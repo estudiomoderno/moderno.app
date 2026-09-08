@@ -1,0 +1,28 @@
+# Secretos y configuración local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Dependencias y builds
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
+
+# Editor
+.vscode/
+.idea/
+
+# Supabase local
+supabase/.temp/
+supabase/.branches/
+
+# Archivos pesados / entregas antiguas
+*.zip

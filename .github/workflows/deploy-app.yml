@@ -1,0 +1,26 @@
+name: Desplegar app.moderno.app
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Subir app/ a DonDominio por FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./app/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}   # p. ej. /app.moderno.app/
+          exclude: |
+            **/.git*
+            **/.git*/**
