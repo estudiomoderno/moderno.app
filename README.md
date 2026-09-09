@@ -1,34 +1,52 @@
-# Moderno.app
+# Moderno.app — TALLER
 
-Repositorio privado con todo el código de Moderno.app.
+CRM para estudios de interiorismo y reformas. Aplicación actual: `app/index.html`, HTML, CSS y JavaScript sin compilación, v3.29.
+
+## Arranque local
+
+Instala Node.js 22 o superior y Git. Desde la raíz del repositorio:
+
+```sh
+node scripts/dev-server.mjs
+```
+
+También sirve `npm run dev`. No hace falta instalar paquetes. Abre http://localhost:3000. Detener: Ctrl+C. El servidor escucha solo en este ordenador, sirve app/, desactiva la caché y admite rutas como /proyectos.
+
+Aquí la raíz Git es `C:\Chat Codex\moderno.app-main`; Codex está vinculado a su carpeta contenedora `C:\Chat Codex`. En otros ordenadores conviene vincular la raíz Git directamente.
+
+## Otro ordenador
+
+```sh
+git clone --branch taller https://github.com/estudiomoderno/moderno.app.git
+cd moderno.app
+node scripts/dev-server.mjs
+```
+
+La rama de trabajo es taller; al terminar cada trabajo se suben los cambios revisados. Leer `docs/ESTADO-TALLER.md` y `docs/DECISIONES.md` antes de desarrollar.
+
+## Datos y login
+
+La configuración pública de Supabase está embebida en el HTML. No se necesita .env; el servidor no lo lee. Se necesita Internet para bibliotecas y Supabase. Iniciar sesión conecta al backend real: local no es una base de datos de pruebas.
+
+Para Google OAuth comprobar en Supabase Authentication → URL Configuration que se permite `http://localhost:3000/` e iniciar el acceso desde la raíz. No se ha inspeccionado la configuración real de OAuth. Revisar el error y las URL permitidas antes de modificar Google. Nunca guardar secretos en el repositorio.
 
 ## Estructura
 
-| Carpeta | Contenido | Se despliega en |
-|---|---|---|
-| `app/` | Aplicación principal (hoy `prototipo-moderno.html`, mañana React + TypeScript) | app.moderno.app |
-| `admin/` | Panel de administración / CRM | admin.moderno.app |
-| `web/` | Web pública: `build_web.py` y el HTML generado | www.moderno.app |
-| `supabase/functions/` | Edge Functions (`gcal`, clasificador de productos…) | Supabase |
-| `supabase/sql/` | Esquema, RPCs (`unirse_al_estudio`, `portal_obra_lee`…) y políticas RLS | Supabase (a mano) |
-| `extension/` | Extensión de Chrome "Product Clipper" (Manifest V3) | Chrome Web Store |
-| `mailer/` | `enviar-invitacion.php` y utilidades PHP | DonDominio |
-| `docs/` | Traspasos del Taller, resúmenes para Estrategia, especificaciones | — |
+- app/: aplicación y .htaccess para Apache.
+- scripts/: servidor local sin dependencias.
+- docs/: estado, decisiones e historial.
+- admin/, web/, extension/, mailer/: contienen README, no implementaciones.
+- supabase/: marcadores de SQL y gcal; faltan archivos ejecutables.
 
-## Versiones
+## Publicación
 
-Cada versión de la app se etiqueta en Git: `git tag v3.29`. El historial de cambios
-por versión vive en `docs/CHANGELOG.md`.
+.github/workflows/deploy-app.yml publica app/ por FTPS al subir cambios de esa carpeta a main y permite ejecución manual. No se han comprobado secretos ni ejecuciones. Trabajar en una rama y revisar antes de publicar.
 
-## Despliegue
+## Git en el entorno Codex de Windows
 
-Al hacer *push* a la rama `main`, GitHub Actions sube el contenido de `app/` a
-app.moderno.app por SFTP/FTP (ver `.github/workflows/deploy-app.yml`).
-Las credenciales del FTP se guardan en **Settings → Secrets → Actions** del repositorio,
-nunca en el código.
+Si Git no encuentra git-remote-https, usar el adaptador incluido:
 
-## Regla de oro
+    ./scripts/git-codex.ps1 fetch origin
+    ./scripts/git-codex.ps1 push -u origin taller
 
-Ningún secreto en el repositorio: ni `service_role`, ni Client Secret de Google,
-ni API key de Verifacti. Solo la clave pública `anon` de Supabase puede ir en el cliente.
-Copia `.env.example` a `.env` para trabajar en local; `.env` está en `.gitignore`.
+Usa Git Credential Manager para iniciar sesión; no incluir credenciales en archivos. En una instalación completa de Git se pueden usar los comandos git habituales.
