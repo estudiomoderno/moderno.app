@@ -6,6 +6,17 @@ import sync from '../app/sync-merge.js';
 const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 const section=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
 const code=section('async function cloudReadRows(','async function cloudRecoverBlock(')+section('async function cloudPoll(){','/* Presencia:');
+test('rendering payment summaries cannot add financial fields to collaborator projects',()=>{
+ const c={_accessRole:'colaborador'};vm.createContext(c);vm.runInContext(html.match(/function planHitos\(p\)\{[^\n]+/)[0],c);const project={id:1};assert.equal(c.planHitos(project).length,0);assert.deepEqual(project,{id:1});
+});
+test('a missing read-only block does not become a collaborator write',()=>{
+ const c={_accessRole:'colaborador',_cloudHash:{},_cloudCount:{},canon:sync.canonical,blockCount:()=>0,CLOUD_BLOCKS:{contratistas:{get:()=>({})},contactos:{get:()=>[]}}};
+ vm.createContext(c);vm.runInContext(section('function cloudMarkLoadedBlocks(rows){','async function cloudLoad(){'),c);c.cloudMarkLoadedBlocks([]);
+ assert.equal(c._cloudHash.contratistas,'{}');assert.equal(c._cloudHash.contactos,undefined);
+});
+test('unavailable workspace names never reappear as a fallback',()=>{
+ const c={wsOrder:['eliminado','privado'],wsVisible:()=>false};vm.createContext(c);vm.runInContext(section('function visibleWsOrder(){','const byBrand'),c);assert.equal(c.visibleWsOrder().length,0);
+});
 function fixture(){
  const calls=[],applied=[];
  const c={ESTUDIO_ID:'ficticio',_accessRole:'colaborador',_cloudSeen:{},document:{hidden:false},syncTag:(...args)=>calls.push(args),cloudApplyRemote:(...args)=>applied.push(args),sb:{from(){assert.fail('No se permite leer la tabla sin filtrar');},rpc:async(name,p)=>{calls.push([name,p]);return {data:[{bloque:'proyectos',contenido:[{id:1,name:'Ficticio'}],updated_at:'1',rol:'colaborador'}]};}}};

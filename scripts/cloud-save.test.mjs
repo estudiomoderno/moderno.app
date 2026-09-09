@@ -30,6 +30,11 @@ test('two stale sessions preserve separate edits',async()=>{
  const one=session(store,a),two=session(store,b);await one.flush();await two.flush();
  assert.deepEqual(store.row.contenido,[{id:1,name:'A1'},{id:2,name:'B1'}]);assert.equal(two.local.dirty,false);
 });
+
+test('collaborator local counters never attempt an unauthorized configuration write',async()=>{
+ const store=fixture(),s=session(store);s.c._accessRole='colaborador';s.c.CLOUD_BLOCKS.config={get:()=>({counters:{m:4}}),set(){assert.fail('No modificar configuración');}};
+ await s.flush();assert.equal(store.writes,0);assert.equal(s.local.mode,'ok');
+});
 test('race between read and write cannot overwrite; retry merges',async()=>{
  const store=fixture(),a=structuredClone(base);a[0].name='A1';let first=true;
  const s=session(store,a,{beforeWrite(){if(first){first=false;store.row={contenido:[{id:1,name:'A'},{id:2,name:'B1'}],updated_at:'2026-01-02T00:00:00Z'};}}});

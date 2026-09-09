@@ -6,21 +6,51 @@ on:
     paths: ['app/**']
   workflow_dispatch:
 
+permissions:
+  contents: read
+concurrency:
+  group: app-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Comprobar candidato
+        run: node --test scripts/*.test.mjs
+      - name: Separar recursos de la entrada
+        run: |
+          mkdir -p release-assets release-entry
+          cp -a app/. release-assets/
+          mv release-assets/index.html release-entry/index.html
 
-      - name: Subir app/ a DonDominio por FTP
+      - name: Subir recursos antes del HTML
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
-          local-dir: ./app/
+          local-dir: ./release-assets/
+          state-name: .ftp-assets-state.json
           server-dir: ${{ secrets.FTP_SERVER_DIR }}   # p. ej. /app.moderno.app/
           exclude: |
             **/.git*
             **/.git*/**
+            **/api/**
+            index.html
+      - name: Publicar entrada una vez disponibles los recursos
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./release-entry/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          state-name: .ftp-entry-state.json

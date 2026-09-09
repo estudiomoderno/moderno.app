@@ -3324,7 +3324,7 @@ var qrcode = function() {
 const BRAND = { cm:{name:"",chip:"cm",front:"var(--cm-soft)",back:"var(--cm-back)"},
                 em:{name:"Estudio Moderno",chip:"em",front:"var(--em-soft)",back:"var(--em-back)"} };
 let wsOrder = ["cm","em"];
-const wsOptions = sel => wsOrder.map(k=>`<option value="${k}" ${sel===k?"selected":""}>${BRAND[k].name}</option>`).join("");
+const wsOptions = sel => visibleWsOrder().map(k=>`<option value="${k}" ${sel===k?"selected":""}>${BRAND[k].name}</option>`).join("");
 function removeWorkspace(k){
   if(wsOrder.length<=1){ toast("Debe quedar al menos un espacio de trabajo"); return; }
   const n = state.projects.filter(x=>x.brand===k).length;
@@ -4067,8 +4067,7 @@ function wsVisible(k){
   return t.map(x=>String(x).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")).includes(me);
 }
 function visibleWsOrder(){
-  const v=wsOrder.filter(wsVisible);
-  return v.length? v : wsOrder;                                 // a prueba de bloqueos: nunca cero
+  return wsOrder.filter(wsVisible);
 }
 const byBrand = arr => {
   if(state.brandFilter==="all")
@@ -9291,7 +9290,7 @@ function hitoChip(h){ const st=hitoStatus(h), c=HITO_ST[st]; const hoy=new Date(
               : `<span class="chip" style="background:${c[1]};color:${c[2]};font-size:10.5px;white-space:nowrap">${c[0]}${h.invRef?" · "+h.invRef:""}</span>`; }
 function isoToEs(s){ return s? s.split("-").reverse().join("/") : ""; }
 function esToIso(s){ const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(s||""); return m? m[3]+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0") : ""; }
-function planHitos(p){ p.payPlan = Array.isArray(p.payPlan)?p.payPlan:[]; return p.payPlan; }
+function planHitos(p){ if(_accessRole==='colaborador')return [];p.payPlan = Array.isArray(p.payPlan)?p.payPlan:[]; return p.payPlan; }
 /* Base (sin IVA) de un asiento de ingreso: usa e.base si la factura lo guardó; si no, descuenta el IVA del estudio */
 function entryBase(e){ if(!e) return 0; if(typeof e.base==="number") return e.base; const v=+(state.account&&state.account.vat)||0; return /^Factura /.test(e.concept||"") && v ? Math.round(e.amount/(1+v/100)*100)/100 : e.amount; }
 /* Valor del proyecto = lo ya facturado (base) + lo previsto aún sin facturar. Se calcula solo; p.total es el importe de contrato para el reparto */
@@ -11286,7 +11285,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.30-rc.1";
+const MODERNO_VER="v3.30";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11427,7 +11426,7 @@ function fixBrands(){
   if(state.catTab && !BRAND[state.catTab]) state.catTab=wsOrder[0];
 }
 let _syncPhase='connecting', _syncDetail='', _syncConfirmed=false, _syncReview=false;
-function syncHasChanges(){return Object.keys(CLOUD_BLOCKS).some(b=>_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()));}
+function syncHasChanges(){return Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()));}
 function syncCopyKeys(){const keys=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(LS_KEY+'_pendiente_'))keys.push(k);}}catch(e){}return keys;}
 function syncView(){
   return ModernoDaily.saveStatus({editing:typeof document!=='undefined'&&!!document.querySelector('.overlay.open input:not([type="hidden"]), .overlay.open textarea, .overlay.open select, .overlay.open [contenteditable="true"]'),localFailure:typeof _saveErr!=='undefined'&&_saveErr,review:_syncReview,online:navigator.onLine,changed:syncHasChanges(),confirmed:_syncConfirmed,phase:_syncPhase,detail:_syncDetail});
@@ -11564,6 +11563,7 @@ async function cloudFlush(){
   window._cloudDiag = window._cloudDiag || {};
   for(const b of Object.keys(CLOUD_BLOCKS)){
     try{
+      if(_accessRole==='colaborador'&&!['proyectos','compras','contactos','fases','agenda'].includes(b))continue;
       const _v=JSON.parse(canon(CLOUD_BLOCKS[b].get()));
       const j=canon(_v);
       if(_cloudHash[b]===j) continue;
@@ -11605,7 +11605,7 @@ async function cloudFlush(){
   if(caidos.length){
     syncTag("err","No se pudo guardar: "+caidos.join(", ")+" — reintentando…");
     clearTimeout(_cloudRetryT); _cloudRetryT=setTimeout(cloudFlush, 15000);
-  } else if(Object.keys(CLOUD_BLOCKS).some(b=>_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))) {
+  } else if(Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))) {
     syncTag("err","Hay cambios pendientes de guardar; conserva esta pestaña abierta");
     clearTimeout(_cloudRetryT); _cloudRetryT=setTimeout(cloudFlush,15000);
   } else {
@@ -11710,6 +11710,14 @@ function cloudPendingNotice(){
     box.append(label,list,download,close);document.body.appendChild(box);
   }catch(e){}
 }
+function cloudMarkLoadedBlocks(rows){
+      const _recibidos = new Set(rows.map(r=>r.bloque));
+      /* La nube manda: los bloques que no existen en la nube se vacían en local (nada de restos de caché o demo) */
+      for(const b of Object.keys(CLOUD_BLOCKS)){
+        if(_recibidos.has(b)){ _cloudHash[b]=canon(CLOUD_BLOCKS[b].get()); _cloudCount[b]=blockCount(CLOUD_BLOCKS[b].get()); }
+        else { const cur=CLOUD_BLOCKS[b].get(); if(Array.isArray(cur) && cur.length){ _cloudApplying=true; try{ CLOUD_BLOCKS[b].set([]); }finally{ _cloudApplying=false; } } if(_accessRole==='colaborador'&&['config','facturas','presupuestos','contratistas'].includes(b))_cloudHash[b]=canon(CLOUD_BLOCKS[b].get());else delete _cloudHash[b]; _cloudCount[b]=0; }
+      }
+}
 async function cloudLoad(){
   if(!sb) return;
   _accessLoading=true;
@@ -11751,12 +11759,7 @@ async function cloudLoad(){
       try{ rows.forEach(r=>{ const io=CLOUD_BLOCKS[r.bloque]; if(io) io.set(r.contenido); _cloudSeen[r.bloque]=r.updated_at; }); }
       finally{ _cloudApplying=false; }
       ensureSelfInTeam();
-      const _recibidos = new Set(rows.map(r=>r.bloque));
-      /* La nube manda: los bloques que no existen en la nube se vacían en local (nada de restos de caché o demo) */
-      for(const b of Object.keys(CLOUD_BLOCKS)){
-        if(_recibidos.has(b)){ _cloudHash[b]=canon(CLOUD_BLOCKS[b].get()); _cloudCount[b]=blockCount(CLOUD_BLOCKS[b].get()); }
-        else { const cur=CLOUD_BLOCKS[b].get(); if(Array.isArray(cur) && cur.length){ _cloudApplying=true; try{ CLOUD_BLOCKS[b].set([]); }finally{ _cloudApplying=false; } } delete _cloudHash[b]; _cloudCount[b]=0; }
-      }
+      cloudMarkLoadedBlocks(rows);
       persistNow(); drawBrandSwitch(); applySessionUI(); render();
       syncTag("ok","Estudio cargado ✓"); cloudRealtimeStart();
       if(_wantProject!=null && state.projects.some(x=>x.id===_wantProject && !x.tpl)){

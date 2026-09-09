@@ -18,11 +18,16 @@ do $$ declare r record; nuevo jsonb; ok boolean;begin
  insert into resultado_prueba values ('config_rechazada',ok);
  ok:=false;begin perform public.app_leer_bloques('00000000-0000-0000-0000-000000000001',null);exception when insufficient_privilege then ok:=true;end;
  insert into resultado_prueba values ('otro_estudio_rechazado',ok);
+ select * into r from public.app_leer_bloques('af1bd5ff-e836-483e-a45f-2c1a71eb1ff5',array['proyectos']);
+ nuevo:=r.contenido||'[{"id":102,"name":"Alta ficticia","createdBy":"Prueba","createdByMail":"prueba@example.invalid","createdAt":"2026-09-09","tasks":[]}]'::jsonb;
+ perform public.guardar_bloque_versionado('af1bd5ff-e836-483e-a45f-2c1a71eb1ff5','proyectos',nuevo,r.updated_at);
+ insert into resultado_prueba select 'alta_proyecto_con_autoria',jsonb_array_length(contenido)=2 from public.app_leer_bloques('af1bd5ff-e836-483e-a45f-2c1a71eb1ff5',array['proyectos']);
 end $$;
 reset role;
 insert into resultado_prueba select 'privados_conservados',contenido#>>'{0,total}'='999' and contenido#>>'{0,tasks,0,amount}'='250' and contenido#>>'{0,rooms,0,sections,0,items,0,cost}'='45' from public.datos_estudio where estudio_id='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5' and bloque='proyectos';
 insert into resultado_prueba select 'marcas_dinamicas',public.app_config_colaborador('{"BRAND":{"marca_ficticia":{"name":"Ficticia","front":"#fff","cost":99}},"logos":{"marca_ficticia":"data:image/png;base64,AA"}}')#>>'{BRAND,marca_ficticia,front}'='#fff';
 insert into resultado_prueba select 'mapas_nulos_seguros',public.app_config_colaborador('{"logos":null,"BRAND":null,"idPrefix":null,"series":null}')#>'{BRAND}'='{}'::jsonb;
+insert into resultado_prueba select 'contacto_con_direccion_y_carpeta',public.app_colaborador_combinar('[]','[{"name":"Ficticio","nif":"FICTICIO","cp":"00000","folder":"https://example.invalid/carpeta"}]')->0->>'cp'='00000';
 insert into resultado_prueba select 'ruta_pdf_unicode',public.app_ruta_storage('https://auth.moderno.app/storage/v1/object/public/archivos/af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/Facturaci%C3%B3n%20prueba.pdf')='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/Facturación prueba.pdf';
 insert into resultado_prueba select 'ruta_pdf_malformada_rechazada',public.app_ruta_storage('https://auth.moderno.app/storage/v1/object/public/archivos/af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/%ZZ.pdf') is null;
 insert into resultado_prueba select 'ruta_pdf_externa_rechazada',public.app_ruta_storage('https://example.invalid/storage/v1/object/public/archivos/af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/prueba.pdf') is null;
