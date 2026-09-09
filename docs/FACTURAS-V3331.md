@@ -6,3 +6,5 @@
 - Una entrada marcada `cobr` conserva pendiente cero aunque carezca de desglose. La ventana explica la diferencia; abrirla no modifica la entrada ni inventa pagos. Al añadir o eliminar movimientos, el recálculo utiliza los importes reales, incluida la retención.
 - Sin migraciones ni escrituras de datos de producción. Validación: 155 pruebas y revisión visual local con facturas ficticias pagada y parcial.
 - Reversión: revertir el commit de esta versión y desplegar; no requiere restaurar datos.
+
+Publicación comprobada: commit 7bc6cbf, ejecución 34390976659 finalizada correctamente. HTML y CSS públicos responden 200 y coinciden con los archivos probados.
