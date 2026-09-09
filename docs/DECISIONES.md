@@ -42,3 +42,10 @@ El usuario autoriza que TALLER desarrolle, compruebe y publique las modificacion
 - El usuario autorizó expresamente la clave S3 de acceso completo y su almacenamiento en GitHub; el programa solo lee Storage.
 - Prueba sintética de recuperación y primera copia real verificadas. Copias completas diarias a las 04:23 de Madrid, sin eliminación automática de anteriores.
 - Sigue pendiente la recuperación integral de base de datos y archivos en entorno aislado, y la supervisión externa de copias ausentes. Consultar BACKUP-SETUP.md antes de cambios que afecten a datos.
+
+## 2026-09-09 — Taller Moderno.App y futura comercialización
+
+- Nombre de la tarea principal: Taller Moderno.App.
+- app.moderno.app seguirá siendo el CRM; www.moderno.app será el escaparate y la entrada a las suscripciones.
+- Conservar el estudio piloto, sus miembros, identificadores y archivos al introducir planes comerciales.
+- La revisión inicial y las propuestas se recogen en PLAN-PRODUCTO.md. Los precios, límites y condiciones comerciales todavía no están decididos.
