@@ -4165,14 +4165,15 @@ const ico = (n,c="") => (ICONS[n]||"").replace('class=\"svgi\"','class=\"svgi '+
 /* =================== ROUTER =================== */
 const V = document.getElementById("view");
 function projTab(t){ if(myAccessLevel()==="colab" && (t==="fin"||t==="resumen")) { toast("No tienes acceso a los datos económicos"); t="tareas"; } state.projTab=t; render(); window.scrollTo(0,0); const m=document.querySelector(".main"); if(m) m.scrollTop=0; }
-var _accessRole=null, _gestoriaData=null;
+var _accessRole=null, _gestoriaData=null, _accessLoading=true;
 const VIEW_DENY = {
   owner:   [],
   miembro: ["contabilidad","informes","facturas","admin"],
-  colab:   ["contabilidad","informes","facturas","admin","catalogo","integraciones","plantillas","utilidades"]
+  colab:   ["contabilidad","informes","facturas","presupuestos","prevision","admin","catalogo","integraciones","plantillas","utilidades"]
 };
 function myAccessLevel(){
   if(_accessRole==="gestoria")return "gestoria";
+  if(_accessRole==="colaborador")return "colab";
   if(!sb || !ESTUDIO_ID) return "owner";
   if(state.myRole==="admin") return "owner";
   const mm=meMail(); const u=(state.users||[]).find(x=>(x.email||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===mm);
@@ -4207,7 +4208,11 @@ document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>go(b.dataset.vie
 drawBrandSwitch();
 
 function render(){
+  if(_accessLoading&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>Conectando con tu estudio</h1><p>Comprobando el acceso y cargando tus datos.</p><button class="btn btn-ghost" onclick="cloudLoad()">Reintentar conexión</button>';return;}
+  if((_accessRole==='contratista'||_accessRole==='cliente')&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>Acceso al proyecto</h1><p>Abre el enlace de proyecto que te ha compartido el estudio.</p><button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión</button>';return;}
   if(_accessRole==="gestoria"){ V.innerHTML=vGestoria();applyRoleNav();return; }
+  if(!canView(state.view))state.view='home';
+  if(_accessRole==='colaborador'&&['fin','resumen'].includes(state.projTab))state.projTab='tareas';
   const r = {home:vHome, workspace:vWorkspace, biblioteca:vLibrary, proyectos:vProjects, proyecto:vProject, estancia:vRoom, agenda:vAgenda, calendario:vCalendar, contabilidad:vAccounting, prevision:vPrevision, facturas:()=>vInvoice("factura"), presupuestos:()=>vInvoice("presupuesto"), catalogo:vCatalog, compras:vCompras, informes:vInformes, plantillas:vDocs, utilidades:vUtils, integraciones:vIntegraciones, admin:vAdmin, ajustes:vAjustes, presedit:vPresEdit, portalcli:vPortalCli, portalobra:vPortalObra}[state.view];
   V.innerHTML = r();
   wire();
@@ -4245,6 +4250,7 @@ function uploadLogo(b,f){
 }
 function profileMenu(){ go("ajustes"); }
 function vAjustes(){
+  if(_accessRole==='colaborador')return '<h1>Ajustes</h1><p>'+ModernoDaily.escape(meName())+' · '+ModernoDaily.escape(meMail())+'</p><p>Colaborador</p><button class="btn btn-ghost" onclick="userModal()">Mi perfil</button> <button class="btn btn-ghost" onclick="resetPasswordFor(meMail())">Restablecer contraseña</button> <button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión</button>';
   const u = (function(){ const s=state.sessionUser||{}; const mm=meMail(); const m=(state.users||[]).find(x=>(x.email||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===mm && mm);
     return { name: s.name||(m&&m.name)||meName(), email: s.mail||(m&&m.email)||"", role: (m&&m.role)||(state.myRole==="admin"?"Administrador":"Miembro") }; })();
   const it = (icon,label,fn,danger) => `<button class="entry pm-it" style="${danger?"color:var(--red-ink)":""}" onclick="${fn}">${ico(icon)} ${label}</button>`;
@@ -4463,13 +4469,13 @@ function userModal(){
   if(_accessRole==="gestoria"){modal('<h3>Gestoría · Solo lectura</h3><p>Consulta y descarga de PDF de Finanzas y Contabilidad.</p><button class="btn btn-dark" onclick="closeModal();sbLogout()">Cerrar sesión</button>');return;}
   modal(`<h3>${ico("m_user")} Mi perfil</h3>
   <div style="display:flex;align-items:center;gap:12px;margin:10px 0">
-    <span style="background:var(--gold);border-radius:14px;width:52px;height:52px;display:grid;place-items:center;font-weight:900;font-size:20px">J</span>
-    <div><b style="font-size:14px">Javier Jiménez Moreno</b><br><small style="color:var(--ink-faint)">hola@estudiomoderno.es</small></div>
+    <span style="background:var(--gold);border-radius:14px;width:52px;height:52px;display:grid;place-items:center;font-weight:900;font-size:20px">${ModernoDaily.escape(meName().slice(0,1))}</span>
+    <div><b style="font-size:14px">${ModernoDaily.escape(meName())}</b><br><small style="color:var(--ink-faint)">${ModernoDaily.escape(meMail())}</small></div>
     <label class="btn btn-ghost" style="margin-left:auto;cursor:pointer;font-size:11px">${ico("import")} Foto
       <input type="file" accept="image/*" style="display:none" onchange="toast('En la app real tu foto sustituye a la inicial en toda la app')"></label>
   </div>
   <div class="entry" style="background:var(--card)">Espacios de trabajo<span class="amt" style="color:var(--ink)">${wsOrder.map(k=>BRAND[k].name).join(" · ")}</span></div>
-  <div class="entry" style="background:var(--card)">Rol<span class="amt" style="color:var(--ink)">Administrador</span></div>
+  <div class="entry" style="background:var(--card)">Rol<span class="amt" style="color:var(--ink)">${_accessRole==='admin'?'Administrador':_accessRole==='colaborador'?'Colaborador':'Miembro'}</span></div>
   <div class="entry" style="background:var(--card)">Idioma<span class="amt" style="color:var(--ink)">Español (más idiomas en la app real)</span></div>
   <p style="font-size:11.5px;color:var(--ink-faint);margin-top:10px">Los usuarios se gestionan en <b>Equipos</b> · los permisos de cada rol, en <b>Administración → Permisos</b> · los logos, en <b>Administración → Creación de marca</b>.</p>
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal();profileMenu()">${ico("atras")} Atrás</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
@@ -9635,13 +9641,13 @@ function taskModal(pid,idx,col){
   <div id="tkSubs"></div>
   <div style="display:flex;gap:6px;margin-top:6px"><input id="tkNewSub" placeholder="Añadir subtarea…" onkeydown="if(event.key==='Enter')tkAddSub()"><button class="btn btn-ghost" onclick="tkAddSub()">＋</button></div>
   ${depsHtml}
-  <label>Presupuestado (€)</label><input id="tkAmt" type="number" value="${src.amount??""}" placeholder="0">
+  ${_accessRole==='colaborador'?'':`<label>Presupuestado (€)</label><input id="tkAmt" type="number" value="${src.amount??""}" placeholder="0">`}
   <label>Adjuntos</label>
   <div id="tkFiles"></div>
   <label class="btn btn-ghost" style="width:100%;justify-content:center;cursor:pointer;background:var(--card)">${ico("adjunto")} Añadir adjunto
     <input type="file" multiple style="display:none" onchange="tkAddFiles(this.files);this.value=''"></label>
-  <label style="display:flex;align-items:center;gap:10px;margin-top:14px">Generar entrada en contabilidad para esta tarea
-  <div class="switch ${src.acc?'on':''}" id="tkAcc" onclick="this.classList.toggle('on')"></div></label>
+  ${_accessRole==='colaborador'?'':`<label style="display:flex;align-items:center;gap:10px;margin-top:14px">Generar entrada en contabilidad para esta tarea
+  <div class="switch ${src.acc?'on':''}" id="tkAcc" onclick="this.classList.toggle('on')"></div></label>`}
   <label>💬 Comentarios</label>
   <div id="tkComments"></div>
   <div style="display:flex;gap:6px;margin-top:6px">
@@ -9753,9 +9759,10 @@ function saveTask(pid,idx){
   tkSyncSubs();
   const nt = { title:document.getElementById("tkTitle").value||"Tarea",
     col:document.querySelector("#tkCol .on").dataset.v, type:document.querySelector("#tkType .on").dataset.v,
-    amount:+document.getElementById("tkAmt").value||null, acc:document.getElementById("tkAcc").classList.contains("on"),
+    amount:+(document.getElementById("tkAmt")?.value)||null, acc:!!document.getElementById("tkAcc")?.classList.contains("on"),
     due:document.getElementById("tkDue").value, assignee:(taskAssignees(tk)[0]||""), assignees:taskAssignees(tk), subs:tk.subs, files:tk.files, comments:tkMergeComments(idx>=0&&p.tasks[idx]?p.tasks[idx].comments:[], tk.comments),
     id: tk.id || (idx>=0&&p.tasks[idx]&&p.tasks[idx].id) || Date.now(), deps:(tk.deps||[]).filter(d=>d!==tk.id && p.tasks.some(t=>t.id===d)) };
+  if(_accessRole==='colaborador'){delete nt.amount;delete nt.acc;}
   nt.deps = nt.deps.filter(d=>!depWouldCycle(p,nt.id,d) || (idx>=0&&(p.tasks[idx].deps||[]).includes(d)));
   const prevCol = idx>=0 ? p.tasks[idx].col : "pend";
   let pedirOk=false;
@@ -11288,6 +11295,7 @@ const SUPABASE_URL = "https://auth.moderno.app";
 const SUPABASE_ANON_KEY = "sb_publishable_MfUr7rezJhqiX1ujS295aA_aDF-YbLu";
 const sb = (SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("PEGA_AQUI") && SUPABASE_ANON_KEY.length>40 && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+if(!sb)_accessLoading=false;
 
 function sbUserToSession(u){
   const md = u.user_metadata || {};
@@ -11313,8 +11321,9 @@ function applySessionUI(){
 }
 function showLogin(v){ const ls=document.getElementById("loginScreen"); if(ls) ls.style.display = v ? "grid" : "none"; }
 let _sbEntered=false, _afterDone=false;
-function afterLoginOnce(){ if(_afterDone) return; _afterDone=true; afterLogin(); setTimeout(gcalEstado, 1200); }
+function afterLoginOnce(){ if(_afterDone||_accessLoading) return; _afterDone=true; afterLogin(); setTimeout(gcalEstado, 1200); }
 function ensureSelfInTeam(){
+  if(sb&&_accessRole!=="admin")return;
   const s=state.sessionUser; if(!s) return;
   if(!state.users) state.users=[];
   let me = state.users.find(u=>u.email && s.mail && u.email.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===s.mail.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""));
@@ -11341,6 +11350,7 @@ function meName(){ const s=state.sessionUser; if(s&&s.name) return s.name; const
 function meMail(){ return ((state.sessionUser&&state.sessionUser.mail)||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
 function isAdminU(){ return (!sb || !ESTUDIO_ID) ? true : state.myRole==="admin"; }
 function sbEnter(user, saluda){
+  if(sb&&!ESTUDIO_ID)_accessLoading=true;
   state.sessionUser = sbUserToSession(user);
   ensureSelfInTeam();
   applySessionUI(); showLogin(false); persistSoon(); render();
@@ -11351,7 +11361,9 @@ function sbEnter(user, saluda){
   }
 }
 async function sbLogout(){
-  _accessRole=null;_gestoriaData=null;
+  _accessRole=null;_gestoriaData=null;_accessLoading=!!sb;
+  clearTimeout(_cloudT);clearTimeout(_cloudRetryT);clearInterval(_rtPoll);_rtPoll=null;
+  if(_rtChan){try{await sb.removeChannel(_rtChan);}catch(e){} _rtChan=null;}
   try{ if(sb) await sb.auth.signOut(); }catch(e){}
   state.sessionUser = null; _sbEntered=false; _afterDone=false; ESTUDIO_ID=null;
   Object.keys(_cloudHash).forEach(k=>delete _cloudHash[k]);
@@ -11468,6 +11480,7 @@ async function fileUp(f){
   }
 }
 function cloudDirty(){
+  if(_accessLoading||_accessRole==='gestoria')return;
   if(!sb||!ESTUDIO_ID||_cloudApplying) return;
   if(!syncHasChanges()){syncRefresh();return;}
   if(_syncPhase!=="saving"&&_syncPhase!=="connecting")_syncPhase="pending";
@@ -11510,12 +11523,40 @@ function cloudGuardModal(b, oldN, newN){
     ()=>{ _cloudForce[b]=true; cloudDirty(); },
     ()=>{ cloudRecoverBlock(b); });
 }
+async function cloudReadRows(bloques=null){
+  const estudio=ESTUDIO_ID,role=_accessRole;
+  const result=await sb.rpc("app_leer_bloques",{p_estudio:estudio,p_bloques:bloques});
+  if(ESTUDIO_ID!==estudio||_accessRole!==role)return {error:new Error("La sesión ha cambiado; vuelve a cargar la consulta")};
+  if(result.error)return result;
+  if(!Array.isArray(result.data)||result.data.some(r=>!r||r.rol!==role))return {error:new Error("Tus permisos han cambiado; conserva los cambios pendientes y vuelve a entrar")};
+  return result;
+}
+async function cloudReadBlock(b){
+  const result=await cloudReadRows([b]);if(result.error)return result;
+  if(result.data.length>1||result.data.some(r=>r.bloque!==b))return {error:new Error("Respuesta de bloque no válida")};
+  return {data:result.data[0]||null};
+}
+function cloudPrepareFilteredCache(rows){
+  if(_accessRole!=="colaborador")return;
+  // Los cambios pendientes se conservan antes de llegar aquí. No mezclar la
+  // antigua copia completa con la nueva proyección autorizada del servidor.
+  const cfg=rows.find(r=>r.bloque==='config')?.contenido||{};
+  state.projects=[];state.library=[];state.clients=[];
+  state.quotes=[];state.invoices=[];state.entries=[];state.borradores=[];
+  state.docs=[];state.catalog=[];state.entriesDel={};state.docsDel={};
+  state.quoteCounter=0;state.invCounter=0;state.defMargin=0;state.irpf=false;
+  state.account=cfg.account||{};state.emitter={};state.users=[];
+  state.idPrefix={};state.series={};state.counters={};state.logos={};
+  state._hist=null;state.qView=null;state.fView=null;
+  state.obraTpl=[];state.cal={view:'mes',off:0,showTasks:true,events:[]};
+}
 async function cloudRecoverBlock(b){
-  try{ const {data}=await sb.from("datos_estudio").select("contenido,updated_at").eq("estudio_id",ESTUDIO_ID).eq("bloque",b).maybeSingle();
+  try{ const {data,error}=await cloudReadBlock(b);if(error)throw error;
     if(data){ _cloudApplying=true; try{ CLOUD_BLOCKS[b].set(data.contenido); }finally{ _cloudApplying=false; } _cloudHash[b]=canon(CLOUD_BLOCKS[b].get()); _cloudSeen[b]=data.updated_at; _cloudCount[b]=blockCount(data.contenido); persistNow(); render(); toast("Bloque «"+b+"» recuperado de la nube ✓"); }
   }catch(e){ toast("No se pudo recuperar «"+b+"»"); }
 }
 async function cloudFlush(){
+  if(typeof _accessLoading!=="undefined"&&_accessLoading)return;
   if(typeof _accessRole!=="undefined"&&_accessRole==="gestoria")return;
   if(!sb||!ESTUDIO_ID||_cloudBusy||_cloudApplying) return;
   _cloudBusy=true;
@@ -11535,8 +11576,7 @@ async function cloudFlush(){
       if(!wrote) syncTag("saving","Guardando…");
       wrote=true;
       const baseHash=_cloudHash[b];
-      const {data:cur,error:readError} = await sb.from("datos_estudio").select("updated_at,contenido")
-        .eq("estudio_id",ESTUDIO_ID).eq("bloque",b).maybeSingle();
+      const {data:cur,error:readError} = await cloudReadBlock(b);
       if(readError) throw readError;
       let _up=_v;
       if(cur){
@@ -11591,7 +11631,8 @@ function cloudApplyRemote(b, contenido, updated_at){
     if(b==="proyectos"){ try{ const n=absorbComments(state.projects, contenido); if(n){ persistSoon(); tkRefreshFromCloud(); if(!_modalAbierto()) render(); cloudDirty(); } }catch(e){} }   // …pero los comentarios ajenos sí se incorporan
     return false; }
   _cloudApplying=true; try{ io.set(contenido); } finally{ _cloudApplying=false; }
-  _cloudHash[b]=j; _cloudSeen[b]=updated_at; _cloudCount[b]=blockCount(contenido);
+  _cloudHash[b]=(_accessRole==='colaborador'&&['config','facturas','presupuestos','contratistas'].includes(b))?canon(io.get()):j;
+  _cloudSeen[b]=updated_at; _cloudCount[b]=blockCount(contenido);
   const ae=document.activeElement; const escribiendo = !!(ae && (ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"||ae.isContentEditable));
   if(escribiendo || _modalAbierto()){ _rtRerender=true; if(b==="proyectos") tkRefreshFromCloud(); }
   else { try{ persistNow(); }catch(e){} render(); }
@@ -11602,12 +11643,9 @@ function _rtFlushRerender(){ if(_rtRerender && !_modalAbierto()){ const ae=docum
 async function cloudPoll(){
   if(!sb || !ESTUDIO_ID || document.hidden) return;
   try{
-    const {data}=await sb.from("datos_estudio").select("bloque,updated_at").eq("estudio_id",ESTUDIO_ID);
-    const stale=(data||[]).filter(r=>r.updated_at && _cloudSeen[r.bloque]!==r.updated_at).map(r=>r.bloque);
-    if(!stale.length) return;
-    const {data:rows}=await sb.from("datos_estudio").select("bloque,contenido,updated_at").eq("estudio_id",ESTUDIO_ID).in("bloque",stale);
-    (rows||[]).forEach(r=>cloudApplyRemote(r.bloque,r.contenido,r.updated_at));
-  }catch(e){}
+    const {data:rows,error}=await cloudReadRows();if(error)throw error;
+    rows.filter(r=>r.updated_at && _cloudSeen[r.bloque]!==r.updated_at).forEach(r=>cloudApplyRemote(r.bloque,r.contenido,r.updated_at));
+  }catch(e){syncTag("err",e.message||"No se pudo actualizar la consulta");}
 }
 /* Presencia: avatares de los compañeros conectados, con la pantalla en la que están */
 let _presT=null;
@@ -11636,10 +11674,9 @@ function cloudRealtimeStart(){
   if(!sb || !ESTUDIO_ID) return;
   if(!_rtChan){
     try{
-      _rtChan = sb.channel("datos_"+ESTUDIO_ID, {config:{presence:{key: meMail()||("anon-"+Math.random().toString(36).slice(2))}}})
-        .on("postgres_changes",{event:"*",schema:"public",table:"datos_estudio",filter:"estudio_id=eq."+ESTUDIO_ID},
-            (p)=>{ const r=p.new||{}; if(r.bloque) cloudApplyRemote(r.bloque, r.contenido, r.updated_at); })
-        .on("presence",{event:"sync"},()=>{ try{ presenceDraw(_rtChan.presenceState()); }catch(e){} })
+      _rtChan = sb.channel("datos_"+ESTUDIO_ID, {config:{presence:{key: meMail()||("anon-"+Math.random().toString(36).slice(2))}}});
+      if(_accessRole==='admin')_rtChan.on("postgres_changes",{event:"*",schema:"public",table:"datos_estudio",filter:"estudio_id=eq."+ESTUDIO_ID},()=>{ cloudPoll(); });
+      _rtChan.on("presence",{event:"sync"},()=>{ try{ presenceDraw(_rtChan.presenceState()); }catch(e){} })
         .subscribe((st)=>{ if(st==="SUBSCRIBED") presenceTrack(); });
     }catch(e){ console.warn("[realtime]", e); }
   }
@@ -11675,6 +11712,7 @@ function cloudPendingNotice(){
 }
 async function cloudLoad(){
   if(!sb) return;
+  _accessLoading=true;
   try{
     syncTag("saving","Conectando con tu estudio…");
     const {data:mem, error:e1} = await sb.rpc("unirse_al_estudio");
@@ -11701,11 +11739,13 @@ async function cloudLoad(){
     const access=await sb.rpc("app_rol",{p_estudio:ESTUDIO_ID});
     if(access.error||!access.data||access.data==="sin_acceso"){syncTag("err","No se pudieron verificar tus permisos");return;}
     _accessRole=access.data;
-    if(_accessRole==="gestoria"){await gestoriaLoad();return;}
+    if(_accessRole==="gestoria"){_accessLoading=false;await gestoriaLoad();return;}
+    if(_accessRole==='contratista'||_accessRole==='cliente'){_accessLoading=false;render();return;}
     const eid = ESTUDIO_ID;
-    const {data:rows, error:e2} = await sb.from("datos_estudio")
-      .select("bloque,contenido,updated_at").eq("estudio_id", eid);
+    const {data:rows, error:e2} = await cloudReadRows();
     if(e2){ syncTag("err","No se pudieron cargar los datos"); afterLoginOnce(); return; }
+    cloudPrepareFilteredCache(rows);
+    _accessLoading=false;
     if(rows && rows.length){
       _cloudApplying=true;
       try{ rows.forEach(r=>{ const io=CLOUD_BLOCKS[r.bloque]; if(io) io.set(r.contenido); _cloudSeen[r.bloque]=r.updated_at; }); }
@@ -11728,7 +11768,7 @@ async function cloudLoad(){
         else { const t=_wantCliToken; _wantCliToken=null; portalBootDone(); go("home"); toast(_wantObra?"Ese enlace de obra ya no es válido (llave antigua o regenerada): abre el proyecto → Seguimiento de obra → QR de obra para obtener el nuevo":"Ese enlace de portal no corresponde a ningún proyecto de tu estudio"); console.warn("[portal] llave no encontrada:", t); }
       }
       afterLoginOnce();
-      setTimeout(migrateEmbeddedLogos, 800);
+      if(_accessRole==='admin')setTimeout(migrateEmbeddedLogos, 800);
     } else if(localHasData() && state.myRole==="admin" && !_anclaPrevia){
       /* Solo el creador del estudio (admin) y solo con la nube VACÍA puede subir su copia local */
       cloudSnapshotAll(); cloudOfferMigration();
@@ -11789,6 +11829,7 @@ function cloudUploadLocal(){
 }
 let _invsFor=null;
 function syncUsersFromInvs(){
+  if(sb&&_accessRole!=="admin")return;
   if(!state.users) state.users=[];
   let changed=false;
   (state._invs||[]).forEach(v=>{
@@ -12892,7 +12933,8 @@ if(sb){
 }
 if(!sb && _resumed && state.sessionUser) setTimeout(()=>afterLoginOnce(), 900);
 function afterLogin(){
-  if(!state.onboarded){
+  if(_accessLoading)return;
+  if(!state.onboarded&&(!sb||_accessRole==='admin')){
     state.onboarded = true;                 // primer arranque: saludo, no formulario
     persistSoon();
     setTimeout(()=>toast("\ud83d\udc4b Bienvenido a Moderno \u2014 configura tu estudio cuando quieras en Administraci\u00f3n"), 600);

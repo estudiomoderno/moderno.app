@@ -9,7 +9,7 @@ const base=[{id:1,name:'A'},{id:2,name:'B'}];
 function fixture(){return {row:{contenido:structuredClone(base),updated_at:'2026-01-01T00:00:00Z'},writes:0};}
 function session(store,items=structuredClone(base),hooks={}){
  const local={dirty:true};
- const c={Date,console:{warn(){},info(){}},window:{},localStorage:{removeItem(){local.dirty=false}},LS_KEY:'test',ESTUDIO_ID:'test',_cloudBusy:false,_cloudApplying:false,_cloudForce:{},_cloudCount:{contactos:base.length},_cloudHash:{contactos:sync.canonical(base)},_cloudSeen:{contactos:store.row?.updated_at},_cloudRetryT:null,CLOUD_BLOCKS:{contactos:{get:()=>items,set:v=>{items=v}}},canon:sync.canonical,ModernoSync:sync,persistSoon(){},blockCount:v=>v.length,syncTag(mode,msg){local.mode=mode;local.message=msg},clearTimeout(){},setTimeout(){},cloudGuardModal(){local.guarded=true},sb:{from(){let method='GET',payload,filters={};return {select(){return this},eq(k,v){filters[k]=v;return this},update(v){method='PATCH';payload=structuredClone(v);return this},insert(v){method='POST';payload=structuredClone(v);return this},async maybeSingle(){
+ const c={Date,console:{warn(){},info(){}},window:{},localStorage:{removeItem(){local.dirty=false}},LS_KEY:'test',ESTUDIO_ID:'test',_accessRole:'admin',_cloudBusy:false,_cloudApplying:false,_cloudForce:{},_cloudCount:{contactos:base.length},_cloudHash:{contactos:sync.canonical(base)},_cloudSeen:{contactos:store.row?.updated_at},_cloudRetryT:null,CLOUD_BLOCKS:{contactos:{get:()=>items,set:v=>{items=v}}},canon:sync.canonical,ModernoSync:sync,persistSoon(){},blockCount:v=>v.length,syncTag(mode,msg){local.mode=mode;local.message=msg},clearTimeout(){},setTimeout(){},cloudGuardModal(){local.guarded=true},sb:{from(){let method='GET',payload,filters={};return {select(){return this},eq(k,v){filters[k]=v;return this},update(v){method='PATCH';payload=structuredClone(v);return this},insert(v){method='POST';payload=structuredClone(v);return this},async maybeSingle(){
  if(method==='GET'){if(hooks.failRead)return {error:new Error('offline')};const result=structuredClone(store.row);await hooks.afterRead?.();return {data:result};}
  await hooks.beforeWrite?.();
  if(method==='PATCH'&&store.row?.updated_at!==filters.updated_at)return {data:null};
@@ -18,11 +18,12 @@ function session(store,items=structuredClone(base),hooks={}){
  store.row=structuredClone(payload);store.writes++;await hooks.afterWrite?.(items);return {data:{updated_at:payload.updated_at}};
  }}}}};
  c.sb.rpc=async(_name,p)=>{
+ if(_name==='app_leer_bloques'){const result=await c.sb.from('datos_estudio').select().maybeSingle();return result.error?result:{data:result.data?[{...result.data,bloque:'contactos',rol:c._accessRole}]:[]};}
   const row={contenido:p.p_contenido,updated_at:new Date(Date.now()+store.writes).toISOString()};
   const q=c.sb.from('datos_estudio');
   return (p.p_base===null?q.insert(row):q.update(row).eq('updated_at',p.p_base)).select().maybeSingle();
  };
- vm.createContext(c);vm.runInContext(code,c);return {c,local,flush:()=>c.cloudFlush(),get:()=>items};
+ vm.createContext(c);vm.runInContext(html.slice(html.indexOf('async function cloudReadRows('),html.indexOf('async function cloudRecoverBlock('))+'\n'+code,c);return {c,local,flush:()=>c.cloudFlush(),get:()=>items};
 }
 test('two stale sessions preserve separate edits',async()=>{
  const store=fixture(),a=structuredClone(base),b=structuredClone(base);a[0].name='A1';b[1].name='B1';

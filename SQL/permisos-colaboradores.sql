@@ -11,7 +11,7 @@ begin
  elsif jsonb_typeof(v)='object' then
   r:='{}';
   for k,hijo in select key,value from jsonb_each(v) loop
-   if k=any(array['id','name','num','title','brand','client','clientIdx','status','curPhase','tpl','rooms','sections','items','tasks','files','notes','note','desc','description','url','data','type','when','date','due','start','end','color','done','col','who','assignees','subtasks','text','t','qty','price','unit','sku','supplier','dims','material','plazo','img','libId','cat','rstatus','code','email','phone','fiscal','addr','city','country','trade','obraF','obraPlanos','obraContactos','phases','account','logos','BRAND','wsOrder','users','role','ibv','onboarded','idPrefix','series','counters','view','month','year','week','events','weekend','showWeekends','homePage','dateFmt','lang','timezone','n','chip','back','soft']) then
+   if k=any(array['id','name','num','title','brand','client','clientIdx','status','curPhase','tpl','rooms','sections','items','tasks','files','notes','note','desc','description','url','data','type','when','date','due','start','end','color','done','col','who','assignees','assignee','subs','deps','comments','chat','cliChat','cid','txt','ts','fases','updated','off','showTasks','showObra','pid','src','subtasks','text','t','qty','price','unit','sku','supplier','dims','material','plazo','img','libId','cat','rstatus','code','email','phone','fiscal','addr','city','country','trade','obraF','obraPlanos','obraContactos','phases','account','logos','BRAND','wsOrder','users','role','ibv','onboarded','idPrefix','series','counters','view','month','year','week','events','weekend','showWeekends','homePage','dateFmt','lang','timezone','n','chip','back','soft']) then
     r:=r||jsonb_build_object(k,public.app_colaborador_filtrar(hijo));
    end if;
   end loop;
@@ -21,16 +21,29 @@ begin
 end $$;
 revoke all on function public.app_colaborador_filtrar(jsonb) from public,anon,authenticated;
 
+-- Los nombres de marcas son claves dinámicas; no tratarlos como campos del
+-- modelo. Solo pasan los valores previstos para logotipos y colores.
+create or replace function public.app_config_colaborador(v jsonb) returns jsonb
+language sql immutable set search_path='' as $$
+ select public.app_colaborador_filtrar(v)||jsonb_build_object(
+ 'logos',coalesce((select jsonb_object_agg(key,value) from jsonb_each(case when jsonb_typeof(v->'logos')='object' then v->'logos' else '{}'::jsonb end) where jsonb_typeof(value)='string'),'{}'),
+ 'BRAND',coalesce((select jsonb_object_agg(key,public.portal_campos(value,array['name','front','back','soft','chip','color','ink'])) from jsonb_each(case when jsonb_typeof(v->'BRAND')='object' then v->'BRAND' else '{}'::jsonb end) where jsonb_typeof(value)='object'),'{}'),
+ 'idPrefix',coalesce((select jsonb_object_agg(key,value) from jsonb_each(case when jsonb_typeof(v->'idPrefix')='object' then v->'idPrefix' else '{}'::jsonb end) where jsonb_typeof(value)='string'),'{}'),
+ 'series',coalesce((select jsonb_object_agg(key,value) from jsonb_each(case when jsonb_typeof(v->'series')='object' then v->'series' else '{}'::jsonb end) where jsonb_typeof(value)='string'),'{}'));
+$$;
+revoke all on function public.app_config_colaborador(jsonb) from public,anon,authenticated;
+
 create or replace function public.app_leer_bloques(p_estudio uuid,p_bloques text[] default null)
-returns table(bloque text,contenido jsonb,updated_at timestamptz)
+returns table(bloque text,contenido jsonb,updated_at timestamptz,rol text)
 language plpgsql stable security definer set search_path='' as $$
-declare rol text;
+declare acceso text;
 begin
- rol:=public.app_rol(p_estudio);
- if rol not in ('admin','colaborador') then raise exception 'No autorizado' using errcode='42501'; end if;
- return query select d.bloque,case when rol='admin' then d.contenido
+ acceso:=public.app_rol(p_estudio);
+ if acceso not in ('admin','colaborador') then raise exception 'No autorizado' using errcode='42501'; end if;
+ return query select d.bloque,case when acceso='admin' then d.contenido
   when d.bloque in ('facturas','presupuestos') then '{}'::jsonb
-  else public.app_colaborador_filtrar(d.contenido) end,d.updated_at
+  when d.bloque='config' then public.app_config_colaborador(d.contenido)
+  else public.app_colaborador_filtrar(d.contenido) end,d.updated_at,acceso
  from public.datos_estudio d where d.estudio_id=p_estudio and (p_bloques is null or d.bloque=any(p_bloques));
 end $$;
 revoke all on function public.app_leer_bloques(uuid,text[]) from public,anon;
