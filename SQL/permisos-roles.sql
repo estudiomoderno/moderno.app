@@ -3,15 +3,16 @@
 -- La integración de cliente, RLS, historial y Storage debe entregarse completa.
 begin;
 
-create or replace function public.app_rol(p_estudio uuid) returns text
-language plpgsql stable security definer set search_path='' as $$
+-- Auxiliar privado: permite comprobar también al titular de una suscripción.
+create or replace function public.app_rol_usuario(p_estudio uuid,p_usuario uuid) returns text
+language plpgsql stable set search_path='' as $$
 declare membresia text; correo text; etiqueta text; coincidencias integer;
 begin
  select m.rol into membresia from public.miembros m
- where m.estudio_id=p_estudio and m.user_id=auth.uid();
+ where m.estudio_id=p_estudio and m.user_id=p_usuario;
  if membresia is null then return 'sin_acceso'; end if;
  if membresia='admin' then return 'admin'; end if;
- select lower(u.email) into correo from auth.users u where u.id=auth.uid();
+ select lower(u.email) into correo from auth.users u where u.id=p_usuario;
  select min(x->>'role'),count(*) into etiqueta,coincidencias from public.datos_estudio d
  cross join lateral jsonb_array_elements(coalesce(d.contenido->'users','[]')) x
  where d.estudio_id=p_estudio and d.bloque='config' and lower(x->>'email')=correo;
@@ -21,6 +22,11 @@ begin
  when 'Contratista (obra)' then 'contratista' when 'Cliente' then 'cliente'
  else 'colaborador' end;
 end $$;
+revoke all on function public.app_rol_usuario(uuid,uuid) from public,anon,authenticated;
+create or replace function public.app_rol(p_estudio uuid) returns text
+language sql stable security definer set search_path='' as $$
+ select public.app_rol_usuario(p_estudio,auth.uid());
+$$;
 revoke all on function public.app_rol(uuid) from public,anon;
 grant execute on function public.app_rol(uuid) to authenticated;
 
@@ -150,6 +156,30 @@ create trigger app_gestoria_solo_lectura before insert or update or delete on pu
  for each row execute function public.app_bloquear_escritura_gestoria();
 
 -- Busca exclusivamente referencias PDF en el bloque contable, no cualquier URL.
+create or replace function public.app_ruta_storage(enlace text) returns text
+language plpgsql immutable set search_path='' as $$
+declare ruta text; salida bytea:=''::bytea; i integer:=1; parte text;
+begin
+ if enlace like 'storage://archivos/%' then ruta:=substr(enlace,20);
+ elsif enlace ~ '^https://(auth\.moderno\.app|cgqtylvaapwbuwqvpjtb\.supabase\.co|lypsmptuastbgxvlwfzj\.supabase\.co)/storage/v1/object/(public|authenticated)/archivos/' then
+  ruta:=substring(enlace from '/storage/v1/object/(?:public|authenticated)/archivos/(.*)$');
+  ruta:=split_part(split_part(ruta,'?',1),'#',1);
+  while i<=length(ruta) loop
+   if substr(ruta,i,1)='%' then
+    parte:=substr(ruta,i+1,2);if parte !~ '^[a-fA-F0-9]{2}$' then return null;end if;
+    salida:=salida||decode(parte,'hex');i:=i+3;
+   else salida:=salida||convert_to(substr(ruta,i,1),'UTF8');i:=i+1;end if;
+  end loop;
+  ruta:=convert_from(salida,'UTF8');
+ else return null;end if;
+ if ruta !~* '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/'
+  or ruta ~ '[[:cntrl:]?#%]' or position(chr(92) in ruta)>0
+  or exists(select 1 from unnest(string_to_array(ruta,'/')) segmento where segmento in ('','.','..')) then return null;end if;
+ return ruta;
+exception when others then return null;
+end $$;
+revoke all on function public.app_ruta_storage(text) from public,anon,authenticated;
+
 create or replace function public.app_rutas_pdf(v jsonb) returns setof text
 language plpgsql immutable set search_path='' as $$
 declare hijo jsonb; enlace text; ruta text;
@@ -157,10 +187,7 @@ begin
  if jsonb_typeof(v)='object' then
   if v->>'type'='application/pdf' or lower(coalesce(v->>'name','')) like '%.pdf' then
    foreach enlace in array array[v->>'data',v->>'url'] loop
-    if enlace like 'storage://archivos/%' then ruta:=substr(enlace,20);
-    elsif enlace ~ '^https://(auth\.moderno\.app|cgqtylvaapwbuwqvpjtb\.supabase\.co|lypsmptuastbgxvlwfzj\.supabase\.co)/storage/v1/object/public/archivos/' then
-     ruta:=substring(enlace from '/storage/v1/object/public/archivos/(.*)$');
-    else ruta:=null; end if;
+    ruta:=public.app_ruta_storage(enlace);
     if ruta is not null then return next ruta; end if;
    end loop;
   end if;

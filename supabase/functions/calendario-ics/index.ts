@@ -21,14 +21,11 @@ Deno.serve(async (req) => {
   const t = new URL(req.url).searchParams.get("t") ?? "";
   if (!/^[a-f0-9]{48}$/.test(t)) return new Response("Enlace no válido", { status: 404 });
 
-  const { data: tok } = await sb.from("calendario_tokens").select("estudio_id").eq("token", t).maybeSingle();
-  if (!tok) return new Response("Enlace no válido o regenerado", { status: 404 });
-
-  const { data: rows } = await sb.from("datos_estudio").select("bloque,contenido")
-    .eq("estudio_id", tok.estudio_id).in("bloque", ["proyectos", "agenda"]);
-  const get = (b: string) => rows?.find((r) => r.bloque === b)?.contenido;
-  const proyectos: any[] = Array.isArray(get("proyectos")) ? get("proyectos") : [];
-  const agenda: any = get("agenda") ?? {};
+  const { data, error } = await sb.rpc("app_calendario_consultar", { p_token: t });
+  if (error) return new Response("Calendario no disponible", { status: 503 });
+  if (!data) return new Response("Enlace no válido o sin acceso", { status: 404 });
+  const proyectos: any[] = Array.isArray(data.proyectos) ? data.proyectos : [];
+  const agenda: any = data.agenda ?? {};
 
   const evs: Ev[] = [];
   for (const p of proyectos) {
@@ -74,7 +71,7 @@ Deno.serve(async (req) => {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
       "Content-Disposition": 'inline; filename="moderno-app.ics"',
-      "Cache-Control": "private, max-age=300",
+      "Cache-Control": "private, no-store",
       "Access-Control-Allow-Origin": "*",
     },
   });
