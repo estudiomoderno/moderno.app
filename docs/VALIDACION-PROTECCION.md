@@ -1,6 +1,16 @@
 # Validación de protección — 9 de septiembre de 2026
 
-Candidato v3.30-pruebas en rama aislada. No publicado en GitHub ni desplegado en producción en esta validación.
+Candidato actual v3.30-rc.1 en rama aislada, con la tanda de operativa incluida. No publicado en GitHub ni desplegado en producción en esta validación. Las denominaciones previas v3.30-pruebas y v3.31-operativa-pruebas no fueron versiones publicadas.
+
+## Reconciliación para la entrega
+
+El 9 de septiembre se verificó de nuevo: producción HTTP 200, v3.29, HTML idéntico al de c91d243 tras normalizar saltos de línea; GitHub main/HEAD c91d243fbc0c6224f2b567e8af4234357d868af7 y última etiqueta v3.29. La próxima versión publicada corresponde a v3.30.
+
+La suite local actual pasa 81 pruebas (53 del candidato de protección, 18 de operativa, 4 de transición antigua y 6 de impresión privada). Una de las cuatro documenta un fallo conocido de v3.29: con cuota local agotada, su exportación puede recuperar una copia anterior. No es una prueba de que sea seguro cerrar esa sesión.
+
+La revisión detectó imágenes directas de planos/logos y llamadas a impresión sin esperar su carga privada. Se han convertido las imágenes dinámicas al resolutor común y la impresión espera la firma y decodificación; cancela si falta una imagen, cambia la identidad o se reemplaza el documento. Cada impresión solicita firmas nuevas. Seis pruebas del código real verifican estos casos. En navegador conectado solo al clon se subió PLANO-FICTICIO-impresion.png: guardado confirmado, miniatura firmada y decodificada; Paquete de obra preparó las cuatro imágenes completas, incluido el plano privado, y recuperó el título original. No se certificó un PDF descargado ni todos los formatos de impresión. Se retiraron avisos posteriores que podían ocultar el error de preparación.
+
+Las funciones de acceso y envío de correo comparadas con c91d243 permanecen iguales; esta comparación no sustituye pruebas funcionales ni acredita restricciones financieras en servidor. La RPC de guardado valida membresía del estudio, no permisos por campo. Se mantienen los pendientes siguientes; no atribuirles cierre por las 81 pruebas.
 
 ## Comprobado en el clon
 

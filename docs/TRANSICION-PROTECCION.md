@@ -14,6 +14,14 @@ portal-archivo valida el token y los documentos permitidos antes de firmar. La v
 
 ## Incidencias
 
+### Comprobación humana de las sesiones v3.29
+
+Antes de fijar el corte, un responsable debe identificar todos los dispositivos, perfiles de navegador y pestañas del piloto, incluidos los que estén sin conexión. Terminar y guardar cada formulario; comprobar que no hay avisos de error. Descargar la copia y verificar que contiene los últimos cambios antes del cierre voluntario. La exportación no incluye formularios sin guardar.
+
+Ante falta de espacio local, error de guardado o copia que no contiene la última edición, DETENER la transición y mantener esa pestaña abierta para recuperar sus cambios. v3.29 puede exportar una copia antigua si falla la escritura local. Su botón de actualización tampoco espera la confirmación del servidor: no usarlo con pendientes. Ni una autorización para publicar ni un «vale» acreditan el cierre de sesiones.
+
+Registrar responsable, ventana y confirmación efectiva del equipo antes de cambiar permisos de producción. No solicitar que cierren ahora mientras la compatibilidad técnica siga pendiente.
+
 - Ante fallo de guardado, conservar pestaña y copia pendiente; no reemplazarla automáticamente por la nube.
 - SQL/portales-suspender.sql suspende las RPC sin borrar registros; ensayo realizado en una transacción revertida. Recuperar el acceso aplicando de nuevo portales-filtrados.sql revisado. No exponer las RPC originales sin filtrar.
 - SQL/guardar-bloque-versionado.rollback.sql recupera la escritura antigua y mantiene la RPC, pero reabre el riesgo de sobrescritura. Solo usar en reversión coordinada. Revertir únicamente HTML puede impedir guardar a clientes antiguos.

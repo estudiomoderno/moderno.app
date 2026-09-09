@@ -1,6 +1,6 @@
 # Primera tanda de operativa diaria
 
-Fecha: 9 de septiembre de 2026. Versión candidata: v3.31-operativa-pruebas.
+Fecha: 9 de septiembre de 2026. Versión candidata actual: v3.30-rc.1. La denominación inicial v3.31-operativa-pruebas fue solo local; se corrige al comprobar que producción y la última etiqueta siguen en v3.29. Véase CHANGELOG.md.
 
 ## Base y alcance exactos
 

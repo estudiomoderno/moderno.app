@@ -3485,7 +3485,7 @@ function cliChatSend(pid){
   (p.cliChat=p.cliChat||[]).push({de:"estudio",t,d:hoyEs()});
   el.value=""; persistNow(); cloudFlush(); render(); toast("Enviado al portal del cliente \u2713");
 }
-function portalInvoicePrint(ref){
+async function portalInvoicePrint(ref){
   const f=(state.invoices||[]).find(x=>x.ref===ref)
         || (state.quotes||[]).find(x=>x.ref===ref)
         || (state.portalFacturas||[]).find(x=>x.ref===ref)
@@ -3513,7 +3513,7 @@ function portalInvoicePrint(ref){
     <div style="text-align:right;margin-top:14px;font-size:16px">${tr("pdf.total")}: <b>${fmt(+f.total||0)}</b></div>
     ${em.iban?`<p style="font-size:11px;color:#555;margin-top:18px">${tr("pdf.transferencia")}: <b>${em.iban}</b></p>`:""}
   </div>`;
-  printAs(((state.quotes||[]).some(q=>q.ref===f.ref)?"Presupuesto ":"Factura ")+f.ref);
+  await printAs(((state.quotes||[]).some(q=>q.ref===f.ref)?"Presupuesto ":"Factura ")+f.ref);
 }
 function cliCommentModal(pid,rid,si,ii){
   const p=state.projects.find(x=>x.id===pid);
@@ -3586,7 +3586,7 @@ async function portalPlanoView(pid,i){
   const fl=state.projects.find(x=>x.id===pid).obraPlanos[i]; if(!fl) return;
   const resolvedSrc=await fileResolveForView(fl); if(resolvedSrc===false)return;
   const body = fl.type==="application/pdf" ? `<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:84vh;border-radius:12px">`
-    : fl.type&&fl.type.startsWith("image/") ? `<img src="${resolvedSrc}" style="width:100%;max-height:82vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
+    : fl.type&&fl.type.startsWith("image/") ? `<img ${fileImageAttrs(resolvedSrc)} style="width:100%;max-height:82vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
     : `<p style="font-size:13px">\ud83d\udcd0 ${fl.name}</p>`;
   mb.classList.add("wide"); mb.classList.add("xwide");
   modal(`<h3 style="display:flex;align-items:center;gap:7px">\ud83d\udcd0 ${fl.name}</h3>${body}
@@ -3596,7 +3596,7 @@ async function portalFileView(pid,f,i){
   const x=state.projects.find(p=>p.id===pid).obraF[f].items[i], fl=x.file; if(!fl) return;
   const resolvedSrc=await fileResolveForView(fl); if(resolvedSrc===false)return;
   const body = fl.type==="application/pdf" ? `<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:74vh;border-radius:12px">`
-    : (fl.type||"").startsWith("image/") ? `<img src="${resolvedSrc}" style="max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto">`
+    : (fl.type||"").startsWith("image/") ? `<img ${fileImageAttrs(resolvedSrc)} style="max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto">`
     : `<p style="font-size:13px">\ud83d\udcc4 ${fl.name}</p>`;
   modal(`<h3 style="display:flex;align-items:center;gap:7px">${ico("clip")} ${fl.name}</h3><p style="font-size:11.5px;color:var(--ink-faint);margin-top:0">${x.t}</p>${body}
   <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${resolvedSrc}" download="${fl.name}">\u2193 Descargar</a><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
@@ -5097,7 +5097,7 @@ function vLibrary(){
       return `<div class="room-card" style="padding:0;overflow:hidden;position:relative" onclick="state.libF.cat='${c}';render()">
       <button class="collbtn" title="Renombrar la categoría" style="position:absolute;top:7px;right:40px;background:rgba(255,255,255,.9);z-index:2" onclick="event.stopPropagation();catRenameModal('${c}')">${ico("editar")}</button>
       <button class="collbtn" title="Subir imagen de la carpeta" style="position:absolute;top:7px;right:7px;background:rgba(255,255,255,.9);z-index:2" onclick="event.stopPropagation();catImgPick('${c}')">${ico("subir")}</button>
-      <div class="thumb" style="width:100%;height:130px;border-radius:0;background:var(--gold-soft);color:var(--ink)">${cim?`<img src="${cim}">`:(CAT_ICONS[c]||CAT_ICONS["Otros"])}</div>
+      <div class="thumb" style="width:100%;height:130px;border-radius:0;background:var(--gold-soft);color:var(--ink)">${cim?`<img ${fileImageAttrs(cim)}>`:(CAT_ICONS[c]||CAT_ICONS["Otros"])}</div>
       <div style="padding:11px 13px">
         <b style="font-size:13px">${c}</b>
         <div style="font-size:11px;color:var(--ink-faint);margin-top:2px">${arr.length} producto${arr.length===1?"":"s"}</div>
@@ -5118,7 +5118,7 @@ function vLibrary(){
   <div class="proj-grid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px">
     ${items.map(x=>{const i=state.library.indexOf(x);return `
     <div class="room-card" style="padding:0;overflow:hidden;background:linear-gradient(180deg,var(--white) 0%,var(--gold-soft) 45%,var(--gold-soft) 100%)">
-      <div class="thumb" style="width:100%;height:130px;border-radius:0;background:transparent" onclick="libEdit(${i})">${x.img?`<img src="${x.img}">`:"🛋"}</div>
+      <div class="thumb" style="width:100%;height:130px;border-radius:0;background:transparent" onclick="libEdit(${i})">${x.img?`<img ${fileImageAttrs(x.img)}>`:"🛋"}</div>
       <div style="padding:12px">
         <b style="font-size:13px">${x.name}</b>
         <div style="font-size:11px;color:var(--ink-soft);margin:3px 0">${x.supplier||"—"} · ${x.sku||"—"}${x.ai?` · <span title="Categoría asignada por IA (Claude Haiku, simulado)" style="background:var(--gold-soft);border-radius:99px;padding:1px 7px;font-size:9.5px;font-weight:700">✨ Clasificado por IA</span>`:""}</div>
@@ -5261,7 +5261,7 @@ function libEdit(i){
     <button class="btn btn-gold" style="flex-shrink:0" onclick="lbNewCatGo()">Crear</button>
   </div>
   <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-    <div class="thumb" id="lbThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('lbImgFile').click()">${lbImg?`<img src="${lbImg}">`:"🛋"}</div>
+    <div class="thumb" id="lbThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('lbImgFile').click()">${lbImg?`<img ${fileImageAttrs(lbImg)}>`:"🛋"}</div>
     <div><label style="margin-top:0">Foto</label>
       <label class="btn btn-ghost" style="cursor:pointer;font-size:11px;padding:6px 11px;display:inline-flex;align-items:center;gap:6px">${ico("subir")} Subir imagen<input type="file" id="lbImgFile" accept="image/*" style="display:none" onchange="lbLoadImg(this.files[0])"></label>
       <p style="font-size:10.5px;color:var(--ink-faint);margin-top:2px">O clic en la miniatura. «⚡ Obtener datos» también la trae de la tienda.</p>
@@ -5280,7 +5280,7 @@ function libEdit(i){
   <button class="btn btn-dark" onclick="libSave(${i})">Guardar</button></div>`);
   unitSum("lbQty","lbP","lbU","lbSum","lbC");
 }
-function lbDrawThumb(){ const t=document.getElementById("lbThumb"); if(t) t.innerHTML = lbImg?`<img src="${lbImg}">`:"🛋"; }
+function lbDrawThumb(){ const t=document.getElementById("lbThumb"); if(t) t.innerHTML = lbImg?`<img ${fileImageAttrs(lbImg)}>`:"🛋"; }
 function lbLoadImg(f){ if(!f)return; fileUp(f).then(__u=>{ if(__u==null) return; lbImg=__u; lbDrawThumb(); }); }
 function libScrape(){
   try{
@@ -5563,7 +5563,7 @@ function vProject(){
   ${closed?"":`<div class="dl-grid">
     ${groupRooms.map(r=>{ const tot=roomTotal(r), n=r.sections.reduce((s,x)=>s+x.items.length,0);
       const imgs=r.sections.flatMap(x=>x.items).filter(it=>it.img).map(it=>it.img).slice(0,5);
-      const tiles=[0,1,2].map(k=>`<div class="t s">${imgs[k]?`<img src="${imgs[k]}" alt="" loading="lazy">`:""}</div>`).join("")+[3,4].map(k=>`<div class="t w">${imgs[k]?`<img src="${imgs[k]}" alt="" loading="lazy">`:""}</div>`).join("");
+      const tiles=[0,1,2].map(k=>`<div class="t s">${imgs[k]?`<img ${fileImageAttrs(imgs[k])} alt="" loading="lazy">`:""}</div>`).join("")+[3,4].map(k=>`<div class="t w">${imgs[k]?`<img ${fileImageAttrs(imgs[k])} alt="" loading="lazy">`:""}</div>`).join("");
       return `
       <div class="dl-card" onclick="openRoom(${p.id},${r.id})" title="${n} producto${n===1?"":"s"} · ${r.sections.length} sección${r.sections.length===1?"":"es"} · ${fmt(tot)}${r.visible===false?" · oculta al cliente":""}">
         <div class="dl-mosaic">${tiles}<span class="dl-st">${r.rstatus||"Borrador"}</span></div>
@@ -5673,7 +5673,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
       ${open?`<div style="margin-top:10px">${pls.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px">
         ${pls.map((fl,i)=>`<div style="background:var(--card);border-radius:12px;overflow:hidden">
           <div style="height:110px;display:grid;place-items:center;background:var(--panel);cursor:pointer" onclick="obraPlanoView(${p.id},${i})">
-            ${fl.type&&fl.type.startsWith("image/")?`<img src="${fl.data}" style="width:100%;height:110px;object-fit:cover">`:`<span style="font-size:34px">\ud83d\udcd0</span>`}
+            ${fl.type&&fl.type.startsWith("image/")?`<img ${fileImageAttrs(fl.data)} style="width:100%;height:110px;object-fit:cover">`:`<span style="font-size:34px">\ud83d\udcd0</span>`}
           </div>
           <div style="padding:8px 10px;display:flex;align-items:center;gap:6px">
             <b style="font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${fl.name}">${fl.name}</b>
@@ -5795,7 +5795,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
       <button class="btn btn-ghost" title="Se abre en una pesta\u00f1a nueva, tal y como lo ve tu cliente" onclick="persistNow();cloudFlush();window.open(cliLink(state.projects.find(x=>x.id===${p.id})),'_blank')">\u25a4 Ver como cliente</button>
     </div>
     <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:10px">
-      ${cliQR(p)?`<img src="${cliQR(p)}" style="width:104px;height:104px;image-rendering:pixelated;border-radius:12px;background:#fff;padding:6px;box-shadow:var(--shadow)">`:""}
+      ${cliQR(p)?`<img ${fileImageAttrs(cliQR(p))} style="width:104px;height:104px;image-rendering:pixelated;border-radius:12px;background:#fff;padding:6px;box-shadow:var(--shadow)">`:""}
       <div style="flex:1;min-width:240px;display:grid;gap:8px">
         <label style="display:flex;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:12.5px">Mostrar resumen econ\u00f3mico (presupuesto y pagado)
           <div class="switch ${sh.money?'on':''}" onclick="const s=cliEnsure(state.projects.find(x=>x.id===${p.id}));s.money=!this.classList.contains('on');this.classList.toggle('on');persistSoon();toast(s.money?'El cliente ver\u00e1 el resumen econ\u00f3mico':'Resumen econ\u00f3mico oculto')"></div></label>
@@ -6345,7 +6345,7 @@ function vInvoice(kind){
       ${capGroups(d.lines).some(g=>g.cap!==CAP_OTROS)?`<div class="noprint" style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:6px;max-width:660px;margin-left:auto;margin-right:auto"><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="capToggleAll(false)">▸ Encoger capítulos</button><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="capToggleAll(true)">▾ Desplegar todo</button></div>`:""}
       <div class="inv-paper" id="paper">
         <div class="head">
-          <div>${state.logos[d.brand]?`<img src="${state.logos[d.brand]}" style="max-height:44px;max-width:180px">`:document.querySelector(".logo").outerHTML.replace('class="logo"','class="logo-inv"')}
+          <div>${state.logos[d.brand]?`<img ${fileImageAttrs(state.logos[d.brand])} style="max-height:44px;max-width:180px">`:document.querySelector(".logo").outerHTML.replace('class="logo"','class="logo-inv"')}
           <div style="margin-top:6px"><span class="chip ${b.chip}">${isF?"FACTURA":"PRESUPUESTO"} · ${b.name}</span></div></div>
           <div class="inv-meta">Número<br><b>${serie(isF)}-${String(d.num).padStart(4,"0")}</b>Fecha de emisión<br><b>${today}</b>${!isF&&d.validUntil?`Válido hasta<br><b>${d.validUntil.split("-").reverse().join("/")}</b>`:""}</div>
         </div>
@@ -6788,7 +6788,7 @@ function vAdmin(){
     <label>Logos de los espacios de trabajo</label>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;max-width:560px;margin-bottom:14px">
       ${wsOrder.map(b=>`<div style="background:var(--white);border-radius:12px;padding:12px;text-align:center">
-        <div style="height:44px;display:grid;place-items:center;margin-bottom:6px">${state.logos[b]?`<img src="${state.logos[b]}" style="max-height:40px;max-width:100%">`:`<span style="color:var(--ink-faint);font-size:11px">Sin logo</span>`}</div>
+        <div style="height:44px;display:grid;place-items:center;margin-bottom:6px">${state.logos[b]?`<img ${fileImageAttrs(state.logos[b])} style="max-height:40px;max-width:100%">`:`<span style="color:var(--ink-faint);font-size:11px">Sin logo</span>`}</div>
         <label class="btn btn-ghost" style="width:100%;justify-content:center;cursor:pointer;font-size:11px">${ico("import")} ${BRAND[b].name}
           <input type="file" accept="image/*" style="display:none" onchange="uploadLogo('${b}',this.files[0])"></label>
       </div>`).join("")}
@@ -7104,7 +7104,7 @@ function vRoom(){
            ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')"
            ondrop="dropItemRow(event,${si},${ii})">
         <div class="dl-hover"><input type="checkbox" title="Seleccionar" onclick="event.stopPropagation()"><span class="dl-grip" title="Arrastra para reordenar o mover de sección">⠿</span></div>
-        <div class="dl-thumb" title="Ampliar imagen" onclick="imgZoom(${si},${ii})">${it.img?`<img src="${it.img}" alt="">`:"🛋"}</div>
+        <div class="dl-thumb" title="Ampliar imagen" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="">`:"🛋"}</div>
         <div class="dl-info">
           <span class="dl-nm" title="${esc(it.name)}" onclick="itemModal(${si},${ii})">${it.name}</span>
           ${it.url?`<span class="dl-url"><a href="${it.url}" target="_blank" onclick="event.stopPropagation()" title="${esc(it.url)}">${shortUrl(it.url)}</a><a class="ext" href="${it.url}" target="_blank" title="Abrir enlace" onclick="event.stopPropagation()">↗</a></span>`:`<span class="dl-url">-</span>`}
@@ -7164,7 +7164,7 @@ function imgZoom(si,ii){
     <button class="btn btn-ghost" onclick="closeModal();itemModal(${si},${ii})">${ico("editar")} Editar</button>
     <button onclick="closeModal()" style="font-size:16px">✕</button></div>
   <div style="display:grid;place-items:center;background:var(--card);border-radius:16px;min-height:380px">
-    ${it.img?`<img src="${it.img}" style="max-width:100%;max-height:64vh;border-radius:12px">`:`<div style="text-align:center;color:var(--ink-faint)"><div style="font-size:70px">🛋</div>Sin foto todavía — añádela con ✎ o con «⚡ Obtener datos» desde la URL</div>`}
+    ${it.img?`<img ${fileImageAttrs(it.img)} style="max-width:100%;max-height:64vh;border-radius:12px">`:`<div style="text-align:center;color:var(--ink-faint)"><div style="font-size:70px">🛋</div>Sin foto todavía — añádela con ✎ o con «⚡ Obtener datos» desde la URL</div>`}
   </div>
   <div style="display:flex;gap:14px;margin-top:12px;font-size:12.5px;color:var(--ink-soft);flex-wrap:wrap">
     ${it.dims?`<span><b>Dimensiones:</b> ${it.dims}</span>`:""}${it.color?`<span><b>Color:</b> ${it.color}</span>`:""}${it.material?`<span><b>Material:</b> ${it.material}</span>`:""}<span><b>Precio:</b> ${fmt(it.price)}</span>
@@ -7471,7 +7471,7 @@ async function obraFileView(pid,f,i){
   const resolvedSrc=await fileResolveForView(fl); if(resolvedSrc===false)return;
   const _btns = fileBtns(`state.projects.find(p=>p.id===${pid}).obraF[${f}].items[${i}].file.data`, fl.name);
   const body = _btns + (fl.type==="application/pdf" ? `<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:74vh;border-radius:12px">`
-    : fl.type.startsWith("image/") ? `<img src="${resolvedSrc}" style="max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto">`
+    : fl.type.startsWith("image/") ? `<img ${fileImageAttrs(resolvedSrc)} style="max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto">`
     : `<p style="font-size:13px">📄 ${fl.name}</p><a class="btn btn-dark" href="${resolvedSrc}" download="${fl.name}">Descargar</a>`);
   modal(`<h3 style="display:flex;align-items:center;gap:7px">${ico("clip")} ${fl.name}</h3><p style="font-size:11.5px;color:var(--ink-faint);margin-top:0">${x.t}</p>${body}
   <div class="btn-row" style="margin-top:12px"><button class="btn btn-ghost" onclick="obraFileDel(${pid},${f},${i})">✕ Quitar adjunto</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
@@ -7494,18 +7494,18 @@ async function obraPlanoView(pid,i){
   const resolvedSrc=await fileResolveForView(fl); if(resolvedSrc===false)return;
   const _btns = fileBtns(`state.projects.find(x=>x.id===${pid}).obraPlanos[${i}].data`, fl.name);
   const body = _btns + (fl.type==="application/pdf" ? `<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:84vh;border-radius:12px">`
-    : fl.type&&fl.type.startsWith("image/") ? `<img src="${resolvedSrc}" style="width:100%;max-height:82vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
+    : fl.type&&fl.type.startsWith("image/") ? `<img ${fileImageAttrs(resolvedSrc)} style="width:100%;max-height:82vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
     : `<p style="font-size:13px">\ud83d\udcd0 ${fl.name}</p>`);
   mb.classList.add("wide"); mb.classList.add("xwide"); modal(`<h3 style="display:flex;align-items:center;gap:7px">\ud83d\udcd0 ${fl.name}</h3>
   <p style="font-size:11.5px;color:var(--ink-faint);margin-top:0">Plano definitivo de la obra</p>${body}
   <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${resolvedSrc}" download="${fl.name}">\u2193 Descargar</a><button class="btn btn-ghost" onclick="obraPlanoDel(${pid},${i})">\u2715 Quitar plano</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
 }
 function obraPlanoDel(pid,i){ obraSnap(pid); state.projects.find(x=>x.id===pid).obraPlanos.splice(i,1); closeModal(); render(); toast("Plano quitado \u2014 \u21a9 deshacer arriba si te arrepientes"); }
-function obraPack(pid){
+async function obraPack(pid){
   const p=state.projects.find(x=>x.id===pid); ensureObra(p);
   const ag=(p.obraAgenda||[]).map(n=>state.clients.find(c=>c.name===n)).filter(Boolean);
   const tot=p.obraF.reduce((s,f)=>s+f.items.length,0), done=p.obraF.reduce((s,f)=>s+f.items.filter(x=>x.done).length,0);
-  const logo = state.logos[p.brand] ? `<img src="${state.logos[p.brand]}" style="max-height:52px;max-width:200px">` : `<div style="font-weight:900;font-size:22px">${BRAND[p.brand]?BRAND[p.brand].name:""}</div>`;
+  const logo = state.logos[p.brand] ? `<img ${fileImageAttrs(state.logos[p.brand])} style="max-height:52px;max-width:200px">` : `<div style="font-weight:900;font-size:22px">${BRAND[p.brand]?BRAND[p.brand].name:""}</div>`;
   const fD = s=>s?s.split("-").reverse().join("/"):"";
   const z=document.getElementById("printZone");
   const planosQR=(function(){ try{ const qr=qrcode(0,"M"); qr.addData(obraLink(p,true)); qr.make(); return qr.createDataURL(3,4); }catch(e){ return ""; } })();
@@ -7515,7 +7515,7 @@ function obraPack(pid){
       ${logo}
       <div style="display:flex;align-items:center;gap:14px">
         <div style="text-align:right;font-size:12px;color:#5E5E5E">${BRAND[p.brand]?BRAND[p.brand].name:""}<br>${hoyEs()}</div>
-        <div style="text-align:center"><img src="${obraQR(pid,3)}" style="width:76px;height:76px;image-rendering:pixelated"><div style="font-size:8.5px;color:#9B9B9B">Portal de obra</div></div>
+        <div style="text-align:center"><img ${fileImageAttrs(obraQR(pid,3))} style="width:76px;height:76px;image-rendering:pixelated"><div style="font-size:8.5px;color:#9B9B9B">Portal de obra</div></div>
       </div>
     </div>
     <h1 style="margin:16px 0 2px;font-size:22px">Paquete de obra</h1>
@@ -7535,13 +7535,12 @@ function obraPack(pid){
       <tr style="text-align:left;border-bottom:2px solid #141414"><th style="padding:6px 5px">Nombre</th><th>Empresa</th><th>Oficio</th><th>Tipo</th><th>Teléfono</th><th>Email</th></tr>
       ${ag.map(c=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:6px 5px;line-height:1.4"><b>${c.name}</b></td><td>${c.fiscal||"—"}</td><td><b>${c.trade||"—"}</b></td><td>${c.type}</td><td>${c.phone||"—"}</td><td>${c.email||"—"}</td></tr>`).join("")}
     </table>`:""}
-    ${(p.obraPlanos||[]).length?`<div style="display:flex;align-items:center;gap:14px;margin:18px 0 6px;page-break-before:always"><h3 style="margin:0">Planos definitivos</h3>${planosQR?`<img src="${planosQR}" style="width:64px;height:64px;image-rendering:pixelated;margin-left:auto"><div style="font-size:9.5px;color:#9B9B9B;max-width:150px">Escanea para abrir los planos definitivos en el móvil</div>`:""}</div>
+    ${(p.obraPlanos||[]).length?`<div style="display:flex;align-items:center;gap:14px;margin:18px 0 6px;page-break-before:always"><h3 style="margin:0">Planos definitivos</h3>${planosQR?`<img ${fileImageAttrs(planosQR)} style="width:64px;height:64px;image-rendering:pixelated;margin-left:auto"><div style="font-size:9.5px;color:#9B9B9B;max-width:150px">Escanea para abrir los planos definitivos en el móvil</div>`:""}</div>
     ${p.obraPlanos.map(fl=> fl.type&&fl.type.startsWith("image/")
-      ? `<div style="page-break-inside:avoid;margin-bottom:14px"><b style="font-size:12px">📐 ${fl.name}</b><br><img src="${fl.data}" style="max-width:100%;max-height:850px;margin-top:4px"></div>`
+      ? `<div style="page-break-inside:avoid;margin-bottom:14px"><b style="font-size:12px">📐 ${fl.name}</b><br><img ${fileImageAttrs(fl.data)} style="max-width:100%;max-height:850px;margin-top:4px"></div>`
       : `<div style="font-size:12px;margin-bottom:4px">📐 ${fl.name} <i style="color:var(--ink-faint)">(PDF — se adjunta aparte al imprimir)</i></div>`).join("")}`:""}
   </div><div class="pdf-pn">${pdfFoot(BRAND[p.brand]?BRAND[p.brand].name:"")}<span>${p.num} ${p.name}</span></div></div>`;
-  z.style.display="block"; printAs("Paquete de Obra \u2013 "+p.num+" "+p.name); z.style.display="none";
-  toast("Se abre el diálogo de impresión → «Guardar como PDF»");
+  z.style.display="block"; await printAs("Paquete de Obra \u2013 "+p.num+" "+p.name); z.style.display="none";
 }
 function obraQR(pid, cell){
   const p=state.projects.find(x=>x.id===pid);
@@ -7553,29 +7552,28 @@ function obraQRModal(pid){
   const img=obraQR(pid,7);
   modal(`<h3>⛶ QR de obra — ${p.num} ${p.name}</h3>
   <p style="font-size:12px;color:var(--ink-soft);margin-top:2px">Imprímelo y pégalo en la obra. Quien lo escanee entra al <b>portal de obra de solo lectura</b>: avance, fases con sus fechas, planos definitivos, archivos y contactos de la obra. Sin precios, listas ni finanzas, y con una llave distinta a la del portal del cliente. No hace falta registrarse.</p>
-  <div style="display:grid;place-items:center;background:#fff;border-radius:16px;padding:18px;margin-top:10px"><img src="${img}" style="width:216px;height:216px;image-rendering:pixelated" alt="QR del portal de obra"></div>
+  <div style="display:grid;place-items:center;background:#fff;border-radius:16px;padding:18px;margin-top:10px"><img ${fileImageAttrs(img)} style="width:216px;height:216px;image-rendering:pixelated" alt="QR del portal de obra"></div>
   <p style="text-align:center;font-size:11.5px;color:var(--ink-faint);margin-top:6px;word-break:break-all">${obraLink(p)}</p>
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>
   <button class="btn btn-ghost" title="Se abre en una pestaña nueva, tal y como lo verán en la obra" onclick="persistNow();cloudFlush();window.open(obraLink(state.projects.find(x=>x.id===${pid})),'_blank')">👁 Ver lo que verán</button>
   <button class="btn btn-ghost" title="Invalida el enlace y el QR actuales" onclick="obraRegen(${pid})">⟳ Regenerar</button>
   <button class="btn btn-dark" onclick="obraQRPrint(${pid})">🖨 Imprimir cartel</button></div>`);
 }
-function obraQRPrint(pid){
+async function obraQRPrint(pid){
   const p=state.projects.find(x=>x.id===pid);
   const img=obraQR(pid,10);
-  const logo = state.logos[p.brand] ? `<img src="${state.logos[p.brand]}" style="max-height:60px;max-width:230px">` : `<div style="font-weight:900;font-size:26px">${BRAND[p.brand]?BRAND[p.brand].name:""}</div>`;
+  const logo = state.logos[p.brand] ? `<img ${fileImageAttrs(state.logos[p.brand])} style="max-height:60px;max-width:230px">` : `<div style="font-weight:900;font-size:26px">${BRAND[p.brand]?BRAND[p.brand].name:""}</div>`;
   const z=document.getElementById("printZone");
   z.innerHTML=`<div style="font-family:Inter,sans-serif;color:var(--ink);padding:40px;text-align:center">
     ${logo}
     <h1 style="font-size:30px;margin:26px 0 4px">Portal de obra</h1>
     <p style="font-size:16px;color:var(--ink-soft);margin:0 0 26px">${p.num} ${p.name}</p>
-    <img src="${img}" style="width:340px;height:340px;image-rendering:pixelated">
+    <img ${fileImageAttrs(img)} style="width:340px;height:340px;image-rendering:pixelated">
     <p style="font-size:13px;color:var(--ink-soft);margin-top:22px">Escanea con la cámara del móvil para ver el avance de la obra,<br>las fases, la planeación y todos los planos y archivos.</p>
     <p style="font-size:12px;color:var(--ink-faint);margin-top:6px;word-break:break-all">${obraLink(p)}</p>
     <p style="font-size:10.5px;color:var(--ink-faint);margin-top:30px">Acceso de solo lectura · Generado con Moderno.app</p>
   </div>`;
-  z.style.display="block"; printAs("QR de Obra \u2013 "+p.num+" "+p.name); z.style.display="none";
-  toast("Se abre el diálogo de impresión → «Guardar como PDF» o imprimir el cartel");
+  z.style.display="block"; await printAs("QR de Obra \u2013 "+p.num+" "+p.name); z.style.display="none";
 }
 function obraShareModal(pid){
   const p=state.projects.find(x=>x.id===pid);
@@ -7633,7 +7631,7 @@ function contractorView(pid){
     return `<b style="font-size:12.5px;display:block;margin:14px 0 7px">📐 Planos y archivos de la obra <span class="chip neutral" style="font-size:10px">${tarj.length||"ninguno aún"}</span></b>
     ${tarj.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px">
       ${tarj.map(t=>`<div style="background:var(--card);border-radius:10px;overflow:hidden;cursor:pointer" title="${t.tip} — toca para verlo a pantalla completa" onclick="${t.click}">
-        <div style="height:84px;display:grid;place-items:center;background:var(--panel)">${t.fl.type&&t.fl.type.startsWith("image/")?`<img src="${t.fl.data}" style="width:100%;height:84px;object-fit:cover">`:`<span style="font-size:26px">📐</span>`}</div>
+        <div style="height:84px;display:grid;place-items:center;background:var(--panel)">${t.fl.type&&t.fl.type.startsWith("image/")?`<img ${fileImageAttrs(t.fl.data)} style="width:100%;height:84px;object-fit:cover">`:`<span style="font-size:26px">📐</span>`}</div>
         <div style="padding:6px 9px;font-size:10.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.fl.name}</div>
       </div>`).join("")}
     </div>`
@@ -7713,12 +7711,12 @@ function obraAgendaSave(pid){
   closeModal(); render(); toast("✓ Agenda de contactos actualizada — "+p.obraAgenda.length+(p.obraAgenda.length===1?" contacto":" contactos"));
 }
 function obraAgendaDel(pid,name){ const p=state.projects.find(x=>x.id===pid); p.obraAgenda=(p.obraAgenda||[]).filter(n=>n!==name); render(); }
-function obraAgendaExport(pid){
+async function obraAgendaExport(pid){
   const p=state.projects.find(x=>x.id===pid);
   const ag=(p.obraAgenda||[]).map(n=>state.clients.find(c=>c.name===n)).filter(Boolean);
   if(!ag.length){ toast("La agenda de contactos de obra est\u00e1 vac\u00eda \u2014 a\u00f1ade contactos antes de exportar"); return; }
   const logo = state.logos[p.brand]
-    ? `<img src="${state.logos[p.brand]}" style="max-height:52px;max-width:200px">`
+    ? `<img ${fileImageAttrs(state.logos[p.brand])} style="max-height:52px;max-width:200px">`
     : `<div style="font-weight:900;font-size:22px">${BRAND[p.brand]?BRAND[p.brand].name:""}</div>`;
   const z=document.getElementById("printZone");
   const cell="padding:9px 8px;vertical-align:top;line-height:1.45;word-break:break-word;overflow-wrap:anywhere;border-bottom:1px solid #E2E2E0";
@@ -7738,8 +7736,7 @@ function obraAgendaExport(pid){
     </div>
     <div class="pdf-pn">${pdfFoot(BRAND[p.brand]?BRAND[p.brand].name:"")}<span>${p.num} ${p.name}</span></div>
   </div>`;
-  z.style.display="block"; printAs("Agenda de Contactos \u2013 "+p.num+" "+p.name); z.style.display="none";
-  toast("Se abre el di\u00e1logo de impresi\u00f3n \u2192 \u00abGuardar como PDF\u00bb");
+  z.style.display="block"; await printAs("Agenda de Contactos \u2013 "+p.num+" "+p.name); z.style.display="none";
 }
 /* Plantillas de fases de obra: state.obraTpl = [{id,name,fases:[{name,color,items:[{t,done:false}]}],updated}] */
 function obraTplList(){ state.obraTpl = Array.isArray(state.obraTpl)?state.obraTpl:[]; return state.obraTpl; }
@@ -8080,7 +8077,7 @@ function vPresEdit(){
 function presFooter(p,pr){
   const f = pr.foot;
   const parts = [];
-  if(f.logo!==false) parts.push(f.logoImg ? `<img src="${f.logoImg}" style="max-height:16px;max-width:78px">` : state.logos[p.brand] ? `<img src="${state.logos[p.brand]}" style="max-height:16px;max-width:78px">` : `<b style="font-family:Georgia,serif;font-size:11px;color:var(--ink)">${BRAND[p.brand].name}</b>`);
+  if(f.logo!==false) parts.push(f.logoImg ? `<img ${fileImageAttrs(f.logoImg)} style="max-height:16px;max-width:78px">` : state.logos[p.brand] ? `<img ${fileImageAttrs(state.logos[p.brand])} style="max-height:16px;max-width:78px">` : `<b style="font-family:Georgia,serif;font-size:11px;color:var(--ink)">${BRAND[p.brand].name}</b>`);
   if(f.proj!==false) parts.push(`<span style="font-size:8px;color:#5C554D">${p.num} · ${p.name}</span>`);
   if(f.txt) parts.push(`<span style="font-size:7.5px;color:#5C554D">${f.txt.replace(/</g,"&lt;")}</span>`);
   if(f.date!==false) parts.push(`<span style="font-size:7.5px;color:#9A938A">${hoyEs()}</span>`);
@@ -8110,7 +8107,7 @@ function presFootModal(){
   <label>Logo</label>
   <div style="background:var(--card);border-radius:12px;padding:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <span style="width:110px;height:34px;background:var(--white);border-radius:8px;display:grid;place-items:center;overflow:hidden">
-      ${f.logoImg?`<img src="${f.logoImg}" style="max-height:26px;max-width:100px">`:state.logos[presGet().p.brand]?`<img src="${state.logos[presGet().p.brand]}" style="max-height:26px;max-width:100px">`:`<small style="color:var(--ink-faint);font-size:9px">sin logo</small>`}
+      ${f.logoImg?`<img ${fileImageAttrs(f.logoImg)} style="max-height:26px;max-width:100px">`:state.logos[presGet().p.brand]?`<img ${fileImageAttrs(state.logos[presGet().p.brand])} style="max-height:26px;max-width:100px">`:`<small style="color:var(--ink-faint);font-size:9px">sin logo</small>`}
     </span>
     <label class="btn btn-ghost" style="cursor:pointer;font-size:11.5px">${ico("import")} Subir logo de la empresa<input type="file" accept="image/*" style="display:none" onchange="footLogoUp(this.files[0])"></label>
     ${f.logoImg?`<button class="chip neutral" style="cursor:pointer;font-size:10.5px" onclick="presGet().pr.foot.logoImg=null;closeModal();presFootModal()">Usar el del espacio</button>`:`<small style="color:var(--ink-faint);font-size:10px">Si no subes uno, se usa el del espacio de trabajo</small>`}
@@ -8147,12 +8144,12 @@ function presRenderEl(p,e,i,c){
       <div style="font-family:${PFONTS[e.font||"sora"]};font-size:${e.size||16}px;font-weight:${e.weight||400};color:${e.color||"#141414"};text-align:${e.align||"left"};letter-spacing:${e.ls?e.ls+"px":"normal"};line-height:1.25;white-space:pre-wrap;word-break:break-word">${(e.text||"").replace(/</g,"&lt;")}</div>${handle}</div>`;
   }
   if(e.t==="img"){
-    return `<div style="${base}" ${grab}><img src="${e.img}" style="width:100%;display:block;border-radius:6px;${e.nobg?"mix-blend-mode:multiply;":""}">${handle}</div>`;
+    return `<div style="${base}" ${grab}><img ${fileImageAttrs(e.img)} style="width:100%;display:block;border-radius:6px;${e.nobg?"mix-blend-mode:multiply;":""}">${handle}</div>`;
   }
   if(e.t==="prod"){
     const it = presItem(p,e); if(!it) return "";
     return `<div style="${base}" ${grab}>
-      ${it.img?`<img src="${it.img}" style="width:100%;display:block;border-radius:8px;${e.nobg?"mix-blend-mode:multiply;":""}">`:`<div style="aspect-ratio:1;background:#F2F0EB;border-radius:8px;display:grid;place-items:center;font-size:26px">🛋</div>`}
+      ${it.img?`<img ${fileImageAttrs(it.img)} style="width:100%;display:block;border-radius:8px;${e.nobg?"mix-blend-mode:multiply;":""}">`:`<div style="aspect-ratio:1;background:#F2F0EB;border-radius:8px;display:grid;place-items:center;font-size:26px">🛋</div>`}
       ${e.cap===true?`<div style="font-family:${PFONTS.sora};font-size:10.5px;margin-top:4px;color:var(--ink)"><b>${it.name}</b> · ${fmt(it.price)}</div>`:""}
       ${c?`<div style="display:flex;gap:4px;margin-top:4px"><button class="chip" style="background:#DBEBDD;flex:1;cursor:pointer" onclick="event.stopPropagation();presCp(${e.rid},${e.rsi},${e.rii},'Aprobado')">✓ Aprobar</button><button class="chip" style="background:#F6DBD7;cursor:pointer" onclick="event.stopPropagation();presCp(${e.rid},${e.rsi},${e.rii},'r')">✕</button></div>`:""}
       ${handle}</div>`;
@@ -8192,7 +8189,7 @@ function presRenderEl(p,e,i,c){
     if(e.kind==="img"){
       return `<span class="pin" style="left:${e.x}%;top:${e.y}%;background:${e.color||"#E2E2E0"};${sel?"outline:2.5px solid #141414;outline-offset:2px;":""}" ${grab}>${ICONS["pin_img_ic"]}
         <span class="pintip" style="width:170px;pointer-events:auto">
-          ${e.img?`<img src="${e.img}" style="width:100%;height:110px;object-fit:cover;border-radius:8px">`:`<small style="font-size:10px;color:#9A938A">Sin imagen — usa la barra para subir una</small>`}
+          ${e.img?`<img ${fileImageAttrs(e.img)} style="width:100%;height:110px;object-fit:cover;border-radius:8px">`:`<small style="font-size:10px;color:#9A938A">Sin imagen — usa la barra para subir una</small>`}
           ${e.note?`<span style="display:block;font-size:10px;color:#5C554D;margin-top:5px;text-align:left">${e.note.replace(/</g,"&lt;")}</span>`:""}
         </span></span>`;
     }
@@ -8202,7 +8199,7 @@ function presRenderEl(p,e,i,c){
     return `<span class="pin" style="left:${e.x}%;top:${e.y}%;background:${e.color||"#E2E2E0"};${sel?"outline:2.5px solid #141414;outline-offset:2px;":""}" ${grab}>${ICONS["pin_prod_ic"]}
       <span class="pintip" style="width:190px;text-align:left;pointer-events:auto">
         <span style="display:flex;gap:8px;align-items:flex-start">
-          ${it.img?`<img src="${it.img}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0">`:""}
+          ${it.img?`<img ${fileImageAttrs(it.img)} style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0">`:""}
           <span style="min-width:0"><span class="chip" style="background:${st[1]};font-size:8.5px">${st[0]}</span><br>
           <b style="font-size:11.5px">${it.name}</b> <small style="color:#9A938A">${it.sku||""}</small></span>
         </span>
@@ -8331,7 +8328,7 @@ function presProdPick(kind){
   ${opts.map(o=>`<button class="entry" style="background:var(--card);width:100%;cursor:pointer" onclick="presSnap();presGet().pr.pages[presPg].els.push(${kind==="pin"
     ?`{t:'pin',x:50,y:50,color:'#E2E2E0',rid:${o.r.id},rsi:${o.rsi},rii:${o.rii}}`
     :`{t:'prod',x:15,y:15,w:26,rid:${o.r.id},rsi:${o.rsi},rii:${o.rii}}`});presSel=presGet().pr.pages[presPg].els.length-1;closeModal();render();${kind==="pin"?`toast('Pin añadido al centro — arrástralo a su sitio')`:""}">
-    <span style="width:32px;height:32px;border-radius:8px;background:var(--white);display:grid;place-items:center;overflow:hidden;flex-shrink:0">${o.it.img?`<img src="${o.it.img}" style="width:100%;height:100%;object-fit:cover">`:"🛋"}</span>
+    <span style="width:32px;height:32px;border-radius:8px;background:var(--white);display:grid;place-items:center;overflow:hidden;flex-shrink:0">${o.it.img?`<img ${fileImageAttrs(o.it.img)} style="width:100%;height:100%;object-fit:cover">`:"🛋"}</span>
     <b style="font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis">${o.it.name}</b><small style="color:var(--ink-faint)">${o.r.name}</small>
     <span class="amt" style="color:var(--ink)">${fmt(o.it.price)}</span></button>`).join("")}
   </div>
@@ -8411,7 +8408,7 @@ function moodOpen(pid,mid,client){
     </h4>
     <div class="mood-grid">
       ${sec.items.map((it,ii)=>`<div class="mtile ${it.w===2?"big":""}" draggable="${!client}" ondragstart="dragMood={si:${si},ii:${ii}}" ondragover="event.preventDefault()" ondrop="event.stopPropagation();moodDrop(event,${si},${ii})" onclick="moodClickItem(${si},${ii})">
-        ${it.img?`<img src="${it.img}">`:`<div class="ph">🛋</div>`}
+        ${it.img?`<img ${fileImageAttrs(it.img)}>`:`<div class="ph">🛋</div>`}
         ${client?"":`<div class="mctl">
           <button title="Tamaño" onclick="event.stopPropagation();const x=moodGet().m.secs[${si}].items[${ii}];x.w=x.w===2?1:2;moodOpen(${pid},${mid})">⤢</button>
           <button title="Mover a otra sección" onclick="event.stopPropagation();moodMoveMenu(${si},${ii})">⇄</button>
@@ -8455,7 +8452,7 @@ function moodFromLib(si){
   modal(`<h3>🗃 Desde la Biblioteca</h3>
   ${lib.length?`<div class="entry-col" style="max-height:320px;overflow-y:auto">
   ${lib.map((x,i)=>`<button class="entry" style="background:var(--card);width:100%;cursor:pointer" onclick="moodAddLib(${si},${i})">
-    <span style="width:34px;height:34px;border-radius:8px;background:var(--white);display:grid;place-items:center;overflow:hidden;flex-shrink:0">${x.img?`<img src="${x.img}" style="width:100%;height:100%;object-fit:cover">`:"🛋"}</span>
+    <span style="width:34px;height:34px;border-radius:8px;background:var(--white);display:grid;place-items:center;overflow:hidden;flex-shrink:0">${x.img?`<img ${fileImageAttrs(x.img)} style="width:100%;height:100%;object-fit:cover">`:"🛋"}</span>
     <b style="font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis">${x.name}</b>
     <span class="amt" style="color:var(--ink)">${fmt(x.price||0)}</span></button>`).join("")}
   </div>`:`<div class="empty" style="padding:14px">Tu Biblioteca está vacía todavía</div>`}
@@ -8473,7 +8470,7 @@ function moodFromList(si){
   modal(`<h3>▤ Desde las listas de compra</h3>
   ${opts.length?`<div class="entry-col" style="max-height:320px;overflow-y:auto">
   ${opts.map((o,k)=>`<button class="entry" style="background:var(--card);width:100%;cursor:pointer" onclick="moodAddProd(${si},${o.r.id},${o.rsi},${o.rii})">
-    <span style="width:34px;height:34px;border-radius:8px;background:var(--white);display:grid;place-items:center;overflow:hidden;flex-shrink:0">${o.it.img?`<img src="${o.it.img}" style="width:100%;height:100%;object-fit:cover">`:"🛋"}</span>
+    <span style="width:34px;height:34px;border-radius:8px;background:var(--white);display:grid;place-items:center;overflow:hidden;flex-shrink:0">${o.it.img?`<img ${fileImageAttrs(o.it.img)} style="width:100%;height:100%;object-fit:cover">`:"🛋"}</span>
     <b style="font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis">${o.it.name}</b>
     <small style="color:var(--ink-faint)">${o.r.name}</small>
     <span class="amt" style="color:var(--ink)">${fmt(o.it.price)}</span></button>`).join("")}
@@ -8501,7 +8498,7 @@ function moodClickItem(si,ii){
 function prodCard(pid,rid,rsi,rii,fromMood){
   const p=state.projects.find(x=>x.id===pid), r=p.rooms.find(x=>x.id===rid), it=r.sections[rsi].items[rii];
   modal(`<h3>${it.name}</h3>
-  ${it.img?`<img src="${it.img}" style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px">`:""}
+  ${it.img?`<img ${fileImageAttrs(it.img)} style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px">`:""}
   <div class="entry" style="background:var(--card);margin-top:10px">Lista<span class="amt" style="color:var(--ink)">${r.name}</span></div>
   <div class="entry" style="background:var(--card)">Estado<span class="amt"><span class="chip neutral">${it.status}</span></span></div>
   <div class="entry" style="background:var(--card)">Precio<span class="amt" style="color:var(--ink)">${fmt(it.price)}${it.unit==="m2"?" /m²":" /ud"}</span></div>
@@ -8513,7 +8510,7 @@ function prodCard(pid,rid,rsi,rii,fromMood){
 function payModal(ref,pid,mode){
   mode = mode||"card";
   const v = state.invoices.find(x=>x.ref===ref);
-  modal(`<div style="text-align:center;margin-bottom:6px">${state.logos[v.brand]?`<img src="${state.logos[v.brand]}" style="max-height:34px">`:`<b style="font-family:Georgia,serif;font-size:17px">${BRAND[v.brand].name}</b>`}</div>
+  modal(`<div style="text-align:center;margin-bottom:6px">${state.logos[v.brand]?`<img ${fileImageAttrs(state.logos[v.brand])} style="max-height:34px">`:`<b style="font-family:Georgia,serif;font-size:17px">${BRAND[v.brand].name}</b>`}</div>
   <h3 style="text-align:center">Pagar ${v.ref}</h3>
   <div style="text-align:center;font-size:26px;font-weight:900;margin:8px 0">${fmt(v.total)}</div>
   <div class="opt-pills" style="justify-content:center">
@@ -8558,7 +8555,7 @@ function projectPortal(pid){
   const rooms = (p.rooms||[]).filter(r=>r.visible!==false);
   mb.classList.add("wide");
   mb.innerHTML = `<div style="display:flex;align-items:center;gap:10px;border-bottom:1px solid #E2E2E0;padding-bottom:12px;margin-bottom:16px">
-    ${state.logos[p.brand]?`<img src="${state.logos[p.brand]}" style="max-height:36px;max-width:130px">`:document.querySelector(".logo").outerHTML.replace('class="logo"','style="width:110px"')}
+    ${state.logos[p.brand]?`<img ${fileImageAttrs(state.logos[p.brand])} style="max-height:36px;max-width:130px">`:document.querySelector(".logo").outerHTML.replace('class="logo"','style="width:110px"')}
     <span style="color:var(--ink-faint)">/</span> <b>${p.num} ${p.name}</b>
     <span class="chip neutral" style="margin-left:auto">Portal del cliente — lo que ve con su enlace</span>
     <button onclick="mb.classList.remove('wide');closeModal()" style="font-size:16px">✕</button>
@@ -8603,7 +8600,7 @@ function clientPortal(){
     <h4 style="margin:14px 0 8px;font-weight:900">${sec.name}</h4>
     ${sec.items.map((it,ii)=>it.hidden?"":`
       <div style="display:grid;grid-template-columns:96px 1fr 210px;gap:14px;background:var(--white);border-radius:14px;padding:14px;margin-bottom:10px">
-        <div class="thumb" style="width:96px;height:96px">${it.img?`<img src="${it.img}">`:"🛋"}</div>
+        <div class="thumb" style="width:96px;height:96px">${it.img?`<img ${fileImageAttrs(it.img)}>`:"🛋"}</div>
         <div>
           <b style="font-size:13.5px">${it.name}</b>
           ${it.url?`<br><a href="${it.url}" target="_blank" style="font-size:10.5px;color:var(--ink-soft)">Ir a la tienda online ↗</a>`:""}
@@ -8683,7 +8680,7 @@ function doExportRoom(){
   if(o.lay==="lista") roomPDF(); else roomGridPDF();
   setTimeout(()=>st.remove(),800);
 }
-function roomGridPDF(){
+async function roomGridPDF(){
   const {p,r} = getRoom(); const o=exOpts();
   const z=document.getElementById("printZone");
   const secs=r.sections.map(sec=>({sec,items:exItems(sec,o)})).filter(x=>x.items.length);
@@ -8692,10 +8689,10 @@ function roomGridPDF(){
     ${exHead(p,r,o, o.prices&&o.total?`<div style="font-size:13px;font-weight:800;margin-top:2px">${fmt(roomTotal(r))}</div>`:"")}
     ${secs.map(({sec,items})=>`
       <div class="ex-sec"><b>${sec.name}</b><span class="line"></span>${o.prices&&o.sections?`<span class="ex-sum">${fmt(items.reduce((a,i)=>a+i.price*i.qty,0))}</span>`:""}</div>
-      <div class="ex-grid" style="grid-template-columns:repeat(${cols},1fr)">${items.map(it=>`<div class="ex-cell"><div class="ex-img">${it.img?`<img src="${it.img}" alt="">`:""}</div>${o.prices?`<div class="ex-cap"><span>${it.name}</span><b>${fmt(it.price*it.qty)}</b></div>`:`<div class="ex-cap"><span>${it.name}</span></div>`}</div>`).join("")}</div>`).join("")}
+      <div class="ex-grid" style="grid-template-columns:repeat(${cols},1fr)">${items.map(it=>`<div class="ex-cell"><div class="ex-img">${it.img?`<img ${fileImageAttrs(it.img)} alt="">`:""}</div>${o.prices?`<div class="ex-cap"><span>${it.name}</span><b>${fmt(it.price*it.qty)}</b></div>`:`<div class="ex-cap"><span>${it.name}</span></div>`}</div>`).join("")}</div>`).join("")}
     ${o.prices&&o.total?`<div class="ex-total">Total de la estancia <b>${fmt(roomTotal(r))}</b></div>`:""}
   </div><div class="pdf-pn">${pdfFoot()}<span>${p.num} · ${r.name}</span></div></div>`;
-  z.style.display="block"; printAs(r.name+" – "+p.num); z.style.display="none";
+  z.style.display="block"; await printAs(r.name+" – "+p.num); z.style.display="none";
 }
 
 function marginModal(){
@@ -8796,7 +8793,7 @@ function itemModal(si,ii,fromUrl){
   </div>
   <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">En la app real, «Obtener datos» leerá de la tienda el nombre, la foto, el SKU y el <b>precio</b> automáticamente. En el prototipo se simula.</p>
   <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-    <div class="thumb" id="itThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('itImgFile').click()">${itImg?`<img src="${itImg}">`:"🛋"}</div>
+    <div class="thumb" id="itThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('itImgFile').click()">${itImg?`<img ${fileImageAttrs(itImg)}>`:"🛋"}</div>
     <div><label style="margin-top:0">Foto</label>
       <label class="btn btn-ghost" style="cursor:pointer;font-size:11px;padding:6px 11px;display:inline-flex;align-items:center;gap:6px">${ico("subir")} Subir imagen<input type="file" id="itImgFile" accept="image/*" style="display:none" onchange="itLoadImg(this.files[0])"></label>
       <p style="font-size:10.5px;color:var(--ink-faint);margin-top:2px">O clic en la miniatura. «⚡ Obtener datos» también la trae de la tienda.</p>
@@ -8839,7 +8836,7 @@ function itemModal(si,ii,fromUrl){
   if(fromUrl){ const u=document.getElementById("itUrl"); u.focus(); }
 }
 function itLoadImg(f){ if(!f)return; fileUp(f).then(__u=>{ if(__u==null) return; itImg=__u; itDrawThumb(); }); }
-function itDrawThumb(){ document.getElementById("itThumb").innerHTML = itImg?`<img src="${itImg}">`:"🛋"; }
+function itDrawThumb(){ document.getElementById("itThumb").innerHTML = itImg?`<img ${fileImageAttrs(itImg)}>`:"🛋"; }
 function itDrawFiles(){
   document.getElementById("itFilesBox").innerHTML = itFiles.map((f,i)=>`
     <div class="entry" style="background:var(--white);padding:7px 10px;font-size:12px">${ico("adj_archivo")} ${f}<button style="margin-left:auto;color:var(--ink-faint)" onclick="itFiles.splice(${i},1);itDrawFiles()">✕</button></div>`).join("") || `<div style="font-size:11.5px;color:var(--ink-faint)">Sin archivos</div>`;
@@ -8919,7 +8916,7 @@ function exHead(p,r,o,extra){
   </div>`;
 }
 function exItems(sec,o){ return (sec.items||[]).filter(it=>!it.hidden && (o.alts||!it.alt)); }
-function roomPDF(){
+async function roomPDF(){
   const {p,r} = getRoom(); const o=exOpts();
   const z=document.getElementById("printZone");
   const meta=it=>[o.supplier&&it.supplier?["Proveedor",it.supplier]:null, o.dims&&it.dims?["Dimensiones",it.dims]:null, o.color&&it.color?["Color",it.color]:null, o.material&&it.material?["Material",it.material]:null, o.cat&&it.cat?["Categoría",it.cat]:null, o.sku&&it.sku?["SKU",it.sku]:null, o.plazo&&it.plazo?["Plazo de entrega",it.plazo]:null, o.code&&it.code?["Código de producto",it.code]:null].filter(Boolean);
@@ -8929,7 +8926,7 @@ function roomPDF(){
     ${secs.map(({sec,items})=>`
       <div class="ex-sec"><b>${sec.name}</b><span class="line"></span>${o.prices&&o.sections?`<span class="ex-sum">${fmt(items.reduce((a,i)=>a+i.price*i.qty,0))}</span>`:""}</div>
       ${items.map(it=>`<div class="ex-item">
-        <div class="ex-th">${it.img?`<img src="${it.img}" alt="">`:""}</div>
+        <div class="ex-th">${it.img?`<img ${fileImageAttrs(it.img)} alt="">`:""}</div>
         <div class="ex-in">
           <div class="ex-nm">${it.name}${it.alt?` <span class="ex-alt">alternativa</span>`:""}</div>
           ${o.links&&it.url?`<a class="ex-url" href="${it.url}">${it.url}</a>`:""}
@@ -8941,7 +8938,7 @@ function roomPDF(){
       </div>`).join("")}`).join("")}
     ${o.prices&&o.total?`<div class="ex-total">Total de la estancia <b>${fmt(roomTotal(r))}</b></div>`:""}
   </div><div class="pdf-pn">${pdfFoot()}<span>${p.num} · ${r.name}</span></div></div>`;
-  z.style.display="block"; printAs(r.name+" – "+p.num); z.style.display="none";
+  z.style.display="block"; await printAs(r.name+" – "+p.num); z.style.display="none";
 }
 
 function roomXLSX(){
@@ -8952,7 +8949,7 @@ function roomXLSX(){
   const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv); a.download=p.num+"-"+r.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"-")+".csv"; a.click();
   toast("Hoja de cálculo descargada");
 }
-function projPDF(pid, ids){
+async function projPDF(pid, ids){
   const p = state.projects.find(x=>x.id===pid);
   const _rooms = (p.rooms||[]).filter(r=>!ids || ids.includes(r.id));
   const z=document.getElementById("printZone");
@@ -8968,7 +8965,7 @@ function projPDF(pid, ids){
         ${sec.items.map(i=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:4px">${i.name}</td><td>${i.supplier||"—"}</td><td>${i.sku||"—"}</td><td style="text-align:right">${fmt(i.price)}</td><td style="text-align:center">${i.qty} ${i.unit==="m2"?"m²":"ud"}</td><td style="text-align:right">${fmt(i.price*i.qty)}</td><td>${i.status}</td></tr>`).join("")}
         </table>`).join("")}`).join("")}
     <h2 style="text-align:right;margin-top:20px">Total del proyecto: ${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</h2></div>`;
-  z.style.display="block"; window.print(); z.style.display="none";
+  z.style.display="block"; await printAs(document.title); z.style.display="none";
 }
 function projXLSX(pid, ids){
   const p = state.projects.find(x=>x.id===pid);
@@ -9407,7 +9404,7 @@ async function fileView(pid,i,fromPortal){
     <button onclick="mb.classList.remove('wide');${fromPortal?`projectPortal(${pid})`:"closeModal()"}" style="font-size:16px">✕</button>
   </div>
   <div style="background:#FBFAF7;color:var(--ink);border-radius:14px;padding:${resolvedSrc?"10px":"34px 38px"};min-height:340px;box-shadow:var(--shadow)">
-    ${resolvedSrc?(f.type==="application/pdf"?`<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:72vh;border-radius:10px">`:(f.type||"").startsWith("image/")?`<img src="${resolvedSrc}" style="width:100%;max-height:72vh;object-fit:contain;border-radius:10px;display:block">`:`<div style="text-align:center;padding:60px 20px">\ud83d\udcc4 ${f.name}<br><a class="btn btn-ghost" style="margin-top:12px" href="${resolvedSrc}" download="${f.name}" target="_blank" rel="noopener">\u2193 Descargar</a></div>`)
+    ${resolvedSrc?(f.type==="application/pdf"?`<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:72vh;border-radius:10px">`:(f.type||"").startsWith("image/")?`<img ${fileImageAttrs(resolvedSrc)} style="width:100%;max-height:72vh;object-fit:contain;border-radius:10px;display:block">`:`<div style="text-align:center;padding:60px 20px">\ud83d\udcc4 ${f.name}<br><a class="btn btn-ghost" style="margin-top:12px" href="${resolvedSrc}" download="${f.name}" target="_blank" rel="noopener">\u2193 Descargar</a></div>`)
     :f.body?`<pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.65;margin:0">${f.body.replace(/</g,"&lt;")}</pre>`
       :`<div style="text-align:center;color:#9A938A;padding:70px 20px">📄<br><br>Vista previa del archivo<br><small>En la app real aquí se muestra el PDF o la imagen tal cual. Los documentos creados desde Plantillas sí se ven con su contenido.</small></div>`}
     ${f.signed?`<div style="margin-top:30px;border-top:1px solid #E2E2E0;padding-top:14px;font-size:12.5px">Firmado electrónicamente por <b>${f.signed.by}</b> el ${f.signed.date}<br><span style="font-family:cursive;font-size:22px">${f.signed.by}</span></div>`:""}
@@ -9449,7 +9446,7 @@ async function portalProjFileView(pid,i){
   const srcOk=await fileResolveForView(f); if(srcOk===false)return;
   const body = !srcOk ? `<p style="font-size:13px">\ud83d\udcc4 ${f.name}</p><p style="font-size:11.5px;color:var(--ink-faint)">Archivo sin contenido (subido en una versión anterior).</p>`
     : f.type==="application/pdf" ? `<embed src="${srcOk}" type="application/pdf" style="width:100%;height:78vh;border-radius:12px">`
-    : (f.type||"").startsWith("image/") ? `<img src="${srcOk}" style="width:100%;max-height:78vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
+    : (f.type||"").startsWith("image/") ? `<img ${fileImageAttrs(srcOk)} style="width:100%;max-height:78vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
     : `<p style="font-size:13px">\ud83d\udcc4 ${f.name}</p>`;
   mb.classList.add("wide");
   modal(`<h3 style="display:flex;align-items:center;gap:7px">\ud83d\udcc4 ${f.name}</h3>${body}
@@ -10258,7 +10255,7 @@ function libPickDraw(){
   <p style="font-size:12px;color:var(--ink-soft);margin-top:2px">Marca los productos y añádelos de una vez. Entran con su precio cliente y unidad, en el capítulo de su categoría.</p>
   <input id="libPickQ" placeholder="Buscar por nombre, proveedor, referencia…" value="${(state.libPickQ||"").replace(/"/g,"&quot;")}" oninput="state.libPickQ=this.value;libPickDraw();setTimeout(()=>{const e=document.getElementById('libPickQ');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length)}},0)" style="margin-bottom:10px">
   <div style="max-height:52vh;overflow:auto">
-  ${items.length? cats.map(c=>`<div style="font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px">${c}</div>`+items.filter(x=>(x.cat||"Otros")===c).map(x=>`<div class="catalog-item catpick ${(state._libSel||{})[x.id]?"sel":""}" onclick="libPickToggle(${x.id},this)"><span class="ck"></span>${x.img?`<img src="${x.img}" style="width:28px;height:28px;object-fit:cover;border-radius:6px;flex:none">`:""} <span style="flex:1;min-width:0"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.name}</span>${x.supplier||x.sku?`<small style="color:var(--ink-faint)">${[x.supplier,x.sku].filter(Boolean).join(" · ")}</small>`:""}</span><span class="p">${fmt(x.price||0)} <small style="font-weight:500">/ ${unitLabel(x.unit||"ud")}</small></span></div>`).join("")).join("") : `<div class="empty" style="padding:16px">Nada${q?" con esa búsqueda":" en la Biblioteca todavía"}</div>`}
+  ${items.length? cats.map(c=>`<div style="font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px">${c}</div>`+items.filter(x=>(x.cat||"Otros")===c).map(x=>`<div class="catalog-item catpick ${(state._libSel||{})[x.id]?"sel":""}" onclick="libPickToggle(${x.id},this)"><span class="ck"></span>${x.img?`<img ${fileImageAttrs(x.img)} style="width:28px;height:28px;object-fit:cover;border-radius:6px;flex:none">`:""} <span style="flex:1;min-width:0"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.name}</span>${x.supplier||x.sku?`<small style="color:var(--ink-faint)">${[x.supplier,x.sku].filter(Boolean).join(" · ")}</small>`:""}</span><span class="p">${fmt(x.price||0)} <small style="font-weight:500">/ ${unitLabel(x.unit||"ud")}</small></span></div>`).join("")).join("") : `<div class="empty" style="padding:16px">Nada${q?" con esa búsqueda":" en la Biblioteca todavía"}</div>`}
   </div>
   <p id="libPickN" style="font-size:11px;color:var(--ink-faint)"></p>
   <div class="modal-foot"><button class="btn btn-ghost" onclick="state._libSel={};closeModal()">Cancelar</button><button class="btn btn-dark" id="libPickAdd" onclick="libPickAddAll()">Añadir</button></div>`);
@@ -10394,7 +10391,7 @@ function provSummaryModal(){
     return `<div class="entry prov-row" style="background:var(--white)"><div style="min-width:0"><b style="font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</b>${c?`<small style="color:var(--ink-faint);display:block">${c.type}${c.trade?" · "+c.trade:""}${c.phone?" · "+c.phone:""}</small>`:""}</div><small style="color:var(--ink-soft);white-space:nowrap">${ls.length} línea${ls.length===1?"":"s"}${sin?" · "+sin+" sin coste*":""}</small><b style="white-space:nowrap;text-align:right">${fmt(coste)}</b><div style="text-align:right">${k!=="Sin asignar"?`<button class="btn btn-dark" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" onclick="provExportPDF('${k.replace(/'/g,"\\'")}')">${ico("pdf")} Exportar su parte</button>`:""}</div></div>`; }).join("")}</div>
   <div class="modal-foot"><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
 }
-function provExportPDF(prov){
+async function provExportPDF(prov){
   const d=state.draft; if(!d) return; const ls=(provLines(d).find(([k])=>k===prov)||[prov,[]])[1]; if(!ls.length){ toast("Sin líneas para "+prov); return; }
   const c=state.clients.find(x=>x.name===prov)||{}; const pr=d.projectId?state.projects.find(x=>x.id===d.projectId):null;
   const isF=d.kind!=="presupuesto"; const ref=d.editRef||("borrador "+(isF?"factura":"presupuesto"));
@@ -10414,7 +10411,7 @@ function provExportPDF(prov){
     ${ls.some(x=>x.l.cost==null)?`<p style="font-size:10.5px;color:#9B9B9B;margin-top:8px">* Sin coste interno: se muestra el precio de venta.</p>`:""}
     <p style="font-size:10.5px;color:#9B9B9B;margin-top:14px">Importes sin IVA. Documento interno de coordinación, no es factura.</p>
   </div><div class="pdf-pn">${pdfFoot()}<span>Parte de ${prov}</span></div></div>`;
-  z.style.display="block"; printAs("Parte "+prov+(pr?" – "+pr.num:"")); z.style.display="none";
+  z.style.display="block"; await printAs("Parte "+prov+(pr?" – "+pr.num:"")); z.style.display="none";
 }
 function lineEditModal(i, nueva){
   const l=state.draft&&state.draft.lines[i]; if(!l) return;
@@ -10671,11 +10668,19 @@ function quoteToInvoice(i){
   go("facturas");
 }
 /* Imprime con nombre de archivo propio (el navegador usa el título del documento al «Guardar como PDF») */
-function printAs(title){
-  const t0=document.title; document.title=String(title||"Moderno.app").replace(/[\\/:*?"<>|]+/g,"-");
-  const back=()=>{ document.title=t0; window.removeEventListener("afterprint",back); };
-  window.addEventListener("afterprint",back);
-  window.print(); setTimeout(back,2500);
+async function printAs(title){
+  const z=document.getElementById("printZone");
+  const children=Array.from(z.childNodes), owner=fileViewIdentity();
+  try{
+    await Promise.all(Array.from(z.querySelectorAll("img")).map(async img=>{
+      await Promise.race([fileLoadImage(img,true),new Promise((_,reject)=>setTimeout(()=>reject(Error("Tiempo de carga agotado")),15000))]);
+    }));
+    if(owner!==fileViewIdentity()||children.length!==z.childNodes.length||children.some((n,i)=>n!==z.childNodes[i]))throw Error("El documento cambió");
+    const t0=document.title,display=z.style.display;
+    document.title=String(title||"Moderno.app").replace(/[\\/:*?"<>|]+/g,"-");z.style.display="block";
+    try{window.print();}finally{document.title=t0;z.style.display=display;}
+    return true;
+  }catch(e){toast("No se pudo preparar el PDF completo. Comprueba las imágenes y vuelve a intentarlo.");return false;}
 }
 function pdfBrandLogo(bk, h){
   h=h||44;
@@ -10686,7 +10691,7 @@ function pdfBrandLogo(bk, h){
 }
 function pdfFoot(extra){
   const l=document.querySelector(".sidebar img.logo");
-  return `<div class="pdf-foot"><img src="${l?l.src:""}" style="height:14px;opacity:.8"><span>Generado con Moderno.app${extra?" · "+extra:""}</span></div>`;
+  return `<div class="pdf-foot"><img ${fileImageAttrs(l?l.src:"")} style="height:14px;opacity:.8"><span>Generado con Moderno.app${extra?" · "+extra:""}</span></div>`;
 }
 /* Paginación real de presupuestos y facturas: cabecera con logo en todas las páginas y «Página X de Y» */
 function paginatePaper(paper, docTitle, bk){
@@ -10746,15 +10751,14 @@ function paginatePaper(paper, docTitle, bk){
   if(exclusive) pages.push(`<div class="pdf-page"><div class="pdf-body inv-paper" style="padding:0;box-shadow:none;aspect-ratio:auto;max-width:none;height:auto">${mini}${after.join("")}</div><div class="pdf-pn">${pdfFoot()}<span>Página ${total} de ${total}</span></div></div>`);
   return pages.join("");
 }
-function printDoc(){
+async function printDoc(){
   const d=state.draft||{}; const isF=d.kind!=="presupuesto";
   const ref=(document.querySelector("#paper .inv-meta b")||{}).textContent||"";
   const z=document.getElementById("printZone");
   z.innerHTML=paginatePaper(document.getElementById("paper"), (isF?"Factura ":"Presupuesto ")+ref, d.brand||wsOrder[0]);
-  z.style.display="block"; printAs((isF?"Factura ":"Presupuesto ")+ref); z.style.display="none";
-  toast("Se abre el diálogo de impresión → «Guardar como PDF»");
+  z.style.display="block"; await printAs((isF?"Factura ":"Presupuesto ")+ref); z.style.display="none";
 }
-function agendaExportPDF(){
+async function agendaExportPDF(){
   const tab = state.agendaTab||"Todos";
   const typeMap = TYPE_TAB;
   const rows = byBrand(state.clients).filter(c=>tab==="Todos"||c.type===typeMap[tab]);
@@ -10783,7 +10787,7 @@ function agendaExportPDF(){
         <td style="padding:5px 6px;white-space:nowrap">${c.nif||""}</td>
       </tr>`).join("")}
     </table></div>`;
-  window.print();
+  await printAs(document.title);
 }
 /* Los asientos tal y como se ven en la pestaña activa: periodo + tipo + búsqueda + filtros + orden */
 function accVisible(kind){
@@ -10801,7 +10805,7 @@ function periodoLabel(){
   if(P.mode==="año") return "Año "+P.year;
   return "Todo el histórico";
 }
-function exportAccountingPDF(kind){
+async function exportAccountingPDF(kind){
   kind = kind || (state.accTab==="out"?"out":"in");
   const es = accVisible(kind);
   if(!es.length){ toast("No hay "+(kind==="in"?"ingresos":"gastos")+" en la vista actual"); return; }
@@ -10824,7 +10828,7 @@ function exportAccountingPDF(kind){
     <tr><td colspan="4" style="padding:10px 8px;text-align:right;font-weight:800">Total ${kind==="in"?"ingresos":"gastos"}</td><td style="padding:10px 8px;text-align:right;font-weight:900;white-space:nowrap">${kind==="in"?"+":"\u2212"}${fmt(tot)}</td></tr>
     </table></div>
     <div class="pdf-pn">${pdfFoot()}<span>${titulo}</span></div></div>`;
-  z.style.display="block"; printAs(titulo); z.style.display="none";
+  z.style.display="block"; await printAs(titulo); z.style.display="none";
 }
 function genRecurring(){
   const now=new Date(), mm=now.getMonth()+1, yy=now.getFullYear();
@@ -10890,11 +10894,26 @@ function fileImageAttrs(source){
     return 'src="'+escape(source)+'"';
   }catch{return 'alt="Imagen no disponible"';}
 }
+function fileViewIdentity(){return [ESTUDIO_ID,state.portalAnon,state.sessionUser&&state.sessionUser.id].join('|');}
+const _imageLoads=new WeakMap();
+function fileLoadImage(img,refresh=false){
+  if(!refresh&&_imageLoads.has(img))return _imageLoads.get(img);
+  const owner=fileViewIdentity();
+  const promise=(async()=>{
+    if(img.dataset.privateFile){
+      const src=await fileResolveForView({data:img.dataset.privateFile});
+      if(!src||!img.isConnected||owner!==fileViewIdentity())throw Error('Imagen no disponible');
+      img.src=src;
+    }
+    if(!img.getAttribute('src'))throw Error('Imagen sin origen');
+    await img.decode();
+    if(!img.isConnected||owner!==fileViewIdentity()||!img.naturalWidth)throw Error('Imagen no disponible');
+  })();
+  _imageLoads.set(img,promise);return promise;
+}
 document.addEventListener('DOMContentLoaded',()=>{
-  const identity=()=>[ESTUDIO_ID,state.portalAnon,state.sessionUser&&state.sessionUser.id].join('|');
-  const scan=()=>document.querySelectorAll('img[data-private-file]:not([data-file-loading])').forEach(img=>{
-    img.dataset.fileLoading='1';const owner=identity();
-    fileResolveForView({data:img.dataset.privateFile}).then(src=>{if(src&&img.isConnected&&owner===identity())img.src=src;});
+  const scan=()=>document.querySelectorAll('img[data-private-file]').forEach(img=>{
+    if(!_imageLoads.has(img))fileLoadImage(img).catch(()=>{img.alt='Imagen no disponible';});
   });
   new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
 });
@@ -10921,7 +10940,7 @@ async function gastoFile(id){
       ? (fo.type==="application/pdf"
           ? `<embed src="${srcOk}" type="application/pdf" style="width:100%;height:60vh;border-radius:12px">`
           : (fo.type&&fo.type.startsWith("image")
-              ? `<img src="${srcOk}" style="max-width:100%;max-height:60vh;border-radius:12px">`
+              ? `<img ${fileImageAttrs(srcOk)} style="max-width:100%;max-height:60vh;border-radius:12px">`
               : `<div class="entry" style="background:var(--card)">\ud83d\udcc4 ${fo.name}</div>`))
       : fo.subiendo
         ? `<div class="entry" style="background:var(--card);margin-top:12px">\u23f3 Subiendo \u00ab${fo.name}\u00bb a la nube\u2026 cierra y vuelve a abrir en unos segundos.</div>`
@@ -10991,7 +11010,7 @@ function clientCard(name){
   <button class="btn btn-ghost" onclick="closeModal();clientModal(${state.clients.indexOf(c)})">\u270e Editar</button>
   <button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
 }
-function exportPeriodInvoices(){
+async function exportPeriodInvoices(){
   const es = byBrand(state.entries).filter(inPeriod);
   const facturas = es.filter(e=>e.kind==="in").map(e=>({tipo:"Ingreso",...e}));
   const gastos = es.filter(e=>e.kind==="out").map(e=>({tipo:"Gasto",...e}));
@@ -11004,7 +11023,7 @@ function exportPeriodInvoices(){
     <tr style="text-align:left;border-bottom:2px solid #141414"><th style="padding:6px">Tipo</th><th>Fecha</th><th>Concepto</th><th>Archivo</th><th style="text-align:right">Importe</th></tr>
     ${[...facturas,...gastos].map(e=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:6px">${e.tipo}</td><td>${e.date}</td><td>${e.concept}</td><td>${e.file||(e.kind==="in"?"PDF generado por la app":"—")}</td><td style="text-align:right">${e.kind==="in"?"+":"−"}${fmt(e.amount)}</td></tr>`).join("")}
     </table></div>`;
-  z.style.display="block"; window.print(); z.style.display="none";
+  z.style.display="block"; await printAs(document.title); z.style.display="none";
 }
 function exportCSV(){
   const es = byBrand(state.entries);
@@ -11044,7 +11063,7 @@ function onboardDraw(){
   const logoBtn=(which,lab)=>{
     const img=D["logo"+which];
     return `<div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-      <div style="width:110px;height:44px;background:var(--card);border-radius:10px;display:grid;place-items:center;overflow:hidden">${img?`<img src="${img}" style="max-height:40px;max-width:104px">`:`<span style="font-size:10px;color:var(--ink-faint)">Sin logo</span>`}</div>
+      <div style="width:110px;height:44px;background:var(--card);border-radius:10px;display:grid;place-items:center;overflow:hidden">${img?`<img ${fileImageAttrs(img)} style="max-height:40px;max-width:104px">`:`<span style="font-size:10px;color:var(--ink-faint)">Sin logo</span>`}</div>
       <button class="btn btn-ghost" style="font-size:11.5px" onclick="obLogoPick(${which})">${ico("subir")} ${img?"Cambiar":"Subir"} logotipo</button>
       ${img?`<button class="collbtn" title="Quitar logo" onclick="obData.logo${which}=null;obCollect();onboardDraw()">\u2715</button>`:""}
     </div>`;
@@ -11087,7 +11106,7 @@ function onboardDraw(){
     <div style="display:grid;gap:6px;margin-top:8px">
       <div class="entry" style="background:var(--card)"><span>Estudio</span><b style="margin-left:auto">${D.estudio}</b></div>
       <div class="entry" style="background:var(--card)"><span>Emisor</span><b style="margin-left:auto">${D.nombre} \u00b7 ${D.nif}</b></div>
-      <div class="entry" style="background:var(--card)"><span>Marcas</span><b style="margin-left:auto;display:flex;align-items:center;gap:7px">${D.logo1?`<img src="${D.logo1}" style="max-height:20px;max-width:60px">`:""}${D.marca1}${D.marca2?" \u00b7 "+D.marca2:""}</b></div>
+      <div class="entry" style="background:var(--card)"><span>Marcas</span><b style="margin-left:auto;display:flex;align-items:center;gap:7px">${D.logo1?`<img ${fileImageAttrs(D.logo1)} style="max-height:20px;max-width:60px">`:""}${D.marca1}${D.marca2?" \u00b7 "+D.marca2:""}</b></div>
       ${D.extraWs.length?`<div class="entry" style="background:var(--card)"><span>Espacios extra</span><b style="margin-left:auto">${D.extraWs.join(", ")}</b></div>`:""}
       <div class="entry" style="background:var(--card)"><span>Servicios</span><b style="margin-left:auto">${D.servicios.join(", ")||"\u2014"}</b></div>
       <div class="entry" style="background:var(--card)"><span>Facturaci\u00f3n</span><b style="margin-left:auto">${CURR[D.currency]?CURR[D.currency].n:D.currency} \u00b7 IVA ${D.vat}%</b></div>
@@ -11232,7 +11251,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.31-operativa-pruebas";
+const MODERNO_VER="v3.30-rc.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11253,14 +11272,14 @@ function applySessionUI(){
   try{
     const td=document.getElementById("topUserDot"), tn=document.getElementById("topUserName");
     if(tn) tn.textContent = (s.name||"").split(" ")[0];
-    if(td) td.innerHTML = s.avatar ? `<img src="${s.avatar}" alt="" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:99px;object-fit:cover">` : ((s.name||"?")[0]||"?").toUpperCase();
+    if(td) td.innerHTML = s.avatar ? `<img ${fileImageAttrs(s.avatar)} alt="" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:99px;object-fit:cover">` : ((s.name||"?")[0]||"?").toUpperCase();
   }catch(e){}
   const n=document.getElementById("ucName"), m=document.getElementById("ucMail"),
         a=document.getElementById("ucAvatar"), pv=document.getElementById("ucProv");
   if(n) n.textContent = s.name || "";
   if(m) m.textContent = s.mail || "";
   if(a) a.innerHTML = s.avatar
-    ? `<img src="${s.avatar}" alt="" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:10px;object-fit:cover">`
+    ? `<img ${fileImageAttrs(s.avatar)} alt="" referrerpolicy="no-referrer" style="width:100%;height:100%;border-radius:10px;object-fit:cover">`
     : (s.name ? s.name[0].toUpperCase() : "?");
   if(pv) pv.innerHTML = s.prov==="google" ? ico("google") : s.prov==="apple" ? ico("apple") : "";
 }
