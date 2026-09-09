@@ -10,6 +10,7 @@ insert into public.app_archivos_compartidos(estudio_id,nombre) values
  ('af1bd5ff-e836-483e-a45f-2c1a71eb1ff5','af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_compartido.pdf'),
  ('af1bd5ff-e836-483e-a45f-2c1a71eb1ff5','af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_contable.pdf');
 update public.datos_estudio set contenido=jsonb_set(contenido,'{entries}','[{"id":123,"file":{"name":"Contable.pdf","type":"application/pdf","data":"storage://archivos/af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_contable.pdf"}}]') where estudio_id='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5' and bloque='facturas';
+update public.datos_estudio set contenido=jsonb_set(contenido,'{0,tasks,0,files}','[{"name":"Contable.pdf","docRef":"ficticio","docKind":"factura","data":"storage://archivos/af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_contable.pdf"}]') where estudio_id='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5' and bloque='proyectos';
 set local role authenticated;
 insert into resultado_prueba select 'archivo_propio_permitido',count(*)=1 from storage.objects where bucket_id='archivos' and name='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_propio.pdf';
 insert into resultado_prueba select 'archivo_compartido_permitido',count(*)=1 from storage.objects where bucket_id='archivos' and name='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_compartido.pdf';
@@ -27,6 +28,7 @@ do $$ declare r record; n integer; ok boolean:=false;begin
  insert into resultado_prueba values('permiso_borrado_rechazado',not public.app_archivo_roles('af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_propio.pdf','borrar'));
 end $$;
 reset role;
+insert into resultado_prueba select 'rpc_conserva_documento_oculto',contenido#>'{0,tasks,0,files,0}'='{"name":"Contable.pdf","docRef":"ficticio","docKind":"factura","data":"storage://archivos/af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_contable.pdf"}'::jsonb from public.datos_estudio where estudio_id='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5' and bloque='proyectos';
 insert into resultado_prueba select 'adjunto_propio_registrado',exists(select 1 from public.app_archivos_compartidos where nombre='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_propio.pdf');
 insert into resultado_prueba select 'adjunto_ajeno_no_registrado',not exists(select 1 from public.app_archivos_compartidos where nombre='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/__ensayo_roles_oculto.pdf');
 update public.datos_estudio set contenido=jsonb_set(contenido,'{entries}','[]') where estudio_id='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5' and bloque='facturas';

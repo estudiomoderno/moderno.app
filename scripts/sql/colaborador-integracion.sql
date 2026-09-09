@@ -26,5 +26,19 @@ insert into resultado_prueba select 'mapas_nulos_seguros',public.app_config_cola
 insert into resultado_prueba select 'ruta_pdf_unicode',public.app_ruta_storage('https://auth.moderno.app/storage/v1/object/public/archivos/af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/Facturaci%C3%B3n%20prueba.pdf')='af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/Facturación prueba.pdf';
 insert into resultado_prueba select 'ruta_pdf_malformada_rechazada',public.app_ruta_storage('https://auth.moderno.app/storage/v1/object/public/archivos/af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/%ZZ.pdf') is null;
 insert into resultado_prueba select 'ruta_pdf_externa_rechazada',public.app_ruta_storage('https://example.invalid/storage/v1/object/public/archivos/af1bd5ff-e836-483e-a45f-2c1a71eb1ff5/prueba.pdf') is null;
+do $$ declare original jsonb; cambiado jsonb; esperado jsonb; ok boolean;begin
+ original:='[{"name":"Plano.pdf","data":"plano"},{"name":"Privado.pdf","docRef":"privado","docKind":"factura","data":"secreto"},{"name":"Foto.png","data":"foto"},{"docRef":"sin-identidad","data":"secreto-2"}]';
+ cambiado:=public.app_colaborador_combinar(original,'[{"name":"Foto.png","data":"foto-2"},{"name":"Plano nuevo.pdf","data":"nuevo"},{"name":"Alta.pdf","data":"alta"}]');
+ insert into resultado_prueba values('adjuntos_visibles_editables',public.app_colaborador_filtrar(cambiado)='[{"name":"Foto.png","data":"foto-2"},{"name":"Plano nuevo.pdf","data":"nuevo"},{"name":"Alta.pdf","data":"alta"}]'::jsonb);
+ insert into resultado_prueba values('documentos_ocultos_intactos',cambiado->1=original->1 and cambiado->3=original->3);
+ insert into resultado_prueba values('quitar_visibles_conserva_ocultos',public.app_colaborador_combinar(original,'[]')=jsonb_build_array(original->1,original->3));
+ insert into resultado_prueba values('guardado_repetido_idempotente',public.app_colaborador_combinar(cambiado,public.app_colaborador_filtrar(cambiado))=cambiado);
+ ok:=false;begin perform public.app_colaborador_combinar(original,'[{"name":"Privado.pdf","data":"suplantado"}]');exception when insufficient_privilege then ok:=true;end;
+ insert into resultado_prueba values('suplantacion_oculto_rechazada',ok);
+ ok:=false;begin perform public.app_colaborador_combinar(original,'[{"name":"Nuevo","docRef":"inyectado"}]');exception when insufficient_privilege then ok:=true;end;
+ insert into resultado_prueba values('inyeccion_documento_privado_rechazada',ok);
+ ok:=false;begin perform public.app_colaborador_combinar('[{"id":1,"name":"Con coste","cost":50}]','[]');exception when insufficient_privilege then ok:=true;end;
+ insert into resultado_prueba values('borrar_fila_con_coste_rechazado',ok);
+end $$;
 select * from resultado_prueba;
 rollback;

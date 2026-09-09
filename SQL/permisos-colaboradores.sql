@@ -55,6 +55,7 @@ grant execute on function public.app_leer_bloques(uuid,text[]) to authenticated;
 create or replace function public.app_colaborador_combinar(anterior jsonb,nuevo jsonb) returns jsonb
 language plpgsql immutable set search_path='' as $$
 declare visible jsonb; resultado jsonb; k text; valor jsonb; previo jsonb; identidad text; llave text;
+ visibles_anteriores jsonb; conservado jsonb; indice integer;
 begin
  visible:=public.app_colaborador_filtrar(anterior);
  if nuevo=visible then return anterior; end if;
@@ -79,7 +80,17 @@ begin
   return resultado;
  elsif jsonb_typeof(anterior)='array' then
   resultado:='[]';
+  select coalesce(jsonb_agg(x),'[]') into visibles_anteriores from jsonb_array_elements(anterior) x
+   where not (jsonb_typeof(x)='object' and (x ? 'docRef' or x ? 'docKind'));
   for previo in select value from jsonb_array_elements(anterior) loop
+   if jsonb_typeof(previo)='object' and (previo ? 'docRef' or previo ? 'docKind') then
+    -- No aceptar una fila visible que suplante un documento oculto.
+    if exists(select 1 from jsonb_array_elements(nuevo) x where
+     (previo ? 'id' and x->'id'=previo->'id') or (previo ? 'name' and x->'name'=previo->'name')) then
+     raise exception 'Identidad de fila reservada' using errcode='42501';
+    end if;
+    continue;
+   end if;
    if public.app_colaborador_filtrar(previo) is distinct from previo then
     llave:=case when previo ? 'id' then 'id' when previo ? 'name' then 'name' else null end;
     if llave is null then raise exception 'Un administrador debe modificar esta lista protegida sin identificadores' using errcode='42501'; end if;
@@ -92,15 +103,28 @@ begin
    llave:=case when valor ? 'id' then 'id' when valor ? 'name' then 'name' else null end;
    previo:=null;
    if llave is not null then
-    if (select count(*) from jsonb_array_elements(anterior) x where x->llave=valor->llave)>1
+    if (select count(*) from jsonb_array_elements(visibles_anteriores) x where x->llave=valor->llave)>1
       or (select count(*) from jsonb_array_elements(nuevo) x where x->llave=valor->llave)>1 then
      raise exception 'Identidad de fila ambigua; conservar cambios' using errcode='42501';
     end if;
-    select x into previo from jsonb_array_elements(anterior) x where x->llave=valor->llave;
+    select x into previo from jsonb_array_elements(visibles_anteriores) x where x->llave=valor->llave;
    end if;
    resultado:=resultado||jsonb_build_array(public.app_colaborador_combinar(previo,valor));
   end loop;
-  return resultado;
+  -- Intercalar las filas ocultas intactas, manteniendo su orden. Los huecos
+  -- visibles toman el orden solicitado; las altas restantes van al final.
+  conservado:='[]';indice:=0;
+  for previo in select value from jsonb_array_elements(anterior) loop
+   if jsonb_typeof(previo)='object' and (previo ? 'docRef' or previo ? 'docKind') then
+    conservado:=conservado||jsonb_build_array(previo);
+   elsif indice<jsonb_array_length(resultado) then
+    conservado:=conservado||jsonb_build_array(resultado->indice);indice:=indice+1;
+   end if;
+  end loop;
+  while indice<jsonb_array_length(resultado) loop
+   conservado:=conservado||jsonb_build_array(resultado->indice);indice:=indice+1;
+  end loop;
+  return conservado;
  end if;
  raise exception 'Cambio no autorizado' using errcode='42501';
 end $$;
