@@ -906,7 +906,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 </style>
-<link rel="stylesheet" href="/appearance-b.css?v=3326">
+<link rel="stylesheet" href="/appearance-b.css?v=333">
 </head>
 <body>
 <div class="app">
@@ -1022,6 +1022,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/gestoria.js?v=20260909"></script>
 <script src="/pending-archive.js?v=20260909"></script>
 <script src="/flow-recovery.js?v=331"></script>
+<script src="/router.js?v=333"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -4212,7 +4213,7 @@ function go(view, arg){
   if(view==="portalcli"||view==="portalobra") setTimeout(portalBootDone,0);
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active", b.dataset.view===view || ((view==="proyecto"||view==="estancia")&&b.dataset.view==="proyectos")));
   render(); V.parentElement.scrollTop=0; }
-document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>go(b.dataset.view));
+document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{_wantProject=null;go(b.dataset.view);});
 drawBrandSwitch();
 
 function render(){
@@ -11332,7 +11333,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.32.6";
+const MODERNO_VER="v3.33";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11397,6 +11398,7 @@ function meMail(){ return ((state.sessionUser&&state.sessionUser.mail)||"").toLo
 function isAdminU(){ return (!sb || !ESTUDIO_ID) ? true : state.myRole==="admin"; }
 function sbEnter(user, saluda){
   if(sb&&!ESTUDIO_ID)_accessLoading=true;
+  routeAuthReturn();
   state.sessionUser = sbUserToSession(user);
   ensureSelfInTeam();
   applySessionUI(); showLogin(false); if(!_accessLoading)persistSoon(); render();
@@ -11829,8 +11831,10 @@ async function cloudLoad(){
       cloudMarkLoadedBlocks(rows);
       persistNow(); drawBrandSwitch(); applySessionUI(); render();
       syncTag("ok","Estudio cargado ✓"); cloudRealtimeStart();
-      if(_wantProject!=null && state.projects.some(x=>x.id===_wantProject && !x.tpl)){
-        state.view="proyecto"; state.currentProject=_wantProject; _wantProject=null; render();
+      if(_wantProject!=null){
+        if(state.projects.some(x=>x.id===_wantProject&&!x.tpl))routeParse();
+        else{_wantProject=null;state.view='proyectos';toast('El proyecto no está disponible o no tienes acceso.');}
+        render();
       }
       if(_wantCliToken){
         const _pc=state.projects.find(x=>{ const sh=_wantObra?x.obraShare:x.cliShare; return sh && String(sh.token).toLowerCase()===String(_wantCliToken).toLowerCase() && sh.active!==false; });
@@ -12093,11 +12097,7 @@ function roomsHint(){
   setTimeout(()=>{ el.scrollTo({left:76,behavior:"smooth"}); setTimeout(()=>el.scrollTo({left:0,behavior:"smooth"}), 560); }, 380);
 }
 /* ===== Rutas con nombre: /proyectos, /administracion, /proyecto/7 ===== */
-const RUTAS = {home:"", workspace:"workspace", biblioteca:"biblioteca", proyectos:"proyectos",
-  agenda:"agenda", calendario:"calendario", contabilidad:"contabilidad", prevision:"prevision-cobros", facturas:"facturas",
-  presupuestos:"presupuestos", catalogo:"catalogo", compras:"compras", informes:"informes",
-  plantillas:"plantillas", utilidades:"utilidades", integraciones:"integraciones",
-  admin:"administracion", ajustes:"ajustes"};
+const RUTAS = ModernoRouter.locales.es;
 let _routingBack=false, _wantProject=null, _wantCliToken=null, _wantObra=false;
 function routeSlug(){
   const v=state.view;
@@ -12111,45 +12111,69 @@ function routeSlug(){
   return "/"+(RUTAS[v]!==undefined?RUTAS[v]:"");
 }
 let _navDepth=0;
+let _routeReady=false;
+function routeCurrent(){return {locale:'es',view:state.view,project:state.currentProject,detail:state.view==='estancia'?state.currentRoom:state.view==='presedit'&&presCur?presCur.prid:undefined};}
 function routeWrite(){
   try{
-    if(location.protocol==="file:") return;
-    if(_wantCliToken) return;                 // enlace de portal pendiente de resolver: no pisar la URL
-    const p="#"+routeSlug();
-    if(location.hash!==p){
-      const url=location.pathname+location.search+p;
-      if(_routingBack) history.replaceState({m:1},"",url);
-      else { history.pushState({m:1},"",url); _navDepth++; }
+    if(location.protocol==='file:'||_wantCliToken||_wantProject!=null||_accessLoading||ModernoRouter.authCallback(location))return;
+    if(['portalcli','portalobra'].includes(state.view)||(state.view==='presedit'&&presClient))return;
+    const url=ModernoRouter.path(routeCurrent())+location.search;
+    if(location.pathname+location.search+location.hash!==url){
+      if(_routingBack||!_routeReady)history.replaceState({m:1},'',url);
+      else{history.pushState({m:1},'',url);_navDepth++;}
     }
+    _routeReady=true;
+  }catch(e){}
+}
+function routeAuthRedirect(){
+  try{const route=ModernoRouter.parse(location);if(route)sessionStorage.setItem('moderno_auth_destination',ModernoRouter.path(route)+(ModernoRouter.authCallback(location)?'':location.search));}catch(e){}
+  return location.origin+'/';
+}
+function routeAuthReturn(){
+  try{const dest=sessionStorage.getItem('moderno_auth_destination');if(!dest)return;
+    const target=new URL(dest,location.origin);const parsed=ModernoRouter.parse(target);
+    if(!parsed||!dest.startsWith('/es/'))return;
+    sessionStorage.removeItem('moderno_auth_destination');
+    for(const [key,value] of new URLSearchParams(location.search))target.searchParams.set(key,value);
+    history.replaceState({m:1},'',target.pathname+target.search+location.hash);routeParse();
   }catch(e){}
 }
 /* Atrás: vuelve a la página anterior de la app; si no hay historial propio, a Proyectos */
 function navBack(){ if(_navDepth>0){ _navDepth--; history.back(); } else go("proyectos"); }
 function routeParse(){
   try{
-    let raw = location.hash && location.hash.length>1 ? location.hash.slice(1) : (location.pathname||"/");
-    let p=decodeURIComponent(raw).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-    p=p.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-    p=p.replace(/^\/+|\/+$/g,"").replace(/^index\.html$/,"");
-    if(!p){ state.view="home"; return; }
-    const seg=p.split("/");
-    if(seg[0]==="proyecto" && seg[1]!==undefined){
-      const id=+seg[1];
-      if(state.projects.some(x=>x.id===id && !x.tpl)){ state.view="proyecto"; state.currentProject=id; }
-      else { _wantProject=id; state.view="proyectos"; }
+    const route=ModernoRouter.parse(location);
+    if(route){
+      document.documentElement.lang='es';
+      if(route.project!==undefined){
+        const project=state.projects.find(x=>x.id===route.project&&!x.tpl);
+        if(!project){_wantProject=route.project;state.view='proyectos';return;}
+        _wantProject=null;state.currentProject=route.project;state.view='proyecto';
+        if(route.view==='estancia'&&(project.rooms||[]).some(r=>r.id===route.detail)){state.currentRoom=route.detail;state.view='estancia';}
+        if(route.view==='presedit'&&(project.pres||[]).some(r=>r.id===route.detail)){presCur={pid:route.project,prid:route.detail};presClient=false;presPg=0;presSel=null;presComm=false;presHist=[];presHistI=-1;state.view='presedit';}
+      }else{_wantProject=null;state.view=route.view;}
       return;
     }
+    const raw=/^#\//.test(location.hash||'')?location.hash.slice(1):location.pathname;
+    const seg=decodeURIComponent(raw).replace(/^\/+|\/+$/g,'').toLowerCase().split('/');
     if((seg[0]==="cliente"||seg[0]==="obra") && seg[1]){
       const obra=seg[0]==="obra"; _wantObra=obra; state.obraPortalPlanos = obra && seg[2]==="planos";
       const pr=state.projects.find(x=>{ const sh=obra?x.obraShare:x.cliShare; return sh && String(sh.token).toLowerCase()===seg[1] && sh.active!==false; });
       if(pr){ state.view=obra?"portalobra":"portalcli"; state.currentProject=pr.id; return; }
       _wantCliToken=seg[1]; state.view="home"; return;    // los datos aún no han llegado: recuérdalo
     }
-    const v=Object.keys(RUTAS).find(k=>RUTAS[k]===seg[0]);
-    state.view = v || "home";
-  }catch(e){ state.view="home"; }
+    state.view='home';
+  }catch(e){state.view='home';}
 }
-window.addEventListener("popstate", ()=>{ _routingBack=true; routeParse(); go(state.view, state.currentProject); _routingBack=false; });
+function routeHistory(){
+  if(draftEditing()&&draftDirty()||ov.classList.contains('open')){
+    _routingBack=true;routeWrite();_routingBack=false;toast('Guarda o cierra la edición antes de cambiar de sección.');return;
+  }
+  const previous=state.view,project=state.currentProject;
+  _routingBack=true;routeParse();const view=state.view,arg=state.currentProject;
+  state.view=previous;state.currentProject=project;go(view,arg);_routingBack=false;
+}
+window.addEventListener('popstate',routeHistory);
 /* ---- Autocompletar propio para todos los <input list="…">: el desplegable nativo del navegador distingue acentos
    ("alvaro" no sugiere "Álvaro"); este no, y además se ve como el resto de la app. ---- */
 const AC={el:null, inp:null, items:[], idx:-1};
@@ -12878,10 +12902,21 @@ const __render0=render; render=function(...a){ try{ migrateAssignees(); normaliz
 const __modal0=modal; modal=function(...a){ const r=__modal0(...a); setTimeout(__i18nPass,0); return r; };
 const __toast0=toast; toast=function(m,...a){ return __toast0(t9(m),...a); };
 try{ localizeChrome(); translateDom(document.querySelector("aside.sidebar")); }catch(e){}
-window.addEventListener("hashchange", ()=>{ if(("#"+routeSlug())!==location.hash){ _routingBack=true; routeParse(); go(state.view, state.currentProject); _routingBack=false; } });
+window.addEventListener('hashchange',()=>{if(/^#\//.test(location.hash))routeHistory();});
 
 const __origRender = render;
-render = function(){ __origRender(); persistSoon(); roomsHint(); routeWrite(); };
+let _lastVisualRoute='',_viewFade=null;
+render = function(){
+  const loading=_accessLoading&&!['portalcli','portalobra'].includes(state.view);
+  V.setAttribute('aria-busy',String(!!loading));
+  __origRender();persistSoon();roomsHint();routeWrite();
+  const key=state.view+'|'+(state.view==='proyecto'?state.projTab:'')+'|'+state.currentProject+'|'+state.currentRoom+'|'+(typeof presCur!=='undefined'&&presCur?presCur.prid:'');
+  if(!loading&&key!==_lastVisualRoute){
+    if(_viewFade)_viewFade.cancel();
+    if(_lastVisualRoute&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&V.animate)_viewFade=V.animate([{opacity:.65},{opacity:1}],{duration:180,easing:'ease-out'});
+    _lastVisualRoute=key;
+  }
+};
 window.addEventListener("beforeunload", persistNow);
 /* Vigía de Administración: cualquier ajuste tocado confirma y persiste */
 let _admPingT=null;
@@ -13032,7 +13067,7 @@ async function sbMailSignup(){
   if(!sb){ loginGo("mail"); return; }
   const email=_lgVal("lgEmail").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""), pass=_lgVal("lgPass");
   if(!email || pass.length<8){ toast("Escribe tu correo y una contraseña de al menos 8 caracteres"); return; }
-  const {error} = await sb.auth.signUp({email, password:pass, options:{ emailRedirectTo: location.origin + location.pathname }});
+  const {error} = await sb.auth.signUp({email, password:pass, options:{ emailRedirectTo: routeAuthRedirect() }});
   if(error){
     toast("⚠ " + (/(already|registered)/i.test(error.message)
       ? "Ese correo ya tiene cuenta — usa Entrar o recupera la contraseña" : error.message));
@@ -13057,7 +13092,7 @@ async function sbMailResetGo(){
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast("Escribe un correo válido"); return; }
   const btn=document.getElementById("rstGoBtn");
   if(btn){ btn.disabled=true; btn.innerHTML='<span class="lg-spin"></span> Enviando…'; }
-  const {error} = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  const {error} = await sb.auth.resetPasswordForEmail(email, { redirectTo: routeAuthRedirect() });
   closeModal();
   toast(error ? "⚠ "+error.message : "📬 Si ese correo tiene cuenta, te hemos enviado un enlace — revisa la bandeja y el spam");
 }
@@ -13087,7 +13122,7 @@ function loginGo(prov){
   if(sb && prov==="google"){
     const btn=document.getElementById("lg-google");
     if(btn){ btn.disabled=true; btn.style.opacity=".8"; btn.innerHTML='<span class="lg-spin"></span> Abriendo Google…'; }
-    sb.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: location.origin + location.pathname } });
+    sb.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: routeAuthRedirect() } });
     return;
   }
   const names={google:"Google",apple:"Apple",mail:"tu correo"};

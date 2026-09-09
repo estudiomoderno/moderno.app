@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.33 — rutas con idioma y transición
+
+- Rutas limpias /es/ mediante History API, enlaces antiguos compatibles y rutas de detalle de estancias y presentaciones. Apache sirve enlaces directos sin capturar recursos ni API.
+- Fundido de 180 ms al cambiar vista o pestaña del proyecto, sin retrasos ni repetición por guardados/sondeos; respeta movimiento reducido. Estado de carga accesible.
+- Retorno de autenticación a la raíz existente y recuperación del destino en la misma pestaña. Formularios abiertos protegidos ante Atrás/Adelante. Solo español disponible.
+
 ## v3.32.6 — logo aprobado
 
 - Logo moderno con .app pequeño, conservando composición y Berlin Sans FB Demi mediante trazados SVG. Grafito en claro, blanco en oscuro, variante azul disponible. Menú, cabecera móvil y acceso actualizados; m del menú plegado conservada.
