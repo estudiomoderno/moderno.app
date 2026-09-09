@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.32.5 — menú contraído
+
+- El botón de expandir ocupa su propia fila bajo el logo y deja 14 px antes de Inicio. Ya no se superpone a la navegación; etiqueta y estado accesible reflejan plegado/expandido. 142 pruebas correctas y revisión visual local.
+
 ## v3.32.4 — etiquetas de carpeta
 
 - El recorte del título se limita al nombre; las etiquetas quedan fuera y la portada adapta su altura. Verificado con nombre de dos líneas, foto y etiqueta completa. 142 pruebas correctas y sintaxis comprobada. Sin cambios de datos.

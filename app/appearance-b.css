@@ -205,3 +205,10 @@
   body:not(.portalmode) .folder .folder-tags {display:flex;flex-wrap:wrap;gap:4px;line-height:1.4}
   body:not(.portalmode) .folder .folder-tags .chip {max-width:100%;white-space:normal;overflow-wrap:anywhere}
 }
+
+/* v3.32.5: el control plegado ocupa espacio real en la cabecera. */
+@media screen and (min-width:811px) {
+ body.navmini .sidebar .sb-head {flex-direction:column;align-items:center!important;gap:12px!important;margin-bottom:14px;flex-shrink:0}
+ body.navmini .sidebar .logo-mini {margin:4px auto 0;flex-shrink:0}
+ body.navmini .sidebar .sb-toggle {position:static;left:auto;top:auto;width:28px;height:28px;flex-shrink:0}
+}
