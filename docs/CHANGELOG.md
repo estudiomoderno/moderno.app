@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.30.2 — copias sin aviso automático
+
+- Se elimina el aviso amarillo al entrar. Las copias se conservan y pueden consultarse desde el estado de sincronización → Ver copias anteriores.
+
 ## v3.30.1 — recuperación de espacio local
 
 Publicada el 9/9/2026. HTML y módulos comparados con el código probado; recuperación del acceso y descarga de una copia archivada comprobadas en navegador.

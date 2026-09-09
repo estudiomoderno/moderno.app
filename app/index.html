@@ -11286,7 +11286,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.30.1";
+const MODERNO_VER="v3.30.2";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11750,7 +11750,7 @@ async function cloudLoad(){
         await cloudArchivePendingCopies();
         cloudKeepPendingCopy();
       }
-      cloudPendingNotice();
+      // Las copias se consultan voluntariamente desde el estado de sincronización.
     }catch(e){syncTag("err","No se pudo conservar la copia pendiente. No cierres esta pestaña ni borres los datos del navegador.");afterLoginOnce();return;}
     const access=await sb.rpc("app_rol",{p_estudio:ESTUDIO_ID});
     if(access.error||!access.data||access.data==="sin_acceso"){syncTag("err","No se pudieron verificar tus permisos");return;}
