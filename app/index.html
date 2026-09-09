@@ -1019,6 +1019,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/private-files.js?v=20260909"></script>
 <script src="/daily-work.js?v=20260909"></script>
 <script src="/gestoria.js?v=20260909"></script>
+<script src="/pending-archive.js?v=20260909"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -11285,7 +11286,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.30";
+const MODERNO_VER="v3.30.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11352,7 +11353,7 @@ function sbEnter(user, saluda){
   if(sb&&!ESTUDIO_ID)_accessLoading=true;
   state.sessionUser = sbUserToSession(user);
   ensureSelfInTeam();
-  applySessionUI(); showLogin(false); persistSoon(); render();
+  applySessionUI(); showLogin(false); if(!_accessLoading)persistSoon(); render();
   if(!ESTUDIO_ID) cloudLoad();
   if(!_sbEntered){ _sbEntered=true;
     if(saluda) toast("✓ Sesión iniciada — hola, "+state.sessionUser.name.split(" ")[0]);
@@ -11685,6 +11686,9 @@ function cloudRealtimeStart(){
   document.addEventListener("focusout", ()=>setTimeout(_rtFlushRerender,80));
   document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ cloudPoll(); _rtFlushRerender(); } });
 }
+let _pendingArchiveStore;
+function pendingArchiveStore(){return _pendingArchiveStore||(_pendingArchiveStore=ModernoPendingArchive.createStore(window.indexedDB));}
+async function cloudArchivePendingCopies(){await ModernoPendingArchive.migrate(localStorage,LS_KEY+'_pendiente_',pendingArchiveStore());}
 function cloudKeepPendingCopy(){
   if(!_resumed || localStorage.getItem(LS_KEY+"_dirty")!=="1") return;
   const raw=localStorage.getItem(LS_KEY);
@@ -11705,7 +11709,7 @@ function cloudPendingNotice(){
     const list=document.createElement("select");list.setAttribute("aria-label","Copia pendiente");
     for(const key of keys){const option=document.createElement("option");option.value=key;option.textContent=new Date(Number(key.split("_pendiente_").pop())).toLocaleString();list.appendChild(option);}
     const download=document.createElement("button");download.textContent="Descargar copia";
-    download.onclick=()=>{try{const raw=localStorage.getItem(list.value);if(!raw)throw new Error();const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="Moderno-cambios-pendientes-"+list.value.split("_pendiente_").pop()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast("No se pudo descargar la copia pendiente");}};
+    download.onclick=async()=>{try{const raw=await ModernoPendingArchive.resolve(localStorage,list.value,pendingArchiveStore());if(!raw)throw new Error();const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="Moderno-cambios-pendientes-"+list.value.split("_pendiente_").pop()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast("No se pudo descargar la copia pendiente");}};
     const close=document.createElement("button");close.textContent="Cerrar aviso";close.onclick=()=>box.remove();
     box.append(label,list,download,close);document.body.appendChild(box);
   }catch(e){}
@@ -11741,7 +11745,11 @@ async function cloudLoad(){
       localStorage.setItem(LS_KEY+"_estudio", ESTUDIO_ID);
     }catch(e){}
     try{
-      cloudKeepPendingCopy();
+      try{cloudKeepPendingCopy();}catch(copyError){
+        syncTag('saving','Conservando copias anteriores para liberar espacio…');
+        await cloudArchivePendingCopies();
+        cloudKeepPendingCopy();
+      }
       cloudPendingNotice();
     }catch(e){syncTag("err","No se pudo conservar la copia pendiente. No cierres esta pestaña ni borres los datos del navegador.");afterLoginOnce();return;}
     const access=await sb.rpc("app_rol",{p_estudio:ESTUDIO_ID});

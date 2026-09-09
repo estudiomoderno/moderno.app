@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.30.1 — recuperación de espacio local
+
+- Si las copias pendientes llenan localStorage, se archivan en IndexedDB y se verifica cada contenido antes de sustituirlo por una referencia pequeña. Todas siguen disponibles para descargar; no se eliminan copias ni se aplican sobre la nube.
+- La entrada de sesión espera a la comprobación de acceso antes de programar la escritura local.
+- 127 pruebas automáticas correctas, incluidas fallas de almacenamiento y cambios simultáneos en copias.
+
 ## v3.30 — publicada el 9 sep 2026
 
 - Workspace/Inicio: Mis tareas y Todas las tareas conservan tipografía y dimensiones al seleccionarse; cambia el fondo.
