@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.32.4 — etiquetas de carpeta
+
+- El recorte del título se limita al nombre; las etiquetas quedan fuera y la portada adapta su altura. Verificado con nombre de dos líneas, foto y etiqueta completa. 142 pruebas correctas y sintaxis comprobada. Sin cambios de datos.
+
 ## v3.32.3 — editor de proyecto
 
 - Corrige el color de carpeta: se respeta la elección, con beige por defecto y texto contrastado.

@@ -53,3 +53,8 @@ Petición del usuario: corregir elección de color, integrar botón de fotos, re
 142 pruebas correctas; sintaxis validada. Revisión local ficticia: color salvia en vista previa y carpeta guardada, botón Añadir fotos abre selector y prepara miniatura, sin selector de emojis ni botón nativo visible. Móvil 390 px: ancho interior y contenido del modal 352 px, sin desbordamiento horizontal. Sin SQL, borrados ni cambios de permisos.
 
 Publicada v3.32.3 el 9/9/2026, commit f6986db. Los ocho recursos públicos responden 200 y coinciden exactamente con el código validado normalizando finales de línea.
+
+
+## Etiquetas v3.32.4
+
+Corrección visual: el límite de líneas de fname incluía las etiquetas y las recortaba. Se separa folder-title de folder-tags y la portada con fotos adapta su altura. Verificado localmente con datos ficticios, título de dos líneas, una foto y etiqueta completa; 142 pruebas y sintaxis correctas. No modifica datos ni archivos.

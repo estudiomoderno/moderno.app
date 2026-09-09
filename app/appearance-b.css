@@ -156,7 +156,7 @@
   @media(prefers-reduced-motion:reduce) {.folder-photo {transition:none!important}}
 }
 
-@media screen {body:not(.portalmode) .folder.has-photos .front {flex-direction:column;justify-content:flex-end;align-items:stretch} body:not(.portalmode) .folder.has-photos .fname {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}}
+@media screen {body:not(.portalmode) .folder.has-photos .front {flex-direction:column;justify-content:flex-end;align-items:stretch} body:not(.portalmode) .folder.has-photos .fname {flex-shrink:0}}
 
 /* v3.32.3: edición de proyecto coherente con la app. */
 @media screen {
@@ -197,3 +197,11 @@
 }
 
 @media screen {.project-editor-footer {position:sticky;bottom:-26px;background:var(--panel);padding-bottom:16px;z-index:5} @media(max-width:620px){.project-editor-footer {bottom:-18px}}}
+
+/* El recorte del título nunca debe incluir las etiquetas. */
+@media screen {
+  body:not(.portalmode) .folder.has-photos .front {height:auto;min-height:64%;padding:8%}
+  body:not(.portalmode) .folder .folder-title {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere}
+  body:not(.portalmode) .folder .folder-tags {display:flex;flex-wrap:wrap;gap:4px;line-height:1.4}
+  body:not(.portalmode) .folder .folder-tags .chip {max-width:100%;white-space:normal;overflow-wrap:anywhere}
+}
