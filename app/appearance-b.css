@@ -1,4 +1,4 @@
-/* v3.32: presentación B. Sin cambios de datos, permisos, iconos o navegación.
+/* v3.32.1: presentación B. Sin cambios de datos, permisos, iconos o navegación.
    Solo pantalla: los PDF/impresiones y los portales conservan sus estilos. */
 @media screen {
   body:not(.dark):not(.portalmode) {
@@ -12,7 +12,7 @@
     --red:#fbe5e8; --red-ink:#a12940; --pend:#fff0c5; --pend-ink:#795200;
   }
   body:not(.dark):not(.portalmode) .main {background:var(--ui-canvas)}
-  body:not(.dark):not(.portalmode) .nav-item.active {background:var(--ui-selected);color:var(--ui-selected-ink);box-shadow:inset 3px 0 var(--ui-accent)}
+  body:not(.dark):not(.portalmode) .nav-item.active {background:#e8e8e6;color:#41413e;box-shadow:none}
   body:not(.dark):not(.portalmode) .nav-item:hover {background:var(--card)}
   body:not(.dark):not(.portalmode) .nav-sub {border-color:var(--ui-line)}
   body:not(.dark):not(.portalmode) .nav-sub .nav-item::before {background:var(--ui-line)}
@@ -40,10 +40,11 @@
   body:not(.dark):not(.portalmode) #tkCol button.on[data-v=listo] {background:var(--green);color:var(--green-ink)}
   body:not(.dark):not(.portalmode) .widget .clock {font-size:26px}
   body:not(.dark):not(.portalmode) h1.big {font-size:clamp(27px,2.7vw,34px);font-weight:800;line-height:1.16;margin-bottom:18px}
-  body:not(.dark):not(.portalmode) .proj-head {background:var(--white)!important;border:1px solid var(--ui-line);border-top:4px solid var(--f-front);padding:20px 24px}
+  body:not(.dark):not(.portalmode) .proj-head {background:var(--white)!important;border:1px solid var(--ui-line);border-top:4px solid #ded9ce;padding:20px 24px}
   body:not(.dark):not(.portalmode) .proj-head h1 {font-size:28px;font-weight:800}
-  body:not(.dark):not(.portalmode) .folder .front {background:var(--white);border:1px solid var(--ui-line)}
-  body:not(.dark):not(.portalmode) .folder .front::before {background:var(--white)}
+  body:not(.dark):not(.portalmode) .folder .back {background:#e4dfd5}
+  body:not(.dark):not(.portalmode) .folder .front {background:#f5f2ec;border:1px solid #ded9cf}
+  body:not(.dark):not(.portalmode) .folder .front::before {background:#f5f2ec}
   body:not(.dark):not(.portalmode) .folder .fname {font-weight:750;color:var(--ink)}
   body:not(.dark):not(.portalmode) .folder:hover {transform:none}
   body:not(.dark):not(.portalmode) .folder:hover .front {transform:none}
@@ -82,10 +83,25 @@
   body:not(.portalmode) .ws-views button {font-weight:600}
   body:not(.portalmode) .ws-full .kanban {gap:20px}
   body:not(.portalmode) .task {transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+  /* Un mismo radio en selectores y listas; cmb anulaba base-select. */
+  body:not(.portalmode) select,
+  body:not(.portalmode) input[list],
+  body:not(.portalmode) input[data-ac],
+  body:not(.portalmode) .acbox,
+  body:not(.portalmode) .project-options-body {border-radius:12px}
+  body:not(.portalmode) select::picker(select) {border-radius:12px}
+  @supports (appearance:base-select) {
+    body:not(.portalmode) select {appearance:base-select;background-image:none}
+    body:not(.portalmode) select::picker(select) {appearance:base-select}
+  }
+  body.dark:not(.portalmode) .folder .back {background:#625f58}
+  body.dark:not(.portalmode) .folder .front,
+  body.dark:not(.portalmode) .folder .front::before {background:#e8e4dc}
+  body.dark:not(.portalmode) .proj-head {background:#e8e4dc!important}
   /* Conservar el fondo oscuro y evitar texto claro sobre selecciones amarillas. */
   body.dark:not(.portalmode) .opt-pills button.on,
   body.dark:not(.portalmode) .pill-tabs button.on {background:#dbe5ff;color:#203e7f}
-  body.dark:not(.portalmode) .nav-item.active {background:#2d3b5e;color:#dbe5ff}
+  body.dark:not(.portalmode) .nav-item.active {background:#393938;color:#eeede9;box-shadow:none}
   body.dark:not(.portalmode) .btn-dark {background:#9fb9ff;color:#182444}
   body.dark:not(.portalmode) .kanban .task {background:#22222a!important;border:1px solid #454957}
   body.dark:not(.portalmode) .task .tm .chip {background:#303441!important;color:#d3d9e8}

@@ -28,3 +28,8 @@ Publicar mediante el workflow habitual: pruebas, recursos (incluido CSS), despu�
 ## Volver al aspecto anterior
 
 La base previa es `e3ecb77` (app v3.31). Para revertir únicamente este diseño, retirar el enlace a `appearance-b.css` de `app/index.html`, aumentar la versión a la siguiente revisión y publicar por el mismo workflow. Los atributos visuales adicionales son inertes sin esa hoja. Esto recupera los estilos previos sin tocar datos ni deshacer arreglos funcionales futuros. No usar una restauración de base de datos para un cambio de apariencia.
+
+
+## Ajuste v3.32.1
+
+Solicitado por el usuario: menú gris sin franja, carpetas gris/beige claro y desplegables redondeados. Solo CSS y versión; conserva los colores guardados en los proyectos, sin modificar registros. Radio de 12 px en controles y listas. Se corrige la anulación de base-select por cmb; en navegadores sin soporte el menú depende del sistema. Validado con proyectos ficticios, formulario de proyecto y autocompletado abiertos; 137 pruebas y sintaxis correctas. Publicación por el workflow habitual, sin forzar recargas.

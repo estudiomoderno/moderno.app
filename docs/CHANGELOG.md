@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.32.1 — ajustes visuales
+
+- Menú activo gris sin franja lateral; carpetas gris/beige suave también en oscuro.
+- Selectores y listas con radio de 12 px. Los selectores cmb conservan el menú estilizado en navegadores compatibles con base-select; los demás mantienen el control nativo.
+- 137 pruebas correctas, sintaxis y revisión visual local con datos ficticios. Sin cambios de datos ni permisos.
+
 ## v3.32 — apariencia B
 
 - Superficies neutras, colores diferenciados de estado, iconos y menú originales. Tablero móvil sin columnas solapadas, controles estables y mejoras de contraste. Sin cambios de datos ni permisos. Validación y vuelta al aspecto anterior en ENTREGA-V332.md.
