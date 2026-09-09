@@ -697,6 +697,7 @@ input[type=color]::-moz-color-swatch{border:none;border-radius:12px}
 .opt-pills button{border-radius:999px;padding:5px 13px;font-size:12px;font-weight:600;background:var(--card);border:1.5px solid transparent;transition:var(--tr)}
 .opt-pills button:hover{border-color:var(--ink-faint)}
 .opt-pills button.on{background:var(--gold);font-weight:800}
+.opt-pills.daily-scope button,.opt-pills.daily-scope button.on{font-weight:600;transition:background-color .25s ease,border-color .25s ease}
 #tkCol button.on[data-v="pend"]{background:#8FC4EA}
 #tkCol button.on[data-v="prog"]{background:var(--gold)}
 #tkCol button.on[data-v="rev"]{background:#F2A7C6}
@@ -5008,7 +5009,7 @@ function vWorkspace(){
   return `<div class="ws-full">
   <h1 class="big">${mine?"Mis tareas":"Tareas del equipo"}<br><span class="sec-note">Primero lo que vence antes</span></h1>
   <div class="wsrow" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-    <div class="opt-pills" style="margin:0">
+    <div class="opt-pills daily-scope" style="margin:0">
       <button class="${mine?"on":""}" onclick="state.wsMine=true;render()">Mis tareas</button>
       <button class="${!mine?"on":""}" onclick="state.wsMine=false;render()">Todas las tareas</button>
     </div>

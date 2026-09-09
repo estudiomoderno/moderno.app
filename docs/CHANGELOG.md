@@ -2,6 +2,8 @@
 
 ## v3.30 — preparada, NO publicada
 
+- Workspace/Inicio: Mis tareas y Todas las tareas conservan tipografía y dimensiones al seleccionarse; cambia el fondo. Propuesta de vistas adicionales en WORKSPACE-VISTAS.md, aún sin implementar.
+
 Candidata local identificada como v3.30-rc.1. Las denominaciones anteriores v3.30-pruebas y v3.31-operativa-pruebas fueron pruebas locales, no entregas. El 9 de septiembre se comprobó producción v3.29 y main c91d243, sin etiquetas posteriores a v3.29.
 
 - Inicio y Mis tareas: prioridades por fecha, asignaciones compartidas, acceso directo a tareas y búsquedas con resultados vacíos claros.
