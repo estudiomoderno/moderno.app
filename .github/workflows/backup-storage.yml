@@ -1,6 +1,9 @@
 name: Verificar y copiar archivos
 
 on:
+  schedule:
+    - cron: '23 4 * * *'
+      timezone: Europe/Madrid
   workflow_dispatch:
     inputs:
       mode:
@@ -53,7 +56,7 @@ jobs:
           export_environment_variables: false
       - name: Copiar y verificar
         env:
-          BACKUP_MODE: ${{ inputs.mode }}
+          BACKUP_MODE: ${{ github.event_name == 'schedule' && 'backup' || inputs.mode }}
           GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
           SOURCE_CONFIG: ${{ secrets.BACKUP_SOURCE_CONFIG }}

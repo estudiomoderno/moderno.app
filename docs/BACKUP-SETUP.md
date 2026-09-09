@@ -1,6 +1,6 @@
 # Preparación de copias de archivos
 
-Estado (2026-09-09): prueba sintética de copia y recuperación en Google Drive completada correctamente desde GitHub Actions. No hay copia real de Storage verificada ni programación automática todavía.
+Estado (2026-09-09): prueba sintética de copia y recuperación y primera copia real de Storage completadas y verificadas. Programación diaria a las 04:23 en Europe/Madrid mediante GitHub Actions. El primer disparo programado aún está pendiente; las ejecuciones manuales ya funcionan.
 
 Requiere Node.js 22+, rclone y dos conexiones mediante variables de entorno: origen S3 compatible y destino Google Drive privado. La cuenta de servicio de Google necesita acceso al destino autorizado y Drive API habilitada. Los secretos no pertenecen al repositorio.
 
@@ -33,7 +33,7 @@ Alternativa sin clave privada de Google: federación de identidad con GitHub y t
 
 ## Ejecución en GitHub
 
-El workflow `backup-storage.yml` solo admite ejecuciones manuales en `main`, con exclusión mutua y un máximo de 50 minutos. El token de Google dura una hora. No se programa hasta validar la primera copia real y su volumen.
+El workflow `backup-storage.yml` se ejecuta diariamente a las 04:23 en Europe/Madrid y también permite ejecuciones manuales en `main`, con exclusión mutua y un máximo de 50 minutos. El token de Google dura una hora. Cada ejecución crea una copia completa nueva. No se eliminan copias antiguas automáticamente; revisar periódicamente espacio y transferencia antes de acordar retención.
 
 Configurar dos secretos JSON en Actions, nunca como archivos del repositorio:
 
@@ -44,5 +44,18 @@ El proveedor de Google debe comprobar los ID numéricos del propietario y reposi
 
 Ejecutar primero el modo `test-drive`: crea dos archivos sintéticos, los copia y verifica, los descarga a un directorio temporal y compara los bytes. Las carpetas `prueba-*` quedan en Drive como evidencia y no contienen datos reales. Después ejecutar `backup`. Una prueba sintética correcta no demuestra que el origen real esté configurado ni sustituye una primera copia completa.
 
-Validación completada: workflow manual con acceso temporal, copia sintética, comprobación del contenido, descarga y comparación de recuperación. Pendiente: credencial autorizada de origen, medición del volumen, primera copia real completa y decisión de frecuencia/retención. No dar por protegidos los archivos reales hasta completar esos pasos.
+Validación completada: acceso temporal, copia sintética, descarga y comparación de recuperación; copia real con inventario estable y comparación del contenido por descarga, manifiesto y COMPLETE.json presentes en el destino privado. Los detalles operativos y nombres de archivos se conservan fuera de este repositorio público.
+
+## Comprobar el resultado y recuperar archivos
+
+1. Revisar el workflow en Actions. Un fallo o una ejecución cancelada no constituyen una copia válida. Las carpetas de pruebas se distinguen por el prefijo `prueba-`.
+2. En el destino privado, elegir una carpeta fechada que contenga `COMPLETE.json`, `manifest.json` y `objects`. La marca completa se escribe al terminar las comprobaciones.
+3. Para recuperar, descargar `objects` a una carpeta local nueva o a un entorno aislado. Con el remoto privado configurado: `rclone copy destination:ID_DE_COPIA/objects ./recuperacion-ID_DE_COPIA --immutable`. No apuntar este comando a producción.
+4. Comparar inventario, tamaños y contenido recuperado; abrir los documentos necesarios. Antes de volver a subir a Supabase, decidir el punto de recuperación de la base de datos y conservar rutas, referencias y permisos. No sobrescribir producción sin un procedimiento de recuperación revisado.
+
+Este sistema respalda el bucket configurado. Los nuevos buckets requieren ampliar explícitamente el alcance. No exporta la base de datos, RLS, usuarios ni todo el metadato específico de Supabase. Sigue pendiente ensayar una recuperación integral del CRM en un entorno aislado.
+
+## Continuidad de la programación
+
+GitHub puede retrasar ejecuciones y desactiva los workflows programados de repositorios públicos tras 60 días sin actividad. Revisar la fecha de la última copia completa y los fallos de Actions; una programación configurada no garantiza por sí sola una copia diaria exitosa. La supervisión externa de copias ausentes sigue pendiente. [Referencia de GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
 
