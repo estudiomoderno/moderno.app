@@ -1,8 +1,8 @@
 # Estado inicial de TALLER — 9 septiembre 2026
 
-Última versión: v3.31, publicada y verificada. Corrige retirada de acceso, guardado conjunto, resolución de conflictos, conexión e ICS. Mantiene las copias recuperables y oculta su aviso automático. Véase [Entrega v3.31](ENTREGA-V331.md) y CHANGELOG.md.
+Última versión: v3.32, publicada y verificada. Aplica la apariencia B elegida por el usuario, conserva iconos y menú contraíble y corrige el tablero móvil. Mantiene las protecciones de guardado, permisos y copias de v3.31. Véase [Entrega v3.32](ENTREGA-V332.md) y CHANGELOG.md.
 
-Estado de publicación vigente: [Entrega v3.31](ENTREGA-V331.md), publicada el 9/9/2026. 137 pruebas locales, 15 comprobaciones SQL adicionales en aislamiento y resolución de conflictos probada en navegador. Recursos públicos y carga de sesión verificados. Los apartados siguientes son históricos.
+Estado de publicación vigente: [Entrega v3.32](ENTREGA-V332.md), publicada el 9/9/2026. 137 pruebas locales correctas, comprobación visual con datos ficticios, recursos públicos y carga de sesión verificados. No requiere cambios SQL. La entrega documenta cómo recuperar el aspecto anterior sin restaurar datos. Los apartados siguientes son históricos.
 
 Último ensayo de permisos: [archivos y calendario](VALIDACION-ARCHIVOS-CALENDARIO.md), 118 pruebas locales y 38 comprobaciones SQL en el clon; candidato todavía sin publicar.
 

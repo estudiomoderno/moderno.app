@@ -1,5 +1,7 @@
 # v3.32 — apariencia B
 
+Publicada y verificada el 9 de septiembre de 2026. Commit `5f92f81`; [despliegue correcto](https://github.com/estudiomoderno/moderno.app/actions/runs/34380762368). Los ocho recursos públicos (HTML, CSS y seis módulos) coinciden con el candidato. La sesión autorizada carga Mis tareas, usa el fondo B y muestra guardado en nube. No se han forzado recargas del equipo.
+
 ## Decisión
 
 El usuario elige la dirección B: superficies neutras, colores de estado más definidos, iconos originales y menú contraíble. Después de revisar la maqueta autoriza aplicarla y publicarla. Referencia cromática: estados con color y etiqueta, como en la [documentación de Monday](https://support.monday.com/hc/en-us/articles/360001269685-The-Status-Column); no se incorporan sus recursos ni dependencias.
