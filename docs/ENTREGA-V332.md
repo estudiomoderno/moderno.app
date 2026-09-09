@@ -44,3 +44,10 @@ Desde Personalizar se eligen hasta tres JPG/PNG/WEBP, máximo 12 MB por original
 141 pruebas correctas, incluida validación de fuentes/tamaño, conservación de adjuntos y cancelación asíncrona. Revisión local: tres imágenes, guardado, reapertura y retirada cancelada conserva las tres; miniaturas cargadas y textos sin solapamiento. Animación CSS 240 ms, desactivada con movimiento reducido y en dispositivos sin hover. Para revertir esta función, retirar controles y representación de folderPhotos, conservando el campo almacenado. No restaurar la base de datos.
 
 Publicada v3.32.2 el 9/9/2026: commit ad54f90, [despliegue 34385634870](https://github.com/estudiomoderno/moderno.app/actions/runs/34385634870) correcto. Los ocho recursos públicos responden 200 y coinciden con la versión probada normalizando finales de línea.
+
+
+## Editor v3.32.3
+
+Petición del usuario: corregir elección de color, integrar botón de fotos, retirar emojis y unificar ventana de edición. La hoja de apariencia estaba sobreescribiendo el color elegido; ahora usa las variables de cada carpeta. El beige es predeterminado y los colores explícitos guardados vuelven a mostrarse. Se calcula texto claro/oscuro por luminancia. Editor de dos columnas y una en móvil, acciones de guardado visibles al desplazar. El estado del proyecto se aplica junto al resto al guardar, no al seleccionarlo. Los iconos antiguos permanecen en los datos, sin control ni representación en carpetas.
+
+142 pruebas correctas; sintaxis validada. Revisión local ficticia: color salvia en vista previa y carpeta guardada, botón Añadir fotos abre selector y prepara miniatura, sin selector de emojis ni botón nativo visible. Móvil 390 px: ancho interior y contenido del modal 352 px, sin desbordamiento horizontal. Sin SQL, borrados ni cambios de permisos.

@@ -42,10 +42,10 @@
   body:not(.dark):not(.portalmode) h1.big {font-size:clamp(27px,2.7vw,34px);font-weight:800;line-height:1.16;margin-bottom:18px}
   body:not(.dark):not(.portalmode) .proj-head {background:var(--white)!important;border:1px solid var(--ui-line);border-top:4px solid #ded9ce;padding:20px 24px}
   body:not(.dark):not(.portalmode) .proj-head h1 {font-size:28px;font-weight:800}
-  body:not(.dark):not(.portalmode) .folder .back {background:#e4dfd5}
-  body:not(.dark):not(.portalmode) .folder .front {background:#f5f2ec;border:1px solid #ded9cf}
-  body:not(.dark):not(.portalmode) .folder .front::before {background:#f5f2ec}
-  body:not(.dark):not(.portalmode) .folder .fname {font-weight:750;color:var(--ink)}
+  body:not(.dark):not(.portalmode) .folder .back {background:var(--f-back,#e4dfd5)}
+  body:not(.dark):not(.portalmode) .folder .front {background:var(--f-front,#f5f2ec);border:1px solid #00000008}
+  body:not(.dark):not(.portalmode) .folder .front::before {background:var(--f-front,#f5f2ec)}
+  body:not(.dark):not(.portalmode) .folder .fname {font-weight:750;color:var(--f-ink,#242424)}
   body:not(.dark):not(.portalmode) .folder:hover {transform:none}
   body:not(.dark):not(.portalmode) .folder:hover .front {transform:none}
   body:not(.dark):not(.portalmode) .folder:hover .back {box-shadow:var(--shadow)}
@@ -94,9 +94,9 @@
     body:not(.portalmode) select {appearance:base-select;background-image:none}
     body:not(.portalmode) select::picker(select) {appearance:base-select}
   }
-  body.dark:not(.portalmode) .folder .back {background:#625f58}
+  body.dark:not(.portalmode) .folder .back {background:var(--f-back,#625f58)}
   body.dark:not(.portalmode) .folder .front,
-  body.dark:not(.portalmode) .folder .front::before {background:#e8e4dc}
+  body.dark:not(.portalmode) .folder .front::before {background:var(--f-front,#e8e4dc)}
   body.dark:not(.portalmode) .proj-head {background:#e8e4dc!important}
   /* Conservar el fondo oscuro y evitar texto claro sobre selecciones amarillas. */
   body.dark:not(.portalmode) .opt-pills button.on,
@@ -157,3 +157,43 @@
 }
 
 @media screen {body:not(.portalmode) .folder.has-photos .front {flex-direction:column;justify-content:flex-end;align-items:stretch} body:not(.portalmode) .folder.has-photos .fname {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}}
+
+/* v3.32.3: edición de proyecto coherente con la app. */
+@media screen {
+  #modalBox:has(.project-editor) {width:min(760px,94vw);padding:26px;border-radius:18px;background:var(--panel)}
+  .project-editor-header {display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:24px}
+  .project-editor-header h3 {margin:0;font-size:22px;letter-spacing:-.4px}
+  .project-editor p {font-size:12px;line-height:1.5;color:var(--ink-soft);margin:6px 0 12px}
+  .project-editor-layout {display:grid;grid-template-columns:230px minmax(0,1fr);gap:30px}
+  .project-editor-appearance {background:var(--card);padding:16px;border-radius:14px}
+  .project-editor-appearance .folder {width:100%}
+  .project-editor label {font-size:12px;text-transform:none;letter-spacing:0;font-weight:600;color:var(--ink);margin:16px 0 7px;display:block}
+  .project-editor small {font-weight:400;color:var(--ink-soft);margin-left:4px}
+  .project-editor-fields>label:first-child {margin-top:0}
+  .project-editor input:not([type=file]):not([type=color]),.project-editor select {width:100%;border:1px solid var(--ui-line,#dce1eb);border-radius:10px;background:var(--panel);min-height:40px;padding:9px 12px}
+  .project-editor input[hidden] {display:none!important}
+  .project-editor #czSw {display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .project-editor #czSw button {width:32px;height:32px;border-radius:10px;border:1px solid #0002;justify-self:center}
+  .project-editor #czSw button.on {outline:2px solid var(--ink-soft);outline-offset:3px}
+  .project-color-custom {display:flex;align-items:center;gap:8px;margin-top:14px}
+  .project-color-custom label {margin:0;font-size:11px;white-space:nowrap}
+  .project-color-custom input[type=color] {width:30px;height:32px;border:0;padding:0;background:transparent;cursor:pointer;flex-shrink:0}
+  .project-color-custom #czHex {min-width:0;padding:6px;font-size:11px;min-height:32px}
+  .project-color-custom .sr-only {position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+  .project-neutral {font-size:11px;width:100%;margin-top:12px}
+  .project-editor-photos {border-top:1px solid var(--ui-line,#dce1eb);margin-top:20px}
+  .project-editor-footer {border-top:1px solid var(--ui-line,#dce1eb);padding-top:18px;margin-top:24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .project-editor-footer>div {display:flex;gap:8px}
+  .project-delete {background:transparent;color:#a12940;font-size:12px;padding:8px 0}
+  .project-editor button:disabled {opacity:.5;cursor:default}
+  body.dark:not(.portalmode) .folder .fname {color:var(--f-ink,#242424)}
+  @media(max-width:620px) {
+    #modalBox:has(.project-editor) {padding:18px}
+    .project-editor-layout {grid-template-columns:minmax(0,1fr);gap:20px}
+    .project-editor-appearance {max-width:270px;width:100%;justify-self:center}
+    .project-editor-footer {flex-wrap:wrap}
+    .project-editor-footer>div {flex:1;justify-content:flex-end}
+  }
+}
+
+@media screen {.project-editor-footer {position:sticky;bottom:-26px;background:var(--panel);padding-bottom:16px;z-index:5} @media(max-width:620px){.project-editor-footer {bottom:-18px}}}

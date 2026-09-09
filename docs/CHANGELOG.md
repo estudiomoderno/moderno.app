@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.32.3 — editor de proyecto
+
+- Corrige el color de carpeta: se respeta la elección, con beige por defecto y texto contrastado.
+- Editor coherente con la app, adaptable a móvil; botón Añadir fotos integrado y sin selector de emojis. Los valores antiguos de icono se conservan sin mostrarse en carpetas.
+- Estado en borrador hasta Guardar cambios. 142 pruebas y comprobación visual de color guardado, carga desde el nuevo botón y ancho móvil sin desbordamiento.
+
 ## v3.32.2 — fotos en carpetas
 
 - Hasta tres fotos opcionales desde Personalizar, previsualización, retirada y cancelación sin alterar los originales. Transición suave entre capas; respeta movimiento reducido y mantiene tonos neutros.

@@ -906,7 +906,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 </style>
-<link rel="stylesheet" href="/appearance-b.css?v=3322">
+<link rel="stylesheet" href="/appearance-b.css?v=3323">
 </head>
 <body>
 <div class="app">
@@ -3924,9 +3924,14 @@ const PALETTE = {
   teja:{front:"#F2D3BE",back:"#D9A177"}, piedra:{front:"#E4E1DA",back:"#BDB8AE"} };
 function darken(hex,f=0.82){ const n=hex.replace("#",""); const v=[0,2,4].map(i=>Math.round(parseInt(n.substr(i,2),16)*f)); return "#"+v.map(x=>x.toString(16).padStart(2,"0")).join(""); }
 function folderColors(p){
-  if(p.color && p.color.startsWith("#")) return {front:p.color, back:darken(p.color)};
-  return p.color && PALETTE[p.color] ? PALETTE[p.color] : BRAND[p.brand];
+  let c={front:'#f5f2ec',back:'#e4dfd5'};
+  if(/^#[0-9a-f]{6}$/i.test(p.color||'')) c={front:p.color,back:darken(p.color)};
+  else if(PALETTE[p.color]) c=PALETTE[p.color];
+  const rgb=[1,3,5].map(i=>parseInt(c.front.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+  const lum=.2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2];
+  return {...c,ink:lum>.179?'#242424':'#ffffff'};
 }
+
 const state = {
   brandFilter:"all", view:"home", currentProject:null,
   counters:{ cm:68, em:12 },
@@ -5010,7 +5015,7 @@ function folderPhotosHtml(p){
 }
 function folderCard(p){
   const b=BRAND[p.brand], c=folderColors(p);
-  return `<div class="folder ${folderPhotoSources(p).length?'has-photos':''}" style="--f-front:${c.front};--f-back:${c.back}" onclick="go('proyecto',${p.id})">
+  return `<div class="folder ${folderPhotoSources(p).length?'has-photos':''}" style="--f-front:${c.front};--f-back:${c.back};--f-ink:${c.ink}" onclick="go('proyecto',${p.id})">
     <div class="back"></div>
     ${folderPhotosHtml(p)}
     ${folderPhotoSources(p).length?"":`<div class="badges" style="display:flex;flex-direction:column;align-items:center;gap:4px">${p.tpl?`<span class="chip tpl">Plantilla</span>`:`<span class="mini">${b.name}</span>`}${!p.tpl&&p.client?`<span class="mini" title="Cliente">${p.client}</span>`:""}</div>`}
@@ -5018,7 +5023,7 @@ function folderCard(p){
       <button title="Duplicar" onclick="event.stopPropagation();duplicateProject(${p.id})">${ico('dup_proyecto')}</button>
       <button title="Personalizar" onclick="event.stopPropagation();customizeModal(${p.id})">${ico('editar')}</button>
     </div>
-    <div class="front">${folderPhotoSources(p).length?`<div class="badges" style="display:flex;flex-direction:column;align-items:center;gap:4px">${p.tpl?`<span class="chip tpl">Plantilla</span>`:`<span class="mini">${b.name}</span>`}${!p.tpl&&p.client?`<span class="mini" title="Cliente">${p.client}</span>`:""}</div>`:""}<div class="fname">${p.icon?p.icon+" ":""}${p.num} ${p.name}${p.tags&&p.tags.length?`<div style="margin-top:5px;font-weight:400">${p.tags.map(t=>`<span class="chip tag" style="font-size:10px">${t}</span>`).join(" ")}</div>`:""}</div></div>
+    <div class="front">${folderPhotoSources(p).length?`<div class="badges" style="display:flex;flex-direction:column;align-items:center;gap:4px">${p.tpl?`<span class="chip tpl">Plantilla</span>`:`<span class="mini">${b.name}</span>`}${!p.tpl&&p.client?`<span class="mini" title="Cliente">${p.client}</span>`:""}</div>`:""}<div class="fname">${p.num} ${p.name}${p.tags&&p.tags.length?`<div style="margin-top:5px;font-weight:400">${p.tags.map(t=>`<span class="chip tag" style="font-size:10px">${t}</span>`).join(" ")}</div>`:""}</div></div>
   </div>`;
 }
 
@@ -9167,57 +9172,42 @@ function doDuplicate(id){
 const SWATCH_HEX = ["#F8E88F","#F6B8CD","#F8C9A4","#B4E4C9","#BFDCF5","#C9B8F0","#EE8B7B","#A9C79B","#E4E1DA","#3A2C27"];
 let cz = null;
 function customizeModal(id){
-  const p = state.projects.find(x=>x.id===id);
-  cz = { folderPhotos:[...folderPhotoSources(p)], busy:false, color:p.color||null, icon:p.icon||"", tags:(p.tags||[]).join(", "), client:p.client||"", name:p.name||"" };
-  modal(`<h3 style="display:flex;align-items:center">Editar proyecto
-    <button class="danger" style="margin-left:auto;margin-right:0" onclick="deleteProject(${id})">Borrar proyecto</button></h3>
-  <label>Nombre del proyecto <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">(${p.num})</small></label>
-  <input id="czName" value="${(p.name||"").replace(/"/g,"&quot;")}" placeholder="Ej: La Casita de Melody" oninput="cz.name=this.value;czPreviewDraw(${id})" style="font-weight:700">
-  <label>Estado del proyecto</label>
-  <div class="opt-pills">${["En progreso","En revisión","Entregado","Archivado"].map(x=>`<button class="${p.status===x?'on':''}" onclick="setStatus(${id},'${x}');this.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===this))">${x}</button>`).join("")}</div>
-  <div style="display:grid;grid-template-columns:1fr 150px;gap:16px;margin-top:14px;align-items:start">
-    <div id="czPreview"></div>
-    <div>
-      <label style="margin-top:0">Color</label>
-      <div class="swatches" id="czSw" style="max-width:150px">
-        ${SWATCH_HEX.map(h=>`<button data-c="${h}" style="background:${h}" onclick="czPick('${h}',this)"></button>`).join("")}
-        <button title="Color libre" style="background:conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red)" onclick="document.getElementById('czNative').click()"></button>
-        <input type="color" id="czNative" style="width:0;height:0;opacity:0;position:absolute" oninput="czPick(this.value)">
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
-        <span style="font-size:12px;color:var(--ink-faint)">#</span>
-        <input id="czHex" placeholder="FFCBA4" maxlength="6" style="width:100%" onchange="czPick('#'+this.value.replace('#',''))">
-      </div>
-      <button class="danger" style="margin:10px 0 0" onclick="czPick(null)">Empezar de nuevo</button>
+  const p=state.projects.find(x=>x.id===id);if(!p)return;
+  const E=ModernoDaily.escape;
+  cz={folderPhotos:[...folderPhotoSources(p)],busy:false,color:p.color||null,icon:p.icon||'',tags:(p.tags||[]).join(', '),client:p.client||'',name:p.name||'',status:p.status||'En progreso'};
+  modal(`<div class="project-editor">
+    <header class="project-editor-header"><div><h3>Editar proyecto</h3><p>Personaliza la carpeta y los datos del proyecto.</p></div><button class="btn btn-ghost" aria-label="Cerrar edición" onclick="closeModal()">×</button></header>
+    <div class="project-editor-layout">
+      <section class="project-editor-appearance" aria-label="Aspecto de la carpeta">
+        <div id="czPreview"></div>
+        <label>Color de la carpeta</label>
+        <div class="swatches" id="czSw">${['#F5F2EC','#E4E1DA','#D3DDC8','#C9DFF2','#F2D3BE','#F6CBDD','#F8E88F','#3A2C27'].map(h=>`<button type="button" aria-label="Color ${h}" aria-pressed="${folderColors({color:cz.color}).front.toLowerCase()===h.toLowerCase()}" class="${folderColors({color:cz.color}).front.toLowerCase()===h.toLowerCase()?'on':''}" data-c="${h}" style="background:${h}" onclick="czPick('${h}',this)"></button>`).join('')}</div>
+        <div class="project-color-custom"><label for="czNative">Otro color</label><input type="color" id="czNative" value="${folderColors(p).front}" oninput="czPick(this.value)"><label for="czHex" class="sr-only">Código de color</label><input id="czHex" aria-label="Código de color" value="${folderColors(p).front.slice(1).toUpperCase()}" maxlength="6" onchange="czPick('#'+this.value.replace('#',''))"></div>
+        <button class="btn btn-ghost project-neutral" onclick="czPick(null)">Usar beige suave</button>
+      </section>
+      <section class="project-editor-fields" aria-label="Datos del proyecto">
+        <label for="czName">Nombre <small>${E(p.num)}</small></label><input id="czName" value="${E(cz.name)}" oninput="cz.name=this.value;czPreviewDraw(${id})">
+        <label for="czStatus">Estado</label><select id="czStatus" onchange="cz.status=this.value">${['En progreso','En revisión','Entregado','Archivado'].map(x=>`<option ${cz.status===x?'selected':''}>${x}</option>`).join('')}</select>
+        <label for="czClient">Cliente</label><select id="czClient" onchange="cz.client=this.value"><option value="">Sin cliente</option>${state.clients.filter(c=>c.type==='Cliente').map(c=>`<option ${cz.client===c.name?'selected':''}>${E(c.name)}</option>`).join('')}</select>
+        <label for="czTags">Etiquetas</label><input id="czTags" value="${E(cz.tags)}" placeholder="Reforma, vivienda…" oninput="cz.tags=this.value">
+        <div class="project-editor-photos"><label>Fotos de la carpeta <small>Hasta 3</small></label><p>Fotos o renders que asoman por detrás de la carpeta.</p>
+          <input id="czPhotosInput" type="file" hidden accept="image/jpeg,image/png,image/webp" multiple onchange="czAddPhotos(this.files)">
+          <button id="czPhotosButton" class="btn btn-ghost" type="button" onclick="document.getElementById('czPhotosInput').click()">${ico('subir')} Añadir fotos</button>
+          <div id="czPhotosList" class="folder-photo-editor"></div><p id="czPhotosStatus" role="status"></p>
+        </div>
+      </section>
     </div>
-  </div>
-  <label>Fotos de la carpeta <small>(opcionales, hasta 3)</small></label>
-  <p style="font-size:12px;color:var(--ink-soft);margin:4px 0 10px">Elige fotos o renders para reconocer el proyecto. Se guardan como miniaturas; tus archivos originales no cambian.</p>
-  <input id="czPhotosInput" type="file" accept="image/jpeg,image/png,image/webp" multiple onchange="czAddPhotos(this.files)">
-  <div id="czPhotosList" class="folder-photo-editor"></div>
-  <p id="czPhotosStatus" role="status" style="font-size:12px;color:var(--ink-soft)"></p>
-  <label>Icono o emoji</label>
-  <div style="display:flex;gap:8px;align-items:center">
-    <input id="czIcon" value="${cz.icon}" placeholder="Elige abajo o escribe el tuyo" maxlength="4" style="width:120px;text-align:center;font-size:17px" oninput="cz.icon=this.value;czPreviewDraw(${id})">
-    <button class="chip neutral" onclick="cz.icon='';document.getElementById('czIcon').value='';czPreviewDraw(${id})">Sin icono</button>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-top:8px;background:var(--card);border-radius:12px;padding:8px">
-    ${["🏠","🏡","🏢","🏬","🏨","🏛","🛋","🛏","🛁","🚿","🍽","🪑","🪟","🚪","💡","🖼","🪴","🌿","🌸","🌊","☀️","⭐","✨","🔥","❤️","🎨","📐","🧱","🔨","🏗","🏝","🍋","🥂","🎯","👶","🐶","🎹","📚","🕯","💎"].map(e=>`<button style="font-size:19px;height:34px;border-radius:8px;background:transparent" onmouseover="this.style.background='var(--white)'" onmouseout="this.style.background='transparent'" onclick="cz.icon='${e}';document.getElementById('czIcon').value='${e}';czPreviewDraw(${id})">${e}</button>`).join("")}
-  </div>
-  <label>Etiquetas (comas)</label><input id="czTags" value="${cz.tags}" placeholder="reforma, urgente" oninput="cz.tags=this.value">
-  <label>Cliente</label>
-  <select id="czClient" onchange="cz.client=this.value">
-    <option value="">— Sin cliente —</option>
-    ${state.clients.filter(c=>c.type==="Cliente").map(c=>`<option ${p.client===c.name?"selected":""}>${c.name}</option>`).join("")}
-  </select>
-  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-  <button id="czSave" class="btn btn-dark" onclick="saveCustomize(${id})">Guardar cambios</button></div>`);
+    <footer class="project-editor-footer"><button class="project-delete" onclick="deleteProject(${id})">Borrar proyecto</button><div><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button id="czSave" class="btn btn-dark" onclick="saveCustomize(${id})">Guardar cambios</button></div></footer>
+  </div>`);
   czPreviewDraw(id);
 }
+
 function czPick(c,btn){
+  if(c!==null && !/^#[0-9a-f]{6}$/i.test(c)){toast("Escribe un color de seis caracteres, por ejemplo E4E1DA.");return;}
   cz.color = c;
-  document.querySelectorAll("#czSw button").forEach(b=>b.classList.toggle("on", b===btn));
-  const hx=document.getElementById("czHex"); if(hx) hx.value = (c&&c.startsWith("#"))? c.replace("#","").toUpperCase() : "";
+  document.querySelectorAll("#czSw button").forEach(b=>{const on=(b.dataset.c||"").toLowerCase()===(c||"#F5F2EC").toLowerCase();b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on));});
+  const native=document.getElementById("czNative");if(native)native.value=folderColors({color:c}).front;
+  const hx=document.getElementById("czHex"); if(hx) hx.value = folderColors({color:c}).front.slice(1).toUpperCase();
   czPreviewDraw(cz.__id);
 }
 function czPreviewDraw(id){
@@ -9226,10 +9216,10 @@ function czPreviewDraw(id){
   const p = state.projects.find(x=>x.id===id);
   const c = folderColors({...p, color:cz.color});
   document.getElementById("czPreview").innerHTML = `
-    <div class="folder" style="--f-front:${c.front};--f-back:${c.back};max-width:230px">
+    <div class="folder" style="--f-front:${c.front};--f-back:${c.back};--f-ink:${c.ink};max-width:230px">
       <div class="back"></div>
       ${folderPhotosHtml(cz)}
-      <div class="front"><div class="fname" style="${cz.color==='#3A2C27'?'color:#fff':''}">${cz.icon?cz.icon+" ":""}${p.num} ${cz.name||p.name}</div></div>
+      <div class="front"><div class="fname" >${ModernoDaily.escape(p.num)} ${ModernoDaily.escape(cz.name||p.name)}</div></div>
     </div>`;
 }
 function czPhotosDraw(){
@@ -9237,6 +9227,7 @@ function czPhotosDraw(){
   list.innerHTML=folderPhotoSources(cz).map((src,i)=>'<div><img src="'+src+'" alt="Foto '+(i+1)+'"><button type="button" class="btn btn-ghost" '+(cz.busy?'disabled':'')+' onclick="czRemovePhoto('+i+')">Quitar foto '+(i+1)+'</button></div>').join('');
   const input=document.getElementById('czPhotosInput'), save=document.getElementById('czSave');
   if(input)input.disabled=cz.busy||cz.folderPhotos.length>=3;
+  const button=document.getElementById('czPhotosButton');if(button){button.disabled=cz.busy||cz.folderPhotos.length>=3;button.textContent=cz.busy?'Preparando fotos…':cz.folderPhotos.length>=3?'3 fotos añadidas':'Añadir fotos';}
   if(save)save.disabled=cz.busy;
 }
 function czRemovePhoto(i){if(!cz||cz.busy)return;cz.folderPhotos.splice(i,1);czPreviewDraw(cz.__id);}
@@ -9274,7 +9265,7 @@ function saveCustomize(id){
   if(cz.name && cz.name.trim()) p.name = cz.name.trim();
   p.folderPhotos = [...folderPhotoSources(cz)];
   p.color = cz.color;
-  p.icon = cz.icon.trim();
+  if(cz.status)p.status=cz.status;
   p.tags = cz.tags.split(",").map(s=>s.trim()).filter(Boolean);
   p.client = cz.client || null;
   closeModal(); render(); toast("Cambios guardados ✓");
@@ -11341,7 +11332,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.32.2";
+const MODERNO_VER="v3.32.3";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
