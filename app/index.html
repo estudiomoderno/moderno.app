@@ -1018,6 +1018,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/sync-merge.js?v=20260909"></script>
 <script src="/private-files.js?v=20260909"></script>
 <script src="/daily-work.js?v=20260909"></script>
+<script src="/gestoria.js?v=20260909"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -4164,12 +4165,14 @@ const ico = (n,c="") => (ICONS[n]||"").replace('class=\"svgi\"','class=\"svgi '+
 /* =================== ROUTER =================== */
 const V = document.getElementById("view");
 function projTab(t){ if(myAccessLevel()==="colab" && (t==="fin"||t==="resumen")) { toast("No tienes acceso a los datos económicos"); t="tareas"; } state.projTab=t; render(); window.scrollTo(0,0); const m=document.querySelector(".main"); if(m) m.scrollTop=0; }
+var _accessRole=null, _gestoriaData=null;
 const VIEW_DENY = {
   owner:   [],
   miembro: ["contabilidad","informes","facturas","admin"],
   colab:   ["contabilidad","informes","facturas","admin","catalogo","integraciones","plantillas","utilidades"]
 };
 function myAccessLevel(){
+  if(_accessRole==="gestoria")return "gestoria";
   if(!sb || !ESTUDIO_ID) return "owner";
   if(state.myRole==="admin") return "owner";
   const mm=meMail(); const u=(state.users||[]).find(x=>(x.email||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===mm);
@@ -4179,7 +4182,7 @@ function myAccessLevel(){
   if(r==="Colaborador") return "colab";
   return "miembro";
 }
-function canView(v){ return !(VIEW_DENY[myAccessLevel()]||[]).includes(v); }
+function canView(v){ if(_accessRole==="gestoria")return ["home","contabilidad","facturas","prevision"].includes(v); return !(VIEW_DENY[myAccessLevel()]||[]).includes(v); }
 function applyRoleNav(){
   const lvl=myAccessLevel();
   document.body.classList.toggle("role-colab", lvl==="colab");
@@ -4204,6 +4207,7 @@ document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>go(b.dataset.vie
 drawBrandSwitch();
 
 function render(){
+  if(_accessRole==="gestoria"){ V.innerHTML=vGestoria();applyRoleNav();return; }
   const r = {home:vHome, workspace:vWorkspace, biblioteca:vLibrary, proyectos:vProjects, proyecto:vProject, estancia:vRoom, agenda:vAgenda, calendario:vCalendar, contabilidad:vAccounting, prevision:vPrevision, facturas:()=>vInvoice("factura"), presupuestos:()=>vInvoice("presupuesto"), catalogo:vCatalog, compras:vCompras, informes:vInformes, plantillas:vDocs, utilidades:vUtils, integraciones:vIntegraciones, admin:vAdmin, ajustes:vAjustes, presedit:vPresEdit, portalcli:vPortalCli, portalobra:vPortalObra}[state.view];
   V.innerHTML = r();
   wire();
@@ -4456,6 +4460,7 @@ function importDataModal(){
   <div class="modal-foot"><button class="btn btn-ghost" onclick="mb.classList.remove('wide');closeModal();profileMenu()">${ico("atras")} Atrás</button><button class="btn btn-dark" onclick="mb.classList.remove('wide');closeModal()">Cerrar</button></div>`);
 }
 function userModal(){
+  if(_accessRole==="gestoria"){modal('<h3>Gestoría · Solo lectura</h3><p>Consulta y descarga de PDF de Finanzas y Contabilidad.</p><button class="btn btn-dark" onclick="closeModal();sbLogout()">Cerrar sesión</button>');return;}
   modal(`<h3>${ico("m_user")} Mi perfil</h3>
   <div style="display:flex;align-items:center;gap:12px;margin:10px 0">
     <span style="background:var(--gold);border-radius:14px;width:52px;height:52px;display:grid;place-items:center;font-weight:900;font-size:20px">J</span>
@@ -11346,6 +11351,7 @@ function sbEnter(user, saluda){
   }
 }
 async function sbLogout(){
+  _accessRole=null;_gestoriaData=null;
   try{ if(sb) await sb.auth.signOut(); }catch(e){}
   state.sessionUser = null; _sbEntered=false; _afterDone=false; ESTUDIO_ID=null;
   Object.keys(_cloudHash).forEach(k=>delete _cloudHash[k]);
@@ -11416,6 +11422,7 @@ function syncView(){
 }
 function syncRefresh(){
   if(!state.sessionUser||state.view==='portalcli'||state.view==='portalobra')return;
+  if(_accessRole==='gestoria'){gestoriaStatus();return;}
   const view=syncView();let el=document.getElementById('syncTag');
   if(!el){el=document.createElement('button');el.id='syncTag';el.type='button';el.innerHTML='<span class="dot" aria-hidden="true"></span><span class="txt" role="status" aria-live="polite"></span>';el.onclick=syncDetails;document.body.appendChild(el);}
   el.className=view.mode;el.title=view.detail;el.setAttribute('aria-label',view.label+'. Ver estado y copias pendientes');
@@ -11509,6 +11516,7 @@ async function cloudRecoverBlock(b){
   }catch(e){ toast("No se pudo recuperar «"+b+"»"); }
 }
 async function cloudFlush(){
+  if(typeof _accessRole!=="undefined"&&_accessRole==="gestoria")return;
   if(!sb||!ESTUDIO_ID||_cloudBusy||_cloudApplying) return;
   _cloudBusy=true;
   let wrote=false; const caidos=[];
@@ -11690,6 +11698,10 @@ async function cloudLoad(){
       cloudKeepPendingCopy();
       cloudPendingNotice();
     }catch(e){syncTag("err","No se pudo conservar la copia pendiente. No cierres esta pestaña ni borres los datos del navegador.");afterLoginOnce();return;}
+    const access=await sb.rpc("app_rol",{p_estudio:ESTUDIO_ID});
+    if(access.error||!access.data||access.data==="sin_acceso"){syncTag("err","No se pudieron verificar tus permisos");return;}
+    _accessRole=access.data;
+    if(_accessRole==="gestoria"){await gestoriaLoad();return;}
     const eid = ESTUDIO_ID;
     const {data:rows, error:e2} = await sb.from("datos_estudio")
       .select("bloque,contenido,updated_at").eq("estudio_id", eid);

@@ -78,3 +78,10 @@ El usuario autoriza que TALLER desarrolle, compruebe y publique las modificacion
 - El usuario aprueba prioridades/fechas, apertura directa de tareas, estado fiel de guardado, búsquedas claras, nombres en español y encabezado móvil compacto.
 - Rama taller-operativa-20260909 sobre d28c710, que conserva las protecciones previas. La entrega operativa se registra aparte; no publicar incidentalmente sus antecesores todavía pendientes de transición.
 - Sin integraciones, planes, cobros, nueva gestión de visibilidad de archivos ni formulario breve de tareas. Alcance, pruebas y bloqueo de publicación en OPERATIVA-DIARIA.md.
+
+## 2026-09-09 — Gestoría de solo lectura
+
+- Confirmado por el usuario: Gestoría puede consultar Finanzas/Contabilidad y descargar sus PDF; no puede modificar los datos.
+- La autorización se comprueba en el servidor. Ocultar botones no basta. El candidato incorpora consulta separada, bloqueo de escritura y acceso limitado a los PDF contables.
+- Los PDF originales adjuntos se ofrecen por separado del resumen imprimible, que no sustituye al documento original.
+- Los cambios de permisos siguen en desarrollo y no están publicados. La lectura filtrada y el guardado de colaboradores deben quedar integrados y verificados antes de entregar el conjunto.
