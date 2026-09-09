@@ -28,10 +28,19 @@ No basta con ocultar más botones ni denegar solamente el bloque facturas: proye
 - Petición HEAD al servicio productivo: HTTP 405 y application/json, sin destinatario, cuerpo ni envío. Esto acredita respuesta del endpoint, no entrega de correo ni seguridad de su implementación.
 - Dos pruebas locales con transporte simulado verifican payload y rechazo de respuestas fallidas/no JSON.
 - Después, el usuario autorizó expresamente una invitación de prueba a su dirección personal. Se realizó un único POST al servicio, con contenido identificado como prueba técnica: HTTP 200 y respuesta {"ok":true,"version":"v1.4","via":"smtp","smtp":"ok"}. No se ejecutaron operaciones de alta de usuarios, membresías ni permisos. La dirección personal se omite del repositorio público.
-- El servicio confirma aceptación SMTP; sigue pendiente la confirmación del destinatario de que recibió el mensaje. Para validar el backend aislado falta recuperar la fuente/configuración no secreta del servicio y prepararlo en pruebas. No copiar credenciales al cliente o al repositorio.
+- El usuario confirmó que recibió el correo y después pudo registrarse/entrar con su cuenta nueva. Vio bienvenida/estudio vacío: la prueba SMTP no creó una invitación de membresía y no acredita unión al estudio habitual. No se ejecutó ninguna importación ni se le añadió al estudio.
+- El servicio existente queda acreditado para envío y recepción de este mensaje; su fuente PHP sigue fuera del repositorio. Esta entrega no lo modifica. Recuperar su fuente/configuración no secreta será necesario antes de modificar ese backend o reproducirlo en aislamiento; no confundir esa deuda de recuperación con falta de recepción del correo ya comprobada.
 
 ## Estado del piloto
 
 El usuario confirma pausa del equipo y que todos guardaron, sin formularios pendientes ni errores. No se ha confirmado el cierre de todas las sesiones antiguas ni se ha ordenado recargar. La pausa no resuelve los hallazgos técnicos anteriores. No ejecutar el corte todavía.
 
 Suite: 87 pruebas. Las pruebas rotuladas documented gap demuestran defectos existentes; pasar esas pruebas no significa que esos permisos sean correctos.
+
+## Correcciones en curso tras autorizar completar la entrega
+
+- Se retira la elevación de navegación por el rótulo local Administrador: solo la membresía admin concede ese nivel. La prueba antes descriptiva del defecto ahora exige que el rótulo local no eleve al miembro.
+- guardar-bloque-versionado.sql exige membresía admin para escribir config, donde viven roles/usuarios/capacidades. Ensayo SQL en clon, dentro de transacción revertida: miembro_config_rechazada=true y admin_config_permitida=true. Se usó SET LOCAL ROLE authenticated con identidad ficticia. El cambio de función se revirtió al terminar; la corrección está preparada en el archivo, no instalada ni publicada.
+- Estas correcciones evitan elevación de privilegios por configuración; no cierran aún la lectura financiera, los campos internos de proyectos/listas, historial y archivos.
+- Decisión requerida y preguntada al usuario: el rol Gestoría (solo lectura) tiene una promesa de no edición, pero su matriz editable permite activar capacidades de escritura. Se recomienda mantener ese rol siempre de lectura y usar otro rol para una gestoría con edición. No implementar una precedencia contradictoria sin resolver esa decisión.
+- El equipo había sido autorizado a retomar el trabajo. La confirmación anterior de pausa/guardado no permite asumir una nueva ventana de publicación ni el cierre actual de sesiones.

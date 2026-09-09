@@ -10,6 +10,12 @@ begin
   if auth.uid() is null or not exists (
     select 1 from public.miembros m where m.user_id=auth.uid() and m.estudio_id=p_estudio
   ) then raise exception 'No autorizado' using errcode='42501'; end if;
+  -- Config contiene usuarios, roles y capacidades: ningún miembro puede
+  -- promoverse cambiando el JSON. La autoridad es la membresía del servidor.
+  if p_bloque='config' and not exists (
+    select 1 from public.miembros m where m.user_id=auth.uid()
+      and m.estudio_id=p_estudio and m.rol='admin'
+  ) then raise exception 'Solo un administrador puede cambiar la configuracion del estudio' using errcode='42501'; end if;
   select updated_at into actual from public.datos_estudio
     where estudio_id=p_estudio and bloque=p_bloque for update;
   existe := found;

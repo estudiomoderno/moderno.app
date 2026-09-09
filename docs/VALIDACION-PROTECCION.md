@@ -25,7 +25,7 @@ Las funciones de acceso y envío de correo comparadas con c91d243 permanecen igu
 
 ## Pendiente antes de publicar
 
-Actualización: el usuario confirma que el piloto está en pausa y guardó sin formularios pendientes ni errores. Los pendientes de roles/correo se concretan en ACCESO-CORREO-VALIDACION.md: miembro puede leer/escribir facturas en el clon, Gestoría no tiene el comportamiento anunciado, fuente PHP ausente y entrega de correo sin destinatario autorizado. La suite actual pasa 87 pruebas, incluidas pruebas que reproducen esos defectos. No equivale a autorización financiera validada.
+Actualización: el piloto confirmó pausa y guardado, y después recibió indicación de retomar su trabajo; habrá que coordinar el corte al estar listo. El usuario confirmó recepción del correo de prueba y entrada con cuenta nueva (sin membresía al estudio habitual). La fuente PHP sigue fuera del repositorio y no se modifica. Los defectos y avances concretos de permisos están en ACCESO-CORREO-VALIDACION.md; no confundir la suite satisfactoria con autorización financiera completa. Las vistas de Workspace aumentaron la suite a 92 pruebas.
 
 1. Coordinar todas las sesiones del piloto: guardar y conservar pendientes antes de cerrar voluntariamente clientes antiguos. No forzar recargas ni borrar caché.
 2. Validar los flujos de acceso y correo que entren en esta entrega con una cuenta dedicada. Google Calendar queda fuera: el usuario confirma que nunca se conectó y decide posponerlo; recuperar sus fuentes o probar esa integración no bloquea esta actualización.

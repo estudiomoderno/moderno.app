@@ -4174,7 +4174,8 @@ function myAccessLevel(){
   if(state.myRole==="admin") return "owner";
   const mm=meMail(); const u=(state.users||[]).find(x=>(x.email||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===mm);
   const r=(u&&u.role)||"";
-  if(r==="Administrador") return "owner";
+  // Un rótulo guardado en el cliente nunca concede administración del estudio.
+  if(r==="Administrador") return "miembro";
   if(r==="Colaborador") return "colab";
   return "miembro";
 }
