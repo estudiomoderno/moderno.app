@@ -58,3 +58,5 @@ Publicada v3.32.3 el 9/9/2026, commit f6986db. Los ocho recursos públicos respo
 ## Etiquetas v3.32.4
 
 Corrección visual: el límite de líneas de fname incluía las etiquetas y las recortaba. Se separa folder-title de folder-tags y la portada con fotos adapta su altura. Verificado localmente con datos ficticios, título de dos líneas, una foto y etiqueta completa; 142 pruebas y sintaxis correctas. No modifica datos ni archivos.
+
+Publicada v3.32.4 el 9/9/2026, commit d9afb8b. Ocho recursos públicos con respuesta 200 y coincidencia exacta con el código probado, normalizando finales de línea.

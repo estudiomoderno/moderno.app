@@ -1,6 +1,6 @@
 # Estado inicial de TALLER — 9 septiembre 2026
 
-Última versión: v3.32.3, publicada y verificada. Editor renovado, color editable y botón de fotos integrado, sin selector de emojis. Incluye hasta tres fotos opcionales por carpeta y transición suave. Ajuste visual: menú gris sin franja, carpetas beige claro y desplegables redondeados. Aplica la apariencia B elegida por el usuario, conserva iconos y menú contraíble y corrige el tablero móvil. Mantiene las protecciones de guardado, permisos y copias de v3.31. Véase [Entrega v3.32](ENTREGA-V332.md) y CHANGELOG.md.
+Última versión: v3.32.4, publicada y verificada. Corrige las etiquetas recortadas bajo nombres de varias líneas. Editor renovado, color editable y botón de fotos integrado, sin selector de emojis. Incluye hasta tres fotos opcionales por carpeta y transición suave. Ajuste visual: menú gris sin franja, carpetas beige claro y desplegables redondeados. Aplica la apariencia B elegida por el usuario, conserva iconos y menú contraíble y corrige el tablero móvil. Mantiene las protecciones de guardado, permisos y copias de v3.31. Véase [Entrega v3.32](ENTREGA-V332.md) y CHANGELOG.md.
 
 Estado de publicación vigente: [Entrega v3.32](ENTREGA-V332.md), publicada el 9/9/2026. 137 pruebas locales correctas, comprobación visual con datos ficticios, recursos públicos y carga de sesión verificados. No requiere cambios SQL. La entrega documenta cómo recuperar el aspecto anterior sin restaurar datos. Los apartados siguientes son históricos.
 
