@@ -22,5 +22,11 @@
     if(confirmed)return {mode:'ok',label:'Guardado en nube',detail:'Los datos actuales coinciden con la última versión confirmada.'};
     return {mode:'pending',label:'Pendiente de comprobar',detail:'Todavía no hay confirmación de la nube.'};
   }
-  return {normalize,escape,today,due,isMine,compare,projectMatches,saveStatus};
+  function monthDays(month){
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw Error('Mes no válido');
+    const [y,m]=month.split('-').map(Number), first=new Date(Date.UTC(y,m-1,1));
+    const offset=(first.getUTCDay()+6)%7, count=new Date(Date.UTC(y,m,0)).getUTCDate();
+    return Array.from({length:Math.ceil((offset+count)/7)*7},(_,i)=>i<offset||i>=offset+count?'':month+'-'+String(i-offset+1).padStart(2,'0'));
+  }
+  return {normalize,escape,today,due,isMine,compare,projectMatches,saveStatus,monthDays};
 });

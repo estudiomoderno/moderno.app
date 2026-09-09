@@ -428,7 +428,7 @@ body.dark .pill-tabs button.on{background:#FFFFFF;color:#141414}
 .entry{background:var(--white);border-radius:12px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:8px;font-size:12.5px;transition:var(--tr)}
 .acc-row .collbtn{flex:none;width:30px;height:30px;display:inline-grid;place-items:center}
 .acc-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:8px;margin:0 0 10px}
-.acc-filters select{width:100%;font-size:12px;padding:7px 28px 7px 10px;border:1px solid var(--line);border-radius:10px;background-color:var(--white)}
+.acc-filters select{width:100%;font-size:12px;padding:7px 28px 7px 10px;border:1px solid var(--ink-faint);border-radius:10px;background-color:var(--white)}
 @media(max-width:900px){.acc-filters{grid-template-columns:1fr 1fr}}
 .acc-row select.st{flex:none;width:120px;margin-left:4px}
 .acc-row .amt{flex:none;width:118px;text-align:right}
@@ -881,7 +881,7 @@ body.dark .mdp{background:#23232A;color:#F2F1EE}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('resumen')"]{display:none!important}
-.dz{border:2px dashed var(--line);border-radius:14px;padding:14px;text-align:center;transition:.15s;cursor:pointer}
+.dz{border:2px dashed var(--ink-faint);border-radius:14px;padding:14px;text-align:center;transition:.15s;cursor:pointer}
 .dz.over,.acc-row.dropover{outline:2px dashed var(--gold);outline-offset:-2px;background:var(--gold-soft)!important}
 .dz small{display:block;color:var(--ink-faint);font-size:11px;margin-top:6px}
 .acc-sticky{position:sticky;top:-14px;z-index:15;background:var(--card);margin:-14px -14px 8px;padding:12px 14px 10px;border-radius:var(--radius) var(--radius) 0 0;display:flex;flex-direction:column;gap:8px}
@@ -900,9 +900,11 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 @media(min-width:811px){.proj-head h1{padding-right:210px}}
 @media(max-width:810px){.proj-head{padding:14px 16px;margin-top:10px;border-radius:20px}.proj-head h1{font-size:23px;line-height:1.15;overflow-wrap:anywhere;margin:8px 0}.proj-head .btn{font-size:12px;padding:8px 10px}.project-options{position:static;margin-top:8px}.project-options summary{display:inline-flex;min-height:40px}.project-options:not([open])>.project-options-body{display:none}.project-options-body{margin-top:8px;flex-wrap:wrap}.proj-head+.pill-tabs{margin:14px 0!important}.daily-entry{gap:6px}}
 
-#syncTag{pointer-events:auto;border:1px solid var(--line);border-radius:14px;background:var(--white);color:var(--ink);padding:8px 10px;max-width:calc(100vw - 28px);cursor:pointer;min-height:38px}
+#syncTag{pointer-events:auto;border:1px solid var(--ink-faint);border-radius:14px;background:var(--white);color:var(--ink);padding:8px 10px;max-width:calc(100vw - 28px);cursor:pointer;min-height:38px}
 #syncTag .txt{display:inline;background:none;box-shadow:none;padding:0;border-radius:0}#syncTag.pending .dot{background:#B8860B}#syncTag.err{color:var(--red-ink)}
 #cloudPendingCopies{max-width:min(400px,calc(100vw - 32px))!important;box-sizing:border-box;max-height:65vh;overflow:auto;bottom:62px!important}#cloudPendingCopies button{margin:6px 4px 0 0;padding:8px}
+
+.ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 </style>
 </head>
 <body>
@@ -4402,9 +4404,9 @@ function liDraw(){
   const inv={}; Object.keys(_liMap).forEach(i=>inv[_liMap[i]]=+i);
   const cols=LI_FIELDS.filter(([k])=>k&&inv[k]!=null);
   const prev=`<label>Vista previa — ${_liRows.length} fila${_liRows.length===1?"":"s"}</label>
-  <div style="max-height:190px;overflow:auto;border:1px solid var(--line);border-radius:10px"><table style="width:100%;border-collapse:collapse;font-size:11.5px">
+  <div style="max-height:190px;overflow:auto;border:1px solid var(--ink-faint);border-radius:10px"><table style="width:100%;border-collapse:collapse;font-size:11.5px">
   <tr>${cols.map(([k,l])=>`<th style="text-align:left;padding:4px 8px;background:var(--card);position:sticky;top:0">${l}</th>`).join("")}</tr>
-  ${_liRows.slice(0,8).map(r=>`<tr>${cols.map(([k])=>`<td style="padding:4px 8px;border-top:1px solid var(--line);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis">${(k==="price"||k==="cost")?fmt(liNum(r[inv[k]])):(k==="qty"?(liNum(r[inv[k]])||1):(r[inv[k]]||""))}</td>`).join("")}</tr>`).join("")}
+  ${_liRows.slice(0,8).map(r=>`<tr>${cols.map(([k])=>`<td style="padding:4px 8px;border-top:1px solid var(--ink-faint);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis">${(k==="price"||k==="cost")?fmt(liNum(r[inv[k]])):(k==="qty"?(liNum(r[inv[k]])||1):(r[inv[k]]||""))}</td>`).join("")}</tr>`).join("")}
   </table></div>${_liRows.length>8?`<div style="font-size:11px;color:var(--ink-faint);padding:4px">…y ${_liRows.length-8} más</div>`:""}
   ${!has("name")?`<p style="font-size:11.5px;color:var(--red-ink);margin-top:6px">Indica qué columna es el <b>Producto</b> para poder importar.</p>`:""}`;
   box.innerHTML=mapUI+dest+sec+prev;
@@ -4999,6 +5001,34 @@ function folderCard(p){
 }
 
 function wsProjPick(v){state.wsQuery=String(v||'').trim();state.wsProj='all';render();}
+function wsViewKey(){return LS_KEY+'_vista_tareas_'+(meMail()||'local');}
+function wsViewGet(){try{const v=localStorage.getItem(wsViewKey());return ['tablero','lista','calendario'].includes(v)?v:'tablero';}catch{return 'tablero';}}
+function wsViewSet(v){if(!['tablero','lista','calendario'].includes(v))return;try{localStorage.setItem(wsViewKey(),v);}catch{toast('No se pudo recordar la vista en este dispositivo');return;}render();}
+function wsViewControls(){return `<div class="opt-pills daily-scope ws-views" role="group" aria-label="Vista de tareas">${[['tablero','Tablero'],['lista','Lista'],['calendario','Calendario']].map(([v,label])=>`<button aria-pressed="${wsViewGet()===v}" class="${wsViewGet()===v?'on':''}" onclick="wsViewSet('${v}')">${label}</button>`).join('')}</div>`;}
+function wsTaskButton(c){return '<button class="ws-task-link" onclick="openDailyTask('+Number(c.p.id)+','+c.i+')">'+ModernoDaily.escape(c.t.title||'Sin título')+'</button>';}
+function wsList(cards){return '<div class="ws-table-wrap"><table class="ws-task-table"><thead><tr><th>Tarea</th><th>Proyecto</th><th>Responsable</th><th>Vencimiento</th><th>Estado</th></tr></thead><tbody>'+cards.map(c=>'<tr><td>'+wsTaskButton(c)+'</td><td>'+ModernoDaily.escape(c.p.num+' '+c.p.name)+'</td><td>'+ModernoDaily.escape(taskAssignees(c.t).join(', ')||'Sin asignar')+'</td><td>'+dailyDue(c.t)+'</td><td>'+ModernoDaily.escape((KCOLS.find(k=>k[0]===c.t.col)||[])[1]||c.t.col||'Pendiente')+'</td></tr>').join('')+'</tbody></table></div>';}
+let _wsCalendarMonth='';
+function wsMonthMove(delta){const base=(_wsCalendarMonth||ModernoDaily.today().slice(0,7)).split('-').map(Number);const d=new Date(base[0],base[1]-1+delta,1,12);_wsCalendarMonth=ModernoDaily.today(d).slice(0,7);render();}
+function wsMonthToday(){_wsCalendarMonth=ModernoDaily.today().slice(0,7);render();}
+function wsCalendar(cards){
+  const month=_wsCalendarMonth||ModernoDaily.today().slice(0,7),days=ModernoDaily.monthDays(month),E=ModernoDaily.escape;
+  const undated=cards.filter(c=>!ModernoDaily.due(c.t.due).date),shown=cards.filter(c=>ModernoDaily.due(c.t.due).date.startsWith(month));
+  const title=new Date(month+'-01T12:00:00').toLocaleDateString(APP_LOCALE(),{month:'long',year:'numeric'});
+  const item=c=>'<div class="ws-cal-task">'+wsTaskButton(c)+'<small>'+E(c.p.num+' '+c.p.name)+'</small></div>';
+  return '<section aria-label="Calendario de vencimientos"><div class="ws-calendar-nav"><button class="btn btn-ghost" aria-label="Mes anterior" onclick="wsMonthMove(-1)">←</button><h2>'+E(title)+'</h2><button class="btn btn-ghost" aria-label="Mes siguiente" onclick="wsMonthMove(1)">→</button><button class="btn btn-ghost" onclick="wsMonthToday()">Hoy</button></div><p class="sec-note">'+shown.length+' tareas en este mes · '+(cards.length-shown.length-undated.length)+' en otros meses · '+undated.length+' sin fecha</p><div class="ws-calendar-wrap"><div class="ws-calendar-grid">'+['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>'<div class="ws-weekday">'+d+'</div>').join('')+days.map(day=>'<div class="ws-calendar-day '+(day===ModernoDaily.today()?'ws-today':'')+'">'+(day?'<time datetime="'+day+'">'+Number(day.slice(-2))+'</time>'+cards.filter(c=>c.t.due===day).map(item).join(''):'')+'</div>').join('')+'</div></div><h3>Sin fecha ('+undated.length+')</h3>'+ (undated.length?undated.map(item).join(''):'<p class="sec-note">Todas las tareas de estos filtros tienen fecha.</p>')+'</section>';
+}
+function wsBoard(cards){return `  <div class="kanban" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+    ${KCOLS.filter(c=>c[0]!=="listo").map(([key,label,color])=>`
+      <div class="kcol" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="wsDrop(event,'${key}')">
+        <h4><span class="kdot" style="background:${color}"></span>${label}<span class="n">${cards.filter(c=>c.t.col===key).length}</span></h4>
+        ${cards.filter(c=>c.t.col===key).map(({p,t,i})=>`
+          <div class="task" draggable="true" ondragstart="dragTask(event,${p.id},${i});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" style="background:${key==='pend'?'var(--gold-soft)':'var(--white)'}" onclick="taskModal(${p.id},${i})">
+            <div class="tt">${ModernoDaily.escape(t.title)}</div>${dailyDue(t)}
+            <div class="tm"><span class="chip ${BRAND[p.brand].chip}">${p.num} ${p.name}</span><span class="chip cm" style="background:var(--card)">${t.type}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}${assigneeChips(t)}</div>
+          </div>`).join("")}
+        <button class="addtask" onclick="wsNewTask('${key}')">${ico("mas")} Nueva tarea</button>
+      </div>`).join("")}
+  </div>`;}
 function vWorkspace(){
   const projs = sortProjects(byBrand(state.projects.filter(p=>!p.tpl && p.status!=="Archivado")));
   const previous=projs.find(p=>String(p.id)===String(state.wsProj));
@@ -5022,20 +5052,11 @@ function vWorkspace(){
     <button class="btn btn-ghost" onclick="newProjectModal()">${ico("mas")} Nuevo proyecto</button>
     <button class="btn btn-dark" onclick="wsNewTask('pend')">${ico("mas")} Nueva tarea</button>
   </div>
+  ${wsViewControls()}
   <div class="daily-filter-info" role="status">${pool.length} proyecto${pool.length===1?'':'s'} · ${cards.length} tarea${cards.length===1?'':'s'} pendiente${cards.length===1?'':'s'}${query?` · Filtro: «${ModernoDaily.escape(query)}» <button class="btn btn-ghost" onclick="wsProjPick('')">Limpiar búsqueda</button>`:''}</div>
   ${!pool.length?'<div class="empty">No hay proyectos que coincidan con la búsqueda.</div>':!cards.length?'<div class="empty">No hay tareas pendientes para estos filtros. Revisa el proyecto o consulta Todas las tareas.</div>':''}
-  <div class="kanban" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-    ${KCOLS.filter(c=>c[0]!=="listo").map(([key,label,color])=>`
-      <div class="kcol" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="wsDrop(event,'${key}')">
-        <h4><span class="kdot" style="background:${color}"></span>${label}<span class="n">${cards.filter(c=>c.t.col===key).length}</span></h4>
-        ${cards.filter(c=>c.t.col===key).map(({p,t,i})=>`
-          <div class="task" draggable="true" ondragstart="dragTask(event,${p.id},${i});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" style="background:${key==='pend'?'var(--gold-soft)':'var(--white)'}" onclick="taskModal(${p.id},${i})">
-            <div class="tt">${ModernoDaily.escape(t.title)}</div>${dailyDue(t)}
-            <div class="tm"><span class="chip ${BRAND[p.brand].chip}">${p.num} ${p.name}</span><span class="chip cm" style="background:var(--card)">${t.type}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}${assigneeChips(t)}</div>
-          </div>`).join("")}
-        <button class="addtask" onclick="wsNewTask('${key}')">${ico("mas")} Nueva tarea</button>
-      </div>`).join("")}
-  </div></div>`;
+  ${wsViewGet()==="lista"?wsList(cards):wsViewGet()==="calendario"?wsCalendar(cards):wsBoard(cards)}
+  </div>`;
 }
 function wsDrop(ev,col){
   ev.preventDefault(); ev.currentTarget.classList.remove("dragover");
@@ -5921,7 +5942,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
       <input id="pChat" placeholder="Escribe un comentario para el equipo…" style="flex:1;border:none;background:var(--white);border-radius:12px;padding:10px 14px;outline:none" onkeydown="if(event.key==='Enter')sendChat(${p.id})">
       <button class="btn btn-dark" onclick="sendChat(${p.id})">Comentar</button>
     </div>
-  </div>`}${tb==="resumen"?`<div style="margin-top:28px;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  </div>`}${tb==="resumen"?`<div style="margin-top:28px;padding-top:14px;border-top:1px solid var(--ink-faint);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <small style="color:var(--ink-faint);flex:1">¿Este proyecto te sirve de base para otros? Guárdalo como plantilla: tareas, estancias, fases y puntos de obra, listos para reutilizar.</small>
     <button class="btn btn-ghost" onclick="saveAsTemplate(${p.id})">${ico("copiar")} Guardar como plantilla de proyecto</button>
   </div>`:""}`;

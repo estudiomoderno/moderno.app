@@ -2,7 +2,8 @@
 
 ## v3.30 — preparada, NO publicada
 
-- Workspace/Inicio: Mis tareas y Todas las tareas conservan tipografía y dimensiones al seleccionarse; cambia el fondo. Propuesta de vistas adicionales en WORKSPACE-VISTAS.md, aún sin implementar.
+- Workspace/Inicio: Mis tareas y Todas las tareas conservan tipografía y dimensiones al seleccionarse; cambia el fondo.
+- Workspace: Lista y Calendario mensual junto al Tablero, con los mismos filtros y preferencia de vista por cuenta/dispositivo. Las tareas sin fecha siguen disponibles. Detalles y pruebas en WORKSPACE-VISTAS.md; Cronograma queda para después.
 
 Candidata local identificada como v3.30-rc.1. Las denominaciones anteriores v3.30-pruebas y v3.31-operativa-pruebas fueron pruebas locales, no entregas. El 9 de septiembre se comprobó producción v3.29 y main c91d243, sin etiquetas posteriores a v3.29.
 
