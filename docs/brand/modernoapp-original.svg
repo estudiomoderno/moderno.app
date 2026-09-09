@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="90.205643mm"
+   height="44.695217mm"
+   viewBox="0 0 90.205645 44.695217"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="oerno.svg"
+   inkscape:export-filename="modernoapp.svg"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm">
+    <inkscape:page
+       x="0"
+       y="5.6646101e-16"
+       width="90.205643"
+       height="44.695217"
+       id="page2"
+       margin="0"
+       bleed="0" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <text
+     xml:space="preserve"
+     style="font-weight:bold;font-size:9.76634px;font-family:'Berlin Sans FB Demi';-inkscape-font-specification:'Berlin Sans FB Demi Bold';text-align:center;writing-mode:lr-tb;direction:ltr;text-anchor:middle;fill:#000000;fill-opacity:1;stroke-width:0.813861"
+     x="40.144474"
+     y="44.556923"
+     id="text1"><tspan
+       sodipodi:role="line"
+       id="tspan1"
+       style="fill:#000000;fill-opacity:1;stroke-width:0.813861"
+       x="40.144474"
+       y="44.556923">moderno</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-weight:bold;font-size:3.79638px;font-family:'Berlin Sans FB Demi';-inkscape-font-specification:'Berlin Sans FB Demi Bold';text-align:center;writing-mode:lr-tb;direction:ltr;text-anchor:middle;fill:#272525;fill-opacity:1;stroke-width:0.316365"
+     x="62.942604"
+     y="44.11314"
+     id="text1-8"><tspan
+       sodipodi:role="line"
+       id="tspan1-2"
+       style="fill:#272525;fill-opacity:1;stroke-width:0.316365"
+       x="62.942604"
+       y="44.11314">.app</tspan></text>
+</svg>

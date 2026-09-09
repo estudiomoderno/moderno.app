@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.32.6 — logo aprobado
+
+- Logo moderno con .app pequeño, conservando composición y Berlin Sans FB Demi mediante trazados SVG. Grafito en claro, blanco en oscuro, variante azul disponible. Menú, cabecera móvil y acceso actualizados; m del menú plegado conservada.
+- 142 pruebas correctas y revisión visual local. Sin cambios de datos ni logos de estudios.
+
 ## v3.32.5 — menú contraído
 
 - El botón de expandir ocupa su propia fila bajo el logo y deja 14 px antes de Inicio. Ya no se superpone a la navegación; etiqueta y estado accesible reflejan plegado/expandido. 142 pruebas correctas y revisión visual local.

@@ -212,3 +212,10 @@
  body.navmini .sidebar .logo-mini {margin:4px auto 0;flex-shrink:0}
  body.navmini .sidebar .sb-toggle {position:static;left:auto;top:auto;width:28px;height:28px;flex-shrink:0}
 }
+
+/* v3.32.6: composición aprobada con .app pequeño, en trazados. */
+@media screen {
+ .sidebar img.logo {width:146px;height:auto}
+ .login-brand {display:block;width:190px;height:auto;margin:0 auto;filter:none}
+ body.dark .sidebar img.logo,body.dark #mHeader .mlogo {content:url("/brand/modernoapp-blanco.svg");filter:none}
+}
