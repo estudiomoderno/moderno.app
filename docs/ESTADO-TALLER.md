@@ -44,3 +44,6 @@ Se localizó git-remote-https.exe en mingw64/bin. Con --exec-path a esa carpeta,
 ## Copias de archivos — 2026-09-09
 
 Primera copia real de Storage a Google Drive completada y verificada, además de una prueba sintética de recuperación. Workflow diario preparado a las 04:23 de Madrid y ejecución manual disponible. Configuración privada en secretos de GitHub; instrucciones en docs/BACKUP-SETUP.md. Pendientes: observar el primer disparo programado, supervisión externa y ensayo de recuperación integral del CRM. No se han modificado datos ni archivos de producción durante esta preparación.
+
+## Actualización v3.33.1
+Corrección de presentación de facturas y cobros históricos. Ver FACTURAS-V3331.md. Sin modificación de datos reales.

@@ -906,7 +906,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 </style>
-<link rel="stylesheet" href="/appearance-b.css?v=333">
+<link rel="stylesheet" href="/appearance-b.css?v=3331">
 </head>
 <body>
 <div class="app">
@@ -6214,26 +6214,30 @@ function vAccounting(){
 /* ============ FACTURAS: LISTA AL ENTRAR + COBROS A CUENTA (v3.24) ============ */
 function aCobrar(e){ return (e.amount||0) - (e.irpf>0 ? (e.base||0)*e.irpf/100 : 0); }
 function cobrado(e){ return (e.cobros||[]).reduce((s,c)=>s+(+c.amount||0),0); }
-function pendienteCobro(e){ return Math.max(0, Math.round((aCobrar(e)-cobrado(e))*100)/100); }
+function pendienteCobro(e){ return e.status==="cobr" ? 0 : Math.max(0, Math.round((aCobrar(e)-cobrado(e))*100)/100); }
 function cobroRecalc(e){
   if(!(e.cobros||[]).length) return;
-  if(pendienteCobro(e)<=0.005){ e.status="cobr"; }
+  if(aCobrar(e)-cobrado(e)<=0.005){ e.status="cobr"; }
   else if(e.status==="cobr"){ e.status="env"; }
   syncEntryToInvoice(e);
 }
 function cobrosModal(entryId){
   const e=state.entries.find(x=>x.id===entryId); if(!e){ toast("No encuentro ese ingreso"); return; }
-  e.cobros=e.cobros||[];
-  const pend=pendienteCobro(e), tot=aCobrar(e), cob=cobrado(e);
+  const cobros=e.cobros||[];
+  const pend=pendienteCobro(e), tot=aCobrar(e), cob=e.status==="cobr"?tot:cobrado(e);
+  const historica=e.status==="cobr" && Math.abs(tot-cobrado(e))>0.005;
   const hoy=new Date().toISOString().slice(0,10);
-  modal(`<h3>€ Cobros de ${e.link||e.concept.split(" — ")[0]}</h3>
-  <p style="font-size:12.5px;color:var(--ink-soft);margin-top:4px">${e.concept}${e.client?" · "+e.client:""}<br>A cobrar <b>${fmt(tot)}</b>${e.irpf>0?` <small>(total ${fmt(e.amount)} menos ${retLabel()} ${e.irpf}%)</small>`:""} · Cobrado <b style="color:#2E6B4F">${fmt(cob)}</b> · Pendiente <b style="color:${pend>0?"var(--red-ink)":"#2E6B4F"}">${fmt(pend)}</b></p>
-  ${e.cobros.length?`<div class="entry-col" style="gap:6px;margin:10px 0">${e.cobros.map((c,i)=>`<div class="entry" style="background:var(--white);padding:7px 10px;font-size:12px;gap:10px"><b style="min-width:90px">${fmt(c.amount)}</b><span style="color:var(--ink-soft)">${(c.date||"").split("-").reverse().join("/")}</span><span style="flex:1;color:var(--ink-faint)">${c.note||""}</span><button style="color:var(--ink-faint)" title="Quitar este cobro" onclick="cobroDel(${e.id},${i})">✕</button></div>`).join("")}</div>`:`<p style="font-size:11.5px;color:var(--ink-faint);margin:8px 0">Todavía no hay ningún cobro registrado.</p>`}
+  modal(`<div class="collections-dialog"><h3>Cobros de ${e.link||e.concept.split(" — ")[0]}</h3>
+  <p class="collections-description">${e.concept}${e.client?" · "+e.client:""}</p>
+  <div class="collections-summary"><div><span>A cobrar</span><b>${fmt(tot)}</b></div><div><span>Cobrado</span><b>${fmt(cob)}</b></div><div><span>Pendiente</span><b>${fmt(pend)}</b></div></div>
+  ${e.irpf>0?`<p class="collections-description">Total ${fmt(e.amount)} menos ${retLabel()} ${e.irpf}%.</p>`:""}
+  ${historica?`<p class="collections-notice">Esta factura está marcada como cobrada. El desglose de cobros guardado no cubre el total; se conserva su estado sin crear movimientos.</p>`:""}
+  ${cobros.length?`<div class="entry-col" style="gap:6px;margin:10px 0">${cobros.map((c,i)=>`<div class="entry" style="background:var(--white);padding:7px 10px;font-size:12px;gap:10px"><b style="min-width:90px">${fmt(c.amount)}</b><span style="color:var(--ink-soft)">${(c.date||"").split("-").reverse().join("/")}</span><span style="flex:1;color:var(--ink-faint)">${c.note||""}</span><button style="color:var(--ink-faint)" title="Quitar este cobro" onclick="cobroDel(${e.id},${i})">✕</button></div>`).join("")}</div>`:`<p style="font-size:11.5px;color:var(--ink-faint);margin:8px 0">No hay un desglose de cobros registrado.</p>`}
   ${pend>0?`<label>Nuevo cobro</label>
   <div class="row2"><div><label style="font-size:10px">Importe (€)</label><input id="cbImp" type="number" step="0.01" min="0" value="${pend.toFixed(2)}"></div><div><label style="font-size:10px">Fecha</label><input id="cbDate" type="date" value="${hoy}"></div></div>
   <label style="font-size:10px">Nota <small style="text-transform:none;letter-spacing:0">(transferencia, Bizum, efectivo, «a cuenta»…)</small></label><input id="cbNote" placeholder="Transferencia">
   <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${[25,50,100].map(p=>`<button class="chip neutral" onclick="document.getElementById('cbImp').value=(${tot}*${p}/100).toFixed(2)">${p} % del total</button>`).join("")}<button class="chip neutral" onclick="document.getElementById('cbImp').value='${pend.toFixed(2)}'">Todo lo pendiente</button></div>`:`<p style="font-size:12px;color:#2E6B4F;font-weight:800;margin-top:6px">✓ Cobrada del todo</p>`}
-  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>${pend>0?`<button class="btn btn-dark" onclick="cobroAdd(${e.id})">Registrar cobro</button>`:""}</div>`);
+  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>${pend>0?`<button class="btn btn-dark" onclick="cobroAdd(${e.id})">Registrar cobro</button>`:""}</div></div>`);
 }
 function cobroAdd(entryId){
   const e=state.entries.find(x=>x.id===entryId); if(!e) return;
@@ -6275,7 +6279,7 @@ function invoiceListHtml(){
   const clientesF=[...new Set(all.map(x=>x.client).filter(Boolean))].sort();
   const activo = FF.from||FF.to||FF.client||FF.status;
   const nEnt=all.filter(x=>x.kind==="ent").length;
-  return `<h2 class="sec">Facturas emitidas <span class="sec-note">${all.length} en total${nEnt?` · ${nEnt} registrada${nEnt===1?"":"s"} solo en Contabilidad`:""}</span></h2>
+  return `<h2 class="sec">Facturas emitidas <span class="sec-note">${all.length} en total</span></h2>
         <div class="flt" style="display:flex;align-items:flex-end;gap:12px;margin:0 0 10px;flex-wrap:wrap">
           <div><label>Desde</label><input id="fltFrom" type="date" value="${FF.from}" onchange="state.fFilter.from=this.value;render()"></div>
           <div><label>Hasta</label><input type="date" data-after="fltFrom" min="${FF.from||""}" value="${FF.to}" onchange="state.fFilter.to=this.value;render()"></div>
@@ -6283,12 +6287,20 @@ function invoiceListHtml(){
           <div><label>Estado</label><select onchange="state.fFilter.status=this.value;render()"><option value="">Todos</option><option value="pend" ${FF.status==="pend"?"selected":""}>Pendiente</option><option value="parc" ${FF.status==="parc"?"selected":""}>Cobrada en parte</option><option value="cobr" ${FF.status==="cobr"?"selected":""}>Cobrada</option><option value="venc" ${FF.status==="venc"?"selected":""}>Vencida</option></select></div>
           ${activo?`<button class="btn btn-ghost" onclick="state.fFilter={from:'',to:'',client:'',status:''};render()">✕ Limpiar</button>`:""}
         </div>
-        ${rows.length?`<table class="list"><tbody>${rows.slice(0,state.invN||10).map(x=>{ const pr=x.pid&&state.projects.find(p=>p.id===x.pid); const est=entryEst(x.e);
-          const btns = x.kind==="doc"
-            ? `<button class="btn btn-ghost" title="Ver / descargar el PDF" onclick="portalInvoicePrint('${x.ref}')">${ico("pdf")} PDF</button> ${x.e?`<button class="btn btn-ghost" title="Registrar un cobro total o a cuenta" onclick="cobrosModal(${x.e.id})">€ Cobros</button> `:""}<button class="btn btn-ghost" onclick="loadDoc(${x.i},'factura')">✎ Editar</button> <button class="btn btn-ghost" title="Guardar en los archivos de un proyecto" onclick="docToProject('factura',${x.i})">${ico("mas")} A proyecto</button> <button class="btn btn-ghost" style="color:var(--red-ink)" title="Eliminar la factura y su ingreso" onclick="delInvoice('${x.ref}')">${ico("eliminar")}</button>`
-            : `${x.e.file?`<button class="btn btn-ghost" title="Ver / descargar el archivo adjunto" onclick="gastoFile(${x.e.id})">${ico("factura")} Archivo</button> `:`<button class="btn btn-ghost" title="Adjuntar el PDF de esta factura" onclick="gastoFile(${x.e.id})">${ico("factura")} Adjuntar</button> `}<button class="btn btn-ghost" title="Registrar un cobro total o a cuenta" onclick="cobrosModal(${x.e.id})">€ Cobros</button> <button class="btn btn-ghost" onclick="editEntry(${x.e.id})">✎ Editar</button> <button class="btn btn-ghost" style="color:var(--red-ink)" title="Eliminar este ingreso" onclick="delEntry(${x.e.id})">${ico("eliminar")}</button>`;
-          return `<tr><td><b>${x.ref}</b>${x.kind==="ent"?`<br><span class="chip neutral" style="font-size:10px" title="Este ingreso es una factura hecha fuera de la app o anterior: no tiene documento aquí, pero cuenta igual">Solo en Contabilidad</span>`:""}</td><td>${(x.date||"").split("-").reverse().join("/")}</td><td>${x.client}${pr?`<br><span class="chip neutral" style="font-size:10px;cursor:pointer" title="Abrir el proyecto" onclick="state.projTab='fin';go('proyecto',${pr.id})">📁 ${pr.num}</span>`:""}</td><td><span class="chip ${(BRAND[x.brand]||{}).chip||'cm'}">${(BRAND[x.brand]||{}).name||""}</span></td><td><span class="chip" style="background:${est[1]};white-space:nowrap">${est[0]}</span></td><td style="text-align:right;font-weight:800">${fmt(x.total)}</td>
-        <td style="text-align:right;white-space:nowrap">${btns}</td></tr>`; }).join("")}</tbody></table>${rows.length>(state.invN||10)?`<button class="addtask" style="margin-top:8px" onclick="state.invN=(state.invN||10)+10;render()">${ico("mas")} Cargar 10 más (${rows.length-(state.invN||10)} restantes)</button>`:""}`:`<div class="empty">Ninguna factura coincide con los filtros.</div>`}`;
+        ${rows.length?`<div class="invoice-table-scroll"><table class="list invoice-table"><thead><tr><th>Factura</th><th>Fecha</th><th>Cliente / proyecto</th><th>Estudio</th><th>Estado</th><th>Importe</th><th>Acciones</th></tr></thead><tbody>${rows.slice(0,state.invN||10).map(x=>{ const pr=x.pid&&state.projects.find(p=>p.id===x.pid); const est=entryEst(x.e);
+          const rowIndex=all.indexOf(x);
+          const btns = `<div class="invoice-actions"><button class="btn btn-ghost" title="Ver el documento o adjuntar el original" onclick="invoiceRowAction(${rowIndex},'documento')">${ico("factura")} Documento</button><button class="btn btn-ghost" ${x.e?'':'disabled title="Sin ingreso asociado"'} onclick="invoiceRowAction(${rowIndex},'cobros')">€ Cobros</button><button class="btn btn-ghost" onclick="invoiceRowAction(${rowIndex},'editar')">✎ Editar</button><button class="btn btn-ghost" aria-label="Más opciones de ${x.ref}" onclick="invoiceRowAction(${rowIndex},'mas')">··· Más</button></div>`;
+          return `<tr><td><b>${x.ref}</b></td><td>${(x.date||"").split("-").reverse().join("/")}</td><td>${x.client}${pr?`<br><span class="chip neutral" style="font-size:10px;cursor:pointer" title="Abrir el proyecto" onclick="state.projTab='fin';go('proyecto',${pr.id})">📁 ${pr.num}</span>`:""}</td><td><span class="chip ${(BRAND[x.brand]||{}).chip||'cm'}">${(BRAND[x.brand]||{}).name||""}</span></td><td><span class="chip" style="background:${est[1]};white-space:nowrap">${est[0]}</span></td><td class="invoice-amount">${fmt(x.total)}</td>
+        <td style="text-align:right;white-space:nowrap">${btns}</td></tr>`; }).join("")}</tbody></table></div>${rows.length>(state.invN||10)?`<button class="addtask" style="margin-top:8px" onclick="state.invN=(state.invN||10)+10;render()">${ico("mas")} Cargar 10 más (${rows.length-(state.invN||10)} restantes)</button>`:""}`:`<div class="empty">Ninguna factura coincide con los filtros.</div>`}`;
+}
+function invoiceRowAction(index,action){
+  const x=invoiceRows()[index]; if(!x)return;
+  if(action==="documento")return x.kind==="doc"?portalInvoicePrint(x.ref):gastoFile(x.e.id);
+  if(action==="cobros")return x.e&&cobrosModal(x.e.id);
+  if(action==="editar")return x.kind==="doc"?loadDoc(x.i,'factura'):editEntry(x.e.id);
+  if(action==="proyecto"){closeModal();return docToProject('factura',x.i);}
+  if(action==="eliminar"){closeModal();return x.kind==="doc"?delInvoice(x.ref):delEntry(x.e.id);}
+  modal(`<h3>Opciones de la factura</h3><div class="invoice-more">${x.kind==="doc"?`<button class="btn btn-ghost" onclick="invoiceRowAction(${index},'proyecto')">Guardar PDF en un proyecto</button>`:`<button class="btn btn-ghost" onclick="closeModal();invoiceRowAction(${index},'editar')">Editar datos y proyecto</button>`}<button class="btn btn-ghost" style="color:var(--red-ink)" onclick="invoiceRowAction(${index},'eliminar')">Eliminar factura</button></div><div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button></div>`);
 }
 function delInvoice(ref){
   const i=(state.invoices||[]).findIndex(f=>f.ref===ref); if(i<0){ toast("No encuentro la factura "+ref); return; }
@@ -11333,7 +11345,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.33";
+const MODERNO_VER="v3.33.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

@@ -80,3 +80,6 @@ Versión pública identificada como v3.30. Las denominaciones anteriores v3.30-r
 - Casado de proveedor con la agenda al leer facturas de gasto (`matchSupplier`).
 
 (Completar hacia atrás según los traspasos del Taller.)
+
+## v3.33.1 — Facturas y cobros
+Filas y acciones alineadas, importes sin saltos, eliminación de Solo en Contabilidad y ventana de cobros espaciosa que respeta facturas antiguas marcadas cobradas. 155 pruebas. Detalles: FACTURAS-V3331.md.

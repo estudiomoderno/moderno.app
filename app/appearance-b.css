@@ -219,3 +219,26 @@
  .login-brand {display:block;width:190px;height:auto;margin:0 auto;filter:none}
  body.dark .sidebar img.logo,body.dark #mHeader .mlogo {content:url("/brand/modernoapp-blanco.svg");filter:none}
 }
+
+/* Facturas: columnas estables y cobros legibles. */
+.invoice-table-scroll{overflow-x:auto;margin-top:20px}
+.invoice-table{min-width:1020px;width:100%}
+.invoice-table th{text-align:left;padding:12px 10px;color:var(--ink-soft);font-size:11px;font-weight:600}
+.invoice-table td{padding:18px 10px;vertical-align:middle}
+.invoice-table td:first-child,.invoice-table td:nth-child(2),.invoice-table .invoice-amount{white-space:nowrap}
+.invoice-table .invoice-amount{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.invoice-actions{display:grid;grid-template-columns:112px 86px 80px 72px;gap:6px;justify-content:end}
+.invoice-actions .btn{margin:0;justify-content:center;padding:9px 8px}
+.invoice-actions .btn:disabled{opacity:.45;cursor:default}
+.invoice-more{display:flex;flex-direction:column;gap:14px;margin-top:24px}
+#modalBox:has(.collections-dialog){width:640px;max-width:calc(100vw - 32px);padding:28px}
+.collections-description{font-size:13px;line-height:1.6;color:var(--ink-soft);margin:12px 0 20px}
+.collections-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0}
+.collections-summary>div{background:var(--card);border-radius:12px;padding:16px}
+.collections-summary span{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:10px}
+.collections-summary b{white-space:nowrap;font-size:18px;font-variant-numeric:tabular-nums}
+.collections-notice{padding:16px;background:var(--card);border-radius:12px;font-size:13px;line-height:1.6;margin:20px 0}
+.collections-dialog>.row2{gap:16px;margin:16px 0}
+.collections-dialog .modal-foot{margin-top:28px;gap:12px}
+.collections-dialog label{margin-top:18px;margin-bottom:8px}
+@media(max-width:540px){.collections-summary{grid-template-columns:1fr}.collections-summary>div{display:flex;justify-content:space-between;align-items:center}.collections-summary span{margin:0}#modalBox:has(.collections-dialog){padding:20px}}
