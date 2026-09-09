@@ -2,6 +2,8 @@
 
 ## v3.30.1 — recuperación de espacio local
 
+Publicada el 9/9/2026. HTML y módulos comparados con el código probado; recuperación del acceso y descarga de una copia archivada comprobadas en navegador.
+
 - Si las copias pendientes llenan localStorage, se archivan en IndexedDB y se verifica cada contenido antes de sustituirlo por una referencia pequeña. Todas siguen disponibles para descargar; no se eliminan copias ni se aplican sobre la nube.
 - La entrada de sesión espera a la comprobación de acceso antes de programar la escritura local.
 - 127 pruebas automáticas correctas, incluidas fallas de almacenamiento y cambios simultáneos en copias.
