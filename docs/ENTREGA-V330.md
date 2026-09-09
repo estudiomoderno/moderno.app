@@ -1,4 +1,17 @@
-# Entrega v3.30 — preparada, pendiente del corte
+# Entrega v3.30 — publicada el 9 de septiembre de 2026
+
+## Resultado de publicación
+
+- Publicada en `https://app.moderno.app/`. Código de aplicación `1bc6a7d`; ajuste del workflow `8421f83`.
+- [Despliegue 34370512628](https://github.com/estudiomoderno/moderno.app/actions/runs/34370512628) completado correctamente. El primer intento se detuvo antes de subir archivos porque el checkout superficial no contenía el commit usado por la prueba de transición. Se corrigió con `fetch-depth: 0`, conservando todas las pruebas.
+- Equipo confirmó guardado y cierre de sesiones. Autorizó expresamente cambios de funciones, políticas, disparadores, tablas de clasificación y privacidad.
+- Respaldo previo y comparación posterior comprobados. Los respaldos y el informe operativo detallado se conservan fuera del repositorio público.
+- Paquete SQL SHA-256 `6a5280ec51df13fab2921c4c5af6aa0e69a660fbae383d67ab79894c656cba39` aplicado correctamente en una transacción. Funciones `portal-archivo` e ICS desplegadas; validan sus propios tokens.
+- Almacén `archivos` cambiado de público a privado después de publicar el cliente y las funciones. Sin borrar, mover ni reemplazar objetos. Una ruta existente rechaza acceso público.
+- HTTP 200 y contenido exacto del candidato para `index.html` y los cuatro módulos JavaScript. Portal con token inválido: 403; ICS con token inválido: 404.
+- Acceso, estado de sincronización, apertura y descarga de PDF comprobados. Las escrituras y restricciones por rol se probaron con identidades ficticias en un entorno aislado.
+- Las copias locales pendientes deben conservarse y revisarse aparte, sin aplicarlas automáticamente sobre la nube.
+- Se avisó al equipo de que podía volver a entrar tras estas comprobaciones. Google Calendar continúa aplazado.
 
 ## Comprobaciones del 9 de septiembre de 2026
 
@@ -22,6 +35,6 @@
 5. Coordinar privacidad de Storage con el cliente y las funciones ya disponibles. No mover ni reemplazar objetos.
 6. Verificar versión pública, carga de recursos, acceso, guardado y apertura de archivos antes de pedir al equipo que retome el trabajo.
 
-Estado: estos cambios aún no están desplegados en producción. La confirmación del corte es un requisito operativo, no una nueva autorización para desarrollar o publicar.
+Estado: corte realizado y versión publicada. La secuencia anterior queda como guía para próximas entregas; las comprobaciones iniciales describen el ensayo previo.
 
 Referencia de las opciones FTP usadas: [documentación de FTP-Deploy-Action v4.3.5](https://github.com/SamKirkland/FTP-Deploy-Action/tree/v4.3.5).

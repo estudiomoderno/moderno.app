@@ -1,6 +1,6 @@
 # Estado inicial de TALLER — 9 septiembre 2026
 
-Estado de publicación vigente: [Entrega v3.30](ENTREGA-V330.md). Paquete preparado, pruebas reales en clon y copia nueva verificada; pendiente del corte coordinado.
+Estado de publicación vigente: [Entrega v3.30](ENTREGA-V330.md). Publicada el 9/9/2026, permisos instalados, archivos privados y acceso/descarga comprobados. Equipo avisado para reanudar. Los apartados siguientes son históricos.
 
 Último ensayo de permisos: [archivos y calendario](VALIDACION-ARCHIVOS-CALENDARIO.md), 118 pruebas locales y 38 comprobaciones SQL en el clon; candidato todavía sin publicar.
 
