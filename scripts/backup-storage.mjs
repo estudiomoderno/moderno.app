@@ -28,7 +28,7 @@ export async function backup(run, bucket, id) {
   await run(['rcat', `${root}/COMPLETE.json`], JSON.stringify({ version: 1, verifiedAt: new Date().toISOString(), count: after.length }));
 }
 
-function rclone(args, input) {
+export function rclone(args, input) {
   return new Promise((resolve, reject) => {
     const child = spawn('rclone', [...args, '--log-level', 'ERROR', '--stats', '0'], { stdio: ['pipe', 'pipe', 'pipe'] });
     let output = '';

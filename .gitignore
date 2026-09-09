@@ -4,6 +4,7 @@
 !.env.example
 *.pem
 *.key
+gha-creds-*.json
 
 # Sistema
 .DS_Store

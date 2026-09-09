@@ -1,6 +1,6 @@
 # Preparación de copias de archivos
 
-Estado: programa preparado, no conectado ni programado. No hay copia real verificada todavía.
+Estado: programa preparado y workflow manual de comprobación. No hay copia real verificada ni programación automática todavía.
 
 Requiere Node.js 22+, rclone y dos conexiones mediante variables de entorno: origen S3 compatible y destino Google Drive privado. La cuenta de servicio de Google necesita acceso al destino autorizado y Drive API habilitada. Los secretos no pertenecen al repositorio.
 
@@ -29,5 +29,18 @@ La copia completa y su comprobación consumen transferencia; definir frecuencia 
 
 Referencias: https://rclone.org/drive/ y https://supabase.com/docs/guides/storage/s3/authentication
 
-Alternativa sin clave privada de Google: federación de identidad con GitHub y token OAuth temporal en RCLONE_CONFIG_DESTINATION_TOKEN (JSON rclone). En este modo no se necesita RCLONE_CONFIG_DESTINATION_SERVICE_ACCOUNT_CREDENTIALS. Restringir confianza al repositorio y workflow de copias en main; limitar la ejecución a la duración del token. La federación y la programación todavía no están configuradas.
+Alternativa sin clave privada de Google: federación de identidad con GitHub y token OAuth temporal en RCLONE_CONFIG_DESTINATION_TOKEN (JSON rclone). En este modo no se necesita RCLONE_CONFIG_DESTINATION_SERVICE_ACCOUNT_CREDENTIALS. Restringir confianza al repositorio y workflow de copias en main; limitar la ejecución a la duración del token.
+
+## Ejecución en GitHub
+
+El workflow `backup-storage.yml` solo admite ejecuciones manuales en `main`, con exclusión mutua y un máximo de 50 minutos. El token de Google dura una hora. No se programa hasta validar la primera copia real y su volumen.
+
+Configurar dos secretos JSON en Actions, nunca como archivos del repositorio:
+
+- `BACKUP_GOOGLE_CONFIG`: `project_id`, `provider`, `service_account`, `folder_id`, `team_drive`.
+- `BACKUP_SOURCE_CONFIG`: `bucket`, `endpoint`, `region`, `access_key_id`, `secret_access_key`.
+
+El proveedor de Google debe comprobar los ID numéricos del propietario y repositorio, `ref == refs/heads/main` y el `workflow_ref` exacto. Mapear `google.subject = assertion.sub` y otorgar `roles/iam.workloadIdentityUser` sobre la cuenta de servicio únicamente al sujeto del repositorio en main. Habilitar Drive API y las API de IAM, STS y credenciales de cuenta de servicio. La cuenta necesita acceso de colaborador a la carpeta privada autorizada.
+
+Ejecutar primero el modo `test-drive`: crea dos archivos sintéticos, los copia y verifica, los descarga a un directorio temporal y compara los bytes. Las carpetas `prueba-*` quedan en Drive como evidencia y no contienen datos reales. Después ejecutar `backup`. Una prueba sintética correcta no demuestra que el origen real esté configurado ni sustituye una primera copia completa.
 
