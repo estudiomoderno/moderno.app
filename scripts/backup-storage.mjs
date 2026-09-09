@@ -33,10 +33,14 @@ export function rclone(args, input) {
     const child = spawn('rclone', [...args, '--log-level', 'ERROR', '--stats', '0'], { stdio: ['pipe', 'pipe', 'pipe'] });
     let output = '';
     child.stdout.on('data', data => { output += data; });
-    // Do not publish object names, URLs or provider errors in public CI logs.
-    child.stderr.resume();
+    // Publish only known error categories, never object names or provider payloads.
+    let diagnostic = '';
+    child.stderr.on('data', data => { diagnostic = (diagnostic + data).slice(-8192); });
     child.on('error', () => reject(new Error('Cannot start rclone')));
-    child.on('close', code => code === 0 ? resolve(output) : reject(new Error(`Backup step ${args[0]} failed`)));
+    child.on('close', code => {
+      const category = diagnostic.match(/accessNotConfigured|insufficientFilePermissions|teamDriveMembershipRequired|notFound|invalid_grant|unauthorized_client|insufficientPermissions|rateLimitExceeded|storageQuotaExceeded|directory not found|couldn't find root directory|empty token|failed to get token|didn't find section in config file/i)?.[0] ?? 'unclassified';
+      code === 0 ? resolve(output) : reject(new Error(`Backup step ${args[0]} failed (${category})`));
+    });
     child.stdin.on('error', () => {});
     child.stdin.end(input);
   });

@@ -24,7 +24,8 @@ try {
     if (!(await readFile(join('restored', path))).equals(expected)) throw new Error('Synthetic restore verification failed');
   }
   console.log('Synthetic copy and restore verified.');
-} catch {
+} catch (error) {
+  console.error(error.message);
   console.error('Synthetic copy or restore failed. No production data was changed.');
   process.exitCode = 1;
 } finally {
