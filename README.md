@@ -54,3 +54,7 @@ Si Git no encuentra git-remote-https, usar el adaptador incluido:
     ./scripts/git-codex.ps1 push -u origin taller
 
 Usa Git Credential Manager para iniciar sesión; no incluir credenciales en archivos. En una instalación completa de Git se pueden usar los comandos git habituales.
+
+## Candidato de operativa diaria
+
+La primera tanda aprobada está en v3.31-operativa-pruebas, rama local taller-operativa-20260909. Consultar [alcance, pruebas y publicación pendiente](docs/OPERATIVA-DIARIA.md). Incluye como base el candidato de protección anterior; no equivale a la versión publicada.

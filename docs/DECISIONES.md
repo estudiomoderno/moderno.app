@@ -68,3 +68,9 @@ El usuario autoriza que TALLER desarrolle, compruebe y publique las modificacion
 
 - El usuario confirma que Google Calendar nunca llegó a conectarse y decide hacerlo más adelante. Queda fuera de la actualización de protección; no exigir sus fuentes ni una cuenta para probar Calendar como condición para publicarla.
 - Esta decisión no aplaza la validación del inicio de sesión, el correo incluido en la entrega ni la coordinación de sesiones del piloto. La función calendario-ics recuperada es un flujo distinto de la integración pendiente con Google Calendar.
+
+## 2026-09-09 — Primera tanda de operativa aprobada
+
+- El usuario aprueba prioridades/fechas, apertura directa de tareas, estado fiel de guardado, búsquedas claras, nombres en español y encabezado móvil compacto.
+- Rama taller-operativa-20260909 sobre d28c710, que conserva las protecciones previas. La entrega operativa se registra aparte; no publicar incidentalmente sus antecesores todavía pendientes de transición.
+- Sin integraciones, planes, cobros, nueva gestión de visibilidad de archivos ni formulario breve de tareas. Alcance, pruebas y bloqueo de publicación en OPERATIVA-DIARIA.md.

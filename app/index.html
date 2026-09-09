@@ -889,6 +889,19 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 .acc-sticky .acc-top .flt{flex:1;min-width:220px;margin:0}
 .acc-sticky .addtask{width:auto;flex:none;padding:8px 14px;background:var(--gold);color:var(--ink);border:1.5px solid var(--gold);font-weight:800}
 @media (max-width:810px){ .acc-sticky{top:74px} }
+
+/* Primera tanda operativa: conserva los colores y componentes existentes. */
+.task-due{display:inline-block;font-size:12px;font-weight:700;padding:4px 7px;border-radius:8px;background:var(--card);color:var(--ink);margin:4px 0}
+.task-due.overdue{background:#F6DBD7;color:#842E24}.task-due.today{background:#FFF1A8;color:#51420A}
+.daily-entry{width:100%;text-align:left;background:var(--white);cursor:pointer;flex-wrap:wrap;border:0;font:inherit}.daily-entry b{flex:1 1 190px}.daily-who{font-size:11px;color:var(--ink-soft)}
+.daily-scope{margin-bottom:10px}.daily-filter-info{font-size:12px;color:var(--ink-soft);margin:10px 0;display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.project-options{position:absolute;top:22px;right:22px}.project-options summary{display:inline-flex;min-height:40px}.project-options-body{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;padding:8px;background:var(--white);border-radius:12px;box-shadow:var(--shadow)}.project-options:not([open])>.project-options-body{display:none}
+@media(min-width:811px){.proj-head h1{padding-right:210px}}
+@media(max-width:810px){.proj-head{padding:14px 16px;margin-top:10px;border-radius:20px}.proj-head h1{font-size:23px;line-height:1.15;overflow-wrap:anywhere;margin:8px 0}.proj-head .btn{font-size:12px;padding:8px 10px}.project-options{position:static;margin-top:8px}.project-options summary{display:inline-flex;min-height:40px}.project-options:not([open])>.project-options-body{display:none}.project-options-body{margin-top:8px;flex-wrap:wrap}.proj-head+.pill-tabs{margin:14px 0!important}.daily-entry{gap:6px}}
+
+#syncTag{pointer-events:auto;border:1px solid var(--line);border-radius:14px;background:var(--white);color:var(--ink);padding:8px 10px;max-width:calc(100vw - 28px);cursor:pointer;min-height:38px}
+#syncTag .txt{display:inline;background:none;box-shadow:none;padding:0;border-radius:0}#syncTag.pending .dot{background:#B8860B}#syncTag.err{color:var(--red-ink)}
+#cloudPendingCopies{max-width:min(400px,calc(100vw - 32px))!important;box-sizing:border-box;max-height:65vh;overflow:auto;bottom:62px!important}#cloudPendingCopies button{margin:6px 4px 0 0;padding:8px}
 </style>
 </head>
 <body>
@@ -918,12 +931,12 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
     </div>
 
     <div class="nav-group">
-      <button class="nav-item" data-view="home" style="padding-left:10px;font-weight:800"><span class="ico i-home" style="opacity:1"></span> <b>Home</b></button>
+      <button class="nav-item" data-view="home" style="padding-left:10px;font-weight:800"><span class="ico i-home" style="opacity:1"></span> <b>Inicio</b></button>
     </div>
     <div class="nav-group" id="ngCrear">
       <div class="nav-head" onclick="document.getElementById('ngCrear').classList.toggle('closed')"><span class="ico-h"></span> Mi Trabajo <span class="chev">▾</span></div>
       <div class="nav-sub">
-        <button class="nav-item" data-view="workspace"><span class="ico i-ws"></span> Workspace</button>
+        <button class="nav-item" data-view="workspace"><span class="ico i-ws"></span> Mis tareas</button>
         <button class="nav-item" data-view="biblioteca"><span class="ico i-bib"></span> Biblioteca</button>
         <button class="nav-item" data-view="proyectos"><span class="ico i-pro"></span> Proyectos</button>
         <button class="nav-item" data-view="compras"><span class="ico i-comp"></span> Compras</button>
@@ -943,7 +956,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
       </div>
     </div>
     <div class="nav-group" id="ngTools">
-      <div class="nav-head" onclick="document.getElementById('ngTools').classList.toggle('closed')"><span class="ico-t"></span> Tools <span class="chev">▾</span></div>
+      <div class="nav-head" onclick="document.getElementById('ngTools').classList.toggle('closed')"><span class="ico-t"></span> Herramientas <span class="chev">▾</span></div>
       <div class="nav-sub">
         <button class="nav-item" data-view="integraciones"><span class="ico" style="display:inline-flex"><svg class="svgi" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 7h3a1 1 0 0 0 1 -1v-1a2 2 0 0 1 4 0v1a1 1 0 0 0 1 1h3a1 1 0 0 1 1 1v3a1 1 0 0 0 1 1h1a2 2 0 0 1 0 4h-1a1 1 0 0 0 -1 1v3a1 1 0 0 1 -1 1h-3a1 1 0 0 1 -1 -1v-1a2 2 0 0 0 -4 0v1a1 1 0 0 1 -1 1h-3a1 1 0 0 1 -1 -1v-3a1 1 0 0 1 1 -1h1a2 2 0 0 0 0 -4h-1a1 1 0 0 1 -1 -1v-3a1 1 0 0 1 1 -1" /></svg></span> Integraciones</button>
         <button class="nav-item" data-view="plantillas"><span class="ico i-docs"></span> Plantillas y docs</button>
@@ -1001,6 +1014,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/sync-merge.js?v=20260909"></script>
 <script src="/private-files.js?v=20260909"></script>
+<script src="/daily-work.js?v=20260909"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -4092,7 +4106,7 @@ const I18N = { es: { __on:true,
   "portal.titulo": "Portal del cliente", "portal.solo_lectura": "Portal de solo lectura",
   "portal.pagar_hito": "Pagar hito \u2014 pr\u00f3ximamente",
   "comun.duplicar":"Duplicar","comun.cerrar":"Cerrar","comun.enviar":"Enviar","comun.nuevo":"Nuevo","comun.descargar":"Descargar","comun.pantalla_completa":"Pantalla completa","comun.proximamente":"Pr\u00f3ximamente","comun.idioma_ok":"Idioma guardado \u2713",
-  "menu.workspace":"Workspace","menu.biblioteca":"Biblioteca","menu.proyectos":"Proyectos","menu.compras":"Compras","menu.contactos":"Contactos","menu.calendario":"Calendario","menu.contabilidad":"Contabilidad","menu.informes":"Informes","menu.facturas":"Facturas","menu.presupuestos":"Presupuestos","menu.catalogo":"Cat\u00e1logo","menu.integraciones":"Integraciones","menu.plantillas":"Plantillas y docs","menu.utilidades":"Utilidades",
+  "menu.workspace":"Mis tareas","menu.biblioteca":"Biblioteca","menu.proyectos":"Proyectos","menu.compras":"Compras","menu.contactos":"Contactos","menu.calendario":"Calendario","menu.contabilidad":"Contabilidad","menu.informes":"Informes","menu.facturas":"Facturas","menu.presupuestos":"Presupuestos","menu.catalogo":"Cat\u00e1logo","menu.integraciones":"Integraciones","menu.plantillas":"Plantillas y docs","menu.utilidades":"Utilidades",
   "tabs.tareas":"Tareas","tabs.listas":"Listas de compra","tabs.obra":"Seguimiento de obra","tabs.archivos":"Archivos y notas","tabs.fin":"Finanzas","tabs.cliente":"Cliente","tabs.chat":"Conversaci\u00f3n","tabs.resumen":"Resumen",
   "pdf.factura":"Factura","pdf.concepto":"Concepto","pdf.uds":"Uds","pdf.precio":"Precio","pdf.importe":"Importe","pdf.total":"Total","pdf.transferencia":"Transferencia","pdf.pagada":"Pagada","pdf.pendiente":"Pendiente",
   "portal.avanza":"As\u00ed avanza tu proyecto","portal.listas":"Tus listas de la compra","portal.facturas":"Tus facturas","portal.conversacion":"Conversaci\u00f3n con tu estudio","portal.escribe":"Escribe a tu estudio\u2026","portal.docs":"Documentos compartidos","portal.resumen_eco":"Resumen econ\u00f3mico","portal.presupuesto":"Presupuesto del proyecto","portal.pagado_hoy":"Pagado hasta hoy","portal.completada":"Completada \u2713","portal.en_curso":"En curso","portal.pendiente":"Pendiente","portal.aprobar":"\u2713 Aprobar","portal.pieza":"pieza","portal.piezas":"piezas","portal.hola":"\u00a1Hola","portal.bienvenida":"Aqu\u00ed puedes seguir tu proyecto y aprobar las piezas que te proponemos."
@@ -4274,7 +4288,7 @@ function vAjustes(){
         const raw = localStorage.getItem(LS_KEY);
         const kb = raw ? Math.round(raw.length/1024) : 0;
         return raw
-          ? `Guardado autom\u00e1tico <b>activo</b> en este navegador \u00b7 ~${kb} KB${_lastSave?" \u00b7 \u00faltima vez "+_lastSave.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}):""}.${_saveErr?" <span style=\"color:var(--red-ink);font-weight:700\">\u26a0 El \u00faltimo guardado fall\u00f3 (\u00bfdemasiadas im\u00e1genes?).</span>":""} Los datos viven solo aqu\u00ed: exporta copias con frecuencia.`
+          ? `Guardado autom\u00e1tico <b>activo</b> en este navegador \u00b7 ~${kb} KB${_lastSave?" \u00b7 \u00faltima vez "+_lastSave.toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"}):""}.${_saveErr?" <span style=\"color:var(--red-ink);font-weight:700\">\u26a0 El \u00faltimo guardado fall\u00f3 (\u00bfdemasiadas im\u00e1genes?).</span>":""} Consulta el estado de guardado para comprobar la nube y descargar copias pendientes.`
           : "Guardado autom\u00e1tico activo: en cuanto toques algo, tus datos quedan guardados en este navegador entre sesiones. Exporta copias con frecuencia.";
       })()}</p>
       <div class="entry-col">
@@ -4511,9 +4525,16 @@ function notifModal(){
     <button class="btn btn-dark" onclick="state.notifs.forEach(n=>n.read=true);notifBadge();closeModal()">Marcar leídas y cerrar</button>
   </div>`);
 }
+function dailyTaskCards(projs,mine=state.wsMine!==false){
+  const day=ModernoDaily.today();
+  return projs.flatMap(p=>(p.tasks||[]).map((t,i)=>({p,t,i}))).filter(c=>c.t.col!=="listo"&&!c.t.done&&(!mine||ModernoDaily.isMine(taskAssignees(c.t),meName(),meMail()))).sort((a,b)=>ModernoDaily.compare(a,b,day));
+}
+function dailyDue(t){const d=ModernoDaily.due(t.due);return '<span class="task-due '+d.kind+'">'+d.label+(d.date?' · '+d.date.split('-').reverse().join('/'):'')+'</span>';}
+function dailyScope(){return '<div class="opt-pills daily-scope"><button class="'+(state.wsMine!==false?'on':'')+'" onclick="state.wsMine=true;render()">Mis tareas</button><button class="'+(state.wsMine===false?'on':'')+'" onclick="state.wsMine=false;render()">Todas las tareas</button></div>';}
+function openDailyTask(pid,idx){const p=state.projects.find(x=>x.id===pid);if(!p||!p.tasks[idx])return;state.projTab='tareas';go('proyecto',pid);taskModal(pid,idx);}
 function vHome(){
   const projs = byBrand(state.projects.filter(p=>!p.tpl && p.status!=="Archivado"));
-  const pendTasks = projs.flatMap(p=>p.tasks.filter(t=>t.col!=="listo").map(t=>({...t,proj:p})));
+  const pendTasks = dailyTaskCards(projs);
   const now = new Date();
   const dayName = now.toLocaleDateString("es-ES",{weekday:"long"});
   const monName = now.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
@@ -4558,12 +4579,13 @@ function vHome(){
   </div>`:""})()}
   <div class="home-grid" style="grid-template-columns:1.15fr 1fr">
     <div class="widget" style="border:1.5px solid #E2E2E0">
-      <div class="wh" style="align-items:center"><span style="display:flex;align-items:center;gap:9px;font-size:16px">${ico("tpend","lg")} Tareas pendientes (${pendTasks.length})</span><i onclick="go('workspace')" style="cursor:pointer">Ver todas</i></div>
-      ${pendTasks.length? pendTasks.map(t=>`
-        <div class="entry" style="background:var(--white)" onclick="go('proyecto',${t.proj.id})">
-          <b>${t.title}</b> <span class="chip ${BRAND[t.proj.brand].chip}">${t.proj.num} ${t.proj.name}</span>
+      <div class="wh" style="align-items:center"><span style="display:flex;align-items:center;gap:9px;font-size:16px">${ico("tpend","lg")} ${state.wsMine!==false?"Mis tareas pendientes":"Tareas del equipo"} (${pendTasks.length})</span><i onclick="go('workspace')" style="cursor:pointer">Ver todas</i></div>
+      ${dailyScope()}
+      ${pendTasks.length? pendTasks.map(({p,t,i})=>`
+        <button class="entry daily-entry" onclick="openDailyTask(${p.id},${i})">
+          <b>${ModernoDaily.escape(t.title)}</b> ${dailyDue(t)} <span class="chip ${BRAND[p.brand].chip}">${ModernoDaily.escape(p.num+" "+p.name)}</span><span class="daily-who">${ModernoDaily.escape(taskAssignees(t).join(", ")||"Sin asignar")}</span>
           ${t.amount?`<span class="amt in">${fmt(t.amount)}</span>`:""}
-        </div>`).join("") : `<div class="empty">Nada pendiente. Día limpio.</div>`}
+        </button>`).join("") : `<div class="empty">${state.wsMine!==false?"No tienes tareas pendientes asignadas. Puedes consultar Todas las tareas.":"No hay tareas pendientes en estos proyectos."}</div>`}
     </div>
     <div class="widget">
       <div class="wh"><span>Acceso rápido</span></div>
@@ -4975,45 +4997,39 @@ function folderCard(p){
   </div>`;
 }
 
-function wsProjPick(v){
-  v=(v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const act = state.projects.filter(x=>!x.tpl && x.status!=="Archivado");
-  if(!v){ state.wsProj="all"; render(); return; }
-  const p = act.find(x=>(x.num+" "+x.name).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===v) || act.find(x=>(x.num+" "+x.name).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(v));
-  state.wsProj = p ? String(p.id) : "all";
-  render();
-}
+function wsProjPick(v){state.wsQuery=String(v||'').trim();state.wsProj='all';render();}
 function vWorkspace(){
   const projs = sortProjects(byBrand(state.projects.filter(p=>!p.tpl && p.status!=="Archivado")));
-  const sel = state.wsProj||"all";
-  const pool = sel==="all"? projs : projs.filter(p=>p.id===+sel);
+  const previous=projs.find(p=>String(p.id)===String(state.wsProj));
+  const query=state.wsQuery===undefined?(previous?previous.num+' '+previous.name:''):state.wsQuery;
+  const pool = projs.filter(p=>ModernoDaily.projectMatches(p,query));
   const mine = (state.wsMine!==false);
-  const me = meName(), meL=me.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""), mm=meMail();
-  const esMia = t => taskAssignees(t).some(a=>{ const x=String(a).trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); return x===meL || (mm && x===mm); });
-  const cards = pool.flatMap(p=>p.tasks.map((t,i)=>({p,t,i}))).filter(c=>!mine || esMia(c.t));
+  const cards = dailyTaskCards(pool,mine);
   return `<div class="ws-full">
-  <h1 class="big">Estas son tus tareas<br>pendientes${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
+  <h1 class="big">${mine?"Mis tareas":"Tareas del equipo"}<br><span class="sec-note">Primero lo que vence antes</span></h1>
   <div class="wsrow" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
     <div class="opt-pills" style="margin:0">
       <button class="${mine?"on":""}" onclick="state.wsMine=true;render()">Mis tareas</button>
-      <button class="${!mine?"on":""}" onclick="state.wsMine=false;render()">Todas</button>
+      <button class="${!mine?"on":""}" onclick="state.wsMine=false;render()">Todas las tareas</button>
     </div>
     <span style="flex:1"></span>
     <div style="position:relative;display:inline-flex;align-items:center">
       <span style="position:absolute;left:11px;display:inline-flex;color:var(--ink-faint);pointer-events:none">${ico("buscar")}</span>
-      <input id="wsProjBox" list="wsProjList" class="btn btn-ghost cmb" style="padding-left:34px;min-width:240px;text-align:left;cursor:text" placeholder="Todos los proyectos" value="${(function(){ if(sel==="all") return ""; const p=state.projects.find(x=>String(x.id)===String(sel)); return p?(p.num+" "+p.name):""; })()}" onchange="wsProjPick(this.value)">
+      <input id="wsProjBox" list="wsProjList" class="btn btn-ghost cmb" style="padding-left:34px;min-width:200px;text-align:left" aria-label="Filtrar proyectos" placeholder="Número, nombre o cliente" value="${ModernoDaily.escape(query)}" oninput="state.wsQuery=this.value;state.wsProj='all';renderKeep(this)">
       <datalist id="wsProjList">${projs.map(p=>`<option value="${p.num} ${p.name}">`).join("")}</datalist>
     </div>
     <button class="btn btn-ghost" onclick="newProjectModal()">${ico("mas")} Nuevo proyecto</button>
     <button class="btn btn-dark" onclick="wsNewTask('pend')">${ico("mas")} Nueva tarea</button>
   </div>
+  <div class="daily-filter-info" role="status">${pool.length} proyecto${pool.length===1?'':'s'} · ${cards.length} tarea${cards.length===1?'':'s'} pendiente${cards.length===1?'':'s'}${query?` · Filtro: «${ModernoDaily.escape(query)}» <button class="btn btn-ghost" onclick="wsProjPick('')">Limpiar búsqueda</button>`:''}</div>
+  ${!pool.length?'<div class="empty">No hay proyectos que coincidan con la búsqueda.</div>':!cards.length?'<div class="empty">No hay tareas pendientes para estos filtros. Revisa el proyecto o consulta Todas las tareas.</div>':''}
   <div class="kanban" style="grid-template-columns:repeat(3,minmax(0,1fr))">
     ${KCOLS.filter(c=>c[0]!=="listo").map(([key,label,color])=>`
       <div class="kcol" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="wsDrop(event,'${key}')">
         <h4><span class="kdot" style="background:${color}"></span>${label}<span class="n">${cards.filter(c=>c.t.col===key).length}</span></h4>
         ${cards.filter(c=>c.t.col===key).map(({p,t,i})=>`
           <div class="task" draggable="true" ondragstart="dragTask(event,${p.id},${i});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" style="background:${key==='pend'?'var(--gold-soft)':'var(--white)'}" onclick="taskModal(${p.id},${i})">
-            <div class="tt">${t.title}</div>
+            <div class="tt">${ModernoDaily.escape(t.title)}</div>${dailyDue(t)}
             <div class="tm"><span class="chip ${BRAND[p.brand].chip}">${p.num} ${p.name}</span><span class="chip cm" style="background:var(--card)">${t.type}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}${assigneeChips(t)}</div>
           </div>`).join("")}
         <button class="addtask" onclick="wsNewTask('${key}')">${ico("mas")} Nueva tarea</button>
@@ -5408,7 +5424,7 @@ function vProjects(){
   const timeMode = state.projView==="time";
   const buscador = `<div class="flt" style="position:relative;display:inline-flex;align-items:center">
     <span style="position:absolute;left:11px;display:inline-flex;color:var(--ink-faint)">${ico("buscar")}</span>
-    <input id="projQBox" value="${state.projQ||""}" placeholder="Buscar proyecto…" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
+    <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Número, nombre o cliente…" aria-label="Buscar proyecto" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
   </div>`;
   return `
   <h1 class="big" style="margin-bottom:22px">${arch?"Proyectos archivados":"Estos son tus proyectos"}${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
@@ -5419,11 +5435,13 @@ function vProjects(){
     <div class="brand-switch">
       <button class="${!listMode&&!timeMode?'on':''}" title="Cuadrícula" onclick="state.projView='grid';render()">${ico('grid')}</button>
       <button class="${listMode?'on':''}" title="Lista" onclick="state.projView='list';render()">${ico('list')}</button>
-      <button class="${timeMode?'on':''}" title="Timeline" onclick="state.projView='time';render()" ><svg class="svgi" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8"/><path d="M9 12h9"/><path d="M6 18h7"/><circle cx="16" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg></button>
+      <button class="${timeMode?'on':''}" title="Cronograma" onclick="state.projView='time';render()" ><svg class="svgi" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8"/><path d="M9 12h9"/><path d="M6 18h7"/><circle cx="16" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg></button>
     </div>
     <button class="btn ${arch?'btn-dark':'btn-ghost'}" onclick="state.showArchived=!state.showArchived;render()">${ico('archivar')} Archivados</button>
     ${arch?"":`<button class="btn btn-dark" onclick="newProject()">${ico("mas")} Nuevo proyecto</button>`}
   </div>
+  <div class="daily-filter-info" role="status">${projs.length} resultado${projs.length===1?'':'s'}${PQ?` para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button>`:''}</div>
+  ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
   ${timeMode? vTimeline(projs.filter(x=>!x.tpl)) : listMode? `
   <table class="list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
     ${projs.length? projs.map(p=>{ const c=folderColors(p); return `<tr style="cursor:pointer" onclick="go('proyecto',${p.id})">
@@ -5437,16 +5455,16 @@ function vProjects(){
         <button class="btn btn-ghost" title="Duplicar" onclick="event.stopPropagation();duplicateProject(${p.id})">${ico('dup_proyecto')}</button>
         <button class="btn btn-ghost" title="Editar" onclick="event.stopPropagation();customizeModal(${p.id})">${ico('editar')}</button>
         <button class="btn btn-ghost" title="${arch?'Desarchivar':'Archivar'}" onclick="event.stopPropagation();toggleArchive(${p.id})">${arch?"↩":ico('archivar')}</button>
-      </td></tr>`}).join("") : `<tr><td colspan="7"><div class="empty">${arch?"Nada archivado todavía.":"Sin proyectos."}</div></td></tr>`}
+      </td></tr>`}).join("") : `<tr><td colspan="7"><div class="empty">${PQ?"Sin resultados para esta búsqueda.":arch?"Nada archivado todavía.":"Sin proyectos."}</div></td></tr>`}
     ${archHits.length?`<tr><td colspan="7" style="padding-top:14px"><b style="font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em">Archivados</b></td></tr>${archHits.map(p=>`<tr style="cursor:pointer;opacity:.7" onclick="go('proyecto',${p.id})"><td></td><td><b>${p.num}</b> ${p.name}</td><td>${BRAND[p.brand]?.name||""}</td><td>${p.client||""}</td><td><span class="chip neutral">Archivado</span></td><td>${(p.tasks||[]).length}</td><td></td></tr>`).join("")}`:""}
   </tbody></table>`
   : `
   <div class="proj-grid">
     ${projs.map(folderCard).join("")}
-    ${arch? (projs.length?"":`<div class="empty" style="grid-column:1/-1">Nada archivado todavía.</div>`) : `<div class="folder add" onclick="newProject()">+</div>`}
+    ${arch? (projs.length||PQ?"":`<div class="empty" style="grid-column:1/-1">Nada archivado todavía.</div>`) : PQ&&!projs.length?"":`<div class="folder add" onclick="newProject()">+</div>`}
   </div>
   ${archHits.length?`<h2 class="sec" style="margin-top:22px">Archivados <span class="sec-note">${archHits.length} coincidencia${archHits.length===1?"":"s"}</span></h2><div class="proj-grid">${archHits.map(folderCard).join("")}</div>`:""}`}
-  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">Pasa el ratón por una carpeta: se abre, y aparecen duplicar ⧉ y editar ✎. Al terminar un proyecto, márcalo <b>Archivado</b> (desde su detalle o desde la vista de lista) y saldrá de aquí sin borrarse.</p>`}`;
+  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">${timeMode?"Consulta las fases y fechas de los proyectos en el cronograma.":listMode?"Pulsa un proyecto para abrirlo. Las acciones de su fila permiten editar, duplicar o archivar sin borrarlo.":"Pulsa una carpeta para abrir el proyecto. Puedes editar, duplicar o archivar desde la vista de lista."}</p>`}`;
 }
 function toggleArchive(id){
   const p = state.projects.find(x=>x.id===id);
@@ -5482,10 +5500,10 @@ function vProject(){
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
       <button class="btn btn-ghost" style="background:rgba(255,255,255,.8)" onclick="projLinks(${p.id})">${ico('carpeta')} Carpeta de proyecto</button>
     </div>
-    <div style="position:absolute;top:22px;right:22px;display:flex;gap:8px">
+    <details class="project-options"><summary class="btn btn-ghost">Opciones del proyecto</summary><div class="project-options-body">
       <button class="btn btn-ghost" style="background:rgba(255,255,255,.75)" onclick="customizeModal(${p.id})">${ico('personalizar')} Personalizar</button>
       <button class="btn btn-dark" onclick="duplicateProject(${p.id})">⧉ Duplicar proyecto</button>
-    </div>
+    </div></details>
   </div>
   <div class="pill-tabs" style="margin:24px 0 22px;flex-wrap:wrap">
     ${[["tareas","tabs.tareas","tab_tareas"],["listas","tabs.listas","tab_listas"],["obra","tabs.obra","tab_obra"],["archivos","tabs.archivos","tab_archivos"],["fin","tabs.fin","finanzas"],["cliente","tabs.cliente","tab_pres"],["chat","tabs.chat","tab_chat"],["resumen","tabs.resumen","resumen_ic"]].map(([k,t,ic])=>`<button class="${tb===k?'on':''}" style="display:inline-flex;align-items:center;gap:6px" onclick="projTab('${k}')">${ico(ic)} ${tr(t)}</button>`).join("")}
@@ -6741,7 +6759,7 @@ function vAdmin(){
     <label>¿Mostrar los fines de semana en el calendario?</label>
     <div class="opt-pills"><button class="${A.showWeekends?'on':''}" onclick="state.account.showWeekends=true;render()">Mostrar</button><button class="${!A.showWeekends?'on':''}" onclick="state.account.showWeekends=false;render()">Ocultar</button></div>
     <label>Página de inicio de la cuenta</label>
-    <div class="opt-pills"><button class="${A.homePage==='pred'?'on':''}" onclick="state.account.homePage='pred';render()">Home</button><button class="${A.homePage==='ws'?'on':''}" onclick="state.account.homePage='ws';render()">Workspace</button><button class="${A.homePage==='proy'?'on':''}" onclick="state.account.homePage='proy';render()">Proyectos</button></div>
+    <div class="opt-pills"><button class="${A.homePage==='pred'?'on':''}" onclick="state.account.homePage='pred';render()">Inicio</button><button class="${A.homePage==='ws'?'on':''}" onclick="state.account.homePage='ws';render()">Mis tareas</button><button class="${A.homePage==='proy'?'on':''}" onclick="state.account.homePage='proy';render()">Proyectos</button></div>
     <label>Exportar datos de la cuenta</label>
     <button class="btn btn-dark" onclick="toast('En la app real: se genera un ZIP con todos tus datos (proyectos, listas, contactos, contabilidad, archivos) y te llega por email')">${ico("download")} Exportar todo</button>
     ${sb ? (state.sessionUser && state.sessionUser.prov==="google"
@@ -9586,7 +9604,7 @@ function taskModal(pid,idx,col){
     <div class="opt-pills" id="tkWho" style="flex-wrap:wrap">${(function(){ const me=meName(), mm=meMail(); const sel=taskAssignees(tk);
       return teamMembers().map(u=>{ const yo=(mm&&(u.email||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===mm)||u.name===me; const on=sel.includes(u.name);
         return `<button type="button" class="${on?"on":""}" data-who="${(u.name||"").replace(/"/g,"&quot;")}" onclick="tkToggleWho(this)">${yo?"(Yo) ":""}${u.name}${on&&sel[0]===u.name&&sel.length>1?" ★":""}</button>`; }).join(""); })()}</div>
-    <small style="font-size:10px;color:var(--ink-faint)">Pulsa para añadir o quitar personas · ★ responsable principal (el primero elegido)</small><small style="font-size:10px;color:var(--ink-faint)">Del Team de la Agenda</small></div>
+    <small style="font-size:10px;color:var(--ink-faint)">Pulsa para añadir o quitar personas · ★ responsable principal (el primero elegido)</small><small style="font-size:10px;color:var(--ink-faint)">Personas del equipo</small></div>
   </div>
   <label>Subtareas <span id="tkSubCount" style="color:var(--ink-faint)">${tk.subs.filter(s=>s.done).length}/${tk.subs.length}</span></label>
   <div id="tkSubs"></div>
@@ -11162,8 +11180,8 @@ function askInputCancel(){ const cb=_inpCancel; _inpOk=_inpCancel=null; closeMod
 
 /* =================== UI HELPERS =================== */
 const ov=document.getElementById("overlay"), mb=document.getElementById("modalBox");
-function modal(html){ mb.innerHTML=html; ov.classList.add("open"); }
-function closeModal(){ _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); }
+function modal(html){ mb.innerHTML=html; ov.classList.add("open"); try{syncRefresh();}catch(e){} }
+function closeModal(){ _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
 ov.addEventListener("click",e=>{ /* clic fuera NO cierra: solo Cancelar/Guardar */ });
 let toastTimer;
 function toast(msg){ const el=document.getElementById("toast"); el.textContent=msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("show"),2800); }
@@ -11214,7 +11232,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.30-pruebas";
+const MODERNO_VER="v3.31-operativa-pruebas";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11348,13 +11366,35 @@ function fixBrands(){
   if(state.brandFilter && state.brandFilter!=="all" && (!BRAND[state.brandFilter] || !wsVisible(state.brandFilter))) state.brandFilter="all";
   if(state.catTab && !BRAND[state.catTab]) state.catTab=wsOrder[0];
 }
-function syncTag(mode,msg){
-  /* Estado silencioso: un punto fijo. Verde = sincronizado · gris = guardando/conectando · rojo = problema (con texto). */
-  let el=document.getElementById("syncTag");
-  if(!el){ el=document.createElement("div"); el.id="syncTag"; el.innerHTML='<span class="dot"></span><span class="txt"></span>'; document.body.appendChild(el); }
-  el.className=mode||""; el.title=msg||"";
-  el.querySelector(".txt").textContent = mode==="err" ? (msg||"") : "";
+let _syncPhase='connecting', _syncDetail='', _syncConfirmed=false, _syncReview=false;
+function syncHasChanges(){return Object.keys(CLOUD_BLOCKS).some(b=>_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()));}
+function syncCopyKeys(){const keys=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(LS_KEY+'_pendiente_'))keys.push(k);}}catch(e){}return keys;}
+function syncView(){
+  return ModernoDaily.saveStatus({editing:typeof document!=='undefined'&&!!document.querySelector('.overlay.open input:not([type="hidden"]), .overlay.open textarea, .overlay.open select, .overlay.open [contenteditable="true"]'),localFailure:typeof _saveErr!=='undefined'&&_saveErr,review:_syncReview,online:navigator.onLine,changed:syncHasChanges(),confirmed:_syncConfirmed,phase:_syncPhase,detail:_syncDetail});
 }
+function syncRefresh(){
+  if(!state.sessionUser||state.view==='portalcli'||state.view==='portalobra')return;
+  const view=syncView();let el=document.getElementById('syncTag');
+  if(!el){el=document.createElement('button');el.id='syncTag';el.type='button';el.innerHTML='<span class="dot" aria-hidden="true"></span><span class="txt" role="status" aria-live="polite"></span>';el.onclick=syncDetails;document.body.appendChild(el);}
+  el.className=view.mode;el.title=view.detail;el.setAttribute('aria-label',view.label+'. Ver estado y copias pendientes');
+  const copies=syncCopyKeys().length;const text=view.label+(copies?' · '+copies+' copia(s) por revisar':'');const label=el.querySelector('.txt');if(label.textContent!==text)label.textContent=text;
+}
+function syncTag(mode,msg){
+  if(mode==='err'){_syncReview=true;_syncPhase='pending';}
+  else if(mode==='ok'){_syncConfirmed=true;_syncReview=false;_syncPhase='idle';}
+  else {_syncPhase=mode==='saving'&&msg&&msg.startsWith('Conectando')?'connecting':mode;}
+  _syncDetail=msg||'';syncRefresh();
+}
+function syncDownloadCurrent(){
+  try{const raw=JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder});const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='moderno-cambios-actuales-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast('No se pudo descargar la copia. Conserva esta pestaña abierta.');}
+}
+function syncDetails(){
+  if(_modalAbierto()){toast('Guarda o cancela el formulario antes de abrir el estado de sincronización.');return;}
+  const v=syncView(),copies=syncCopyKeys().length;
+  modal('<h3>'+v.label+'</h3><p>'+ModernoDaily.escape(v.detail)+'</p><p>Descargar una copia conserva lo que tienes en esta pestaña. No sustituye automáticamente los datos de la nube.</p>'+(copies?'<p>'+copies+' copia(s) anterior(es) pendiente(s) de revisar.</p>':'')+'<div class="modal-foot"><button class="btn btn-ghost" onclick="syncDownloadCurrent()">Descargar cambios actuales</button>'+(copies?'<button class="btn btn-ghost" onclick="closeModal();cloudPendingNotice()">Ver copias anteriores</button>':'')+'<button class="btn btn-ghost" onclick="closeModal();persistNow();cloudFlush()">Reintentar guardado</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>');
+}
+window.addEventListener('offline',()=>{syncRefresh();});
+window.addEventListener('online',()=>{syncRefresh();cloudDirty();});
 /* ===== Archivos del estudio: Supabase Storage (bucket "archivos") =====
    Ruta: {estudio_id}/{aleatorio}.{ext}. El estado guarda solo la URL.
    Sin nube (o si falla la subida): degrada a incrustado en el navegador. */
@@ -11369,7 +11409,7 @@ async function fileUp(f){
     const {error} = await sb.storage.from("archivos").upload(path, f, {contentType:f.type||undefined, cacheControl:"31536000", upsert:false});
     if(error) throw error;
     const {data} = sb.storage.from("archivos").getPublicUrl(path);
-    syncTag("ok","Archivo subido \u2713");
+    syncTag("pending","Archivo preparado; falta confirmar su referencia en el estudio");
     return (data && data.publicUrl) || null;
   }catch(e){
     console.warn("[storage]", e && e.message || e);
@@ -11380,6 +11420,9 @@ async function fileUp(f){
 }
 function cloudDirty(){
   if(!sb||!ESTUDIO_ID||_cloudApplying) return;
+  if(!syncHasChanges()){syncRefresh();return;}
+  if(_syncPhase!=="saving"&&_syncPhase!=="connecting")_syncPhase="pending";
+  syncRefresh();
   try{ localStorage.setItem(LS_KEY+"_dirty","1"); }catch(e){}
   clearTimeout(_cloudT);
   _cloudT=setTimeout(cloudFlush, 900);
@@ -11477,7 +11520,7 @@ async function cloudFlush(){
     clearTimeout(_cloudRetryT); _cloudRetryT=setTimeout(cloudFlush,15000);
   } else {
     try{ localStorage.removeItem(LS_KEY+"_dirty"); }catch(e){}
-    if(wrote) syncTag("ok","Guardado ✓");
+    syncTag("ok","Guardado ✓");
   }
   _cloudBusy=false;
 }
@@ -11502,7 +11545,7 @@ function cloudApplyRemote(b, contenido, updated_at){
   const ae=document.activeElement; const escribiendo = !!(ae && (ae.tagName==="INPUT"||ae.tagName==="TEXTAREA"||ae.isContentEditable));
   if(escribiendo || _modalAbierto()){ _rtRerender=true; if(b==="proyectos") tkRefreshFromCloud(); }
   else { try{ persistNow(); }catch(e){} render(); }
-  try{ syncTag("ok"); }catch(e){}
+  try{ if(!syncHasChanges())syncTag("ok");else syncRefresh(); }catch(e){}
   return true;
 }
 function _rtFlushRerender(){ if(_rtRerender && !_modalAbierto()){ const ae=document.activeElement; if(ae && (ae.tagName==="INPUT"||ae.tagName==="TEXTAREA")) return; _rtRerender=false; try{ persistNow(); }catch(e){} render(); } }
@@ -11521,7 +11564,7 @@ let _presT=null;
 function presenceWhere(){
   const v=state.view||"home";
   if((v==="proyecto"||v==="room"||v==="timeline") && state.currentProject){ const p=state.projects.find(x=>x.id===state.currentProject); if(p) return p.num+" "+p.name; }
-  const L={home:"Home",workspace:"Workspace",biblioteca:"Biblioteca",proyectos:"Proyectos",compras:"Compras",agenda:"Contactos",calendario:"Calendario",contabilidad:"Contabilidad",informes:"Informes",facturas:"Facturas",presupuestos:"Presupuestos",catalogo:"Catálogo",integraciones:"Integraciones",plantillas:"Plantillas y docs",utilidades:"Utilidades",admin:"Administración",ajustes:"Ajustes"};
+  const L={home:"Inicio",workspace:"Mis tareas",biblioteca:"Biblioteca",proyectos:"Proyectos",compras:"Compras",agenda:"Contactos",calendario:"Calendario",contabilidad:"Contabilidad",informes:"Informes",facturas:"Facturas",presupuestos:"Presupuestos",catalogo:"Catálogo",integraciones:"Integraciones",plantillas:"Plantillas y docs",utilidades:"Utilidades",admin:"Administración",ajustes:"Ajustes"};
   return L[v]||v;
 }
 function presenceTrack(){
@@ -11845,7 +11888,7 @@ function persistNow(){
 }
 /* v3.28: sombra en la barra fija de Contabilidad cuando queda pegada arriba */
 document.addEventListener("scroll", ev=>{ const el=document.getElementById("accSticky"); if(!el) return; const r=el.getBoundingClientRect(); const m=el.closest(".main"); const top=m?m.getBoundingClientRect().top:0; el.classList.toggle("stuck", r.top<=top+2); }, true);
-function persistSoon(){ clearTimeout(_saveT); _saveT=setTimeout(persistNow, 500); gcalSchedule(); }
+function persistSoon(){ clearTimeout(_saveT); _saveT=setTimeout(persistNow, 500); gcalSchedule(); try{syncRefresh();}catch(e){} }
 /* ============ ARRANQUE VACÍO (producción): sin datos de demostración ============ */
 (function(){
   state.projects = state.projects.filter(p=>p.tpl);   // solo las plantillas internas de proyecto
@@ -12072,11 +12115,11 @@ document.addEventListener("input",  e=>{ const el=e.target; if(el&&el.tagName===
 const T9N = (function(){
   const D = {};
   const A = (es,en,fr,it,pt)=>{ D[es]={en,fr,it,pt}; };
-  A("Home","Home","Accueil","Home","In\u00edcio");
+  A("Inicio","Home","Accueil","Home","In\u00edcio");
   A("Mi Trabajo","My Work","Mon travail","Il mio lavoro","Meu trabalho");
   A("Finanzas","Finance","Finances","Finanze","Finan\u00e7as");
-  A("Tools","Tools","Outils","Strumenti","Ferramentas");
-  A("Workspace","Workspace","Espace de travail","Workspace","Workspace");
+  A("Herramientas","Tools","Outils","Strumenti","Ferramentas");
+  A("Mis tareas","My tasks","Mes tâches","Le mie attività","Minhas tarefas");
   A("Biblioteca","Library","Biblioth\u00e8que","Libreria","Biblioteca");
   A("Proyectos","Projects","Projets","Progetti","Projetos");
   A("Compras","Purchasing","Achats","Acquisti","Compras");
