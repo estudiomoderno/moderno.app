@@ -1,6 +1,6 @@
 # Preparación de copias de archivos
 
-Estado: programa preparado y workflow manual de comprobación. No hay copia real verificada ni programación automática todavía.
+Estado (2026-09-09): prueba sintética de copia y recuperación en Google Drive completada correctamente desde GitHub Actions. No hay copia real de Storage verificada ni programación automática todavía.
 
 Requiere Node.js 22+, rclone y dos conexiones mediante variables de entorno: origen S3 compatible y destino Google Drive privado. La cuenta de servicio de Google necesita acceso al destino autorizado y Drive API habilitada. Los secretos no pertenecen al repositorio.
 
@@ -43,4 +43,6 @@ Configurar dos secretos JSON en Actions, nunca como archivos del repositorio:
 El proveedor de Google debe comprobar los ID numéricos del propietario y repositorio, `ref == refs/heads/main` y el `workflow_ref` exacto. Normalizar `google.subject = 'repo:' + assertion.repository + ':ref:' + assertion.ref` y otorgar `roles/iam.workloadIdentityUser` sobre la cuenta de servicio únicamente al sujeto `repo:PROPIETARIO/REPOSITORIO:ref:refs/heads/main`. La condición de ID numéricos es obligatoria para que esta normalización sea segura. GitHub puede incluir ID numéricos en `sub`; no asumir que coincide con el formato antiguo. Habilitar Drive API y las API de IAM, STS y credenciales de cuenta de servicio. La cuenta necesita acceso de colaborador a la carpeta privada autorizada.
 
 Ejecutar primero el modo `test-drive`: crea dos archivos sintéticos, los copia y verifica, los descarga a un directorio temporal y compara los bytes. Las carpetas `prueba-*` quedan en Drive como evidencia y no contienen datos reales. Después ejecutar `backup`. Una prueba sintética correcta no demuestra que el origen real esté configurado ni sustituye una primera copia completa.
+
+Validación completada: workflow manual con acceso temporal, copia sintética, comprobación del contenido, descarga y comparación de recuperación. Pendiente: credencial autorizada de origen, medición del volumen, primera copia real completa y decisión de frecuencia/retención. No dar por protegidos los archivos reales hasta completar esos pasos.
 
