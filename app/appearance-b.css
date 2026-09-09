@@ -1,0 +1,117 @@
+/* v3.32: presentación B. Sin cambios de datos, permisos, iconos o navegación.
+   Solo pantalla: los PDF/impresiones y los portales conservan sus estilos. */
+@media screen {
+  body:not(.dark):not(.portalmode) {
+    --bg:#eef0f5; --panel:#fff; --white:#fff; --card:#f0f2f7;
+    --ink:#323338; --ink-soft:#606979; --ink-faint:#697384;
+    --radius:12px; --radius-lg:18px;
+    --shadow:0 4px 14px rgb(32 45 75 / 6%);
+    --ui-accent:#365ec5; --ui-selected:#e5ecff; --ui-selected-ink:#254fb3;
+    --ui-line:#dce1eb; --ui-canvas:#f6f7fb;
+    --green:#e2f3eb; --green-ink:#286448;
+    --red:#fbe5e8; --red-ink:#a12940; --pend:#fff0c5; --pend-ink:#795200;
+  }
+  body:not(.dark):not(.portalmode) .main {background:var(--ui-canvas)}
+  body:not(.dark):not(.portalmode) .nav-item.active {background:var(--ui-selected);color:var(--ui-selected-ink);box-shadow:inset 3px 0 var(--ui-accent)}
+  body:not(.dark):not(.portalmode) .nav-item:hover {background:var(--card)}
+  body:not(.dark):not(.portalmode) .nav-sub {border-color:var(--ui-line)}
+  body:not(.dark):not(.portalmode) .nav-sub .nav-item::before {background:var(--ui-line)}
+  body:not(.dark):not(.portalmode) .btn-dark {background:var(--ui-accent);color:#fff}
+  body:not(.dark):not(.portalmode) .btn-dark:hover {background:#294da9;transform:none;box-shadow:none}
+  body:not(.dark):not(.portalmode) .btn {border-radius:8px}
+  body:not(.dark):not(.portalmode) .btn-ghost {background:var(--white);border-color:var(--ui-line)}
+  body:not(.dark):not(.portalmode) .opt-pills button.on,
+  body:not(.dark):not(.portalmode) .pill-tabs button.on {background:var(--ui-selected);color:var(--ui-selected-ink)}
+  body:not(.dark):not(.portalmode) .opt-pills.daily-scope button {font-weight:600}
+  body:not(.dark):not(.portalmode) .pill-tabs button {font-weight:600}
+  body:not(.dark):not(.portalmode) .avatar .dot,
+  body:not(.dark):not(.portalmode) .av {background:var(--card);color:var(--ink-soft)}
+  body:not(.dark):not(.portalmode) #ucAvatar {background:var(--card)!important;color:var(--ink-soft)}
+  body:not(.dark):not(.portalmode) .task-assignee {background:var(--card)!important;border-color:#b6c0d4!important;color:var(--ink-soft);border-radius:10px!important}
+  body:not(.dark):not(.portalmode) .task-assignee[data-primary=true] {border-color:#697994!important}
+  body:not(.dark):not(.portalmode) .widget {background:var(--white);border:1px solid var(--ui-line);border-radius:14px}
+  body:not(.dark):not(.portalmode) .clockbox .day {background:var(--ui-selected);color:var(--ui-selected-ink)}
+  body:not(.dark):not(.portalmode) .minical td.today {background:var(--pend);color:var(--pend-ink)}
+  body:not(.dark):not(.portalmode) .daily-entry {border-bottom:1px solid var(--ui-line);border-radius:8px}
+  body:not(.dark):not(.portalmode) .daily-entry .chip {background:var(--card);color:var(--ink-soft)}
+  body:not(.dark):not(.portalmode) #tkCol button.on[data-v=pend] {background:#e9edf3;color:#4b5668}
+  body:not(.dark):not(.portalmode) #tkCol button.on[data-v=prog] {background:var(--pend);color:var(--pend-ink)}
+  body:not(.dark):not(.portalmode) #tkCol button.on[data-v=rev] {background:#efe6fa;color:#71459b}
+  body:not(.dark):not(.portalmode) #tkCol button.on[data-v=listo] {background:var(--green);color:var(--green-ink)}
+  body:not(.dark):not(.portalmode) .widget .clock {font-size:26px}
+  body:not(.dark):not(.portalmode) h1.big {font-size:clamp(27px,2.7vw,34px);font-weight:800;line-height:1.16;margin-bottom:18px}
+  body:not(.dark):not(.portalmode) .proj-head {background:var(--white)!important;border:1px solid var(--ui-line);border-top:4px solid var(--f-front);padding:20px 24px}
+  body:not(.dark):not(.portalmode) .proj-head h1 {font-size:28px;font-weight:800}
+  body:not(.dark):not(.portalmode) .folder .front {background:var(--white);border:1px solid var(--ui-line)}
+  body:not(.dark):not(.portalmode) .folder .front::before {background:var(--white)}
+  body:not(.dark):not(.portalmode) .folder .fname {font-weight:750;color:var(--ink)}
+  body:not(.dark):not(.portalmode) .folder:hover {transform:none}
+  body:not(.dark):not(.portalmode) .folder:hover .front {transform:none}
+  body:not(.dark):not(.portalmode) .folder:hover .back {box-shadow:var(--shadow)}
+  body:not(.dark):not(.portalmode) .kanban .kcol {background:transparent;border-radius:0;padding:0;min-height:190px;min-width:0}
+  body:not(.dark):not(.portalmode) .kcol[data-status] h4 {border-top:3px solid var(--status-color);padding-top:12px;margin-bottom:14px;font-weight:650}
+  body:not(.dark):not(.portalmode) .kcol[data-status=pend] {--status-color:#a4adba}
+  body:not(.dark):not(.portalmode) .kcol[data-status=prog] {--status-color:#edb334}
+  body:not(.dark):not(.portalmode) .kcol[data-status=rev] {--status-color:#a476d6}
+  body:not(.dark):not(.portalmode) .kcol[data-status=listo] {--status-color:#499b76}
+  body:not(.dark):not(.portalmode) .kcol[data-status] .kdot {background:var(--status-color)!important}
+  body:not(.dark):not(.portalmode) .kanban .task {background:var(--white)!important;border:1px solid var(--ui-line);padding:16px;border-radius:10px;margin-bottom:12px}
+  body:not(.dark):not(.portalmode) .kanban .task:hover {border-color:#9aa9c4;box-shadow:var(--shadow);transform:none}
+  body:not(.dark):not(.portalmode) .task .tt {font-weight:650;line-height:1.45;overflow-wrap:anywhere;margin-bottom:10px}
+  body:not(.dark):not(.portalmode) .task .tm {gap:6px;line-height:1.5}
+  body:not(.dark):not(.portalmode) .task .tm .chip {background:var(--card)!important;color:var(--ink-soft);font-weight:500}
+  body:not(.dark):not(.portalmode) .task-due.overdue {background:var(--red);color:var(--red-ink)}
+  body:not(.dark):not(.portalmode) .task-due.today {background:var(--pend);color:var(--pend-ink)}
+  body:not(.dark):not(.portalmode) .ws-task-table th,
+  body:not(.dark):not(.portalmode) .ws-task-table td,
+  body:not(.dark):not(.portalmode) .ws-calendar-grid,
+  body:not(.dark):not(.portalmode) .ws-calendar-day,
+  body:not(.dark):not(.portalmode) .ws-weekday {border-color:var(--ui-line)}
+  body:not(.dark):not(.portalmode) .ws-task-table,
+  body:not(.dark):not(.portalmode) .ws-calendar-grid {background:var(--white)}
+  body:not(.dark):not(.portalmode) .ws-today {background:#fff8df}
+  body:not(.dark):not(.portalmode) button:focus-visible,
+  body:not(.dark):not(.portalmode) input:focus-visible,
+  body:not(.dark):not(.portalmode) select:focus-visible {outline:2px solid var(--ui-accent);outline-offset:3px}
+  body:not(.portalmode) .ws-full h1 .sec-note {float:none;display:block;margin-top:8px;font-size:14px;line-height:1.5;letter-spacing:0}
+  body:not(.portalmode) .ws-full .wsrow {flex-wrap:wrap}
+  body:not(.portalmode) .ws-full .daily-scope {flex:0 0 auto;flex-wrap:nowrap}
+  body:not(.portalmode) .ws-full .wsrow .btn {white-space:nowrap}
+  body:not(.portalmode) .ws-full .wsrow input {max-width:100%;min-width:0!important;width:250px}
+  body:not(.portalmode) .ws-views {margin:16px 0}
+  body:not(.portalmode) .ws-views button {font-weight:600}
+  body:not(.portalmode) .ws-full .kanban {gap:20px}
+  body:not(.portalmode) .task {transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+  /* Conservar el fondo oscuro y evitar texto claro sobre selecciones amarillas. */
+  body.dark:not(.portalmode) .opt-pills button.on,
+  body.dark:not(.portalmode) .pill-tabs button.on {background:#dbe5ff;color:#203e7f}
+  body.dark:not(.portalmode) .nav-item.active {background:#2d3b5e;color:#dbe5ff}
+  body.dark:not(.portalmode) .btn-dark {background:#9fb9ff;color:#182444}
+  body.dark:not(.portalmode) .kanban .task {background:#22222a!important;border:1px solid #454957}
+  body.dark:not(.portalmode) .task .tm .chip {background:#303441!important;color:#d3d9e8}
+  body.dark:not(.portalmode) .task-assignee {background:#303441!important;color:#d3d9e8;border-color:#7d8ba6!important}
+  @media(max-width:1100px) {
+    body:not(.portalmode) .kanban {display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;overflow:visible}
+    body:not(.portalmode) .kanban .kcol {min-width:0;max-width:100%}
+  }
+  @media(max-width:700px) {
+    body:not(.portalmode) .kanban {grid-template-columns:minmax(0,1fr)!important;gap:24px}
+    body:not(.portalmode) .ws-full .kcol {min-height:0}
+    body:not(.portalmode) .ws-full .wsrow>span {display:none}
+    body:not(.portalmode) .ws-full .wsrow>div {flex:1 1 100%}
+    body:not(.portalmode) .ws-full .wsrow .daily-scope {flex:1 1 100%}
+    body:not(.portalmode) .ws-full .daily-scope button {flex:1;white-space:nowrap}
+    body:not(.portalmode) .ws-full .wsrow input {width:100%}
+    body:not(.portalmode) .daily-scope button,
+    body:not(.portalmode) .ws-views button,
+    body:not(.portalmode) .pill-tabs button {min-height:40px}
+    body:not(.dark):not(.portalmode) .proj-head {padding:16px}
+    body:not(.dark):not(.portalmode) .proj-head h1 {font-size:24px}
+    body:not(.portalmode) .ws-table-wrap::before {content:'Desliza la tabla para ver todos los datos';display:block;color:var(--ink-soft);font-size:12px;margin:6px 0}
+    body:not(.portalmode) .ws-calendar-wrap::before {content:'Desliza para ver la semana completa';display:block;color:var(--ink-soft);font-size:12px;margin:6px 0}
+    body:not(.portalmode) .ws-calendar-wrap::after {display:none}
+  }
+  @media(prefers-reduced-motion:reduce) {
+    body:not(.portalmode) .task,body:not(.portalmode) .folder,body:not(.portalmode) .folder .front {transition:none!important}
+  }
+}

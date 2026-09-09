@@ -1,0 +1,28 @@
+# v3.32 — apariencia B
+
+## Decisión
+
+El usuario elige la dirección B: superficies neutras, colores de estado más definidos, iconos originales y menú contraíble. Después de revisar la maqueta autoriza aplicarla y publicarla. Referencia cromática: estados con color y etiqueta, como en la [documentación de Monday](https://support.monday.com/hc/en-us/articles/360001269685-The-Status-Column); no se incorporan sus recursos ni dependencias.
+
+## Implementación
+
+- `app/appearance-b.css` aplica la presentación de pantalla sobre la app existente: fondos claros, selección azul, tarjetas neutras, estados gris/ámbar/violeta/verde con sus nombres y vencimientos etiquetados.
+- Los iconos, rutas, menú contraíble, formularios y operaciones permanecen en el código original. El HTML añade únicamente el enlace al CSS, atributos visuales de estado/responsable y la versión.
+- Mis tareas mantiene controles de tamaño estable y un subtítulo junto al encabezado. A anchos pequeños el tablero dispone las columnas verticalmente para evitar su solapamiento. Lista y Calendario conservan desplazamiento horizontal con una ayuda visible al inicio.
+- Las carpetas y cabeceras conservan el color del proyecto en la parte superior y reducen la superficie coloreada. No se reescriben las preferencias guardadas.
+- Se corrige el contraste de las selecciones y etiquetas de tareas en modo oscuro. Los estilos nuevos de pantalla excluyen portales; el archivo completo está dentro de `@media screen` para no modificar la impresión.
+- No hay migración, actualización de funciones, permisos ni cambios de Storage. No se restauran copias ni se borran registros o archivos.
+
+## Comprobaciones
+
+137 pruebas existentes correctas y sintaxis de tres scripts inline comprobada. Revisión local sin conexión de datos, con dos proyectos y tareas inventados: Inicio, tablero, Lista, Calendario, Proyectos y detalle; tamaños 1440×1000 y 390×844. Menú original contraído/expandido, apertura y cancelación del formulario de tarea y selección legible en oscuro comprobados. En móvil el documento mide 390 px y las columnas ocupan 355 px sin solapamiento; los selectores de alcance tienen dimensiones iguales.
+
+No constituye una auditoría completa de accesibilidad ni una prueba en todos los dispositivos. Las tablas largas siguen necesitando desplazamiento horizontal.
+
+## Publicación
+
+Publicar mediante el workflow habitual: pruebas, recursos (incluido CSS), después HTML. Verificar respuesta 200 y contenido exacto de `index.html` y `appearance-b.css`, además de la carga de una sesión. Las sesiones abiertas usan el mecanismo existente de actualización segura; no forzar su recarga.
+
+## Volver al aspecto anterior
+
+La base previa es `e3ecb77` (app v3.31). Para revertir únicamente este diseño, retirar el enlace a `appearance-b.css` de `app/index.html`, aumentar la versión a la siguiente revisión y publicar por el mismo workflow. Los atributos visuales adicionales son inertes sin esa hoja. Esto recupera los estilos previos sin tocar datos ni deshacer arreglos funcionales futuros. No usar una restauración de base de datos para un cambio de apariencia.

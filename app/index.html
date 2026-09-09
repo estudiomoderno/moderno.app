@@ -906,6 +906,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 </style>
+<link rel="stylesheet" href="/appearance-b.css?v=332">
 </head>
 <body>
 <div class="app">
@@ -5033,7 +5034,7 @@ function wsCalendar(cards){
 }
 function wsBoard(cards){return `  <div class="kanban" style="grid-template-columns:repeat(3,minmax(0,1fr))">
     ${KCOLS.filter(c=>c[0]!=="listo").map(([key,label,color])=>`
-      <div class="kcol" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="wsDrop(event,'${key}')">
+      <div class="kcol" data-status="${key}" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="wsDrop(event,'${key}')">
         <h4><span class="kdot" style="background:${color}"></span>${label}<span class="n">${cards.filter(c=>c.t.col===key).length}</span></h4>
         ${cards.filter(c=>c.t.col===key).map(({p,t,i})=>`
           <div class="task" draggable="true" ondragstart="dragTask(event,${p.id},${i});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" style="background:${key==='pend'?'var(--gold-soft)':'var(--white)'}" onclick="taskModal(${p.id},${i})">
@@ -5563,7 +5564,7 @@ function vProject(){
   ${tb!=="tareas"?"":`
   <div class="kanban">
     ${KCOLS.map(([key,label,color])=>`
-      <div class="kcol" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="dropTask(event,'${key}',${p.id})">
+      <div class="kcol" data-status="${key}" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="dropTask(event,'${key}',${p.id})">
         <h4><span class="kdot" style="background:${color}"></span>${label}<span class="n">${p.tasks.filter(t=>t.col===key).length}</span></h4>
         ${p.tasks.filter(t=>t.col===key).map(t=>{
           const i=p.tasks.indexOf(t);
@@ -9509,7 +9510,7 @@ function migrateAssignees(){
 }
 function assigneeChips(t){
   const me=meName(); const arr=taskAssignees(t); if(!arr.length) return "";
-  return arr.map((a,i)=>`<span style="background:${i===0?"var(--gold)":"var(--card)"};border:1px solid var(--gold);border-radius:6px;padding:1px 6px;font-weight:800" title="${a===me?"(Yo) ":""}${a}${i===0&&arr.length>1?" · responsable":""}">${a.split(" ").map(x=>x[0]).join("")}</span>`).join(" ");
+  return arr.map((a,i)=>`<span class="task-assignee" data-primary="${i===0}" style="background:${i===0?"var(--gold)":"var(--card)"};border:1px solid var(--gold);border-radius:6px;padding:1px 6px;font-weight:800" title="${a===me?"(Yo) ":""}${a}${i===0&&arr.length>1?" · responsable":""}">${a.split(" ").map(x=>x[0]).join("")}</span>`).join(" ");
 }
 function teamMembers(){
   /* Fuente única: miembros del estudio = equipo sincronizado + tabla de invitaciones de Supabase (+ yo). Sin duplicados. */
@@ -11288,7 +11289,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.31";
+const MODERNO_VER="v3.32";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

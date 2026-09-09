@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.32 — apariencia B
+
+- Superficies neutras, colores diferenciados de estado, iconos y menú originales. Tablero móvil sin columnas solapadas, controles estables y mejoras de contraste. Sin cambios de datos ni permisos. Validación y vuelta al aspecto anterior en ENTREGA-V332.md.
+
 ## v3.31 — flujos de trabajo
 
 - Revocación real de acceso, guardado conjunto de operaciones, resolución explícita de conflictos, errores de conexión con reintento y exclusión de tareas terminadas en ICS. Procedimiento y pruebas en ENTREGA-V331.md.
