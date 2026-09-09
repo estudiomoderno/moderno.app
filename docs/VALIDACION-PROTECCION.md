@@ -25,6 +25,8 @@ Las funciones de acceso y envío de correo comparadas con c91d243 permanecen igu
 
 ## Pendiente antes de publicar
 
+Actualización: el usuario confirma que el piloto está en pausa y guardó sin formularios pendientes ni errores. Los pendientes de roles/correo se concretan en ACCESO-CORREO-VALIDACION.md: miembro puede leer/escribir facturas en el clon, Gestoría no tiene el comportamiento anunciado, fuente PHP ausente y entrega de correo sin destinatario autorizado. La suite actual pasa 87 pruebas, incluidas pruebas que reproducen esos defectos. No equivale a autorización financiera validada.
+
 1. Coordinar todas las sesiones del piloto: guardar y conservar pendientes antes de cerrar voluntariamente clientes antiguos. No forzar recargas ni borrar caché.
 2. Validar los flujos de acceso y correo que entren en esta entrega con una cuenta dedicada. Google Calendar queda fuera: el usuario confirma que nunca se conectó y decide posponerlo; recuperar sus fuentes o probar esa integración no bloquea esta actualización.
 3. Completar la revisión funcional más amplia y de permisos por rol/campo. El aislamiento entre estudios no certifica todos los permisos financieros del CRM.

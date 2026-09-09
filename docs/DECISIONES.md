@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-09-09 — Pausa confirmada y hallazgos previos a v3.30
+
+El usuario confirma que el equipo está en pausa y había guardado sin formularios pendientes ni errores. No se interpreta como cierre de todas las sesiones antiguas. La revisión identifica permisos financieros insuficientes en el candidato y límites precisos de validación del correo; véase ACCESO-CORREO-VALIDACION.md. No publicar ni cambiar permisos productivos basándose solo en la pausa o en que pasen pruebas que reproducen defectos.
+
 ## 2026-09-09 — Entorno y continuidad
 
 - TALLER es la tarea principal. Explicar en español sencillo y resumir estado y pendientes antes de desarrollar funcionalidades, según petición del usuario.
