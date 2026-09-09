@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 const code=html.slice(html.indexOf('async function cloudLoad(){'),html.indexOf('function _dataUrlBlob('));
 async function resolve(probe,error=null){
- const ctx={console:{warn(){}},state:{},ESTUDIO_ID:null,_resumed:false,LS_KEY:'test',syncTag(){},afterLoginOnce(){},localStorage:{getItem:()=> 'old-study',setItem(){}},sb:{
+ const ctx={_accessConnecting:false,_accessAttempt:0,cloudConnectionStep:async p=>p,render(){},console:{warn(){}},state:{},ESTUDIO_ID:null,_resumed:false,LS_KEY:'test',syncTag(){},afterLoginOnce(){},localStorage:{getItem:()=> 'old-study',setItem(){}},sb:{
   rpc:async()=>({data:{estudio_id:'new-study',rol:'admin'}}),
   from(){return {
    select(){return this},eq(){return this},limit:async()=>({data:probe,error}),

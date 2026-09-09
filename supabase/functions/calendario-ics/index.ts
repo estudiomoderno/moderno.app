@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     });
     // Tareas con fecha límite
     (p.tasks ?? []).forEach((tk: any, i: number) => {
-      if (isoOk(tk?.due) && tk.col !== "done")
+      if (isoOk(tk?.due) && !tk.done && !["listo","done"].includes(tk.col))
         evs.push({ uid: `tarea-${p.id}-${i}`, title: `☑ ${tk.title ?? "Tarea"} · ${num}`, start: tk.due, desc: `Tarea de ${num} ${name}${tk.assignee ? " · " + tk.assignee : ""}` });
     });
   }

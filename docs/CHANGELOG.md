@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.31 — flujos de trabajo
+
+- Revocación real de acceso, guardado conjunto de operaciones, resolución explícita de conflictos, errores de conexión con reintento y exclusión de tareas terminadas en ICS. Procedimiento y pruebas en ENTREGA-V331.md.
+
 ## v3.30.2 — copias sin aviso automático
 
 - Se elimina el aviso amarillo al entrar. Las copias se conservan y pueden consultarse desde el estado de sincronización → Ver copias anteriores.

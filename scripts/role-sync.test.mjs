@@ -37,7 +37,7 @@ test('a hidden finance update cannot generate a false pending write',()=>{
  c.cloudApplyRemote('facturas',{},'nueva');assert.equal(c.syncHasChanges(),false);assert.equal(c._cloudSeen.facturas,'nueva');
 });
 test('cached content is not rendered while checking study permissions',()=>{
- const c={_accessLoading:true,state:{view:'facturas'},V:{innerHTML:''}};
+ const c={_accessLoading:true,_accessError:'',_accessConnecting:false,ModernoDaily:{escape:s=>s},state:{view:'facturas'},V:{innerHTML:''}};
  vm.createContext(c);vm.runInContext(section('function render(){','/* =================== VIEWS'),c);c.render();assert.match(c.V.innerHTML,/Comprobando el acceso/);assert.doesNotMatch(c.V.innerHTML,/Factura/);
 });
 test('collaborators never subscribe to raw database payloads',()=>{

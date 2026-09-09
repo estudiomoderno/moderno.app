@@ -1015,11 +1015,12 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <div id="printZone" style="display:none"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/sync-merge.js?v=20260909"></script>
+<script src="/sync-merge.js?v=331"></script>
 <script src="/private-files.js?v=20260909"></script>
 <script src="/daily-work.js?v=20260909"></script>
 <script src="/gestoria.js?v=20260909"></script>
 <script src="/pending-archive.js?v=20260909"></script>
+<script src="/flow-recovery.js?v=331"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -4166,6 +4167,7 @@ const ico = (n,c="") => (ICONS[n]||"").replace('class=\"svgi\"','class=\"svgi '+
 const V = document.getElementById("view");
 function projTab(t){ if(myAccessLevel()==="colab" && (t==="fin"||t==="resumen")) { toast("No tienes acceso a los datos económicos"); t="tareas"; } state.projTab=t; render(); window.scrollTo(0,0); const m=document.querySelector(".main"); if(m) m.scrollTop=0; }
 var _accessRole=null, _gestoriaData=null, _accessLoading=true;
+var _accessError='',_accessConnecting=false,_accessAttempt=0;
 const VIEW_DENY = {
   owner:   [],
   miembro: ["contabilidad","informes","facturas","admin"],
@@ -4208,7 +4210,7 @@ document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>go(b.dataset.vie
 drawBrandSwitch();
 
 function render(){
-  if(_accessLoading&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>Conectando con tu estudio</h1><p>Comprobando el acceso y cargando tus datos.</p><button class="btn btn-ghost" onclick="cloudLoad()">Reintentar conexión</button>';return;}
+  if(_accessLoading&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>'+(_accessError?'No se ha podido abrir el estudio':'Conectando con tu estudio')+'</h1><p>'+ModernoDaily.escape(_accessError||'Comprobando el acceso y cargando tus datos.')+'</p>'+(_accessError?'<p>Tus copias se conservan. Puedes descargar los cambios desde el estado de sincronización.</p>':'')+'<button class="btn btn-ghost" '+(_accessConnecting?'disabled':'')+' onclick="cloudLoad()">'+(_accessConnecting?'Conectando…':'Reintentar conexión')+'</button>';return;}
   if((_accessRole==='contratista'||_accessRole==='cliente')&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>Acceso al proyecto</h1><p>Abre el enlace de proyecto que te ha compartido el estudio.</p><button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión</button>';return;}
   if(_accessRole==="gestoria"){ V.innerHTML=vGestoria();applyRoleNav();return; }
   if(!canView(state.view))state.view='home';
@@ -4343,7 +4345,7 @@ function teamsModal(){
     <span style="min-width:0"><b style="font-size:12.5px">${u.name}</b><br><small style="color:var(--ink-faint)">${u.email}</small></span>
     <span class="chip neutral" style="margin-left:auto;font-size:10px;${u.role==="Administrador"?"background:var(--gold)":""}">${u.role}</span>
     <button class="collbtn" title="Editar rol" onclick="closeModal();inviteUserModal(${i})">${ico("editar")}</button>
-    ${u.role!=="Administrador"?`<button class="collbtn" title="Quitar acceso" onclick="askConfirm('¿Quitar el acceso a ${u.name}?','Quitar acceso',()=>{state.users.splice(${i},1);teamsModal();toast('Acceso revocado')},()=>teamsModal())">✕</button>`:""}
+    ${u.role!=="Administrador"?`<button class="collbtn" title="Quitar acceso" onclick="askConfirm('¿Quitar el acceso de esta persona al estudio? Sus documentos se conservarán.','Quitar acceso',()=>teamRevoke(${i}),()=>teamsModal())">✕</button>`:""}
   </div>`).join("")}
   <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:8px" onclick="closeModal();inviteUserModal(-1)">＋ Invitar miembro</button>
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal();profileMenu()">${ico("atras")} Atrás</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
@@ -11286,7 +11288,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.30.2";
+const MODERNO_VER="v3.31";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11361,6 +11363,7 @@ function sbEnter(user, saluda){
   }
 }
 async function sbLogout(){
+  _accessAttempt++;_accessConnecting=false;_accessError='';window._cloudConflicts={};
   _accessRole=null;_gestoriaData=null;_accessLoading=!!sb;
   clearTimeout(_cloudT);clearTimeout(_cloudRetryT);clearInterval(_rtPoll);_rtPoll=null;
   if(_rtChan){try{await sb.removeChannel(_rtChan);}catch(e){} _rtChan=null;}
@@ -11452,7 +11455,7 @@ function syncDownloadCurrent(){
 function syncDetails(){
   if(_modalAbierto()){toast('Guarda o cancela el formulario antes de abrir el estado de sincronización.');return;}
   const v=syncView(),copies=syncCopyKeys().length;
-  modal('<h3>'+v.label+'</h3><p>'+ModernoDaily.escape(v.detail)+'</p><p>Descargar una copia conserva lo que tienes en esta pestaña. No sustituye automáticamente los datos de la nube.</p>'+(copies?'<p>'+copies+' copia(s) anterior(es) pendiente(s) de revisar.</p>':'')+'<div class="modal-foot"><button class="btn btn-ghost" onclick="syncDownloadCurrent()">Descargar cambios actuales</button>'+(copies?'<button class="btn btn-ghost" onclick="closeModal();cloudPendingNotice()">Ver copias anteriores</button>':'')+'<button class="btn btn-ghost" onclick="closeModal();persistNow();cloudFlush()">Reintentar guardado</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>');
+  modal('<h3>'+v.label+'</h3><p>'+ModernoDaily.escape(v.detail)+'</p><p>Descargar una copia conserva lo que tienes en esta pestaña. No sustituye automáticamente los datos de la nube.</p>'+(copies?'<p>'+copies+' copia(s) anterior(es) pendiente(s) de revisar.</p>':'')+'<div class="modal-foot">'+(Object.keys(window._cloudConflicts||{}).length?'<button class="btn btn-gold" onclick="flowReviewOpen()">Resolver cambios</button>':'')+'<button class="btn btn-ghost" onclick="syncDownloadCurrent()">Descargar cambios actuales</button>'+(copies?'<button class="btn btn-ghost" onclick="closeModal();cloudPendingNotice()">Ver copias anteriores</button>':'')+'<button class="btn btn-ghost" onclick="closeModal();persistNow();cloudFlush()">Reintentar guardado</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>');
 }
 window.addEventListener('offline',()=>{syncRefresh();});
 window.addEventListener('online',()=>{syncRefresh();cloudDirty();});
@@ -11558,63 +11561,67 @@ async function cloudRecoverBlock(b){
 async function cloudFlush(){
   if(typeof _accessLoading!=="undefined"&&_accessLoading)return;
   if(typeof _accessRole!=="undefined"&&_accessRole==="gestoria")return;
-  if(!sb||!ESTUDIO_ID||_cloudBusy||_cloudApplying) return;
+  if(!sb||!ESTUDIO_ID||_cloudBusy||_cloudApplying)return;
+  const conflicts=window._cloudConflicts||(window._cloudConflicts={});
+  if(Object.keys(conflicts).length){syncTag('err','Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.');return;}
   _cloudBusy=true;
-  let wrote=false; const caidos=[];
-  window._cloudDiag = window._cloudDiag || {};
-  for(const b of Object.keys(CLOUD_BLOCKS)){
-    try{
+  const estudio=ESTUDIO_ID,plans=[],snapshots=[];
+  window._cloudDiag=window._cloudDiag||{};
+  try{
+    // Capturar toda la operación antes del primer await.
+    for(const b of Object.keys(CLOUD_BLOCKS)){
       if(_accessRole==='colaborador'&&!['proyectos','compras','contactos','fases','agenda'].includes(b))continue;
-      const _v=JSON.parse(canon(CLOUD_BLOCKS[b].get()));
-      const j=canon(_v);
-      if(_cloudHash[b]===j) continue;
-      /* Anti-pisado: reducir mucho un bloque exige confirmación explícita */
-      const newN=blockCount(_v), oldN=_cloudCount[b];
-      if(!_cloudForce[b] && oldN!=null && oldN>=5 && newN < oldN*0.5){
-        if(!window._cloudGuardShown||window._cloudGuardShown!==b){ window._cloudGuardShown=b; cloudGuardModal(b, oldN, newN); }
-        continue;
+      const value=JSON.parse(canon(CLOUD_BLOCKS[b].get()));
+      if(_cloudHash[b]===canon(value))continue;
+      const count=blockCount(value),old=_cloudCount[b];
+      if(!_cloudForce[b]&&old!=null&&old>=5&&count<old*.5){
+        if(window._cloudGuardShown!==b){window._cloudGuardShown=b;cloudGuardModal(b,old,count);}
+        syncTag('err','La operación completa espera confirmación; todavía no se ha guardado ninguna parte.');return;
       }
-      if(!wrote) syncTag("saving","Guardando…");
-      wrote=true;
-      const baseHash=_cloudHash[b];
-      const {data:cur,error:readError} = await cloudReadBlock(b);
-      if(readError) throw readError;
-      let _up=_v;
-      if(cur){
-        if(baseHash===undefined && canon(cur.contenido)!==j && !_cloudForce[b]) throw new Error("No se conoce la versión original; los cambios siguen pendientes");
-        _up=baseHash===undefined ? _v : ModernoSync.mergeSavedData(JSON.parse(baseHash),_v,cur.contenido);
-      }else if(_cloudSeen[b] && !_cloudForce[b]) throw new Error("El bloque ya no está en la nube; los cambios siguen pendientes");
-      const {data:saved,error} = await sb.rpc("guardar_bloque_versionado",{
-        p_estudio:ESTUDIO_ID,p_bloque:b,p_contenido:_up,p_base:cur?cur.updated_at:null
-      });
-      if(error) throw error;
-      if(!saved) throw new Error("Otro compañero ha guardado mientras tanto; se reintentará sin sobrescribirlo");
-      // Preserve edits made while this request was in flight as well as remote edits.
-      const current=JSON.parse(canon(CLOUD_BLOCKS[b].get()));
-      const combined=ModernoSync.mergeSavedData(_v,current,_up);
-      _cloudApplying=true;
-      try{ CLOUD_BLOCKS[b].set(combined); }finally{ _cloudApplying=false; }
-      _cloudHash[b]=canon(_up); _cloudSeen[b]=saved.updated_at; _cloudCount[b]=blockCount(_up); delete _cloudForce[b]; if(window._cloudGuardShown===b) window._cloudGuardShown=null;
-      persistSoon();
-      window._cloudDiag[b]={ok:true, at:new Date().toLocaleTimeString(), msg:""};
-    }catch(e){
-      caidos.push(b);
-      window._cloudDiag[b]={ok:false, at:new Date().toLocaleTimeString(), msg:(e&&e.message)||String(e)};
-      console.warn("[sync] bloque «"+b+"»:", e && e.message || e);
+      snapshots.push({b,value,base:_cloudHash[b],seen:_cloudSeen[b]});
     }
-  }
-  if(caidos.length){
-    syncTag("err","No se pudo guardar: "+caidos.join(", ")+" — reintentando…");
-    clearTimeout(_cloudRetryT); _cloudRetryT=setTimeout(cloudFlush, 15000);
-  } else if(Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))) {
-    syncTag("err","Hay cambios pendientes de guardar; conserva esta pestaña abierta");
-    clearTimeout(_cloudRetryT); _cloudRetryT=setTimeout(cloudFlush,15000);
-  } else {
-    try{ localStorage.removeItem(LS_KEY+"_dirty"); }catch(e){}
-    syncTag("ok","Guardado ✓");
-  }
-  _cloudBusy=false;
+    if(snapshots.length)syncTag('saving','Guardando…');
+    for(const s of snapshots){
+      const {data:cur,error}=await cloudReadBlock(s.b);if(error)throw error;
+      if(cur&&s.base===undefined&&canon(cur.contenido)!==canon(s.value)&&!_cloudForce[s.b])throw Error('No se conoce la versión original; los cambios siguen pendientes');
+      if(!cur&&s.seen&&!_cloudForce[s.b])throw Error('El bloque ya no está en la nube; los cambios siguen pendientes');
+      let merged=s.value;
+      if(cur&&s.base!==undefined){
+        try{merged=ModernoSync.mergeSavedData(JSON.parse(s.base),s.value,cur.contenido);}
+        catch(e){if(String(e.message).startsWith('Conflicto:'))conflicts[s.b]={base:JSON.parse(s.base),local:s.value,remote:cur.contenido,version:cur.updated_at};throw e;}
+      }
+      plans.push({...s,merged,version:cur?cur.updated_at:null});
+    }
+    if(plans.length){
+      if(ESTUDIO_ID!==estudio)throw Error('La sesión ha cambiado');
+      const {data:saved,error}=await sb.rpc('app_guardar_lote',{p_estudio:estudio,p_cambios:plans.map(p=>({bloque:p.b,contenido:p.merged,base:p.version}))});
+      if(error)throw error;
+      if(!Array.isArray(saved)||plans.some(p=>!saved.some(s=>s.bloque===p.b&&s.updated_at)))throw Error('No se pudo confirmar la operación completa; se conservan los cambios');
+      if(ESTUDIO_ID!==estudio)return;
+      for(const p of plans){
+        const current=JSON.parse(canon(CLOUD_BLOCKS[p.b].get()));
+        try{
+          const combined=ModernoSync.mergeSavedData(p.value,current,p.merged);
+          _cloudApplying=true;try{CLOUD_BLOCKS[p.b].set(combined);}finally{_cloudApplying=false;}
+          _cloudHash[p.b]=canon(p.merged);
+        }catch(e){conflicts[p.b]={base:p.value,local:current,remote:p.merged,version:saved.find(s=>s.bloque===p.b).updated_at};_cloudHash[p.b]=canon(p.value);}
+        _cloudSeen[p.b]=saved.find(s=>s.bloque===p.b).updated_at;_cloudCount[p.b]=blockCount(p.merged);delete _cloudForce[p.b];
+        if(window._cloudGuardShown===p.b)window._cloudGuardShown=null;
+        window._cloudDiag[p.b]={ok:true,at:new Date().toLocaleTimeString(),msg:''};
+      }
+      persistSoon();
+    }
+    if(Object.keys(conflicts).length){syncTag('err','Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.');return;}
+    if(Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))){syncTag('err','Hay cambios pendientes de guardar; conserva esta pestaña abierta');clearTimeout(_cloudRetryT);_cloudRetryT=setTimeout(cloudFlush,15000);}
+    else{localStorage.removeItem(LS_KEY+'_dirty');syncTag('ok','Guardado ✓');}
+  }catch(e){
+    const conflict=Object.keys(conflicts).length>0;
+    syncTag('err',conflict?'Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.':'No se pudo guardar la operación completa: '+(e.message||e)+' — se reintentará');
+    console.warn('[sync]',e.message||e);
+    clearTimeout(_cloudRetryT);if(!conflict)_cloudRetryT=setTimeout(cloudFlush,15000);
+  }finally{_cloudBusy=false;}
 }
+
 function cloudSnapshotAll(){ for(const b of Object.keys(CLOUD_BLOCKS)) _cloudHash[b]=JSON.stringify(CLOUD_BLOCKS[b].get() ?? null); }
 function localHasData(){
   return state.projects.some(p=>!p.tpl) || state.clients.length>0 || state.library.length>0 ||
@@ -11722,13 +11729,20 @@ function cloudMarkLoadedBlocks(rows){
         else { const cur=CLOUD_BLOCKS[b].get(); if(Array.isArray(cur) && cur.length){ _cloudApplying=true; try{ CLOUD_BLOCKS[b].set([]); }finally{ _cloudApplying=false; } } if(_accessRole==='colaborador'&&['config','facturas','presupuestos','contratistas'].includes(b))_cloudHash[b]=canon(CLOUD_BLOCKS[b].get());else delete _cloudHash[b]; _cloudCount[b]=0; }
       }
 }
+async function cloudConnectionStep(request,attempt){
+  let timer;
+  try{const result=await Promise.race([request,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('La conexión tarda demasiado. Comprueba tu conexión y vuelve a intentarlo.')),20000);})]);if(attempt!==_accessAttempt)throw Error('La sesión ha cambiado');return result;}
+  finally{clearTimeout(timer);}
+}
 async function cloudLoad(){
-  if(!sb) return;
+  if(!sb||_accessConnecting)return;
+  const attempt=++_accessAttempt;_accessConnecting=true;_accessError="";
   _accessLoading=true;
   try{
+    render();
     syncTag("saving","Conectando con tu estudio…");
-    const {data:mem, error:e1} = await sb.rpc("unirse_al_estudio");
-    if(e1||!mem||!mem.estudio_id){ syncTag("err","No se pudo conectar con el estudio"); console.warn("[sync]", e1); afterLoginOnce(); return; }
+    const {data:mem, error:e1} = await cloudConnectionStep(sb.rpc("unirse_al_estudio"),attempt);
+    if(e1||!mem||!mem.estudio_id){ throw new Error("No se pudo comprobar tu acceso al estudio. Revisa la conexión y reintenta."); }
     ESTUDIO_ID = mem.estudio_id;
     state.myRole = mem.rol || "miembro";
     /* Ancla de estudio: si este navegador ya trabajaba con un estudio y sigue teniendo
@@ -11738,12 +11752,13 @@ async function cloudLoad(){
       const anc = localStorage.getItem(LS_KEY+"_estudio");
       _anclaPrevia = !!(anc && anc!==ESTUDIO_ID);
       if(anc && anc!==ESTUDIO_ID){
-        const {data:probe, error:pe} = await sb.from("miembros")
-          .select("estudio_id,rol").eq("estudio_id", anc).limit(1);
+        const {data:probe, error:pe} = await cloudConnectionStep(sb.from("miembros")
+          .select("estudio_id,rol").eq("estudio_id", anc).limit(1),attempt);
         if(!pe && Array.isArray(probe) && probe.length===1){ ESTUDIO_ID = anc; state.myRole=probe[0].rol||"miembro"; }
       }
       localStorage.setItem(LS_KEY+"_estudio", ESTUDIO_ID);
     }catch(e){}
+    if(attempt!==_accessAttempt)return;
     try{
       try{cloudKeepPendingCopy();}catch(copyError){
         syncTag('saving','Conservando copias anteriores para liberar espacio…');
@@ -11751,15 +11766,15 @@ async function cloudLoad(){
         cloudKeepPendingCopy();
       }
       // Las copias se consultan voluntariamente desde el estado de sincronización.
-    }catch(e){syncTag("err","No se pudo conservar la copia pendiente. No cierres esta pestaña ni borres los datos del navegador.");afterLoginOnce();return;}
-    const access=await sb.rpc("app_rol",{p_estudio:ESTUDIO_ID});
-    if(access.error||!access.data||access.data==="sin_acceso"){syncTag("err","No se pudieron verificar tus permisos");return;}
+    }catch(e){throw new Error("No hay espacio para conservar la copia pendiente. Descarga los cambios desde el estado de sincronización y conserva esta pestaña abierta.");}
+    const access=await cloudConnectionStep(sb.rpc("app_rol",{p_estudio:ESTUDIO_ID}),attempt);
+    if(access.error||!['admin','colaborador','gestoria','contratista','cliente'].includes(access.data)){throw new Error("No se pudieron verificar tus permisos. Reintenta o consulta con el administrador del estudio.");}
     _accessRole=access.data;
     if(_accessRole==="gestoria"){_accessLoading=false;await gestoriaLoad();return;}
     if(_accessRole==='contratista'||_accessRole==='cliente'){_accessLoading=false;render();return;}
     const eid = ESTUDIO_ID;
-    const {data:rows, error:e2} = await cloudReadRows();
-    if(e2){ syncTag("err","No se pudieron cargar los datos"); afterLoginOnce(); return; }
+    const {data:rows, error:e2} = await cloudConnectionStep(cloudReadRows(),attempt);
+    if(e2){ throw new Error("No se pudieron cargar los datos del estudio. Revisa la conexión y reintenta."); }
     cloudPrepareFilteredCache(rows);
     _accessLoading=false;
     if(rows && rows.length){
@@ -11794,7 +11809,8 @@ async function cloudLoad(){
       cloudDirty(); cloudRealtimeStart(); syncTag("ok","Estudio listo ✓");
       afterLoginOnce();
     }
-  }catch(e){ console.warn("[sync]", e); syncTag("err","Error de conexión con el estudio"); afterLoginOnce(); }
+  }catch(e){if(attempt!==_accessAttempt)return;_accessLoading=true;_accessError=e.message||"No se pudo completar la conexión. Reintenta.";console.warn("[sync]",e);syncTag("err",_accessError);}
+  finally{if(attempt===_accessAttempt){_accessConnecting=false;render();}}
 }
 function _dataUrlBlob(du){
   try{

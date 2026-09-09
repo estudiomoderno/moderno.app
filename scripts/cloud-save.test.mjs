@@ -19,9 +19,12 @@ function session(store,items=structuredClone(base),hooks={}){
  }}}}};
  c.sb.rpc=async(_name,p)=>{
  if(_name==='app_leer_bloques'){const result=await c.sb.from('datos_estudio').select().maybeSingle();return result.error?result:{data:result.data?[{...result.data,bloque:'contactos',rol:c._accessRole}]:[]};}
+ assert.equal(_name,'app_guardar_lote');assert.equal(p.p_cambios.length,1);
+ const change=p.p_cambios[0];p={p_contenido:change.contenido,p_base:change.base};
   const row={contenido:p.p_contenido,updated_at:new Date(Date.now()+store.writes).toISOString()};
   const q=c.sb.from('datos_estudio');
-  return (p.p_base===null?q.insert(row):q.update(row).eq('updated_at',p.p_base)).select().maybeSingle();
+  const result=await (p.p_base===null?q.insert(row):q.update(row).eq('updated_at',p.p_base)).select().maybeSingle();
+  return result.error?result:{data:result.data?[{bloque:change.bloque,updated_at:result.data.updated_at}]:null};
  };
  vm.createContext(c);vm.runInContext(html.slice(html.indexOf('async function cloudReadRows('),html.indexOf('async function cloudRecoverBlock('))+'\n'+code,c);return {c,local,flush:()=>c.cloudFlush(),get:()=>items};
 }
@@ -69,4 +72,11 @@ test('explicitly confirmed import uses current server version',async()=>{
 test('unknown baseline cannot replace an existing block without confirmation',async()=>{
  const store=fixture(),s=session(store,[{id:3,name:'Restored'}]);delete s.c._cloudHash.contactos;
  await s.flush();assert.equal(store.writes,0);assert.equal(s.local.dirty,true);
+});
+
+test('a conflict in the second block prevents saving the first block',async()=>{
+ const store=fixture(),a=structuredClone(base);a[0].name='Cambio local';const s=session(store,a);
+ let agenda=[{id:1,name:'Mi cita'}];s.c.CLOUD_BLOCKS.agenda={get:()=>agenda,set:v=>agenda=v};s.c._cloudHash.agenda=sync.canonical([{id:1,name:'Base'}]);s.c._cloudCount.agenda=1;
+ s.c.cloudReadBlock=async b=>({data:b==='contactos'?structuredClone(store.row):{contenido:[{id:1,name:'Cita compañero'}],updated_at:'otro'}});
+ await s.flush();assert.equal(store.writes,0);assert.equal(store.row.contenido[0].name,'A');assert.equal(s.get()[0].name,'Cambio local');assert.ok(s.c.window._cloudConflicts.agenda);
 });
