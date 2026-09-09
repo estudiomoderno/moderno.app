@@ -56,3 +56,15 @@ El usuario autoriza que TALLER desarrolle, compruebe y publique las modificacion
 - Taller Moderno.App es el único responsable de estos cambios. El candidato se desarrolla en una rama y carpeta aisladas; Web y Panelcontrol no editan el CRM.
 - Se verificaron recuperación de base de datos y contenidos, permisos con identidades ficticias y guardado concurrente. Resultados, límites y transición pendientes en VALIDACION-PROTECCION.md.
 - No se modifica producción ni se activa una automatización de supervisión. La publicación requiere completar los flujos pendientes y coordinar las sesiones del equipo piloto.
+
+## 2026-09-09 — Visores privados y continuidad
+
+- Candidato local: portales filtrados en servidor, enlaces firmados de 60 segundos y actualización que espera al guardado. Mantener referencias de archivos; nunca guardar los enlaces temporales.
+- Desarrollo local conectado exclusivamente a pruebas, con almacenamiento local separado. Las claves administrativas no pertenecen a .env del cliente.
+- ICS, Realtime, visores e importación ficticia ensayados en el clon. La validación del correo incluido en la entrega y la coordinación de sesiones siguen pendientes; no publicar el candidato incompleto.
+- Procedimiento de transición y suspensión en TRANSICION-PROTECCION.md. Producción no se ha modificado en esta validación.
+
+## 2026-09-09 — Google Calendar aplazado
+
+- El usuario confirma que Google Calendar nunca llegó a conectarse y decide hacerlo más adelante. Queda fuera de la actualización de protección; no exigir sus fuentes ni una cuenta para probar Calendar como condición para publicarla.
+- Esta decisión no aplaza la validación del inicio de sesión, el correo incluido en la entrega ni la coordinación de sesiones del piloto. La función calendario-ics recuperada es un flujo distinto de la integración pendiente con Google Calendar.

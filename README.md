@@ -1,16 +1,18 @@
 # Moderno.app — TALLER
 
-CRM para estudios de interiorismo y reformas. Aplicación actual: `app/index.html`, HTML, CSS y JavaScript sin compilación, v3.29.
+CRM para estudios de interiorismo y reformas. Candidato v3.30-pruebas, sin publicar. Lee [Validación de protección](docs/VALIDACION-PROTECCION.md) antes de continuar.
 
 ## Arranque local
 
 Instala Node.js 22 o superior y Git. Desde la raíz del repositorio:
 
 ```sh
-node scripts/dev-server.mjs
+cp .env.example .env
+# Rellena .env con URL y clave pública del proyecto de pruebas.
+npm run dev
 ```
 
-También sirve `npm run dev`. No hace falta instalar paquetes. Abre http://localhost:3000. Detener: Ctrl+C. El servidor escucha solo en este ordenador, sirve app/, desactiva la caché y admite rutas como /proyectos.
+No hace falta instalar paquetes. En PowerShell puedes copiar el archivo con `Copy-Item .env.example .env`. Abre http://localhost:3000. Detener: Ctrl+C. El servidor escucha solo en este ordenador, sirve app/, desactiva la caché y admite rutas como /proyectos. También admite `node --env-file=.env scripts/dev-server.mjs`.
 
 Aquí la raíz Git es `C:\Chat Codex\moderno.app-main`; Codex está vinculado a su carpeta contenedora `C:\Chat Codex`. En otros ordenadores conviene vincular la raíz Git directamente.
 
@@ -19,14 +21,16 @@ Aquí la raíz Git es `C:\Chat Codex\moderno.app-main`; Codex está vinculado a 
 ```sh
 git clone --branch taller https://github.com/estudiomoderno/moderno.app.git
 cd moderno.app
-node scripts/dev-server.mjs
+cp .env.example .env
+# Configura el proyecto de pruebas antes de arrancar.
+npm run dev
 ```
 
 La rama de trabajo es taller; al terminar cada trabajo se suben los cambios revisados. Leer `docs/ESTADO-TALLER.md` y `docs/DECISIONES.md` antes de desarrollar.
 
 ## Datos y login
 
-La configuración pública de Supabase está embebida en el HTML. No se necesita .env; el servidor no lo lee. Se necesita Internet para bibliotecas y Supabase. Iniciar sesión conecta al backend real: local no es una base de datos de pruebas.
+El HTML entregado en producción conserva su configuración. El servidor local la sustituye en memoria por la URL y clave pública de `.env`; rechaza el proyecto productivo conocido y las claves administrativas. Limita las conexiones al proyecto de pruebas y usa una clave de almacenamiento local distinta, conservando las copias de producción del navegador. Se necesita Internet y un usuario ficticio de ese proyecto. No basta con servir el HTML con otro servidor: eso conservaría su conexión productiva.
 
 Para Google OAuth comprobar en Supabase Authentication → URL Configuration que se permite `http://localhost:3000/` e iniciar el acceso desde la raíz. No se ha inspeccionado la configuración real de OAuth. Revisar el error y las URL permitidas antes de modificar Google. Nunca guardar secretos en el repositorio.
 
@@ -36,7 +40,7 @@ Para Google OAuth comprobar en Supabase Authentication → URL Configuration que
 - scripts/: servidor local sin dependencias.
 - docs/: estado, decisiones e historial.
 - admin/, web/, extension/, mailer/: contienen README, no implementaciones.
-- supabase/: marcadores de SQL y gcal; faltan archivos ejecutables.
+- supabase/: calendario recuperado, función de autorización de adjuntos y configuración. La función gcal sigue pendiente de fuente y despliegue.
 
 ## Publicación
 

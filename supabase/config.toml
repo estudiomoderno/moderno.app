@@ -1,0 +1,7 @@
+# These functions validate their link tokens in their handlers.
+# Never disable checks in those handlers when disabling the legacy JWT gateway.
+[functions.calendario-ics]
+verify_jwt = false
+
+[functions.portal-archivo]
+verify_jwt = false

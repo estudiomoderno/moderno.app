@@ -1000,6 +1000,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/sync-merge.js?v=20260909"></script>
+<script src="/private-files.js?v=20260909"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -3567,22 +3568,24 @@ function cliItems(p, soloEnviados){
   })));
   return out;
 }
-function portalPlanoView(pid,i){
+async function portalPlanoView(pid,i){
   const fl=state.projects.find(x=>x.id===pid).obraPlanos[i]; if(!fl) return;
-  const body = fl.type==="application/pdf" ? `<embed src="${fileSrc(fl)}" type="application/pdf" style="width:100%;height:84vh;border-radius:12px">`
-    : fl.type&&fl.type.startsWith("image/") ? `<img src="${fileSrc(fl)}" style="width:100%;max-height:82vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
+  const resolvedSrc=await fileResolveForView(fl); if(resolvedSrc===false)return;
+  const body = fl.type==="application/pdf" ? `<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:84vh;border-radius:12px">`
+    : fl.type&&fl.type.startsWith("image/") ? `<img src="${resolvedSrc}" style="width:100%;max-height:82vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
     : `<p style="font-size:13px">\ud83d\udcd0 ${fl.name}</p>`;
   mb.classList.add("wide"); mb.classList.add("xwide");
   modal(`<h3 style="display:flex;align-items:center;gap:7px">\ud83d\udcd0 ${fl.name}</h3>${body}
-  <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${fl.data}" download="${fl.name}">\u2193 Descargar</a><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
+  <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${resolvedSrc}" download="${fl.name}">\u2193 Descargar</a><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
 }
-function portalFileView(pid,f,i){
+async function portalFileView(pid,f,i){
   const x=state.projects.find(p=>p.id===pid).obraF[f].items[i], fl=x.file; if(!fl) return;
-  const body = fl.type==="application/pdf" ? `<embed src="${fl.data}" type="application/pdf" style="width:100%;height:74vh;border-radius:12px">`
-    : (fl.type||"").startsWith("image/") ? `<img src="${fl.data}" style="max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto">`
+  const resolvedSrc=await fileResolveForView(fl); if(resolvedSrc===false)return;
+  const body = fl.type==="application/pdf" ? `<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:74vh;border-radius:12px">`
+    : (fl.type||"").startsWith("image/") ? `<img src="${resolvedSrc}" style="max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto">`
     : `<p style="font-size:13px">\ud83d\udcc4 ${fl.name}</p>`;
   modal(`<h3 style="display:flex;align-items:center;gap:7px">${ico("clip")} ${fl.name}</h3><p style="font-size:11.5px;color:var(--ink-faint);margin-top:0">${x.t}</p>${body}
-  <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${fl.data}" download="${fl.name}">\u2193 Descargar</a><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
+  <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${resolvedSrc}" download="${fl.name}">\u2193 Descargar</a><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
 }
 /* Portal de obra: lo que ve quien escanea el QR pegado en el tajo. Sin precios, listas ni finanzas. */
 function vPortalObra(){
@@ -3601,7 +3604,7 @@ function vPortalObra(){
   const planosHtml=`<div class="cliCard" id="portalPlanos"><h2 class="sec" style="margin-top:0">Planos definitivos <span class="chip neutral" style="font-size:10px">${pls.length||"ninguno a\u00fan"}</span></h2>
       ${pls.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">
         ${pls.map((fl,i)=>`<div style="background:var(--card);border-radius:12px;overflow:hidden;cursor:pointer" onclick="portalPlanoView(${p.id},${i})">
-          <div style="height:110px;display:grid;place-items:center;background:var(--panel)">${fl.type&&fl.type.startsWith("image/")?`<img src="${fileSrc(fl)}" style="width:100%;height:110px;object-fit:cover">`:`<span style="font-size:34px">\ud83d\udcd0</span>`}</div>
+          <div style="height:110px;display:grid;place-items:center;background:var(--panel)">${fl.type&&fl.type.startsWith("image/")?`<img ${fileImageAttrs(fileSrc(fl))} style="width:100%;height:110px;object-fit:cover">`:`<span style="font-size:34px">\ud83d\udcd0</span>`}</div>
           <div style="padding:8px 10px;font-size:11.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fl.name}</div>
         </div>`).join("")}
       </div>`:`<p style="font-size:12px;color:var(--ink-faint)">El estudio a\u00fan no ha subido los planos definitivos.</p>`}
@@ -3621,7 +3624,7 @@ function vPortalObra(){
   return `<div style="min-height:100vh;background:var(--card)">
   <div style="max-width:820px;margin:0 auto;padding:26px 18px 60px">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
-      ${lg?`<img src="${lg}" style="height:46px;max-width:180px;object-fit:contain">`:`<div style="font-weight:900;font-size:24px;letter-spacing:-0.5px">${b.name||state.portalEstudio||""}</div>`}
+      ${lg?`<img ${fileImageAttrs(lg)} style="height:46px;max-width:180px;object-fit:contain">`:`<div style="font-weight:900;font-size:24px;letter-spacing:-0.5px">${b.name||state.portalEstudio||""}</div>`}
       <span style="margin-left:auto;font-size:11px;color:var(--ink-faint)">Portal de obra \u00b7 solo lectura</span>
     </div>
     <div class="cliCard" style="padding:20px 22px">
@@ -3712,7 +3715,7 @@ function vPortalCli(){
   return `<div style="min-height:100vh;background:var(--card)">
   <div style="max-width:760px;margin:0 auto;padding:26px 18px 60px">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px">
-      ${lg?`<img src="${lg}" style="height:46px;max-width:180px;object-fit:contain">`:`<div style="font-weight:900;font-size:24px;letter-spacing:-0.5px">${b.name||state.account.name||""}</div>`}
+      ${lg?`<img ${fileImageAttrs(lg)} style="height:46px;max-width:180px;object-fit:contain">`:`<div style="font-weight:900;font-size:24px;letter-spacing:-0.5px">${b.name||state.account.name||""}</div>`}
       <span style="margin-left:auto;font-size:11px;color:var(--ink-faint)">Portal del cliente</span>
     </div>
     <div class="cliCard" style="padding:22px">
@@ -7422,22 +7425,22 @@ function obraFileLoad(inp){
   const {pid,f,i}=obraFileTarget; obraFileTarget=null;
   fileUp(file).then(__u=>{ if(__u==null) return; obraSnap(pid); const p=state.projects.find(x=>x.id===pid); p.obraF[f].items[i].file={name:file.name,data:__u,type:file.type}; render(); toast("✓ Archivo adjuntado al punto"); });
 }
-function fileFull(data){
+async function fileFull(data){
   try{
-    fetch(data).then(r=>r.blob()).then(b=>{
-      const u=URL.createObjectURL(b); window.open(u,"_blank");
-      setTimeout(()=>URL.revokeObjectURL(u), 60000);
-    });
-  }catch(e){ toast("No he podido abrirlo a pantalla completa"); }
+    const src=await fileResolveForView({data}); if(!src)return;
+    const response=await fetch(src); if(!response.ok)throw new Error();
+    const u=URL.createObjectURL(await response.blob()); window.open(u,"_blank","noopener");
+    setTimeout(()=>URL.revokeObjectURL(u),60000);
+  }catch(e){toast("No he podido abrirlo a pantalla completa");}
 }
-function descargaArchivo(src,name){
+async function descargaArchivo(data,name){
   try{
-    fetch(src).then(r=>r.blob()).then(b=>{
-      const u=URL.createObjectURL(b);
-      const a=document.createElement("a"); a.href=u; a.download=name||"archivo"; a.click();
-      setTimeout(()=>URL.revokeObjectURL(u), 30000);
-    });
-  }catch(e){ toast("No he podido descargarlo"); }
+    const src=await fileResolveForView({data}); if(!src)return;
+    const response=await fetch(src); if(!response.ok)throw new Error();
+    const u=URL.createObjectURL(await response.blob());
+    const a=document.createElement("a");a.href=u;a.download=name||"archivo";a.click();
+    setTimeout(()=>URL.revokeObjectURL(u),30000);
+  }catch(e){toast("No he podido descargarlo");}
 }
 function fileBtns(getPath,name){
   return `<div style="display:flex;gap:8px;margin:0 0 10px">
@@ -7445,12 +7448,13 @@ function fileBtns(getPath,name){
     <button class="btn btn-dark" onclick="descargaArchivo(${getPath},'${(name||"archivo").replace(/'/g,"")}')">\u2b07 Descargar</button>
   </div>`;
 }
-function obraFileView(pid,f,i){
+async function obraFileView(pid,f,i){
   const x=state.projects.find(p=>p.id===pid).obraF[f].items[i], fl=x.file; if(!fl) return;
+  const resolvedSrc=await fileResolveForView(fl); if(resolvedSrc===false)return;
   const _btns = fileBtns(`state.projects.find(p=>p.id===${pid}).obraF[${f}].items[${i}].file.data`, fl.name);
-  const body = _btns + (fl.type==="application/pdf" ? `<embed src="${fl.data}" type="application/pdf" style="width:100%;height:74vh;border-radius:12px">`
-    : fl.type.startsWith("image/") ? `<img src="${fl.data}" style="max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto">`
-    : `<p style="font-size:13px">📄 ${fl.name}</p><a class="btn btn-dark" href="${fl.data}" download="${fl.name}">Descargar</a>`);
+  const body = _btns + (fl.type==="application/pdf" ? `<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:74vh;border-radius:12px">`
+    : fl.type.startsWith("image/") ? `<img src="${resolvedSrc}" style="max-width:100%;max-height:70vh;border-radius:12px;display:block;margin:0 auto">`
+    : `<p style="font-size:13px">📄 ${fl.name}</p><a class="btn btn-dark" href="${resolvedSrc}" download="${fl.name}">Descargar</a>`);
   modal(`<h3 style="display:flex;align-items:center;gap:7px">${ico("clip")} ${fl.name}</h3><p style="font-size:11.5px;color:var(--ink-faint);margin-top:0">${x.t}</p>${body}
   <div class="btn-row" style="margin-top:12px"><button class="btn btn-ghost" onclick="obraFileDel(${pid},${f},${i})">✕ Quitar adjunto</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
 }
@@ -7467,15 +7471,16 @@ function obraPlanoLoad(inp){
   files.forEach(f=>{ fileUp(f).then(__u=>{ if(__u==null) return; p.obraPlanos.push({name:f.name,data:__u,type:f.type}); done++;
       if(done===files.length){ render(); toast("\u2713 "+done+(done===1?" plano subido":" planos subidos")); } }); });
 }
-function obraPlanoView(pid,i){
+async function obraPlanoView(pid,i){
   const fl=state.projects.find(x=>x.id===pid).obraPlanos[i]; if(!fl) return;
+  const resolvedSrc=await fileResolveForView(fl); if(resolvedSrc===false)return;
   const _btns = fileBtns(`state.projects.find(x=>x.id===${pid}).obraPlanos[${i}].data`, fl.name);
-  const body = _btns + (fl.type==="application/pdf" ? `<embed src="${fileSrc(fl)}" type="application/pdf" style="width:100%;height:84vh;border-radius:12px">`
-    : fl.type&&fl.type.startsWith("image/") ? `<img src="${fileSrc(fl)}" style="width:100%;max-height:82vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
+  const body = _btns + (fl.type==="application/pdf" ? `<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:84vh;border-radius:12px">`
+    : fl.type&&fl.type.startsWith("image/") ? `<img src="${resolvedSrc}" style="width:100%;max-height:82vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
     : `<p style="font-size:13px">\ud83d\udcd0 ${fl.name}</p>`);
   mb.classList.add("wide"); mb.classList.add("xwide"); modal(`<h3 style="display:flex;align-items:center;gap:7px">\ud83d\udcd0 ${fl.name}</h3>
   <p style="font-size:11.5px;color:var(--ink-faint);margin-top:0">Plano definitivo de la obra</p>${body}
-  <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${fl.data}" download="${fl.name}">\u2193 Descargar</a><button class="btn btn-ghost" onclick="obraPlanoDel(${pid},${i})">\u2715 Quitar plano</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
+  <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${resolvedSrc}" download="${fl.name}">\u2193 Descargar</a><button class="btn btn-ghost" onclick="obraPlanoDel(${pid},${i})">\u2715 Quitar plano</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
 }
 function obraPlanoDel(pid,i){ obraSnap(pid); state.projects.find(x=>x.id===pid).obraPlanos.splice(i,1); closeModal(); render(); toast("Plano quitado \u2014 \u21a9 deshacer arriba si te arrepientes"); }
 function obraPack(pid){
@@ -8891,7 +8896,7 @@ function refreshPrices(){
 function exHead(p,r,o,extra){
   const lg=state.logos&&state.logos[p.brand];
   return `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px">
-    <div style="min-width:0">${o.logo?(lg?`<img src="${lg}" style="height:44px;max-width:180px;object-fit:contain;display:block;margin-bottom:6px">`:`<div style="font-weight:900;font-size:20px;margin-bottom:4px">${(BRAND[p.brand]||{}).name||state.account.name||""}</div>`):""}</div>
+    <div style="min-width:0">${o.logo?(lg?`<img ${fileImageAttrs(lg)} style="height:44px;max-width:180px;object-fit:contain;display:block;margin-bottom:6px">`:`<div style="font-weight:900;font-size:20px;margin-bottom:4px">${(BRAND[p.brand]||{}).name||state.account.name||""}</div>`):""}</div>
     <div style="text-align:right;min-width:0">${o.date?`<div style="font-size:11px;color:#8a8a8a">${hoyEs()}</div>`:""}<div style="font-size:24px;line-height:1.2"><span style="color:#8a8a8a">${p.num} ${p.name} / </span><b>${r.name}</b></div>${extra||""}</div>
   </div>`;
 }
@@ -9369,21 +9374,22 @@ const fobj = f => typeof f==="string" ? {name:f} : f;
 const fileOk = f => { const o=fobj(f); return !!(o && (fileSrc(o) || o.body || o.docRef)); };
 const fileCli = f => { const o=fobj(f); return !!o && o.cli!==false; };
 function fileCliToggle(pid,i){ const p=state.projects.find(x=>x.id===pid); if(!p||!p.files||p.files[i]===undefined) return; if(typeof p.files[i]==="string") p.files[i]={name:p.files[i]}; p.files[i].cli=!fileCli(p.files[i]); persistSoon(); render(); }
-function fileView(pid,i,fromPortal){
+async function fileView(pid,i,fromPortal){
   const p = state.projects.find(x=>x.id===pid);
   const f = fobj(p.files[i]);
   if(f && f.docRef){ portalInvoicePrint(f.docRef); return; }
+  const resolvedSrc=await fileResolveForView(f); if(resolvedSrc===false)return;
   mb.classList.add("wide");
   mb.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
     ${ico("docs","lg")} <b style="font-size:15px;min-width:0">${f.name}</b>
     ${f.signed?`<span class="chip" style="background:#DBEBDD;color:#2E6B4F">✍ Firmado por ${f.signed.by} · ${f.signed.date}</span>`:""}
     <span style="margin-left:auto"></span>
     ${fromPortal&&!f.signed?`<button class="btn btn-gold" onclick="signModal(${pid},${i})">✍ Firmar online</button>`:""}
-    ${fileSrc(f)?`<a class="btn btn-ghost" href="${fileSrc(f)}" download="${f.name}" target="_blank" rel="noopener">${ico('download')} Descargar</a>`:`<button class="btn btn-ghost" onclick="toast('Este archivo es de una versión anterior (solo nombre): vuelve a subirlo para poder descargarlo')">${ico('download')} Descargar</button>`}
+    ${resolvedSrc?`<a class="btn btn-ghost" href="${resolvedSrc}" download="${f.name}" target="_blank" rel="noopener">${ico('download')} Descargar</a>`:`<button class="btn btn-ghost" onclick="toast('Este archivo es de una versión anterior (solo nombre): vuelve a subirlo para poder descargarlo')">${ico('download')} Descargar</button>`}
     <button onclick="mb.classList.remove('wide');${fromPortal?`projectPortal(${pid})`:"closeModal()"}" style="font-size:16px">✕</button>
   </div>
-  <div style="background:#FBFAF7;color:var(--ink);border-radius:14px;padding:${fileSrc(f)?"10px":"34px 38px"};min-height:340px;box-shadow:var(--shadow)">
-    ${fileSrc(f)?(f.type==="application/pdf"?`<embed src="${fileSrc(f)}" type="application/pdf" style="width:100%;height:72vh;border-radius:10px">`:(f.type||"").startsWith("image/")?`<img src="${fileSrc(f)}" style="width:100%;max-height:72vh;object-fit:contain;border-radius:10px;display:block">`:`<div style="text-align:center;padding:60px 20px">\ud83d\udcc4 ${f.name}<br><a class="btn btn-ghost" style="margin-top:12px" href="${fileSrc(f)}" download="${f.name}" target="_blank" rel="noopener">\u2193 Descargar</a></div>`)
+  <div style="background:#FBFAF7;color:var(--ink);border-radius:14px;padding:${resolvedSrc?"10px":"34px 38px"};min-height:340px;box-shadow:var(--shadow)">
+    ${resolvedSrc?(f.type==="application/pdf"?`<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:72vh;border-radius:10px">`:(f.type||"").startsWith("image/")?`<img src="${resolvedSrc}" style="width:100%;max-height:72vh;object-fit:contain;border-radius:10px;display:block">`:`<div style="text-align:center;padding:60px 20px">\ud83d\udcc4 ${f.name}<br><a class="btn btn-ghost" style="margin-top:12px" href="${resolvedSrc}" download="${f.name}" target="_blank" rel="noopener">\u2193 Descargar</a></div>`)
     :f.body?`<pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.65;margin:0">${f.body.replace(/</g,"&lt;")}</pre>`
       :`<div style="text-align:center;color:#9A938A;padding:70px 20px">📄<br><br>Vista previa del archivo<br><small>En la app real aquí se muestra el PDF o la imagen tal cual. Los documentos creados desde Plantillas sí se ven con su contenido.</small></div>`}
     ${f.signed?`<div style="margin-top:30px;border-top:1px solid #E2E2E0;padding-top:14px;font-size:12.5px">Firmado electrónicamente por <b>${f.signed.by}</b> el ${f.signed.date}<br><span style="font-family:cursive;font-size:22px">${f.signed.by}</span></div>`:""}
@@ -9420,9 +9426,9 @@ function addFiles(pid,files){
   toast("Subiendo "+arr.length+" archivo"+(arr.length===1?"":"s")+"…");
 }
 /* Visor de archivo de proyecto para los portales (sin borrar ni firmar): imagen, PDF o descarga */
-function portalProjFileView(pid,i){
+async function portalProjFileView(pid,i){
   const p=state.projects.find(x=>x.id===pid); const f=fobj((p.files||[])[i]); if(!f) return;
-  const srcOk=fileSrc(f);
+  const srcOk=await fileResolveForView(f); if(srcOk===false)return;
   const body = !srcOk ? `<p style="font-size:13px">\ud83d\udcc4 ${f.name}</p><p style="font-size:11.5px;color:var(--ink-faint)">Archivo sin contenido (subido en una versión anterior).</p>`
     : f.type==="application/pdf" ? `<embed src="${srcOk}" type="application/pdf" style="width:100%;height:78vh;border-radius:12px">`
     : (f.type||"").startsWith("image/") ? `<img src="${srcOk}" style="width:100%;max-height:78vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
@@ -9644,8 +9650,8 @@ function tkDrawFiles(){
               : `<small style="color:var(--ink-faint)" title="Se guardó solo el nombre en una versión anterior: vuelve a subirlo">solo nombre</small>`;
     return `<div class="entry" style="background:var(--white);padding:7px 10px;font-size:12px;gap:8px;${ok?"cursor:pointer":""}" ${ok?`onclick="tkOpenFile(${i})" title="Abrir ${f.name.replace(/"/g,"")}"`:""}>${ico("adj_archivo")} ${name} ${est}<button style="margin-left:auto;color:var(--ink-faint)" title="Quitar adjunto" onclick="event.stopPropagation();tk.files.splice(${i},1);tkDrawFiles()">✕</button></div>`; }).join("") || "";
 }
-function tkOpenFile(i){
-  const f=tkFileObj(tk.files[i]); const s=fileSrc(f); if(!s) return;
+async function tkOpenFile(i){
+  const f=tkFileObj(tk.files[i]); const s=await fileResolveForView(f); if(!s) return;
   if(/^https?:/.test(s)){ window.open(s,"_blank","noopener"); return; }
   try{ const b=_dataUrlBlob(s); if(b){ const u=URL.createObjectURL(b); window.open(u,"_blank","noopener"); setTimeout(()=>URL.revokeObjectURL(u), 60000); return; } }catch(e){}
   const a=document.createElement("a"); a.href=s; a.download=f.name||"archivo"; a.click();
@@ -10656,7 +10662,7 @@ function printAs(title){
 function pdfBrandLogo(bk, h){
   h=h||44;
   const lg=state.logos&&state.logos[bk];
-  if(lg) return `<img src="${lg}" style="max-height:${h}px;max-width:200px;object-fit:contain">`;
+  if(lg) return `<img ${fileImageAttrs(lg)} style="max-height:${h}px;max-width:200px;object-fit:contain">`;
   const n=(BRAND[bk]&&BRAND[bk].name)||state.emitter.name||state.account.name||"";
   return `<div style="font-weight:900;font-size:${Math.round(h/2)}px;letter-spacing:-.3px">${n}</div>`;
 }
@@ -10740,7 +10746,7 @@ function agendaExportPDF(){
   const z=document.getElementById("printZone");
   z.innerHTML = `<div style="font-family:Segoe UI,sans-serif;color:#111;padding:6px">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px">
-      ${lg?`<img src="${lg}" style="height:44px;max-width:170px;object-fit:contain">`:`<div style="font-weight:900;font-size:22px">${marca}</div>`}
+      ${lg?`<img ${fileImageAttrs(lg)} style="height:44px;max-width:170px;object-fit:contain">`:`<div style="font-weight:900;font-size:22px">${marca}</div>`}
       <div style="margin-left:auto;text-align:right;font-size:11px;color:#666">${hoyEs()}<br>${rows.length} contactos</div>
     </div>
     <h1 style="margin:6px 0 2px;font-size:20px">Agenda de contactos${tab!=="Todos"?" \u00b7 "+tab:""}</h1>
@@ -10847,6 +10853,33 @@ function subeAdjunto(f, obj){
     });
 }
 function fileSrc(fo){ return (fo && (fo.url || fo.data)) || null; }
+async function fileResolveForView(fo){
+  const source=fileSrc(fo); if(!source)return null;
+  try{
+    const origins=[new URL(SUPABASE_URL).origin,'https://auth.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co'];
+    const resolve=ModernoFiles.createResolver({origins,
+      signMember:async path=>{const {data,error}=await sb.storage.from('archivos').createSignedUrl(path,60);if(error)throw error;return data.signedUrl;},
+      signPortal:async ({path,token,type})=>{const {data,error}=await sb.functions.invoke('portal-archivo',{body:{path,token,type}});if(error)throw error;return data.url;}
+    });
+    return await resolve(source,{study:ESTUDIO_ID,portalToken:state.portalAnon,portalType:_wantObra?'obra':'cliente'});
+  }catch(e){toast('No se pudo abrir el archivo. Comprueba tu acceso y vuelve a intentarlo.');return false;}
+}
+function fileImageAttrs(source){
+  const escape=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  try{
+    const origins=[new URL(SUPABASE_URL).origin,'https://auth.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co'];
+    if(ModernoFiles.storagePath(source,origins))return 'data-private-file="'+escape(source)+'" alt="Imagen del proyecto"';
+    return 'src="'+escape(source)+'"';
+  }catch{return 'alt="Imagen no disponible"';}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const identity=()=>[ESTUDIO_ID,state.portalAnon,state.sessionUser&&state.sessionUser.id].join('|');
+  const scan=()=>document.querySelectorAll('img[data-private-file]:not([data-file-loading])').forEach(img=>{
+    img.dataset.fileLoading='1';const owner=identity();
+    fileResolveForView({data:img.dataset.privateFile}).then(src=>{if(src&&img.isConnected&&owner===identity())img.src=src;});
+  });
+  new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
+});
 /* Arrastrar y soltar archivos (v3.26): en la fila de Contabilidad, en «Adjuntar» y en el modal de gasto/ingreso */
 const DZ_ATTR = fn => `ondragover="event.preventDefault();event.stopPropagation();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="event.preventDefault();event.stopPropagation();this.classList.remove('over');${fn}(event.dataTransfer&&event.dataTransfer.files[0])"`;
 function dzFileOk(f){ if(!f) return false; const ok=/^image\//.test(f.type||"")||f.type==="application/pdf"||/\.(pdf|png|jpe?g|webp|heic)$/i.test(f.name||""); if(!ok) toast("Solo PDF o imágenes (JPG, PNG, WEBP)"); return ok; }
@@ -10860,11 +10893,11 @@ function rowDropAttr(e){
   if(e.link && (state.invoices||[]).some(f=>f.ref===e.link)) return "";
   return `ondragover="if(event.dataTransfer&&[...event.dataTransfer.types].includes('Files')){event.preventDefault();this.classList.add('dropover')}" ondragleave="this.classList.remove('dropover')" ondrop="event.preventDefault();this.classList.remove('dropover');gastoDrop(${e.id},event.dataTransfer.files[0])" title="Arrastra aquí el PDF o la foto de la factura para adjuntarla"`;
 }
-function gastoFile(id){
+async function gastoFile(id){
   const e = state.entries.find(x=>x.id===id);
   if(e.file){
     const fo = (typeof e.file==="object") ? e.file : {name:String(e.file), type:"", data:null};
-    const srcOk = fileSrc(fo);
+    const srcOk = await fileResolveForView(fo); if(srcOk===false)return;
     const btns = srcOk ? fileBtns(`fileSrc(state.entries.find(x=>x.id===${id}).file)`, fo.name) : "";
     const cuerpo = srcOk
       ? (fo.type==="application/pdf"
@@ -11805,7 +11838,7 @@ function persistNow(){
     localStorage.setItem(LS_KEY, JSON.stringify({v:1, when:Date.now(), state, BRAND, wsOrder}));
     _lastSave=new Date(); _saveErr=false;
   }catch(e){
-    if(!_saveErr) toast("⚠ La copia local no cabe en este navegador (imágenes pesadas) — tus datos SÍ siguen guardándose en la nube del estudio.");
+    if(!_saveErr) toast("⚠ No se pudo guardar la copia local. Conserva esta pestaña abierta y comprueba el guardado en la nube antes de salir.");
     _saveErr=true;
   }
   cloudDirty();   // la nube manda: se sincroniza aunque el navegador esté lleno
@@ -12659,6 +12692,17 @@ document.addEventListener("change", e=>{
   if(e.target.matches("input,select,textarea")) adminSavedPing();
 }, true);
 /* Centinela de caché: compara la versión que corre con la que hay subida al servidor */
+async function prepareAppReload(){
+  persistNow();
+  if(_saveErr){toast('No se puede actualizar: falta una copia local verificada. Conserva esta pestaña abierta.');return false;}
+  if(sb&&ESTUDIO_ID){
+    await cloudFlush();
+    if(_cloudBusy || Object.keys(CLOUD_BLOCKS).some(b=>_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))){
+      toast('Hay cambios pendientes. Guarda o descarga una copia antes de actualizar.');return false;
+    }
+  }
+  return true;
+}
 async function versionSentinel(){
   try{
     if(location.protocol==="file:") return;
@@ -12673,7 +12717,7 @@ async function versionSentinel(){
         bar.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:9999;background:var(--gold,#ffe94d);color:#111;padding:10px 16px;font-size:13px;font-weight:700;display:flex;gap:12px;align-items:center;justify-content:center;box-shadow:0 -4px 18px rgba(0,0,0,.18)";
         bar.innerHTML='⚠ Estás viendo una versión antigua por la caché del navegador ('+MODERNO_VER+'). En el servidor está la <b>'+m[1]+'</b>.&nbsp;<button id="verBarBtn" style="border:none;border-radius:99px;padding:8px 14px;font-weight:800;cursor:pointer;background:#111;color:#fff">Actualizar ahora</button>';
         document.body.appendChild(bar);
-        document.getElementById("verBarBtn").onclick=()=>{ persistNow(); location.replace(location.pathname+"?v="+Date.now()+location.hash); };
+        document.getElementById("verBarBtn").onclick=async()=>{ if(await prepareAppReload())location.replace(location.pathname+"?v="+Date.now()+location.hash); };
       }
     }
   }catch(e){}

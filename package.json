@@ -1,6 +1,6 @@
 {
   "name": "moderno-app",
   "private": true,
-  "scripts": { "dev": "node scripts/dev-server.mjs" },
+  "scripts": { "dev": "node --env-file=.env scripts/dev-server.mjs" },
   "engines": { "node": ">=22" }
 }
