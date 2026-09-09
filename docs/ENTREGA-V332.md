@@ -65,3 +65,5 @@ Publicada v3.32.4 el 9/9/2026, commit d9afb8b. Ocho recursos públicos con respu
 ## Menú v3.32.5
 
 Control plegado en flujo normal de la cabecera, en lugar de posición fija sobre Inicio. Revisión visual local y medidas DOM: debajo del logo y 14 px de separación con el primer enlace. 142 pruebas correctas. Solo disposición y etiqueta accesible; no cambia datos, iconos ni el comportamiento móvil.
+
+Publicada v3.32.5 el 9/9/2026, commit 4d20b4e. Ocho recursos públicos con respuesta 200 y contenido exacto comprobado normalizando finales de línea.
