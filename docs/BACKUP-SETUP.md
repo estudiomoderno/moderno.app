@@ -28,3 +28,6 @@ Primera prueba: usar archivos sintéticos en un entorno aislado, ejecutar copia 
 La copia completa y su comprobación consumen transferencia; definir frecuencia y retención según el volumen medido. No activar eliminación automática de copias sin una política acordada. Los logs publicados solo deben mostrar estados generales.
 
 Referencias: https://rclone.org/drive/ y https://supabase.com/docs/guides/storage/s3/authentication
+
+Alternativa sin clave privada de Google: federación de identidad con GitHub y token OAuth temporal en RCLONE_CONFIG_DESTINATION_TOKEN (JSON rclone). En este modo no se necesita RCLONE_CONFIG_DESTINATION_SERVICE_ACCOUNT_CREDENTIALS. Restringir confianza al repositorio y workflow de copias en main; limitar la ejecución a la duración del token. La federación y la programación todavía no están configuradas.
+

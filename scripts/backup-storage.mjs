@@ -43,8 +43,8 @@ function rclone(args, input) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const required = ['BACKUP_BUCKET', 'RCLONE_CONFIG_SOURCE_ENDPOINT', 'RCLONE_CONFIG_SOURCE_ACCESS_KEY_ID', 'RCLONE_CONFIG_SOURCE_SECRET_ACCESS_KEY', 'RCLONE_CONFIG_DESTINATION_SERVICE_ACCOUNT_CREDENTIALS', 'RCLONE_CONFIG_DESTINATION_ROOT_FOLDER_ID', 'RCLONE_CONFIG_DESTINATION_TEAM_DRIVE'];
-  if (required.some(key => !process.env[key])) {
+  const required = ['BACKUP_BUCKET', 'RCLONE_CONFIG_SOURCE_ENDPOINT', 'RCLONE_CONFIG_SOURCE_ACCESS_KEY_ID', 'RCLONE_CONFIG_SOURCE_SECRET_ACCESS_KEY', 'RCLONE_CONFIG_DESTINATION_ROOT_FOLDER_ID', 'RCLONE_CONFIG_DESTINATION_TEAM_DRIVE'];
+  if (required.some(key => !process.env[key]) || !(process.env.RCLONE_CONFIG_DESTINATION_TOKEN || process.env.RCLONE_CONFIG_DESTINATION_SERVICE_ACCOUNT_CREDENTIALS)) {
     console.error('Missing backup configuration. No copy started.');
     process.exitCode = 1;
   } else {
