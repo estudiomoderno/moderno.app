@@ -26,8 +26,9 @@ No basta con ocultar más botones ni denegar solamente el bloque facturas: proye
 - Las pruebas previas de entrada ficticia y anclaje a membresía siguen vigentes. Los cambios de impresión no modifican sbEnter, mailFnSend ni la resolución de membresía.
 - El cliente llama a /api/enviar-invitacion.php. No hay fuente PHP correspondiente en el repositorio ni en los archivos encontrados en el workspace. No incluir un reemplazo improvisado en el despliegue.
 - Petición HEAD al servicio productivo: HTTP 405 y application/json, sin destinatario, cuerpo ni envío. Esto acredita respuesta del endpoint, no entrega de correo ni seguridad de su implementación.
-- Dos pruebas locales con transporte simulado verifican payload y rechazo de respuestas fallidas/no JSON. No se enviaron correos, invitaciones reales ni recuperaciones de contraseña.
-- Para acreditar entrega real falta un destinatario de prueba explícitamente autorizado; para validar el backend aislado falta recuperar la fuente/configuración no secreta del servicio y prepararlo en pruebas. No copiar credenciales al cliente o al repositorio.
+- Dos pruebas locales con transporte simulado verifican payload y rechazo de respuestas fallidas/no JSON.
+- Después, el usuario autorizó expresamente una invitación de prueba a su dirección personal. Se realizó un único POST al servicio, con contenido identificado como prueba técnica: HTTP 200 y respuesta {"ok":true,"version":"v1.4","via":"smtp","smtp":"ok"}. No se ejecutaron operaciones de alta de usuarios, membresías ni permisos. La dirección personal se omite del repositorio público.
+- El servicio confirma aceptación SMTP; sigue pendiente la confirmación del destinatario de que recibió el mensaje. Para validar el backend aislado falta recuperar la fuente/configuración no secreta del servicio y prepararlo en pruebas. No copiar credenciales al cliente o al repositorio.
 
 ## Estado del piloto
 
