@@ -1,0 +1,20 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import sync from '../app/sync-merge.js';
+const merge = sync.mergeSavedData;
+test('independent records and fields survive',()=>{
+ const b=[{id:1,name:'A',done:false},{id:2,name:'B'}];
+ const l=structuredClone(b),r=structuredClone(b);l[0].name='A1';r[1].name='B1';r[0].done=true;
+ assert.deepEqual(merge(b,l,r),[{id:1,name:'A1',done:true},{id:2,name:'B1'}]);
+ assert.equal(b[0].name,'A');
+});
+test('conflicting values never silently win',()=>assert.throws(()=>merge({a:1},{a:2},{a:3}),/Conflicto/));
+test('delete versus edit conflicts',()=>assert.throws(()=>merge([{id:1,a:1}],[],[{id:1,a:2}]),/Conflicto/));
+test('independent additions and deletion survive',()=>assert.deepEqual(merge([{id:1}],[{id:2}],[{id:1},{id:3}]),[{id:3},{id:2}]));
+test('matching edits are idempotent',()=>assert.deepEqual(merge({a:1},{a:2},{a:2}),{a:2}));
+test('record references support documents',()=>assert.deepEqual(merge([{ref:'Q1',a:1}],[{ref:'Q1',a:2}],[{ref:'Q1',a:1},{ref:'Q2'}]),[{ref:'Q1',a:2},{ref:'Q2'}]));
+test('unkeyed simultaneous list changes conflict',()=>assert.throws(()=>merge([1],[1,2],[1,3]),/Conflicto/));
+test('reorders with concurrent changes conflict',()=>assert.throws(()=>merge([{id:1},{id:2}],[{id:2},{id:1}],[{id:1,a:1},{id:2}]),/Conflicto/));
+test('duplicate identifiers conflict',()=>assert.throws(()=>merge([{id:1}],[{id:1},{id:1}],[{id:1,a:1}]),/Conflicto/));
+test('object key ordering is irrelevant',()=>assert.deepEqual(merge({a:1,b:2},{b:2,a:1},{a:3,b:2}),{a:3,b:2}));
+test('nulls and scalar deletion are preserved',()=>assert.deepEqual(merge({a:1,b:2},{b:2},{a:1,b:null}),{b:null}));

@@ -53,7 +53,7 @@ Validación completada: acceso temporal, copia sintética, descarga y comparaci�
 3. Para recuperar, descargar `objects` a una carpeta local nueva o a un entorno aislado. Con el remoto privado configurado: `rclone copy destination:ID_DE_COPIA/objects ./recuperacion-ID_DE_COPIA --immutable`. No apuntar este comando a producción.
 4. Comparar inventario, tamaños y contenido recuperado; abrir los documentos necesarios. Antes de volver a subir a Supabase, decidir el punto de recuperación de la base de datos y conservar rutas, referencias y permisos. No sobrescribir producción sin un procedimiento de recuperación revisado.
 
-Este sistema respalda el bucket configurado. Los nuevos buckets requieren ampliar explícitamente el alcance. No exporta la base de datos, RLS, usuarios ni todo el metadato específico de Supabase. Sigue pendiente ensayar una recuperación integral del CRM en un entorno aislado.
+Este sistema respalda el bucket configurado. Los nuevos buckets requieren ampliar explícitamente el alcance. No exporta la base de datos, RLS, usuarios ni todo el metadato específico de Supabase. Se han recuperado por separado base de datos y contenidos en un proyecto aislado y comparado los archivos byte a byte. Sigue pendiente completar los flujos del CRM y las integraciones no incluidas en el clon; consultar VALIDACION-PROTECCION.md.
 
 ## Continuidad de la programación
 

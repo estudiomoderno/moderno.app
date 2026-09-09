@@ -49,3 +49,10 @@ El usuario autoriza que TALLER desarrolle, compruebe y publique las modificacion
 - app.moderno.app seguirá siendo el CRM; www.moderno.app será el escaparate y la entrada a las suscripciones.
 - Conservar el estudio piloto, sus miembros, identificadores y archivos al introducir planes comerciales.
 - La revisión inicial y las propuestas se recogen en PLAN-PRODUCTO.md. Los precios, límites y condiciones comerciales todavía no están decididos.
+
+## 2026-09-09 — Validación aislada de protección
+
+- El usuario autorizó expresamente restaurar la copia de base de datos en un proyecto separado y usar su clave administrativa temporalmente en memoria para preparar pruebas y recuperar archivos. No guardar esa clave en GitHub ni en archivos.
+- Taller Moderno.App es el único responsable de estos cambios. El candidato se desarrolla en una rama y carpeta aisladas; Web y Panelcontrol no editan el CRM.
+- Se verificaron recuperación de base de datos y contenidos, permisos con identidades ficticias y guardado concurrente. Resultados, límites y transición pendientes en VALIDACION-PROTECCION.md.
+- No se modifica producción ni se activa una automatización de supervisión. La publicación requiere completar los flujos pendientes y coordinar las sesiones del equipo piloto.

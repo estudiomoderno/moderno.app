@@ -1,5 +1,7 @@
 # Estado inicial de TALLER — 9 septiembre 2026
 
+Actualización posterior: véase [Validación de protección](VALIDACION-PROTECCION.md). Hay un candidato v3.30-pruebas en una rama aislada; producción continúa sin esta modificación. Los apartados siguientes conservan el estado de la revisión inicial.
+
 ## Comprobado
 
 - Repositorio real: C:\Chat Codex\moderno.app-main, con .git y origin correcto. Estado inicial limpio.

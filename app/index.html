@@ -999,6 +999,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <div id="printZone" style="display:none"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/sync-merge.js?v=20260909"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -11180,7 +11181,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.29";
+const MODERNO_VER="v3.30-pruebas";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11396,7 +11397,7 @@ async function cloudFlush(){
   window._cloudDiag = window._cloudDiag || {};
   for(const b of Object.keys(CLOUD_BLOCKS)){
     try{
-      const _v=CLOUD_BLOCKS[b].get();
+      const _v=JSON.parse(canon(CLOUD_BLOCKS[b].get()));
       const j=canon(_v);
       if(_cloudHash[b]===j) continue;
       /* Anti-pisado: reducir mucho un bloque exige confirmación explícita */
@@ -11407,16 +11408,27 @@ async function cloudFlush(){
       }
       if(!wrote) syncTag("saving","Guardando…");
       wrote=true;
-      const {data:cur} = await sb.from("datos_estudio").select(b==="proyectos"?"updated_at,contenido":"updated_at")
+      const baseHash=_cloudHash[b];
+      const {data:cur,error:readError} = await sb.from("datos_estudio").select("updated_at,contenido")
         .eq("estudio_id",ESTUDIO_ID).eq("bloque",b).maybeSingle();
-      if(cur && _cloudSeen[b] && new Date(cur.updated_at) > new Date(_cloudSeen[b])) console.info("[sync] «"+b+"» actualizado por otro miembro; gana la última escritura");
+      if(readError) throw readError;
       let _up=_v;
-      if(b==="proyectos" && cur && Array.isArray(cur.contenido)){ try{ const n=absorbComments(state.projects, cur.contenido); if(n){ persistSoon(); tkRefreshFromCloud(); } }catch(e){} _up=CLOUD_BLOCKS[b].get(); }
-      const now=new Date().toISOString();
-      const {error} = await sb.from("datos_estudio")
-        .upsert({estudio_id:ESTUDIO_ID, bloque:b, contenido:_up==null?{}:_up, updated_at:now}, {onConflict:"estudio_id,bloque"});
+      if(cur){
+        if(baseHash===undefined && canon(cur.contenido)!==j && !_cloudForce[b]) throw new Error("No se conoce la versión original; los cambios siguen pendientes");
+        _up=baseHash===undefined ? _v : ModernoSync.mergeSavedData(JSON.parse(baseHash),_v,cur.contenido);
+      }else if(_cloudSeen[b] && !_cloudForce[b]) throw new Error("El bloque ya no está en la nube; los cambios siguen pendientes");
+      const {data:saved,error} = await sb.rpc("guardar_bloque_versionado",{
+        p_estudio:ESTUDIO_ID,p_bloque:b,p_contenido:_up,p_base:cur?cur.updated_at:null
+      });
       if(error) throw error;
-      _cloudHash[b]=canon(_up); _cloudSeen[b]=now; _cloudCount[b]=blockCount(_up); delete _cloudForce[b]; if(window._cloudGuardShown===b) window._cloudGuardShown=null;
+      if(!saved) throw new Error("Otro compañero ha guardado mientras tanto; se reintentará sin sobrescribirlo");
+      // Preserve edits made while this request was in flight as well as remote edits.
+      const current=JSON.parse(canon(CLOUD_BLOCKS[b].get()));
+      const combined=ModernoSync.mergeSavedData(_v,current,_up);
+      _cloudApplying=true;
+      try{ CLOUD_BLOCKS[b].set(combined); }finally{ _cloudApplying=false; }
+      _cloudHash[b]=canon(_up); _cloudSeen[b]=saved.updated_at; _cloudCount[b]=blockCount(_up); delete _cloudForce[b]; if(window._cloudGuardShown===b) window._cloudGuardShown=null;
+      persistSoon();
       window._cloudDiag[b]={ok:true, at:new Date().toLocaleTimeString(), msg:""};
     }catch(e){
       caidos.push(b);
@@ -11427,6 +11439,9 @@ async function cloudFlush(){
   if(caidos.length){
     syncTag("err","No se pudo guardar: "+caidos.join(", ")+" — reintentando…");
     clearTimeout(_cloudRetryT); _cloudRetryT=setTimeout(cloudFlush, 15000);
+  } else if(Object.keys(CLOUD_BLOCKS).some(b=>_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))) {
+    syncTag("err","Hay cambios pendientes de guardar; conserva esta pestaña abierta");
+    clearTimeout(_cloudRetryT); _cloudRetryT=setTimeout(cloudFlush,15000);
   } else {
     try{ localStorage.removeItem(LS_KEY+"_dirty"); }catch(e){}
     if(wrote) syncTag("ok","Guardado ✓");
@@ -11507,6 +11522,31 @@ function cloudRealtimeStart(){
   document.addEventListener("focusout", ()=>setTimeout(_rtFlushRerender,80));
   document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ cloudPoll(); _rtFlushRerender(); } });
 }
+function cloudKeepPendingCopy(){
+  if(!_resumed || localStorage.getItem(LS_KEY+"_dirty")!=="1") return;
+  const raw=localStorage.getItem(LS_KEY);
+  if(!raw) throw new Error("No se encuentra la copia local pendiente");
+  const key=LS_KEY+"_pendiente_"+Date.now();
+  localStorage.setItem(key,raw);
+  if(localStorage.getItem(key)!==raw) throw new Error("No se pudo verificar la copia pendiente");
+  localStorage.removeItem(LS_KEY+"_dirty");
+}
+function cloudPendingNotice(){
+  try{
+    const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(LS_KEY+"_pendiente_"))keys.push(k);}
+    if(!keys.length||document.getElementById("cloudPendingCopies"))return;
+    keys.sort().reverse();
+    const box=document.createElement("div");box.id="cloudPendingCopies";box.setAttribute("role","alert");
+    box.style.cssText="position:fixed;bottom:44px;right:16px;max-width:400px;padding:14px;background:#fff3bd;color:#222;border:1px solid #887332;border-radius:12px;z-index:10000;font-size:14px";
+    const label=document.createElement("p");label.textContent="Hay una copia de cambios pendientes de una sesión anterior. Descárgala y revísala antes de volver a aplicar esos cambios.";
+    const list=document.createElement("select");list.setAttribute("aria-label","Copia pendiente");
+    for(const key of keys){const option=document.createElement("option");option.value=key;option.textContent=new Date(Number(key.split("_pendiente_").pop())).toLocaleString();list.appendChild(option);}
+    const download=document.createElement("button");download.textContent="Descargar copia";
+    download.onclick=()=>{try{const raw=localStorage.getItem(list.value);if(!raw)throw new Error();const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="Moderno-cambios-pendientes-"+list.value.split("_pendiente_").pop()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast("No se pudo descargar la copia pendiente");}};
+    const close=document.createElement("button");close.textContent="Cerrar aviso";close.onclick=()=>box.remove();
+    box.append(label,list,download,close);document.body.appendChild(box);
+  }catch(e){}
+}
 async function cloudLoad(){
   if(!sb) return;
   try{
@@ -11522,20 +11562,16 @@ async function cloudLoad(){
       const anc = localStorage.getItem(LS_KEY+"_estudio");
       _anclaPrevia = !!(anc && anc!==ESTUDIO_ID);
       if(anc && anc!==ESTUDIO_ID){
-        const {data:probe, error:pe} = await sb.from("datos_estudio")
-          .select("updated_at").eq("estudio_id", anc).limit(1);
-        if(!pe && Array.isArray(probe)){ ESTUDIO_ID = anc; }
+        const {data:probe, error:pe} = await sb.from("miembros")
+          .select("estudio_id,rol").eq("estudio_id", anc).limit(1);
+        if(!pe && Array.isArray(probe) && probe.length===1){ ESTUDIO_ID = anc; state.myRole=probe[0].rol||"miembro"; }
       }
       localStorage.setItem(LS_KEY+"_estudio", ESTUDIO_ID);
     }catch(e){}
     try{
-      if(_resumed && localStorage.getItem(LS_KEY+"_dirty")==="1"){
-        syncTag("saving","Subiendo cambios pendientes…");
-        /* SEGURIDAD: NUNCA se sube nada antes de leer la nube. Los cambios pendientes se guardan como copia local recuperable. */
-        try{ localStorage.setItem(LS_KEY+"_pendiente_"+Date.now(), localStorage.getItem(LS_KEY)||""); }catch(e){}
-        localStorage.removeItem(LS_KEY+"_dirty");
-      }
-    }catch(e){}
+      cloudKeepPendingCopy();
+      cloudPendingNotice();
+    }catch(e){syncTag("err","No se pudo conservar la copia pendiente. No cierres esta pestaña ni borres los datos del navegador.");afterLoginOnce();return;}
     const eid = ESTUDIO_ID;
     const {data:rows, error:e2} = await sb.from("datos_estudio")
       .select("bloque,contenido,updated_at").eq("estudio_id", eid);
