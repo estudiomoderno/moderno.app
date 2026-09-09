@@ -1,5 +1,9 @@
 # v3.31 — correcciones de flujos
 
+Publicada y verificada el 9 de septiembre de 2026. Commit de aplicación `c2222f1`; [despliegue correcto](https://github.com/estudiomoderno/moderno.app/actions/runs/34375655730).
+
+Instaladas las dos funciones SQL y actualizado el ICS existente. Los siete archivos públicos coinciden con el candidato probado. La sesión autorizada llega a Mis tareas y muestra guardado en nube. Las solicitudes sin autorización al portal y al ICS siguen rechazadas (403 y 404). No se han usado bajas de miembros reales ni modificaciones de documentos de producción como pruebas.
+
 ## Cambios
 
 - Quitar acceso llama a una operación del servidor: solo administradores, versión de equipo comprobada, sin autoexpulsión ni expulsión de administradores. Retira membresía, invitación pendiente y token ICS del estudio; conserva cuenta y documentos.
@@ -10,7 +14,7 @@
 
 ## Validación
 
-Pruebas automáticas de guardado, conflictos, permisos, conexión y calendario. Ensayo SQL transaccional con identidades ficticias y ROLLBACK: 15 comprobaciones correctas, incluidas reversión de escritura parcial, permisos de colaborador/Gestoría y revocación sin borrar archivos. Pantalla de resolución probada en navegador con copia recuperable y conservación de cambios independientes.
+137 pruebas automáticas correctas de guardado, conflictos, permisos, conexión y calendario; sintaxis de los tres scripts inline comprobada. Ensayo SQL transaccional con identidades ficticias y ROLLBACK: 15 comprobaciones correctas, incluidas reversión de escritura parcial, permisos de colaborador/Gestoría y revocación sin borrar archivos. Pantalla de resolución probada en navegador con copia recuperable y conservación de cambios independientes.
 
 ## Orden de instalación
 

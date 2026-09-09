@@ -1,8 +1,8 @@
 # Estado inicial de TALLER — 9 septiembre 2026
 
-Última versión: v3.30.1, publicada y verificada. Corrige la conexión bloqueada cuando las copias pendientes llenan localStorage, conservándolas en IndexedDB. Véase CHANGELOG.md.
+Última versión: v3.31, publicada y verificada. Corrige retirada de acceso, guardado conjunto, resolución de conflictos, conexión e ICS. Mantiene las copias recuperables y oculta su aviso automático. Véase [Entrega v3.31](ENTREGA-V331.md) y CHANGELOG.md.
 
-Estado de publicación vigente: [Entrega v3.30](ENTREGA-V330.md). Publicada el 9/9/2026, permisos instalados, archivos privados y acceso/descarga comprobados. Equipo avisado para reanudar. Los apartados siguientes son históricos.
+Estado de publicación vigente: [Entrega v3.31](ENTREGA-V331.md), publicada el 9/9/2026. 137 pruebas locales, 15 comprobaciones SQL adicionales en aislamiento y resolución de conflictos probada en navegador. Recursos públicos y carga de sesión verificados. Los apartados siguientes son históricos.
 
 Último ensayo de permisos: [archivos y calendario](VALIDACION-ARCHIVOS-CALENDARIO.md), 118 pruebas locales y 38 comprobaciones SQL en el clon; candidato todavía sin publicar.
 
