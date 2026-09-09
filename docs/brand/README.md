@@ -7,3 +7,5 @@ Conversión con Inkscape: seleccionar todo, objeto a trayecto, ajustar lienzo a 
 Validación local: claro y oscuro, menú expandido y plegado sin solapamiento, login a 190 px, cabecera móvil a 144 px. .app legible y con tamaño relativo original. La pantalla de acceso mantiene tarjeta blanca y logo grafito. 142 pruebas correctas y sintaxis comprobada. No se modifican logos cargados por clientes/estudios.
 
 Reversión: restaurar únicamente referencias de marca y reglas CSS de este cambio desde fb951cf; publicar con nueva versión de parche. No restaurar datos.
+
+Publicada v3.32.6 el 9/9/2026: f3027b6. Actions correcto: https://github.com/estudiomoderno/moderno.app/actions/runs/34389159256. HTML, CSS y cuatro SVG verificados con respuesta 200 y contenido exacto.
