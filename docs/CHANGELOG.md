@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.32.2 — fotos en carpetas
+
+- Hasta tres fotos opcionales desde Personalizar, previsualización, retirada y cancelación sin alterar los originales. Transición suave entre capas; respeta movimiento reducido y mantiene tonos neutros.
+- Miniaturas JPEG de hasta 320 px y 48.000 caracteres por foto, dentro del proyecto y su sincronización existente. No se suben los originales ni se crean objetos públicos.
+- 141 pruebas correctas, sintaxis y carga/guardado/cancelación comprobados localmente con imágenes ficticias.
+
 ## v3.32.1 — ajustes visuales
 
 - Menú activo gris sin franja lateral; carpetas gris/beige suave también en oscuro.

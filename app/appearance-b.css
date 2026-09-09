@@ -131,3 +131,29 @@
     body:not(.portalmode) .task,body:not(.portalmode) .folder,body:not(.portalmode) .folder .front {transition:none!important}
   }
 }
+
+/* v3.32.2: fotos opcionales en capas, sin cambiar los originales. */
+@media screen {
+  body:not(.portalmode) .folder {isolation:isolate}
+  body:not(.portalmode) .folder .back {z-index:-2}
+  body:not(.portalmode) .folder .front {z-index:1;transition:transform .24s ease}
+  .folder-photo {position:absolute;left:18%;bottom:43%;width:29%;height:43%;object-fit:cover;border:3px solid #fff;border-radius:10px;box-shadow:0 3px 9px #0002;transform:rotate(-9deg);transform-origin:center bottom;transition:transform .24s ease;pointer-events:none;z-index:-1}
+  .folder-photo-1 {left:36%;transform:rotate(1deg)}
+  .folder-photo-2 {left:54%;transform:rotate(10deg)}
+  body:not(.portalmode) .folder.has-photos .badges {position:static;align-items:flex-start!important;pointer-events:none;margin-bottom:8px}
+  body:not(.portalmode) .folder.has-photos .mini {max-width:100%;font-size:10px}
+  .folder-photo-editor {display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .folder-photo-editor>div {display:flex;flex-direction:column;align-items:center;gap:6px}
+  .folder-photo-editor img {width:64px;height:76px;object-fit:cover;border-radius:9px}
+  .folder-photo-editor button {font-size:11px}
+  @media(hover:hover) and (prefers-reduced-motion:no-preference) {
+    body:not(.portalmode) .folder:hover .front {transform:translateY(4%)}
+    .folder:hover .folder-photo-0 {transform:translate(-6%,-12%) rotate(-15deg)}
+    .folder:hover .folder-photo-1 {transform:translateY(-17%) rotate(0deg)}
+    .folder:hover .folder-photo-2 {transform:translate(6%,-12%) rotate(16deg)}
+  }
+  @media(hover:none) {body:not(.portalmode) .folder .actions {opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce) {.folder-photo {transition:none!important}}
+}
+
+@media screen {body:not(.portalmode) .folder.has-photos .front {flex-direction:column;justify-content:flex-end;align-items:stretch} body:not(.portalmode) .folder.has-photos .fname {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}}

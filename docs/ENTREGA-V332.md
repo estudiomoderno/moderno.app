@@ -35,3 +35,10 @@ La base previa es `e3ecb77` (app v3.31). Para revertir únicamente este diseño,
 Solicitado por el usuario: menú gris sin franja, carpetas gris/beige claro y desplegables redondeados. Solo CSS y versión; conserva los colores guardados en los proyectos, sin modificar registros. Radio de 12 px en controles y listas. Se corrige la anulación de base-select por cmb; en navegadores sin soporte el menú depende del sistema. Validado con proyectos ficticios, formulario de proyecto y autocompletado abiertos; 137 pruebas y sintaxis correctas. Publicación por el workflow habitual, sin forzar recargas.
 
 Publicado el 9/9/2026: commit 01da24c, workflow [34384055800](https://github.com/estudiomoderno/moderno.app/actions/runs/34384055800) correcto. Los ocho recursos públicos responden 200 y coinciden exactamente con el código probado (normalizando finales de línea). Menú y carpetas también comprobados en modo oscuro local.
+
+
+## Fotos opcionales v3.32.2
+
+Desde Personalizar se eligen hasta tres JPG/PNG/WEBP, máximo 12 MB por original. La conversión se realiza en el navegador y guarda solo una miniatura JPEG de hasta 320 px y 48.000 caracteres. Campo opcional folderPhotos en el proyecto: usa permisos, sincronización y copias existentes, sin SQL ni objetos públicos. Quitar una miniatura no borra archivos. Cancelar descarta el borrador; una conversión que termina después de cerrar el formulario no modifica el proyecto. Guardar espera a la conversión.
+
+141 pruebas correctas, incluida validación de fuentes/tamaño, conservación de adjuntos y cancelación asíncrona. Revisión local: tres imágenes, guardado, reapertura y retirada cancelada conserva las tres; miniaturas cargadas y textos sin solapamiento. Animación CSS 240 ms, desactivada con movimiento reducido y en dispositivos sin hover. Para revertir esta función, retirar controles y representación de folderPhotos, conservando el campo almacenado. No restaurar la base de datos.
