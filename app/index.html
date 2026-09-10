@@ -906,7 +906,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 </style>
-<link rel="stylesheet" href="/appearance-b.css?v=334">
+<link rel="stylesheet" href="/appearance-b.css?v=335">
 </head>
 <body>
 <div class="app">
@@ -1023,7 +1023,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/pending-archive.js?v=20260909"></script>
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=333"></script>
-<script src="/specifications.js?v=334"></script>
+<script src="/specifications.js?v=335"></script>
+<script src="/product-operations.js?v=335"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -3397,10 +3398,7 @@ function portalAnonBoot(token){
     state.portalResp=Array.isArray(data.respuestas)?data.respuestas:[];
     pr.cliChatLocal=state.portalResp.filter(rr=>rr.tipo==="mensaje").map(rr=>({de:"cliente",t:rr.texto,d:rr.d}));
     state.portalResp.forEach(rr=>{
-      if(rr.tipo!=="aprobado" && rr.tipo!=="rechazado") return;
-      (pr.rooms||[]).forEach(r=>(r.sections||[]).forEach(s=>(s.items||[]).forEach(it=>{
-        if(it.name===rr.item) it.cli = rr.tipo==="aprobado"?"ok":"no";
-      })));
+      // Legacy responses remain in the history; never apply them by product name again.
     });
     state.currentProject=pr.id; state.view=_wantObra?"portalobra":"portalcli"; render(); portalBootDone();
   }).catch(()=>{ portalBootDone(); showLogin(true); toast("No he podido abrir el portal — int\u00e9ntalo de nuevo"); });
@@ -3448,30 +3446,10 @@ function cliDocToggle(pid,fi,ii){
   persistSoon(); render();
 }
 function cliApprove(pid,rid,si,ii){
-  const p=state.projects.find(x=>x.id===pid);
-  const it=p.rooms.find(r=>String(r.id)===String(rid)).sections[si].items[ii];
-  it.cli="ok";
-  if(state.portalAnon){
-    sb.rpc("portal_cliente_escribe",{p_token:state.portalAnon,p_tipo:"aprobado",p_item:it.name,p_texto:""});
-    render(); toast("\u2713 Aprobado — tu estudio lo ver\u00e1 al momento");
-    return;
-  }
-  p.notes=((p.notes||"")+"\n\u2713 Cliente aprueba \u00ab"+it.name+"\u00bb ("+hoyEs()+")").trim();
-  notif("\u2713 El cliente ha aprobado \u00ab"+it.name+"\u00bb en "+p.num,"proyecto",p.id);
-  persistNow(); cloudFlush(); render(); toast("\u2713 Aprobado — el estudio ya lo sabe");
+ if(state.portalAnon)ProductOps.portal();else ProductOps.open(pid);
 }
 function cliReject(pid,rid,si,ii){
-  const p=state.projects.find(x=>x.id===pid);
-  const it=p.rooms.find(r=>String(r.id)===String(rid)).sections[si].items[ii];
-  it.cli="no";
-  if(state.portalAnon){
-    sb.rpc("portal_cliente_escribe",{p_token:state.portalAnon,p_tipo:"rechazado",p_item:it.name,p_texto:""});
-    render(); toast("Anotado — tu estudio buscar\u00e1 alternativa");
-    return;
-  }
-  p.notes=((p.notes||"")+"\n\u2717 Cliente rechaza \u00ab"+it.name+"\u00bb ("+hoyEs()+")").trim();
-  notif("\u2717 El cliente ha rechazado \u00ab"+it.name+"\u00bb en "+p.num,"proyecto",p.id);
-  persistNow(); cloudFlush(); render(); toast("Rechazo registrado");
+ if(state.portalAnon)ProductOps.portal();else ProductOps.open(pid);
 }
 function portalChatSend(pid){
   const el=document.getElementById("pChatIn"); const t=(el&&el.value||"").trim();
@@ -3560,11 +3538,7 @@ async function cliRespSync(pid){
         if(!p.cliChatLocal.some(m=>m.t===rr.texto)) { p.cliChatLocal.push({de:"cliente",t:rr.texto,d:new Date(rr.created_at).toLocaleDateString("es-ES")}); cambio=true; }
         return;
       }
-      if(rr.tipo!=="aprobado"&&rr.tipo!=="rechazado") return;
-      const objetivo=rr.tipo==="aprobado"?"ok":"no";
-      (p.rooms||[]).forEach(r=>(r.sections||[]).forEach(s=>(s.items||[]).forEach(it=>{
-        if(it.name===rr.item && it.cli!==objetivo){ it.cli=objetivo; cambio=true; }
-      })));
+      // Historic responses are displayed below, not reassigned by name.
     });
     if(caja){
       caja.innerHTML = data.length ? data.slice().reverse().map(rr=>
@@ -3765,6 +3739,7 @@ function vPortalCli(){
       <div class="entry-col">${p.obraContactos.map(c=>{ const tels=(c.phone||"").split(/\s*[\/,;\-–]\s*(?=\+?\d)/).map(t=>t.trim()).filter(t=>/\d{6,}/.test(t.replace(/\s/g,""))); const fis=(c.fiscal||"").trim(); const showFis=fis&&_capNorm(fis)!==_capNorm(c.name);
         return `<div class="entry oc-row" style="background:var(--white)"><div class="oc-main"><b>${c.name}</b>${showFis?`<small>${fis}</small>`:""}</div><div class="oc-tag">${c.trade?`<span class="chip neutral" style="font-size:10px">${c.trade}</span>`:""}</div><div class="oc-links">${tels.map(t=>`<a href="tel:${t.replace(/\s/g,"")}">\u2706 ${t}</a>`).join("")}${c.email?`<a href="mailto:${c.email}">\u2709 ${c.email}</a>`:""}</div></div>`; }).join("")}</div>
       </div>`:""}
+    ${state.portalAnon?`<div class="cliCard"><h2 class="sec">Aprobaciones por revisión</h2><p>Consulta las fichas que el estudio ha preparado para tu aprobación.</p><button class="btn btn-dark" onclick="ProductOps.portal()">Revisar productos</button></div>`:""}
     ${(p.rooms||[]).some(r=>cliModeOf(r)!=="off")?`<div class="cliCard"><h2 class="sec" style="margin-top:0">${tr("portal.listas")}</h2>
       ${(p.rooms||[]).filter(r=>cliModeOf(r)!=="off").map((r,ri)=>{
         const its=(r.sections||[]).flatMap((s,si)=>(s.items||[]).map((it,ii)=>({si,ii,it})));
@@ -3777,11 +3752,8 @@ function vPortalCli(){
         ${its.map(({si,ii,it})=>`<div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--card)">
           <div style="flex:1;min-width:0"><span style="font-size:13px;font-weight:700">${it.name}</span>
             <span style="font-size:11.5px;color:var(--ink-soft)"> \u00b7 ${it.qty||1} ud${(it.qty||1)>1?"s":""}${it.price?" \u00b7 "+fmt((it.price||0)*(it.qty||1)):""}</span></div>
-          ${it.cli==="ok"?`<span class="chip cm">\u2713</span>`:it.cli==="no"?`<span class="chip" style="background:#F6DBD7">\u2717</span>`:cliModeOf(r)==="aprob"?`<div style="display:flex;gap:5px">
-              <button class="btn btn-ghost" style="padding:5px 9px;font-size:11px" onclick="cliCommentModal(${p.id},'${r.id}',${si},${ii})">\ud83d\udcac</button>
-              <button class="btn btn-ghost" style="padding:5px 9px;font-size:11px" onclick="cliReject(${p.id},'${r.id}',${si},${ii})">\u2717</button>
-              <button class="btn btn-dark" style="padding:5px 11px;font-size:11px" onclick="cliApprove(${p.id},'${r.id}',${si},${ii})">${tr("portal.aprobar")}</button>
-            </div>`:cliModeOf(r)==="coment"?`<button class="btn btn-ghost" style="padding:5px 9px;font-size:11px" onclick="cliCommentModal(${p.id},'${r.id}',${si},${ii})">\ud83d\udcac Comentar</button>`:""}
+          ${cliModeOf(r)==="aprob"?`<button class="btn btn-ghost" onclick="cliApprove(${p.id},'${r.id}',${si},${ii})">Revisar aprobación</button>`:cliModeOf(r)==="coment"?`<button class="btn btn-ghost" onclick="cliCommentModal(${p.id},'${r.id}',${si},${ii})">Comentar</button>`:""}
+
         </div>`).join("")}
         </div></details>`;
       }).join("")}</div>`:""}
@@ -3955,7 +3927,7 @@ const state = {
        {name:"Pavimento", items:[
          {name:"Porcelánico efecto madera 22×90", url:"", sku:"PAV-2290", supplier:"Azulejos Jaén", price:19.90, cost:14.90, qty:42, unit:"m2", status:"Revisión Cliente", dims:"22×90 cm", material:"Porcelánico", plazo:"1-2 semanas", img:"", files:["ficha-tecnica-porcelanico.pdf"]} ]},
        {name:"Revestimiento", items:[]} ]},
-       {id:3, kind:"otra", name:"Eléctrico", sections:[{name:"General", items:[]}]} ],
+       {id:3, kind:"otra", name:"Eléctrico", sections:[{id:crypto.randomUUID(),name:"General", items:[]}]} ],
      links:{drive:"", rayon:""}},
     {id:4, num:"PR-12", brand:"em", name:"Torre Mirador — visualización", tpl:false, client:"Inmobiliaria Evol", status:"En revisión",
      tasks:[ t("Renders exteriores","Diseño","listo"), t("Recorrido 360","Desarrollo","prog"), {title:"2º pago", type:"Contabilidad", col:"pend", amount:1800, acc:true} ]},
@@ -4450,7 +4422,7 @@ function liRun(){
   _liRows.forEach(row=>{
     const name=g(row,"name").trim(); if(!name){ skipped++; return; }
     let r=fixed; if(!r){ const rn=g(row,"room").trim()||"Lista importada"; r=findRoom(rn); if(!r){ r=mkRoom(rn); newRooms++; } }
-    const sn=g(row,"section").trim()||secDefault; let sec=r.sections.find(s=>liNorm(s.name)===liNorm(sn)); if(!sec){ sec={name:sn,items:[]}; r.sections.push(sec); }
+    const sn=g(row,"section").trim()||secDefault; let sec=r.sections.find(s=>liNorm(s.name)===liNorm(sn)); if(!sec){ sec={id:crypto.randomUUID(),name:sn,items:[]}; r.sections.push(sec); }
     const qty=liNum(g(row,"qty"));
     sec.items.push({name, url:g(row,"url"), sku:g(row,"sku"), supplier:g(row,"supplier"), price:liNum(g(row,"price")), cost:liNum(g(row,"cost")), qty:qty>0?qty:1, margin:null, unit:g(row,"unit"), status:"Borrador", dims:g(row,"dims"), material:g(row,"material"), color:g(row,"color"), plazo:g(row,"plazo"), note:g(row,"note"), img:"", files:[]});
     touched.add(r.id); added++;
@@ -6448,6 +6420,7 @@ function vCompras(){
   const CST={"Aprobado":"Por pedir","Comprado":"Pedido","En Tránsito":"En tránsito","Instalado":"Instalado"};
   return `
   <h1 class="big">Compras</h1>
+  ${_accessRole==='admin'?`<div class="flt"><label>Compras y aprobaciones por proyecto<select id="opsProject">${byBrand(state.projects.filter(p=>!p.tpl&&p.status!=='Archivado')).map(p=>`<option value="${p.id}">${ModernoDaily.escape(p.num+' '+p.name)}</option>`).join('')}</select></label><button class="btn btn-dark" onclick="ProductOps.open(document.getElementById('opsProject').value)">Gestionar pedidos</button></div>`:''}
   <p class="sub">Todo lo aprobado y pedido de todos tus proyectos, agrupado por proveedor. Para saber qué reclamar sin abrir proyecto a proyecto.</p>
   <div class="flt" style="display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap">
     <label style="margin:0">Proyecto</label>
@@ -7100,6 +7073,7 @@ function vRoom(){
   <div class="dl-top" style="margin-top:8px">
     <h2 class="sec" style="display:flex;align-items:center;gap:10px"><span style="background:var(--gold-soft);border-radius:10px;width:34px;height:34px;display:grid;place-items:center">${rico(r.icon)}</span>${r.name}${r.rstatus?`<span class="dl-cnt" style="font-weight:700;padding:0 9px">${r.rstatus}</span>`:""}</h2>
     <button class="dl-btn" onclick="roomBoard()">▦ Board de la estancia</button>
+    ${_accessRole==='admin'?`<button class="dl-btn" onclick="ProductOps.open(${p.id})">Compras y aprobaciones</button>`:""}
     <button class="dl-btn" title="Compartir, margen general, exportar, icono, mover a otro proyecto…" onclick="roomMenu(${p.id},${r.id})">…</button>
   </div>
   <div class="dl-budget" style="margin:14px 0 4px">
@@ -7227,7 +7201,7 @@ function roomCloneData(r, secIdx){
   c.id = Math.max(Date.now()*1000,(roomCloneData.lastId||0)+1);
   while((state.projects||[]).some(p=>(p.rooms||[]).some(r=>r.id===c.id)))c.id++;
   roomCloneData.lastId=c.id; delete c.shareToken;
-  (c.sections||[]).forEach(s=>{s.items=(s.items||[]).map(it=>ModernoSpec.duplicate(it));});   // las respuestas del cliente son de cada proyecto
+  (c.sections||[]).forEach(s=>{s.id=crypto.randomUUID();s.items=(s.items||[]).map(it=>ModernoSpec.duplicate(it));});   // las respuestas del cliente son de cada proyecto
   return c;
 }
 function roomToProjectModal(pid,rid){
@@ -8787,7 +8761,7 @@ function pickNrIcon(k){ nrIcon=k; document.getElementById("nrIcons").innerHTML =
 function doNewRoom(pid,kind){
   const p = state.projects.find(x=>x.id===pid);
   p.rooms = p.rooms || [];
-  const r = {id:Date.now(), kind:kind||"estancia", icon:nrIcon, name:document.getElementById("nrName").value||"Lista", created:new Date().toISOString().slice(0,10), sections:[{name:"General", items:[]}]};
+  const r = {id:Date.now(), kind:kind||"estancia", icon:nrIcon, name:document.getElementById("nrName").value||"Lista", created:new Date().toISOString().slice(0,10), sections:[{id:crypto.randomUUID(),name:"General", items:[]}]};
   p.rooms.push(r); closeModal(); openRoom(pid, r.id);
 }
 function renameSection(si){
@@ -8799,14 +8773,14 @@ function delSection(si){
   const n=(s.items||[]).length;
   if(r.sections.length===1 && n===0){ toast("Es la única sección: deja al menos una (puedes renombrarla)"); return; }
   const other=r.sections.length>1;
-  askConfirm(`¿Eliminar la sección «<b>${s.name.replace(/</g,"&lt;")}</b>»${n?` con sus <b>${n}</b> producto${n===1?"":"s"}`:""}?${n&&other?`<br><br>Si prefieres conservarlos, «Mover productos» los pasa a la sección anterior antes de borrar.`:""}`,"Eliminar",()=>{ specPrepare(getRoom().p);r.sections.splice(si,1); if(!r.sections.length) r.sections.push({name:"General",items:[]}); persistSoon(); render(); toast("Sección eliminada"); },null,
+  askConfirm(`¿Eliminar la sección «<b>${s.name.replace(/</g,"&lt;")}</b>»${n?` con sus <b>${n}</b> producto${n===1?"":"s"}`:""}?${n&&other?`<br><br>Si prefieres conservarlos, «Mover productos» los pasa a la sección anterior antes de borrar.`:""}`,"Eliminar",()=>{ specPrepare(getRoom().p);r.sections.splice(si,1); if(!r.sections.length) r.sections.push({id:crypto.randomUUID(),name:"General",items:[]}); persistSoon(); render(); toast("Sección eliminada"); },null,
     (n&&other)?{label:"Mover productos", fn:()=>{ specPrepare(getRoom().p);const dest=r.sections[si===0?1:si-1]; dest.items.push(...s.items); r.sections.splice(si,1); persistSoon(); render(); toast(n+" producto"+(n===1?"":"s")+" movido"+(n===1?"":"s")+" a «"+dest.name+"» y sección eliminada"); }}:undefined);
 }
 function newSection(){
   modal(`<h3>Nueva sección</h3>
   <label>Nombre</label><input id="nsName" placeholder="Ej: Mobiliario, Iluminación, Textiles…">
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-  <button class="btn btn-dark" onclick="(function(){const n=document.getElementById('nsName').value||'Sección';getRoom().r.sections.push({name:n,items:[]});closeModal();render()})()">Añadir</button></div>`);
+  <button class="btn btn-dark" onclick="(function(){const n=document.getElementById('nsName').value||'Sección';getRoom().r.sections.push({id:crypto.randomUUID(),name:n,items:[]});closeModal();render()})()">Añadir</button></div>`);
 }
 function setItem(si,ii,k,v){ getRoom().r.sections[si].items[ii][k]=v; render(); }
 function delItem(si,ii){ specPrepare(getRoom().p);getRoom().r.sections[si].items.splice(ii,1);render(); }
@@ -11305,7 +11279,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.34";
+const MODERNO_VER="v3.35";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

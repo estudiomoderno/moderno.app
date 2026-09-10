@@ -1,0 +1,67 @@
+-- Run only inside the isolated recovery project, transaction ends in ROLLBACK.
+do $$begin if not exists(select 1 from auth.users where email='publicacion-admin-735c13cc-1cb5-4eb7-a197-24265f738bfb@example.invalid') then raise exception 'Solo clon de pruebas';end if;end$$;
+create temp table pruebas_ops(nombre text,correcto boolean);
+alter table pruebas_ops enable row level security;
+create policy ensayo_select on pruebas_ops for select to anon,authenticated using(true);
+create policy ensayo_insert on pruebas_ops for insert to anon,authenticated with check(true);
+grant select,insert on pruebas_ops to authenticated,anon;
+update public.datos_estudio set contenido='[{"id":335001,"name":"Proyecto ficticio","cliShare":{"token":"pruebaoperaciones335","active":true},"rooms":[{"id":1,"name":"Sala","cliMode":"aprob","sections":[{"id":"sec-a","name":"Muebles","items":[{"id":"chair-a","name":"Silla","qty":2,"price":100,"cost":50,"note":"privado","unit":"ud"},{"id":"chair-b","name":"Silla","qty":1,"price":200,"cost":90}]}]}]}]'::jsonb where estudio_id='735c13cc-1cb5-4eb7-a197-24265f738bfb' and bloque='proyectos';
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from auth.users where email='publicacion-admin-735c13cc-1cb5-4eb7-a197-24265f738bfb@example.invalid'),'role','authenticated')::text,true);
+set local role authenticated;
+do $$declare eid uuid:='735c13cc-1cb5-4eb7-a197-24265f738bfb';a jsonb;r jsonb;o jsonb;v jsonb;oldv jsonb;req jsonb;cmd uuid;failed boolean;begin
+ a:=public.app_operaciones_accion(eid,'335001','aprobacion','{"item":"chair-a"}',gen_random_uuid());
+ insert into pruebas_ops values('aprobacion_snapshot_sin_costes',not (a->'contenido'->'snapshot' ? 'cost') and not (a->'contenido'->'snapshot' ? 'note'));
+ failed:=false;begin perform public.app_operaciones_accion(eid,'335001','aprobacion','{"item":"chair-a"}',gen_random_uuid());exception when others then failed:=true;end;insert into pruebas_ops values('sin_solicitud_duplicada',failed);
+ r:=public.app_operaciones_accion(eid,'335001','solicitud','{"items":["chair-a"],"proveedor":"Proveedor ficticio"}',gen_random_uuid());
+ r:=public.app_operaciones_accion(eid,'335001','oferta',jsonb_build_object('id',r->>'id','version',r->'version','precios','[60]'::jsonb,'referencia','OF-TEST'),gen_random_uuid());
+ o:=public.app_operaciones_accion(eid,'335001','pedido',jsonb_build_object('id',r->>'id','version',r->'version','oferta',r#>>'{contenido,ofertas,0,id}'),gen_random_uuid());
+ failed:=false;begin perform public.app_operaciones_accion(eid,'335001','confirmar',jsonb_build_object('id',o->>'id','version',o->'version'),gen_random_uuid());exception when others then failed:=true;end;insert into pruebas_ops values('pedido_exige_aprobacion',failed);
+ a:=public.app_operaciones_accion(eid,'335001','aprobacion_manual',jsonb_build_object('id',a->>'id','version',a->'version','nota','Recibida por escrito para prueba ficticia'),gen_random_uuid());
+ o:=public.app_operaciones_accion(eid,'335001','confirmar',jsonb_build_object('id',o->>'id','version',o->'version'),gen_random_uuid());
+ insert into pruebas_ops values('pedido_confirmado_con_total',o->>'estado'='confirmado' and (o#>>'{contenido,total}')::numeric=120);
+ failed:=false;begin perform public.app_operaciones_accion(eid,'335001','recibir',jsonb_build_object('id',o->>'id','version',o->'version','cantidades','[3]'::jsonb),gen_random_uuid());exception when others then failed:=true;end;insert into pruebas_ops values('no_recibir_mas_de_lo_pedido',failed);
+ cmd:=gen_random_uuid();req:=jsonb_build_object('id',o->>'id','version',o->'version','cantidades','[1]'::jsonb);oldv:=o;
+ o:=public.app_operaciones_accion(eid,'335001','recibir',req,cmd);
+ v:=public.app_operaciones_accion(eid,'335001','recibir',req,cmd);
+ insert into pruebas_ops values('reintento_no_duplica_recepcion',v=o and o->>'estado'='parcial' and (o#>>'{contenido,lineas,0,recibido}')::numeric=1);
+ failed:=false;begin perform public.app_operaciones_accion(eid,'335001','recibir',req,gen_random_uuid());exception when sqlstate 'PT409' then failed:=true;end;insert into pruebas_ops values('version_antigua_rechazada',failed);
+ o:=public.app_operaciones_accion(eid,'335001','recibir',jsonb_build_object('id',o->>'id','version',o->'version','cantidades','[1]'::jsonb),gen_random_uuid());
+ insert into pruebas_ops values('recepcion_completa',o->>'estado'='recibido');
+ failed:=false;begin perform public.app_operaciones_accion(eid,'335001','cancelar',jsonb_build_object('id',o->>'id','version',o->'version','nota','No eliminar lo recibido'),gen_random_uuid());exception when others then failed:=true;end;insert into pruebas_ops values('conservar_pedido_recibido',failed);
+ a:=public.app_operaciones_accion(eid,'335001','aprobacion','{"item":"chair-b"}',gen_random_uuid());
+ insert into pruebas_ops values('dos_nombres_iguales_dos_identidades',a#>>'{contenido,snapshot,id}'='chair-b');
+end$$;
+reset role;
+set local role anon;
+do $$declare a jsonb;v jsonb;cmd uuid:=gen_random_uuid();failed boolean;begin
+ a:=public.portal_aprobaciones('pruebaoperaciones335');
+ insert into pruebas_ops values('portal_sin_coste_proveedor_nota',a::text not like '%cost%' and a::text not like '%proveedor%' and a::text not like '%privado%');
+ select x into a from jsonb_array_elements(a) x where x->'snapshot'->>'id'='chair-b';
+ v:=public.portal_aprobacion_decidir('pruebaoperaciones335',(a->>'id')::uuid,a->>'revision','aprobada',cmd);
+ insert into pruebas_ops values('portal_aprueba_revision_exacta',v->>'registrado'='true');
+ insert into pruebas_ops values('portal_reintento_idempotente',v=public.portal_aprobacion_decidir('pruebaoperaciones335',(a->>'id')::uuid,a->>'revision','aprobada',cmd));
+ failed:=false;begin perform public.portal_aprobacion_decidir('tokeninexistente',(a->>'id')::uuid,a->>'revision','aprobada',gen_random_uuid());exception when insufficient_privilege then failed:=true;end;insert into pruebas_ops values('token_incorrecto_rechazado',failed);
+ failed:=false;begin perform 1 from public.app_operaciones;exception when insufficient_privilege then failed:=true;end;insert into pruebas_ops values('anon_sin_tablas_internas',failed);
+end$$;
+reset role;
+update public.datos_estudio set contenido=jsonb_set(contenido,'{0,rooms,0,sections,0,items,1,price}','250') where estudio_id='735c13cc-1cb5-4eb7-a197-24265f738bfb' and bloque='proyectos';
+set local role anon;
+insert into pruebas_ops select 'cambio_invalida_aprobacion',not (x->>'vigente')::boolean from jsonb_array_elements(public.portal_aprobaciones('pruebaoperaciones335')) x where x->'snapshot'->>'id'='chair-b';
+reset role;
+update public.datos_estudio set contenido=jsonb_set(contenido,'{0,rooms,0,sections,0,items,1,price}','200') where estudio_id='735c13cc-1cb5-4eb7-a197-24265f738bfb' and bloque='proyectos';
+set local role anon;
+insert into pruebas_ops select 'volver_al_precio_no_revalida',not (x->>'vigente')::boolean from jsonb_array_elements(public.portal_aprobaciones('pruebaoperaciones335')) x where x->'snapshot'->>'id'='chair-b';
+do $$declare fallo boolean:=false;begin
+ begin perform public.portal_cliente_escribe('pruebaoperaciones335','aprobado','Silla','');exception when sqlstate 'PT409' then fallo:=true;end;
+ insert into pruebas_ops values('decision_antigua_por_nombre_rechazada',fallo);
+end$$;
+reset role;
+select set_config('request.jwt.claims',jsonb_build_object('sub',(select id from auth.users where email='publicacion-colaborador-735c13cc-1cb5-4eb7-a197-24265f738bfb@example.invalid'),'role','authenticated')::text,true);
+set local role authenticated;
+do $$declare failed boolean:=false;begin
+ begin perform public.app_operaciones_lee('735c13cc-1cb5-4eb7-a197-24265f738bfb','335001');exception when insufficient_privilege then failed:=true;end;insert into pruebas_ops values('colaborador_sin_costes_comerciales',failed);
+ failed:=false;begin perform public.app_operaciones_accion('735c13cc-1cb5-4eb7-a197-24265f738bfb','335001','solicitud','{"items":["chair-a"],"proveedor":"X"}',gen_random_uuid());exception when insufficient_privilege then failed:=true;end;insert into pruebas_ops values('colaborador_no_compra',failed);
+end$$;
+reset role;
+select count(*) as pruebas, count(*) filter(where correcto is not true) as fallos, jsonb_agg(nombre) filter(where correcto is not true) as detalle from pruebas_ops;
+rollback;

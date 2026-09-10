@@ -89,3 +89,6 @@ Tema oscuro grafito y orden móvil logo, espacio de trabajo, menú, modo, usuari
 
 ## v3.34 — Productos y Boards
 Biblioteca y especificaciones independientes, Board derivado por estancia, referencias estables al editar como administrador, retirada de simulaciones de importación/conexiones y adjuntos con contenido. Alcance, compatibilidad y validación en ENTREGA-V334.md.
+## v3.35 — 11 de septiembre de 2026
+
+Aprobaciones por identidad y revisión, ofertas de proveedores, pedidos confirmados, recepciones parciales e historial en servidor. Nuevos documentos PDF de compra, separados de precios de venta; no envía correos ni registra pagos. Se retiran decisiones por nombre y se añaden identidades de sección. Validación: 182 pruebas locales y 20 comprobaciones SQL en el clon, más recorrido real de interfaz. Requiere el paquete SQL aditivo; ver ENTREGA-V335.md.

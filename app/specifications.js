@@ -27,9 +27,14 @@ var ModernoSpec=(()=>{
   const counts=new Map();rr.forEach(x=>{if(x.item.id!=null)counts.set(key(x.item.id),(counts.get(key(x.item.id))||0)+1);});
   const reserved=new Set(rr.filter(x=>x.item.id!=null).map(x=>key(x.item.id)));
   const assignments=[];rr.forEach(x=>{if(x.item.id==null||counts.get(key(x.item.id))>1){const id=newId();if(reserved.has(key(id)))throw Error('Identificador repetido');reserved.add(key(id));assignments.push([x.item,id]);}});
+  const sections=(p.rooms||[]).flatMap(r=>r.sections||[]),sectionCounts=new Map();
+  sections.forEach(s=>{if(s.id!=null)sectionCounts.set(key(s.id),(sectionCounts.get(key(s.id))||0)+1);});
+  const sectionReserved=new Set(sections.filter(s=>s.id!=null).map(s=>key(s.id))),sectionAssignments=[];
+  sections.forEach(s=>{if(s.id==null||sectionCounts.get(key(s.id))>1){const id=newId();if(sectionReserved.has(key(id)))throw Error('Identificador de sección repetido');sectionReserved.add(key(id));sectionAssignments.push([s,id]);}});
   const itemIds=new Map(assignments);
   const refAssignments=bound.filter(({ref})=>!ref.src||!String(ref.src).startsWith('spec:')).map(({ref,target})=>[ref,target?refFor(itemIds.get(target.item)??target.item.id):'spec:missing:'+newId()]);
   assignments.forEach(([item,id])=>{item.id=id;});
+  sectionAssignments.forEach(([section,id])=>{section.id=id;});
   refAssignments.forEach(([ref,src])=>{ref.src=src;});
   return p;
  }

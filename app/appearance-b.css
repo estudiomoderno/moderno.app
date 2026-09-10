@@ -311,3 +311,23 @@
 @media print{.room-board{--ink:#252525;--ink-soft:#626262;--ui-line:#ddd;color:#252525}.room-board-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.room-board-image{height:45mm;aspect-ratio:auto}.room-board article{background:white}.room-board header{break-after:avoid}.room-board h3{break-after:avoid}}
 .room-board-toolbar label{width:auto!important;white-space:nowrap}
 .room-board-toolbar input[type=checkbox]{width:20px!important;height:20px!important;min-height:20px!important;flex:0 0 20px}
+/* Product operations: same neutral palette in light and dark mode. */
+#modalBox:has(#opsBody),#modalBox:has(#opsPortal){width:980px;max-width:calc(100vw - 24px)}
+.ops-head,.ops-card header,.ops-actions,.ops-card footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ops-head p,#opsBody>p,#opsPortal>p{color:var(--ink-soft);font-size:13px;line-height:1.6;margin:10px 0 18px}
+.ops-tabs{display:flex;gap:5px;flex-wrap:wrap;padding:6px;background:var(--card);border-radius:14px;margin:18px 0}
+.ops-tabs button{padding:10px 14px;border-radius:10px;font-size:12px;color:var(--ink-soft)}
+.ops-tabs button.on{background:var(--white);color:var(--ink)}
+.ops-products{display:grid;gap:8px;max-height:48vh;overflow:auto}
+.ops-products label{display:flex;align-items:center;gap:12px;padding:13px;background:var(--card);border-radius:12px;font-size:13px;margin:0}
+.ops-products input{width:18px;height:18px;flex:none}
+.ops-products small,.ops-card small{display:block;color:var(--ink-soft);margin-top:5px;font-size:11px}
+.ops-card{border:1px solid var(--line,#e4e4e1);border-radius:16px;padding:18px;margin:12px 0;background:var(--white)}
+.ops-card p,.ops-card li{font-size:13px;line-height:1.6}.ops-card footer{justify-content:flex-start;margin-top:14px}
+.ops-offers>div{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line,#e4e4e1);font-size:12px}
+.ops-actions{justify-content:flex-end;margin-top:20px}.ops-empty{padding:28px;text-align:center;color:var(--ink-soft)}
+#opsBody>label{display:block;margin:14px 0;font-size:13px}#opsBody>label input,#opsBody>label textarea{display:block;margin-top:7px;width:100%}
+.ops-print table{width:100%;border-collapse:collapse;margin:20px 0}.ops-print td,.ops-print th{padding:10px;text-align:left;border-bottom:1px solid #ddd}.ops-print small{display:block;margin-top:5px}.ops-print{font:13px Arial;color:#111}
+@media(max-width:600px){.ops-tabs button{flex:1;padding:9px}.ops-card{padding:14px}.ops-offers>div{align-items:flex-start;flex-direction:column}.ops-card footer .btn{flex:1}.ops-head h3{font-size:18px}}
+.ops-card ul{padding-left:20px;margin:12px 0}.ops-card h4{margin:0 0 10px}
+@media(max-width:600px){.ops-tabs{display:grid;grid-template-columns:1fr 1fr}.ops-tabs button{min-height:42px}}
