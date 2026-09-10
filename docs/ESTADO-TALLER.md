@@ -47,3 +47,6 @@ Primera copia real de Storage a Google Drive completada y verificada, además de
 
 ## Actualización v3.33.1
 Corrección de presentación de facturas y cobros históricos. Ver FACTURAS-V3331.md. Sin modificación de datos reales.
+
+## v3.33.2
+Tema oscuro actualizado y selector móvil antes del usuario. Ver TEMA-V3332.md.

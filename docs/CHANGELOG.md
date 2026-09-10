@@ -83,3 +83,6 @@ Versión pública identificada como v3.30. Las denominaciones anteriores v3.30-r
 
 ## v3.33.1 — Facturas y cobros
 Filas y acciones alineadas, importes sin saltos, eliminación de Solo en Contabilidad y ventana de cobros espaciosa que respeta facturas antiguas marcadas cobradas. 155 pruebas. Detalles: FACTURAS-V3331.md.
+
+## v3.33.2
+Tema oscuro grafito y orden móvil logo, espacio de trabajo, menú, modo, usuario. Ver TEMA-V3332.md.

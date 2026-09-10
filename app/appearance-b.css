@@ -242,3 +242,48 @@
 .collections-dialog .modal-foot{margin-top:28px;gap:12px}
 .collections-dialog label{margin-top:18px;margin-bottom:8px}
 @media(max-width:540px){.collections-summary{grid-template-columns:1fr}.collections-summary>div{display:flex;justify-content:space-between;align-items:center}.collections-summary span{margin:0}#modalBox:has(.collections-dialog){padding:20px}}
+
+/* Tema grafito y orden del cajón móvil, v3.33.2. */
+#mobileTheme{display:none!important}
+@media screen and (max-width:810px){
+ #mobileTheme{display:flex!important;margin:16px 0!important;padding:12px;border-radius:12px;background:var(--card)}
+}
+@media screen {
+ body.dark:not(.portalmode){color-scheme:dark;--bg:#191a1c;--panel:#212225;--white:#27282b;--card:#303135;--ink:#f0efed;--ink-soft:#c5c3bf;--ink-faint:#aaa8a4;--ui-canvas:#191a1c;--ui-line:#444549;--ui-accent:#a9bde9;--ui-selected:#3b414d;--ui-selected-ink:#e2e9fa;--gold:#d3c8b5;--pk:#d3c8b5;--gold-soft:#38352e;--green:#293c33;--green-ink:#b7dbc7;--red:#463034;--red-ink:#f0b9c0;--pend:#403a2d;--pend-ink:#e7d6aa;--shadow:0 4px 18px #0003;--dl-bg:#303135;--dl-line:#444549;--dl-ink:#f0efed;--dl-soft:#c5c3bf}
+ body.dark:not(.portalmode) .main,body.dark:not(.portalmode) #view{background:var(--ui-canvas)}
+ body.dark:not(.portalmode) #mHeader{background:var(--panel)}
+ body.dark:not(.portalmode) .nav-item.active,body.dark:not(.portalmode) .nav-item.active *{background:#3b3c3e;color:var(--ink)!important;box-shadow:none}
+ body.dark:not(.portalmode) .nav-sub{border-color:var(--ui-line)}
+ body.dark:not(.portalmode) .nav-sub .nav-item::before{background:var(--ui-line)}
+ body.dark:not(.portalmode) .btn-dark{background:var(--ui-accent);color:#202a40}
+ body.dark:not(.portalmode) .btn-ghost{background:var(--card);color:var(--ink);border-color:var(--ui-line)}
+ body.dark:not(.portalmode) .pill-tabs button.on,body.dark:not(.portalmode) .opt-pills button.on,body.dark:not(.portalmode) .brand-switch button.on{background:var(--ui-selected);color:var(--ui-selected-ink)}
+ body.dark:not(.portalmode) .proj-head{background:var(--panel)!important;color:var(--ink);border:1px solid var(--ui-line)}
+ body.dark:not(.portalmode) .proj-head .btn-ghost{color:var(--ink)}
+ body.dark:not(.portalmode) .kanban .task{background:var(--white)!important;border-color:var(--ui-line)}
+ body.dark:not(.portalmode) .task .tm .chip,body.dark:not(.portalmode) .task-assignee{background:var(--card)!important;color:var(--ink-soft);border-color:var(--ui-line)!important}
+ body.dark:not(.portalmode) :is(.nav-item,.pm-it,.catalog-item,.room-card,.entry,.addtask):hover{background:#38393d;color:var(--ink)}
+ body.dark:not(.portalmode) :is(.ws-task-table,.ws-calendar-grid){background:var(--white)}
+ body.dark:not(.portalmode) :is(.ws-task-table th,.ws-task-table td,.ws-calendar-grid,.ws-calendar-day,.ws-weekday){border-color:var(--ui-line)}
+ body.dark:not(.portalmode) .ws-today{background:var(--gold-soft)}
+ body.dark:not(.portalmode) .fin-card{background:var(--card)!important;color:var(--ink)!important}
+ body.dark:not(.portalmode) .fin-card *{color:var(--ink)!important}
+ body.dark:not(.portalmode) .fin-card .lab{background:var(--panel)!important}
+ body.dark:not(.portalmode) .fin-card:nth-child(1){border-top:3px solid #b8a784}
+ body.dark:not(.portalmode) .fin-card:nth-child(2){border-top:3px solid #ca929b}
+ body.dark:not(.portalmode) .fin-card:nth-child(3){border-top:3px solid #91b7a0}
+ body.dark:not(.portalmode) select option{background:var(--panel);color:var(--ink)}
+ body.dark:not(.portalmode) ::picker(select){background:var(--panel);border-color:var(--ui-line);color:var(--ink)}
+ body.dark:not(.portalmode) select option:checked{background:var(--ui-selected)}
+ body.dark:not(.portalmode) :is(button,input,select,textarea):focus-visible{outline:2px solid var(--ui-accent);outline-offset:3px}
+}
+
+@media screen {
+ body.dark:not(.portalmode) table.list td,body.dark:not(.portalmode) table.list th{border-color:var(--ui-line)}
+ body.dark:not(.portalmode) .chip.cm,body.dark:not(.portalmode) .chip.em{background:#49443b;color:#e9dfcb!important}
+ body.dark:not(.portalmode) .chip[style*="background:#F5E8CE"],body.dark:not(.portalmode) .chip[style*="background:#FBF3CE"]{background:var(--pend)!important;color:var(--pend-ink)!important}
+ body.dark:not(.portalmode) .chip[style*="background:#DDF0DC"]{background:var(--green)!important;color:var(--green-ink)!important}
+ body.dark:not(.portalmode) .chip[style*="background:#F6DBD7"]{background:var(--red)!important;color:var(--red-ink)!important}
+ body.dark:not(.portalmode) .btn{border-radius:8px}
+}
+@media screen and (max-width:540px){.fin-cards{grid-template-columns:1fr!important}.fin-card .val{white-space:nowrap}}
