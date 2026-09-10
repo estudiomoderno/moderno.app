@@ -1,3 +1,7 @@
+# Estado actual de Taller
+
+Candidato v3.34: productos y Boards; ver ENTREGA-V334.md. Última publicación verificada anterior: v3.33.2. Los apartados siguientes conservan el historial.
+
 # Estado inicial de TALLER — 9 septiembre 2026
 
 Última versión: v3.33, publicada y verificada. Rutas /es/ y transición discreta; detalles y límites en RUTAS-V333.md. Logo moderno.app aprobado en trazados; véase brand/README.md. El botón del menú contraído ya no se superpone a Inicio. Corrige las etiquetas recortadas bajo nombres de varias líneas. Editor renovado, color editable y botón de fotos integrado, sin selector de emojis. Incluye hasta tres fotos opcionales por carpeta y transición suave. Ajuste visual: menú gris sin franja, carpetas beige claro y desplegables redondeados. Aplica la apariencia B elegida por el usuario, conserva iconos y menú contraíble y corrige el tablero móvil. Mantiene las protecciones de guardado, permisos y copias de v3.31. Véase [Entrega v3.32](ENTREGA-V332.md) y CHANGELOG.md.

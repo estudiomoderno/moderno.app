@@ -287,3 +287,27 @@
  body.dark:not(.portalmode) .btn{border-radius:8px}
 }
 @media screen and (max-width:540px){.fin-cards{grid-template-columns:1fr!important}.fin-card .val{white-space:nowrap}}
+
+/* Room Boards use the same specification data, including in print. */
+.room-board{color:var(--ink);padding:20px 0}
+.room-board header{margin-bottom:24px}
+.room-board header p,.room-board-caption p{color:var(--ink-soft);font-size:12px;line-height:1.6}
+.room-board h2{font-size:26px;margin:8px 0}
+.room-board section{margin:24px 0}
+.room-board section h3{margin-bottom:16px;font-size:15px}
+.room-board-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.room-board article{border:1px solid var(--ui-line,#ddd);border-radius:14px;overflow:hidden;break-inside:avoid}
+.room-board-image{aspect-ratio:1;background:#f3f1ed;display:grid;place-items:center;color:#62605c;font-size:12px;padding:12px}
+.room-board-image img{width:100%;height:100%;object-fit:contain;min-height:0}
+.room-board-caption{padding:14px;overflow-wrap:anywhere}
+.room-board-caption b{display:block;line-height:1.45}
+.room-board-caption strong{display:block;margin-top:10px;font-variant-numeric:tabular-nums}
+.room-board-caption span{font-size:12px}
+.room-board-toolbar{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.room-board-toolbar p{max-width:500px;color:var(--ink-soft);font-size:12px;line-height:1.5;margin:8px 0}
+.room-board-toolbar label{display:flex;align-items:center;gap:8px;font-size:12px}
+#modalBox:has(.room-board-dialog){width:1000px;max-width:calc(100vw - 24px)}
+@media(max-width:600px){.room-board-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.room-board-toolbar{flex-wrap:wrap}.room-board-caption{padding:10px}}
+@media print{.room-board{--ink:#252525;--ink-soft:#626262;--ui-line:#ddd;color:#252525}.room-board-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.room-board-image{height:45mm;aspect-ratio:auto}.room-board article{background:white}.room-board header{break-after:avoid}.room-board h3{break-after:avoid}}
+.room-board-toolbar label{width:auto!important;white-space:nowrap}
+.room-board-toolbar input[type=checkbox]{width:20px!important;height:20px!important;min-height:20px!important;flex:0 0 20px}

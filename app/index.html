@@ -906,7 +906,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 </style>
-<link rel="stylesheet" href="/appearance-b.css?v=3332">
+<link rel="stylesheet" href="/appearance-b.css?v=334">
 </head>
 <body>
 <div class="app">
@@ -959,7 +959,6 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
     <div class="nav-group" id="ngTools">
       <div class="nav-head" onclick="document.getElementById('ngTools').classList.toggle('closed')"><span class="ico-t"></span> Herramientas <span class="chev">▾</span></div>
       <div class="nav-sub">
-        <button class="nav-item" data-view="integraciones"><span class="ico" style="display:inline-flex"><svg class="svgi" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 7h3a1 1 0 0 0 1 -1v-1a2 2 0 0 1 4 0v1a1 1 0 0 0 1 1h3a1 1 0 0 1 1 1v3a1 1 0 0 0 1 1h1a2 2 0 0 1 0 4h-1a1 1 0 0 0 -1 1v3a1 1 0 0 1 -1 1h-3a1 1 0 0 1 -1 -1v-1a2 2 0 0 0 -4 0v1a1 1 0 0 1 -1 1h-3a1 1 0 0 1 -1 -1v-3a1 1 0 0 1 1 -1h1a2 2 0 0 0 0 -4h-1a1 1 0 0 1 -1 -1v-3a1 1 0 0 1 1 -1" /></svg></span> Integraciones</button>
         <button class="nav-item" data-view="plantillas"><span class="ico i-docs"></span> Plantillas y docs</button>
         <button class="nav-item" data-view="utilidades"><span class="ico" style="display:inline-flex"><svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="18"/></svg></span> Utilidades</button>
       </div>
@@ -1024,6 +1023,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/pending-archive.js?v=20260909"></script>
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=333"></script>
+<script src="/specifications.js?v=334"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -4193,7 +4193,7 @@ function myAccessLevel(){
   if(r==="Colaborador") return "colab";
   return "miembro";
 }
-function canView(v){ if(_accessRole==="gestoria")return ["home","contabilidad","facturas","prevision"].includes(v); return !(VIEW_DENY[myAccessLevel()]||[]).includes(v); }
+function canView(v){ if(v==="integraciones")return false; if(_accessRole==="gestoria")return ["home","contabilidad","facturas","prevision"].includes(v); return !(VIEW_DENY[myAccessLevel()]||[]).includes(v); }
 function applyRoleNav(){
   const lvl=myAccessLevel();
   document.body.classList.toggle("role-colab", lvl==="colab");
@@ -4218,6 +4218,7 @@ document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{_wantProject=nu
 drawBrandSwitch();
 
 function render(){
+  (state.projects||[]).forEach(p=>ModernoSpec.reindex(p));
   if(_accessLoading&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>'+(_accessError?'No se ha podido abrir el estudio':'Conectando con tu estudio')+'</h1><p>'+ModernoDaily.escape(_accessError||'Comprobando el acceso y cargando tus datos.')+'</p>'+(_accessError?'<p>Tus copias se conservan. Puedes descargar los cambios desde el estado de sincronización.</p>':'')+'<button class="btn btn-ghost" '+(_accessConnecting?'disabled':'')+' onclick="cloudLoad()">'+(_accessConnecting?'Conectando…':'Reintentar conexión')+'</button>';return;}
   if((_accessRole==='contratista'||_accessRole==='cliente')&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>Acceso al proyecto</h1><p>Abre el enlace de proyecto que te ha compartido el estudio.</p><button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión</button>';return;}
   if(_accessRole==="gestoria"){ V.innerHTML=vGestoria();applyRoleNav();return; }
@@ -4928,7 +4929,7 @@ function gcalButton(){
   if(!sb) return `<button class="btn btn-ghost" onclick="toast('Disponible con tu cuenta del estudio en app.moderno.app')">${ico('google')} Conectar Google Calendar</button>`;
   if(_gcal.busy) return `<button class="btn btn-ghost" disabled><span class="lg-spin"></span> Conectando con Google…</button>`;
   if(_gcal.on) return `<button class="btn btn-gold" title="${_gcal.email?_gcal.email+" · ":""}${_gcal.ultimo?"último envío "+_gcal.ultimo:"pendiente de sincronizar"}" onclick="gcalMenu()">${ico('google')} Google Calendar conectado ✓</button>`;
-  return `<button class="btn btn-ghost" onclick="gcalConnect()">${ico('google')} Conectar Google Calendar</button>`;
+  return ""; // No ofrecer una conexión aún no validada.
 }
 async function gcalInvoke(body){
   const {data,error}=await sb.functions.invoke("gcal",{body});
@@ -5172,7 +5173,7 @@ function vLibrary(){
       <div class="thumb" style="width:100%;height:130px;border-radius:0;background:transparent" onclick="libEdit(${i})">${x.img?`<img ${fileImageAttrs(x.img)}>`:"🛋"}</div>
       <div style="padding:12px">
         <b style="font-size:13px">${x.name}</b>
-        <div style="font-size:11px;color:var(--ink-soft);margin:3px 0">${x.supplier||"—"} · ${x.sku||"—"}${x.ai?` · <span title="Categoría asignada por IA (Claude Haiku, simulado)" style="background:var(--gold-soft);border-radius:99px;padding:1px 7px;font-size:9.5px;font-weight:700">✨ Clasificado por IA</span>`:""}</div>
+        <div style="font-size:11px;color:var(--ink-soft);margin:3px 0">${x.supplier||"—"} · ${x.sku||"—"}${x.ai?` · <span title="Categoría sugerida por reglas; revisa el resultado" style="background:var(--gold-soft);border-radius:99px;padding:1px 7px;font-size:9.5px;font-weight:700">✨ Categoría sugerida</span>`:""}</div>
         ${x.cat?`<span class="chip neutral" style="font-size:9.5px;cursor:pointer" title="Filtrar por esta categoría" onclick="state.libF.cat='${x.cat}';render()">${x.cat}</span>`:""}
         <div style="display:flex;align-items:center;gap:6px"><b>${fmt(x.price)}</b><small style="color:var(--ink-faint)">/${x.unit==="m2"?"m²":"ud"}</small>
           <span style="margin-left:auto"></span>
@@ -5190,7 +5191,7 @@ function libPick(si){
   modal(`<h3>🗃 Añadir desde la biblioteca</h3>
   <input placeholder="⌕ Buscar…" value="${q}" oninput="state.lpQ=this.value;libPick(${si});const e=document.querySelectorAll('.modal input')[0];e.focus();e.setSelectionRange(e.value.length,e.value.length)">
   <div style="max-height:300px;overflow-y:auto;margin-top:8px">
-  ${items.map((x)=>{const i=state.library.indexOf(x);return `<div class="catalog-item" onclick="const r=getRoom().r;r.sections[${si}].items.push({...state.library[${i}],qty:1,status:'Revisión Cliente',files:[],note:'',plazo:''});toast('＋ '+state.library[${i}].name);render()">＋ ${x.name}<span style="font-size:10.5px;color:var(--ink-faint);margin-left:6px">${x.supplier||""}</span><span class="p">${fmt(x.price)}</span></div>`}).join("")||`<div class="empty" style="padding:14px">Biblioteca vacía</div>`}
+  ${items.map((x)=>{const i=state.library.indexOf(x);return `<div class="catalog-item" onclick="const r=getRoom().r;r.sections[${si}].items.push(ModernoSpec.fromProduct(state.library[${i}]));toast('＋ '+state.library[${i}].name);render()">＋ ${x.name}<span style="font-size:10.5px;color:var(--ink-faint);margin-left:6px">${x.supplier||""}</span><span class="p">${fmt(x.price)}</span></div>`}).join("")||`<div class="empty" style="padding:14px">Biblioteca vacía</div>`}
   </div>
   <div class="modal-foot"><button class="btn btn-dark" onclick="state.lpQ='';closeModal()">Hecho</button></div>`);
 }
@@ -5264,45 +5265,31 @@ function aiCategory(txt){
   for(const [cat,keys] of AI_CAT_RULES) if(keys.some(k=>t.includes(k))) return cat;
   return "Otros";
 }
-const IMP_SAMPLES=[
-  {name:"Lámpara colgante de ratán Nara ⌀45", price:89.95, emoji:"💡", bg:"#FEF3D7"},
-  {name:"Sofá 3 plazas Loulé tapizado beige", price:649, emoji:"🛋", bg:"#EDE6DC"},
-  {name:"Grifo de lavabo cascada negro mate", price:129.9, emoji:"🚿", bg:"#DCE8E6"},
-  {name:"Mesa de comedor roble macizo 180 cm", price:459, emoji:"🪑", bg:"#EAE0D3"}];
 function urlDomain(u){
   try{ u=(u||"").trim(); if(!u) return null; if(!/^https?:\/\//i.test(u)) u="https://"+u;
     const h=new URL(u).hostname.replace(/^www\./,""); return h.includes(".")?h:null; }catch(e){ return null; }
 }
 function libUrlImport(){
-  const el=document.getElementById("libUrlImp");
-  const raw=el?el.value:"";
-  const dom=urlDomain(raw);
-  if(!dom){ toast("Eso no parece una URL de producto — pega el enlace completo de la tienda"); return; }
-  if(state.libImporting) return;
-  state.libImporting=true; render();
-  setTimeout(()=>{
-    const s=IMP_SAMPLES[(state.libImpSeq=state.libImpSeq||0)%IMP_SAMPLES.length]; state.libImpSeq++;
-    const svg="data:image/svg+xml,"+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><rect width='100%' height='100%' fill='"+s.bg+"'/><text x='50%' y='60%' font-size='120' text-anchor='middle'>"+s.emoji+"</text></svg>");
-    const cat=aiCategory(s.name);
-    state.libSeq=state.libSeq||1;
-    state.library.unshift({id:state.libSeq++, name:s.name, url:raw.trim(), sku:"IMP-"+Math.floor(1000+Math.random()*9000), supplier:dom, price:s.price, cost:+(s.price*0.8).toFixed(2), margin:0, unit:"ud", img:svg, dims:"", material:"", color:"", cat, ai:true});
-    state.libImporting=false; state.libQ=""; state.libF={cat:"",sup:"",min:"",max:""};
-    render();
-    toast("✓ Producto importado de "+dom+" — ✨ clasificado por IA en «"+cat+"»");
-  }, 1500);
+ const raw=(document.getElementById('libUrlImp')?.value||'').trim();
+ if(!urlDomain(raw)){toast('Pega un enlace válido de producto');return;}
+ libEdit(-1);document.getElementById('lbUrl').value=/^https?:\/\//i.test(raw)?raw:'https://'+raw;
+ toast('Completa los datos comprobados del producto antes de guardarlo');
 }
-let lbImg="";
+function newLibraryId(){
+ let id;do{id=Date.now()*1000+crypto.getRandomValues(new Uint32Array(1))[0]%1000;}while(state.library.some(x=>x.id===id));return id;
+}
+let lbImg="",libraryUploadDraft=null;
 function libEdit(i){
-  const x = i>=0? state.library[i] : {name:"",url:"",sku:"",supplier:"",price:0,cost:0,unit:"ud",img:"",dims:"",material:"",color:""};
+  const x = i>=0? state.library[i] : {name:"",url:"",sku:"",supplier:"",price:null,cost:null,unit:"ud",img:"",dims:"",material:"",color:""};
   lbImg = x.img||"";
   modal(`<h3>${i>=0?"Editar":"Añadir"} producto de biblioteca</h3>
   <label>URL de la tienda</label>
   <div style="display:flex;gap:6px">
-    <input id="lbUrl" value="${x.url}" placeholder="https://www.sklum.com/es/…">
-    <button class="btn btn-gold" style="flex-shrink:0" onclick="libScrape()">⚡ Obtener datos</button>
+    <input id="lbUrl" value="${ModernoDaily.escape(x.url||"")}" placeholder="https://www.sklum.com/es/…">
+    <button class="btn btn-gold" style="flex-shrink:0" onclick="libScrape()">Sugerir nombre</button>
   </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">Rellena nombre, proveedor, SKU, precio y foto desde la URL (simulado en el prototipo; real en la app).</p>
-  <label>Categoría <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— la IA la rellena sola desde la URL</small></label>
+  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">El enlace permite sugerir un nombre y una categoría. Confirma la referencia, el proveedor y el precio con la tienda; añade la imagen desde un archivo.</p>
+  <label>Categoría <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— sugerencia por palabras del enlace; revísala</small></label>
   <div style="display:flex;gap:6px">
     <select id="lbCat" style="flex:1">${allCats().map(c=>`<option ${(x.cat||"")===c?"selected":""}>${c}</option>`).join("")}</select>
     <button class="btn btn-ghost" title="Nueva categoría" style="flex-shrink:0" onclick="lbNewCat()">＋</button>
@@ -5315,57 +5302,40 @@ function libEdit(i){
     <div class="thumb" id="lbThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('lbImgFile').click()">${lbImg?`<img ${fileImageAttrs(lbImg)}>`:"🛋"}</div>
     <div><label style="margin-top:0">Foto</label>
       <label class="btn btn-ghost" style="cursor:pointer;font-size:11px;padding:6px 11px;display:inline-flex;align-items:center;gap:6px">${ico("subir")} Subir imagen<input type="file" id="lbImgFile" accept="image/*" style="display:none" onchange="lbLoadImg(this.files[0])"></label>
-      <p style="font-size:10.5px;color:var(--ink-faint);margin-top:2px">O clic en la miniatura. «⚡ Obtener datos» también la trae de la tienda.</p>
+      <p style="font-size:10.5px;color:var(--ink-faint);margin-top:2px">También puedes pulsar la miniatura para añadir una imagen.</p>
     </div>
   </div>
-  <label>Nombre</label><input id="lbN" value="${x.name}">
-  <div class="row2"><div><label>Proveedor</label><input id="lbS" list="dlProvs" value="${x.supplier}" placeholder="De tu agenda o libre">${dlProvs()}</div><div><label>SKU</label><input id="lbK" value="${x.sku}"></div></div>
-  <div class="row2"><div><label>Precio cliente (€)</label><input id="lbP" type="number" step="0.01" value="${x.price||""}" oninput="mgSync('lb','price')"></div><div><label>Coste profesional (€)</label><input id="lbC" type="number" step="0.01" value="${x.cost||""}" oninput="mgSync('lb','cost')"></div></div>
+  <label>Nombre</label><input id="lbN" value="${ModernoDaily.escape(x.name||"")}">
+  <div class="row2"><div><label>Proveedor</label><input id="lbS" list="dlProvs" value="${ModernoDaily.escape(x.supplier||"")}" placeholder="De tu agenda o libre">${dlProvs()}</div><div><label>SKU</label><input id="lbK" value="${ModernoDaily.escape(x.sku||"")}"></div></div>
+  <div class="row2"><div><label>Precio cliente (€)</label><input id="lbP" type="number" step="0.01" value="${x.price??""}" oninput="mgSync('lb','price')"></div><div><label>Coste profesional (€)</label><input id="lbC" type="number" step="0.01" value="${x.cost??""}" oninput="mgSync('lb','cost')"></div></div>
   <div class="row2">
-    <div><label>Unidades</label><input id="lbQty" type="number" step="0.01" value="${x.qty||1}" oninput="unitSum('lbQty','lbP','lbU','lbSum','lbC')"></div>
+    <div><label>Unidades</label><input id="lbQty" type="number" step="0.01" value="${x.qty??1}" oninput="unitSum('lbQty','lbP','lbU','lbSum','lbC')"></div>
     <div><label>Unidad</label><select id="lbU" onchange="unitSum('lbQty','lbP','lbU','lbSum','lbC')"><option value="ud" ${x.unit!=="m2"?"selected":""}>Unidades</option><option value="m2" ${x.unit==="m2"?"selected":""}>m²</option></select></div>
   </div>
   <div id="lbSum" class="entry" style="display:block;background:var(--gold-soft);margin-top:8px;font-size:12.5px"></div>
   ${mgUI("lb", mgAuto(x))}
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
   <button class="btn btn-dark" onclick="libSave(${i})">Guardar</button></div>`);
+  libraryUploadDraft={form:document.getElementById("lbN"),pending:0};
   unitSum("lbQty","lbP","lbU","lbSum","lbC");
 }
 function lbDrawThumb(){ const t=document.getElementById("lbThumb"); if(t) t.innerHTML = lbImg?`<img ${fileImageAttrs(lbImg)}>`:"🛋"; }
-function lbLoadImg(f){ if(!f)return; fileUp(f).then(__u=>{ if(__u==null) return; lbImg=__u; lbDrawThumb(); }); }
-function libScrape(){
-  try{
-    const u = new URL(document.getElementById("lbUrl").value);
-    const host = u.hostname.replace("www.","").split(".")[0];
-    document.getElementById("lbS").value = host.charAt(0).toUpperCase()+host.slice(1)+" ES";
-    const slug = u.pathname.split("/").filter(Boolean).pop()||"";
-    const skuM = slug.match(/(\d{4,})/);
-    if(skuM) document.getElementById("lbK").value = skuM[1]+"-es";
-    const name = slug.replace(/\.\w+$/,"").replace(/[-_]+/g," ").replace(/\d+/g,"").trim();
-    if(name) document.getElementById("lbN").value = name.charAt(0).toUpperCase()+name.slice(1);
-    const pEl = document.getElementById("lbP");
-    if(!+pEl.value){ pEl.value = ((Math.floor(Math.random()*28)+4)*10 - 0.05).toFixed(2); pEl.style.boxShadow="0 0 0 2px var(--gold)"; }
-    if(!lbImg){
-      const th=document.getElementById("lbThumb"); if(th) th.innerHTML="<span style='font-size:11px;color:var(--ink-faint)'>foto…</span>";
-      fetchProductImage(u.href).then(img=>{
-        if(lbImg) return;
-        if(img){ lbImg=img; lbDrawThumb(); toast("📷 Foto oficial del producto cargada"); }
-        else { lbDrawThumb(); toast("No he encontrado la foto oficial — a\u00f1\u00e1dela t\u00fa con el bot\u00f3n de foto"); }
-      });
-    }
-    const catSel=document.getElementById("lbCat");
-    if(catSel){ toast("✨ Analizando con IA…");
-      setTimeout(()=>{ const c=aiCategory(u.pathname+" "+(document.getElementById("lbN")?document.getElementById("lbN").value:"")); if(!document.getElementById("lbCat")) return;
-        catSel.value=c; catSel.style.boxShadow="0 0 0 2px var(--gold)";
-        if(!document.getElementById("aiBadge")){ const b=document.createElement("span"); b.id="aiBadge"; b.textContent="✨ Clasificado por IA"; b.title="Claude Haiku (simulado)"; b.style.cssText="display:inline-block;background:var(--gold-soft);border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;margin-top:5px"; catSel.parentElement.appendChild(b); }
-        toast("✨ Clasificado por IA como «"+c+"» — cámbialo si no acierta"); }, 1200); }
-    toast("⚡ Datos leídos — buscando la foto oficial del producto…");
-  }catch(e){ toast("Pega una URL válida (https://…)"); }
+async function lbLoadImg(f){
+ if(!f)return;const d=libraryUploadDraft;if(!d||!d.form.isConnected)return;d.pending++;
+ try{const data=await fileUp(f);if(data&&d===libraryUploadDraft&&d.form.isConnected){lbImg=data;lbDrawThumb();}}finally{d.pending--;}
 }
-/* «Libre» = sin margen automático: precio y coste se escriben a mano, cada uno lo suyo; solo se informa del margen resultante */
+function libScrape(){ productUrlSuggest('lbUrl','lbN','lbCat'); }
+function productUrlSuggest(urlId,nameId,categoryId){
+ try{const u=new URL(document.getElementById(urlId).value);if(!['https:','http:'].includes(u.protocol))throw Error();
+ const name=decodeURIComponent(u.pathname.split('/').filter(Boolean).pop()||'').replace(/[-_]+/g,' ').replace(/\.html?$/,'');
+ const field=document.getElementById(nameId);if(!field.value.trim())field.value=name;
+ if(categoryId){const c=document.getElementById(categoryId);if(c&&(!c.value||c.value==='Otros'))c.value=aiCategory(name);}
+ toast('Nombre sugerido desde el enlace. Comprueba los datos y añade el precio y la imagen');
+ }catch(e){toast('Pega una URL válida (https://…)');}
+}
 function mgAuto(it){ if(!it) return undefined; if(it.margin===null) return "libre"; const c=+it.cost||0, p=+it.price||0; if(c>0&&p>0&&it.margin!==undefined&&it.margin!==""){ const k=1+(+it.margin||0)/100; if(Math.abs(c*k-p)>0.02) return "libre"; } return it.margin; }
 function mgUI(pfx, cur){
-  const libre = cur==="libre" || cur===null;
+  const libre = cur==="libre" || cur===null || cur===undefined;
   cur = libre ? "" : ((cur===undefined||cur==="") ? (state.defMargin??0) : +cur);
   const std=[0,5,10,15,20], custom=!libre && !std.includes(cur);
   return `<label>Margen comercial (%) <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— con un %, el otro campo se calcula solo; con «Libre», precio y coste van cada uno a su aire</small></label>
@@ -5408,19 +5378,9 @@ function mgPick(pfx, v, btn){
   if(btn){ inp.value=""; inp.style.borderColor="#E2E2E0"; } else { inp.style.borderColor="var(--ink)"; }
   mgSync(pfx, null);
 }
-function syncFromLibrary(x){
-  let n=0;
-  state.projects.forEach(p=>(p.rooms||[]).forEach(r=>r.sections.forEach(sec=>sec.items.forEach(it=>{
-    if(it.libId===x.id){ it.price=x.price; it.cost=x.cost; it.margin=x.margin; n++; }
-  }))));
-  if(n) toast("⇄ "+n+" producto"+(n===1?"":"s")+" de tus listas actualizado"+(n===1?"":"s")+" desde la biblioteca");
-}
-function syncToLibrary(it){
-  if(it.libId===undefined) return;
-  const x=state.library.find(z=>z.id===it.libId); if(!x) return;
-  x.price=it.price; x.cost=it.cost; x.margin=it.margin;
-  toast("⇄ Producto de la biblioteca actualizado desde la lista");
-}
+// Los valores de cada proyecto son independientes del producto maestro.
+function syncFromLibrary(){ return false; }
+function syncToLibrary(){ return false; }
 function unitSum(qId,pId,uId,outId,cId){
   const q=+((document.getElementById(qId)||{}).value)||0, pr=+((document.getElementById(pId)||{}).value)||0;
   const co=cId? (+((document.getElementById(cId)||{}).value)||0) : 0;
@@ -5431,16 +5391,23 @@ function unitSum(qId,pId,uId,outId,cId){
   if(co>0&&co<pr){ const m=(pr-co)*q; html+=` <span style="color:var(--ink-soft)">· Margen: <b>${fmt(m)}</b> (${Math.round((pr-co)/pr*100)}%)</span>`; }
   el.innerHTML=html;
 }
+function productAmountsValid(priceId,costId,qtyId){
+ const values=[priceId,costId,qtyId].map(id=>document.getElementById(id).value);
+ if(values.some((v,i)=>(i!==1&&v.trim()==='')||(v!==''&&(!Number.isFinite(+v)||+v<0)))){toast('Revisa precio, coste y cantidad: deben ser números válidos, cero o mayores');return false;}return true;
+}
 function libSave(i){
+  if(libraryUploadDraft?.pending){toast("Espera a que termine la imagen");return;}
+  if(!productAmountsValid('lbP','lbC','lbQty'))return;
+  if(document.getElementById("lbP").value.trim()===""){toast("Indica el precio comprobado; puedes escribir 0 si es gratuito");return;}
   const x = {...(i>=0?state.library[i]:{img:"",dims:"",material:"",color:""}),
     name:document.getElementById("lbN").value||"Producto", supplier:document.getElementById("lbS").value,
     sku:document.getElementById("lbK").value, price:+document.getElementById("lbP").value||0,
-    cost:+document.getElementById("lbC").value||0, unit:document.getElementById("lbU").value, url:document.getElementById("lbUrl").value, img:lbImg,
-    cat:document.getElementById("lbCat").value, qty:Math.max(0,+document.getElementById("lbQty").value||1),
+    cost:document.getElementById("lbC").value===""?null:+document.getElementById("lbC").value, unit:document.getElementById("lbU").value, url:document.getElementById("lbUrl").value, img:lbImg,
+    cat:document.getElementById("lbCat").value, qty:+document.getElementById("lbQty").value,
     margin:(document.getElementById("lbMgV").value===""?null:(+document.getElementById("lbMgV").value||0))};
   if(x.cat==="Otros"){ const g=aiCategory(x.name+" "+x.url); if(g!=="Otros") x.cat=g; }
-  if(i>=0){ x.id=state.library[i].id; state.library[i]=x; syncFromLibrary(x); }
-  else { state.libSeq=state.libSeq||1; x.id=state.libSeq++; state.library.push(x); }
+  if(i>=0){ x.id=state.library[i].id??newLibraryId(); state.library[i]=x;  }
+  else { x.id=newLibraryId();state.library.push(x); }
   closeModal(); render(); toast("🗃 Guardado en la biblioteca");
 }
 function libUse(i){
@@ -5459,7 +5426,7 @@ function luAdd(i){
   const x = state.library[i];
   const p = state.projects.find(z=>z.id===+document.getElementById("luP").value);
   const r = p.rooms.find(z=>z.id===+document.getElementById("luR").value);
-  r.sections[0].items.push({...x, libId:x.id, qty:(state.library[i].qty||1), status:"Revisión Cliente", files:[], note:"", plazo:""});
+  r.sections[0].items.push(ModernoSpec.fromProduct(x));
   closeModal(); toast("＋ Añadido a "+r.name+" ("+p.num+")");
 }
 /* Orden natural por serie y número: CM-1, CM-2, … PR-1, PR-2 (prefijo alfabético, número ascendente) */
@@ -6761,37 +6728,10 @@ const INTEGRS = [
     {k:"trello", n:"Trello", d:"Tus tableros convertidos en proyectos, lista a lista.", em:"\u25a4"},
     {k:"asana", n:"Asana", d:"Tareas y proyectos sincronizados con tu equipo.", em:"\u25d4"}]}
 ];
-function integrToggle(k,n){
-  if(k==="gcal"){ if(_gcal.on) gcalDisconnect(); else gcalConnect(); return; }
-  state.account.integr[k] = !state.account.integr[k];
-  render();
-  toast(state.account.integr[k] ? "\u2713 "+n+" conectado (simulado \u2014 en la app real, OAuth)" : n+" desconectado");
-}
-function vIntegraciones(){
-  const A = state.account;
-  const total = INTEGRS.reduce((s,c)=>s+c.items.length,0);
-  const on = INTEGRS.reduce((s,c)=>s+c.items.filter(x=>A.integr[x.k]).length,0);
-  return `
-  <h1 class="big">Integraciones</h1>
-  <p class="sub">Conecta Moderno.app con las herramientas que ya usas \u2014 calendario, archivos, cobros y m\u00e1s. <b>${on}</b> de ${total} conectadas.</p>
-  ${INTEGRS.map(c=>`
-  <h2 class="sec">${c.cat}</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;align-items:stretch;margin-bottom:6px">
-    ${c.items.map(x=>{ const conn=x.k==="gcal"?_gcal.on:!!A.integr[x.k]; return `
-    <div class="widget" style="display:flex;flex-direction:column;gap:8px;${conn?"outline:2px solid var(--gold)":""}">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="width:38px;height:38px;border-radius:11px;background:var(--card);display:grid;place-items:center;font-size:17px;flex:none">${x.ic?ico(x.ic):x.em}</span>
-        <b style="font-size:13.5px">${x.n}</b>
-        ${conn?`<span class="chip" style="margin-left:auto;background:#DBEBDD;color:#2E6B4F;font-size:10px">\u2713 Conectada</span>`:""}
-      </div>
-      <p style="font-size:12px;color:var(--ink-soft);flex:1;margin:0">${x.d}</p>
-      <button class="btn ${conn?"btn-ghost":"btn-dark"}" style="align-self:flex-start" onclick="integrToggle('${x.k}','${x.n}')">${conn?"Desconectar":"Conectar"}</button>
-    </div>`;}).join("")}
-  </div>`).join("")}
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:12px">Las conexiones tambi\u00e9n se gestionan desde Administraci\u00f3n \u2192 Conexiones, y los desarrolladores tienen un token de API personal all\u00ed mismo. En la app real cada bot\u00f3n abre el OAuth del servicio.</p>`;
-}
+function integrToggle(){ toast("Esta conexión todavía no está disponible"); }
+function vIntegraciones(){ return '<h1>Sección no disponible</h1><p>Las conexiones se mostrarán cuando estén operativas.</p>'; }
 function vAdmin(){
-  const A = state.account, sec = state.adminSec||"perfil";
+  const A = state.account, sec = state.adminSec==="conex"?"perfil":(state.adminSec||"perfil");
   const item = (id,label,indent) => `<button class="nav-item ${sec===id?"active":""}" style="${indent?"margin-left:22px;width:calc(100% - 22px);font-size:12px":""}" onclick="state.adminSec='${id}';render()">${label}</button>`;
   const head = (icon,label) => `<div class="nav-head" style="cursor:default;margin-top:10px">${ico(icon)} ${label}</div>`;
   let body="";
@@ -7027,8 +6967,7 @@ function vAdmin(){
       ${item("perfil","Perfil")}${item("cuenta","Cuenta")}${item("region","Idioma y región")}${item("espacios","Espacios de trabajo")}${item("equipo","Equipo e invitaciones")}
       ${head("a_pers","Personalización")}
       ${item("marca","Creación de marca")}${item("colores","Colores")}${item("campos","Perfil de usuario")}
-      ${head("a_conex","Conexiones")}
-      ${item("conex","Integraciones y API")}
+
       ${item("historial","Historial de versiones")}
       ${head("a_fact","Facturación")}
       ${item("fact-vista","Vista general")}${item("fact-config","Configuración",1)}${item("fact-fact","Facturas",1)}${item("fact-pago","Método de pago",1)}${item("fact-cont","Contactos",1)}
@@ -7099,10 +7038,37 @@ function vCatalog(){
 }
 
 /* =================== ESTANCIAS (Densy) =================== */
+function specPrepare(p){
+ // Existing private fields in collaborator projections cannot be safely rebound.
+ if(_accessRole==='colaborador')return false;
+ ModernoSpec.prepare(p);return true;
+}
+function specInsertPresentation(kind,rid,si,ii){
+ const {p,pr}=presGet();const r=(p.rooms||[]).find(x=>x.id===rid),item=r?.sections[si]?.items[ii];if(!item)return;
+ if(_accessRole==='colaborador'){toast('Un administrador debe preparar los vínculos de esta presentación');return;}
+ presSnap();specPrepare(p);
+ const ref={rid,rsi:si,rii:ii,src:ModernoSpec.refFor(item.id)};
+ pr.pages[presPg].els.push(kind==='pin'?{t:'pin',x:50,y:50,color:'#E2E2E0',...ref}:{t:'prod',x:15,y:15,w:26,...ref});
+ presSel=pr.pages[presPg].els.length-1;closeModal();render();
+}
+let roomBoardPrices=false;
+function roomBoardContent(p,r,prices){
+ const E=ModernoDaily.escape,sections=ModernoSpec.board(r);
+ return `<div class="room-board"><header><p>${E(p.num)} · ${E(p.name)}</p><h2>${E(r.name)}</h2></header>${sections.length?sections.map(sec=>`<section><h3>${E(sec.name)}</h3><div class="room-board-grid">${sec.items.map(it=>`<article><div class="room-board-image">${it.img?`<img ${fileImageAttrs(it.img)} alt="${E(it.name)}">`:'<span>Sin imagen</span>'}</div><div class="room-board-caption"><b>${E(it.name)}</b><p>${E([it.sku,it.color,it.material,it.dims].filter(Boolean).join(' · '))}</p><span>${E(it.qty??1)} ${E(it.unit||'ud')}</span>${prices?`<strong>${it.price==null?'Precio por confirmar':fmt((+it.price||0)*(it.qty??1))}</strong>`:''}</div></article>`).join('')}</div></section>`).join(''):'<p>Añade productos a esta estancia para crear su Board.</p>'}</div>`;
+}
+function roomBoard(){
+ const {p,r}=getRoom();if(!p||!r||!canView('estancia'))return;
+ modal(`<div class="room-board-dialog"><div class="room-board-toolbar"><div><h3>Board de la estancia</h3><p>Se genera con los productos actuales. Los costes y las notas internas no se incluyen.</p></div><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button></div><div class="room-board-toolbar"><label><input type="checkbox" ${roomBoardPrices?'checked':''} onchange="roomBoardPrices=this.checked;roomBoard()"> Mostrar precios de venta</label><button class="btn btn-dark" onclick="roomBoardPDF()">Descargar PDF</button></div>${roomBoardContent(p,r,roomBoardPrices)}</div>`);
+}
+async function roomBoardPDF(){
+ const {p,r}=getRoom();if(!p||!r||!canView('estancia'))return;
+ const z=document.getElementById('printZone');z.innerHTML='<div class="pdf-page">'+roomBoardContent(p,r,roomBoardPrices)+'</div>';
+ try{await printAs('Board — '+r.name);}finally{z.style.display='none';}
+}
 function roomTotal(r){ return r.sections.reduce((s,sec)=>s+sec.items.reduce((a,i)=>a+i.price*i.qty,0),0); }
-function effCost(r,i){ return i.cost ? i.cost : (r.margin ? i.price*(1-r.margin/100) : i.price); }
-function itemGain(r,i){ const g=(i.price-effCost(r,i))*i.qty; return g>0.004 ? g : 0; }
-function roomCost(r){ return r.sections.reduce((s,sec)=>s+sec.items.reduce((a,i)=>a+effCost(r,i)*i.qty,0),0); }
+function effCost(r,i){ if(i.cost!==null&&i.cost!==undefined&&i.cost!==""&&Number.isFinite(+i.cost))return +i.cost;return r.margin!=null?i.price*(1-r.margin/100):null; }
+function itemGain(r,i){ const c=effCost(r,i);return c===null?null:Math.round((i.price-c)*i.qty*100)/100; }
+function roomCost(r){ const items=r.sections.flatMap(s=>s.items);return items.some(i=>effCost(r,i)===null)?null:items.reduce((n,i)=>n+effCost(r,i)*i.qty,0); }
 function openRoom(pid,rid){ state.currentProject=pid; state.currentRoom=rid; go("estancia"); }
 function getRoom(){ const p=state.projects.find(x=>x.id===state.currentProject); return {p, r:(p&&p.rooms||[]).find(x=>x.id===state.currentRoom)}; }
 
@@ -7110,7 +7076,7 @@ function vRoom(){
   const {p,r} = getRoom();
   if(!p||!r) return vProjects();
   const b = BRAND[p.brand];
-  const tot=roomTotal(r), cost=roomCost(r), ben=tot-cost;
+  const tot=roomTotal(r), cost=roomCost(r), ben=cost===null?null:tot-cost;
   const q = _capNorm(state.roomSearch||"");
   const rf = state.rf || (state.rf={status:"",supplier:"",color:"",min:"",max:""});
   const isPav = r.kind==="pav";
@@ -7133,11 +7099,11 @@ function vRoom(){
   </div>
   <div class="dl-top" style="margin-top:8px">
     <h2 class="sec" style="display:flex;align-items:center;gap:10px"><span style="background:var(--gold-soft);border-radius:10px;width:34px;height:34px;display:grid;place-items:center">${rico(r.icon)}</span>${r.name}${r.rstatus?`<span class="dl-cnt" style="font-weight:700;padding:0 9px">${r.rstatus}</span>`:""}</h2>
-    <button class="dl-btn" title="Actualiza precio, foto y datos de los productos con enlace" onclick="refreshPrices()">⚡ Obtener datos</button>
+    <button class="dl-btn" onclick="roomBoard()">▦ Board de la estancia</button>
     <button class="dl-btn" title="Compartir, margen general, exportar, icono, mover a otro proyecto…" onclick="roomMenu(${p.id},${r.id})">…</button>
   </div>
   <div class="dl-budget" style="margin:14px 0 4px">
-    <div><span class="dl-lab">Presupuesto de la estancia</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px" title="Interno — el cliente no lo ve">🔒 coste ${fmt(cost)} · beneficio ${fmt(ben)}${r.margin?" · margen general "+r.margin+"%":""}</div></div>
+    <div><span class="dl-lab">Presupuesto de la estancia</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px" title="Interno — el cliente no lo ve">🔒 coste ${cost===null?"por confirmar":fmt(cost)} · beneficio ${ben===null?"por confirmar":fmt(ben)}${r.margin?" · margen general "+r.margin+"%":""}</div></div>
     <b class="dl-num">${fmt(tot)}</b>
   </div>
   <div class="dl-bar">
@@ -7178,7 +7144,7 @@ function vRoom(){
           ${F("Dimensiones", inp(si,ii,"dims",it.dims))}
           ${F("Color", inp(si,ii,"color",it.color))}
           ${F("Plazo entrega", inp(si,ii,"plazo",it.plazo))}
-          ${F("Precio coste", `<input type="number" step="0.01" value="${it.cost||""}" placeholder="-" onchange="setItem(${si},${ii},'cost',+this.value||0)">`)}
+          ${F("Precio coste", `<input type="number" step="0.01" value="${it.cost??""}" placeholder="-" onchange="setItem(${si},${ii},'cost',+this.value||0)">`)}
           ${F("Margen", `<input type="number" step="0.5" value="${it.margin==null?"":it.margin}" placeholder="${r.margin?r.margin+"% gral.":"-"}" title="Margen de esta línea; vacío = margen general de la estancia" onchange="setItem(${si},${ii},'margin',this.value===''?null:(+this.value||0))">`)}
           ${F("Precio cliente", `<input type="number" step="0.01" value="${it.price}" onchange="setItem(${si},${ii},'price',+this.value||0)">`)}
           ${F("Material", inp(si,ii,"material",it.material))}
@@ -7186,7 +7152,7 @@ function vRoom(){
           ${F("SKU", inp(si,ii,"sku",it.sku))}
           ${F("Unidades", `<input type="number" step="${it.unit==='m2'?'0.01':'1'}" value="${it.qty}" onchange="setItem(${si},${ii},'qty',Math.max(0,+this.value||0))">`)}
           ${F("Unidad", isPav?`<select onchange="setItem(${si},${ii},'unit',this.value)"><option value="m2" ${it.unit==="m2"?"selected":""}>m²</option><option value="ud" ${it.unit!=="m2"?"selected":""}>ud</option></select>`:`<span class="v">${it.unit==="m2"?"m²":"ud"}</span>`)}
-          ${F("Total cliente", `<span class="v b">${fmt(it.price*it.qty)}</span>${itemGain(r,it)?`<span style="display:block;font-size:10px;color:var(--dl-soft)" title="Ganancia interna">▲ ${fmt(itemGain(r,it))}</span>`:""}`)}
+          ${F("Total cliente", `<span class="v b">${fmt(it.price*it.qty)}</span>${itemGain(r,it)?`<span style="display:block;font-size:10px;color:var(--dl-soft)" title="Ganancia interna">${itemGain(r,it)<0?"▼":"▲"} ${fmt(itemGain(r,it))}</span>`:""}`)}
           ${F("Nota interna", `<textarea rows="1" placeholder="-" onchange="setItem(${si},${ii},'note',this.value)">${esc(it.note||"")}</textarea>`, "span2")}
           ${isPav?`<div class="dl-f"><span class="k">Despiece</span><button class="dl-addlink sec" style="padding:0" onclick="despiece(${si},${ii})">+10 % despiece</button></div>`:""}
           ${open?`<div class="dl-extra">
@@ -7241,16 +7207,16 @@ function itemMenu(si,ii){
   <label>Producto</label>
   <div style="display:grid;gap:6px">
     <button class="btn btn-ghost" style="justify-content:flex-start" onclick="const it=getRoom().r.sections[${si}].items[${ii}];it.hidden=!it.hidden;closeModal();render();toast(it.hidden?'🚫 Oculto para los clientes':'👁 Visible para los clientes')">${it.hidden?"👁 Mostrar a los clientes":"🚫 Ocultar a los clientes"}</button>
-    <button class="btn btn-ghost" style="justify-content:flex-start" onclick="const s=getRoom().r.sections[${si}];s.items.splice(${ii}+1,0,{...JSON.parse(JSON.stringify(s.items[${ii}]))});closeModal();render();toast('⧉ Producto duplicado')">⧉ Duplicar</button>
+    <button class="btn btn-ghost" style="justify-content:flex-start" onclick="specPrepare(getRoom().p);const s=getRoom().r.sections[${si}];s.items.splice(${ii}+1,0,ModernoSpec.duplicate(s.items[${ii}]));closeModal();render();toast('⧉ Producto duplicado')">⧉ Duplicar</button>
     <button class="btn btn-ghost" style="justify-content:flex-start" onclick="closeModal();copyItemModal(${si},${ii})">→ Copiar a…</button>
     <button class="btn btn-ghost" style="justify-content:flex-start" onclick="closeModal();toast('⟳ Producto actualizado desde la tienda (simulado — en la app real refresca precio, foto y stock)')">⟳ Actualizar producto desde URL</button>
   </div>
   <label>Opciones alternativas</label>
-  <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="const s=getRoom().r.sections[${si}];const c={...JSON.parse(JSON.stringify(s.items[${ii}]))};c.name=c.name+' — alternativa';c.alt=true;c.status='Revisión Cliente';s.items.splice(${ii}+1,0,c);closeModal();render();toast('⇄ Opción alternativa creada — edítala y el cliente elegirá')">⇄ Añadir opción alternativa</button>
+  <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="specPrepare(getRoom().p);const s=getRoom().r.sections[${si}];const c=ModernoSpec.duplicate(s.items[${ii}]);c.name=c.name+' — alternativa';c.alt=true;c.status='Revisión Cliente';s.items.splice(${ii}+1,0,c);closeModal();render();toast('⇄ Opción alternativa creada — edítala y el cliente elegirá')">⇄ Añadir opción alternativa</button>
   <label>Biblioteca</label>
-  <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="const it=getRoom().r.sections[${si}].items[${ii}];state.library.push({name:it.name,url:it.url,sku:it.sku,supplier:it.supplier,price:it.price,cost:it.cost,unit:it.unit||'ud',img:it.img,dims:it.dims||'',material:it.material||'',color:it.color||''});closeModal();toast('🗃 Guardado en la biblioteca de productos')">🗃 Guardar en la biblioteca de productos</button>
+  <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="const it=getRoom().r.sections[${si}].items[${ii}];state.library.push({id:newLibraryId(),name:it.name,url:it.url,sku:it.sku,supplier:it.supplier,price:it.price,cost:it.cost,unit:it.unit||'ud',img:it.img,dims:it.dims||'',material:it.material||'',color:it.color||''});closeModal();toast('🗃 Guardado en la biblioteca de productos')">🗃 Guardar en la biblioteca de productos</button>
   <div class="modal-foot">
-    <button class="danger" onclick="askConfirm('¿Eliminar este producto de la lista?','Eliminar',()=>{getRoom().r.sections[${si}].items.splice(${ii},1);render();toast('Producto eliminado')})">🗑 Eliminar</button>
+    <button class="danger" onclick="askConfirm('¿Eliminar este producto de la lista?','Eliminar',()=>{delItem(${si},${ii});toast('Producto eliminado')})">🗑 Eliminar</button>
     <button class="btn btn-dark" onclick="closeModal()">Cerrar</button>
   </div>`);
 }
@@ -7258,8 +7224,10 @@ function itemMenu(si,ii){
 function roomCloneData(r, secIdx){
   const src = secIdx>=0 ? {...r, sections:[r.sections[secIdx]]} : r;
   const c = JSON.parse(JSON.stringify(src));
-  c.id = Date.now()+Math.floor(Math.random()*1000); delete c.shareToken;
-  (c.sections||[]).forEach(s=>(s.items||[]).forEach(it=>{ delete it.cli; delete it.cliNote; }));   // las respuestas del cliente son de cada proyecto
+  c.id = Math.max(Date.now()*1000,(roomCloneData.lastId||0)+1);
+  while((state.projects||[]).some(p=>(p.rooms||[]).some(r=>r.id===c.id)))c.id++;
+  roomCloneData.lastId=c.id; delete c.shareToken;
+  (c.sections||[]).forEach(s=>{s.items=(s.items||[]).map(it=>ModernoSpec.duplicate(it));});   // las respuestas del cliente son de cada proyecto
   return c;
 }
 function roomToProjectModal(pid,rid){
@@ -7345,7 +7313,7 @@ function ciDo(si,ii){
   const it = getRoom().r.sections[si].items[ii];
   const p = state.projects.find(z=>z.id===+document.getElementById("ciP").value);
   const r = p.rooms.find(z=>z.id===+document.getElementById("ciR").value);
-  r.sections[+document.getElementById("ciS").value].items.push(JSON.parse(JSON.stringify(it)));
+  r.sections[+document.getElementById("ciS").value].items.push(ModernoSpec.duplicate(it));
   closeModal(); toast("→ Copiado a "+r.name+" ("+p.num+")");
 }
 function filterModal(){
@@ -8273,7 +8241,7 @@ function presRenderEl(p,e,i,c){
   }
   return "";
 }
-function presItem(p,e){ const r=(p.rooms||[]).find(x=>x.id===e.rid); return r&&r.sections[e.rsi]&&r.sections[e.rsi].items[e.rii]||null; }
+function presItem(p,e){ return ModernoSpec.resolve(p,e)?.item||null; }
 function presToolbar(el){
   const i = presSel;
   if(el.t==="text"||el.t==="toc") return `<div class="widget" style="padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
@@ -8388,9 +8356,7 @@ function presProdPick(kind){
   if(!opts.length){ toast("El proyecto no tiene productos en sus listas todavía"); return; }
   modal(`<h3>${kind==="pin"?"📍 Pin vinculado a producto":"🛋 Insertar producto"}</h3>
   <div class="entry-col" style="max-height:320px;overflow-y:auto">
-  ${opts.map(o=>`<button class="entry" style="background:var(--card);width:100%;cursor:pointer" onclick="presSnap();presGet().pr.pages[presPg].els.push(${kind==="pin"
-    ?`{t:'pin',x:50,y:50,color:'#E2E2E0',rid:${o.r.id},rsi:${o.rsi},rii:${o.rii}}`
-    :`{t:'prod',x:15,y:15,w:26,rid:${o.r.id},rsi:${o.rsi},rii:${o.rii}}`});presSel=presGet().pr.pages[presPg].els.length-1;closeModal();render();${kind==="pin"?`toast('Pin añadido al centro — arrástralo a su sitio')`:""}">
+  ${opts.map(o=>`<button class="entry" style="background:var(--card);width:100%;cursor:pointer" onclick="specInsertPresentation('${kind}',${o.r.id},${o.rsi},${o.rii})">
     <span style="width:32px;height:32px;border-radius:8px;background:var(--white);display:grid;place-items:center;overflow:hidden;flex-shrink:0">${o.it.img?`<img ${fileImageAttrs(o.it.img)} style="width:100%;height:100%;object-fit:cover">`:"🛋"}</span>
     <b style="font-size:12px;min-width:0;overflow:hidden;text-overflow:ellipsis">${o.it.name}</b><small style="color:var(--ink-faint)">${o.r.name}</small>
     <span class="amt" style="color:var(--ink)">${fmt(o.it.price)}</span></button>`).join("")}
@@ -8542,8 +8508,9 @@ function moodFromList(si){
 }
 function moodAddProd(si,rid,rsi,rii){
   const {p,m}=moodGet();
-  const it = p.rooms.find(r=>r.id===rid).sections[rsi].items[rii];
-  m.secs[si].items.push({img:it.img||null,name:it.name,w:1,prodRef:{rid,rsi,rii}});
+  if(_accessRole==='colaborador'){toast('Un administrador debe preparar los vínculos de este moodboard');return;}
+  const it = p.rooms.find(r=>r.id===rid)?.sections[rsi]?.items[rii];if(!it)return;
+  specPrepare(p);m.secs[si].items.push({img:it.img||null,name:it.name,w:1,prodRef:{rid,rsi,rii,src:ModernoSpec.refFor(it.id)}});
   closeModal(); moodOpen(moodCur.pid,moodCur.mid);
 }
 function moodMoveMenu(si,ii){
@@ -8555,7 +8522,7 @@ function moodMoveMenu(si,ii){
 function moodClickItem(si,ii){
   const {p,m}=moodGet();
   const it = m.secs[si].items[ii];
-  if(it.prodRef){ prodCard(p.id,it.prodRef.rid,it.prodRef.rsi,it.prodRef.rii,true); }
+  if(it.prodRef){ const target=ModernoSpec.resolve(p,it.prodRef);if(!target){toast("El producto vinculado ya no está disponible");return;}prodCard(p.id,target.room.id,target.si,target.ii,true); }
   else if(it.img){ imgZoom(it.img); }
 }
 function prodCard(pid,rid,rsi,rii,fromMood){
@@ -8774,6 +8741,7 @@ function marginModal(){
   </div>`);
 }
 function moveSection(si,dir){
+  specPrepare(getRoom().p);
   const {r}=getRoom(); const j=si+dir;
   if(j<0||j>=r.sections.length) return;
   [r.sections[si],r.sections[j]]=[r.sections[j],r.sections[si]]; render();
@@ -8783,7 +8751,7 @@ function dragItem(ev,si,ii){ dragIt={si,ii}; ev.dataTransfer.effectAllowed="move
 function dropItemRow(ev,si,ii){
   ev.preventDefault(); ev.stopPropagation(); ev.currentTarget.classList.remove("dropbefore");
   if(!dragIt) return;
-  const {r}=getRoom();
+  const {r,p}=getRoom(); specPrepare(p);
   const it = r.sections[dragIt.si].items.splice(dragIt.ii,1)[0];
   if(dragIt.si===si && dragIt.ii<ii) ii--;
   r.sections[si].items.splice(ii,0,it);
@@ -8792,7 +8760,7 @@ function dropItemRow(ev,si,ii){
 function dropItemSection(ev,si){
   ev.preventDefault();
   if(!dragIt) return;
-  const {r}=getRoom();
+  const {r,p}=getRoom(); specPrepare(p);
   const it = r.sections[dragIt.si].items.splice(dragIt.ii,1)[0];
   r.sections[si].items.push(it);
   toast(it.name+" → "+r.sections[si].name);
@@ -8831,8 +8799,8 @@ function delSection(si){
   const n=(s.items||[]).length;
   if(r.sections.length===1 && n===0){ toast("Es la única sección: deja al menos una (puedes renombrarla)"); return; }
   const other=r.sections.length>1;
-  askConfirm(`¿Eliminar la sección «<b>${s.name.replace(/</g,"&lt;")}</b>»${n?` con sus <b>${n}</b> producto${n===1?"":"s"}`:""}?${n&&other?`<br><br>Si prefieres conservarlos, «Mover productos» los pasa a la sección anterior antes de borrar.`:""}`,"Eliminar",()=>{ r.sections.splice(si,1); if(!r.sections.length) r.sections.push({name:"General",items:[]}); persistSoon(); render(); toast("Sección eliminada"); },null,
-    (n&&other)?{label:"Mover productos", fn:()=>{ const dest=r.sections[si===0?1:si-1]; dest.items.push(...s.items); r.sections.splice(si,1); persistSoon(); render(); toast(n+" producto"+(n===1?"":"s")+" movido"+(n===1?"":"s")+" a «"+dest.name+"» y sección eliminada"); }}:undefined);
+  askConfirm(`¿Eliminar la sección «<b>${s.name.replace(/</g,"&lt;")}</b>»${n?` con sus <b>${n}</b> producto${n===1?"":"s"}`:""}?${n&&other?`<br><br>Si prefieres conservarlos, «Mover productos» los pasa a la sección anterior antes de borrar.`:""}`,"Eliminar",()=>{ specPrepare(getRoom().p);r.sections.splice(si,1); if(!r.sections.length) r.sections.push({name:"General",items:[]}); persistSoon(); render(); toast("Sección eliminada"); },null,
+    (n&&other)?{label:"Mover productos", fn:()=>{ specPrepare(getRoom().p);const dest=r.sections[si===0?1:si-1]; dest.items.push(...s.items); r.sections.splice(si,1); persistSoon(); render(); toast(n+" producto"+(n===1?"":"s")+" movido"+(n===1?"":"s")+" a «"+dest.name+"» y sección eliminada"); }}:undefined);
 }
 function newSection(){
   modal(`<h3>Nueva sección</h3>
@@ -8841,44 +8809,44 @@ function newSection(){
   <button class="btn btn-dark" onclick="(function(){const n=document.getElementById('nsName').value||'Sección';getRoom().r.sections.push({name:n,items:[]});closeModal();render()})()">Añadir</button></div>`);
 }
 function setItem(si,ii,k,v){ getRoom().r.sections[si].items[ii][k]=v; render(); }
-function delItem(si,ii){ getRoom().r.sections[si].items.splice(ii,1); render(); }
+function delItem(si,ii){ specPrepare(getRoom().p);getRoom().r.sections[si].items.splice(ii,1);render(); }
 
-let itFiles=[], itImg="";
+let itFiles=[], itImg="", itemUploadDraft=null;
 function itemModal(si,ii,fromUrl){
   const {r} = getRoom();
-  const it = ii>=0 ? r.sections[si].items[ii] : {name:"",url:"",sku:"",supplier:"",price:0,cost:0,qty:1,unit:r.kind==="pav"?"m2":"ud",status:"Revisión Cliente",img:"",files:[]};
+  const it = ii>=0 ? r.sections[si].items[ii] : {name:"",url:"",sku:"",supplier:"",price:null,cost:null,qty:1,unit:r.kind==="pav"?"m2":"ud",status:"Revisión Cliente",img:"",files:[]};
   itFiles=[...(it.files||[])]; itImg=it.img||""; itLibId=it.libId;
   modal(`<h3>${ii>=0?"Editar":"Añadir"} producto</h3>
   <label>URL de la tienda</label>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
-    <input id="itUrl" value="${it.url}" placeholder="https://www.sklum.com/es/…" style="flex:1 1 200px;min-width:0;max-width:100%">
-    <button class="btn btn-gold" style="flex:0 0 auto" onclick="scrapeUrl()">⚡ Obtener datos</button>
+    <input id="itUrl" value="${ModernoDaily.escape(it.url||"")}" placeholder="https://www.sklum.com/es/…" style="flex:1 1 200px;min-width:0;max-width:100%">
+    <button class="btn btn-gold" style="flex:0 0 auto" onclick="scrapeUrl()">Sugerir nombre</button>
   </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">En la app real, «Obtener datos» leerá de la tienda el nombre, la foto, el SKU y el <b>precio</b> automáticamente. En el prototipo se simula.</p>
+  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">El enlace permite sugerir un nombre. Revisa los datos con el proveedor y añade el precio y la imagen del producto.</p>
   <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
     <div class="thumb" id="itThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('itImgFile').click()">${itImg?`<img ${fileImageAttrs(itImg)}>`:"🛋"}</div>
     <div><label style="margin-top:0">Foto</label>
       <label class="btn btn-ghost" style="cursor:pointer;font-size:11px;padding:6px 11px;display:inline-flex;align-items:center;gap:6px">${ico("subir")} Subir imagen<input type="file" id="itImgFile" accept="image/*" style="display:none" onchange="itLoadImg(this.files[0])"></label>
-      <p style="font-size:10.5px;color:var(--ink-faint);margin-top:2px">O clic en la miniatura. «⚡ Obtener datos» también la trae de la tienda.</p>
+      <p style="font-size:10.5px;color:var(--ink-faint);margin-top:2px">También puedes pulsar la miniatura para añadir una imagen.</p>
     </div>
   </div>
-  <label>Nombre</label><input id="itName" value="${it.name}">
+  <label>Nombre</label><input id="itName" value="${ModernoDaily.escape(it.name||"")}">
   <div class="row2">
-    <div><label>Proveedor</label><input id="itSup" list="dlProvs" value="${it.supplier}" placeholder="De tu agenda o libre">${dlProvs()}</div>
-    <div><label>SKU</label><input id="itSku" value="${it.sku}"></div>
+    <div><label>Proveedor</label><input id="itSup" list="dlProvs" value="${ModernoDaily.escape(it.supplier||"")}" placeholder="De tu agenda o libre">${dlProvs()}</div>
+    <div><label>SKU</label><input id="itSku" value="${ModernoDaily.escape(it.sku||"")}"></div>
   </div>
   <div class="row2">
-    <div><label>Dimensiones</label><input id="itDims" value="${it.dims||""}" placeholder="Ej: 120×35×80 cm"></div>
-    <div><label>Material</label><input id="itMat" value="${it.material||""}" placeholder="Ej: Roble, cerámica…"></div>
+    <div><label>Dimensiones</label><input id="itDims" value="${ModernoDaily.escape(it.dims||"")}" placeholder="Ej: 120×35×80 cm"></div>
+    <div><label>Material</label><input id="itMat" value="${ModernoDaily.escape(it.material||"")}" placeholder="Ej: Roble, cerámica…"></div>
   </div>
   <div class="row2">
-    <div><label>Color</label><input id="itCol" value="${it.color||""}" placeholder="Ej: Azul Marino"></div>
-    <div><label>Plazo de entrega</label><input id="itPlz" value="${it.plazo||""}" placeholder="Ej: 2-3 semanas"></div>
+    <div><label>Color</label><input id="itCol" value="${ModernoDaily.escape(it.color||"")}" placeholder="Ej: Azul Marino"></div>
+    <div><label>Plazo de entrega</label><input id="itPlz" value="${ModernoDaily.escape(it.plazo||"")}" placeholder="Ej: 2-3 semanas"></div>
   </div>
-  <label>Nota interna</label><input id="itNote" value="${it.note||""}" placeholder="Solo la ve el equipo">
+  <label>Nota interna</label><input id="itNote" value="${ModernoDaily.escape(it.note||"")}" placeholder="Solo la ve el equipo">
   <div class="row2">
-    <div><label>Precio cliente (€)</label><input id="itPrice" type="number" step="0.01" value="${it.price||""}" oninput="mgSync('it','price')"></div>
-    <div><label>Coste profesional (€)</label><input id="itCost" type="number" step="0.01" value="${it.cost||""}" placeholder="Con tu descuento pro" oninput="mgSync('it','cost')"></div>
+    <div><label>Precio cliente (€)</label><input id="itPrice" type="number" step="0.01" value="${it.price??""}" oninput="mgSync('it','price')"></div>
+    <div><label>Coste profesional (€)</label><input id="itCost" type="number" step="0.01" value="${it.cost??""}" placeholder="Con tu descuento pro" oninput="mgSync('it','cost')"></div>
   </div>
   <div class="row2">
     <div><label>Unidades</label><input id="itQty" type="number" step="0.01" value="${it.qty}" oninput="unitSum('itQty','itPrice','itUnit','itSum','itCost')"></div>
@@ -8890,19 +8858,30 @@ function itemModal(si,ii,fromUrl){
   <label>Adjuntos del producto — instrucciones, ficha técnica…</label>
   <div id="itFilesBox"></div>
   <label class="btn btn-ghost" style="width:100%;justify-content:center;cursor:pointer;background:var(--card)">${ico("adj_archivo")} Añadir archivo
-    <input type="file" multiple style="display:none" onchange="[...this.files].forEach(f=>itFiles.push(f.name));itDrawFiles()"></label>
-  <div class="modal-foot"><button class="btn btn-ghost" title="Guardar este producto en tu biblioteca transversal" onclick="const _n=document.getElementById('itName').value||'Producto',_u=document.getElementById('itUrl').value;state.libSeq=state.libSeq||1;const _id=state.libSeq++;state.library.push({id:_id,name:_n,url:_u,sku:document.getElementById('itSku').value,supplier:document.getElementById('itSup').value,price:+document.getElementById('itPrice').value||0,cost:+document.getElementById('itCost').value||0,margin:(document.getElementById('itMgV').value===""?null:(+document.getElementById('itMgV').value||0)),unit:document.getElementById('itUnit').value,img:itImg,dims:document.getElementById('itDims').value,material:document.getElementById('itMat').value,color:document.getElementById('itCol').value,cat:aiCategory(_n+' '+_u),ai:true});itLibId=_id;toast('✓ Añadido a tu biblioteca — ✨ clasificado por IA en «'+aiCategory(_n+' '+_u)+'»')">${ico("guardar")} Añadir a mi biblioteca</button>
+    <input type="file" multiple style="display:none" onchange="itAddFiles([...this.files])"></label>
+  <div class="modal-foot"><button class="btn btn-ghost" title="Guardar este producto en tu biblioteca transversal" onclick="if(itemUploadDraft?.pending){toast('Espera a que terminen los archivos');return;}if(!productAmountsValid('itPrice','itCost','itQty'))return;const _n=document.getElementById('itName').value||'Producto',_u=document.getElementById('itUrl').value;state.libSeq=state.libSeq||1;const _id=newLibraryId();state.library.push({id:_id,name:_n,url:_u,sku:document.getElementById('itSku').value,supplier:document.getElementById('itSup').value,price:+document.getElementById('itPrice').value||0,cost:document.getElementById('itCost').value===''?null:+document.getElementById('itCost').value,margin:(document.getElementById('itMgV').value===""?null:(+document.getElementById('itMgV').value||0)),unit:document.getElementById('itUnit').value,files:JSON.parse(JSON.stringify(itFiles)),img:itImg,dims:document.getElementById('itDims').value,material:document.getElementById('itMat').value,color:document.getElementById('itCol').value,cat:aiCategory(_n+' '+_u),ai:true});itLibId=_id;toast('✓ Añadido a tu biblioteca — ✨ categoría sugerida en «'+aiCategory(_n+' '+_u)+'»')">${ico("guardar")} Añadir a mi biblioteca</button>
   <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
   <button class="btn btn-dark" onclick="saveItem(${si},${ii})">Guardar</button></div>`);
   itDrawThumb(); delete _mgLast.it; unitSum("itQty","itPrice","itUnit","itSum","itCost");
+  itemUploadDraft={form:document.getElementById("itName"),files:itFiles,pending:0};
   itDrawFiles();
   if(fromUrl){ const u=document.getElementById("itUrl"); u.focus(); }
 }
-function itLoadImg(f){ if(!f)return; fileUp(f).then(__u=>{ if(__u==null) return; itImg=__u; itDrawThumb(); }); }
-function itDrawThumb(){ document.getElementById("itThumb").innerHTML = itImg?`<img ${fileImageAttrs(itImg)}>`:"🛋"; }
+function itemDraftActive(d){return d&&d===itemUploadDraft&&d.form.isConnected;}
+async function itLoadImg(f){
+ if(!f)return;const d=itemUploadDraft;if(!itemDraftActive(d))return;d.pending++;
+ try{const data=await fileUp(f);if(data&&itemDraftActive(d)){itImg=data;itDrawThumb();}}
+ finally{d.pending--;}
+}
+async function itAddFiles(files){
+ const d=itemUploadDraft;if(!itemDraftActive(d))return;d.pending++;
+ try{for(const f of files){const data=await fileUp(f);if(!itemDraftActive(d))return;if(data)d.files.push({name:f.name,type:f.type||'',data});}if(itemDraftActive(d))itDrawFiles();}
+ finally{d.pending--;}
+}
+function itDrawThumb(){ const e=document.getElementById('itThumb');if(e)e.innerHTML=itImg?`<img ${fileImageAttrs(itImg)}>`:'🛋'; }
 function itDrawFiles(){
-  document.getElementById("itFilesBox").innerHTML = itFiles.map((f,i)=>`
-    <div class="entry" style="background:var(--white);padding:7px 10px;font-size:12px">${ico("adj_archivo")} ${f}<button style="margin-left:auto;color:var(--ink-faint)" onclick="itFiles.splice(${i},1);itDrawFiles()">✕</button></div>`).join("") || `<div style="font-size:11.5px;color:var(--ink-faint)">Sin archivos</div>`;
+ const E=ModernoDaily.escape,box=document.getElementById('itFilesBox');if(!box)return;
+ box.innerHTML=itFiles.map((f,i)=>`<div class="entry" style="background:var(--white);padding:7px 10px;font-size:12px">${ico('adj_archivo')} ${E(typeof f==='object'?f.name:f)}${typeof f==='object'&&f.data?`<button class="btn btn-ghost" onclick="descargaArchivo(itFiles[${i}].data,itFiles[${i}].name)">Descargar</button>`:'<small>Solo consta el nombre; vuelve a adjuntar el archivo para descargarlo</small>'}<button style="margin-left:auto" title="Quitar de esta ficha" onclick="itFiles.splice(${i},1);itDrawFiles()">✕</button></div>`).join('')||'<p>Sin archivos</p>';
 }
 async function fetchProductImage(u){
   const grab = async (proxy)=>{
@@ -8925,45 +8904,24 @@ async function fetchProductImage(u){
   return await grab("https://api.allorigins.win/raw?url="+encodeURIComponent(u))
       || await grab("https://corsproxy.io/?url="+encodeURIComponent(u));
 }
-async function scrapeUrl(){
-  try{
-    const u = new URL(document.getElementById("itUrl").value);
-    const host = u.hostname.replace("www.","").split(".")[0];
-    document.getElementById("itSup").value = host.charAt(0).toUpperCase()+host.slice(1)+" ES";
-    const slug = u.pathname.split("/").filter(Boolean).pop()||"";
-    const skuM = slug.match(/(\d{4,})/);
-    if(skuM) document.getElementById("itSku").value = skuM[1]+"-es";
-    const name = slug.replace(/\.\w+$/,"").replace(/[-_]+/g," ").replace(/\d+/g,"").trim();
-    if(name) document.getElementById("itName").value = name.charAt(0).toUpperCase()+name.slice(1);
-    const priceEl = document.getElementById("itPrice");
-    if(!+priceEl.value){ priceEl.value = (Math.floor(Math.random()*28)+4)*10 - 0.05; priceEl.style.boxShadow="0 0 0 2px var(--gold)"; }
-    mgSync("it","price");
-    if(!itImg){
-      const th=document.getElementById("itThumb"); if(th) th.innerHTML="<span style='font-size:11px;color:var(--ink-faint)'>foto…</span>";
-      toast("⚡ Datos leídos — buscando la foto oficial del producto…");
-      const img = await fetchProductImage(u.href);
-      if(itImg) return;
-      if(img){ itImg = img; itDrawThumb(); toast("📷 Foto oficial del producto cargada"); }
-      else { itDrawThumb(); toast("No he encontrado la foto oficial — a\u00f1\u00e1dela t\u00fa con el bot\u00f3n de foto"); }
-    } else {
-      toast("⚡ Datos leídos");
-    }
-  }catch(e){ toast("Pega una URL válida (https://…)"); }
-}
+async function scrapeUrl(){ productUrlSuggest('itUrl','itName',null); }
 let itLibId;
 function saveItem(si,ii){
+  if(!productAmountsValid("itPrice","itCost","itQty"))return;
+  if(itemUploadDraft?.pending){toast("Espera a que terminen de prepararse los archivos");return;}
+  if(document.getElementById("itPrice").value.trim()===""){toast("Indica el precio comprobado; puedes escribir 0 si es gratuito");return;}
   const {r} = getRoom();
-  const it = { libId:itLibId, name:document.getElementById("itName").value||"Producto",
+  const it = { ...(ii>=0?r.sections[si].items[ii]:{}), libId:itLibId, name:document.getElementById("itName").value||"Producto",
     url:document.getElementById("itUrl").value, sku:document.getElementById("itSku").value,
     supplier:document.getElementById("itSup").value, price:+document.getElementById("itPrice").value||0,
-    cost:+document.getElementById("itCost").value||0, qty:Math.max(0,+document.getElementById("itQty").value||1),
+    cost:document.getElementById("itCost").value===""?null:+document.getElementById("itCost").value, qty:+document.getElementById("itQty").value,
     margin:(document.getElementById("itMgV").value===""?null:(+document.getElementById("itMgV").value||0)),
     unit:document.getElementById("itUnit").value, status:document.getElementById("itSt").value,
     dims:document.getElementById("itDims").value, material:document.getElementById("itMat").value,
     color:document.getElementById("itCol").value, plazo:document.getElementById("itPlz").value,
     note:document.getElementById("itNote").value, img:itImg, files:[...itFiles] };
-  if(ii>=0) r.sections[si].items[ii]=it; else r.sections[si].items.push(it);
-  syncToLibrary(it);
+  if(ii>=0) r.sections[si].items[ii]=it; else {it.id=crypto.randomUUID();r.sections[si].items.push(it);}
+
   closeModal(); render();
 }
 function refreshPrices(){
@@ -9161,7 +9119,7 @@ function createProject(){
   if(from==="tpl" && !tpl){ toast("Aún no hay plantillas de proyecto: guarda una desde el Resumen de cualquier proyecto"); return; }
   const tasks = from==="tpl" ? cloneTasksWithDeps(tpl.tasks, t=>{ t.col="pend"; t.done=false; t.assignee=""; t.assignees=[]; t.comments=[]; }) : [];
   const p = {id:Date.now(), num:projPre(brand)+"-"+num, brand, name, tpl:false, client, status:"En progreso", curPhase:0, tasks};
-  if(from==="tpl" && tpl){ try{ if(tpl.rooms) p.rooms=JSON.parse(JSON.stringify(tpl.rooms)); if(tpl.phases) p.phases=JSON.parse(JSON.stringify(tpl.phases)); if(tpl.obraF) p.obraF=JSON.parse(JSON.stringify(tpl.obraF)).map(f=>({...f,items:(f.items||[]).map(x=>({...x,done:false}))})); }catch(e){} }
+  if(from==="tpl" && tpl){ try{ if(tpl.rooms) p.rooms=tpl.rooms.map(r=>roomCloneData(r,-1)); if(tpl.phases) p.phases=JSON.parse(JSON.stringify(tpl.phases)); if(tpl.obraF) p.obraF=JSON.parse(JSON.stringify(tpl.obraF)).map(f=>({...f,items:(f.items||[]).map(x=>({...x,done:false}))})); }catch(e){} }
   p.createdBy=meName(); p.createdByMail=meMail(); p.createdAt=p.createdAt||new Date().toISOString(); state.projects.push(p); closeModal(); toast(`Creado ${p.num} · la serie ${BRAND[brand].name} sigue en ${projPre(brand)}-${nextProjNum(brand)}`); go("proyecto",p.id);
 }
 function duplicateProject(id){
@@ -9181,6 +9139,7 @@ function doDuplicate(id){
   const brand = document.querySelector("#dpBrand .on").dataset.b;
   state.counters[brand]++;
   const p = {id:Date.now(), num:"PR-"+state.counters[brand], brand, name:document.getElementById("dpName").value||src.name, tpl:false, client:null, status:"En progreso", curPhase:0, tasks:cloneTasksWithDeps(src.tasks, t=>{ t.col="pend"; t.done=false; }), color:src.color||null, icon:src.icon||"", tags:[...(src.tags||[])]};
+  p.rooms=(src.rooms||[]).map(r=>roomCloneData(r,-1));
   state.projects.push(p); closeModal(); toast(`⧉ Duplicado como ${p.num} con ${p.tasks.length} tareas`); go("proyecto",p.id);
 }
 const SWATCH_HEX = ["#F8E88F","#F6B8CD","#F8C9A4","#B4E4C9","#BFDCF5","#C9B8F0","#EE8B7B","#A9C79B","#E4E1DA","#3A2C27"];
@@ -11346,7 +11305,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.33.2";
+const MODERNO_VER="v3.34";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

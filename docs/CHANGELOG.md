@@ -86,3 +86,6 @@ Filas y acciones alineadas, importes sin saltos, eliminación de Solo en Contabi
 
 ## v3.33.2
 Tema oscuro grafito y orden móvil logo, espacio de trabajo, menú, modo, usuario. Ver TEMA-V3332.md.
+
+## v3.34 — Productos y Boards
+Biblioteca y especificaciones independientes, Board derivado por estancia, referencias estables al editar como administrador, retirada de simulaciones de importación/conexiones y adjuntos con contenido. Alcance, compatibilidad y validación en ENTREGA-V334.md.
