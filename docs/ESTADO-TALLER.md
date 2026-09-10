@@ -1,6 +1,6 @@
 # Estado actual de Taller
 
-Candidato v3.34: productos y Boards; ver ENTREGA-V334.md. Última publicación verificada anterior: v3.33.2. Los apartados siguientes conservan el historial.
+Versión publicada y verificada: v3.34, productos independientes y Boards; ver ENTREGA-V334.md. 174 pruebas correctas. Despliegue 34533228206 completado; HTML, CSS y specifications.js públicos coinciden con el candidato. Sin migración SQL. Los apartados siguientes conservan el historial.
 
 # Estado inicial de TALLER — 9 septiembre 2026
 

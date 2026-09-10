@@ -40,3 +40,14 @@ Ante incidencia, desactivar los accesos nuevos en una corrección manteniendo sp
 ## Arranque
 
 Mismo servidor y proceso de la versión anterior. Publicar specifications.js antes de index.html (el workflow ya sube recursos primero). No hay dependencias adicionales. La estrategia comercial completa se mantiene fuera de la publicación del repositorio público.
+
+## Publicación verificada
+
+- Fecha: 10 de septiembre de 2026.
+- Commit de aplicación: d6194d86851e91b814c93b1a9cbaeadeb10359ae.
+- GitHub Actions: https://github.com/estudiomoderno/moderno.app/actions/runs/34533228206 — completado correctamente.
+- 174 pruebas automatizadas correctas; sintaxis de los tres bloques de script comprobada.
+- index.html, appearance-b.css y specifications.js públicos: HTTP 200 y contenido idéntico al revisado, normalizando finales de línea.
+- Ensayo de conversión con datos ficticios: conservación de campos e idempotencia correctas, cero escrituras externas. No se ha ejecutado conversión de datos reales ni ensayo nuevo de restauración completa en esta entrega.
+- Alta manual visual con coste cero correcta. Los nuevos vínculos de presentaciones/moodboards requieren administrador para evitar reasignar identidades sobre datos filtrados de colaboradores.
+- Siguiente tramo: compatibilidad de servidor para normalizar identidad histórica y secciones, seguida de prueba en copia aislada; aprobación por revisiones y compras formales continúan fuera de esta entrega.
