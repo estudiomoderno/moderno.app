@@ -43,3 +43,14 @@ Desactivar accesos al módulo si aparece una incidencia; conservar ambas tablas,
 ## Límites de esta versión
 
 Es una gestión manual de aprobaciones y compras con registro en servidor. No incluye correo automático a proveedores, impuestos de pedidos, pagos, devoluciones, varias divisas ni integración automática con facturas; tampoco catálogo público o conectores CAD/BIM. Las integraciones futuras continúan fuera del alcance acordado. Los datos antiguos conservan su formato hasta una operación autorizada; referencias ambiguas se detienen y no se adivinan.
+
+## Publicación verificada — 11 septiembre 2026
+
+- Aplicación: aed3cb850a38d45cc877700a732661018881cf82.
+- Despliegue: https://github.com/estudiomoderno/moderno.app/actions/runs/34537483465 — completado correctamente.
+- Paquete SQL instalado en producción antes del HTML. Comprobación transaccional: bloques intactos, inventario de archivos intacto y RLS activo. No se copiaron registros ficticios a producción.
+- Funciones base de permisos/portal idénticas entre clon y producción antes de instalar (comparación de sus cuerpos).
+- Reinstalación del paquete en clon comprobada, con datos y archivos conservados.
+- index.html, appearance-b.css, specifications.js y product-operations.js: HTTP 200 y contenido idéntico al candidato, normalizando finales de línea.
+- Comprobación de rutas de producción sin datos reales: token inexistente devuelve lista vacía; visitante anónimo recibe rechazo de acceso a operaciones comerciales.
+- Revisión visual en escritorio, modo oscuro y marco móvil de 390 px. El flujo completo de prueba utilizó exclusivamente el estudio ficticio del clon.

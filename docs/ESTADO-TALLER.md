@@ -1,6 +1,6 @@
 # Estado actual de Taller
 
-Versión publicada y verificada: v3.34, productos independientes y Boards; ver ENTREGA-V334.md. 174 pruebas correctas. Despliegue 34533228206 completado; HTML, CSS y specifications.js públicos coinciden con el candidato. Sin migración SQL. Los apartados siguientes conservan el historial.
+Versión publicada y verificada: v3.35, aprobaciones por revisión y ciclo de compras; ver ENTREGA-V335.md. Servidor instalado con comprobación de conservación, 182 pruebas locales y 20 comprobaciones SQL en clon. GitHub Actions 34537483465 correcto; HTML, CSS y módulos públicos coinciden. Los apartados siguientes conservan el historial.
 
 # Estado inicial de TALLER — 9 septiembre 2026
 
