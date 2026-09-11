@@ -44,3 +44,9 @@ Una versión futura de la plantilla no debe sobrescribir estudios inicializados.
 v3.46 publicada el 11 de septiembre de 2026, commit f9e0d003d2b6af069920042c33d8063fe0d8e9f0. GitHub Actions 34627932427 terminó correctamente. Verificados HTTP 200, versión y módulos servidos desde app.moderno.app.
 
 Aplicada la sustitución únicamente al estudio autorizado: 1.068 partidas activas y 54 anteriores archivadas. La transacción confirmó conservación de todos los demás bloques, campos ajenos de config e inventario completo de archivos. Copia previa externa y copia atómica privadas verificadas. Comprobados inicio de sesión existente, búsqueda, apertura y cancelación de edición en la app publicada, sin modificar precios de producción ni errores de consola.
+
+## Vista de tarjetas v3.47
+
+El catálogo se presenta en tarjetas adaptables a móvil, con esquinas redondeadas, tonos suaves por familia, precio y acciones alineados. Los colores incluyen variantes oscuras; se respeta la preferencia de reducir animaciones. Los controles conservan sus etiquetas accesibles y el foco por teclado.
+
+La descripción y el desplegable de alcance se retiran del listado; la descripción se consulta en el formulario de edición. El selector dentro de un documento conserva la revisión del alcance antes de añadir una partida explícitamente. No se modifican datos, precios, referencias, presupuestos ni borradores. No hay migración SQL. Verificación: 269 pruebas existentes correctas y revisión visual local de tarjetas.
