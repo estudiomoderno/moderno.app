@@ -1,0 +1,54 @@
+-- Wrap migration and this test in ONE transaction and finish with ROLLBACK.
+-- Only the isolated recovery project contains this deliberately fictional account.
+do $$begin if not exists(select 1 from auth.users where email='recuperacion-v336-20260911@example.invalid') then raise exception 'Solo clon de pruebas';end if;end$$;
+create temp table pruebas_catalogo(nombre text,correcto boolean);
+do $$
+declare eid uuid:=gen_random_uuid();custom_id uuid:=gen_random_uuid();uid uuid;cfg jsonb;v timestamptz;r jsonb;failed boolean;before_cfg jsonb;op uuid:=gen_random_uuid();original_doc jsonb;
+begin
+ select id into uid from auth.users where email='recuperacion-v336-20260911@example.invalid';
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',uid,'role','authenticated')::text,true);
+ r:=public.app_catalogo_inicial('33600000-0000-4000-8000-000000000001',null);insert into pruebas_catalogo values('estudio_existente_excluido',r->>'status'='existing_study');
+ insert into public.estudios(id,nombre) values(eid,'CATALOGO FICTICIO'),(custom_id,'CATALOGO PERSONAL FICTICIO');
+ update public.miembros set estudio_id=eid where user_id=uid;
+ insert into public.app_catalogo_plantillas(version,locale,items,activa) values('ensayo-es','ensayo-es','[{"name":"Partida ficticia","tipo":"Partida","unit":"ud","price":45,"cost":null},{"name":"Por medir","tipo":"Servicio","unit":"ud","price":null}]',true);
+ cfg:='{"catalog":[],"account":{"lang":"ensayo-es","name":"Ficticio"},"docs":[{"id":7,"name":"Conservar"}],"BRAND":{"cm":{"name":"Ficticia"}}}';
+ r:=public.guardar_bloque_versionado(eid,'config',cfg,null);v:=(r->>'updated_at')::timestamptz;
+ r:=public.app_catalogo_inicial(eid,v);
+ insert into pruebas_catalogo values('inicializa_dos_partidas',r->>'status'='initialized' and jsonb_array_length(r->'contenido'->'catalog')=2);
+ insert into pruebas_catalogo values('conserva_config_ajeno',(r->'contenido')-'catalog'-'catalogSeed'=cfg-'catalog');
+ insert into pruebas_catalogo values('coste_y_medicion_no_inventados',r#>'{contenido,catalog,0,cost}'='null'::jsonb and r#>'{contenido,catalog,1,price}'='null'::jsonb);
+ cfg:=r->'contenido';v:=(r->>'updated_at')::timestamptz;
+ r:=public.app_catalogo_inicial(eid,v);insert into pruebas_catalogo values('segunda_llamada_no_duplica',r->>'status'='already_initialized');
+ r:=public.guardar_bloque_versionado(eid,'config',jsonb_set(cfg,'{catalog}','[]'),v);v:=(r->>'updated_at')::timestamptz;
+ r:=public.app_catalogo_inicial(eid,v);insert into pruebas_catalogo values('no_rellena_despues_de_borrar',r->>'status'='already_initialized');
+ update public.miembros set estudio_id=custom_id where user_id=uid;
+ cfg:='{"catalog":[{"id":4,"name":"Personal","price":90}],"account":{"lang":"ensayo-es"}}';
+ r:=public.guardar_bloque_versionado(custom_id,'config',cfg,null);v:=(r->>'updated_at')::timestamptz;
+ failed:=false;begin perform public.app_catalogo_inicial(custom_id,v-interval '1 second');exception when sqlstate 'PT409' then failed:=true;end;
+ insert into pruebas_catalogo values('version_antigua_rechazada',failed);
+ r:=public.app_catalogo_inicial(custom_id,v);insert into pruebas_catalogo values('personalizacion_no_sobrescrita',r->>'status'='custom_catalog');
+ select contenido into before_cfg from public.datos_estudio where estudio_id=custom_id and bloque='config';insert into pruebas_catalogo values('personalizacion_identica',before_cfg=cfg);
+ r:=public.guardar_bloque_versionado(custom_id,'config',jsonb_set(cfg,'{catalog}','[]'),v);v:=(r->>'updated_at')::timestamptz;
+ r:=public.app_catalogo_inicial(custom_id,v);insert into pruebas_catalogo values('personalizado_vacio_no_reinicia',r->>'status'='already_initialized');
+ cfg:='{"catalog":[{"id":4,"name":"Personal","price":90,"desc":"Alcance histórico"}],"account":{"lang":"ensayo-es","name":"Conservar"},"docs":[{"name":"Plantilla privada"}]}';
+ r:=public.guardar_bloque_versionado(custom_id,'config',cfg,v);v:=(r->>'updated_at')::timestamptz;
+ original_doc:='{"quotes":[{"ref":"FICTICIO","lines":[{"catId":4,"price":20,"qty":2}]}]}';
+ perform public.guardar_bloque_versionado(custom_id,'presupuestos',original_doc,null);
+ r:=public.app_catalogo_reemplazar(custom_id,'ensayo-es',v,op);v:=(r->>'updated_at')::timestamptz;
+ insert into pruebas_catalogo values('reemplazo_y_copia_atomicos',r->>'status'='applied' and exists(select 1 from public.app_catalogo_reemplazos where id=op and antes=cfg));
+ select contenido into before_cfg from public.datos_estudio where estudio_id=custom_id and bloque='config';
+ insert into pruebas_catalogo values('legacy_conserva_id_y_alcance',before_cfg#>>'{catalog,0,id}'='4' and before_cfg#>>'{catalog,0,archived}'='true' and before_cfg#>>'{catalog,0,desc}'='Alcance histórico');
+ insert into pruebas_catalogo select 'documento_antiguo_identico',contenido=original_doc from public.datos_estudio where estudio_id=custom_id and bloque='presupuestos';
+ insert into pruebas_catalogo values('config_no_catalogo_identico',before_cfg-'catalog'-'catalogArchive'-'catalogSeed'=cfg-'catalog');
+ r:=public.app_catalogo_reemplazar(custom_id,'ensayo-es',null,op);insert into pruebas_catalogo values('reintento_reemplazo_idempotente',r->>'status'='already_applied');
+ r:=public.app_catalogo_restaurar(custom_id,op,v);v:=(r->>'updated_at')::timestamptz;
+ select contenido into before_cfg from public.datos_estudio where estudio_id=custom_id and bloque='config';insert into pruebas_catalogo values('restauracion_exacta',before_cfg=cfg);
+ op:=gen_random_uuid();r:=public.app_catalogo_reemplazar(custom_id,'ensayo-es',v,op);v:=(r->>'updated_at')::timestamptz;
+ select contenido into before_cfg from public.datos_estudio where estudio_id=custom_id and bloque='config';
+ r:=public.guardar_bloque_versionado(custom_id,'config',jsonb_set(before_cfg,'{account,name}','"Cambio posterior"'),v);v:=(r->>'updated_at')::timestamptz;
+ failed:=false;begin perform public.app_catalogo_restaurar(custom_id,op,v);exception when sqlstate 'PT409' then failed:=true;end;insert into pruebas_catalogo values('no_pisar_cambios_posteriores',failed);
+ failed:=false;begin perform public.app_catalogo_reemplazar(eid,'ensayo-es',null,gen_random_uuid());exception when insufficient_privilege then failed:=true;end;insert into pruebas_catalogo values('no_reemplazar_otro_estudio',failed);
+ perform set_config('request.jwt.claims','{}',true);failed:=false;begin perform public.app_catalogo_inicial(eid,v);exception when insufficient_privilege then failed:=true;end;insert into pruebas_catalogo values('sin_identidad_rechazado',failed);
+end $$;
+select * from pruebas_catalogo;
+do $$begin if exists(select 1 from pruebas_catalogo where correcto is distinct from true) then raise exception 'Falló una prueba de catálogo';end if;end$$;
