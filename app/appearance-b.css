@@ -311,6 +311,12 @@
 @media print{.room-board{--ink:#252525;--ink-soft:#626262;--ui-line:#ddd;color:#252525}.room-board-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.room-board-image{height:45mm;aspect-ratio:auto}.room-board article{background:white}.room-board header{break-after:avoid}.room-board h3{break-after:avoid}}
 .room-board-toolbar label{width:auto!important;white-space:nowrap}
 .room-board-toolbar input[type=checkbox]{width:20px!important;height:20px!important;min-height:20px!important;flex:0 0 20px}
+.board-fichas .room-board-grid{grid-template-columns:1fr}
+.board-fichas .room-board article{display:grid;grid-template-columns:minmax(100px,25%) 1fr}
+.board-fichas .room-board-image{aspect-ratio:auto;min-height:130px}
+.board-revision-label{overflow-wrap:anywhere;font-size:10px;color:var(--ink-soft);margin-top:20px}
+.room-board-toolbar select{max-width:180px}
+@media(max-width:600px){.room-board-toolbar label{white-space:normal}.room-board-toolbar select{max-width:150px}.board-fichas .room-board article{grid-template-columns:90px minmax(0,1fr)}}
 /* Product operations: same neutral palette in light and dark mode. */
 #modalBox:has(#opsBody),#modalBox:has(#opsPortal){width:980px;max-width:calc(100vw - 24px)}
 .ops-head,.ops-card header,.ops-actions,.ops-card footer{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}

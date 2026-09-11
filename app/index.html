@@ -906,7 +906,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 </style>
-<link rel="stylesheet" href="/appearance-b.css?v=336">
+<link rel="stylesheet" href="/appearance-b.css?v=342">
 </head>
 <body>
 <div class="app">
@@ -1027,6 +1027,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/project-quotes.js?v=337"></script>
 <script src="/spec-audit.js?v=340"></script>
 <script src="/spec-master.js?v=341"></script>
+<script src="/room-boards.js?v=342"></script>
 <script src="/product-operations.js?v=339"></script>
 <script src="/purchase-finance.js?v=339"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
@@ -7045,15 +7046,8 @@ function roomBoardContent(p,r,prices){
  const E=ModernoDaily.escape,sections=ModernoSpec.board(r);
  return `<div class="room-board"><header><p>${E(p.num)} · ${E(p.name)}</p><h2>${E(r.name)}</h2></header>${sections.length?sections.map(sec=>`<section><h3>${E(sec.name)}</h3><div class="room-board-grid">${sec.items.map(it=>`<article><div class="room-board-image">${it.img?`<img ${fileImageAttrs(it.img)} alt="${E(it.name)}">`:'<span>Sin imagen</span>'}</div><div class="room-board-caption"><b>${E(it.name)}</b><p>${E([it.sku,it.color,it.material,it.dims].filter(Boolean).join(' · '))}</p><span>${E(it.qty??1)} ${E(it.unit||'ud')}</span>${prices?`<strong>${it.price==null?'Precio por confirmar':fmt((+it.price||0)*(it.qty??1))}</strong>`:''}</div></article>`).join('')}</div></section>`).join(''):'<p>Añade productos a esta estancia para crear su Board.</p>'}</div>`;
 }
-function roomBoard(){
- const {p,r}=getRoom();if(!p||!r||!canView('estancia'))return;
- modal(`<div class="room-board-dialog"><div class="room-board-toolbar"><div><h3>Board de la estancia</h3><p>Se genera con los productos actuales. Los costes y las notas internas no se incluyen.</p></div><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button></div><div class="room-board-toolbar"><label><input type="checkbox" ${roomBoardPrices?'checked':''} onchange="roomBoardPrices=this.checked;roomBoard()"> Mostrar precios de venta</label><button class="btn btn-dark" onclick="roomBoardPDF()">Descargar PDF</button></div>${roomBoardContent(p,r,roomBoardPrices)}</div>`);
-}
-async function roomBoardPDF(){
- const {p,r}=getRoom();if(!p||!r||!canView('estancia'))return;
- const z=document.getElementById('printZone');z.innerHTML='<div class="pdf-page">'+roomBoardContent(p,r,roomBoardPrices)+'</div>';
- try{await printAs('Board — '+r.name);}finally{z.style.display='none';}
-}
+function roomBoard(){RoomBoards.open();}
+async function roomBoardPDF(){await RoomBoards.pdf();}
 function roomTotal(r){ return r.sections.reduce((s,sec)=>s+sec.items.reduce((a,i)=>a+i.price*i.qty,0),0); }
 function effCost(r,i){ if(i.cost!==null&&i.cost!==undefined&&i.cost!==""&&Number.isFinite(+i.cost))return +i.cost;return r.margin!=null?i.price*(1-r.margin/100):null; }
 function itemGain(r,i){ const c=effCost(r,i);return c===null?null:Math.round((i.price-c)*i.qty*100)/100; }
@@ -11314,7 +11308,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.41";
+const MODERNO_VER="v3.42";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
