@@ -62,3 +62,7 @@ Versión publicada y verificada; entrega en ENTREGA-V335.md. Cerrado el ensayo a
 ## Continuación — avisos, servicio y compras
 
 Supervisión horaria en Codex activada y comprobada; alcance y dependencia del equipo local en MONITORIZACION-COPIAS.md. Recuperación funcional del núcleo comprobada con 15 pruebas HTTP; correo PHP y OAuth tienen límites explícitos en RECUPERACION-SERVICIO.md. v3.36 de economía de compras publicada y verificada (commit ee6fb79, ejecución 34585008205); instalación con datos, pedidos, historial e inventario conservados. Detalles, pruebas y límites en ENTREGA-V336.md. La copia privada del servicio PHP está completada: dos archivos verificados en Drive, ejecución 34595566064. Se corrigió el nombre FTPS siguiendo la documentación oficial de DonDominio y se conservó la ruta completa del despliegue. La validación TLS permanece activa. Pendientes: prueba de SMTP restaurado y OAuth Google del clon.
+
+## Cierre de pruebas externas — 11 septiembre 2026
+
+Correo restaurado: 12 comprobaciones correctas, con TLS/autenticación reales y captura local del mensaje; no se probó entrega a buzón externo. Google OAuth del clon: siete comprobaciones correctas con inicio y cierre de sesión reales. Configuración de producción y datos del piloto intactos. Procedimiento y límites en RECUPERACION-SERVICIO.md. Google Calendar sigue aplazado.

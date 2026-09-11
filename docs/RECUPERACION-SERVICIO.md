@@ -37,3 +37,17 @@ El 11 de septiembre de 2026 la ejecución https://github.com/estudiomoderno/mode
 DonDominio documenta ftp.dondominio.com como servidor alternativo oficial: https://www.dondominio.com/es/help/120/como-subo-web-mediante-ftp/. Su certificado y nombre se verificaron con el almacén de confianza estándar. ftp.moderno.app apunta al mismo servicio pero no está cubierto por el certificado. El workflow manual utiliza el nombre oficial con validación completa y la ruta FTP_SERVER_DIR que ya usa el despliegue. La ruta relativa app/ produjo 550 y se descartó; no reemplazar la ruta completa por esa abreviatura.
 
 Alcance: copia manual verificada del directorio api actual. No constituye todavía un ensayo de ejecución del correo restaurado ni una copia de configuración externa a api. Google OAuth del clon también continúa pendiente. La programación diaria sigue copiando Storage; backup-service se ejecuta manualmente.
+
+## Comprobación de correo y Google — cierre del 11 septiembre 2026
+
+Esta sección actualiza los pendientes históricos anteriores. Producción no recibió escrituras durante el ensayo.
+
+**Correo:** se descargaron los dos archivos privados de la copia verificada de Drive y se ejecutó el manejador PHP original, sin cambios de bytes, con PHP 8.4.25 NTS, OpenSSL y mbstring. Las 12 comprobaciones pasaron: destino SMTP restringido, TLS y autenticación reales con DonDominio, rechazo de GET/origen ajeno/destinatario inválido, envío mediante SMTP simulado, un único mensaje, MIME HTML/texto y logo, destinatario ficticio, asunto, saneamiento HTML e igualdad del código restaurado. La conexión real terminó después de autenticarse, sin enviar correo. El mensaje de ensayo se capturó exclusivamente en un servidor TLS local con credenciales ficticias y mail() deshabilitado.
+
+Esto acredita que la copia del servicio se puede ejecutar y que sus credenciales SMTP funcionan. No acredita entrega a un buzón externo, aceptación de invitación desde la aplicación ni una auditoría completa de autorización del servicio. Antes de ampliar su exposición debe revisarse su control de acceso. La configuración privada no se incorpora al repositorio.
+
+**Google:** se creó el cliente independiente «Moderno App Recuperacion 20260911», dentro del proyecto Google Cloud existente, y se activó únicamente en el clon szbswxpkhidywaosdfcg. Callback autorizado: https://szbswxpkhidywaosdfcg.supabase.co/auth/v1/callback. Supabase permite el retorno exacto http://127.0.0.1:3173/callback para el ensayo. El cliente de producción permanece intacto.
+
+El inicio de sesión real pasó siete comprobaciones: intercambio PKCE, consulta autenticada de identidad, proveedor Google, cuenta esperada, emisor del clon, correo confirmado y cierre de la sesión creada (scope=local). No se modificaron proyectos. El secreto del cliente se introdujo directamente en Supabase sin guardarlo en archivos o GitHub. No se habilitó Google Calendar.
+
+Para repetir: recuperar api desde la copia privada COMPLETE, usar PHP con OpenSSL/mbstring y un receptor SMTP local; comprobar por separado TLS/AUTH sin MAIL FROM. Para OAuth, usar un cliente exclusivo del clon y callback exacto, iniciar PKCE S256 desde un servidor local ligado a 127.0.0.1, validar origen y cookie de sesión, intercambiar el código con el verificador, comprobar /auth/v1/user y cerrar solo esa sesión. Guardar únicamente resultados booleanos, nunca tokens ni contraseñas. Detener los servidores temporales al terminar.
