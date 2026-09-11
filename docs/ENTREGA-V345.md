@@ -1,6 +1,6 @@
 # v3.45 — Cierre integrado del recorrido
 
-Estado: candidato final validado; publicación pendiente.
+Estado: publicada y verificada. Commit 0099668961d52989e59b4a19fd7ad125b71495a6; Actions 34617692074 completado correctamente. index.html, product-operations.js, dialog-access.js, workflow-help.js y appearance-b.css responden HTTP 200 y coinciden con el candidato normalizando finales de línea.
 
 Se incorpora Guía del recorrido en Compras y aprobaciones: ficha independiente, lámina conservada, revisión aprobada, presupuesto, pedido parcial, entrega, instalación y economía por separado. Se actualiza el README para continuar desde un clon en otro ordenador y distinguir publicación de interfaz e instalación SQL.
 

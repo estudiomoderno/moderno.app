@@ -16,7 +16,7 @@ main y checkout: 1934a686c98af662846bba41dfb98528d6051dc6. Interfaz servida v3.3
 | 3.42 | Board por estancia con pocas plantillas útiles, revisión conservada y proyecciones por audiencia que no filtren costes. Recursos privados fallidos se declaran. | 3.40–3.41, reutilizar editor/render/export existentes; ensayar permisos, imágenes, historial y exportación. | Publicada |
 | 3.43 | Aprobación corresponde a revisión exacta; alternativas identificadas; cambio relevante invalida aprobación; cantidades de presupuesto trazables; documentos emitidos intactos. | 3.39–3.42; pruebas de cambios, duplicados, cantidades, versiones antiguas y roles. | Publicada |
 | 3.44 | Comparar ofertas y registrar pedido parcial/plazo/incidencia/instalación; relación económica consistente sin duplicar contabilidad ni transferir dinero. | Reutilizar operaciones v3.35–3.37 y 3.39. Pruebas de parciales, incidencias, devoluciones, pagos separados y dos sesiones. | Publicada |
-| 3.45 | Recorrido integral, roles, móvil, accesibilidad, rendimiento con fixtures representativos, recuperación/reversión y ayuda. Separar evidencia real, simulada y pendiente. | Todas las anteriores; muestra propuesta 10 estancias/100 especificaciones más nombres largos, imágenes fallidas, sesión concurrente. | En curso |
+| 3.45 | Recorrido integral, roles, móvil, accesibilidad, rendimiento con fixtures representativos, recuperación/reversión y ayuda. Separar evidencia real, simulada y pendiente. | Todas las anteriores; muestra propuesta 10 estancias/100 especificaciones más nombres largos, imágenes fallidas, sesión concurrente. | Publicada; ensayos externos pendientes documentados |
 
 ## Puertas de publicación
 
@@ -33,3 +33,5 @@ El éxito de correo local y la autenticación SMTP previa no acreditan entrega e
 - Fuera de alcance: catálogo público, CAD, nuevas integraciones/IA/idiomas, marketplace, Web y Panelcontrol. Sin automatizaciones ni tareas nuevas.
 
 - 3.39 publicada: cef9685 / Actions 34612671632; 219 Node y 18 SQL, UI y reinstalación conservadoras. Ver ENTREGA-V339.md. Inicio de 3.40: prepare todavía reasigna IDs repetidos; sustituir reparación implícita por diagnóstico y bloqueo seguro de operación ambigua, sin fusión ni renumeración masiva.
+
+- Cierre 3.45: 0099668961d52989e59b4a19fd7ad125b71495a6 / Actions 34617692074. Recursos verificados. 246 Node, 24 PHP, 26 SQL de recorrido y 18 de snapshots con funciones finales. Ver ENTREGA-V345.md para límites externos. Entregas 3.39–3.45 publicadas; no se certifica recepción real de invitación ni prueba humana en teléfonos.

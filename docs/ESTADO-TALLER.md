@@ -1,6 +1,14 @@
-# Estado actual de Taller
+# Estado actual de Taller — 11 septiembre 2026
 
-Versión publicada y verificada: v3.39. Copia fija de presupuesto en pedido y devolución coherente con instalaciones. 219 Node, 18 SQL, Actions34612671632 correcto y recursos coincidentes; ENTREGA-V339.md. Continúa roadmap 3.40–3.45 en ROADMAP-V339-V345.md. El ensayo externo de invitación necesita destinatario/alta autorizados específicamente; no se certifica entrega humana. Los apartados siguientes conservan el historial.
+Versión publicada y verificada: **v3.45**, commit 0099668961d52989e59b4a19fd7ad125b71495a6. Actions 34617692074 correcto; cinco recursos modificados HTTP 200 e idénticos al candidato. El código y la documentación están en main y taller-operativa-20260909. Checkout de trabajo: C:\Chat Codex\moderno-validacion. Plan estratégico privado local sin seguimiento de Git.
+
+El recorrido 3.39–3.45 está publicado: copia fija de presupuesto, identidad sin renumeración, actualización explícita de biblioteca, revisiones de lámina, trazabilidad de cantidades/aprobaciones, comparación de ofertas, fechas/incidencias y guía. Ver [roadmap](ROADMAP-V339-V345.md) y [cierre](ENTREGA-V345.md).
+
+Verificación final: 246 pruebas Node, 24 PHP, 26 SQL de recorrido y 18 de snapshots. UI ficticia en clon, móvil simulado a 390 px y teclado. Última instalación SQL (3.44) con datos/pedidos/historial/inventario conservados en producción. No se hicieron escrituras ficticias en producción ni recargas forzadas.
+
+Pendiente externo: prueba de invitación hasta buzón real y alta específicamente autorizados, prueba humana en dispositivos y verificación de archivos posteriores a la recuperación ensayada. No confundir copia programada saludable con restauración total comprobada. Google Calendar permanece aplazado. No se ha desarrollado Web ni Panelcontrol en este cierre.
+
+Las pestañas y servidores creados para las pruebas se cerraron. Para continuar, usar el arranque aislado del README; no servir el HTML productivo con un servidor genérico. Los apartados siguientes son históricos, no el estado vigente.
 
 # Estado inicial de TALLER — 9 septiembre 2026
 
