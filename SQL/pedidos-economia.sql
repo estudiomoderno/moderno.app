@@ -46,7 +46,24 @@ begin
  if op.estado='cancelada' then raise exception 'Pedido cancelado';end if;
  c:=op.contenido;nota:=trim(coalesce(p_datos->>'nota',''));
  if length(nota)<5 or length(nota)>2000 then raise exception 'Indica un detalle de entre 5 y 2000 caracteres para el historial';end if;
- if p_accion='copiar_presupuesto' then
+ if p_accion in ('fecha_entrega','incidencia','resolver_incidencia') then
+  if op.estado not in ('confirmado','parcial','recibido') then raise exception 'Confirma primero el pedido';end if;
+  if p_accion='fecha_entrega' then
+   if coalesce(p_datos->>'fecha','') !~ '^\d{4}-\d{2}-\d{2}$' then raise exception 'Indica una fecha de entrega valida';end if;
+   perform (p_datos->>'fecha')::date;
+   c:=jsonb_set(c,'{fecha_entrega}',p_datos->'fecha');
+  elsif p_accion='incidencia' then
+   if coalesce(p_datos->>'categoria','') not in ('retraso','dano','faltante','otra') then raise exception 'Selecciona el tipo de incidencia';end if;
+   c:=jsonb_set(c,'{incidencias}',coalesce(c->'incidencias','[]')||jsonb_build_array(jsonb_build_object('id',p_operacion,'categoria',p_datos->>'categoria','nota',nota,'estado','abierta','creada',clock_timestamp(),'actor',auth.uid())));
+  else
+   n:=0;movs:='[]';for e in select value from jsonb_array_elements(coalesce(c->'incidencias','[]')) loop
+    if e->>'id'=p_datos->>'incidencia' and e->>'estado'='abierta' then e:=e||jsonb_build_object('estado','resuelta','solucion',nota,'resuelta',clock_timestamp(),'resuelta_por',auth.uid());n:=n+1;end if;
+    movs:=movs||jsonb_build_array(e);
+   end loop;
+   if n<>1 then raise exception 'Incidencia abierta no disponible';end if;
+   c:=jsonb_set(c,'{incidencias}',movs);
+  end if;
+ elsif p_accion='copiar_presupuesto' then
   select contenido into f from public.datos_estudio where estudio_id=p_estudio and bloque='presupuestos' for share;
   select count(*),jsonb_agg(q)->0 into n,e from jsonb_array_elements(coalesce(f->'quotes','[]')) q where q->>'ref'=p_datos->>'referencia';
   if n<>1 or e->>'projectId' is distinct from p_proyecto then raise exception 'Presupuesto ausente, ambiguo o de otro proyecto';end if;
