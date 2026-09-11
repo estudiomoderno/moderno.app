@@ -1,6 +1,6 @@
 # v3.44 — Ofertas comparables y logística con historial
 
-Estado: función instalada en clon y producción con conservación verificada; interfaz pendiente de publicación.
+Estado: publicada y verificada. Commit 2effc9ee8606f4136804149556c50997c509e35f; Actions 34616671477 correcto. index.html, product-operations.js y purchase-logistics.js verificados HTTP 200 y coincidentes. Función instalada en clon y producción con conservación verificada.
 
 Comparar ofertas agrupa solo mismas identidades tipadas de ficha, revisión, unidad y cantidad. Muestra proveedor, referencia, importe sin impuestos y notas de la oferta. Cantidades/revisiones distintas permanecen separadas. No elige proveedor ni crea pedidos automáticamente; Preparar pedido usa la acción existente y rechaza duplicar una solicitud que ya tenga pedido activo.
 
