@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.39–v3.45 — recorrido de producto y compras
+
+- v3.39: copia fija de presupuesto en pedido.
+- v3.40: diagnóstico de referencias sin renumerar duplicados.
+- v3.41: actualización de biblioteca por campos elegidos, unidades y fichas independientes.
+- v3.42: dos plantillas de láminas y revisiones conservadas con proyecciones seguras.
+- v3.43: cantidades trazables y controles de ámbito de las aprobaciones.
+- v3.44: comparación de ofertas equivalentes, fechas e incidencias con historial.
+- v3.45: guía, teclado, móvil simulado, regresión integrada y arranque documentado.
+- Estado y evidencia de publicación en ROADMAP-V339-V345.md y ENTREGA-V339.md a ENTREGA-V345.md.
+
+
 ## v3.38 — invitaciones autorizadas
 
 - Sesión, administrador e invitación del mismo estudio obligatorios para enviar correo.

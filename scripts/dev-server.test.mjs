@@ -11,6 +11,7 @@ test('local server replaces backend, isolates cache and limits connections',asyn
   assert.ok(html.includes('const LS_KEY="moderno_pruebas_pruebasdemo";'));
   assert.ok(!html.includes('const LS_KEY="moderno_prod_v1";'));
   assert.equal(res.headers.get('content-security-policy'),"connect-src 'self' https://pruebasdemo.supabase.co wss://pruebasdemo.supabase.co");
+  const asset=await fetch('http://127.0.0.1:'+port+'/specifications.js');assert.equal(asset.status,200);assert.match(await asset.text(),/var ModernoSpec/);
  }finally{clearTimeout(timer);if(child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}}
 });
 test('local server refuses production',async()=>{const child=start({SUPABASE_URL:'https://cgqtylvaapwbuwqvpjtb.supabase.co'});child.stderr.resume();assert.notEqual((await once(child,'exit'))[0],0);});

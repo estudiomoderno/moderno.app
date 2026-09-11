@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {performance} from 'node:perf_hooks';import spec from '../app/specifications.js';import boards from '../app/room-boards.js';import sync from '../app/sync-merge.js';
+test('representative 10-room / 100-spec journey preserves snapshots, files and independent edits',t=>{
+ const start=performance.now(),master={id:'master',name:'Producto de nombre largo '.repeat(6),qty:2,unit:'m',price:100,cost:0,material:'Roble',img:'storage://archivos/imagen-no-disponible',files:[{data:'storage://archivos/ficha.pdf'}]},p={id:1,name:'Proyecto',rooms:Array.from({length:10},(_,r)=>({id:r,name:'Estancia '+r,sections:[{id:'sec'+r,name:'Acabados',items:Array.from({length:10},(_,i)=>spec.fromProduct(master,()=>r+'-'+i))}]}))};
+ spec.prepare(p);const snapshot=boards.capture(p,p.rooms[0],{prices:true});p.rooms[0].boardRevisions=[snapshot];p.rooms[0].sections[0].items[0].material='Metal';p.rooms[0].sections[0].items[0].files[0].data='storage://archivos/otra.pdf';
+ assert.equal(p.rooms[0].sections[0].items[1].material,'Roble');assert.equal(master.files[0].data,'storage://archivos/ficha.pdf');assert.equal(snapshot.room.sections[0].items[0].material,'Roble');
+ const restored=JSON.parse(JSON.stringify(p));assert.equal(spec.rows(restored).length,100);assert.equal(restored.rooms[0].boardRevisions[0].room.sections[0].items[0].material,'Roble');assert.equal(spec.diagnose(restored).length,0);
+ const a=structuredClone(restored),b=structuredClone(restored);a.rooms[1].name='Diseño';b.rooms[2].name='Obra';const merged=sync.mergeSavedData(restored,a,b);assert.equal(merged.rooms[1].name,'Diseño');assert.equal(merged.rooms[2].name,'Obra');assert.equal(merged.rooms[0].boardRevisions.length,1);
+ const elapsed=performance.now()-start;t.diagnostic('100 fichas: '+elapsed.toFixed(1)+' ms para preparación, copias, recuperación JSON y combinación local; no mide red ni navegador.');assert.ok(elapsed<5000);
+});

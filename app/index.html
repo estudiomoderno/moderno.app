@@ -906,7 +906,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 </style>
-<link rel="stylesheet" href="/appearance-b.css?v=342">
+<link rel="stylesheet" href="/appearance-b.css?v=345">
 </head>
 <body>
 <div class="app">
@@ -1029,7 +1029,9 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/spec-master.js?v=341"></script>
 <script src="/room-boards.js?v=342"></script>
 <script src="/purchase-logistics.js?v=344"></script>
-<script src="/product-operations.js?v=344"></script>
+<script src="/dialog-access.js?v=345"></script>
+<script src="/workflow-help.js?v=345"></script>
+<script src="/product-operations.js?v=345"></script>
 <script src="/purchase-finance.js?v=339"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
@@ -5329,7 +5331,7 @@ function mgUI(pfx, cur){
   <div class="opt-pills" id="${pfx}MgPills">
     <button class="${libre?'on':''}" title="Sin margen automático: escribes precio y coste por separado" onclick="mgPick('${pfx}','libre',this)">Libre</button>
     ${std.map(v=>`<button class="${!custom&&!libre&&cur===v?'on':''}" onclick="mgPick('${pfx}',${v},this)">${v}%</button>`).join("")}
-    <input id="${pfx}MgInp" type="number" step="0.5" placeholder="otro" value="${custom?cur:""}" oninput="mgPick('${pfx}',this.value,null)" style="width:76px;border-radius:999px;border:1.5px solid ${custom?"var(--ink)":"#E2E2E0"};background:var(--white);padding:5px 12px;font-size:12px;outline:none">
+    <input id="${pfx}MgInp" aria-label="Margen comercial personalizado" type="number" step="0.5" placeholder="otro" value="${custom?cur:""}" oninput="mgPick('${pfx}',this.value,null)" style="width:76px;border-radius:999px;border:1.5px solid ${custom?"var(--ink)":"#E2E2E0"};background:var(--white);padding:5px 12px;font-size:12px;outline:none">
     <span id="${pfx}MgInfo" style="font-size:11px;color:var(--ink-faint);align-self:center"></span>
   </div>
   <input type="hidden" id="${pfx}MgV" value="${libre?"":cur}">`;
@@ -8812,39 +8814,38 @@ function itemModal(si,ii,fromUrl){
   <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
     <div class="thumb" id="itThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('itImgFile').click()">${itImg?`<img ${fileImageAttrs(itImg)}>`:"🛋"}</div>
     <div><label style="margin-top:0">Foto</label>
-      <label class="btn btn-ghost" style="cursor:pointer;font-size:11px;padding:6px 11px;display:inline-flex;align-items:center;gap:6px">${ico("subir")} Subir imagen<input type="file" id="itImgFile" accept="image/*" style="display:none" onchange="itLoadImg(this.files[0])"></label>
+      <button type="button" class="btn btn-ghost" style="font-size:11px;padding:6px 11px" onclick="document.getElementById('itImgFile').click()">${ico("subir")} Subir imagen</button><input type="file" id="itImgFile" accept="image/*" style="display:none" onchange="itLoadImg(this.files[0])">
       <p style="font-size:10.5px;color:var(--ink-faint);margin-top:2px">También puedes pulsar la miniatura para añadir una imagen.</p>
     </div>
   </div>
-  <label>Nombre</label><input id="itName" value="${ModernoDaily.escape(it.name||"")}">
+  <label for="itName">Nombre</label><input id="itName" value="${ModernoDaily.escape(it.name||"")}">
   <div class="row2">
-    <div><label>Proveedor</label><input id="itSup" list="dlProvs" value="${ModernoDaily.escape(it.supplier||"")}" placeholder="De tu agenda o libre">${dlProvs()}</div>
-    <div><label>Referencia / variante</label><input id="itSku" value="${ModernoDaily.escape(it.sku||"")}"></div>
+    <div><label for="itSup">Proveedor</label><input id="itSup" list="dlProvs" value="${ModernoDaily.escape(it.supplier||"")}" placeholder="De tu agenda o libre">${dlProvs()}</div>
+    <div><label for="itSku">Referencia / variante</label><input id="itSku" value="${ModernoDaily.escape(it.sku||"")}"></div>
   </div>
   <div class="row2">
-    <div><label>Dimensiones estándar o a medida</label><input id="itDims" value="${ModernoDaily.escape(it.dims||"")}" placeholder="Ej: 120×35×80 cm"></div>
-    <div><label>Material / acabado</label><input id="itMat" value="${ModernoDaily.escape(it.material||"")}" placeholder="Ej: Roble, cerámica…"></div>
+    <div><label for="itDims">Dimensiones estándar o a medida</label><input id="itDims" value="${ModernoDaily.escape(it.dims||"")}" placeholder="Ej: 120×35×80 cm"></div>
+    <div><label for="itMat">Material / acabado</label><input id="itMat" value="${ModernoDaily.escape(it.material||"")}" placeholder="Ej: Roble, cerámica…"></div>
   </div>
   <div class="row2">
-    <div><label>Color</label><input id="itCol" value="${ModernoDaily.escape(it.color||"")}" placeholder="Ej: Azul Marino"></div>
-    <div><label>Plazo de entrega</label><input id="itPlz" value="${ModernoDaily.escape(it.plazo||"")}" placeholder="Ej: 2-3 semanas"></div>
+    <div><label for="itCol">Color</label><input id="itCol" value="${ModernoDaily.escape(it.color||"")}" placeholder="Ej: Azul Marino"></div>
+    <div><label for="itPlz">Plazo de entrega</label><input id="itPlz" value="${ModernoDaily.escape(it.plazo||"")}" placeholder="Ej: 2-3 semanas"></div>
   </div>
-  <label>Nota interna</label><input id="itNote" value="${ModernoDaily.escape(it.note||"")}" placeholder="Solo la ve el equipo">
+  <label for="itNote">Nota interna</label><input id="itNote" value="${ModernoDaily.escape(it.note||"")}" placeholder="Solo la ve el equipo">
   <div class="row2">
-    <div><label>Precio cliente (€)</label><input id="itPrice" type="number" step="0.01" value="${it.price??""}" oninput="mgSync('it','price')"></div>
-    <div><label>Coste profesional (€)</label><input id="itCost" type="number" step="0.01" value="${it.cost??""}" placeholder="Con tu descuento pro" oninput="mgSync('it','cost')"></div>
+    <div><label for="itPrice">Precio cliente (€)</label><input id="itPrice" type="number" step="0.01" value="${it.price??""}" oninput="mgSync('it','price')"></div>
+    <div><label for="itCost">Coste profesional (€)</label><input id="itCost" type="number" step="0.01" value="${it.cost??""}" placeholder="Con tu descuento pro" oninput="mgSync('it','cost')"></div>
   </div>
   <div class="row2">
-    <div><label>Unidades</label><input id="itQty" type="number" step="0.01" value="${it.qty}" oninput="unitSum('itQty','itPrice','itUnit','itSum','itCost')"></div>
-    <div><label>Unidad</label><select id="itUnit" onchange="unitSum('itQty','itPrice','itUnit','itSum','itCost')">${[...new Set(["ud","m2","m","m3","l","kg","h",it.unit||"ud"])].map(u=>`<option value="${ModernoDaily.escape(u)}" ${(it.unit||"ud")===u?"selected":""}>${ModernoDaily.escape(({ud:"Unidades",m2:"m²",m:"Metros lineales",m3:"m³",l:"Litros",kg:"Kilogramos",h:"Horas"})[u]||u)}</option>`).join("")}</select></div>
+    <div><label for="itQty">Unidades</label><input id="itQty" type="number" step="0.01" value="${it.qty}" oninput="unitSum('itQty','itPrice','itUnit','itSum','itCost')"></div>
+    <div><label for="itUnit">Unidad</label><select id="itUnit" onchange="unitSum('itQty','itPrice','itUnit','itSum','itCost')">${[...new Set(["ud","m2","m","m3","l","kg","h",it.unit||"ud"])].map(u=>`<option value="${ModernoDaily.escape(u)}" ${(it.unit||"ud")===u?"selected":""}>${ModernoDaily.escape(({ud:"Unidades",m2:"m²",m:"Metros lineales",m3:"m³",l:"Litros",kg:"Kilogramos",h:"Horas"})[u]||u)}</option>`).join("")}</select></div>
   </div>
   <div id="itSum" class="entry" style="display:block;background:var(--gold-soft);margin-top:8px;font-size:12.5px"></div>
   ${mgUI("it", mgAuto(it))}
-  <label>Estado de selección / seguimiento</label><p>La aprobación de una revisión y el estado real del pedido se consultan en Compras y aprobaciones. Esta etiqueta no confirma compras ni registra cobros.</p><select id="itSt">${Object.keys(ISTATES).map(s=>`<option ${it.status===s?"selected":""}>${s}</option>`).join("")}</select>
+  <label for="itSt">Estado de selección / seguimiento</label><p>La aprobación de una revisión y el estado real del pedido se consultan en Compras y aprobaciones. Esta etiqueta no confirma compras ni registra cobros.</p><select id="itSt">${Object.keys(ISTATES).map(s=>`<option ${it.status===s?"selected":""}>${s}</option>`).join("")}</select>
   <label>Adjuntos del producto — instrucciones, ficha técnica…</label>
   <div id="itFilesBox"></div>
-  <label class="btn btn-ghost" style="width:100%;justify-content:center;cursor:pointer;background:var(--card)">${ico("adj_archivo")} Añadir archivo
-    <input type="file" multiple style="display:none" onchange="itAddFiles([...this.files])"></label>
+  <button type="button" class="btn btn-ghost" style="width:100%;justify-content:center;background:var(--card)" onclick="document.getElementById('itAttachFiles').click()">${ico("adj_archivo")} Añadir archivo</button><input id="itAttachFiles" type="file" multiple style="display:none" onchange="itAddFiles([...this.files])">
   <div class="modal-foot"><button class="btn btn-ghost" title="Guardar este producto en tu biblioteca transversal" onclick="itemToLibrary()">${ico("guardar")} Añadir a mi biblioteca</button>
   <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
   <button class="btn btn-dark" onclick="saveItem(${si},${ii})">Guardar</button></div>`);
@@ -11257,9 +11258,10 @@ function askInputCancel(){ const cb=_inpCancel; _inpOk=_inpCancel=null; closeMod
 
 /* =================== UI HELPERS =================== */
 const ov=document.getElementById("overlay"), mb=document.getElementById("modalBox");
-function modal(html){ mb.innerHTML=html; ov.classList.add("open"); try{syncRefresh();}catch(e){} }
-function closeModal(){ _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
+function modal(html){ mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
+function closeModal(){ ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
 ov.addEventListener("click",e=>{ /* clic fuera NO cierra: solo Cancelar/Guardar */ });
+document.addEventListener("keydown",e=>{if(ov.classList.contains("open"))ModernoDialog.trap(e,mb);});
 let toastTimer;
 function toast(msg){ const el=document.getElementById("toast"); el.textContent=msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("show"),2800); }
 function wire(){}
@@ -11309,7 +11311,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.44";
+const MODERNO_VER="v3.45";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

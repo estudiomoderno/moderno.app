@@ -85,3 +85,12 @@ El usuario autoriza que TALLER desarrolle, compruebe y publique las modificacion
 - La autorización se comprueba en el servidor. Ocultar botones no basta. El candidato incorpora consulta separada, bloqueo de escritura y acceso limitado a los PDF contables.
 - Los PDF originales adjuntos se ofrecen por separado del resumen imprimible, que no sustituye al documento original.
 - Los cambios de permisos siguen en desarrollo y no están publicados. La lectura filtrada y el guardado de colaboradores deben quedar integrados y verificados antes de entregar el conjunto.
+
+
+## Cierre de recorrido 3.39–3.45 (11/09/2026)
+
+Biblioteca, ficha, lámina, presupuesto y pedido conservan copias independientes. Actualizar biblioteca es selectivo y explícito; no se reescriben documentos anteriores. Los IDs ambiguos se diagnostican sin renumerarlos. Las revisiones de lámina se anexan y su historial es administrativo; preparar una salida para cliente/diseño/obra no concede accesos.
+
+Una aprobación pertenece a una revisión exacta y no revive por volver a un valor anterior. Comparar ofertas exige iguales fichas/revisiones/cantidades/unidades. Fecha, incidencia, recepción, instalación, factura y pago son registros separados. Registrar un pago no mueve dinero.
+
+Las entregas se publican tras validación y comprobación de recursos. La invitación hasta un buzón real y alta productiva necesita destinatario/alta concretos; no se certifica con pruebas locales. Mantener las limitaciones y evidencias en ENTREGA-V345.md y el estado en ESTADO-TALLER.md.

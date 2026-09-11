@@ -316,6 +316,10 @@
 .board-fichas .room-board-image{aspect-ratio:auto;min-height:130px}
 .board-revision-label{overflow-wrap:anywhere;font-size:10px;color:var(--ink-soft);margin-top:20px}
 .room-board-toolbar select{max-width:180px}
+.workflow-guide{padding-left:24px;line-height:1.65}
+.workflow-guide li{margin:12px 0}
+#modalBox :focus-visible{outline:2px solid var(--ink,#252525);outline-offset:3px}
+#modalBox[tabindex="-1"]:focus{outline:none}
 @media(max-width:600px){.room-board-toolbar label{white-space:normal}.room-board-toolbar select{max-width:150px}.board-fichas .room-board article{grid-template-columns:90px minmax(0,1fr)}}
 /* Product operations: same neutral palette in light and dark mode. */
 #modalBox:has(#opsBody),#modalBox:has(#opsPortal){width:980px;max-width:calc(100vw - 24px)}
