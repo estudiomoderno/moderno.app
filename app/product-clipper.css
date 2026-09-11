@@ -1,5 +1,6 @@
 .clipper-panel{box-sizing:border-box;width:min(880px,calc(100vw - 24px));max-height:90dvh;border:1px solid var(--card);border-radius:22px;padding:26px;background:var(--white,#fff);color:var(--ink,#242426);box-shadow:0 24px 90px #0003;margin:auto;overflow:auto;font:inherit}
 .clipper-panel::backdrop{background:#15151a80}
+.clipper-panel [aria-invalid=true]{outline:2px solid #b24545;outline-offset:2px}.clipper-panel small{display:block;line-height:1.4;color:var(--ink-soft)}
 .clipper-panel header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
 .clipper-panel header h2{font-size:23px;margin:0 0 8px}.clipper-panel p{line-height:1.5}
 .clipper-panel label:not(.clipper-check){display:block;margin:14px 0 6px}

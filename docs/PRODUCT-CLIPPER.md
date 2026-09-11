@@ -50,6 +50,16 @@ Referencias: [Supabase Auth en funciones](https://supabase.com/docs/guides/funct
 
 ## Publicación verificada
 
+### Corrección de guardado v3.51.1
+
+Se reprodujo el recorrido de Biblioteca con la app completa y una identidad ficticia en el clon autorizado `szbswxpkhidywaosdfcg`, usando la ficha SKLUM del escritorio Takeo 96601. La captura no incluía categoría ni unidad; el botón bloqueaba correctamente el guardado, pero el aviso aparecía fuera de la zona visible. Al completar ambos campos, el mismo backend guardó correctamente.
+
+La interfaz identifica ahora los campos obligatorios, enfoca el campo pendiente y repite el aviso junto a Guardar. No inventa unidad, categoría ni precio. Después de la absorción comprueba el ID y la captura en el bloque remoto y en el estado local antes de cerrar; si no puede consultar o hay cambios locales incompatibles, conserva la captura. Consultar una captura ya absorbida vuelve a su producto sin generar otra copia. Al terminar se muestra el destino y se eliminan los filtros locales que podrían ocultar el producto.
+
+Validación del candidato: 292 pruebas JavaScript, 24 comprobaciones PHP y 19 PostgreSQL locales. Ensayo visual con la app completa, sincronización real del clon y usuario ficticio: Biblioteca y Listas muestran el producto pese a una búsqueda anterior incompatible; ambos persisten al recargar. El transporte local del ensayo dirige solo la función a ese clon; no usa credenciales privilegiadas. El backend y las tablas de producción no cambian en esta corrección.
+
+Reintento remoto de las mismas dos capturas bajo la identidad ficticia: `already_absorbed` con los mismos IDs. Una consulta posterior confirma exactamente un producto por captura y presupuestos/borradores de control sin cambios. Las pruebas simuladas de desconexión durante la lectura posterior, error de RPC y conflicto local mantienen la captura y no anuncian un éxito falso.
+
 Commit de publicación: 17a59c6f8b9be25a4f4cece4eea90c0c6098501b. [Actions completado correctamente](https://github.com/estudiomoderno/moderno.app/actions/runs/34657101246). HTML, JS y CSS respondieron HTTP 200 y coincidieron con el candidato; HTML identifica v3.50. Función a través de auth.moderno.app: sin sesión y JWT inválido devuelven 401; preflight del origen app.moderno.app devuelve 204. La copia física de base de datos disponible era del 11/09 a las 00:31:45 UTC; copia de archivos programada correcta del 11/09 a las 02:32:53 UTC. No se ejecutó ninguna restauración.
 
 Comprobación visual en producción: el estudio terminó de cargar, Biblioteca mostró el botón de importación y abrió el diálogo con URL, revisión y estado Borrador. Se cerraron ambos formularios sin capturar ni guardar productos del piloto.

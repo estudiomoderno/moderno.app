@@ -28,4 +28,6 @@ Se generan SVG claros y oscuros y PNG de 16, 32, 48, 180, 192 y 512 píxeles. Se
 
 El flujo de GitHub publica primero los recursos y después el HTML por FTPS. Antes de dar la publicación por terminada, comprobar el resultado del flujo, la versión servida y los nuevos recursos públicos.
 
+Publicación comprobada el 12 de septiembre de 2026: commit `11ca4d5c7710fb2464be87c85a9eaf8aff525220`, flujo `34658013544` terminado correctamente. HTML, CSS, ambos SVG del símbolo, favicon y PNG de 32/180 devolvieron HTTP 200 y coincidieron con el candidato (normalizando finales de línea en textos). Revisión visual adicional en una pestaña nueva de producción, sin editar datos.
+
 Para revertir, crear un commit inverso del cambio de identidad, conservando cualquier arreglo posterior, y publicarlo por el mismo flujo. No restaurar bases de datos por un cambio visual. La versión anterior es v3.50 (commit de publicación `17a59c6f8b9be25a4f4cece4eea90c0c6098501b`).
