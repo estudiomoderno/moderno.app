@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.38 — invitaciones autorizadas
+
+- Sesión, administrador e invitación del mismo estudio obligatorios para enviar correo.
+- Remitente y estudio verificados por el servidor; límites de reenvío y eliminación del segundo intento automático por mail().
+- Configuración SMTP privada conservada; pruebas y publicación en ENTREGA-V338.md.
+
 ## v3.37 — fichas, presupuestos e instalación
 
 - Presupuestos desde fichas con identidad y copia de características, también desde el proyecto.

@@ -1,6 +1,6 @@
 # Estado actual de Taller
 
-Versión publicada y verificada: v3.37, fichas vinculadas a presupuestos, cantidades acumuladas de pedidos e instalación con historial. 213 pruebas Node, 26 comprobaciones SQL y recorrido ficticio de interfaz. Funciones instaladas con conservación verificada y GitHub Actions 34608106406 correcto; los tres archivos públicos modificados coinciden. Detalles y límites en ENTREGA-V337.md. La autorización del endpoint de invitaciones sigue pendiente. Los apartados siguientes conservan el historial.
+Versión publicada y verificada: v3.38, autorización del correo de invitaciones. 215 pruebas Node, 24 PHP y 10 comprobaciones con SMTP local. GitHub Actions 34609210903 correcto; HTML coincide y servicio de producción rechaza peticiones sin sesión y tokens inválidos. Sin cambios SQL ni correos externos de prueba. Detalles y límites en ENTREGA-V338.md. Incluye el recorrido v3.37 documentado en ENTREGA-V337.md. Los apartados siguientes conservan el historial.
 
 # Estado inicial de TALLER — 9 septiembre 2026
 

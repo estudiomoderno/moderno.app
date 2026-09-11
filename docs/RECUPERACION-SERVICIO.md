@@ -51,3 +51,7 @@ Esto acredita que la copia del servicio se puede ejecutar y que sus credenciales
 El inicio de sesión real pasó siete comprobaciones: intercambio PKCE, consulta autenticada de identidad, proveedor Google, cuenta esperada, emisor del clon, correo confirmado y cierre de la sesión creada (scope=local). No se modificaron proyectos. El secreto del cliente se introdujo directamente en Supabase sin guardarlo en archivos o GitHub. No se habilitó Google Calendar.
 
 Para repetir: recuperar api desde la copia privada COMPLETE, usar PHP con OpenSSL/mbstring y un receptor SMTP local; comprobar por separado TLS/AUTH sin MAIL FROM. Para OAuth, usar un cliente exclusivo del clon y callback exacto, iniciar PKCE S256 desde un servidor local ligado a 127.0.0.1, validar origen y cookie de sesión, intercambiar el código con el verificador, comprobar /auth/v1/user y cerrar solo esa sesión. Guardar únicamente resultados booleanos, nunca tokens ni contraseñas. Detener los servidores temporales al terminar.
+
+## Autorización del correo corregida en v3.38
+
+Ver ENTREGA-V338.md y mailer/README.md. El motor PHP ya exige sesión, administrador e invitación existente. Publicación y rechazos de producción verificados; el envío autorizado se ensayó con SMTP local, sin correo externo. La configuración SMTP privada no se publica. Las limitaciones anteriores de autorización describen el motor recuperado v1.4 y quedan sustituidas por esta entrega.

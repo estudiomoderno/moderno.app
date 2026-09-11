@@ -1,6 +1,6 @@
 # v3.38 — Autorización de invitaciones
 
-Estado: candidato validado; publicación pendiente.
+Estado: publicada y verificada el 11 de septiembre de 2026.
 
 El servicio de correo ahora exige sesión válida de Supabase, rol administrador y una invitación existente para ese email dentro del estudio indicado. Consulta con el token del usuario y RLS; no utiliza service_role. El remitente y el estudio se obtienen del servidor. El navegador ya no puede inventar esos datos ni el rol del correo.
 
@@ -22,3 +22,7 @@ Repetir las pruebas PHP con `php scripts/invitation-auth.test.php`. El ensayo HT
 Actions publica primero autorizar-invitacion.php, luego enviar-invitacion.php y después los recursos y HTML. Los inventarios FTP son independientes; config.php queda excluido y no se introduce en Git. La regla de Apache conserva Authorization para PHP. No hay migración SQL ni cambios a documentos, usuarios existentes o archivos.
 
 No restaurar el motor v1.4 sin autorización ante un fallo: mantener el rechazo del servidor y corregir la causa. La copia privada anterior y sus credenciales permanecen fuera del repositorio. Una sesión antigua necesita cargar la nueva versión para enviar invitaciones; no recargarla con cambios pendientes.
+
+## Publicación confirmada
+
+Commit f9e252f024073dad3382280b9434c7052a7d508a. Actions terminó correctamente: https://github.com/estudiomoderno/moderno.app/actions/runs/34609210903. HTML público HTTP 200 y contenido coincidente con el candidato (solo se normalizan finales de línea). En producción: petición sin sesión 401, origen falso 403, cabecera recibida con email inválido 400 y token ficticio rechazado por Auth 403. Ninguna prueba creó invitaciones, alteró datos ni envió correo externo. El flujo autorizado completo se probó con servicios simulados y SMTP local; no se afirma nueva entrega real de correo.
