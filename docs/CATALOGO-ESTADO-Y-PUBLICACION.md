@@ -50,3 +50,9 @@ Aplicada la sustitución únicamente al estudio autorizado: 1.068 partidas activ
 El catálogo se presenta en tarjetas adaptables a móvil, con esquinas redondeadas, tonos suaves por familia, precio y acciones alineados. Los colores incluyen variantes oscuras; se respeta la preferencia de reducir animaciones. Los controles conservan sus etiquetas accesibles y el foco por teclado.
 
 La descripción y el desplegable de alcance se retiran del listado; la descripción se consulta en el formulario de edición. El selector dentro de un documento conserva la revisión del alcance antes de añadir una partida explícitamente. No se modifican datos, precios, referencias, presupuestos ni borradores. No hay migración SQL. Verificación: 269 pruebas existentes correctas y revisión visual local de tarjetas.
+
+## Vistas y selectores v3.48
+
+Selector Tarjetas/Lista con los SVG aportados por el usuario, botones de tamaño fijo y estado aria-pressed. Cambiar de vista conserva filtros y página; solo cambia la presentación local. Las descripciones permanecen fuera de ambas vistas.
+
+Filtros del catálogo de 44 px, alineación vertical centrada y un solo indicador de apertura. select-controls.css usa arrow-big-down en selectores simples y campos con lista, con adaptación al modo oscuro y al selector nativo/base-select. No cambia las flechas de navegación del menú. Iconos originales conservados en app/icons. Sin cambios de datos ni SQL. 269 pruebas correctas; alternancia de vistas y conservación de filtros comprobadas visualmente.
