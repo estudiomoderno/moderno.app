@@ -69,8 +69,9 @@ jobs:
         env:
           GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
-          FTP_HOST: ${{ secrets.FTP_HOST }}
+          # Official generic host: certificate covers dondominio.com, not the customer's alias.
+          FTP_HOST: ftp.dondominio.com
           FTP_USER: ${{ secrets.FTP_USER }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+          FTP_SERVER_DIR: app/
         run: python3 scripts/backup-service.py
