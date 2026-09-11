@@ -21,16 +21,29 @@ var ModernoSpec=(()=>{
   (p.pres||[]).forEach(pr=>(pr.pages||[]).forEach(pg=>(pg.els||[]).forEach(e=>{if(['prod','pin'].includes(e.t))refs.push(e);})));
   (p.moods||[]).forEach(m=>(m.secs||[]).forEach(s=>(s.items||[]).forEach(i=>{if(i.prodRef)refs.push(i.prodRef);})));return refs;
  }
+ function origin(item,masters=[]){
+  if(item.libId==null)return {kind:'independiente',master:null};
+  const matches=masters.filter(m=>m.id===item.libId);
+  return {kind:matches.length===1?'biblioteca':matches.length?'ambiguo':'no_disponible',master:matches.length===1?matches[0]:null};
+ }
+ function diagnose(p){
+  const issues=[],rr=rows(p);
+  const scan=(list,kind)=>{const groups=new Map();for(const x of list){if(x.id==null){issues.push({code:'missing_'+kind,id:null,name:x.name||'',blocking:false});continue;}const k=key(x.id);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(x);}
+   for(const group of groups.values())if(group.length>1)issues.push({code:'duplicate_'+kind,id:group[0].id,name:group.map(x=>x.name||'Sin nombre').join(' · '),count:group.length,blocking:true});};
+  scan(p.rooms||[],'room');scan((p.rooms||[]).flatMap(r=>r.sections||[]),'section');scan(rr.map(x=>x.item),'product');
+  references(p).forEach((ref,index)=>{if(!resolve(p,ref))issues.push({code:'unresolved_reference',id:index,name:'Referencia '+(index+1),blocking:false});});
+  return issues;
+ }
  // Run only as part of an edit. References are bound before positions change.
  function prepare(p,newId=uuid){
+  const ambiguous=diagnose(p).filter(x=>x.blocking);
+  if(ambiguous.length){const error=Error('Hay identificadores repetidos. Revisa las referencias del proyecto antes de reorganizar o vincular fichas.');error.issues=ambiguous;throw error;}
   const rr=rows(p),bound=references(p).map(ref=>({ref,target:resolve(p,ref)}));
-  const counts=new Map();rr.forEach(x=>{if(x.item.id!=null)counts.set(key(x.item.id),(counts.get(key(x.item.id))||0)+1);});
   const reserved=new Set(rr.filter(x=>x.item.id!=null).map(x=>key(x.item.id)));
-  const assignments=[];rr.forEach(x=>{if(x.item.id==null||counts.get(key(x.item.id))>1){const id=newId();if(reserved.has(key(id)))throw Error('Identificador repetido');reserved.add(key(id));assignments.push([x.item,id]);}});
-  const sections=(p.rooms||[]).flatMap(r=>r.sections||[]),sectionCounts=new Map();
-  sections.forEach(s=>{if(s.id!=null)sectionCounts.set(key(s.id),(sectionCounts.get(key(s.id))||0)+1);});
+  const assignments=[];rr.forEach(x=>{if(x.item.id==null){const id=newId();if(reserved.has(key(id)))throw Error('Identificador repetido');reserved.add(key(id));assignments.push([x.item,id]);}});
+  const sections=(p.rooms||[]).flatMap(r=>r.sections||[]);
   const sectionReserved=new Set(sections.filter(s=>s.id!=null).map(s=>key(s.id))),sectionAssignments=[];
-  sections.forEach(s=>{if(s.id==null||sectionCounts.get(key(s.id))>1){const id=newId();if(sectionReserved.has(key(id)))throw Error('Identificador de sección repetido');sectionReserved.add(key(id));sectionAssignments.push([s,id]);}});
+  sections.forEach(s=>{if(s.id==null){const id=newId();if(sectionReserved.has(key(id)))throw Error('Identificador de sección repetido');sectionReserved.add(key(id));sectionAssignments.push([s,id]);}});
   const itemIds=new Map(assignments);
   const refAssignments=bound.filter(({ref})=>!ref.src||!String(ref.src).startsWith('spec:')).map(({ref,target})=>[ref,target?refFor(itemIds.get(target.item)??target.item.id):'spec:missing:'+newId()]);
   assignments.forEach(([item,id])=>{item.id=id;});
@@ -53,6 +66,6 @@ var ModernoSpec=(()=>{
  }
  // Explicit output allowlist: never include internal costs, margins or notes.
  function board(room){return (room.sections||[]).map(s=>({name:s.name,items:(s.items||[]).filter(i=>!i.hidden&&!i.alt).map(i=>({id:i.id,name:i.name,sku:i.sku,color:i.color,material:i.material,dims:i.dims,img:i.img,qty:i.qty,unit:i.unit,price:i.price}))})).filter(s=>s.items.length);}
- return {rows,refFor,resolve,prepare,reindex,fromProduct,duplicate,economics,board};
+ return {rows,refFor,resolve,prepare,reindex,fromProduct,duplicate,economics,board,diagnose,origin};
 })();
 if(typeof module!=='undefined')module.exports=ModernoSpec;
