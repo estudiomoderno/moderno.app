@@ -59,3 +59,17 @@ Este sistema respalda el bucket configurado. Los nuevos buckets requieren amplia
 
 GitHub puede retrasar ejecuciones y desactiva los workflows programados de repositorios públicos tras 60 días sin actividad. Revisar la fecha de la última copia completa y los fallos de Actions; una programación configurada no garantiza por sí sola una copia diaria exitosa. La supervisión externa de copias ausentes sigue pendiente. [Referencia de GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
 
+
+## Recuperación a partir de v3.35
+
+La copia externa de Storage no contiene pedidos ni aprobaciones. Para recuperar el estudio completo se necesita además una copia de base de datos posterior a la instalación de v3.35, incluyendo public.app_operaciones, public.app_operacion_eventos, sus funciones, permisos y el disparador de invalidación. No basta con recuperar datos_estudio.
+
+Comprobación pendiente: restaurar una copia posterior a v3.35 en un entorno aislado y verificar que conserva operaciones y eventos. Las 20 pruebas SQL de la entrega comprueban el funcionamiento del módulo, no sustituyen ese ensayo de recuperación. No declarar esta comprobación terminada hasta disponer de evidencia.
+
+En el ensayo:
+1. Anotar fecha y alcance de la copia de base de datos y de Storage; pueden corresponder a momentos distintos.
+2. Comprobar ambas tablas, RLS y funciones del módulo, y comparar registros con el inventario del mismo punto de copia. Un recuento aislado no demuestra integridad.
+3. Verificar con identidades ficticias que un administrador puede consultar el historial y que un visitante no accede a información interna.
+4. Comprobar una aprobación invalidada y un pedido con recepciones: deben mantener sus revisiones, cantidades e historial tras restaurar.
+5. Recuperar los archivos por separado, conservando rutas y comprobando contenido. No ejecutar operaciones de prueba ni sobrescribir producción.
+6. Guardar el resultado del ensayo sin datos privados ni credenciales en el repositorio público.
