@@ -1,6 +1,6 @@
 # Cierre del recorrido del CRM
 
-Actualización: candidato v3.37 y pruebas nuevas documentadas en ENTREGA-V337.md (213 pruebas Node y 26 SQL correctas). La matriz inferior describe los hallazgos iniciales, no el estado final.
+Actualización: publicada y verificada v3.37 y pruebas nuevas documentadas en ENTREGA-V337.md (213 pruebas Node y 26 SQL correctas). La matriz inferior describe los hallazgos iniciales, no el estado final.
 
 Base: v3.36, aplicación ee6fb79; mantenimiento 699e9b2. Ensayos nuevos exclusivamente en el clon de recuperación. Este documento distingue evidencia previa de pruebas nuevas; no certifica la visión futura completa.
 

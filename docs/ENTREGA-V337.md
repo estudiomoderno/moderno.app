@@ -1,6 +1,6 @@
 # v3.37 — Fichas, presupuestos e instalación
 
-Estado: funciones instaladas y verificadas en producción; publicación de interfaz pendiente de confirmar.
+Estado: publicada y verificada el 11 de septiembre de 2026.
 
 ## Recorrido
 
@@ -32,6 +32,10 @@ Publicar recursos antes de index.html mediante el flujo existente de GitHub Acti
 ## Servidor instalado
 
 11 de septiembre de 2026: el paquete terminó en producción con datos_intactos, pedidos_intactos, historial_intacto y archivos_intactos en true. No se ejecutaron registros de ensayo en producción. La entrada directa «Generar presupuesto» se verificó después con el candidato local: proyecto asociado, precio nuevo 150 EUR, acabado Metal y total 363 EUR; el anterior conserva 242 EUR.
+
+## Publicación confirmada
+
+Commit de aplicación d038a46d65825e6e0817dbfd964dcab8d737da54. GitHub Actions terminó correctamente: https://github.com/estudiomoderno/moderno.app/actions/runs/34608106406. index.html, project-quotes.js y product-operations.js devolvieron HTTP 200 y coincidieron con el candidato, normalizando solamente finales de línea. Recursos publicados antes del HTML; sin recargas forzadas. Servidores y sesiones locales de ensayo cerrados al terminar; credencial temporal descartada de memoria.
 
 ## Pendientes ajenos a esta entrega
 
