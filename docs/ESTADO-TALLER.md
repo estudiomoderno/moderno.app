@@ -1,6 +1,6 @@
 # Estado actual de Taller
 
-Versión publicada y verificada: v3.35, aprobaciones por revisión y ciclo de compras; ver ENTREGA-V335.md. Servidor instalado con comprobación de conservación, 182 pruebas locales y 20 comprobaciones SQL en clon. GitHub Actions 34537483465 correcto; HTML, CSS y módulos públicos coinciden. Los apartados siguientes conservan el historial.
+Versión de interfaz publicada: v3.36 (ENTREGA-V336.md). Candidato v3.37 validado con 213 pruebas Node, 26 comprobaciones SQL y recorrido ficticio de interfaz; funciones instaladas en producción con conservación verificada. Confirmación de publicación de interfaz pendiente en ENTREGA-V337.md. Los apartados siguientes conservan el historial.
 
 # Estado inicial de TALLER — 9 septiembre 2026
 

@@ -1024,7 +1024,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=333"></script>
 <script src="/specifications.js?v=335"></script>
-<script src="/product-operations.js?v=336"></script>
+<script src="/project-quotes.js?v=337"></script>
+<script src="/product-operations.js?v=337"></script>
 <script src="/purchase-finance.js?v=336"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
@@ -4200,6 +4201,7 @@ function render(){
   const r = {home:vHome, workspace:vWorkspace, biblioteca:vLibrary, proyectos:vProjects, proyecto:vProject, estancia:vRoom, agenda:vAgenda, calendario:vCalendar, contabilidad:vAccounting, prevision:vPrevision, facturas:()=>vInvoice("factura"), presupuestos:()=>vInvoice("presupuesto"), catalogo:vCatalog, compras:vCompras, informes:vInformes, plantillas:vDocs, utilidades:vUtils, integraciones:vIntegraciones, admin:vAdmin, ajustes:vAjustes, presedit:vPresEdit, portalcli:vPortalCli, portalobra:vPortalObra}[state.view];
   V.innerHTML = r();
   wire();
+  if(state.view==='compras')ProductOps.overview();
 }
 
 /* =================== VIEWS =================== */
@@ -5536,7 +5538,7 @@ function vProject(){
   <h2 class="sec" style="margin-top:0">Listas de compra <span class="sec-note">Estancias, pavimentos y todo lo que se compra.</span></h2>
   ${(p.rooms||[]).length?`<div class="dl-budget">
     <div><span class="dl-lab">Presupuesto del Proyecto</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px">${(p.rooms||[]).length} lista${(p.rooms||[]).length===1?"":"s"} · ${(p.rooms||[]).reduce((s,r)=>s+r.sections.reduce((a,x)=>a+x.items.length,0),0)} productos</div></div>
-    <button class="dl-btn" title="Crea un presupuesto con una línea por cada lista, listo para revisar y enviar" onclick="listToQuote(${p.id})">${ico("presupuestos")} Generar presupuesto</button>
+    <button class="dl-btn" title="Crea un presupuesto con las fichas del proyecto, agrupadas por estancia" onclick="listToQuote(${p.id})">${ico("presupuestos")} Generar presupuesto</button>
     <b class="dl-num">${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</b>
   </div>`:""}
   ${[["estancia","Estancias","Nueva estancia"],["pav","Pavimentos y Revestimientos","Nueva lista de pavimentos"],["otra","Otras listas","Nueva lista"]].map(([kind,label,addLabel])=>{
@@ -6326,6 +6328,7 @@ function vInvoice(kind){
         <button class="btn btn-ghost" style="flex:1;justify-content:center" title="Editar este contacto \u2014 los cambios se guardan en la Agenda" onclick="draftEditClient()">${ico("editar")} Editar</button>
         <button class="btn btn-ghost" style="flex:1;justify-content:center" title="Crear cliente nuevo en Contactos" onclick="state.afterClient='draft';clientModal(-1,'Cliente')">${ico("mas")} Nuevo</button>
       </div>
+      <button class="btn btn-ghost" style="width:100%;margin-top:12px" onclick="ProjectQuotes.open()">Añadir fichas del proyecto</button>
       <label>Servicios</label>
       <button class="btn btn-gold" style="width:100%;justify-content:center" onclick="catPickModal()">${ico("mas")} Añadir del catálogo</button>
       <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:6px" title="Productos de la Biblioteca: precio cliente, unidad y proveedor; entran en el capítulo «Productos» (o su categoría)" onclick="libPickModal()">${ico("mas")} Añadir de la Biblioteca</button>
@@ -6421,8 +6424,9 @@ function vCompras(){
   const CST={"Aprobado":"Por pedir","Comprado":"Pedido","En Tránsito":"En tránsito","Instalado":"Instalado"};
   return `
   <h1 class="big">Compras</h1>
-  ${_accessRole==='admin'?`<div class="flt"><label>Compras y aprobaciones por proyecto<select id="opsProject">${byBrand(state.projects.filter(p=>!p.tpl&&p.status!=='Archivado')).map(p=>`<option value="${p.id}">${ModernoDaily.escape(p.num+' '+p.name)}</option>`).join('')}</select></label><button class="btn btn-dark" onclick="ProductOps.open(document.getElementById('opsProject').value)">Gestionar pedidos</button></div>`:''}
-  <p class="sub">Todo lo aprobado y pedido de todos tus proyectos, agrupado por proveedor. Para saber qué reclamar sin abrir proyecto a proyecto.</p>
+  ${_accessRole==='admin'?`<div class="flt"><label>Compras y aprobaciones por proyecto<select id="opsProject" onchange="ProductOps.overview()">${byBrand(state.projects.filter(p=>!p.tpl&&p.status!=='Archivado')).map(p=>`<option value="${p.id}">${ModernoDaily.escape(p.num+' '+p.name)}</option>`).join('')}</select></label><button class="btn btn-dark" onclick="ProductOps.open(document.getElementById('opsProject').value)">Gestionar pedidos</button></div><div id="opsOverview" class="widget" aria-live="polite"></div>`:''}
+  <h2 class="sec">Seguimiento manual de las fichas</h2>
+  <p class="sub">Etiquetas que el equipo asigna a los productos, agrupadas por proveedor. Los pedidos, recepciones e instalaciones registrados se consultan en Gestionar pedidos.</p>
   <div class="flt" style="display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap">
     <label style="margin:0">Proyecto</label>
     <input list="compProjList" placeholder="Todos — escribe para buscar…" value="${PF?(function(){const pp=projOpts.find(p=>p.id===PF);return pp?pp.num+" "+pp.name:"";})():""}" onchange="compProjSet(this.value)" style="min-width:280px">
@@ -6432,11 +6436,11 @@ function vCompras(){
   <div class="fin-cards" style="grid-template-columns:repeat(4,1fr)">
     ${["Aprobado","Comprado","En Tránsito","Instalado"].map(st=>`
     <div class="fin-card" style="cursor:pointer;${F===st?"outline:2px solid var(--ink)":""}" onclick="state.compFilter=state.compFilter==='${st}'?'':'${st}';render()">
-      <span class="lab">${CST[st]}</span><div class="val" style="font-size:20px">${by(st).length} <small style="font-size:11px;color:var(--ink-faint);font-weight:400">uds</small></div>
+      <span class="lab">${CST[st]}</span><div class="val" style="font-size:20px">${by(st).length} <small style="font-size:11px;color:var(--ink-faint);font-weight:400">fichas</small></div>
       <div style="font-size:11.5px;color:var(--ink-soft)">${fmt(tot(by(st)))}</div>
     </div>`).join("")}
   </div>
-  ${!Object.keys(groups).length?`<div class="empty">Nada ${F?("en «"+CST[F]+"»"):"pendiente"}${PF?" en este proyecto":""} ahora mismo. Los productos entran aquí cuando pasan a Aprobado.</div>`:""}
+  ${!Object.keys(groups).length?`<div class="empty">No hay fichas con estas etiquetas manuales${PF?" en este proyecto":""}.</div>`:""}
   ${Object.entries(groups).sort((a,b)=>tot(b[1])-tot(a[1])).map(([sup,arr])=>`
   <div class="widget" style="margin-bottom:14px">
     <div class="wh"><span>${sup} <span class="cnt" style="background:var(--card);border-radius:99px;padding:1px 8px;font-size:11px;color:var(--ink-soft)">${arr.length}</span></span><i style="font-weight:900;color:var(--ink)">${fmt(tot(arr))}</i></div>
@@ -10524,6 +10528,7 @@ function pickDraftClient(v){
 }
 function saveDoc(){
   const d=state.draft, isF=d.kind==="factura";
+  try{ProjectQuotes.validate(d,ESTUDIO_ID);}catch(e){toast(e.message);return;}
   if(!d.lines.length){ toast("Añade al menos una línea"); return; }
   const cli = d.clientIdx>=0? state.clients[d.clientIdx] : null;
   if(!cli){ toast("Selecciona un cliente de la agenda"); return; }
@@ -10663,13 +10668,21 @@ function editInvoiceRef(ref){
   if(i<0){ toast("No encuentro la factura "+ref); return; }
   loadDoc(i,"factura");
 }
-function listToQuote(pid){
+async function listToQuote(pid){
+  if(_accessRole!=='admin'){toast('Solo un administrador puede preparar presupuestos');return;}
+  const study=ESTUDIO_ID;
   const p = state.projects.find(x=>x.id===pid);
-  const rooms = (p.rooms||[]).filter(r=>roomTotal(r)>0);
-  if(!rooms.length){ toast("Las listas aún no tienen productos con precio — añade algo primero"); return; }
+  if(!p)return;
+  let lines;
+  try{
+    specPrepare(p);persistNow();await cloudFlush();
+    if(_accessRole!=='admin'||ESTUDIO_ID!==study||state.projects.find(x=>x.id===pid)!==p||_cloudBusy||_saveErr||_cloudHash.proyectos!==canon(CLOUD_BLOCKS.proyectos.get()))throw Error('Primero guarda los cambios del proyecto y vuelve a intentarlo');
+    lines=ModernoSpec.rows(p).filter(r=>!r.item.hidden&&!r.item.alt).map(r=>ProjectQuotes.line(r,study,pid));
+    if(!lines.length)throw Error('Añade productos al proyecto antes de preparar el presupuesto');
+  }catch(e){toast(e.message);return;}
   const cliIdx = p.client ? state.clients.findIndex(c=>c.name===p.client) : -1;
   state.draft = { kind:"presupuesto", brand:p.brand, clientIdx:cliIdx,
-    lines: rooms.map(r=>({name:r.name+" — según lista de compra ("+r.sections.reduce((s,x)=>s+x.items.length,0)+" productos)", qty:1, price:+roomTotal(r).toFixed(2)})),
+    lines,projectId:pid,
     iva:{on:true,pct:state.account.vat}, irpf:{on:false,pct:retPct()}, disc:{on:false,pct:10},
     legend:"Presupuesto generado desde las listas de compra de "+p.num+" "+p.name, validUntil:"", num:null, date:new Date().toISOString().slice(0,10), editRef:null };
   state.qView = "nuevo";
@@ -11280,7 +11293,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.36";
+const MODERNO_VER="v3.37";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

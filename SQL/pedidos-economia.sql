@@ -75,7 +75,7 @@ begin
    total:=0;
    for l in select value from jsonb_array_elements(c->'lineas') loop
     cantidad:=(p_datos->'cantidades'->>k)::numeric;devuelto:=coalesce((l->>'devuelto')::numeric,0);
-    if cantidad is null or cantidad<0 or cantidad::text in ('NaN','Infinity','-Infinity') or cantidad>coalesce((l->>'recibido')::numeric,0)-devuelto then raise exception 'La devolucion supera lo recibido disponible';end if;
+    if cantidad is null or cantidad<0 or cantidad::text in ('NaN','Infinity','-Infinity') or cantidad>coalesce((l->>'recibido')::numeric,0)-devuelto-coalesce((l->>'instalado')::numeric,0) then raise exception 'La devolucion supera lo recibido disponible; registra primero la retirada de lo instalado';end if;
     total:=total+cantidad;ls:=ls||jsonb_build_array(l||jsonb_build_object('devuelto',devuelto+cantidad));k:=k+1;
    end loop;
    if total<=0 then raise exception 'Indica unidades devueltas';end if;

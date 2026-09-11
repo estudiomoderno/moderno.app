@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.37 — fichas, presupuestos e instalación
+
+- Presupuestos desde fichas con identidad y copia de características, también desde el proyecto.
+- Solicitudes parciales y límite acumulado de unidades confirmadas entre pedidos.
+- Instalación y retirada por cantidades con historial; devolución limitada al material sin instalar.
+- Resumen de pedidos separado de etiquetas manuales, sin sumar unidades distintas.
+- Validación e instalación detalladas en ENTREGA-V337.md.
+
 ## v3.33 — rutas con idioma y transición
 
 - Rutas limpias /es/ mediante History API, enlaces antiguos compatibles y rutas de detalle de estancias y presentaciones. Apache sirve enlaces directos sin capturar recursos ni API.

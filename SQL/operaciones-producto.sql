@@ -81,9 +81,13 @@ begin
  else
  if jsonb_typeof(p_datos->'items') is distinct from 'array' or jsonb_array_length(p_datos->'items') not between 1 and 200 or length(trim(coalesce(p_datos->>'proveedor','')))=0 then raise exception 'Selecciona productos y proveedor';end if;
  if (select count(distinct x) from jsonb_array_elements(p_datos->'items') x)<>jsonb_array_length(p_datos->'items') then raise exception 'Productos repetidos';end if;
+ if p_datos ? 'cantidades' and (jsonb_typeof(p_datos->'cantidades') is distinct from 'array' or jsonb_array_length(p_datos->'cantidades')<>jsonb_array_length(p_datos->'items')) then raise exception 'Completa las cantidades de la solicitud';end if;
+ k:=0;
  for linea in select value from jsonb_array_elements(p_datos->'items') loop
  snap:=public.app_spec_actual(p,linea);
- cantidad:=(snap->>'qty')::numeric;if cantidad is null or cantidad<=0 or cantidad>1000000 then raise exception 'Cantidad no valida';end if;
+ cantidad:=case when p_datos ? 'cantidades' then (p_datos->'cantidades'->>k)::numeric else (snap->>'qty')::numeric end;
+ if cantidad is null or cantidad<=0 or cantidad>1000000 or cantidad>(snap->>'qty')::numeric or cantidad::text in ('NaN','Infinity','-Infinity') then raise exception 'Cantidad no valida';end if;
+ k:=k+1;
  lineas:=lineas||jsonb_build_array(jsonb_build_object('snapshot',snap,'revision',md5(snap::text),'qty',cantidad));end loop;
  contenido:=jsonb_build_object('proveedor',trim(p_datos->>'proveedor'),'lineas',lineas,'ofertas','[]'::jsonb,'nota',left(coalesce(p_datos->>'nota',''),2000));
  insert into public.app_operaciones(id,estudio_id,proyecto_id,tipo,estado,contenido,actor) values(id,p_estudio,p_proyecto,'solicitud','preparada',contenido,auth.uid());
@@ -122,6 +126,11 @@ begin
  snap:=public.app_spec_actual(p,linea->'snapshot'->'id');
  if md5(snap::text)<>linea->>'revision' then raise exception 'Una ficha ha cambiado; prepara una nueva solicitud' using errcode='PT409';end if;
  if not exists(select 1 from public.app_operaciones where estudio_id=p_estudio and proyecto_id=p_proyecto and tipo='aprobacion' and estado='aprobada' and not contenido ? 'invalidada_en' and contenido->>'revision'=linea->>'revision' and contenido->'snapshot'->'id'=snap->'id') then raise exception 'Falta la aprobacion de esta revision';end if;
+ select coalesce(sum((l->>'qty')::numeric),0) into cantidad from public.app_operaciones ped
+ cross join lateral jsonb_array_elements(ped.contenido->'lineas') l
+ where ped.estudio_id=p_estudio and ped.proyecto_id=p_proyecto and ped.tipo='pedido'
+ and ped.estado in ('confirmado','parcial','recibido') and ped.id<>op.id and l->'snapshot'->'id'=snap->'id';
+ if cantidad+(linea->>'qty')::numeric>(snap->>'qty')::numeric then raise exception 'La cantidad acumulada de pedidos supera la ficha; revisa los pedidos existentes';end if;
  end loop;
  op.estado:='confirmado';contenido:=contenido||jsonb_build_object('confirmado',clock_timestamp());
  elsif p_accion='recibir' then
@@ -137,6 +146,20 @@ begin
  total:=total+cantidad;lineas:=lineas||jsonb_build_array(linea||jsonb_build_object('recibido',recibido));k:=k+1;end loop;
  if total<=0 then raise exception 'Indica alguna cantidad recibida';end if;
  contenido:=jsonb_set(contenido,'{lineas}',lineas);op.estado:=case when completo then 'recibido' else 'parcial' end;
+ elsif p_accion in ('instalar','desinstalar') then
+ if op.tipo<>'pedido' or op.estado not in ('confirmado','parcial','recibido') then raise exception 'El pedido no admite instalaciones';end if;
+ if length(trim(coalesce(p_datos->>'nota','')))<5 then raise exception 'Describe la instalacion o retirada';end if;
+ if jsonb_typeof(p_datos->'cantidades') is distinct from 'array' or jsonb_array_length(p_datos->'cantidades')<>jsonb_array_length(contenido->'lineas') then raise exception 'Completa las cantidades';end if;
+ k:=0;total:=0;
+ for linea in select value from jsonb_array_elements(contenido->'lineas') loop
+ cantidad:=(p_datos->'cantidades'->>k)::numeric;
+ if cantidad is null or cantidad<0 or cantidad::text in ('NaN','Infinity','-Infinity') then raise exception 'Cantidad no valida';end if;
+ recibido:=coalesce((linea->>'instalado')::numeric,0)+case when p_accion='instalar' then cantidad else -cantidad end;
+ if recibido<0 or recibido>coalesce((linea->>'recibido')::numeric,0)-coalesce((linea->>'devuelto')::numeric,0) then raise exception 'La instalacion supera lo recibido disponible o la retirada supera lo instalado';end if;
+ lineas:=lineas||jsonb_build_array(linea||jsonb_build_object('instalado',recibido));k:=k+1;total:=total+cantidad;
+ end loop;
+ if total<=0 then raise exception 'Indica alguna cantidad';end if;
+ contenido:=jsonb_set(contenido,'{lineas}',lineas);
  elsif p_accion='cancelar' then
  if jsonb_array_length(coalesce(contenido->'pagos','[]'))>0 or jsonb_array_length(coalesce(contenido->'abonos','[]'))>0 or jsonb_array_length(coalesce(contenido->'facturas','[]'))>0 then raise exception 'Conserva el pedido con movimientos; utiliza abonos y correcciones';end if;
  if op.estado in ('aprobada','rechazada','recibido','parcial','cancelada') then raise exception 'No se puede cancelar este registro; conserva su historial';end if;
