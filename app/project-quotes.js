@@ -12,6 +12,19 @@ var ProjectQuotes=(()=>{
   return {name:i.name||'Producto',desc:[i.sku,i.dims,i.material,i.color].filter(Boolean).join(' · '),cap:row.room.name||'Productos',qty,price,unit:i.unit||'ud',cost:i.cost==null||i.cost===''?null:Number(i.cost),source};
  }
  function references(quotes,study,pid,item){return (quotes||[]).flatMap(q=>(q.lines||[]).filter(l=>!l.hidden&&l.source?.study===study&&l.source.project===pid&&l.source.item===item).map(l=>({ref:q.ref,status:q.status||'pend',qty:l.qty,snapshot:copy(l.source.snapshot)})));}
+ function trace(quotes,study,p){
+  const rows=ModernoSpec.rows(p);
+  return (quotes||[]).filter(q=>q.projectId===p.id).flatMap(q=>(q.lines||[]).map((l,index)=>{
+   const src=l.source,hasSource=src?.study===study&&src.project===p.id,matches=hasSource?rows.filter(r=>r.item.id===src.item):[];
+   const current=matches.length===1?matches[0]:null,changed=current&&JSON.stringify([...fields,"room_id","room"].map(k=>snapshot(current)[k]??null))!==JSON.stringify([...fields,"room_id","room"].map(k=>src.snapshot?.[k]??null));
+   return {ref:q.ref,status:q.status||'pend',index,name:l.name,qty:l.qty,unit:l.unit||'ud',sourceQty:hasSource?src.snapshot?.qty:null,origin:!src?'sin_origen':!hasSource?'otro_origen':matches.length>1?'ambiguo':!current?'ausente':changed?'modificada':'coincide',alternative:!!current?.item.alt};
+  }));
+ }
+ function audit(pid){
+  if(_accessRole!=='admin')return;const ps=state.projects.filter(p=>p.id===pid);if(ps.length!==1){toast('Proyecto ausente o ambiguo');return;}
+  const p=ps[0],rows=trace(state.quotes,ESTUDIO_ID,p);
+  modal('<h3>Cantidades en presupuestos</h3><p>'+E(p.name)+'</p><p>Cada documento conserva sus propias cantidades y su copia de la ficha. No se suman presupuestos alternativos ni se modifican documentos anteriores.</p>'+rows.map(r=>'<article class="ops-card"><b>'+E(r.ref)+' · '+E(r.name)+'</b><p>'+E({pend:'Pendiente',acc:'Aceptado',rej:'Rechazado'}[r.status]||r.status)+' · Documento: '+E(r.qty)+' '+E(r.unit)+(r.sourceQty!=null?' · Cantidad de origen al importar: '+E(r.sourceQty):'')+'</p><small>'+E({sin_origen:'Línea histórica o manual sin vínculo; no se adivina por nombre',otro_origen:'Origen de otro ámbito; revisar',ambiguo:'Identidad de origen ambigua',ausente:'Ficha de origen no disponible',modificada:'La ficha actual difiere de la copia del documento',coincide:'La ficha coincide con la copia de origen'}[r.origin])+(r.alternative?' · La ficha ahora está marcada como alternativa':'')+'</small></article>').join('')+(rows.length?'':'<p>No hay líneas de presupuesto vinculadas a este proyecto.</p>')+'<button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>');
+ }
  function validate(draft,study){for(const l of draft.lines||[])if(l.source&&(l.source.study!==study||l.source.project!==draft.projectId))throw Error('Las fichas añadidas pertenecen a otro proyecto. Conserva su proyecto o retira esas líneas.');}
  function links(pid,item){if(_accessRole!=='admin')return '';const refs=references(state.quotes,ESTUDIO_ID,pid,item);return refs.length?'<small>Presupuestos vinculados: '+refs.map(r=>E(r.ref)+' ('+E({pend:'pendiente',acc:'aceptado',rej:'rechazado'}[r.status]||r.status)+')').join(' · ')+'</small>':'';}
  function open(){
@@ -33,5 +46,5 @@ var ProjectQuotes=(()=>{
    s.draft.lines.push(...additions);selection=null;closeModal();render();toast('Fichas añadidas con su referencia de origen');
   }catch(e){toast(e.message);}
  }
- return {snapshot,line,references,validate,links,open,add};
+ return {snapshot,line,references,validate,links,open,add,trace,audit};
 })();

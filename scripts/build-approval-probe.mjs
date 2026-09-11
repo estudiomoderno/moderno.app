@@ -1,0 +1,24 @@
+import fs from 'node:fs';
+let sql=fs.readFileSync(new URL('./sql/recorrido-base.sql',import.meta.url),'utf8');
+sql=sql.replace('end$$;\nreset role;',()=>`
+ r:=public.app_operaciones_lee(e,'337001');select x into a from jsonb_array_elements(r) x where x->>'tipo'='aprobacion';
+ select contenido into req from public.datos_estudio where estudio_id=e and bloque='proyectos';
+ perform public.guardar_bloque_versionado(e,'proyectos',jsonb_set(req,'{0,rooms,0,sections,0,items,0,material}','"Metal"'),d.updated_at) from public.datos_estudio d where d.estudio_id=e and bloque='proyectos';
+ r:=public.app_operaciones_lee(e,'337001');
+ insert into recorrido values('acabado_invalida_aprobacion',exists(select 1 from jsonb_array_elements(r) x where x->>'id'=a->>'id' and x->>'vigente'='false'));
+ perform public.guardar_bloque_versionado(e,'proyectos',req,d.updated_at) from public.datos_estudio d where d.estudio_id=e and bloque='proyectos';
+ r:=public.app_operaciones_lee(e,'337001');
+ insert into recorrido values('volver_a_revision_no_reactiva',exists(select 1 from jsonb_array_elements(r) x where x->>'id'=a->>'id' and x->>'vigente'='false'));
+ insert into recorrido values('pedido_anterior_conserva_copia',exists(select 1 from jsonb_array_elements(r) x where x->>'id'=o->>'id' and x#>'{contenido,lineas}'=o#>'{contenido,lineas}'));
+ a:=public.app_operaciones_accion(e,'337001','aprobacion','{"item":"silla337"}',gen_random_uuid());
+ insert into recorrido values('nueva_solicitud_necesita_respuesta',a->>'estado'='pendiente');
+ perform public.guardar_bloque_versionado(e,'proyectos',jsonb_set(req,'{0,rooms,0,sections,0,items,0,qty}','3'),d.updated_at) from public.datos_estudio d where d.estudio_id=e and bloque='proyectos';
+ fallo:=false;begin perform public.portal_aprobacion_decidir('recorridoficticio337',(a->>'id')::uuid,a#>>'{contenido,revision}','aprobada',gen_random_uuid());exception when sqlstate 'PT409' then fallo:=true;end;
+ insert into recorrido values('cantidad_cambiada_rechaza_respuesta_antigua',fallo);
+ perform public.guardar_bloque_versionado(e,'proyectos',jsonb_set(req,'{0,rooms,0,sections,0,items,0,alt}','true'),d.updated_at) from public.datos_estudio d where d.estudio_id=e and bloque='proyectos';
+ fallo:=false;begin perform public.app_operaciones_accion(e,'337001','aprobacion','{"item":"silla337"}',gen_random_uuid());exception when others then fallo:=sqlerrm='La ficha no esta activa';end;
+ insert into recorrido values('alternativa_no_aprobable',fallo);
+end$$;
+reset role;`);
+sql=sql.replace('select * from recorrido;','select count(*) as comprobaciones,bool_and(correcto is true) as todas_correctas,jsonb_agg(nombre) filter(where correcto is distinct from true) as fallos from recorrido;');
+if(!process.argv[2]||!/rollback;\s*$/i.test(sql))throw Error('Salida y rollback obligatorios');fs.writeFileSync(process.argv[2],sql);
