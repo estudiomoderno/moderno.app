@@ -10,7 +10,7 @@ El estudio sintético tiene sus propios registros y un archivo de ensayo. Ningú
 
 - Funciones Edge y sus ajustes: restauradas y comprobadas en este ensayo.
 - Proveedor Google de inicio de sesión: el nuevo clon lo muestra desactivado. La prueba de correo/contraseña no acredita OAuth Google. Requiere un cliente de pruebas con su callback y configuración propios; no copiar sin control la configuración de producción.
-- Servicio PHP de invitaciones y su configuración de alojamiento/SMTP: no está incluido en la copia de Supabase ni en el repositorio. Se preparó el modo manual `backup-service` del workflow de copias para respaldar por FTPS la carpeta api al Drive privado. Su primera ejecución está pendiente de autorización específica solicitada al usuario por la revisión automática. No se ha efectuado esa exportación ni un nuevo envío de correo.
+- Servicio PHP de invitaciones y su configuración de alojamiento/SMTP: no está incluido en la copia de Supabase ni en el repositorio. Se preparó el modo manual `backup-service` del workflow de copias para respaldar por FTPS la carpeta api al Drive privado. El usuario autorizó expresamente copiar código y configuración al Drive empresarial. Los intentos se detuvieron antes de descargar por discrepancia entre el nombre FTP y su certificado TLS (código 62). No se ha efectuado esa exportación ni un nuevo envío de correo.
 
 Por tanto, el núcleo de acceso por contraseña, datos, archivos y calendario está comprobado; no declarar recuperado de extremo a extremo todo el servicio externo de correo y OAuth.
 
@@ -23,3 +23,9 @@ Por tanto, el núcleo de acceso por contraseña, datos, archivos y calendario es
 5. Recuperar por separado el backend PHP y configurar correo/OAuth en un entorno sin envíos reales. Verificar dependencias y secretos antes de abrir el servicio.
 
 `backup-service` usa FTPS con validación de certificado y solo comandos de lectura. Rechaza enlaces simbólicos, cambios de inventario y contenido fuera de api. Guarda la copia en una carpeta privada `servicio-*`, verifica su contenido por descarga y escribe COMPLETE.json al final. No publica código ni configuración privados en logs o artefactos de GitHub. La copia de código no demuestra por sí sola el funcionamiento de SMTP ni que incluya configuraciones externas al directorio api.
+
+## Intentos autorizados y bloqueo técnico
+
+El 11 de septiembre se ejecutaron 34594792073, 34594952587 y 34595074736. Los dos últimos incorporaron diagnóstico por etapas, clase y código numérico, sin mostrar host, rutas privadas, mensajes del servidor ni credenciales. El último confirmó SSLCertVerificationError / 62 durante la negociación FTPS, antes del inventario y de la transferencia. La conexión temporal a Google funcionó; no hubo subida del servicio ni marcador COMPLETE. No se alteraron servidor ni datos del CRM.
+
+Pendiente identificar el proveedor/panel de alojamiento y confirmar allí el nombre FTPS cubierto por su certificado. El usuario ya autorizó esta copia concreta: no pedir de nuevo permiso para la misma operación. No desactivar validación TLS ni adoptar un nombre obtenido únicamente de una conexión no autenticada. Corregir el destino contra información fiable del proveedor, repetir backup-service y comprobar COMPLETE antes de declarar la copia terminada. Estos fallos manuales no reemplazan ni invalidan la última copia programada de Storage.
