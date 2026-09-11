@@ -1,6 +1,6 @@
 # v3.40 — Identidad y diagnóstico sin fusión
 
-Estado: candidato validado, publicación pendiente.
+Estado: publicada y verificada. Commit d2c1efe3fddbf7468aedde3fc0ead6c58f69c3e4; Actions 34613450326 completado correctamente. index.html, specifications.js y spec-audit.js responden HTTP 200 y coinciden con el código local normalizando finales de línea.
 
 «Revisar referencias» en el proyecto ofrece al administrador un diagnóstico de identificadores ausentes/repetidos y referencias no resolubles. Indica si cada ficha es independiente, procede de biblioteca o tiene origen ausente/ambiguo. La consulta no modifica datos, fusiona homónimos ni asigna un maestro por nombre.
 
