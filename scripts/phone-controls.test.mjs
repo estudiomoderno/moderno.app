@@ -27,5 +27,6 @@ test('legacy text and long numbers are never silently truncated',()=>{
 test('rendering preserves saved value, escapes attributes and supplies fiscal country',()=>{
  const html=phone.field('912 345 678',{España:'ES',Portugal:'PT'},'Portugal','id="test"');
  assert.match(html,/value="912 345 678"/);assert.match(html,/data-country="PT"/);
- assert.match(phone.field('" onfocus="evil',{España:'ES'},'España'),/value="&quot; onfocus=&quot;evil"/);
+  assert.match(phone.field('" onfocus="evil',{España:'ES'},'España'),/value="&quot; onfocus=&quot;evil"/);
+ assert.match(phone.field('+852 5123 4567',{España:'ES'},'España'),/value="HK" selected/);
 });

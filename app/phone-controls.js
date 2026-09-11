@@ -36,7 +36,8 @@
   }
   function field(value,countries,fiscalCountry,attrs=''){
     const country=countryFor(value,countries[fiscalCountry]||'ES');
-    const options=Object.entries(countries).filter(([,iso])=>lib.isSupportedCountry(iso)).map(([name,iso])=>`<option value="${iso}" ${iso===country?'selected':''}>${esc(name)} (+${lib.getCountryCallingCode(iso)})</option>`).join('');
+    const names=new Intl.DisplayNames(['es'],{type:'region'}), labels=Object.fromEntries(Object.entries(countries).map(([name,iso])=>[iso,name]));
+    const options=lib.getCountries().map(iso=>[labels[iso]||names.of(iso),iso]).sort((a,b)=>a[0].localeCompare(b[0],'es')).map(([name,iso])=>`<option value="${iso}" ${iso===country?'selected':''}>${esc(name)} (+${lib.getCountryCallingCode(iso)})</option>`).join('');
     return `<span class="phone-control" data-country="${country}"><span class="phone-country"><img alt="" src="/phone-flags/${country.toLowerCase()}.svg"><select aria-label="País y prefijo del teléfono" onchange="ModernoPhone.select(this)">${options}</select></span><input type="tel" inputmode="tel" autocomplete="tel" aria-label="Número de teléfono" ${attrs} value="${esc(value)}" placeholder="+${lib.getCountryCallingCode(country)}" oninput="ModernoPhone.edit(this)"></span>`;
   }
   function sync(box,country){box.dataset.country=country;box.querySelector('select').value=country;box.querySelector('img').src='/phone-flags/'+country.toLowerCase()+'.svg';box.querySelector('input').placeholder='+'+lib.getCountryCallingCode(country);}

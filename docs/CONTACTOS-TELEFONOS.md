@@ -1,4 +1,4 @@
-# Contactos y teléfonos — v3.49
+# Contactos y teléfonos — v3.49.1
 
 Se añaden los cinco SVG aportados por el usuario a las categorías de contactos. Clientes conserva el icono de contactos existente. Los SVG están en la raíz pública: el alojamiento intercepta `/icons/` y no debe usarse esa ruta.
 
