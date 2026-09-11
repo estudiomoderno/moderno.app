@@ -56,3 +56,5 @@ La descripción y el desplegable de alcance se retiran del listado; la descripci
 Selector Tarjetas/Lista con los SVG aportados por el usuario, botones de tamaño fijo y estado aria-pressed. Cambiar de vista conserva filtros y página; solo cambia la presentación local. Las descripciones permanecen fuera de ambas vistas.
 
 Filtros del catálogo de 44 px, alineación vertical centrada y un solo indicador de apertura. select-controls.css usa arrow-big-down en selectores simples y campos con lista, con adaptación al modo oscuro y al selector nativo/base-select. No cambia las flechas de navegación del menú. Iconos originales conservados en app/icons. Sin cambios de datos ni SQL. 269 pruebas correctas; alternancia de vistas y conservación de filtros comprobadas visualmente.
+
+Ajuste de despliegue v3.48.1: el servidor devuelve 404 para /icons/. Los SVG se sirven desde /view-list.svg, /view-cards.svg y /select-arrow.svg, conservando el contenido aportado. CSS con nueva versión de caché.

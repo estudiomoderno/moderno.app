@@ -27,7 +27,7 @@ body.dark .catalog-board{--catalog-sand:#37332c;--catalog-sage:#2d3732;--catalog
 .catalog-view-switch button{width:36px;height:34px;display:grid;place-items:center;border-radius:8px;color:var(--ink-soft)}
 .catalog-view-switch button[aria-pressed=true]{background:var(--catalog-sand);color:var(--ink)}
 .catalog-view-icon{display:block;width:21px;height:21px;background:currentColor;mask:var(--view-icon) center/contain no-repeat}
-.catalog-view-list{--view-icon:url('/icons/list.svg')}.catalog-view-crop-1-1{--view-icon:url('/icons/crop-1-1.svg')}
+.catalog-view-list{--view-icon:url('/view-list.svg')}.catalog-view-crop-1-1{--view-icon:url('/view-cards.svg')}
 .catalog-list{display:flex;flex-direction:column;gap:10px}
 .catalog-list .catalog-card{display:grid;grid-template-columns:80px minmax(160px,1fr) minmax(130px,180px) 155px 106px;grid-template-areas:'code name family price actions';align-items:center;gap:18px;padding:18px 20px;border-radius:14px}
 .catalog-list .catalog-card:hover{transform:none}

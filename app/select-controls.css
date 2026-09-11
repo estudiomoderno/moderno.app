@@ -1,7 +1,7 @@
 /* Form selectors only: navigation chevrons are deliberately untouched. */
 body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select),
 body input[list]:not(.sidebar input):not(#mNav input){
- background-image:url('/icons/arrow-big-down.svg')!important;
+ background-image:url('/select-arrow.svg')!important;
  background-repeat:no-repeat!important;background-position:right 12px center!important;background-size:17px!important;
  padding-right:39px!important;line-height:1.35;vertical-align:middle;
 }
@@ -12,6 +12,6 @@ body input[list]::-webkit-calendar-picker-indicator{opacity:0}
 @supports (appearance:base-select){
  body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select),
  body.dark select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select){appearance:base-select;display:inline-flex;align-items:center;gap:10px;background-image:none!important;padding-right:14px!important}
- body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select)::picker-icon{content:'';display:block;width:17px;height:17px;flex:0 0 17px;margin:0 0 0 auto;color:inherit;background:currentColor;mask:url('/icons/arrow-big-down.svg') center/contain no-repeat;rotate:0deg}
+ body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select)::picker-icon{content:'';display:block;width:17px;height:17px;flex:0 0 17px;margin:0 0 0 auto;color:inherit;background:currentColor;mask:url('/select-arrow.svg') center/contain no-repeat;rotate:0deg}
  body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select)::picker(select){appearance:base-select}
 }
