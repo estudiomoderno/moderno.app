@@ -1,0 +1,30 @@
+name: Vigilar antigüedad de las copias
+
+on:
+  schedule:
+    - cron: '47 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/monitor-backups.yml', 'scripts/check-backup-health.mjs']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monitor-backups
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Verificar la lógica del supervisor
+        run: node --test scripts/check-backup-health.test.mjs
+      - name: Comprobar última copia programada
+        run: node scripts/check-backup-health.mjs
