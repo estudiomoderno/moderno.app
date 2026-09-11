@@ -61,4 +61,4 @@ Versión publicada y verificada; entrega en ENTREGA-V335.md. Cerrado el ensayo a
 
 ## Continuación — avisos, servicio y compras
 
-Supervisión horaria en Codex activada y comprobada; alcance y dependencia del equipo local en MONITORIZACION-COPIAS.md. Recuperación funcional del núcleo comprobada con 15 pruebas HTTP; correo PHP y OAuth tienen límites explícitos en RECUPERACION-SERVICIO.md. Candidato v3.36 de economía de compras documentado en ENTREGA-V336.md; consultar su sección de publicación para distinguir candidato de despliegue confirmado.
+Supervisión horaria en Codex activada y comprobada; alcance y dependencia del equipo local en MONITORIZACION-COPIAS.md. Recuperación funcional del núcleo comprobada con 15 pruebas HTTP; correo PHP y OAuth tienen límites explícitos en RECUPERACION-SERVICIO.md. v3.36 de economía de compras publicada y verificada (commit ee6fb79, ejecución 34585008205); instalación con datos, pedidos, historial e inventario conservados. Detalles, pruebas y límites en ENTREGA-V336.md. La exportación privada del servicio PHP sigue pendiente de respuesta a la autorización específica exigida por revisión automática.

@@ -30,6 +30,12 @@ Interfaz de ensayo: acceso con cuenta ficticia, revisión de 120 EUR de base y 2
 
 El 11 de septiembre se instaló el paquete en producción. Inventario previo: 18 bloques, 1 operación, 2 eventos y 121 objetos. La transacción terminó con datos_intactos, pedidos_intactos, historial_intacto y archivos_intactos en true. No se ejecutaron registros de ensayo en producción. El despliegue de la interfaz se confirma por separado.
 
+## Publicación confirmada
+
+Interfaz publicada el 11 de septiembre de 2026 con el commit ee6fb79641e29fb98c2c02953461aac18e94a7e9. GitHub Actions terminó correctamente: https://github.com/estudiomoderno/moderno.app/actions/runs/34585008205. Los cuatro archivos modificados de app (index.html, product-operations.js, purchase-finance.js y appearance-b.css) devolvieron HTTP 200 y coincidieron con el contenido local, normalizando solamente finales de línea.
+
+El despliegue repitió las pruebas antes de subir recursos y publicó index.html al final. No se forzaron recargas de sesiones existentes. GitHub avisó de acciones antiguas ejecutadas en Node 24; el trabajo terminó correctamente. Mantener esta actualización de dependencias como mantenimiento separado.
+
 ## Límites
 
 Los movimientos de compras y los estados contables siguen siendo registros separados: vincular una factura no la marca pagada ni genera asientos nuevos. No incluye múltiples divisas, envío automático a proveedores ni pagos bancarios. El importe del abono lo confirma el equipo a partir del documento del proveedor; no se deduce automáticamente de las unidades devueltas.
