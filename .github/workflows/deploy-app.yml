@@ -3,7 +3,7 @@ name: Desplegar app.moderno.app
 on:
   push:
     branches: [main]
-    paths: ['app/**', '.github/workflows/deploy-app.yml']
+    paths: ['app/**', 'mailer/**', '.github/workflows/deploy-app.yml']
   workflow_dispatch:
 
 permissions:
@@ -25,11 +25,47 @@ jobs:
           node-version: '24'
       - name: Comprobar candidato
         run: node --test scripts/*.test.mjs
+      - name: Comprobar autorización de invitaciones sin enviar correo
+        run: |
+          if ! command -v php >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y php-cli
+          fi
+          php -l mailer/enviar-invitacion.php
+          php scripts/invitation-auth.test.php
       - name: Separar recursos de la entrada
         run: |
           mkdir -p release-assets release-entry
           cp -a app/. release-assets/
           mv release-assets/index.html release-entry/index.html
+          mkdir -p release-mail-support/api release-mail-entry/api
+          cp mailer/autorizar-invitacion.php release-mail-support/api/
+          cp mailer/enviar-invitacion.php release-mail-entry/api/
+
+      - name: Publicar comprobación de permisos del correo
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./release-mail-support/
+          state-name: .ftp-mail-support-state.json
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/config.php
+      - name: Publicar servicio de invitaciones protegido
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./release-mail-entry/
+          state-name: .ftp-mail-entry-state.json
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/config.php
 
       - name: Subir recursos antes del HTML
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

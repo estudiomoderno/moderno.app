@@ -4491,21 +4491,29 @@ function abreMailtoInv(d){
       toast("Se ha abierto tu correo con la invitación lista para enviar ✉");
 }
 const MAIL_FN="/api/enviar-invitacion.php"; // motor de correo en el propio servidor — igual para todos los estudios
-function mailFnSend(d){
-  const url=MAIL_FN;
-  return fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({nombre:d.name||d.nombre||"", email:d.email, rol:d.role||d.rol||"Colaborador",
-      estudio:state.account.name||"nuestro estudio", remitente:state.userName||""})})
-    .then(r=>r.json()).then(j=>{ if(!j||!j.ok) throw new Error((j&&j.error)||"fallo"); return j; });
+async function mailFnSend(d,study=ESTUDIO_ID){
+  if(!sb||!study||_accessRole!=='admin')throw Error('Solo un administrador puede enviar invitaciones');
+  const {data,error}=await sb.auth.getSession();
+  if(error||!data?.session?.access_token||ESTUDIO_ID!==study||_accessRole!=='admin')throw Error('Comprueba tu sesión y vuelve a intentarlo');
+  const r=await fetch(MAIL_FN,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+data.session.access_token},body:JSON.stringify({email:d.email,estudio_id:study})});
+  const j=await r.json();if(!r.ok||!j?.ok)throw Error(j?.error||'No se pudo confirmar el envío');return j;
 }
-function saveUser(i){
+async function saveUser(i){
+  if(_accessRole!=='admin'){toast('Solo el administrador puede invitar');return;}
+  const study=ESTUDIO_ID;
   const d = {name:document.getElementById("usN").value||"Usuario", email:document.getElementById("usE").value, role:document.getElementById("usR").value};
+  d.email=d.email.trim().toLowerCase();
+  if(i<0&&d.email){
+    try{const {error}=await sb.from('invitaciones').upsert({estudio_id:study,email:d.email,rol:d.role==='Administrador'?'admin':'miembro'},{onConflict:'estudio_id,email'});if(error)throw error;
+      if(ESTUDIO_ID!==study||_accessRole!=='admin')throw Error('El estudio ha cambiado; revisa la invitación en el estudio original');
+    }catch(e){toast('No se pudo crear la invitación: '+e.message);return;}
+  }
   if(i>=0){ state.users[i]=d; toast("Rol actualizado ✓"); }
   else {
     state.users.push(d);
     if(d.email){
-      mailFnSend(d).then(()=>{ toast("Invitación enviada desde team@moderno.app ✉"); })
-        .catch(()=>{ abreMailtoInv(d); toast("El correo automático falló — abro tu correo como plan B"); });
+      mailFnSend(d,study).then(()=>{ toast("Invitación enviada desde team@moderno.app ✉"); })
+        .catch(e=>{ toast('Invitación creada. '+e.message); });
     }
     else {
       toast("Miembro añadido — sin email no puedo preparar la invitación");
@@ -11293,7 +11301,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.37";
+const MODERNO_VER="v3.38";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11922,21 +11930,24 @@ function invAutoLoad(){
     .catch(()=>{});
 }
 function invEnviar(){
+  if(!sb||_accessRole!=='admin'){toast('Solo un administrador puede invitar');return;}
+  const study=ESTUDIO_ID;
   const em=(document.getElementById("invMail")||{}).value||"", rolNombre=(document.getElementById("invRol")||{}).value||"Colaborador";
   const rol = (rolNombre==="Administrador")?"admin":"miembro";
   const email=em.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast("Escribe un correo válido"); return; }
-  sb.from("invitaciones").upsert({estudio_id:ESTUDIO_ID, email, rol}, {onConflict:"estudio_id,email"})
+  sb.from("invitaciones").upsert({estudio_id:study, email, rol}, {onConflict:"estudio_id,email"})
     .then(({error})=>{ if(error){ toast("No se pudo invitar: "+error.message); return; }
+      if(ESTUDIO_ID!==study||_accessRole!=='admin'){toast('La invitación se creó en el estudio original; revísala allí');return;}
       if(!state.clients.some(x=>(x.email||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===email)){
         state.clients.push({num:nextClientNum("Team"), name:email.split("@")[0], fiscal:"", type:"Team",
           brand:wsOrder[0], phone:"", email:email, nif:"", addr:"", city:"", country:"España",
           notes:"Invitado al estudio como "+rolNombre+" — pendiente de entrar"});
         persistSoon();
       }
-      mailFnSend({nombre:email.split("@")[0], email, rol:rolNombre})
+      mailFnSend({email},study)
         .then(()=>toast("Invitación enviada desde team@moderno.app ✉ — cuando "+email+" entre, se unirá al estudio"))
-        .catch(()=>toast("Invitación creada, pero el correo automático falló — usa ✉ Copiar mensaje y envíaselo tú"));
+        .catch(e=>toast('Invitación creada. '+e.message));
       _invsFor=null; invAutoLoad(); });
 }
 function invCopy(email){

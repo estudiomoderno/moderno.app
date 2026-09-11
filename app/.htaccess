@@ -1,6 +1,7 @@
 # Rutas SPA, incluidas /es/proyectos y detalles. No reescribir recursos ni servicios.
 Options -MultiViews
 RewriteEngine On
+RewriteRule ^ - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 RewriteRule ^(?:api|brand|auth|storage|\.well-known)(?:/|$) - [L]
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
