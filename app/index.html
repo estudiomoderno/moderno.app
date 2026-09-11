@@ -1036,8 +1036,11 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <style>#catalogSearch,#catalogPickerSearch{border-radius:12px;border:1px solid var(--card);padding:10px 12px;background:var(--white);color:var(--ink);font:inherit}</style>
 <script src="/catalog-core.js?v=346"></script>
 <link rel="stylesheet" href="/catalog.css?v=3481">
-<link rel="stylesheet" href="/select-controls.css?v=3481">
+<link rel="stylesheet" href="/select-controls.css?v=349">
 <script src="/catalog-ui.js?v=348"></script>
+<link rel="stylesheet" href="/contact-controls.css?v=349">
+<script src="/phone-vendor.js?v=1.13.13"></script>
+<script src="/phone-controls.js?v=349"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -5966,6 +5969,10 @@ function typeColorsModal(){
   </div>
   <div class="modal-foot"><button class="btn btn-ghost" onclick="state.typeColors={...TYPE_COLOR_DEF};render();typeColorsModal()">Restaurar</button><button class="btn btn-dark" onclick="closeModal();toast('✓ Colores guardados')">Hecho</button></div>`);
 }
+function contactCategoryIcon(category){
+  const file={"Todos":"todos","Proveedores":"proovedores","Contratistas":"contratistas","Arquitectos / Técnicos":"arquitectos","Team":"team"}[category];
+  return file?`<span class="contact-category-icon" aria-hidden="true" style="--contact-icon:url('/contact-${file}.svg')"></span>`:ico('contactos');
+}
 function vAgenda(){
   ensureClientNums();
   const rows = byBrand(state.clients.map((c,i)=>({...c,__i:i})));
@@ -5982,7 +5989,7 @@ function vAgenda(){
   return `
   <h1 class="big">Esta es tu agenda${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <div class="pill-tabs">${["Clientes","Proveedores","Contratistas","Arquitectos / Técnicos","Team","Todos"].map(x=>`<button class="${tab===x?'on':''}" onclick="state.agendaTab='${x}';render()">${x}</button>`).join("")}</div>
+    <div class="pill-tabs contact-category-tabs">${["Clientes","Proveedores","Contratistas","Arquitectos / Técnicos","Team","Todos"].map(x=>`<button class="${tab===x?'on':''}" onclick="state.agendaTab='${x}';render()">${contactCategoryIcon(x)}${x}</button>`).join("")}</div>
     <button class="btn btn-ghost" style="margin-left:auto" title="Elige el color de cada tipo de contacto" onclick="typeColorsModal()">${ico("paleta")} Colores</button>
     <button class="btn btn-ghost" onclick="importModal()">${ico('import')} Importar contactos</button>
     <button class="btn btn-ghost" title="PDF con el logotipo del estudio, un contacto por fila" onclick="agendaExportPDF()">${ico('pdf')} Exportar</button>
@@ -6913,7 +6920,7 @@ function vAdmin(){
     </div>
     <div class="row2">
       <div><label style="font-size:10px">Pa\u00eds</label><select onchange="state.emitter.country=this.value;persistSoon();toast('Emisor guardado \u2713')">${PAISES.map(x=>`<option ${((state.emitter.country||"Espa\u00f1a")===x)?"selected":""}>${x}</option>`).join("")}</select></div>
-      <div><label style="font-size:10px">Tel\u00e9fono</label><input value="${(state.emitter.phone||"").replace(/"/g,"&quot;")}" placeholder="+34 600 000 000" onchange="state.emitter.phone=this.value;persistSoon();toast('Emisor guardado \u2713')"></div>
+      <div><label style="font-size:10px">Tel\u00e9fono</label>${ModernoPhone.field(state.emitter.phone,PAIS_ISO,state.account?.country,`onchange="state.emitter.phone=this.value;persistSoon();toast('Emisor guardado \u2713')"`)}</div>
     </div>
     <label>Preferencias comerciales</label>
     <div class="row2" style="max-width:520px">
@@ -9903,7 +9910,7 @@ function clientModal(editIdx=-1, presetType){
   <div class="opt-pills" id="clBrand">${wsOrder.map((k,i)=>`<button class="${c.brand===k||(i===0&&!wsOrder.includes(c.brand)&&c.brand!=='both')?'on':''} ${k==='em'?'b-em':''}" data-v="${k}">${BRAND[k].name||"Mi espacio"}</button>`).join("")}${wsOrder.length>1?`<button class="${c.brand==='both'?'on b-both':'b-both'}" data-v="both">Ambas</button>`:""}</div></div>
   <label>Nombre</label><input id="clName" name="name" autocomplete="name" value="${c.name}" placeholder="Estudio Ola">
   <div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>Nombre fiscal</label><input id="clFiscal" name="organization" autocomplete="organization" value="${c.fiscal}" placeholder="Estudio Ola S.L."></div>
-  <div class="row2"><div><label>Teléfono</label><input id="clPhone" name="tel" autocomplete="tel" value="${c.phone}" placeholder="+34 600 000 000"></div><div><label>Email</label><input id="clEmail" name="email" autocomplete="email" value="${c.email||""}" placeholder="hola@cliente.com"></div></div>
+  <div class="row2"><div><label>Teléfono</label>${ModernoPhone.field(c.phone,PAIS_ISO,state.account?.country,'id="clPhone" name="tel"')}</div><div><label>Email</label><input id="clEmail" name="email" autocomplete="email" value="${c.email||""}" placeholder="hola@cliente.com"></div></div>
   <label>Carpeta de archivos <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— interna o de Google Drive / Dropbox / OneDrive</small></label>
   <input id="clFolder" value="${(c.folder||"").replace(/"/g,"&quot;")}" placeholder="https://drive.google.com/… · \\\\servidor\\clientes\\marta">
   <div class="row2"><div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>NIF / CIF</label><input id="clNif" value="${c.nif}" placeholder="B00000000"></div><div><label>País</label><select id="clCountry" name="country" autocomplete="country-name">${paisOptions(c.country)}</select></div></div>
@@ -11054,7 +11061,7 @@ function onboardDraw(){
       <div><label>Nombre de tu estudio</label><input id="obEstudio" value="${D.estudio}" placeholder="Estudio Ola"></div>
     </div>
     <label>Nombre de tu empresa (el nombre fiscal que sale en tus facturas)</label><input id="obNombre" value="${D.nombre}" placeholder="Ej: Moderno Interiorismo S.L.">
-    <div class="row2"><div><label>NIF / CIF</label><input id="obNif" value="${D.nif}" placeholder="00000000X"></div><div><label>Tel\u00e9fono</label><input id="obTel" value="${D.tel}" placeholder="+34 600 000 000"></div></div>
+    <div class="row2"><div><label>NIF / CIF</label><input id="obNif" value="${D.nif}" placeholder="00000000X"></div><div><label>Tel\u00e9fono</label>${ModernoPhone.field(D.tel,PAIS_ISO,state.account?.country,'id="obTel"')}</div></div>
     <div class="row2"><div><label>Direcci\u00f3n</label><input id="obDir" value="${D.dir}" placeholder="Calle Mayor 12, 23006 Ja\u00e9n"></div><div><label>Pa\u00eds</label><select id="obPais">${["Espa\u00f1a","Portugal","Francia","Italia","Alemania","Reino Unido","Andorra","M\u00e9xico","Argentina","Chile","Colombia","Estados Unidos","Otro"].map(p=>`<option ${(D.pais||"Espa\u00f1a")===p?"selected":""}>${p}</option>`).join("")}</select></div></div>`,
     `<h3>\ud83c\udfa8 Tus marcas, tu logo y tus espacios</h3>
     <p style="font-size:12px;color:var(--ink-soft);margin-top:2px">Moderno permite llevar varias marcas con proyectos y contabilidad separados.</p>
@@ -11230,7 +11237,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.48.1";
+const MODERNO_VER="v3.49";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

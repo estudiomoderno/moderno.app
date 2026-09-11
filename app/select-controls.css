@@ -1,17 +1,17 @@
 /* Form selectors only: navigation chevrons are deliberately untouched. */
-body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select),
+body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select):not(.phone-control select),
 body input[list]:not(.sidebar input):not(#mNav input){
  background-image:url('/select-arrow.svg')!important;
  background-repeat:no-repeat!important;background-position:right 12px center!important;background-size:17px!important;
  padding-right:39px!important;line-height:1.35;vertical-align:middle;
 }
-body.dark select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select),
+body.dark select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select):not(.phone-control select),
 body.dark input[list]:not(.sidebar input):not(#mNav input){background-image:var(--select-arrow-light)!important}
 body{--select-arrow-light:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23eeeeec' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 4v8h3.586a1 1 0 0 1 .707 1.707l-6.586 6.586a1 1 0 0 1 -1.414 0l-6.586 -6.586a1 1 0 0 1 .707 -1.707h3.586v-8a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1'/%3E%3C/svg%3E")}
 body input[list]::-webkit-calendar-picker-indicator{opacity:0}
 @supports (appearance:base-select){
- body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select),
- body.dark select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select){appearance:base-select;display:inline-flex;align-items:center;gap:10px;background-image:none!important;padding-right:14px!important}
- body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select)::picker-icon{content:'';display:block;width:17px;height:17px;flex:0 0 17px;margin:0 0 0 auto;color:inherit;background:currentColor;mask:url('/select-arrow.svg') center/contain no-repeat;rotate:0deg}
- body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select)::picker(select){appearance:base-select}
+ body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select):not(.phone-control select),
+ body.dark select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select):not(.phone-control select){appearance:base-select;display:inline-flex;align-items:center;gap:10px;background-image:none!important;padding-right:14px!important}
+ body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select):not(.phone-control select)::picker-icon{content:'';display:block;width:17px;height:17px;flex:0 0 17px;margin:0 0 0 auto;color:inherit;background:currentColor;mask:url('/select-arrow.svg') center/contain no-repeat;rotate:0deg}
+ body select:not([multiple]):not([size]):not(.sidebar select):not(#mNav select):not(.phone-control select)::picker(select){appearance:base-select}
 }
