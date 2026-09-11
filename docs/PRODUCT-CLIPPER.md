@@ -1,6 +1,6 @@
-# Product Clipper — candidato y ensayo aislado
+# Product Clipper — v3.50
 
-Estado a 12/09/2026: backend y SQL desplegados y probados exclusivamente en **Moderno App - Recuperacion aislada v335 20260911** (`szbswxpkhidywaosdfcg`), con autorización expresa. Producción continúa en v3.49.1. La interfaz de este candidato todavía no se ha publicado.
+Estado a 12/09/2026: v3.50 publicada en app.moderno.app tras autorización expresa adicional para producción. Backend y SQL se ensayaron primero en **Moderno App - Recuperacion aislada v335 20260911** (`szbswxpkhidywaosdfcg`). En producción se instalaron tablas y función antes del frontend; la huella de todos los bloques existentes permaneció idéntica después de la instalación. Storage sigue privado y no se crearon capturas de prueba en producción.
 
 ## Funcionamiento y contrato
 
@@ -34,7 +34,7 @@ No se usan cookies de usuario, proxies para sortear bloqueos, CAPTCHA ni sesione
 5. Desplegar `supabase/functions/product-clipper/index.ts` con los módulos de su carpeta y la configuración de `supabase/config.toml`. En editor web se puede empaquetar con esbuild, plataforma node, formato esm, externos `npm:*` y `canvas`. No pegar un paquete truncado.
 6. Variables automáticas Supabase permanecen en el servidor. `ANTHROPIC_API_KEY` es opcional y **no se ha añadido ni verificado en este ensayo**: el flujo manual se ha probado sin depender de IA. Si se configura, Haiku solo sugiere categoría/estancia de listas cerradas; nunca cambia el destino, precio o aprobación. `CLIPPER_TEST_ORIGINS` admite orígenes de ensayo explícitos; en producción vacía salvo necesidad justificada. Nunca guardar claves en archivos, commits ni documentación.
 7. Probar dos usuarios y estudios ficticios sin reutilizar cuentas del piloto; verificar captura, lectura privada, imágenes, absorción idempotente y documentos de control. Registrar resultados reales, incluidos bloqueos de tiendas.
-8. La publicación del frontend debe hacerse después del backend, con versión y caché coherentes, pruebas visuales y verificación de la copia de seguridad. No se ha ejecutado este paso en el ensayo del 12/09.
+8. La publicación del frontend debe hacerse después del backend, con versión y caché coherentes, pruebas visuales y verificación de la copia de seguridad. Ejecutado el 12/09 tras la autorización de producción y las comprobaciones previas.
 
 Reversión: deshabilitar el botón/importador en una versión del frontend y dejar las tablas/ficheros existentes conservados. No borrar capturas absorbidas ni imágenes utilizadas, ni restaurar todo el estudio sobre ediciones posteriores. Un fallo de captura queda separado y no debe convertirse en producto automáticamente.
 
@@ -47,3 +47,9 @@ Reversión: deshabilitar el botón/importador en una versión del frontend y dej
 No hay extensión Chrome entregada. Una futura MV3 puede separar content script (datos DOM de la pestaña), service worker (sesión/transporte) y panel lateral (destino/revisión). Enviará el mismo contrato de staging; nunca escribirá directamente en bloques ni incluirá service_role o claves de IA. La captura de contenido visible requerirá contrato y validaciones adicionales; no elimina los controles de origen, archivos, destinos o confirmación.
 
 Referencias: [Supabase Auth en funciones](https://supabase.com/docs/guides/functions/auth), [Deno red/TLS](https://docs.deno.com/api/deno/network/), [shim HTTP de Supabase](https://github.com/supabase/edge-runtime/blob/main/ext/node/polyfills/http.ts), [Product](https://schema.org/Product), [service workers MV3](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers).
+
+## Publicación verificada
+
+Commit de publicación: 17a59c6f8b9be25a4f4cece4eea90c0c6098501b. [Actions completado correctamente](https://github.com/estudiomoderno/moderno.app/actions/runs/34657101246). HTML, JS y CSS respondieron HTTP 200 y coincidieron con el candidato; HTML identifica v3.50. Función a través de auth.moderno.app: sin sesión y JWT inválido devuelven 401; preflight del origen app.moderno.app devuelve 204. La copia física de base de datos disponible era del 11/09 a las 00:31:45 UTC; copia de archivos programada correcta del 11/09 a las 02:32:53 UTC. No se ejecutó ninguna restauración.
+
+Comprobación visual en producción: el estudio terminó de cargar, Biblioteca mostró el botón de importación y abrió el diálogo con URL, revisión y estado Borrador. Se cerraron ambos formularios sin capturar ni guardar productos del piloto.
