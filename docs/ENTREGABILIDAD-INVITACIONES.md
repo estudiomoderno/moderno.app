@@ -4,6 +4,8 @@ El usuario informa de que la validación externa funciona y de que la invitació
 
 También informa de que aparece en no deseado en Apple Mail y confirma después que el buzón es iCloud. Hay, por tanto, informes del usuario para Gmail e iCloud. Falta determinar si los mensajes observados son anteriores o posteriores al despliegue; este dato no demuestra que el arreglo haya fallado ni identifica la causa del filtrado.
 
+Actualización del usuario: responde «nueva» al preguntar si la invitación de iCloud es posterior a las correcciones. Queda registrado que una invitación nueva sigue llegando a no deseado en iCloud, según su testimonio. La entregabilidad no está resuelta. Falta contrastar Date/Received y Message-ID para correlacionarla con el despliegue; el testimonio por sí solo no acredita qué código generó ese mensaje. La antigüedad del mensaje Gmail sigue sin confirmar.
+
 ## Corrección del servicio v1.6 (app v3.45)
 
 El código no generaba Date ni Message-ID y enviaba texto/HTML en 8bit sin negociar esa extensión SMTP. Ahora añade fecha e identificador aleatorio, separadores MIME aleatorios y quoted-printable con CRLF y líneas acotadas. Se mantienen texto alternativo, HTML, logo y enlace a https://app.moderno.app. From y MAIL FROM siguen usando el usuario SMTP privado; Reply-To sigue siendo hola@moderno.app.
