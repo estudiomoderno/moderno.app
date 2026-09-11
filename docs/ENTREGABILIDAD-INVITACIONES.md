@@ -2,7 +2,7 @@
 
 El usuario informa de que la validación externa funciona y de que la invitación llega a Gmail, pero a spam. Es una confirmación del usuario; no acredita todos los dispositivos ni la recuperación de archivos.
 
-También informa de que aparece en no deseado en Apple Mail. Apple Mail es el cliente: falta identificar al proveedor del buzón y no se presupone que sea iCloud ni que sea un segundo filtro independiente. Falta determinar si los mensajes observados son anteriores o posteriores al despliegue; este dato no demuestra que el arreglo haya fallado.
+También informa de que aparece en no deseado en Apple Mail y confirma después que el buzón es iCloud. Hay, por tanto, informes del usuario para Gmail e iCloud. Falta determinar si los mensajes observados son anteriores o posteriores al despliegue; este dato no demuestra que el arreglo haya fallado ni identifica la causa del filtrado.
 
 ## Corrección del servicio v1.6 (app v3.45)
 
