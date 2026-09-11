@@ -79,3 +79,9 @@ En el ensayo:
 Se ha localizado una copia de base de datos completada el 11/09/2026 a las 00:31:45 UTC, posterior al commit de v3.35. Se ha solicitado su restauración en un proyecto nuevo de la misma organización y región, sin restaurar sobre producción. El formulario indicó 0 USD adicionales de cómputo y disco. El destino está identificado en el panel privado como recuperación aislada v335 del 11 de septiembre.
 
 La creación ha sido aceptada; la comprobación de contenido todavía está pendiente mientras arranca el proyecto. Ejecutar primero scripts/sql/recuperacion-operaciones-inventario.sql, de solo lectura, antes de instalar o modificar el módulo. La presencia de la estructura no acredita por sí sola la recuperación de registros ni archivos.
+
+### Comprobación de la base restaurada — 11 septiembre 2026
+
+El entorno aislado ya admite consultas. Antes de instalar o modificar el módulo se comprobó: ambas tablas presentes, las seis funciones esperadas presentes, RLS activo en ambas tablas y un disparador de invalidación habilitado. Se recuperaron 18 bloques de datos. El rol anon no tiene SELECT directo sobre operaciones y authenticated no tiene INSERT directo.
+
+La copia contiene cero operaciones y cero eventos: no permite certificar conservación de un historial poblado. Esta comprobación acredita estructura y restricciones inspeccionadas, no sustituye pruebas funcionales completas de permisos ni una comparación de contenido con un manifiesto del punto de copia. Los archivos de Storage no se han recuperado en este nuevo entorno. Ambos límites permanecen pendientes; no declarar recuperación integral validada.
