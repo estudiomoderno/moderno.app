@@ -1,6 +1,6 @@
 # v3.42 — Láminas de estancia con revisiones
 
-Estado: candidato validado; publicación pendiente.
+Estado: publicada y verificada. Commit 2d1374b4380d08889c2dd5f673bfef300bf729a0; Actions 34615382628 correcto. index.html, room-boards.js y appearance-b.css responden HTTP 200 y coinciden con el candidato.
 
 Dos plantillas: Visual y Fichas técnicas. Destinos Cliente, Diseño y Obra para preparar la salida; elegir destino no crea accesos ni envía archivos. Obra excluye precios incluso si se habían marcado antes. Todas las salidas excluyen costes, márgenes, notas internas, proveedor y adjuntos. Las alternativas y fichas ocultas no entran en esta lámina.
 
