@@ -1,6 +1,6 @@
 # Estado actual de Taller
 
-Versión publicada y verificada: v3.38, autorización del correo de invitaciones. 215 pruebas Node, 24 PHP y 10 comprobaciones con SMTP local. GitHub Actions 34609210903 correcto; HTML coincide y servicio de producción rechaza peticiones sin sesión y tokens inválidos. Sin cambios SQL ni correos externos de prueba. Detalles y límites en ENTREGA-V338.md. Incluye el recorrido v3.37 documentado en ENTREGA-V337.md. Los apartados siguientes conservan el historial.
+Versión publicada y verificada: v3.39. Copia fija de presupuesto en pedido y devolución coherente con instalaciones. 219 Node, 18 SQL, Actions34612671632 correcto y recursos coincidentes; ENTREGA-V339.md. Continúa roadmap 3.40–3.45 en ROADMAP-V339-V345.md. El ensayo externo de invitación necesita destinatario/alta autorizados específicamente; no se certifica entrega humana. Los apartados siguientes conservan el historial.
 
 # Estado inicial de TALLER — 9 septiembre 2026
 

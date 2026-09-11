@@ -1,6 +1,6 @@
 # v3.39 — Presupuesto conservado en el pedido
 
-Estado: candidato en validación; no publicado.
+Estado: publicada y verificada el 11/09/2026.
 
 Compras → pedido → Importes, pagos y facturas → Conservar presupuesto del proyecto. El administrador elige una revisión persistida, añade motivo y guarda una copia íntegra del presupuesto en el pedido. Se conservan campos antiguos, líneas, cantidades y estado del documento. La interfaz de consulta muestra los campos comerciales pertinentes, escapando texto; el registro completo sigue limitado a administradores por RPC.
 
@@ -25,4 +25,6 @@ No se ha identificado autorización específica para crear una membresía produc
 
 Interfaz aislada: seleccionado PS-0001 (242 EUR) para el pedido C1C1F851 (72,60 EUR), guardada copia con motivo y consultada tras recargar. Conserva Roble, 2 unidades a 100 EUR, estado Aceptado; el importe del pedido permanece separado. Inventario productivo previo: 122 objetos y una operación, función nueva ausente y contrato anterior sin copiar_presupuesto.
 
-Servidor instalado el 11/09/2026: datos_intactos, pedidos_intactos, historial_intacto y archivos_intactos en true. No se ejecutaron fixtures en producción. Interfaz pendiente de confirmación de Actions.
+Servidor instalado el 11/09/2026: datos_intactos, pedidos_intactos, historial_intacto y archivos_intactos en true. No se ejecutaron fixtures en producción. Interfaz confirmada como se indica a continuación.
+
+Publicación: commit cef9685382a415c25574fc3b40363409014e404a, Actions https://github.com/estudiomoderno/moderno.app/actions/runs/34612671632 correcto. index.html, product-operations.js y purchase-finance.js HTTP 200 y coincidencia con candidato normalizando finales de línea. No se forzaron recargas.
