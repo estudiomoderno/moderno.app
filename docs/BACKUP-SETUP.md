@@ -73,3 +73,9 @@ En el ensayo:
 4. Comprobar una aprobación invalidada y un pedido con recepciones: deben mantener sus revisiones, cantidades e historial tras restaurar.
 5. Recuperar los archivos por separado, conservando rutas y comprobando contenido. No ejecutar operaciones de prueba ni sobrescribir producción.
 6. Guardar el resultado del ensayo sin datos privados ni credenciales en el repositorio público.
+
+### Ensayo iniciado — 11 septiembre 2026
+
+Se ha localizado una copia de base de datos completada el 11/09/2026 a las 00:31:45 UTC, posterior al commit de v3.35. Se ha solicitado su restauración en un proyecto nuevo de la misma organización y región, sin restaurar sobre producción. El formulario indicó 0 USD adicionales de cómputo y disco. El destino está identificado en el panel privado como recuperación aislada v335 del 11 de septiembre.
+
+La creación ha sido aceptada; la comprobación de contenido todavía está pendiente mientras arranca el proyecto. Ejecutar primero scripts/sql/recuperacion-operaciones-inventario.sql, de solo lectura, antes de instalar o modificar el módulo. La presencia de la estructura no acredita por sí sola la recuperación de registros ni archivos.
