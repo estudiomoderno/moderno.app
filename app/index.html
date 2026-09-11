@@ -1026,6 +1026,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/specifications.js?v=340"></script>
 <script src="/project-quotes.js?v=337"></script>
 <script src="/spec-audit.js?v=340"></script>
+<script src="/spec-master.js?v=341"></script>
 <script src="/product-operations.js?v=339"></script>
 <script src="/purchase-finance.js?v=339"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
@@ -5159,7 +5160,7 @@ function vLibrary(){
         <b style="font-size:13px">${x.name}</b>
         <div style="font-size:11px;color:var(--ink-soft);margin:3px 0">${x.supplier||"—"} · ${x.sku||"—"}${x.ai?` · <span title="Categoría sugerida por reglas; revisa el resultado" style="background:var(--gold-soft);border-radius:99px;padding:1px 7px;font-size:9.5px;font-weight:700">✨ Categoría sugerida</span>`:""}</div>
         ${x.cat?`<span class="chip neutral" style="font-size:9.5px;cursor:pointer" title="Filtrar por esta categoría" onclick="state.libF.cat='${x.cat}';render()">${x.cat}</span>`:""}
-        <div style="display:flex;align-items:center;gap:6px"><b>${fmt(x.price)}</b><small style="color:var(--ink-faint)">/${x.unit==="m2"?"m²":"ud"}</small>
+        <div style="display:flex;align-items:center;gap:6px"><b>${fmt(x.price)}</b><small style="color:var(--ink-faint)">/${ModernoDaily.escape(({m2:"m²",m3:"m³"})[x.unit]||x.unit||"ud")}</small>
           <span style="margin-left:auto"></span>
           <button class="collbtn" title="Editar" onclick="libEdit(${i})">${ico("editar")}</button>
           <button class="collbtn" title="Eliminar" onclick="state.library.splice(${i},1);render()">✕</button>
@@ -5294,7 +5295,7 @@ function libEdit(i){
   <div class="row2"><div><label>Precio cliente (€)</label><input id="lbP" type="number" step="0.01" value="${x.price??""}" oninput="mgSync('lb','price')"></div><div><label>Coste profesional (€)</label><input id="lbC" type="number" step="0.01" value="${x.cost??""}" oninput="mgSync('lb','cost')"></div></div>
   <div class="row2">
     <div><label>Unidades</label><input id="lbQty" type="number" step="0.01" value="${x.qty??1}" oninput="unitSum('lbQty','lbP','lbU','lbSum','lbC')"></div>
-    <div><label>Unidad</label><select id="lbU" onchange="unitSum('lbQty','lbP','lbU','lbSum','lbC')"><option value="ud" ${x.unit!=="m2"?"selected":""}>Unidades</option><option value="m2" ${x.unit==="m2"?"selected":""}>m²</option></select></div>
+    <div><label>Unidad</label><select id="lbU" onchange="unitSum('lbQty','lbP','lbU','lbSum','lbC')">${[...new Set(["ud","m2","m","m3","l","kg","h",x.unit||"ud"])].map(u=>`<option value="${ModernoDaily.escape(u)}" ${(x.unit||"ud")===u?"selected":""}>${ModernoDaily.escape(u)}</option>`).join("")}</select></div>
   </div>
   <div id="lbSum" class="entry" style="display:block;background:var(--gold-soft);margin-top:8px;font-size:12.5px"></div>
   ${mgUI("lb", mgAuto(x))}
@@ -5368,7 +5369,7 @@ function syncToLibrary(){ return false; }
 function unitSum(qId,pId,uId,outId,cId){
   const q=+((document.getElementById(qId)||{}).value)||0, pr=+((document.getElementById(pId)||{}).value)||0;
   const co=cId? (+((document.getElementById(cId)||{}).value)||0) : 0;
-  const u=(document.getElementById(uId)||{}).value==="m2"?"m²":(q===1?"unidad":"unidades");
+  const rawUnit=(document.getElementById(uId)||{}).value||"ud",u=ModernoDaily.escape(({m2:"m²",m3:"m³",ud:q===1?"unidad":"unidades"})[rawUnit]||rawUnit);
   const el=document.getElementById(outId); if(!el) return;
   if(!q||!pr){ el.innerHTML=`<span style="color:var(--ink-faint)">Pon unidades y precio para ver el total</span>`; return; }
   let html=`${q} ${u} × ${fmt(pr)} = <b>${fmt(q*pr)}</b>`;
@@ -6457,7 +6458,7 @@ function vCompras(){
     ${arr.map(x=>`<div class="entry" style="background:var(--card);flex-wrap:wrap">
       <b style="cursor:pointer;min-width:0;overflow:hidden;text-overflow:ellipsis" onclick="openRoom(${x.p.id},${x.r.id})">${x.it.name}</b>
       <span class="chip ${BRAND[x.p.brand].chip}" title="Ver el proyecto ${x.p.num} ${x.p.name}" style="font-size:10px;cursor:pointer;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block" onclick="openProject(${x.p.id})">${x.p.num} ${x.p.name}</span>
-      <small style="color:var(--ink-faint)">${x.it.qty||1} ${x.it.unit==="m2"?"m²":"ud"}${x.it.plazo?" · plazo "+x.it.plazo:""}</small>
+      <small style="color:var(--ink-faint)">${x.it.qty||1} ${ModernoDaily.escape(({m2:"m²",m3:"m³"})[x.it.unit]||x.it.unit||"ud")}${x.it.plazo?" · plazo "+x.it.plazo:""}</small>
       <span style="margin-left:auto;display:flex;gap:8px;align-items:center">
         <select class="sel-pill" style="font-size:11px" onchange="(function(v){const p=state.projects.find(z=>z.id===${x.p.id});const r=p.rooms.find(z=>z.id===${x.r.id});r.sections[${x.si}].items[${x.ii}].status=v;render()})(this.value)">
           ${["Aprobado","Comprado","En Tránsito","Instalado"].map(st=>`<option ${x.it.status===st?"selected":""}>${st}</option>`).join("")}
@@ -7140,7 +7141,7 @@ function vRoom(){
           ${F("Proveedor", inp(si,ii,"supplier",it.supplier))}
           ${F("SKU", inp(si,ii,"sku",it.sku))}
           ${F("Unidades", `<input type="number" step="${it.unit==='m2'?'0.01':'1'}" value="${it.qty}" onchange="setItem(${si},${ii},'qty',Math.max(0,+this.value||0))">`)}
-          ${F("Unidad", isPav?`<select onchange="setItem(${si},${ii},'unit',this.value)"><option value="m2" ${it.unit==="m2"?"selected":""}>m²</option><option value="ud" ${it.unit!=="m2"?"selected":""}>ud</option></select>`:`<span class="v">${it.unit==="m2"?"m²":"ud"}</span>`)}
+          ${F("Unidad", isPav?`<select onchange="setItem(${si},${ii},'unit',this.value)">${[...new Set(["ud","m2","m","m3","l","kg","h",it.unit||"ud"])].map(u=>`<option value="${ModernoDaily.escape(u)}" ${(it.unit||"ud")===u?"selected":""}>${ModernoDaily.escape(u)}</option>`).join("")}</select>`:`<span class="v">${ModernoDaily.escape(({m2:"m²",m3:"m³"})[it.unit]||it.unit||"ud")}</span>`)}
           ${F("Total cliente", `<span class="v b">${fmt(it.price*it.qty)}</span>${itemGain(r,it)?`<span style="display:block;font-size:10px;color:var(--dl-soft)" title="Ganancia interna">${itemGain(r,it)<0?"▼":"▲"} ${fmt(itemGain(r,it))}</span>`:""}`)}
           ${F("Nota interna", `<textarea rows="1" placeholder="-" onchange="setItem(${si},${ii},'note',this.value)">${esc(it.note||"")}</textarea>`, "span2")}
           ${isPav?`<div class="dl-f"><span class="k">Despiece</span><button class="dl-addlink sec" style="padding:0" onclick="despiece(${si},${ii})">+10 % despiece</button></div>`:""}
@@ -8520,7 +8521,7 @@ function prodCard(pid,rid,rsi,rii,fromMood){
   ${it.img?`<img ${fileImageAttrs(it.img)} style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px">`:""}
   <div class="entry" style="background:var(--card);margin-top:10px">Lista<span class="amt" style="color:var(--ink)">${r.name}</span></div>
   <div class="entry" style="background:var(--card)">Estado<span class="amt"><span class="chip neutral">${it.status}</span></span></div>
-  <div class="entry" style="background:var(--card)">Precio<span class="amt" style="color:var(--ink)">${fmt(it.price)}${it.unit==="m2"?" /m²":" /ud"}</span></div>
+  <div class="entry" style="background:var(--card)">Precio<span class="amt" style="color:var(--ink)">${fmt(it.price)}${" /"+ModernoDaily.escape(({m2:"m²",m3:"m³"})[it.unit]||it.unit||"ud")}</span></div>
   <div class="modal-foot">
     <button class="btn btn-ghost" onclick="closeModal();${fromMood?"moodOpen(moodCur.pid,moodCur.mid,moodClient)":""}">${ico("atras")} Volver</button>
     ${moodClient?"":`<button class="btn btn-dark" onclick="mb.classList.remove('wide');closeModal();openRoom(${pid},${rid})">Ir a la lista</button>`}
@@ -8624,7 +8625,7 @@ function clientPortal(){
           <b style="font-size:13.5px">${it.name}</b>
           ${it.url?`<br><a href="${it.url}" target="_blank" style="font-size:10.5px;color:var(--ink-soft)">Ir a la tienda online ↗</a>`:""}
           <div style="font-size:11.5px;color:var(--ink-soft);margin-top:6px">
-            ${it.dims?`Dimensiones: ${it.dims} · `:""}${it.color?`Color: ${it.color} · `:""}Cantidad: ${it.qty} ${it.unit==="m2"?"m²":"ud"} · Precio: <b>${fmt(it.price)}</b> · Total: <b>${fmt(it.price*it.qty)}</b>
+            ${it.dims?`Dimensiones: ${it.dims} · `:""}${it.color?`Color: ${it.color} · `:""}Cantidad: ${it.qty} ${ModernoDaily.escape(({m2:"m²",m3:"m³"})[it.unit]||it.unit||"ud")} · Precio: <b>${fmt(it.price)}</b> · Total: <b>${fmt(it.price*it.qty)}</b>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px">
             <button class="btn" style="background:${it.status==="Aprobado"?"#3E7A3E":"#DDF0DC"};color:${it.status==="Aprobado"?"#fff":"var(--green-ink)"};padding:7px 14px" onclick="cpSet(${si},${ii},'Aprobado')">✓ Aprobar producto</button>
@@ -8758,7 +8759,7 @@ function dropItemSection(ev,si){
 function despiece(si,ii){
   const it = getRoom().r.sections[si].items[ii];
   it.qty = Math.round(it.qty*1.10*100)/100;
-  render(); toast("＋10% de despiece → "+it.qty+" "+(it.unit==="m2"?"m²":"ud"));
+  render(); toast("＋10% de despiece → "+it.qty+" "+(ModernoDaily.escape(({m2:"m²",m3:"m³"})[it.unit]||it.unit||"ud")));
 }
 
 let nrIcon = "";
@@ -8806,6 +8807,7 @@ function itemModal(si,ii,fromUrl){
   const it = ii>=0 ? r.sections[si].items[ii] : {name:"",url:"",sku:"",supplier:"",price:null,cost:null,qty:1,unit:r.kind==="pav"?"m2":"ud",status:"Revisión Cliente",img:"",files:[]};
   itFiles=[...(it.files||[])]; itImg=it.img||""; itLibId=it.libId;
   modal(`<h3>${ii>=0?"Editar":"Añadir"} producto</h3>
+  <div id="itOrigin"></div>
   <label>URL de la tienda</label>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <input id="itUrl" value="${ModernoDaily.escape(it.url||"")}" placeholder="https://www.sklum.com/es/…" style="flex:1 1 200px;min-width:0;max-width:100%">
@@ -8822,11 +8824,11 @@ function itemModal(si,ii,fromUrl){
   <label>Nombre</label><input id="itName" value="${ModernoDaily.escape(it.name||"")}">
   <div class="row2">
     <div><label>Proveedor</label><input id="itSup" list="dlProvs" value="${ModernoDaily.escape(it.supplier||"")}" placeholder="De tu agenda o libre">${dlProvs()}</div>
-    <div><label>SKU</label><input id="itSku" value="${ModernoDaily.escape(it.sku||"")}"></div>
+    <div><label>Referencia / variante</label><input id="itSku" value="${ModernoDaily.escape(it.sku||"")}"></div>
   </div>
   <div class="row2">
-    <div><label>Dimensiones</label><input id="itDims" value="${ModernoDaily.escape(it.dims||"")}" placeholder="Ej: 120×35×80 cm"></div>
-    <div><label>Material</label><input id="itMat" value="${ModernoDaily.escape(it.material||"")}" placeholder="Ej: Roble, cerámica…"></div>
+    <div><label>Dimensiones estándar o a medida</label><input id="itDims" value="${ModernoDaily.escape(it.dims||"")}" placeholder="Ej: 120×35×80 cm"></div>
+    <div><label>Material / acabado</label><input id="itMat" value="${ModernoDaily.escape(it.material||"")}" placeholder="Ej: Roble, cerámica…"></div>
   </div>
   <div class="row2">
     <div><label>Color</label><input id="itCol" value="${ModernoDaily.escape(it.color||"")}" placeholder="Ej: Azul Marino"></div>
@@ -8839,22 +8841,31 @@ function itemModal(si,ii,fromUrl){
   </div>
   <div class="row2">
     <div><label>Unidades</label><input id="itQty" type="number" step="0.01" value="${it.qty}" oninput="unitSum('itQty','itPrice','itUnit','itSum','itCost')"></div>
-    <div><label>Unidad</label><select id="itUnit" onchange="unitSum('itQty','itPrice','itUnit','itSum','itCost')"><option value="ud" ${it.unit!=="m2"?"selected":""}>Unidades</option><option value="m2" ${it.unit==="m2"?"selected":""}>m²</option></select></div>
+    <div><label>Unidad</label><select id="itUnit" onchange="unitSum('itQty','itPrice','itUnit','itSum','itCost')">${[...new Set(["ud","m2","m","m3","l","kg","h",it.unit||"ud"])].map(u=>`<option value="${ModernoDaily.escape(u)}" ${(it.unit||"ud")===u?"selected":""}>${ModernoDaily.escape(({ud:"Unidades",m2:"m²",m:"Metros lineales",m3:"m³",l:"Litros",kg:"Kilogramos",h:"Horas"})[u]||u)}</option>`).join("")}</select></div>
   </div>
   <div id="itSum" class="entry" style="display:block;background:var(--gold-soft);margin-top:8px;font-size:12.5px"></div>
   ${mgUI("it", mgAuto(it))}
-  <label>Estado</label><select id="itSt">${Object.keys(ISTATES).map(s=>`<option ${it.status===s?"selected":""}>${s}</option>`).join("")}</select>
+  <label>Estado de selección / seguimiento</label><p>La aprobación de una revisión y el estado real del pedido se consultan en Compras y aprobaciones. Esta etiqueta no confirma compras ni registra cobros.</p><select id="itSt">${Object.keys(ISTATES).map(s=>`<option ${it.status===s?"selected":""}>${s}</option>`).join("")}</select>
   <label>Adjuntos del producto — instrucciones, ficha técnica…</label>
   <div id="itFilesBox"></div>
   <label class="btn btn-ghost" style="width:100%;justify-content:center;cursor:pointer;background:var(--card)">${ico("adj_archivo")} Añadir archivo
     <input type="file" multiple style="display:none" onchange="itAddFiles([...this.files])"></label>
-  <div class="modal-foot"><button class="btn btn-ghost" title="Guardar este producto en tu biblioteca transversal" onclick="if(itemUploadDraft?.pending){toast('Espera a que terminen los archivos');return;}if(!productAmountsValid('itPrice','itCost','itQty'))return;const _n=document.getElementById('itName').value||'Producto',_u=document.getElementById('itUrl').value;state.libSeq=state.libSeq||1;const _id=newLibraryId();state.library.push({id:_id,name:_n,url:_u,sku:document.getElementById('itSku').value,supplier:document.getElementById('itSup').value,price:+document.getElementById('itPrice').value||0,cost:document.getElementById('itCost').value===''?null:+document.getElementById('itCost').value,margin:(document.getElementById('itMgV').value===""?null:(+document.getElementById('itMgV').value||0)),unit:document.getElementById('itUnit').value,files:JSON.parse(JSON.stringify(itFiles)),img:itImg,dims:document.getElementById('itDims').value,material:document.getElementById('itMat').value,color:document.getElementById('itCol').value,cat:aiCategory(_n+' '+_u),ai:true});itLibId=_id;toast('✓ Añadido a tu biblioteca — ✨ categoría sugerida en «'+aiCategory(_n+' '+_u)+'»')">${ico("guardar")} Añadir a mi biblioteca</button>
+  <div class="modal-foot"><button class="btn btn-ghost" title="Guardar este producto en tu biblioteca transversal" onclick="itemToLibrary()">${ico("guardar")} Añadir a mi biblioteca</button>
   <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
   <button class="btn btn-dark" onclick="saveItem(${si},${ii})">Guardar</button></div>`);
+  SpecMaster.mount(it);
   itDrawThumb(); delete _mgLast.it; unitSum("itQty","itPrice","itUnit","itSum","itCost");
   itemUploadDraft={form:document.getElementById("itName"),files:itFiles,pending:0};
   itDrawFiles();
   if(fromUrl){ const u=document.getElementById("itUrl"); u.focus(); }
+}
+function itemToLibrary(){
+ if(_accessRole!=='admin'){toast('Solo el administrador puede añadir productos a biblioteca');return;}
+ if(itemUploadDraft?.pending){toast('Espera a que terminen los archivos');return;}
+ if(!productAmountsValid('itPrice','itCost','itQty'))return;
+ const v=id=>document.getElementById(id).value,id=newLibraryId();
+ state.library.push({id,name:v('itName')||'Producto',url:v('itUrl'),sku:v('itSku'),supplier:v('itSup'),price:+v('itPrice'),cost:v('itCost')===''?null:+v('itCost'),margin:v('itMgV')===''?null:+v('itMgV'),unit:v('itUnit'),files:JSON.parse(JSON.stringify(itFiles)),img:itImg,dims:v('itDims'),material:v('itMat'),color:v('itCol'),plazo:v('itPlz'),cat:aiCategory(v('itName')+' '+v('itUrl'))});
+ itLibId=id;SpecMaster.mount({libId:id});toast('Producto añadido a biblioteca. Guarda la ficha para conservar el vínculo.');
 }
 function itemDraftActive(d){return d&&d===itemUploadDraft&&d.form.isConnected;}
 async function itLoadImg(f){
@@ -8942,7 +8953,7 @@ async function roomPDF(){
           ${o.links&&it.url?`<a class="ex-url" href="${it.url}">${it.url}</a>`:""}
           ${meta(it).length?`<div class="ex-meta">${meta(it).map(([k,v])=>`<span><i>${k}:</i> ${v}</span>`).join("")}</div>`:""}
           ${o.notes&&it.cliNote?`<div class="ex-note">${it.cliNote}</div>`:""}
-          <div class="ex-qty">Cantidad: ${it.qty}${it.unit==="m2"?" m²":""}</div>
+          <div class="ex-qty">Cantidad: ${it.qty}${" "+ModernoDaily.escape(({m2:"m²",m3:"m³"})[it.unit]||it.unit||"ud")}</div>
           ${o.prices?`<div class="ex-price">${fmt(it.price*it.qty)}${it.qty!==1?` <small>(${it.qty} × ${fmt(it.price)})</small>`:""}</div>`:""}
         </div>
       </div>`).join("")}`).join("")}
@@ -8954,7 +8965,7 @@ async function roomPDF(){
 function roomXLSX(){
   const {p,r} = getRoom();
   const rows = [["Lista","Sección","Producto","Proveedor","SKU","URL","Precio","Cantidad","Unidad","Total","Estado","Adjuntos"]];
-  r.sections.forEach(sec=>sec.items.forEach(i=>rows.push([r.name,sec.name,i.name,i.supplier,i.sku,i.url,i.price,i.qty,i.unit==="m2"?"m²":"ud",i.price*i.qty,i.status,(i.files||[]).join(", ")])));
+  r.sections.forEach(sec=>sec.items.forEach(i=>rows.push([r.name,sec.name,i.name,i.supplier,i.sku,i.url,i.price,i.qty,ModernoDaily.escape(({m2:"m²",m3:"m³"})[i.unit]||i.unit||"ud"),i.price*i.qty,i.status,(i.files||[]).join(", ")])));
   const csv = rows.map(x=>x.join(";")).join("\n");
   const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv); a.download=p.num+"-"+r.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"-")+".csv"; a.click();
   toast("Hoja de cálculo descargada");
@@ -8972,7 +8983,7 @@ async function projPDF(pid, ids){
       ${r.sections.filter(s=>s.items.length).map(sec=>`
         <h3 style="margin:12px 0 4px">${sec.name}</h3>
         <table style="width:100%;border-collapse:collapse;font-size:12px">
-        ${sec.items.map(i=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:4px">${i.name}</td><td>${i.supplier||"—"}</td><td>${i.sku||"—"}</td><td style="text-align:right">${fmt(i.price)}</td><td style="text-align:center">${i.qty} ${i.unit==="m2"?"m²":"ud"}</td><td style="text-align:right">${fmt(i.price*i.qty)}</td><td>${i.status}</td></tr>`).join("")}
+        ${sec.items.map(i=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:4px">${i.name}</td><td>${i.supplier||"—"}</td><td>${i.sku||"—"}</td><td style="text-align:right">${fmt(i.price)}</td><td style="text-align:center">${i.qty} ${ModernoDaily.escape(({m2:"m²",m3:"m³"})[i.unit]||i.unit||"ud")}</td><td style="text-align:right">${fmt(i.price*i.qty)}</td><td>${i.status}</td></tr>`).join("")}
         </table>`).join("")}`).join("")}
     <h2 style="text-align:right;margin-top:20px">Total del proyecto: ${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</h2></div>`;
   z.style.display="block"; await printAs(document.title); z.style.display="none";
@@ -8980,7 +8991,7 @@ async function projPDF(pid, ids){
 function projXLSX(pid, ids){
   const p = state.projects.find(x=>x.id===pid);
   const rows = [["Lista","Sección","Producto","Proveedor","SKU","URL","Precio","Cantidad","Unidad","Total","Estado","Adjuntos"]];
-  (p.rooms||[]).filter(r=>!ids || ids.includes(r.id)).forEach(r=>r.sections.forEach(sec=>sec.items.forEach(i=>rows.push([r.name,sec.name,i.name,i.supplier,i.sku,i.url,i.price,i.qty,i.unit==="m2"?"m²":"ud",i.price*i.qty,i.status,(i.files||[]).join(", ")]))));
+  (p.rooms||[]).filter(r=>!ids || ids.includes(r.id)).forEach(r=>r.sections.forEach(sec=>sec.items.forEach(i=>rows.push([r.name,sec.name,i.name,i.supplier,i.sku,i.url,i.price,i.qty,ModernoDaily.escape(({m2:"m²",m3:"m³"})[i.unit]||i.unit||"ud"),i.price*i.qty,i.status,(i.files||[]).join(", ")]))));
   const csv = rows.map(x=>x.join(";")).join("\n");
   const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv); a.download=p.num+"-listas-de-compra.csv"; a.click();
   toast("Hoja de cálculo del proyecto descargada");
@@ -11303,7 +11314,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.40";
+const MODERNO_VER="v3.41";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

@@ -1,0 +1,17 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';import spec from '../app/specifications.js';
+function fixture(){
+ const master={id:8,name:'<Silla nueva>',price:120,cost:70,qty:999,files:['master']},item={id:1,libId:8,name:'Silla propia',qty:2,files:['propio']};
+ const elements={itOrigin:{},itMasterReview:{},itName:{value:item.name,isConnected:true},itPrice:{value:'100'},itCost:{value:'50'},itMgPills:{querySelector:()=>({})}};
+ const c={state:{library:[master]},_accessRole:'admin',ModernoSpec:spec,ModernoDaily:{escape:v=>String(v).replaceAll('<','&lt;')},document:{getElementById:id=>elements[id]},toast(){},unitSum(){},mgPick(){}};
+ vm.createContext(c);vm.runInContext(fs.readFileSync(new URL('../app/spec-master.js',import.meta.url),'utf8'),c);c.SpecMaster.mount(item);return {c,e:elements,master,item};
+}
+test('library preview escapes content and changes neither master nor specification',()=>{const f=fixture(),before=JSON.stringify([f.master,f.item]);f.c.SpecMaster.compare();assert.match(f.e.itMasterReview.innerHTML,/&lt;Silla nueva>/);assert.equal(JSON.stringify([f.master,f.item]),before);assert.equal(f.e.itName.value,'Silla propia');});
+test('only selected fields enter the draft, retaining quantity, files and untouched prices',()=>{const f=fixture();f.c.SpecMaster.compare();f.e.itMasterPick0={checked:true};f.c.SpecMaster.apply();assert.equal(f.e.itName.value,'<Silla nueva>');assert.equal(f.e.itPrice.value,'100');assert.equal(f.item.name,'Silla propia');assert.equal(f.item.qty,2);assert.deepEqual(f.item.files,['propio']);});
+test('changing the master after preview prevents stale application',()=>{const f=fixture();f.c.SpecMaster.compare();f.e.itMasterPick0={checked:true};f.master.name='Revisión posterior';f.c.SpecMaster.apply();assert.equal(f.e.itName.value,'Silla propia');});
+test('editing draft after preview prevents overwriting local edits',()=>{const f=fixture();f.c.SpecMaster.compare();f.e.itMasterPick0={checked:true};f.e.itName.value='Nueva decisión';f.c.SpecMaster.apply();assert.equal(f.e.itName.value,'Nueva decisión');});
+test('closed editor and lost admin role cannot apply a library refresh',()=>{for(const mode of ['closed','role']){const f=fixture();f.c.SpecMaster.compare();f.e.itMasterPick0={checked:true};if(mode==='closed')f.e.itName.isConnected=false;else f.c._accessRole='colaborador';f.c.SpecMaster.apply();assert.equal(f.e.itName.value,'Silla propia');}});
+test('add-to-library handler creates a deep independent copy and typed link without changing the item',()=>{
+ const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8'),values={itName:'A medida',itPrice:'0',itCost:'',itMgV:'',itUnit:'m',itQty:'2'};
+ const c={_accessRole:'admin',itemUploadDraft:null,productAmountsValid:()=>true,newLibraryId:()=> 'master-test',document:{getElementById:id=>({value:values[id]||''})},state:{library:[]},itFiles:[{name:'Ficha',data:'storage://archivos/demo'}],itImg:'',SpecMaster:{mount(){}},aiCategory:()=> 'Otros',toast(){}};
+ vm.createContext(c);vm.runInContext(html.slice(html.indexOf('function itemToLibrary('),html.indexOf('function itemDraftActive(')),c);c.itemToLibrary();const m=c.state.library[0];assert.equal(m.unit,'m');assert.equal(m.cost,null);assert.equal(m.price,0);assert.equal(c.itLibId,'master-test');c.itFiles[0].name='Editado';assert.equal(m.files[0].name,'Ficha');assert.match(html,/onclick="itemToLibrary\(\)"/);
+});
