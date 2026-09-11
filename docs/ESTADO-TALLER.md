@@ -58,3 +58,7 @@ Tema oscuro actualizado y selector móvil antes del usuario. Ver TEMA-V3332.md.
 ## v3.35 y recuperación — 11 septiembre 2026
 
 Versión publicada y verificada; entrega en ENTREGA-V335.md. Cerrado el ensayo aislado de recuperación de 121 archivos, con contenido, identificadores y propietarios comprobados, y comparación lógica de tres operaciones y ocho eventos ficticios. El ensayo no escribió en producción. Consultar el cierre de BACKUP-SETUP.md para los límites y el procedimiento; las anotaciones anteriores describen estados históricos. La supervisión externa de copias ausentes continúa pendiente.
+
+## Continuación — avisos, servicio y compras
+
+Supervisión horaria en Codex activada y comprobada; alcance y dependencia del equipo local en MONITORIZACION-COPIAS.md. Recuperación funcional del núcleo comprobada con 15 pruebas HTTP; correo PHP y OAuth tienen límites explícitos en RECUPERACION-SERVICIO.md. Candidato v3.36 de economía de compras documentado en ENTREGA-V336.md; consultar su sección de publicación para distinguir candidato de despliegue confirmado.

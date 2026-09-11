@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import fs from 'node:fs';
-const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
+const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const section=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
 function setup({sign,decode}={}){
   const img={dataset:{privateFile:'storage://archivos/ficticio/plano.png'},isConnected:true,naturalWidth:50,src:'',getAttribute(){return this.src;},decode:decode||async function(){}};

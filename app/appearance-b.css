@@ -330,4 +330,12 @@
 .ops-print table{width:100%;border-collapse:collapse;margin:20px 0}.ops-print td,.ops-print th{padding:10px;text-align:left;border-bottom:1px solid #ddd}.ops-print small{display:block;margin-top:5px}.ops-print{font:13px Arial;color:#111}
 @media(max-width:600px){.ops-tabs button{flex:1;padding:9px}.ops-card{padding:14px}.ops-offers>div{align-items:flex-start;flex-direction:column}.ops-card footer .btn{flex:1}.ops-head h3{font-size:18px}}
 .ops-card ul{padding-left:20px;margin:12px 0}.ops-card h4{margin:0 0 10px}
+.pm-totals,.pm-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}
+.pm-totals>div{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--white)}
+.pm-totals small,.pm-totals b{display:block}.pm-totals small,.pm-hint{color:var(--ink-soft)}
+.pm-totals b{margin-top:7px;white-space:nowrap;font-variant-numeric:tabular-nums}
+#opsBody label{display:block;margin:14px 0;line-height:1.5}#opsBody label>span{display:block}
+#opsBody input,#opsBody select,#opsBody textarea{max-width:100%;box-sizing:border-box;border-radius:12px}
+.pm-hint{font-size:12px;line-height:1.6;margin:18px 0}
+@media(max-width:520px){.pm-grid{grid-template-columns:1fr}.pm-totals{gap:8px}.pm-totals>div{padding:10px}.pm-totals b{font-size:14px}}
 @media(max-width:600px){.ops-tabs{display:grid;grid-template-columns:1fr 1fr}.ops-tabs button{min-height:42px}}

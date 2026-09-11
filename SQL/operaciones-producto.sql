@@ -132,12 +132,13 @@ begin
  cantidad:=(p_datos->'cantidades'->>k)::numeric;
  if cantidad is null or cantidad<0 or cantidad::text in ('NaN','Infinity','-Infinity') then raise exception 'Cantidad no valida';end if;
  recibido:=coalesce((linea->>'recibido')::numeric,0)+cantidad;
- if recibido>(linea->>'qty')::numeric then raise exception 'La recepcion supera lo pedido';end if;
- if recibido<(linea->>'qty')::numeric then completo:=false;end if;
+ if recibido-coalesce((linea->>'devuelto')::numeric,0)>(linea->>'qty')::numeric then raise exception 'La recepcion supera lo pedido';end if;
+ if recibido-coalesce((linea->>'devuelto')::numeric,0)<(linea->>'qty')::numeric then completo:=false;end if;
  total:=total+cantidad;lineas:=lineas||jsonb_build_array(linea||jsonb_build_object('recibido',recibido));k:=k+1;end loop;
  if total<=0 then raise exception 'Indica alguna cantidad recibida';end if;
  contenido:=jsonb_set(contenido,'{lineas}',lineas);op.estado:=case when completo then 'recibido' else 'parcial' end;
  elsif p_accion='cancelar' then
+ if jsonb_array_length(coalesce(contenido->'pagos','[]'))>0 or jsonb_array_length(coalesce(contenido->'abonos','[]'))>0 or jsonb_array_length(coalesce(contenido->'facturas','[]'))>0 then raise exception 'Conserva el pedido con movimientos; utiliza abonos y correcciones';end if;
  if op.estado in ('aprobada','rechazada','recibido','parcial','cancelada') then raise exception 'No se puede cancelar este registro; conserva su historial';end if;
  if op.tipo='solicitud' and exists(select 1 from public.app_operaciones where estudio_id=p_estudio and proyecto_id=p_proyecto and tipo='pedido' and estado<>'cancelada' and contenido->>'solicitud'=op.id::text) then raise exception 'La solicitud tiene un pedido activo';end if;
  if length(trim(coalesce(p_datos->>'nota','')))<5 then raise exception 'Indica el motivo';end if;
