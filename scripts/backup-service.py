@@ -82,5 +82,7 @@ if __name__=='__main__':
         # Only protocol error numbers; never expose server messages or paths.
         code=str(error)[:3] if isinstance(error,ftplib.Error) and str(error)[:3].isdigit() else 'unavailable'
         print('Failure class:',type(error).__name__,'Protocol code:',code)
+        if isinstance(error,ssl.SSLCertVerificationError):
+            print('TLS verification code:',error.verify_code)
         print('Server source backup failed. No server files were modified.')
         raise SystemExit(1)
