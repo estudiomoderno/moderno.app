@@ -1,0 +1,44 @@
+import fs from 'node:fs';
+const read=p=>fs.readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const strip=p=>read(p).replace(/^begin;\s*$/mi,'').replace(/^commit;\s*$/mi,'');
+let sql=read('scripts/sql/recorrido-base.sql');
+sql=sql.replace('create temp table recorrido',()=>`insert into public.datos_estudio(estudio_id,bloque,contenido) values('33700000-0000-4000-8000-000000000001','presupuestos','{"quotes":[{"ref":"PS-ENSAYO","projectId":337001,"total":242,"sub":200,"status":"acc","lines":[{"name":"Silla","qty":2,"price":100,"cost":60}],"legacy_extra":"conservar"}]}');
+create temp table recorrido`);
+sql=sql.replace('end$$;\nreset role;',()=>`
+ r:=public.app_presupuestos_revision(e,'337001');
+ insert into recorrido values('lista_presupuesto_real',r->0->>'ref'='PS-ENSAYO');
+ req:=jsonb_build_object('id',o->>'id','version',o->'version','referencia','PS-ENSAYO','revision',r->0->>'revision','nota','Copia de presupuesto ficticio');cmd:=gen_random_uuid();
+ o:=public.app_pedido_economia(e,'337001','copiar_presupuesto',req,cmd);
+ insert into recorrido values('copia_completa',(o#>>'{contenido,presupuestos,0,snapshot,total}')::numeric=242 and o#>>'{contenido,presupuestos,0,snapshot,legacy_extra}'='conservar');
+ insert into recorrido values('copia_idempotente',public.app_pedido_economia(e,'337001','copiar_presupuesto',req,cmd)=o);
+ fallo:=false;begin perform public.app_pedido_economia(e,'337001','copiar_presupuesto',req,gen_random_uuid());exception when sqlstate 'PT409' then fallo:=true;end;
+ insert into recorrido values('copia_version_pedido_obsoleta',fallo);
+ req:=jsonb_set(req,'{version}',o->'version');
+ fallo:=false;begin perform public.app_pedido_economia(e,'337001','copiar_presupuesto',req,gen_random_uuid());exception when others then fallo:=true;end;
+ insert into recorrido values('copia_repetida_rechazada',fallo);
+ perform public.guardar_bloque_versionado(e,'presupuestos',jsonb_set(d.contenido,'{quotes,0,total}','999'),d.updated_at) from public.datos_estudio d where d.estudio_id=e and d.bloque='presupuestos';
+ fallo:=false;begin perform public.app_pedido_economia(e,'337001','copiar_presupuesto',req,gen_random_uuid());exception when sqlstate 'PT409' then fallo:=true;end;
+ insert into recorrido values('presupuesto_modificado_rechazado',fallo);
+ r:=public.app_operaciones_lee(e,'337001');select x into o from jsonb_array_elements(r) x where x->>'id'=req->>'id';
+ insert into recorrido values('copia_conservada_tras_edicion',(o#>>'{contenido,presupuestos,0,snapshot,total}')::numeric=242 and (o#>>'{contenido,pagos,0,importe}')::numeric=50);
+ perform public.guardar_bloque_versionado(e,'presupuestos',jsonb_set(d.contenido,'{quotes}',(d.contenido->'quotes')||(d.contenido->'quotes')),d.updated_at) from public.datos_estudio d where d.estudio_id=e and d.bloque='presupuestos';
+ fallo:=false;begin perform public.app_pedido_economia(e,'337001','copiar_presupuesto',req,gen_random_uuid());exception when others then fallo:=true;end;
+ insert into recorrido values('referencia_duplicada_rechazada',fallo);
+ perform public.guardar_bloque_versionado(e,'presupuestos','{"quotes":[]}',d.updated_at) from public.datos_estudio d where d.estudio_id=e and d.bloque='presupuestos';
+ fallo:=false;begin perform public.app_pedido_economia(e,'337001','copiar_presupuesto',req,gen_random_uuid());exception when others then fallo:=true;end;
+ insert into recorrido values('documento_ausente_rechazado',fallo);
+ r:=public.app_operaciones_lee(e,'337001');select x into o from jsonb_array_elements(r) x where x->>'id'=req->>'id';
+ insert into recorrido values('copia_conservada_sin_original',(o#>>'{contenido,presupuestos,0,snapshot,total}')::numeric=242);
+
+end$$;
+reset role;
+update public.miembros set rol='miembro' where user_id='52957931-04e3-4342-8122-912e95227d9c';
+set local role authenticated;
+do $$declare fallo boolean:=false;begin
+ begin perform public.app_presupuestos_revision('33700000-0000-4000-8000-000000000001','337001');exception when insufficient_privilege then fallo:=true;end;
+ insert into recorrido values('colaborador_sin_presupuestos',fallo);
+end$$;
+reset role;`);
+sql=sql.replace('select * from recorrido;','select count(*) as comprobaciones,bool_and(correcto is true) as todas_correctas,jsonb_agg(nombre) filter(where correcto is distinct from true) as fallos from recorrido;');
+sql=sql.replace('begin;',()=> 'begin;\n'+strip('SQL/operaciones-producto.sql')+'\n'+strip('SQL/pedidos-economia.sql'));
+if(!/rollback;\s*$/i.test(sql)||!process.argv[2])throw Error('Destino y reversión obligatorios');fs.writeFileSync(process.argv[2],sql);

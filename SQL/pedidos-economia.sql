@@ -13,6 +13,20 @@ language sql immutable set search_path='' as $$
 $$;
 revoke all on function public.app_pedido_saldos(jsonb) from public,anon,authenticated;
 
+-- Read the exact persisted revision; no browser-supplied financial snapshot is trusted.
+create or replace function public.app_presupuestos_revision(p_estudio uuid,p_proyecto text) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare b jsonb;res jsonb;
+begin
+ if public.app_rol(p_estudio) is distinct from 'admin' then raise exception 'Solo administradores' using errcode='42501';end if;
+ select contenido into b from public.datos_estudio where estudio_id=p_estudio and bloque='presupuestos';
+ select coalesce(jsonb_agg(jsonb_build_object('ref',q->>'ref','revision',md5(q::text),'fecha',q->>'date','estado',q->>'status','total',q->'total')),'[]') into res
+ from jsonb_array_elements(coalesce(b->'quotes','[]')) q where q->>'projectId'=p_proyecto;
+ return res;
+end$$;
+revoke all on function public.app_presupuestos_revision(uuid,text) from public,anon;
+grant execute on function public.app_presupuestos_revision(uuid,text) to authenticated;
+
 create or replace function public.app_pedido_economia(p_estudio uuid,p_proyecto text,p_accion text,p_datos jsonb,p_operacion uuid) returns jsonb
 language plpgsql security definer set search_path='' as $$
 #variable_conflict use_column
@@ -32,7 +46,16 @@ begin
  if op.estado='cancelada' then raise exception 'Pedido cancelado';end if;
  c:=op.contenido;nota:=trim(coalesce(p_datos->>'nota',''));
  if length(nota)<5 or length(nota)>2000 then raise exception 'Indica un detalle de entre 5 y 2000 caracteres para el historial';end if;
- if p_accion='condiciones' then
+ if p_accion='copiar_presupuesto' then
+  select contenido into f from public.datos_estudio where estudio_id=p_estudio and bloque='presupuestos' for share;
+  select count(*),jsonb_agg(q)->0 into n,e from jsonb_array_elements(coalesce(f->'quotes','[]')) q where q->>'ref'=p_datos->>'referencia';
+  if n<>1 or e->>'projectId' is distinct from p_proyecto then raise exception 'Presupuesto ausente, ambiguo o de otro proyecto';end if;
+  if md5(e::text) is distinct from p_datos->>'revision' then raise exception 'El presupuesto ha cambiado; vuelve a seleccionarlo' using errcode='PT409';end if;
+  if exists(select 1 from jsonb_array_elements(coalesce(c->'presupuestos','[]')) x where x->>'revision'=md5(e::text) and x->>'referencia'=e->>'ref') then raise exception 'Esta revision ya tiene una copia en el pedido';end if;
+  -- Full persisted document, including legacy fields. This ledger is admin-only.
+  s:=e;
+  c:=jsonb_set(c,'{presupuestos}',coalesce(c->'presupuestos','[]')||jsonb_build_array(jsonb_build_object('id',p_operacion,'referencia',e->>'ref','revision',md5(e::text),'capturada',clock_timestamp(),'actor',auth.uid(),'nota',nota,'snapshot',s)));
+ elsif p_accion='condiciones' then
   if c ? 'economia' and op.estado<>'borrador' then raise exception 'El importe confirmado no se reescribe; registra un abono';end if;
   if jsonb_array_length(coalesce(c->'pagos','[]'))>0 or jsonb_array_length(coalesce(c->'abonos','[]'))>0 then raise exception 'El pedido ya tiene movimientos';end if;
   if jsonb_typeof(p_datos->'tipos') is distinct from 'array' or jsonb_array_length(p_datos->'tipos')<>jsonb_array_length(c->'lineas') then raise exception 'Indica el impuesto de cada linea, incluido cero si corresponde';end if;
@@ -92,7 +115,7 @@ begin
    end loop;if n<>1 then raise exception 'Vinculo no disponible';end if;c:=jsonb_set(c,'{facturas}',movs);
   end if;
  else raise exception 'Accion desconocida';end if;
- c:=c||jsonb_build_object('saldos',public.app_pedido_saldos(c));
+ if c ? 'economia' then c:=c||jsonb_build_object('saldos',public.app_pedido_saldos(c));end if;
  update public.app_operaciones set contenido=c,estado=op.estado,version=version+1 where id=op.id;
  select to_jsonb(x) into res from public.app_operaciones x where x.id=op.id;
  insert into public.app_operacion_eventos(id,estudio_id,proyecto_id,accion,entrada,salida,actor,canal) values(p_operacion,p_estudio,p_proyecto,p_accion,p_datos,res,auth.uid(),'equipo');

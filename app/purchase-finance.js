@@ -1,12 +1,14 @@
 /* Server-authoritative purchase amounts. Recording a payment never initiates a transfer. */
 var PurchaseFinance=(()=>{
- let current=null;
+ let current=null,viewVersion=0,quoteChoices=[];
  const E=v=>ModernoDaily.escape(v??'');
+ const quoteStatus=s=>({acc:'Aceptado',pend:'Pendiente',rej:'Rechazado'}[s||'pend']||s);
  const field=id=>document.getElementById(id).value.trim();
  const number=id=>{const raw=field(id),n=Number(raw);if(!raw||!Number.isFinite(n)||n<0)throw Error('Completa los importes y cantidades; indica cero cuando corresponda');return n;};
  const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
  function shell(body,submit,label='Guardar registro'){
-  document.getElementById('opsBody').innerHTML=`<div class="ops-head"><h3>Economía del pedido</h3><button class="btn btn-ghost" onclick="ProductOps.redraw()">Volver a pedidos</button></div>${body}${submit?`<label>Detalle para el historial<textarea id="pmNote" rows="3" maxlength="2000" placeholder="Referencia y motivo del registro"></textarea></label><div class="ops-actions"><button class="btn btn-ghost" onclick="PurchaseFinance.open('${current.id}')">Cancelar</button><button class="btn btn-dark" onclick="${submit}">${label}</button></div>`:''}`;
+  viewVersion++;
+  document.getElementById('opsBody').innerHTML=`<div class="ops-head"><h3>Economía del pedido</h3><button class="btn btn-ghost" onclick="ProductOps.reload()">Volver a pedidos</button></div>${body}${submit?`<label>Detalle para el historial<textarea id="pmNote" rows="3" maxlength="2000" placeholder="Referencia y motivo del registro"></textarea></label><div class="ops-actions"><button class="btn btn-ghost" onclick="PurchaseFinance.open('${current.id}')">Cancelar</button><button class="btn btn-dark" onclick="${submit}">${label}</button></div>`:''}`;
   try{syncRefresh();}catch(e){}
  }
  function open(id){current=ProductOps.getRecord(id);if(!current)return;const c=current.contenido,s=c.saldos,confirmed=['confirmado','parcial','recibido'].includes(current.estado);
@@ -15,8 +17,19 @@ var PurchaseFinance=(()=>{
   <p class="pm-hint">Los pagos reflejan movimientos ya realizados por tu equipo. Registrar una recepción, devolución o factura no registra un pago ni modifica Contabilidad.</p>
   <h4>Movimientos</h4>${(c.pagos||[]).map(m=>`<article class="ops-card"><b>${m.tipo==='pago'?'Pago':'Reintegro'} · ${fmt(m.importe)}${m.anulado?' · Anulado':''}</b><small>${E(m.fecha)}</small><p>${E(m.nota)}</p>${!m.anulado?`<button class="btn btn-ghost" onclick="PurchaseFinance.unlink('anular_pago','${m.id}')">Anular registro erróneo</button>`:''}</article>`).join('')||'<p>No hay movimientos registrados.</p>'}
   <h4>Abonos del proveedor</h4>${(c.abonos||[]).map(m=>`<article class="ops-card"><b>${fmt(m.importe)}${m.anulado?' · Anulado':''}</b><small>${E(m.fecha)}</small><p>${E(m.nota)}</p>${!m.anulado?`<button class="btn btn-ghost" onclick="PurchaseFinance.unlink('anular_abono','${m.id}')">Anular abono erróneo</button>`:''}</article>`).join('')||'<p>Sin abonos registrados. Una devolución física no implica que el proveedor haya aceptado un abono.</p>'}
+  <h4>Presupuestos conservados</h4>${(c.presupuestos||[]).map((q,i)=>`<article class="ops-card"><b>${E(q.referencia)}</b><small>${E(q.capturada)} · revisión ${E(q.revision.slice(0,12))}</small><p>${E(q.nota)}</p><button class="btn btn-ghost" onclick="PurchaseFinance.quoteSnapshot(${i})">Ver copia fija</button></article>`).join('')||'<p>Sin copias de presupuestos en este pedido.</p>'}<button class="btn btn-ghost" onclick="PurchaseFinance.quotes()">Conservar presupuesto del proyecto</button>
   <h4>Facturas vinculadas</h4>${(c.facturas||[]).map(m=>`<article class="ops-card"><b>${E(m.referencia)} · ${fmt(m.importe)}${m.retirado?' · Vínculo retirado':''}</b><p>${E(m.proveedor)} · ${E(m.fecha)}</p><small>Datos conservados al vincular. El documento contable original mantiene su propio estado.</small>${!m.retirado?`<button class="btn btn-ghost" onclick="PurchaseFinance.unlink('desvincular_factura','${m.id}')">Retirar vínculo</button>`:''}</article>`).join('')||'<p>Sin facturas vinculadas.</p>'}
   <button class="btn btn-ghost" onclick="ProductOps.history('${id}')">Ver historial completo</button>`);
+ }
+
+ async function quotes(){const order=current;shell('<p>Cargando presupuestos guardados…</p>');const v=viewVersion;
+  try{const rows=await ProductOps.quoteRevisions();if(current!==order||viewVersion!==v)return;quoteChoices=rows;
+   shell('<p>Elige un documento guardado. Se conservará una copia fija de su contenido y estado actuales; no confirma el pedido ni modifica el presupuesto.</p><label>Presupuesto<select id="pmQuote"><option value="">Seleccionar…</option>'+rows.map((q,i)=>'<option value="'+i+'">'+E(q.ref)+' · '+E(q.fecha)+' · '+fmt(q.total)+' · '+E(quoteStatus(q.estado))+'</option>').join('')+'</select></label>','PurchaseFinance.saveQuote()','Conservar copia fija');
+  }catch(e){if(current===order&&viewVersion===v)shell('<p>'+E(e.message)+'</p>');}
+ }
+ async function saveQuote(){try{const v=field('pmQuote'),q=v!==''&&quoteChoices[Number(v)];if(!q)throw Error('Selecciona un presupuesto');await save('copiar_presupuesto',{referencia:q.ref,revision:q.revision});}catch(e){toast(e.message);}}
+ function quoteSnapshot(index){const q=current.contenido.presupuestos?.[index];if(!q)return;const s=q.snapshot;
+  shell('<h4>'+E(q.referencia)+' · copia fija</h4><p>'+E(q.capturada)+' · '+E(s.client)+' · '+E(quoteStatus(s.status))+'</p><p>Esta copia no cambia al editar o retirar el documento original.</p><div class="entry-col">'+(s.lines||[]).filter(l=>!l.hidden).map(l=>'<article class="ops-card"><b>'+E(l.name)+'</b><p>'+E(l.desc)+'</p><span>'+E(l.qty)+' '+E(l.unit||'ud')+' × '+fmt(l.price)+'</span></article>').join('')+'</div><p>Total del presupuesto: <b>'+fmt(s.total)+'</b></p><p>'+E(s.legend)+'</p>');
  }
  function conditions(){const c=current.contenido,e=c.economia;
   shell(`<p>Importes de compra en euros. Indica el impuesto real de cada línea; no se asigna un tipo por defecto. El total se calcula en el servidor, redondeando cada línea a dos decimales.</p>${c.lineas.map((l,i)=>`<label>${E(l.snapshot.name)} · ${E(l.qty)} × ${fmt(l.precio)}<span>Impuesto (%)</span><input id="pmTax${i}" type="number" min="0" max="100" step="0.01" value="${E(e?.lineas?.[i]?.tipo??'')}"></label>`).join('')}<div class="pm-grid"><label>Transporte sin impuestos (€)<input id="pmTransport" type="number" min="0" step="0.01" value="${E(e?.transporte??0)}"></label><label>Impuesto del transporte (%)<input id="pmTransportTax" type="number" min="0" max="100" step="0.01" value="${E(e?.tipo_transporte??0)}"></label><label>Retención sobre la base (%)<input id="pmRetention" type="number" min="0" max="100" step="0.01" value="${E(e?.tipo_retencion??0)}"></label></div>`,'PurchaseFinance.saveConditions()','Guardar importes revisados');
@@ -26,7 +39,7 @@ var PurchaseFinance=(()=>{
   shell(`<h4>${names[kind]}</h4><p>${kind==='abono'?'Reduce el importe pendiente; no significa que el proveedor haya devuelto dinero. Indica la referencia de su abono.':kind==='pago'?'Registra únicamente un pago que ya hayas realizado. No se envía dinero desde la app.':'Registra únicamente dinero que el proveedor ya haya devuelto.'}</p><div class="pm-grid"><label>Importe (€)<input id="pmAmount" type="number" min="0.01" step="0.01" max="${E(kind==='pago'?s.pendiente:kind==='reintegro'?s.a_recuperar:s.total-s.abonado)}"></label><label>Fecha real<input id="pmDate" type="date" max="${today()}" value="${today()}"></label></div>`,`PurchaseFinance.saveMovement('${kind}')`);
  }
  async function saveMovement(kind){try{await save(kind,{importe:number('pmAmount'),fecha:field('pmDate')});}catch(e){toast(e.message);}}
- function returns(){shell(`<p>Indica las unidades entregadas de vuelta al proveedor. El abono y el reintegro se registran por separado cuando se produzcan.</p>${current.contenido.lineas.map((l,i)=>`<label>${E(l.snapshot.name)} · disponibles para devolver ${E((l.recibido||0)-(l.devuelto||0))}<input id="pmQty${i}" type="number" min="0" max="${E((l.recibido||0)-(l.devuelto||0))}" step="0.01" value="0"></label>`).join('')}`,'PurchaseFinance.saveReturn()','Registrar devolución');}
+ function returns(){shell(`<p>Indica las unidades entregadas de vuelta al proveedor. El abono y el reintegro se registran por separado cuando se produzcan.</p>${current.contenido.lineas.map((l,i)=>`<label>${E(l.snapshot.name)} · disponibles para devolver ${E(Math.max(0,(l.recibido||0)-(l.devuelto||0)-(l.instalado||0)))}<input id="pmQty${i}" type="number" min="0" max="${E(Math.max(0,(l.recibido||0)-(l.devuelto||0)-(l.instalado||0)))}" step="0.01" value="0"></label>`).join('')}`,'PurchaseFinance.saveReturn()','Registrar devolución');}
  async function saveReturn(){try{await save('devolver',{cantidades:current.contenido.lineas.map((_,i)=>number('pmQty'+i))});}catch(e){toast(e.message);}}
  let invoices=[];
  function invoice(){invoices=(state.entries||[]).filter(e=>e.kind==='out'&&(!e.pid||String(e.pid)===String(current.proyecto_id))&&!(state.entriesDel||{})[String(e.id)]);
@@ -36,5 +49,5 @@ var PurchaseFinance=(()=>{
  function unlink(kind,id){shell(`<p>${kind.startsWith('anular_')?'Anular el registro de un movimiento no revierte ninguna transferencia bancaria. Su historial se conserva.':'Retirar el vínculo no borra la factura ni modifica Contabilidad.'}</p>`,`PurchaseFinance.saveUnlink('${kind}','${id}')`,'Registrar corrección');}
  async function saveUnlink(kind,id){await save(kind,kind.startsWith('anular_')?{movimiento:id}:{vinculo:id});}
  async function save(kind,data){const nota=field('pmNote');if(nota.length<5){toast('Añade una referencia o motivo para el historial');return;}const id=current.id;const r=await ProductOps.money(kind,{id,version:current.version,...data,nota});if(r)open(id);}
- return {open,conditions,saveConditions,movement,saveMovement,returns,saveReturn,invoice,saveInvoice,unlink,saveUnlink};
+ return {open,quotes,saveQuote,quoteSnapshot,conditions,saveConditions,movement,saveMovement,returns,saveReturn,invoice,saveInvoice,unlink,saveUnlink};
 })();
