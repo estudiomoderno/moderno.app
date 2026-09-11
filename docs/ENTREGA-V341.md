@@ -1,6 +1,6 @@
 # v3.41 — Ficha propia y actualización explícita de biblioteca
 
-Estado: candidato validado en clon; publicación pendiente.
+Estado: publicada. Commit 3d7fba3ee1f8957d97681d74530d0f5251f72bfd; Actions 34614673718 correcto. index.html y spec-master.js verificados HTTP 200 e idénticos normalizando finales de línea.
 
 El editor identifica una ficha independiente o su origen único en biblioteca. La revisión del maestro muestra diferencias y permite marcar campos concretos; ninguno se marca por defecto. Aplicar modifica el formulario, y Guardar conserva la ficha mediante el guardado versionado existente. Un cambio posterior del maestro o del formulario exige revisar de nuevo. Cerrar el editor o perder el rol administrador impide aplicar. No se sustituyen cantidades, foto, archivos, notas, identidad, documentos ni decisiones históricas. Si se seleccionan importes se pasa a margen libre, para no recalcular otro importe no seleccionado.
 
