@@ -38,3 +38,9 @@ app_catalogo_reemplazar requiere administrador, plantilla activa, revisión de c
 5. Sustituir un estudio existente es una operación separada: verificar pertenencia, exportar config privado, conservar revisión/hash, asignar UUID de operación y comprobar conservación de documentos, Biblioteca, otros estudios y archivos dentro de la transacción. Destino y comprobantes están en el dossier privado, nunca en Git.
 
 Una versión futura de la plantilla no debe sobrescribir estudios inicializados. Correo y otras integraciones quedan fuera de esta modificación.
+
+## Publicación confirmada
+
+v3.46 publicada el 11 de septiembre de 2026, commit f9e0d003d2b6af069920042c33d8063fe0d8e9f0. GitHub Actions 34627932427 terminó correctamente. Verificados HTTP 200, versión y módulos servidos desde app.moderno.app.
+
+Aplicada la sustitución únicamente al estudio autorizado: 1.068 partidas activas y 54 anteriores archivadas. La transacción confirmó conservación de todos los demás bloques, campos ajenos de config e inventario completo de archivos. Copia previa externa y copia atómica privadas verificadas. Comprobados inicio de sesión existente, búsqueda, apertura y cancelación de edición en la app publicada, sin modificar precios de producción ni errores de consola.
