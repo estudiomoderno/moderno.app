@@ -60,6 +60,8 @@ Validación del candidato: 292 pruebas JavaScript, 24 comprobaciones PHP y 19 Po
 
 Reintento remoto de las mismas dos capturas bajo la identidad ficticia: `already_absorbed` con los mismos IDs. Una consulta posterior confirma exactamente un producto por captura y presupuestos/borradores de control sin cambios. Las pruebas simuladas de desconexión durante la lectura posterior, error de RPC y conflicto local mantienen la captura y no anuncian un éxito falso.
 
+Publicada y verificada el 12/09/2026: commit `d5ddb4f731e90bcf0c82029d1d7208f5b6abd1ec`, [flujo correcto 34659174338](https://github.com/estudiomoderno/moderno.app/actions/runs/34659174338). HTML v3.51.1, JS y CSS respondieron HTTP 200 y coincidieron con el candidato. Comprobación de copias programadas correcta antes del despliegue; no hubo migraciones ni pruebas de escritura en producción.
+
 Commit de publicación: 17a59c6f8b9be25a4f4cece4eea90c0c6098501b. [Actions completado correctamente](https://github.com/estudiomoderno/moderno.app/actions/runs/34657101246). HTML, JS y CSS respondieron HTTP 200 y coincidieron con el candidato; HTML identifica v3.50. Función a través de auth.moderno.app: sin sesión y JWT inválido devuelven 401; preflight del origen app.moderno.app devuelve 204. La copia física de base de datos disponible era del 11/09 a las 00:31:45 UTC; copia de archivos programada correcta del 11/09 a las 02:32:53 UTC. No se ejecutó ninguna restauración.
 
 Comprobación visual en producción: el estudio terminó de cargar, Biblioteca mostró el botón de importación y abrió el diálogo con URL, revisión y estado Borrador. Se cerraron ambos formularios sin capturar ni guardar productos del piloto.
