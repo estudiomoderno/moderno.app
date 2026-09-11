@@ -10,7 +10,7 @@ El estudio sintético tiene sus propios registros y un archivo de ensayo. Ningú
 
 - Funciones Edge y sus ajustes: restauradas y comprobadas en este ensayo.
 - Proveedor Google de inicio de sesión: el nuevo clon lo muestra desactivado. La prueba de correo/contraseña no acredita OAuth Google. Requiere un cliente de pruebas con su callback y configuración propios; no copiar sin control la configuración de producción.
-- Servicio PHP de invitaciones y su configuración de alojamiento/SMTP: no está incluido en la copia de Supabase ni en el repositorio. Se preparó el modo manual `backup-service` del workflow de copias para respaldar por FTPS la carpeta api al Drive privado. El usuario autorizó expresamente copiar código y configuración al Drive empresarial. Los intentos se detuvieron antes de descargar por discrepancia entre el nombre FTP y su certificado TLS (código 62). No se ha efectuado esa exportación ni un nuevo envío de correo.
+- Servicio PHP de invitaciones y su configuración de alojamiento/SMTP: no está incluido en la copia de Supabase ni en el repositorio. Se preparó el modo manual `backup-service` del workflow de copias para respaldar por FTPS la carpeta api al Drive privado. El usuario autorizó expresamente copiar código y configuración al Drive empresarial. Tras corregir el nombre FTPS y conservar la ruta completa del despliegue, la copia de los dos archivos de api terminó y se verificó en Drive. No se ha probado todavía SMTP restaurado ni efectuado un nuevo envío de correo.
 
 Por tanto, el núcleo de acceso por contraseña, datos, archivos y calendario está comprobado; no declarar recuperado de extremo a extremo todo el servicio externo de correo y OAuth.
 
@@ -28,4 +28,12 @@ Por tanto, el núcleo de acceso por contraseña, datos, archivos y calendario es
 
 El 11 de septiembre se ejecutaron 34594792073, 34594952587 y 34595074736. Los dos últimos incorporaron diagnóstico por etapas, clase y código numérico, sin mostrar host, rutas privadas, mensajes del servidor ni credenciales. El último confirmó SSLCertVerificationError / 62 durante la negociación FTPS, antes del inventario y de la transferencia. La conexión temporal a Google funcionó; no hubo subida del servicio ni marcador COMPLETE. No se alteraron servidor ni datos del CRM.
 
-Pendiente identificar el proveedor/panel de alojamiento y confirmar allí el nombre FTPS cubierto por su certificado. El usuario ya autorizó esta copia concreta: no pedir de nuevo permiso para la misma operación. No desactivar validación TLS ni adoptar un nombre obtenido únicamente de una conexión no autenticada. Corregir el destino contra información fiable del proveedor, repetir backup-service y comprobar COMPLETE antes de declarar la copia terminada. Estos fallos manuales no reemplazan ni invalidan la última copia programada de Storage.
+Bloqueo resuelto: el usuario identificó DonDominio y la carpeta app/. El usuario ya autorizó esta copia concreta: no pedir de nuevo permiso para la misma operación. No desactivar validación TLS ni adoptar un nombre obtenido únicamente de una conexión no autenticada. Corregir el destino contra información fiable del proveedor, repetir backup-service y comprobar COMPLETE antes de declarar la copia terminada. Estos fallos manuales no reemplazan ni invalidan la última copia programada de Storage.
+
+## Copia privada completada
+
+El 11 de septiembre de 2026 la ejecución https://github.com/estudiomoderno/moderno.app/actions/runs/34595566064 terminó correctamente con el commit 9fd7b41. El registro confirma descarga estable, subida privada, comprobación por descarga, marcador COMPLETE y 2 archivos verificados. El contenido privado permanece en Drive, no en el repositorio ni en artefactos de Actions.
+
+DonDominio documenta ftp.dondominio.com como servidor alternativo oficial: https://www.dondominio.com/es/help/120/como-subo-web-mediante-ftp/. Su certificado y nombre se verificaron con el almacén de confianza estándar. ftp.moderno.app apunta al mismo servicio pero no está cubierto por el certificado. El workflow manual utiliza el nombre oficial con validación completa y la ruta FTP_SERVER_DIR que ya usa el despliegue. La ruta relativa app/ produjo 550 y se descartó; no reemplazar la ruta completa por esa abreviatura.
+
+Alcance: copia manual verificada del directorio api actual. No constituye todavía un ensayo de ejecución del correo restaurado ni una copia de configuración externa a api. Google OAuth del clon también continúa pendiente. La programación diaria sigue copiando Storage; backup-service se ejecuta manualmente.
