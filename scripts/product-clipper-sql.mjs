@@ -1,0 +1,54 @@
+// Run against an in-memory PostgreSQL engine. Never connects to Supabase.
+// node scripts/product-clipper-sql.mjs /absolute/path/to/pglite/dist/index.js
+import fs from 'node:fs/promises';import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';
+const {PGlite}=await import(process.argv[2]?pathToFileURL(process.argv[2]).href:'@electric-sql/pglite');
+const db=new PGlite();let checks=0;const check=(value,message)=>{assert.ok(value,message);checks++;};
+try{
+ await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;
+ create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
+ create table auth.users(id uuid primary key,email text);create table public.estudios(id uuid primary key);
+ create table public.miembros(user_id uuid,estudio_id uuid,rol text);
+ create table public.datos_estudio(estudio_id uuid,bloque text,contenido jsonb,updated_at timestamptz default now(),primary key(estudio_id,bloque));`);
+ const roles=await fs.readFile(new URL('../SQL/permisos-roles.sql',import.meta.url),'utf8');
+ await db.exec(roles.slice(roles.indexOf('create or replace function public.app_rol_usuario'),roles.indexOf('-- Lista explícita')));
+ await db.exec(await fs.readFile(new URL('../SQL/productos-entrantes.sql',import.meta.url),'utf8'));checks++;
+ const study='11111111-1111-4111-8111-111111111111',other='11111111-1111-4111-8111-111111111112',user='22222222-2222-4222-8222-222222222222',stranger='22222222-2222-4222-8222-222222222223';
+ await db.exec(`insert into estudios values('${study}'),('${other}');insert into auth.users values('${user}','fixture@example.invalid'),('${stranger}','other@example.invalid');insert into miembros values('${user}','${study}','admin'),('${stranger}','${other}','admin');set "test.uid"='${user}';
+ insert into datos_estudio values('${study}','config','{"wsOrder":["cm"]}',now()),('${study}','compras','[{"id":"legacy","name":"Anterior","price":25,"files":[{"data":"original"}]}]',now()),('${study}','proyectos','[{"id":"p","name":"Proyecto","rooms":[{"id":"r","name":"Estancia","sections":[{"id":"s","name":"Sección","items":[]}]}]}]',now()),('${study}','presupuestos','{"quotes":[{"id":"q","price":33.25}],"drafts":[{"id":"d","price":12}]}',now());`);
+ const rpc=async(sql,params=[])=>(await db.query(sql,params)).rows[0];
+ const before=(await rpc(`select contenido from datos_estudio where bloque='presupuestos'`)).contenido;
+ const id='33333333-3333-4333-8333-333333333333',dest={kind:'biblioteca',brand:'cm'};
+ const begin=async(id,destination=dest)=>rpc(`select clipper_iniciar($1,$2,'https://shop.example.com/item',$3) result`,[id,study,JSON.stringify(destination)]);
+ check((await begin(id)).result.start,'new capture');check(!(await begin(id)).result.start,'idempotent capture');
+ await assert.rejects(begin(id,{kind:'biblioteca',brand:'other'}));checks++;
+ const snapshot={schemaVersion:'1.0',url:'https://shop.example.com/item',fields:{name:{value:'Silla'},price:{value:'19.123456'},currency:{value:'EUR'},sku:{value:'S1'}},tax:{status:'unknown'},variant:{verified:true},images:[],missing:['images'],dimensions:[]};
+ await db.query('select clipper_finalizar($1,$2,$3,null)',[id,user,JSON.stringify(snapshot)]);
+ await assert.rejects(rpc(`select clipper_absorber($1,'{"confirmed":true,"category":"Mobiliario","unit":"ud","useSourcePrice":true}')`,[id]));checks++;
+ const revision=JSON.stringify({confirmed:true,category:'Mobiliario',unit:'ud'});
+ const saved=(await rpc('select clipper_absorber($1,$2) result',[id,revision])).result;
+ check(saved.status==='absorbed','absorbed');check((await rpc('select clipper_absorber($1,$2) result',[id,revision])).result.itemId===saved.itemId,'same ID on retry');
+ const library=(await rpc(`select contenido from datos_estudio where bloque='compras'`)).contenido;
+ check(library.length===2&&library[0].files[0].data==='original','old library preserved');check(library[1].status==='Borrador'&&library[1].price===null,'draft and unknown VAT never priced');
+ check(library[1].capture.fields.price.value==='19.123456','decimal snapshot exact');
+ assert.deepEqual((await rpc(`select contenido from datos_estudio where bloque='presupuestos'`)).contenido,before);checks++;
+ await db.exec(`set "test.uid"='${stranger}';set role authenticated;`);
+ check((await db.query('select * from productos_entrantes')).rows.length===0,'RLS hides other studies');
+ await assert.rejects(rpc('select clipper_absorber($1,$2)',[id,revision]));checks++;
+ await db.exec(`reset role;set "test.uid"='${user}';set role authenticated;`);
+ await assert.rejects(db.exec(`update productos_entrantes set estado='listo'`));checks++;
+ await assert.rejects(db.query('select clipper_finalizar($1,$2,$3,null)',[id,user,JSON.stringify(snapshot)]));checks++;
+ await db.exec('reset role');
+ const second='33333333-3333-4333-8333-333333333334';await begin(second,{kind:'lista',projectId:'p',roomId:'r',sectionId:'s'});
+ await db.query('select clipper_finalizar($1,$2,$3,null)',[second,user,JSON.stringify(snapshot)]);
+ await db.exec(`update datos_estudio set contenido=jsonb_set(contenido,'{0,note}','"Concurrent edit"') where bloque='proyectos';`);
+ await rpc('select clipper_absorber($1,$2)',[second,revision]);
+ const project=(await rpc(`select contenido from datos_estudio where bloque='proyectos'`)).contenido[0];check(project.note==='Concurrent edit'&&project.rooms[0].sections[0].items.length===1,'unrelated concurrent edits preserved');
+ const third='33333333-3333-4333-8333-333333333335';await begin(third,{kind:'lista',projectId:'p',roomId:'r',sectionId:'s'});await db.query('select clipper_finalizar($1,$2,$3,null)',[third,user,JSON.stringify(snapshot)]);
+ await db.exec(`update datos_estudio set contenido=jsonb_set(contenido,'{0,rooms,0,sections,0,name}','"Changed"') where bloque='proyectos';`);
+ await assert.rejects(rpc('select clipper_absorber($1,$2)',[third,revision]));checks++;
+ await db.exec(`update productos_entrantes set expires_at=now()-interval '1 day';`);
+ const expired=(await rpc('select clipper_caducadas($1) result',[study])).result;
+ check(expired.length===1&&expired[0].id===third,'cleanup excludes absorbed captures');
+ await assert.rejects(rpc('select clipper_absorber($1,$2)',[third,revision]));checks++;
+ console.log(`${checks} SQL checks passed: isolation, permissions, idempotence, snapshots, drafts, retention, document preservation.`);
+}finally{await db.close();}

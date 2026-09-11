@@ -1,0 +1,13 @@
+.clipper-panel{box-sizing:border-box;width:min(880px,calc(100vw - 24px));max-height:90dvh;border:1px solid var(--card);border-radius:22px;padding:26px;background:var(--white,#fff);color:var(--ink,#242426);box-shadow:0 24px 90px #0003;margin:auto;overflow:auto;font:inherit}
+.clipper-panel::backdrop{background:#15151a80}
+.clipper-panel header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+.clipper-panel header h2{font-size:23px;margin:0 0 8px}.clipper-panel p{line-height:1.5}
+.clipper-panel label:not(.clipper-check){display:block;margin:14px 0 6px}
+.clipper-panel input:not([type=checkbox]):not([type=radio]),.clipper-panel select{box-sizing:border-box;width:100%;padding:11px 12px;border:1px solid var(--card);border-radius:10px;background:var(--bg,#f4f4f5);color:inherit;font:inherit}
+.clipper-url{display:flex;gap:10px}.clipper-url input{flex:1;min-width:0}.clipper-url button{flex-shrink:0}
+.clipper-note,.clipper-missing{color:var(--ink-soft,#696970);font-size:12px}.clipper-panel [data-message]{padding:12px;background:var(--bg,#f5f5f5);border-radius:10px;margin:15px 0}
+.clipper-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.clipper-gallery label{padding:8px;border:1px solid var(--card);border-radius:12px}.clipper-gallery img{width:100%;height:145px;object-fit:contain;background:#fff;border-radius:8px}.clipper-gallery span{display:flex;gap:6px;align-items:center;font-size:12px;margin-top:7px}
+.clipper-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px}.clipper-panel dl{margin:20px 0}.clipper-panel dl>div{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid var(--card)}.clipper-panel dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}.clipper-panel dt{font-weight:600;font-size:12px}
+.clipper-check{display:flex;align-items:flex-start;gap:10px;margin:18px 0;line-height:1.5}.clipper-check input{margin-top:4px}.clipper-panel footer{display:flex;justify-content:space-between;gap:12px;margin-top:22px}
+@media(max-width:560px){.clipper-panel{padding:18px}.clipper-url{flex-direction:column}.clipper-columns{grid-template-columns:1fr}.clipper-panel dl>div{grid-template-columns:105px 1fr;gap:10px}}

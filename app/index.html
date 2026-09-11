@@ -1041,6 +1041,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/contact-controls.css?v=349">
 <script src="/phone-vendor.js?v=1.13.13"></script>
 <script src="/phone-controls.js?v=3491"></script>
+<link rel="stylesheet" href="/product-clipper.css?v=350">
+<script src="/product-clipper.js?v=350"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -5270,7 +5272,7 @@ function libUrlImport(){
  const raw=(document.getElementById('libUrlImp')?.value||'').trim();
  if(!urlDomain(raw)){toast('Pega un enlace válido de producto');return;}
  libEdit(-1);document.getElementById('lbUrl').value=/^https?:\/\//i.test(raw)?raw:'https://'+raw;
- toast('Completa los datos comprobados del producto antes de guardarlo');
+ ProductClipper.open('biblioteca');
 }
 function newLibraryId(){
  let id;do{id=Date.now()*1000+crypto.getRandomValues(new Uint32Array(1))[0]%1000;}while(state.library.some(x=>x.id===id));return id;
@@ -5283,10 +5285,10 @@ function libEdit(i){
   <label>URL de la tienda</label>
   <div style="display:flex;gap:6px">
     <input id="lbUrl" value="${ModernoDaily.escape(x.url||"")}" placeholder="https://www.sklum.com/es/…">
-    <button class="btn btn-gold" style="flex-shrink:0" onclick="libScrape()">Sugerir nombre</button>
+    ${i<0?`<button class="btn btn-gold" style="flex-shrink:0" onclick="ProductClipper.open('biblioteca')">Importar producto</button>`:''}
   </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">El enlace permite sugerir un nombre y una categoría. Confirma la referencia, el proveedor y el precio con la tienda; añade la imagen desde un archivo.</p>
-  <label>Categoría <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— sugerencia por palabras del enlace; revísala</small></label>
+  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">Importa una ficha real de la tienda y revisa los datos antes de crear un nuevo producto. También puedes completar esta ficha manualmente.</p>
+  <label>Categoría <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— elige la categoría del producto</small></label>
   <div style="display:flex;gap:6px">
     <select id="lbCat" style="flex:1">${allCats().map(c=>`<option ${(x.cat||"")===c?"selected":""}>${c}</option>`).join("")}</select>
     <button class="btn btn-ghost" title="Nueva categoría" style="flex-shrink:0" onclick="lbNewCat()">＋</button>
@@ -8771,9 +8773,9 @@ function itemModal(si,ii,fromUrl){
   <label>URL de la tienda</label>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <input id="itUrl" value="${ModernoDaily.escape(it.url||"")}" placeholder="https://www.sklum.com/es/…" style="flex:1 1 200px;min-width:0;max-width:100%">
-    <button class="btn btn-gold" style="flex:0 0 auto" onclick="scrapeUrl()">Sugerir nombre</button>
+    ${ii<0?`<button class="btn btn-gold" style="flex:0 0 auto" onclick="ProductClipper.open('lista',${si})">Importar producto</button>`:''}
   </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">El enlace permite sugerir un nombre. Revisa los datos con el proveedor y añade el precio y la imagen del producto.</p>
+  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">Importa el producto desde la tienda con revisión previa o completa esta ficha manualmente.</p>
   <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
     <div class="thumb" id="itThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('itImgFile').click()">${itImg?`<img ${fileImageAttrs(itImg)}>`:"🛋"}</div>
     <div><label style="margin-top:0">Foto</label>
@@ -8816,7 +8818,7 @@ function itemModal(si,ii,fromUrl){
   itDrawThumb(); delete _mgLast.it; unitSum("itQty","itPrice","itUnit","itSum","itCost");
   itemUploadDraft={form:document.getElementById("itName"),files:itFiles,pending:0};
   itDrawFiles();
-  if(fromUrl){ const u=document.getElementById("itUrl"); u.focus(); }
+  if(fromUrl&&ii<0){ ProductClipper.open('lista',si); }
 }
 function itemToLibrary(){
  if(_accessRole!=='admin'){toast('Solo el administrador puede añadir productos a biblioteca');return;}

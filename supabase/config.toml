@@ -5,3 +5,8 @@ verify_jwt = false
 
 [functions.portal-archivo]
 verify_jwt = false
+
+# Product Clipper verifies the user JWT with Auth.getUser before every operation.
+# Supports current signing keys instead of the legacy-secret-only gateway.
+[functions.product-clipper]
+verify_jwt = false
