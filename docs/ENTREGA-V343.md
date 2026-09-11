@@ -1,6 +1,6 @@
 # v3.43 — Revisiones aprobadas y cantidades trazables
 
-Estado: candidato validado; publicación pendiente.
+Estado: publicada y verificada. Commit 745cbaea79a4546e4eaf422722d7ac0039a34bc3; Actions 34615935687 correcto. index.html, project-quotes.js y product-operations.js verificados HTTP 200 y coincidentes.
 
 Compras y aprobaciones muestra los acabados de la copia sometida a aprobación y su referencia de revisión. El servidor existente ya exige una revisión exacta y conserva su invalidación incluso si la ficha vuelve de A a B y luego a A. La nueva entrega comprueba ese comportamiento sin sustituir las funciones ni migrar datos.
 
