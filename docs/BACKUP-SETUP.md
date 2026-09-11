@@ -64,7 +64,7 @@ GitHub puede retrasar ejecuciones y desactiva los workflows programados de repos
 
 La copia externa de Storage no contiene pedidos ni aprobaciones. Para recuperar el estudio completo se necesita además una copia de base de datos posterior a la instalación de v3.35, incluyendo public.app_operaciones, public.app_operacion_eventos, sus funciones, permisos y el disparador de invalidación. No basta con recuperar datos_estudio.
 
-Comprobación pendiente: restaurar una copia posterior a v3.35 en un entorno aislado y verificar que conserva operaciones y eventos. Las 20 pruebas SQL de la entrega comprueban el funcionamiento del módulo, no sustituyen ese ensayo de recuperación. No declarar esta comprobación terminada hasta disponer de evidencia.
+Estado actualizado: ensayo aislado terminado con el alcance y límites descritos en el cierre del 11 de septiembre, al final de este documento. Las 20 pruebas SQL de la entrega comprueban el funcionamiento del módulo y son distintas del ensayo de recuperación.
 
 En el ensayo:
 1. Anotar fecha y alcance de la copia de base de datos y de Storage; pueden corresponder a momentos distintos.
@@ -95,3 +95,13 @@ La copia contiene cero operaciones y cero eventos: no permite certificar conserv
 - Pendiente: ejecutar recuperación controlada por API sobre el clon, releer los 121 contenidos, conservar propietarios y retirar únicamente las 13 copias del ensayo. Se ha solicitado autorización específica de la credencial privilegiada del nuevo clon; no reutilizar la autorización del clon anterior ni usar credenciales de producción.
 
 Se añade `scripts/verify-recovery-files.mjs`: compara una carpeta de copia completa con una carpeta recuperada, ambas con subcarpeta objects; exige manifiesto y marca completa coherentes, comprueba todos los bytes y rechaza archivos extra y rutas no seguras. Uso: `node scripts/verify-recovery-files.mjs CARPETA_COPIA CARPETA_RECUPERADA`. Seis pruebas automatizadas verifican igualdad, alteración con igual tamaño, extras, marca incompleta, salida de ruta y duplicados. No conecta a Supabase ni modifica archivos.
+
+### Cierre del ensayo aislado — 11 septiembre 2026
+
+Los puntos pendientes de archivos de las anotaciones anteriores quedan resueltos. Con autorización específica se utilizó temporalmente la clave del nuevo clon en un comprobador local limitado a ese proyecto. Se recuperaron las 121 rutas originales mediante la API de Storage con upsert y se descargó cada objeto del clon: los 15.626.494 bytes coincidieron exactamente con la copia validada. La comprobación terminó a las 08:44:01 UTC. No se guardó la clave en archivos ni en GitHub; el proceso temporal quedó detenido.
+
+Comprobación posterior por SQL: 121 objetos, 121 coincidencias de tamaño y MD5, cero objetos adicionales, 121 identificadores y propietarios originales conservados, bucket privado. Las 13 copias con sufijo creadas durante el ensayo se compararon con su original antes de retirarlas por la API. Se conservaron los 18 bloques de datos y quedaron cero operaciones y eventos ficticios tras la prueba transaccional. Una solicitud de descarga sin credenciales fue rechazada por falta de autorización.
+
+Alcance acreditado: estructura de la base física posterior a v3.35, comparación completa de tres operaciones y ocho eventos ficticios mediante recuperación lógica, y recuperación efectiva de los 121 archivos. La base física tenía cero operaciones y eventos; este ensayo no acredita un historial poblado dentro de esa copia física. Tampoco certifica todos los flujos de inicio de sesión e integraciones en un entorno nuevo. La supervisión externa de copias ausentes sigue pendiente. Producción no recibió escrituras durante este ensayo.
+
+Para repetir desde otro ordenador: seguir el inventario de solo lectura, descargar la copia privada completa, comprobar contenido contra el punto de base elegido y utilizar exclusivamente credenciales del destino aislado. Antes y después del upsert comparar identificadores, rutas, propietarios, privacidad e inventario. No usar la subida del panel como sustituto: puede renombrar objetos existentes. No retirar objetos salvo los creados expresamente por el propio ensayo y verificados como tales. Las huellas y evidencias con rutas privadas se mantienen fuera del repositorio público.

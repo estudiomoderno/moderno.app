@@ -54,3 +54,7 @@ Es una gestión manual de aprobaciones y compras con registro en servidor. No in
 - index.html, appearance-b.css, specifications.js y product-operations.js: HTTP 200 y contenido idéntico al candidato, normalizando finales de línea.
 - Comprobación de rutas de producción sin datos reales: token inexistente devuelve lista vacía; visitante anónimo recibe rechazo de acceso a operaciones comerciales.
 - Revisión visual en escritorio, modo oscuro y marco móvil de 390 px. El flujo completo de prueba utilizó exclusivamente el estudio ficticio del clon.
+
+## Recuperación comprobada — 11 septiembre 2026
+
+Ensayo aislado posterior a la publicación: estructura de la base restaurada, recuperación lógica idéntica de tres operaciones y ocho eventos ficticios con ROLLBACK, y 121 archivos recuperados y releídos byte a byte. Identificadores y propietarios conservados; bucket privado y cero archivos adicionales. No se modificó producción. Alcance y límites en BACKUP-SETUP.md: la copia física no contenía operaciones y este ensayo no valida todas las integraciones de un entorno nuevo.

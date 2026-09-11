@@ -54,3 +54,7 @@ Corrección de presentación de facturas y cobros históricos. Ver FACTURAS-V333
 
 ## v3.33.2
 Tema oscuro actualizado y selector móvil antes del usuario. Ver TEMA-V3332.md.
+
+## v3.35 y recuperación — 11 septiembre 2026
+
+Versión publicada y verificada; entrega en ENTREGA-V335.md. Cerrado el ensayo aislado de recuperación de 121 archivos, con contenido, identificadores y propietarios comprobados, y comparación lógica de tres operaciones y ocho eventos ficticios. El ensayo no escribió en producción. Consultar el cierre de BACKUP-SETUP.md para los límites y el procedimiento; las anotaciones anteriores describen estados históricos. La supervisión externa de copias ausentes continúa pendiente.
