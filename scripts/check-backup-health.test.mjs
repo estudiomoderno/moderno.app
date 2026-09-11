@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {backupHealth,check} from './check-backup-health.mjs';
+const now=Date.parse('2026-09-11T12:00:00Z');
+const run=(hours,extra={})=>({event:'schedule',head_branch:'main',status:'completed',conclusion:'success',created_at:new Date(now-hours*3600000).toISOString(),html_url:'https://github.com/example/run',...extra});
+test('recent scheduled copy is healthy',()=>assert.equal(backupHealth([run(10)],now).ok,true));
+test('manual test does not hide missing scheduled copy',()=>assert.equal(backupHealth([run(1,{event:'workflow_dispatch'})],now).ok,false));
+test('30 hour grace detects absence without claiming failure',()=>{assert.equal(backupHealth([run(30)],now).ok,true);assert.match(backupHealth([run(31)],now).reasons[0],/30 horas/);});
+test('failed latest run is reported even with a recent earlier success',()=>assert.equal(backupHealth([run(1,{conclusion:'failure'}),run(25)],now).ok,false));
+test('recovery clears the failure',()=>assert.equal(backupHealth([run(2,{conclusion:'failure'}),run(1)],now).ok,true));
+test('stuck run is detected and a fresh run is tolerated',()=>{assert.equal(backupHealth([run(.5,{status:'in_progress',conclusion:null}),run(24)],now).ok,true);assert.equal(backupHealth([run(2,{status:'queued',conclusion:null}),run(24)],now).ok,false);});
+test('API failure is unknown rather than a healthy copy',async()=>assert.rejects(()=>check(async()=>({ok:false})),/GitHub/));

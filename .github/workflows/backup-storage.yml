@@ -11,7 +11,7 @@ on:
         required: true
         default: test-drive
         type: choice
-        options: [test-drive, backup]
+        options: [test-drive, backup, backup-service]
 
 permissions:
   contents: read
@@ -33,7 +33,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Comprobar lógica
-        run: node --test scripts/backup-storage.test.mjs
+        run: |
+          node --test scripts/backup-storage.test.mjs
+          python3 scripts/backup-service.test.py
       - name: Instalar herramienta de copia
         run: |
           sudo apt-get update -qq
@@ -55,9 +57,20 @@ jobs:
           create_credentials_file: false
           export_environment_variables: false
       - name: Copiar y verificar
+        if: github.event_name == 'schedule' || inputs.mode != 'backup-service'
         env:
           BACKUP_MODE: ${{ github.event_name == 'schedule' && 'backup' || inputs.mode }}
           GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
           SOURCE_CONFIG: ${{ secrets.BACKUP_SOURCE_CONFIG }}
         run: node scripts/run-backup-ci.mjs
+      - name: Respaldar código privado del servicio
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'backup-service'
+        env:
+          GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: python3 scripts/backup-service.py
