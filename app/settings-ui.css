@@ -37,7 +37,7 @@ body.navmini .settings-nav button{justify-content:center;padding:12px 4px}
 .settings-page textarea{min-height:110px;resize:vertical}
 .settings-page .settings-check{display:flex;gap:12px;align-items:center;padding:14px 0;line-height:1.5}
 .settings-check input{width:18px;min-height:18px;height:18px}
-.settings-actions{position:sticky;bottom:12px;background:var(--white);border:1px solid var(--settings-line);border-radius:14px;padding:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;z-index:2}
+.settings-actions{position:static;padding:8px 0;display:flex;gap:12px;align-items:center;flex-wrap:wrap;z-index:2}
 .settings-status{flex:1;min-width:180px;font-size:13px;line-height:1.6}
 .settings-status[data-error=true]{color:var(--red-ink,#b32b2b)}
 .settings-person{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
@@ -49,6 +49,17 @@ body.navmini .settings-nav button{justify-content:center;padding:12px 4px}
 .settings-table th,.settings-table td{text-align:left;padding:16px 12px;border-bottom:1px solid var(--settings-line);vertical-align:top}
 .settings-table td{overflow-wrap:anywhere}
 .settings-page :focus-visible,.settings-switch :focus-visible,.settings-nav :focus-visible{outline:2px solid var(--ink);outline-offset:3px}
-@media(max-width:760px){.settings-page{margin-top:12px}.settings-page h1{font-size:25px}.settings-section{padding:20px 16px}.settings-fields{grid-template-columns:1fr;gap:20px}.settings-actions{bottom:6px}.settings-page .btn{min-height:44px}.settings-nav button{min-height:46px}body.navmini .settings-nav .settings-nav-label,body.navmini .settings-switch-name{display:block}body.navmini .settings-nav button{justify-content:flex-start;padding:12px}.settings-popup{width:245px}}
+@media(max-width:760px){.settings-page{margin-top:12px}.settings-page h1{font-size:25px}.settings-section{padding:20px 16px}.settings-fields{grid-template-columns:1fr;gap:20px}.settings-page .btn{min-height:44px}.settings-nav button{min-height:46px}body.navmini .settings-nav .settings-nav-label,body.navmini .settings-switch-name{display:block}body.navmini .settings-nav button{justify-content:flex-start;padding:12px}.settings-popup{width:245px}}
 @media(prefers-reduced-motion:reduce){.settings-page *,.settings-switch *,.settings-nav *{transition:none!important;animation:none!important}}
 @media(max-width:760px){body.navmini .settings-switch[open]{position:relative}body.navmini .settings-switch .settings-popup{position:absolute;left:0;top:calc(100% + 6px);width:100%}}
+
+.settings-invite{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) auto;gap:20px;align-items:end;margin-top:24px}
+.settings-invite>.btn{min-height:44px;margin:0}
+.settings-team-actions{display:flex;gap:12px;flex-wrap:wrap}
+.settings-role{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:22px 0;border-bottom:1px solid var(--settings-line)}
+.settings-role>div{min-width:0}.settings-role p{margin:8px 0 0}.settings-role .settings-team-actions{flex-shrink:0}
+@media(max-width:760px){.settings-invite{grid-template-columns:1fr;gap:20px}.settings-role{align-items:stretch;flex-direction:column}.settings-invite>.btn{justify-self:start}}
+
+.settings-workspaces,.settings-bank-choices{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:22px}.settings-workspaces .btn,.settings-bank-choices .btn{white-space:normal;overflow-wrap:anywhere;text-align:left}
+
+@media(max-width:600px){.settings-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.settings-table,.settings-table tbody,.settings-table tr,.settings-table td{display:block;width:auto}.settings-table tr{padding:16px 0;border-bottom:1px solid var(--settings-line)}.settings-table td{border:0;padding:5px 0;overflow-wrap:anywhere}.settings-table td:nth-child(2)::before{content:'Rol: ';font-weight:650}}

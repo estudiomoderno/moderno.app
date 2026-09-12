@@ -46,7 +46,7 @@ create or replace function public.app_finanzas_lectura(v jsonb) returns jsonb
 language sql immutable set search_path='' as $$
  select jsonb_build_object(
  'invoices',coalesce((select jsonb_agg(
-   public.portal_campos(f,array['ref','num','date','brand','client','clientIdx','projectId','total','subtotal','iva','irpf','disc','status','legend','due'])
+   public.portal_campos(f,array['ref','num','date','brand','client','clientIdx','projectId','total','subtotal','iva','irpf','disc','status','legend','due','paymentIban'])
    ||jsonb_build_object('files',public.app_pdf_contable(f))
    ||jsonb_build_object('lines',coalesce((select jsonb_agg(public.portal_campos(l,array['name','desc','qty','price','unit','cap','on','hidden']))
        from jsonb_array_elements(coalesce(f->'lines','[]')) l),'[]')))

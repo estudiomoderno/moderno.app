@@ -4,8 +4,8 @@ body .phone-control{display:flex;align-items:center;width:100%;min-width:0;borde
 body .phone-control:focus-within{outline:2px solid #a9c8ed;outline-offset:1px}
 body .phone-control .phone-country{position:relative;display:flex;flex:0 0 68px;align-self:stretch;min-height:38px;border-right:1px solid var(--line,#dfe1e6)}
 body .phone-control .phone-country img{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:22px;height:17px;object-fit:cover;border-radius:2px;pointer-events:none;z-index:1}
-body .phone-control .phone-country::after{content:'';position:absolute;right:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;background:var(--ink,#25262b);mask:url('/select-arrow.svg') center/contain no-repeat;pointer-events:none}
-body .phone-control .phone-country select{appearance:auto!important;background:transparent!important;color:transparent!important;border:0!important;border-radius:0!important;margin:0!important;padding:0 6px 0 36px!important;min-width:0;width:100%;height:100%;cursor:pointer;box-shadow:none!important}
+body .phone-control .phone-country::after{content:'';position:absolute;right:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;background:var(--ink,#25262b);mask:url('/select-arrow.svg?v=353') center/contain no-repeat;pointer-events:none}
+body .phone-control .phone-country select{appearance:none!important;background:transparent!important;color:transparent!important;border:0!important;border-radius:0!important;margin:0!important;padding:0 6px 0 36px!important;min-width:0;width:100%;height:100%;cursor:pointer;box-shadow:none!important}
 body .phone-control .phone-country select option{color:var(--ink,#25262b);background:var(--card,#fff)}
 body .phone-control input{flex:1;min-width:0;width:0!important;border:0!important;border-radius:0!important;margin:0!important;padding:10px 11px!important;background:transparent!important;color:var(--ink,#25262b);box-shadow:none!important;outline:none!important;line-height:1.4}
 body .phone-control:has(input:disabled) select,body .phone-control:has(input[readonly]) select{pointer-events:none;opacity:.6}

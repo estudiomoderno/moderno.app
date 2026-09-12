@@ -22,7 +22,7 @@ test('settings validates decimal percentages and series',()=>{
  assert.equal(C.series(' fc26 '),'FC26');for(const v of ['','FC-1','ABCDEFG','<img>'])assert.throws(()=>C.series(v));
 });
 test('settings and inline application scripts parse',()=>{
- for(const file of ['settings-ui.js','settings-icons.js','settings-core.js'])new vm.Script(fs.readFileSync(new URL('../app/'+file,import.meta.url),'utf8'));
+ for(const file of ['settings-ui.js','settings-icons.js','settings-core.js','team-settings.js'])new vm.Script(fs.readFileSync(new URL('../app/'+file,import.meta.url),'utf8'));
  const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
  for(const m of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g))new vm.Script(m[1]);
 });

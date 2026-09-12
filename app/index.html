@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script src="/settings-core.js?v=353"></script>
 <script>try{ if(/#\/?(cliente|obra)\/[a-z0-9]+/i.test(location.hash)) document.documentElement.classList.add("portalboot"); }catch(e){}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -909,7 +910,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 </style>
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
-<link rel="stylesheet" href="/settings-ui.css?v=3521">
+<link rel="stylesheet" href="/settings-ui.css?v=353">
 </head>
 <body>
 <div class="app">
@@ -1039,9 +1040,9 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <style>#catalogSearch,#catalogPickerSearch{border-radius:12px;border:1px solid var(--card);padding:10px 12px;background:var(--white);color:var(--ink);font:inherit}</style>
 <script src="/catalog-core.js?v=346"></script>
 <link rel="stylesheet" href="/catalog.css?v=3481">
-<link rel="stylesheet" href="/select-controls.css?v=349">
+<link rel="stylesheet" href="/select-controls.css?v=353">
 <script src="/catalog-ui.js?v=348"></script>
-<link rel="stylesheet" href="/contact-controls.css?v=349">
+<link rel="stylesheet" href="/contact-controls.css?v=353">
 <script src="/phone-vendor.js?v=1.13.13"></script>
 <script src="/phone-controls.js?v=3491"></script>
 <link rel="stylesheet" href="/product-clipper.css?v=3511">
@@ -3499,7 +3500,7 @@ async function portalInvoicePrint(ref){
         || (state.portalFacturas||[]).find(x=>x.ref===ref)
         || (state.invoices||[]).filter(v=>{const p=state.projects.find(x=>x.id===state.currentProject);return p&&v.client===p.client;}).find(x=>x.ref===ref);
   if(!f){ toast("No encuentro esa factura"); return; }
-  const em=state.portalEmisor||state.emitter||{};
+  const em={...(state.portalEmisor||state.emitter||{})};if(f.paymentIban!=null)em.iban=f.paymentIban;
   const _row=l=>{ const nm=l.c||l.concept||l.name||"", q=+(l.q??l.qty??1)||1, p=+(l.p??l.price??0)||0, ds=(l.desc||l.d||"").trim()||lineDesc({name:nm});
     return `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">${nm}${ds?`<div style="font-size:10.5px;color:#666;margin-top:2px;white-space:pre-line">${ds.replace(/</g,"&lt;")}</div>`:""}</td><td style="padding:6px 8px;text-align:right;border-bottom:1px solid #eee;color:#555">${fmt(p)}</td><td style="padding:6px 8px;text-align:center;border-bottom:1px solid #eee">${q}${l.unit&&l.unit!=="ud"?" "+unitLabel(l.unit):""}</td><td style="padding:6px 8px;text-align:right;border-bottom:1px solid #eee;font-weight:700">${fmt(q*p)}</td></tr>`; };
   const _L=(f.lines||[]).filter(lineOn).map(l=>({...l, cost:undefined, provider:undefined, name:l.name||l.c||l.concept||"", qty:+(l.q??l.qty??1)||1, price:+(l.p??l.price??0)||0}));
@@ -3519,7 +3520,7 @@ async function portalInvoicePrint(ref){
       ${lineas}
     </table>
     <div style="text-align:right;margin-top:14px;font-size:16px">${tr("pdf.total")}: <b>${fmt(+f.total||0)}</b></div>
-    ${em.iban?`<p style="font-size:11px;color:#555;margin-top:18px">${tr("pdf.transferencia")}: <b>${em.iban}</b></p>`:""}
+    ${em.iban?`<p style="font-size:11px;color:#555;margin-top:18px">${tr("pdf.transferencia")}: <b>${ModernoDaily.escape(em.iban)}</b></p>`:""}
   </div>`;
   await printAs(((state.quotes||[]).some(q=>q.ref===f.ref)?"Presupuesto ":"Factura ")+f.ref);
 }
@@ -6409,7 +6410,7 @@ function vInvoice(kind){
         </tbody></table>
         ${d.legend?`<p style="font-size:11px;color:var(--ink-soft);margin-top:10px">${d.legend}</p>`:""}
         <div class="inv-foot">
-          <div><span class="tag" style="background:var(--gold-soft);font-size:10px;font-weight:800;border-radius:99px;padding:2px 9px">▦ Forma de pago</span><br><br>Transferencia<br><b>${state.emitter.iban||state.account.iban||"\u2014"}</b></div>
+          <div><span class="tag" style="background:var(--gold-soft);font-size:10px;font-weight:800;border-radius:99px;padding:2px 9px">▦ Forma de pago</span><br><br>Transferencia<br><b>${ModernoDaily.escape(ModernoSettingsCore.paymentIban(state.account,state.emitter,d))||"\u2014"}</b></div>
           <div style="padding-left:20px;border-left:1px solid #ECECEA"><span class="tag" style="background:var(--gold-soft);font-size:10px;font-weight:800;border-radius:99px;padding:2px 9px">✆ Contacto</span><br><br>Teléfono<br><b>${state.emitter.phone}</b></div>
         </div>
       </div>
@@ -8512,9 +8513,9 @@ function payModal(ref,pid,mode){
   </div>`
   :`<div style="background:var(--card);border-radius:12px;padding:14px;margin-top:10px;font-size:13px">
     <div class="entry" style="background:var(--white)">Beneficiario<span class="amt" style="color:var(--ink)">${state.emitter.name}</span></div>
-    <div class="entry" style="background:var(--white)">IBAN<span class="amt" style="color:var(--ink);font-family:monospace;font-size:12px">${state.account.iban}</span></div>
+    <div class="entry" style="background:var(--white)">IBAN<span class="amt" style="color:var(--ink);font-family:monospace;font-size:12px">${ModernoDaily.escape(v.paymentIban??state.account.iban)}</span></div>
     <div class="entry" style="background:var(--white)">Concepto<span class="amt" style="color:var(--ink)">${v.ref}</span></div>
-    <button class="chip neutral" style="margin-top:8px;cursor:pointer" onclick="navigator.clipboard&&navigator.clipboard.writeText('${state.account.iban}');toast('IBAN copiado ✓')">Copiar IBAN</button>
+    <button class="chip neutral" style="margin-top:8px;cursor:pointer" onclick="navigator.clipboard&&navigator.clipboard.writeText(${ModernoDaily.escape(JSON.stringify(v.paymentIban??state.account.iban))});toast('IBAN copiado ✓')">Copiar IBAN</button>
   </div>
   <div class="modal-foot">
     <button class="btn btn-ghost" onclick="closeModal();projectPortal(${pid})">Cancelar</button>
@@ -10489,6 +10490,8 @@ function saveDoc(){
   try{state.catalog=ModernoCatalog.applyPriceIntents({catalog:state.catalog},d.lines,{role:_accessRole,studyId:ESTUDIO_ID}).catalog;}catch(e){toast(e.message);return;}
   const dateEs = d.date.split("-").reverse().join("/");
   const doc={ref,brand:d.brand,client:cli.name,clientIdx:d.clientIdx,total,sub,due:d.due||null,lines:d.lines.map(l=>{const saved={...l};delete saved.catalogPriceIntent;return saved;}),iva:{...d.iva},irpf:{...d.irpf},disc:{...d.disc},legend:d.legend,date:d.date,validUntil:d.validUntil,capSummary:!!d.capSummary,projectId:d.projectId||null};
+  if(!d.editRef)doc.paymentIban=ModernoSettingsCore.paymentIban(state.account,state.emitter,d);
+  else {const old=arr.find(x=>x.ref===d.editRef);if(old&&Object.hasOwn(old,'paymentIban'))doc.paymentIban=old.paymentIban;}
   if(!isF) doc.status = d.editRef ? (arr.find(x=>x.ref===d.editRef)?.status||"pend") : "pend";
   if(!isF && d.editRef) doc.projectId = arr.find(x=>x.ref===d.editRef)?.projectId;
   if(d.editRef){
@@ -10604,7 +10607,7 @@ function doAcceptQuote(i){
 function loadDoc(i,kind){
   const isF = kind==="factura";
   const doc = (isF?state.invoices:state.quotes)[i];
-  state.draft = { kind, brand:doc.brand, clientIdx:doc.clientIdx, lines:doc.lines.map(l=>({...l})),
+  state.draft = { ...(Object.hasOwn(doc,'paymentIban')?{paymentIban:doc.paymentIban}:{}), kind, brand:doc.brand, clientIdx:doc.clientIdx, lines:doc.lines.map(l=>({...l})),
     iva:{...doc.iva}, irpf:{...doc.irpf}, disc:{...(doc.disc||{on:false,pct:10})}, legend:doc.legend||"", validUntil:doc.validUntil||"",
     num:+doc.ref.split("-")[1], date:doc.date||new Date().toISOString().slice(0,10), editRef:doc.ref, fromEntry:null, fromHito:null, capSummary:!!doc.capSummary, projectId:doc.projectId||null };
   go(isF?"facturas":"presupuestos");
@@ -11242,7 +11245,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.52.1";
+const MODERNO_VER="v3.53";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13059,8 +13062,8 @@ function loginGo(prov){
 /* La ruta se resuelve en el arranque principal (go enrutado); aquí solo se limpia el # heredado */
 try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/"); }catch(e){}
 </script>
-<script src="/settings-icons.js?v=3521"></script>
-<script src="/settings-core.js?v=3521"></script>
-<script src="/settings-ui.js?v=3521"></script>
+<script src="/settings-icons.js?v=353"></script>
+<script src="/team-settings.js?v=353"></script>
+<script src="/settings-ui.js?v=353"></script>
 </body>
 </html>

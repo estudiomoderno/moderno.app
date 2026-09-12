@@ -40,7 +40,7 @@ begin
    jsonb_build_object('emisor',public.portal_campos(datos->'emisor',array['name','nif','addr','city','iban']),
    'cobrado',case when p#>>'{cliShare,money}'='true' then datos->'cobrado' else '0'::jsonb end,
    'respuestas',coalesce((select jsonb_agg(public.portal_campos(x,array['tipo','item','texto','d'])) from jsonb_array_elements(coalesce(datos->'respuestas','[]')) x),'[]'),
-   'facturas',coalesce((select jsonb_agg(public.portal_campos(f,array['ref','date','total','status'])||jsonb_build_object('lines',coalesce((select jsonb_agg(public.portal_campos(l,array['c','concept','name','q','qty','p','price','desc','d','unit','cap','on'])) from jsonb_array_elements(coalesce(f->'lines','[]')) l),'[]'))) from jsonb_array_elements(coalesce(datos->'facturas','[]')) f),'[]')) else '{}'::jsonb end;
+   'facturas',coalesce((select jsonb_agg(public.portal_campos(f,array['ref','date','total','status','paymentIban'])||jsonb_build_object('lines',coalesce((select jsonb_agg(public.portal_campos(l,array['c','concept','name','q','qty','p','price','desc','d','unit','cap','on'])) from jsonb_array_elements(coalesce(f->'lines','[]')) l),'[]'))) from jsonb_array_elements(coalesce(datos->'facturas','[]')) f),'[]')) else '{}'::jsonb end;
  return datos;
 end;
 $$;

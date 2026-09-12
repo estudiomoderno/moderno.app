@@ -1,0 +1,54 @@
+// Isolated PostgreSQL test: no network, production records or emails.
+import fs from 'node:fs/promises';import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';
+const {PGlite}=await import(pathToFileURL(process.argv[2]).href);const db=new PGlite();let checks=0;
+const query=async(s,p=[])=>(await db.query(s,p)).rows[0];const check=(v,m)=>{assert.ok(v,m);checks++;};
+const a='11111111-1111-4111-8111-111111111111',b='11111111-1111-4111-8111-111111111112';
+const admin='22222222-2222-4222-8222-222222222221',member='22222222-2222-4222-8222-222222222222',other='22222222-2222-4222-8222-222222222223',invited='22222222-2222-4222-8222-222222222224';
+try{
+ await db.exec(`create role anon;create role authenticated;create schema auth;
+ create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
+ create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');
+ create table estudios(id uuid primary key);create table miembros(user_id uuid primary key references auth.users(id),estudio_id uuid references estudios(id),rol text);
+ create table invitaciones(estudio_id uuid references estudios(id),email text,rol text,primary key(estudio_id,email));
+ create table datos_estudio(estudio_id uuid,bloque text,contenido jsonb,updated_at timestamptz default now(),primary key(estudio_id,bloque));
+ create table calendario_tokens(estudio_id uuid,user_id uuid);
+ create function guardar_bloque_versionado(p_estudio uuid,p_bloque text,p_contenido jsonb,p_base timestamptz) returns jsonb language plpgsql as $$begin
+ update public.datos_estudio set contenido=p_contenido,updated_at=clock_timestamp() where estudio_id=p_estudio and bloque=p_bloque;return jsonb_build_object('updated_at',clock_timestamp());end$$;
+ insert into estudios values('${a}'),('${b}');insert into auth.users(id,email) values('${admin}','admin@example.invalid'),('${member}','member@example.invalid'),('${other}','other@example.invalid'),('${invited}','invite@example.invalid');
+ insert into miembros values('${admin}','${a}','admin'),('${member}','${a}','miembro'),('${other}','${b}','admin');
+ insert into datos_estudio values('${a}','config','{"users":[{"email":"member@example.invalid","role":"Colaborador"}]}',now()),('${a}','facturas','{"control":33.25}',now()),('${b}','config','{"control":12}',now());
+ set "test.uid"='${admin}';`);
+ const roles=await fs.readFile(new URL('../SQL/permisos-roles.sql',import.meta.url),'utf8');
+ await db.exec(roles.slice(roles.indexOf('create or replace function public.app_rol_usuario'),roles.indexOf('-- Lista explícita')));
+ await db.exec(await fs.readFile(new URL('../SQL/flujos-trabajo.sql',import.meta.url),'utf8'));
+ await db.exec(await fs.readFile(new URL('../SQL/equipo-roles.sql',import.meta.url),'utf8'));
+ const before=(await query(`select jsonb_agg(jsonb_build_object('study',estudio_id,'block',bloque,'data',case when bloque='config' then contenido-'users' else contenido end) order by estudio_id,bloque) data from datos_estudio d`)).data;
+ const r=(await query('select app_rol_guardar($1,null,$2,$3,null) r',[a,'Diseño','colaborador'])).r;
+ await query('select app_equipo_asignar($1,$2,$3)',[a,member,r.id]);
+ check((await query('select app_rol_usuario($1,$2) r',[a,member])).r==='colaborador','assignment effective');
+ const updated=(await query('select app_rol_guardar($1,$2,$3,$4,$5) r',[a,r.id,'Gestión documental','gestoria',1])).r;
+ check(updated.id===r.id&&updated.revision===2,'rename retains ID');
+ check((await query('select app_rol_usuario($1,$2) r',[a,member])).r==='gestoria','permission change effective without JSON edit');
+ await assert.rejects(query('select app_rol_guardar($1,$2,$3,$4,$5)',[a,r.id,'Old','cliente',1]));checks++;
+ await query('select app_equipo_invitar($1,$2,$3,false)',[a,'invite@example.invalid',r.id]);
+ await db.exec(`insert into miembros(user_id,estudio_id,rol) values('${invited}','${a}','miembro');delete from invitaciones where email='invite@example.invalid';`);
+ check((await query('select role_id from miembros where user_id=$1',[invited])).role_id===r.id,'acceptance keeps selected role ID');
+ check((await query('select app_rol_usuario($1,$2) r',[a,invited])).r==='gestoria','accepted permissions effective');
+ await assert.rejects(query('select app_rol_borrar($1,$2,2)',[a,r.id]));checks++;
+ await assert.rejects(query('select app_equipo_asignar($1,$2,$3)',[a,admin,r.id]));checks++;
+ await assert.rejects(query('select app_equipo_asignar($1,$2,$3)',[b,other,r.id]));checks++;
+ await db.exec(`set "test.uid"='${member}';set role authenticated;`);
+ await assert.rejects(query('select app_equipo($1)',[a]));checks++;
+ await assert.rejects(query('select app_rol_guardar($1,null,$2,$3,null)',[a,'Escalada','colaborador']));checks++;
+ await assert.rejects(query('select * from app_roles'));checks++;
+ await db.exec(`reset role;set "test.uid"='${admin}';`);
+ check(JSON.stringify((await query(`select jsonb_agg(jsonb_build_object('study',estudio_id,'block',bloque,'data',case when bloque='config' then contenido-'users' else contenido end) order by estudio_id,bloque) data from datos_estudio d`)).data)===JSON.stringify(before),'role changes preserve unrelated config and all documents');
+ const version=(await query('select updated_at from datos_estudio where estudio_id=$1 and bloque=$2',[a,'config'])).updated_at;
+ await assert.rejects(query('select app_revocar_acceso($1,$2,$3)',[a,'admin@example.invalid',version]));checks++;
+ await query('select app_revocar_acceso($1,$2,$3)',[a,'member@example.invalid',version]);
+ check((await query('select app_rol_usuario($1,$2) r',[a,member])).r==='sin_acceso','revocation effective');
+ check((await query('select count(*) n from auth.users where id=$1',[member])).n===1,'global account preserved');
+ check((await query('select contenido from datos_estudio where estudio_id=$1 and bloque=$2',[a,'facturas'])).contenido.control===33.25,'documents preserved');
+ check((await query('select app_rol_usuario($1,$2) r',[b,other])).r==='admin','other study unaffected');
+ console.log(`${checks} team SQL checks passed.`);
+}finally{await db.close();}
