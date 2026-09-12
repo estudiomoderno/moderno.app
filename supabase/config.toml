@@ -10,3 +10,7 @@ verify_jwt = false
 # Supports current signing keys instead of the legacy-secret-only gateway.
 [functions.product-clipper]
 verify_jwt = false
+
+# Not deployed by the app workflow. Test-only, own JWT verification and signed webhooks.
+[functions.billing]
+verify_jwt = false

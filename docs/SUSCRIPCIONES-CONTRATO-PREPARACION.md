@@ -1,6 +1,6 @@
 # Suscripciones: contrato de preparación con Web
 
-Estado a 12/09/2026: inspección inicial y propuesta de interfaz entre talleres. **No implementado ni conectado a Stripe.** La v3.53.1 publica únicamente la cancelación de invitaciones. No activa cobros ni cambia los permisos del piloto.
+Estado a 12/09/2026: contrato e implementación de preparación en la rama `taller-suscripciones-test-20260912`. **No conectada a Stripe ni publicada en producción.** La v3.53.1 publica únicamente la cancelación de invitaciones. No activa cobros ni cambia los permisos del piloto. Véase `docs/SUSCRIPCIONES-TEST-ARRANQUE.md` para las pruebas realizadas y configuración pendiente.
 
 ## Arquitectura encontrada
 
@@ -12,7 +12,7 @@ Facturación y Órdenes de `app/settings-ui.js` son estados de disponibilidad. N
 
 ## Contrato propuesto para Web
 
-Reservar entrada `https://app.moderno.app/es/ajustes?section=facturacion&plan=<slug>`: no está activa aún. Web enviará exclusivamente un identificador opaco de plan; no enviará importe, moneda, número de usuarios, descuentos, duración de prueba ni un Price ID de Stripe como autoridad. No publicar botones de contratación operativa hasta que el backend esté validado.
+Reservar entrada `https://app.moderno.app/es/ajustes?section=facturacion&plan=<slug>`: implementada en la preparación, no activa en producción. Web enviará exclusivamente un identificador opaco de plan; no enviará importe, moneda, número de usuarios, descuentos, duración de prueba ni un Price ID de Stripe como autoridad. No publicar botones de contratación operativa hasta que el backend esté validado.
 
 El servidor ofrecerá un catálogo de planes aprobados. La sesión autenticada confirmará estudio y permiso administrador antes de iniciar Checkout. Si hay un estudio ya asociado, mostrarlo y pedir una acción de contratación deliberada. Si el usuario es invitado sin administración, explicar que el plan lo gestiona su administrador y permitir entrar al trabajo habitual.
 

@@ -75,3 +75,12 @@ test('single payment setting preserves distinct legacy bank values and old docum
  assert.equal(C.paymentIban(h.state.account,h.state.emitter,{}),'NUEVA');
  assert.equal(C.paymentIban(h.state.account,h.state.emitter,{ref:'FC-2',paymentIban:'FIJA'}),'FIJA');
 });
+
+test('billing intent selects billing after auth for an administrator only',()=>{
+ for(const role of ['admin','colaborador']){
+  const h=harness(role);let loaded=0;h.ctx.URLSearchParams=URLSearchParams;h.ctx.location={search:''};h.ctx.sessionStorage={};
+  h.ctx.ModernoBillingIntent={read:()=>({plan:'synthetic'})};h.ctx.BillingUI={view:()=>'<p>Suscripción de ensayo</p>',load:()=>{loaded++;}};
+  h.state.view='ajustes';const html=h.ctx.SettingsUI.view();
+  assert.equal(loaded,role==='admin'?1:0);assert.equal(html.includes('Suscripción de ensayo'),role==='admin');
+ }
+});

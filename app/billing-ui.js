@@ -1,0 +1,25 @@
+window.BillingUI=(()=>{
+ const E=ModernoDaily.escape;let data=null,error='',owner='',loading=false,busy=false,historyData=null;
+ const valid=()=>owner===String(ESTUDIO_ID||'')&&_accessRole==='admin';
+ const money=(amount,currency)=>{try{return new Intl.NumberFormat('es-ES',{style:'currency',currency}).format(amount/100);}catch{return 'Importe no disponible';}};
+ const url=value=>{try{const u=new URL(value);return u.protocol==='https:'&&['checkout.stripe.com','billing.stripe.com','invoice.stripe.com','pay.stripe.com','files.stripe.com'].includes(u.hostname)?u.href:null;}catch{return null;}};
+ const messages={not_configured:'La contratación todavía no está disponible.',checkout_expired:'El intento ha caducado. Puedes volver a empezar.',checkout_requires_reconciliation:'Estamos comprobando el intento anterior. No se ha iniciado otro pago.',plan_unavailable:'Ese plan todavía no está disponible.',unauthorized:'Vuelve a iniciar sesión para continuar.'};
+ async function request(action,extra={}){if(!valid())throw Error('Acceso no disponible');const {data:result,error:failure}=await sb.functions.invoke('billing',{body:{action,studyId:owner,...extra}});if(!valid())throw Error('El estudio ha cambiado');if(failure||result?.error)throw Error(messages[result?.error]||'No se pudo consultar la suscripción. Vuelve a intentarlo.');return result;}
+ async function load(history=false){if(loading)return;owner=String(ESTUDIO_ID||'');data=null;historyData=null;error='';loading=true;
+  try{data=await request('status');if(history&&data.available)historyData=await request('history');}catch(e){error=e.message;}finally{loading=false;if(valid()&&state.view==='ajustes')render();}
+ }
+ function view(history=false){
+  if(!valid()){data=null;historyData=null;}
+  const title=history?'Historial de la suscripción':'Suscripción de Moderno.app';
+  if(!data)return `<section class="settings-section"><h2>${title}</h2><p role="status">${E(error||'Consultando suscripción…')}</p><button type="button" class="btn btn-ghost" onclick="BillingUI.load(${history})">Volver a consultar</button></section>`;
+  if(!data.available)return `<section class="settings-section"><h2>${title}</h2><p>La contratación de planes todavía no está disponible.</p></section>`;
+  if(history)return `<section class="settings-section"><h2>${title}</h2><p>Entorno de prueba. No son cobros reales.</p>${!historyData?.invoices?.length?'<p>No hay facturas de suscripción.</p>':historyData.invoices.map(i=>`<article class="settings-role"><div><strong>${E(i.number||i.id)}</strong><p>${E(money(i.total,i.currency))} · ${E(i.status)}</p></div>${url(i.pdf)?`<a class="btn btn-ghost" href="${E(url(i.pdf))}" target="_blank" rel="noopener noreferrer">Descargar PDF</a>`:''}</article>`).join('')}${historyData?.hasMore?'<p>Se muestran las 50 últimas facturas. Consulta el resto desde Gestionar suscripción.</p>':''}</section>`;
+  const a=data.account||{},labels={not_started:'Sin suscripción',active:'Activa',trialing:'Prueba pendiente de validación',past_due:'Pago pendiente',unpaid:'Pago pendiente',canceled:'Cancelada',incomplete:'Pago sin completar',incomplete_expired:'Intento caducado',paused:'En pausa'};
+  let intent=null,ret='';try{intent=ModernoBillingIntent.read(sessionStorage);const q=new URLSearchParams(location.search);ret=q.get('billing_return')==='cancelled'?'Has vuelto sin completar el pago.':q.get('billing_return')==='success'?'La vuelta del pago no confirma la suscripción. Consulta el estado para comprobarla.':'';}catch{}
+  return `<section class="settings-section"><h2>${title}</h2><p>Entorno de prueba. No se realizarán cobros reales.</p><p>Estudio: <strong>${E(state.account?.name||'Tu estudio')}</strong></p><p>${E(labels[a.status]||'Pendiente de comprobación')}${a.cancelAtPeriodEnd?' · Cancelación programada':''}</p>${ret?`<p role="status">${E(ret)}</p>`:''}${intent?`<p>Plan seleccionado: ${E(intent.plan)}</p>`:''}<button type="button" class="btn btn-ghost" onclick="BillingUI.load()">Consultar estado</button>${a.customerId?'<button type="button" class="btn btn-ghost" onclick="BillingUI.portal()">Gestionar suscripción</button>':''}${data.plans.length?data.plans.map((p,i)=>`<article class="settings-role"><div><strong>${E(p.name)}</strong><p>${E(money(p.amount,p.currency))} / ${E(p.intervalCount||1)} ${E({month:'mes',year:'año',week:'semana',day:'día'}[p.interval]||p.interval)}</p></div><button type="button" class="btn btn-dark" onclick="BillingUI.checkout(${i})" ${busy?'disabled':''}>Continuar en prueba</button></article>`).join(''):'<p>Los planes todavía no están configurados.</p>'}</section>`;
+ }
+ async function leave(action,extra){if(busy||!valid())return;busy=true;try{if(!await prepareAppReload())return;const result=await request(action,extra),target=url(result.url);if(!target)throw Error('El enlace de pago no está disponible.');location.assign(target);}catch(e){toast(e.message);}finally{busy=false;}}
+ function checkout(index){const p=data?.plans[index];if(p)leave('checkout',{plan:p.slug,requestId:crypto.randomUUID()});}
+ const portal=()=>leave('portal',{});
+ return {load,view,checkout,portal};
+})();
