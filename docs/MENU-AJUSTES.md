@@ -37,4 +37,4 @@ Usar `scripts/dev-server.mjs` con las variables de un clon en `.env`, según la 
 
 Publicación mediante el flujo habitual `deploy-app.yml`: recursos primero y HTML después. Revertir únicamente el código a la versión anterior si hiciera falta; conservar los campos nuevos de configuración y metadatos personales, sin restaurar bloques antiguos encima de ediciones posteriores.
 
-Estado: candidato probado; confirmación del despliegue pendiente de registrar.
+Publicada y verificada el 12/09/2026: commit `e5dcc4b6ef9541ba344a94fe03ad33b4d16486f5`, [ejecución 34705901492 correcta](https://github.com/estudiomoderno/moderno.app/actions/runs/34705901492). HTML v3.52 y los cuatro recursos nuevos devolvieron HTTP 200 y coincidieron con el candidato, normalizando únicamente los finales de línea. No se hicieron escrituras de prueba en producción.
