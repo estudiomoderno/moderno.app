@@ -22,6 +22,7 @@ try{
  await db.exec(roles.slice(roles.indexOf('create or replace function public.app_rol_usuario'),roles.indexOf('-- Lista explícita')));
  await db.exec(await fs.readFile(new URL('../SQL/flujos-trabajo.sql',import.meta.url),'utf8'));
  await db.exec(await fs.readFile(new URL('../SQL/equipo-roles.sql',import.meta.url),'utf8'));
+ await db.exec(await fs.readFile(new URL('../SQL/cancelar-invitacion.sql',import.meta.url),'utf8'));
  const before=(await query(`select jsonb_agg(jsonb_build_object('study',estudio_id,'block',bloque,'data',case when bloque='config' then contenido-'users' else contenido end) order by estudio_id,bloque) data from datos_estudio d`)).data;
  const r=(await query('select app_rol_guardar($1,null,$2,$3,null) r',[a,'Diseño','colaborador'])).r;
  await query('select app_equipo_asignar($1,$2,$3)',[a,member,r.id]);
@@ -31,9 +32,20 @@ try{
  check((await query('select app_rol_usuario($1,$2) r',[a,member])).r==='gestoria','permission change effective without JSON edit');
  await assert.rejects(query('select app_rol_guardar($1,$2,$3,$4,$5)',[a,r.id,'Old','cliente',1]));checks++;
  await query('select app_equipo_invitar($1,$2,$3,false)',[a,'invite@example.invalid',r.id]);
+ await assert.rejects(query('select app_equipo_cancelar_invitacion($1,$2)',[b,'invite@example.invalid']));checks++;
+ check((await query('select app_equipo_cancelar_invitacion($1,$2) done',[a,'invite@example.invalid'])).done,'pending invitation cancelled');
+ check(!(await query('select app_equipo_cancelar_invitacion($1,$2) done',[a,'invite@example.invalid'])).done,'repeat cancellation is harmless');
+ await db.exec(`set "test.uid"='${invited}';`);
+ await assert.rejects(query('insert into miembros(user_id,estudio_id,rol) values($1,$2,$3)',[invited,a,'admin']));checks++;
+ await assert.rejects(query('select app_equipo_cancelar_invitacion($1,$2)',[a,'admin@example.invalid']));checks++;
+ check((await query('select count(*) n from auth.users where id=$1',[invited])).n===1,'cancel preserves global account');
+ await db.exec(`set "test.uid"='${admin}';`);
+ await query('select app_equipo_invitar($1,$2,$3,false)',[a,'invite@example.invalid',r.id]);
  await db.exec(`insert into miembros(user_id,estudio_id,rol) values('${invited}','${a}','miembro');delete from invitaciones where email='invite@example.invalid';`);
  check((await query('select role_id from miembros where user_id=$1',[invited])).role_id===r.id,'acceptance keeps selected role ID');
  check((await query('select app_rol_usuario($1,$2) r',[a,invited])).r==='gestoria','accepted permissions effective');
+ check(!(await query('select app_equipo_cancelar_invitacion($1,$2) done',[a,'invite@example.invalid'])).done,'accepted invitation cannot be cancelled');
+ check((await query('select count(*) n from miembros where user_id=$1',[invited])).n===1,'cancellation preserves accepted membership');
  await assert.rejects(query('select app_rol_borrar($1,$2,2)',[a,r.id]));checks++;
  await assert.rejects(query('select app_equipo_asignar($1,$2,$3)',[a,admin,r.id]));checks++;
  await assert.rejects(query('select app_equipo_asignar($1,$2,$3)',[b,other,r.id]));checks++;

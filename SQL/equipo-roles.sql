@@ -131,9 +131,15 @@ create or replace function public.app_equipo_aceptar_rol() returns trigger
 language plpgsql security definer set search_path='' as $$
 declare invitacion public.invitaciones;
 begin
+ perform pg_advisory_xact_lock(hashtextextended(new.estudio_id::text,331));
  select i.* into invitacion from public.invitaciones i join auth.users u on lower(u.email)=lower(i.email)
- where i.estudio_id=new.estudio_id and u.id=new.user_id;
- if found then new.role_id:=invitacion.role_id;end if;
+ where i.estudio_id=new.estudio_id and u.id=new.user_id for update of i;
+ if found then
+  new.role_id:=invitacion.role_id;
+  new.rol:=invitacion.rol;
+ elsif auth.uid()=new.user_id and exists(select 1 from public.miembros where estudio_id=new.estudio_id) then
+  raise exception 'La invitacion ya no esta disponible' using errcode='42501';
+ end if;
  return new;
 end $$;
 revoke all on function public.app_equipo_aceptar_rol() from public,anon,authenticated;
