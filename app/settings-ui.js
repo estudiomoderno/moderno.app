@@ -33,14 +33,14 @@ window.SettingsUI=(()=>{
   function photo(key,label){return `<div class="settings-person">${draft[key]?`<img class="settings-photo" ${fileImageAttrs(draft[key])} alt="${E(label)}">`:''}<button class="btn btn-ghost" type="button" data-settings-action="photo">Elegir imagen</button><input hidden style="display:none" type="file" id="settings-photo" accept="image/png,image/jpeg,image/webp" data-photo="${key}"><span>JPG, PNG o WebP · hasta 5 MB</span></div>`;}
   function content(){
     if(section==='historial')return histBody();
-    if(section==='cuenta')return box('Perfil personal','Tus datos de acceso a Moderno.app.',photo('avatar','Foto de perfil')+fields(field('first','Nombre')+field('last','Apellidos')+field('email','Correo electrónico','email')+field('timezone','Zona horaria','select',options([...new Set([draft.timezone,...Intl.supportedValuesOf('timeZone')])],draft.timezone)))+'<p>Si cambias el correo, confirma el cambio desde los mensajes de Supabase. Tu correo actual seguirá siendo el de acceso hasta la confirmación.</p><p>La zona horaria se guarda en tu perfil. Las fechas de proyecto conservan su calendario original.</p>')+box('Apariencia','Elige cómo se muestra la aplicación en este navegador.',`<div class="settings-theme"><button type="button" class="btn btn-ghost" onclick="SettingsUI.theme(false)">${icon('modo no oscuro.svg')}Claro</button><button type="button" class="btn btn-ghost" onclick="SettingsUI.theme(true)">${icon('Modo oscuro.svg')}Oscuro</button></div>`);
-    if(section==='estudio')return box('Información del estudio','Información interna de tu equipo.',photo('logo','Logo del estudio')+fields(field('name','Nombre del estudio')+field('type','Tipo de estudio')+field('location','Localización')+field('country','País','select',options(['',...PAISES],draft.country))+field('taxId','Identificación fiscal')+field('web','Página web','url')+field('instagram','Instagram','url')+field('facebook','Facebook','url')+field('about','Sobre el estudio','textarea')))+box('Contacto','Estos datos no se publican en una web pública.',fields(field('email','Correo de contacto','email')+field('phone','Teléfono','tel')+field('address','Dirección')+field('address2','Dirección adicional')+field('city','Ciudad')+field('postcode','Código postal')+field('province','Provincia')))+box('Espacios de trabajo','Gestiona las marcas y áreas del estudio.',visibleWsOrder().map((k,i)=>`<p><button type="button" class="btn btn-ghost" data-workspace-edit="${i}">${E(BRAND[k]?.name||'Espacio de trabajo')}</button></p>`).join('')+'<button type="button" class="btn btn-ghost" data-settings-action="workspace">Crear espacio de trabajo</button>')+box('Dirección de acceso','Tu acceso actual es app.moderno.app. Las direcciones personalizadas todavía no están disponibles.','<p>La incorporación de personas se gestiona mediante invitaciones en Equipo.</p><button type="button" class="btn btn-ghost" data-settings-action="import">Importar datos</button> <button type="button" class="btn btn-ghost" data-settings-action="history">Historial de versiones</button> <button type="button" class="btn btn-ghost" data-settings-action="trash">Papelera</button> <button type="button" class="btn btn-ghost" data-settings-action="sync">Estado de guardado</button>');
-    if(section==='impuestos')return box('Configuración fiscal','Revisa los valores antes de guardarlos. Abrir esta pantalla no cambia ningún documento.',fields(field('country','País fiscal','select',options([...new Set([draft.country,...PAISES])],draft.country))+field('currency','Divisa','select',options([...new Set([draft.currency,...Object.keys(CURR)])],draft.currency))+field('taxName','Nombre del impuesto')+field('vat','Impuesto por defecto (%)','number')+field('irpf','Retención por defecto (%)','number')+field('iban','IBAN para transferencias'))+`<label class="settings-check"><input data-setting="retention" type="checkbox" ${draft.retention?'checked':''}> Aplicar retención</label>`)+box('Emisor de documentos','Datos y valores por defecto de las facturas y presupuestos. Los espacios conservan sus emisores propios.',fields(field('emitter_name','Razón social')+field('emitter_nif','NIF / CIF')+field('emitter_addr','Dirección')+field('emitter_city','Ciudad')+field('emitter_country','País','select',options([...new Set([draft.emitter_country,...PAISES])],draft.emitter_country))+field('emitter_phone','Teléfono','tel')+field('emitter_iban','IBAN del emisor')+field('margin','Margen por defecto (%)','number')+field('fc','Serie de facturas')+field('ps','Serie de presupuestos')));
+    if(section==='cuenta')return box('Perfil personal','Tus datos de acceso a Moderno.app.',photo('avatar','Foto de perfil')+fields(field('first','Nombre')+field('last','Apellidos')+field('email','Correo electrónico','email')+field('timezone','Zona horaria','select',options([...new Set([draft.timezone,...Intl.supportedValuesOf('timeZone')])],draft.timezone)))+'')+box('Apariencia','Elige cómo se muestra la aplicación en este navegador.',`<div class="settings-theme"><button type="button" class="btn btn-ghost" onclick="SettingsUI.theme(false)">${icon('modo no oscuro.svg')}Claro</button><button type="button" class="btn btn-ghost" onclick="SettingsUI.theme(true)">${icon('Modo oscuro.svg')}Oscuro</button></div>`);
+    if(section==='estudio')return box('Información del estudio','Los datos de tu estudio.',photo('logo','Logo del estudio')+fields(field('name','Nombre del estudio')+field('type','Tipo de estudio')+field('location','Localización')+field('country','País','select',options(['',...PAISES],draft.country))+field('taxId','Identificación fiscal')+field('web','Página web','url')+field('instagram','Instagram','url')+field('facebook','Facebook','url')+field('about','Sobre el estudio','textarea')))+box('Contacto','Correo, teléfono y dirección del estudio.',fields(field('email','Correo de contacto','email')+field('phone','Teléfono','tel')+field('address','Dirección')+field('address2','Dirección adicional')+field('city','Ciudad')+field('postcode','Código postal')+field('province','Provincia')))+box('Espacios de trabajo','Gestiona las marcas y áreas del estudio.',visibleWsOrder().map((k,i)=>`<p><button type="button" class="btn btn-ghost" data-workspace-edit="${i}">${E(BRAND[k]?.name||'Espacio de trabajo')}</button></p>`).join('')+'<button type="button" class="btn btn-ghost" data-settings-action="workspace">Crear espacio de trabajo</button>')+box('Dirección de acceso','Tu acceso actual es app.moderno.app. Las direcciones personalizadas todavía no están disponibles.','<p>La incorporación de personas se gestiona mediante invitaciones en Equipo.</p><button type="button" class="btn btn-ghost" data-settings-action="import">Importar datos</button> <button type="button" class="btn btn-ghost" data-settings-action="history">Historial de versiones</button> <button type="button" class="btn btn-ghost" data-settings-action="trash">Papelera</button> <button type="button" class="btn btn-ghost" data-settings-action="sync">Estado de guardado</button>');
+    if(section==='impuestos')return box('Configuración fiscal','Impuestos y datos de facturación de tu estudio.',fields(field('country','País fiscal','select',options([...new Set([draft.country,...PAISES])],draft.country))+field('currency','Divisa','select',options([...new Set([draft.currency,...Object.keys(CURR)])],draft.currency))+field('taxName','Nombre del impuesto')+field('vat','Impuesto por defecto (%)','number')+field('irpf','Retención por defecto (%)','number')+field('iban','IBAN para transferencias'))+`<label class="settings-check"><input data-setting="retention" type="checkbox" ${draft.retention?'checked':''}> Aplicar retención</label>`)+box('Emisor de documentos','Datos para tus facturas y presupuestos.',fields(field('emitter_name','Razón social')+field('emitter_nif','NIF / CIF')+field('emitter_addr','Dirección')+field('emitter_city','Ciudad')+field('emitter_country','País','select',options([...new Set([draft.emitter_country,...PAISES])],draft.emitter_country))+field('emitter_phone','Teléfono','tel')+field('emitter_iban','IBAN del emisor')+field('margin','Margen por defecto (%)','number')+field('fc','Serie de facturas')+field('ps','Serie de presupuestos')));
     if(section==='equipo')return box('Personas y permisos','Consulta las personas registradas y el acceso de cada rol.',`<div class="settings-table-wrap"><table class="settings-table"><thead><tr><th>Persona</th><th>Correo</th><th>Rol registrado</th></tr></thead><tbody>${(state.users||[]).map(u=>`<tr><td>${E(u.name||'Sin nombre')}</td><td>${E(u.email||'Sin correo')}</td><td>${E(u.role||'Miembro')}</td></tr>`).join('')}</tbody></table></div><p>Los cambios de rol de miembros existentes todavía no están disponibles en esta pantalla.</p>`)+box('Invitar al equipo','Crea una invitación para una persona concreta. El envío se realiza solo al pulsar Invitar.',`<div class="settings-fields"><div class="settings-field"><label for="invMail">Correo electrónico</label><input id="invMail" type="email" required></div><div class="settings-field"><label for="invRol">Rol</label><select id="invRol"><option>Colaborador</option><option>Administrador</option></select></div></div><p><button type="button" class="btn btn-dark" data-settings-action="invite">Invitar</button></p><p id="settings-invitations">Las invitaciones se consultan al abrir esta sección.</p>`)+box('Qué permite cada rol','',Object.entries(ROLES).map(([k,v])=>`<p><strong>${E(k)}</strong><br>${E(v)}</p>`).join(''));
-    if(section==='facturacion')return box('Suscripción de Moderno.app','La contratación y los pagos todavía no están conectados.','<p>No hay un plan facturado verificable desde esta pantalla. Cuando esté disponible la contratación, podrás consultar las condiciones y elegir un plan aquí.</p>');
-    if(section==='ordenes')return box('Historial de la suscripción','Aquí aparecerán las facturas y recibos de tu suscripción a Moderno.app.','<p>La consulta del historial de pagos todavía no está conectada.</p>');
+    if(section==='facturacion')return box('Suscripción de Moderno.app','La contratación de planes todavía no está disponible.','');
+    if(section==='ordenes')return box('Historial de la suscripción','Aquí aparecerán las facturas y recibos de tu suscripción a Moderno.app.','<p>El historial de pagos todavía no está disponible.</p>');
     if(section==='idioma')return box('Idioma de la aplicación','Español es el idioma disponible actualmente.','<label for="settings-language">Idioma</label><select id="settings-language" disabled><option>Español</option></select><p>El país fiscal, la moneda y los impuestos se encuentran en Impuestos.</p>');
-    return box('Notificaciones en la aplicación','Consulta la actividad que ya recibe tu estudio.','<button type="button" class="btn btn-ghost" data-settings-action="notifications">Ver notificaciones</button>')+box('Preferencias de correo','Puedes guardar tus preferencias. Los correos automáticos de tareas aún no están conectados; estas opciones no activan envíos.',[['assigned','Me asignan una tarea'],['unassigned','Dejan de asignarme una tarea'],['status','Cambia el estado de una tarea'],['due','Se acerca el vencimiento'],['phase','Cambia una fase'],['comments','Hay comentarios nuevos']].map(([k,t])=>`<label class="settings-check"><input data-setting="${k}" type="checkbox" ${draft[k]?'checked':''}>${E(t)}</label>`).join('')+'<p>Los mensajes de acceso y las invitaciones se gestionan por separado.</p>');
+    return box('Notificaciones en la aplicación','Consulta la actividad que ya recibe tu estudio.','<button type="button" class="btn btn-ghost" data-settings-action="notifications">Ver notificaciones</button>')+box('Preferencias de correo','Los avisos de tareas por correo todavía no están disponibles. Puedes dejar elegidas tus preferencias.',[['assigned','Me asignan una tarea'],['unassigned','Dejan de asignarme una tarea'],['status','Cambia el estado de una tarea'],['due','Se acerca el vencimiento'],['phase','Cambia una fase'],['comments','Hay comentarios nuevos']].map(([k,t])=>`<label class="settings-check"><input data-setting="${k}" type="checkbox" ${draft[k]?'checked':''}>${E(t)}</label>`).join('')+'');
   }
   function view(){
     if(!allowed(section))section='cuenta';
@@ -55,15 +55,15 @@ window.SettingsUI=(()=>{
     if(!personal.has(section)||!sb)return;
     const key=sessionKey(),sec=section,request=key+'|'+sec;
     if(profileRequest===request)return;profileRequest=request;profileAttempt=request;
-    try{const {data,error}=await sb.auth.getUser();if(error)throw error;if(!data.user)throw Error('La sesión ha caducado.');if(key!==sessionKey()||sec!==section||!active())return;
+    try{const {data,error}=await sb.auth.getUser();if(error)throw error;if(!data.user)throw C.problem('La sesión ha caducado.');if(key!==sessionKey()||sec!==section||!active())return;
       metadata=data.user.user_metadata||{};if(!dirty()){state.sessionUser=sbUserToSession(data.user);start();render();}else {message='El perfil está listo. Puedes guardar tus cambios.';render();}
-    }catch(e){if(key===sessionKey()&&sec===section)status('No se pudo comprobar el perfil. Vuelve a abrir Mi cuenta para reintentar: '+e.message,true);}
+    }catch(e){if(key===sessionKey()&&sec===section)status('No hemos podido cargar tus datos. Vuelve a abrir esta sección.',true);}
     finally{if(profileRequest===request)profileRequest='';}
   }
   async function loadInvitations(){
     const key=sessionKey();try{const {data,error}=await sb.from('invitaciones').select('email,rol').eq('estudio_id',ESTUDIO_ID);if(error)throw error;if(key!==sessionKey()||section!=='equipo')return;
       const el=document.getElementById('settings-invitations');if(el)el.textContent=data?.length?'Invitaciones registradas: '+data.map(v=>v.email+' ('+(v.rol==='admin'?'Administrador':'Colaborador')+')').join(' · '):'No hay invitaciones registradas.';
-    }catch(e){const el=document.getElementById('settings-invitations');if(el)el.textContent='No se pudieron consultar las invitaciones: '+e.message;}
+    }catch(e){const el=document.getElementById('settings-invitations');if(el)el.textContent='No se pudieron consultar las invitaciones. Vuelve a abrir Equipo.';}
   }
   async function save(){
     if(busy||!draft||!['cuenta','estudio','impuestos','notificaciones'].includes(section))return;
@@ -71,38 +71,38 @@ window.SettingsUI=(()=>{
     const form=document.getElementById('settings-form');if(!form.reportValidity())return;
     busy=true;const key=sessionKey(),sec=section;status('Guardando…');form.querySelectorAll('button,input,select,textarea').forEach(b=>b.disabled=true);
     try{
-      if(!sb)throw Error('Necesitas una sesión conectada para guardar.');
+      if(!sb)throw C.problem('Vuelve a entrar para guardar los cambios.');
       if(personal.has(sec)){
-        const {data,error}=await sb.auth.getUser();if(error)throw error;if(!data.user)throw Error('La sesión ha caducado.');
-        if(key!==sessionKey())throw Error('La sesión ha cambiado.');
+        const {data,error}=await sb.auth.getUser();if(error)throw error;if(!data.user)throw C.problem('La sesión ha caducado.');
+        if(key!==sessionKey())throw C.problem('La sesión ha cambiado.');
         const md=data.user.user_metadata||{};let update={};
         if(sec==='cuenta'){
-          if(!draft.first.trim())throw Error('Escribe tu nombre.');
-          if(!Intl.supportedValuesOf('timeZone').includes(draft.timezone)&&draft.timezone!=='UTC')throw Error('Zona horaria no válida.');
+          if(!draft.first.trim())throw C.problem('Escribe tu nombre.');
+          if(!Intl.supportedValuesOf('timeZone').includes(draft.timezone)&&draft.timezone!=='UTC')throw C.problem('Zona horaria no válida.');
           const initial={given_name:base.first,family_name:base.last,timezone:base.timezone,avatar_url:base.avatar};
           const current={given_name:md.given_name??base.first,family_name:md.family_name??base.last,timezone:md.timezone??base.timezone,avatar_url:md.avatar_url??base.avatar};
           const merged=C.patch(current,initial,{given_name:draft.first.trim(),family_name:draft.last.trim(),timezone:draft.timezone,avatar_url:draft.avatar});
           update={data:{...md,...merged,full_name:[merged.given_name,merged.family_name].filter(Boolean).join(' ')}};
           if(draft.email.trim().toLowerCase()!==base.email.toLowerCase()){
-            if(!isAdmin())throw Error('El cambio de correo de un miembro debe coordinarse con el administrador para conservar sus permisos.');
+            if(!isAdmin())throw C.problem('Pide al administrador que te ayude a cambiar el correo.');
             update.email=draft.email.trim().toLowerCase();
           }
         }else update={data:{...md,task_email_preferences:C.patch(md.task_email_preferences||base,base,draft)}};
         const result=await sb.auth.updateUser(update);if(result.error)throw result.error;
-        if(key!==sessionKey())throw Error('La sesión cambió durante el guardado. Comprueba tu perfil al volver a entrar.');
+        if(key!==sessionKey())throw C.problem('La sesión cambió durante el guardado. Comprueba tu perfil al volver a entrar.');
         metadata=result.data.user.user_metadata||{};state.sessionUser=sbUserToSession(result.data.user);applySessionUI();start();
-        message=update.email?'Perfil guardado. Confirma el cambio de correo desde los mensajes recibidos; todavía no se ha cambiado el correo del equipo.':sec==='notificaciones'?'Preferencias guardadas. Los correos automáticos de tareas siguen sin estar conectados.':'Perfil guardado.';
+        message=update.email?'Revisa tu correo para confirmar el cambio.':sec==='notificaciones'?'Preferencias guardadas. Los avisos por correo todavía no están disponibles.':'Perfil guardado.';
       }else{
-        if(!isAdmin()||!ESTUDIO_ID)throw Error('Solo el administrador puede guardar los ajustes del estudio.');
+        if(!isAdmin()||!ESTUDIO_ID)throw C.problem('Solo el administrador puede guardar los ajustes del estudio.');
         // Convert only changed numeric fields, preserving empty and legacy values on unrelated saves.
         if(sec==='impuestos'){
           for(const k of ['vat','irpf','margin'])if(draft[k]!==base[k])draft[k]=C.percent(draft[k]);
           for(const k of ['fc','ps'])if(draft[k]!==base[k])draft[k]=C.series(draft[k]);
         }
         const merged=C.patch(values(),base,draft);
-        if(key!==sessionKey()||!isAdmin())throw Error('El acceso al estudio ha cambiado.');
+        if(key!==sessionKey()||!isAdmin())throw C.problem('El acceso al estudio ha cambiado.');
         if(sec==='estudio'){
-          if(!merged.name.trim())throw Error('Escribe el nombre del estudio.');
+          if(!merged.name.trim())throw C.problem('Escribe el nombre del estudio.');
           for(const [k,v]of Object.entries(merged))if(JSON.stringify(v)!==JSON.stringify(base[k])){
             if(k==='name')state.account={...state.account,name:v};
             else state.account={...state.account,studioDetails:{...state.account.studioDetails,[k]:v}};
@@ -118,24 +118,24 @@ window.SettingsUI=(()=>{
         }
         persistNow();
         for(let n=0;_cloudBusy&&n<100;n++)await new Promise(resolve=>setTimeout(resolve,100));
-        if(key!==sessionKey()||!isAdmin())throw Error('El acceso al estudio ha cambiado.');
+        if(key!==sessionKey()||!isAdmin())throw C.problem('El acceso al estudio ha cambiado.');
         await cloudFlush();
         for(let n=0;_cloudBusy&&n<100;n++)await new Promise(resolve=>setTimeout(resolve,100));
-        if(key!==sessionKey()||!isAdmin()||_cloudBusy||_saveErr||_cloudHash.config!==canon(CLOUD_BLOCKS.config.get()))throw Error('El guardado en la nube aún no está confirmado. Conserva esta pestaña y reintenta Guardar.');
+        if(key!==sessionKey()||!isAdmin()||_cloudBusy||_saveErr||_cloudHash.config!==canon(CLOUD_BLOCKS.config.get()))throw C.problem('No hemos podido confirmar el guardado. Mantén esta pestaña abierta y vuelve a intentarlo.');
         start();message='Cambios guardados en el estudio.';
       }
       error=false;
-    }catch(e){message=e.message;error=true;}
+    }catch(e){message=C.explain(e);error=true;}
     finally{busy=false;render();}
   }
   async function image(file,key){
     if(!file)return;const expectedOwner=owner,expectedDraft=draft;
     try{
-      if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)throw Error('Elige un JPG, PNG o WebP de hasta 5 MB.');
+      if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)throw C.problem('Elige un JPG, PNG o WebP de hasta 5 MB.');
       const bitmap=await createImageBitmap(file);const scale=Math.min(1,256/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
-      const value=canvas.toDataURL('image/webp',0.85);if(value.length>180000)throw Error('La imagen es demasiado grande. Elige otra.');
+      const value=canvas.toDataURL('image/webp',0.85);if(value.length>180000)throw C.problem('La imagen es demasiado grande. Elige otra.');
       if(owner!==expectedOwner||draft!==expectedDraft)return;draft[key]=value;message='Imagen preparada. Pulsa Guardar cambios.';render();
-    }catch(e){status(e.message,true);}
+    }catch(e){status(e.userMessage||'No se ha podido abrir esa imagen. Prueba con otro archivo.',true);}
   }
   function chrome(){
     document.body.classList.toggle('settings-mode',active());

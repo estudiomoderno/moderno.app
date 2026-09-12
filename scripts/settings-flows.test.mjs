@@ -26,3 +26,15 @@ test('failed personal save retains entered values',async()=>{
 test('collaborator cannot enter study or taxes through settings actions',async()=>{
  const h=harness('colaborador');await h.open('cuenta');h.ctx.SettingsUI.open('impuestos');assert.match(h.ctx.SettingsUI.view(),/Perfil personal/);h.ctx.SettingsUI.open('estudio');assert.match(h.ctx.SettingsUI.view(),/Perfil personal/);
 });
+test('settings screens do not expose implementation notes',async()=>{
+ const h=harness();
+ for(const section of ['cuenta','estudio','equipo','facturacion','ordenes','impuestos','idioma','notificaciones']){
+  await h.open(section);assert.doesNotMatch(h.ctx.SettingsUI.view(),/Supabase|backend|infraestructura|plan facturado verificable|calendario original|conectad[oa]/i);
+ }
+});
+test('service errors are shown as useful user messages',()=>{
+ assert.equal(C.explain({code:'email_exists',message:'AuthApiError'}),'Ese correo ya está en uso. Prueba con otro.');
+ assert.match(C.explain({message:'Failed to fetch'}),/Revisa tu conexión/);
+ assert.doesNotMatch(C.explain({message:'PostgREST backend JWT error'}),/PostgREST|backend|JWT/);
+ assert.match(C.explain(C.problem('Escribe tu nombre.')),/Escribe tu nombre/);
+});

@@ -38,3 +38,9 @@ Usar `scripts/dev-server.mjs` con las variables de un clon en `.env`, según la 
 Publicación mediante el flujo habitual `deploy-app.yml`: recursos primero y HTML después. Revertir únicamente el código a la versión anterior si hiciera falta; conservar los campos nuevos de configuración y metadatos personales, sin restaurar bloques antiguos encima de ediciones posteriores.
 
 Publicada y verificada el 12/09/2026: commit `e5dcc4b6ef9541ba344a94fe03ad33b4d16486f5`, [ejecución 34705901492 correcta](https://github.com/estudiomoderno/moderno.app/actions/runs/34705901492). HTML v3.52 y los cuatro recursos nuevos devolvieron HTTP 200 y coincidieron con el candidato, normalizando únicamente los finales de línea. No se hicieron escrituras de prueba en producción.
+
+## Corrección de textos v3.52.1
+
+Se retiran la explicación de Supabase y la nota de almacenamiento/zona horaria de Mi cuenta. La instrucción «Revisa tu correo para confirmar el cambio» aparece tras solicitar realmente el cambio. Las ayudas y estados vacíos usan mensajes breves de disponibilidad; no se inventan funciones ni se ocultan errores. Los errores externos se traducen a instrucciones útiles sin mostrar nombres de servicios, códigos internos o respuestas sin tratar. No cambia el comportamiento de guardado, autenticación, permisos o datos.
+
+Se añaden pruebas para revisar los textos de las ocho secciones y la presentación de errores. Pendiente registrar verificación de publicación de esta corrección.
