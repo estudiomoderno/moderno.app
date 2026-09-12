@@ -13,3 +13,5 @@ Aplicar `SQL/cancelar-invitacion.sql` después de `SQL/equipo-roles.sql`, primer
 Validación: 312 pruebas JS existentes, 4 nuevas pruebas del flujo de cancelación y 26 comprobaciones PostgreSQL aisladas. En el clon se ha creado una invitación ficticia, cancelado y repetido la cancelación dentro de una transacción revertida, sin enviar correo.
 
 Para repetir las pruebas PostgreSQL: ejecutar `scripts/team-roles-sql.mjs` con Node y pasar como primer argumento la ruta a `@electric-sql/pglite/dist/index.js`. No necesita credenciales ni conecta con producción.
+
+Publicada el 12/09/2026: commit `ac6101f5b6e22071e6510729a934e7ec31cd612c`, ejecución GitHub Actions `34715495754` correcta. Migración instalada con éxito en clon y producción. HTML y `team-settings.js` públicos devuelven HTTP 200 y coinciden con el candidato, normalizando finales de línea; HTML identifica v3.53.1. No se canceló ninguna invitación real durante las pruebas.
