@@ -33,4 +33,11 @@ Para volver a la interfaz anterior, publicar el código anterior sin borrar tabl
 - Gestoría y portal devuelven `paymentIban` en sus proyecciones, comprobado con JSON ficticio. Pruebas de guardado de documentos verifican que cambiar el valor predeterminado no modifica documentos anteriores.
 - Revisión visual a 390 px en modo oscuro y medición en escritorio: controles de invitación de 44 px de alto, separados por 20 px; espacios de trabajo apilados sin solaparse. SVG de volver comprobado por sus trazados.
 
-La publicación y su verificación HTTP se registrarán después de completarlas.
+## Publicación verificada — 12/09/2026
+
+- Ambos SQL aplicados correctamente en producción. Comprobación antes y después: 18 bloques, 3 miembros y 138 objetos de Storage; cero miembros existentes con una nueva asignación de rol. No se ejecutó el ensayo ficticio en producción.
+- Código: `e14353f6da243ef6d8993ae262207fecc5195203`, publicado en `main` y `taller-operativa-20260909`.
+- Despliegue: [Actions 34709246860](https://github.com/estudiomoderno/moderno.app/actions/runs/34709246860), correcto en el primer intento.
+- Verificación pública: HTTP 200 en los nueve archivos modificados de `app/`, todos idénticos al candidato tras normalizar CRLF/LF. El HTML público anuncia `v3.53`.
+- No se forzó la recarga de sesiones de usuarios ni se enviaron invitaciones de prueba.
+
