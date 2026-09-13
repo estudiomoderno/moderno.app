@@ -5,6 +5,7 @@
 @font-face{font-family:Acorn;src:url('/brand/acorn/acorn-7.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
 @font-face{font-family:Acorn;src:url('/brand/acorn/acorn-4.ttf') format('truetype');font-style:normal;font-weight:200;font-display:swap}
 @media screen {
+ #mHeader .mlogo svg{display:block;width:100%;height:100%;font-synthesis:none}
  body:not(.portalmode) .main :is(h1,h2,h3,h4),body:not(.portalmode) #modalBox :is(h1,h2,h3,h4),html body:not(.portalmode) .main .ws-full h1.big{font-family:Acorn,Georgia,serif;font-weight:600;font-synthesis:none}
  body:not(.portalmode) .sidebar .new-brand{margin:0;flex-shrink:0;line-height:0}
  body:not(.portalmode) .sidebar .logo.new-brand{display:block;width:170px;max-width:100%}
@@ -36,6 +37,17 @@
  body.navmini .study-name,body.navmini .study-chevron{display:none}
  body.navmini .study-dropdown summary{padding:6px;justify-content:center}
  body.navmini .study-popup{left:calc(100% + 14px);top:14px}
+ .sidebar-study .settings-switch,body.navmini .sidebar-study .settings-switch{margin:0}
+ .sidebar-study .settings-switch summary{background:#eeece3;color:#171714}
+ .sidebar-study .settings-popup{min-width:220px;background:#fff;color:#20201e}
+ .sidebar-study .settings-popup button{color:#20201e}
+ body.navmini .sidebar-study .settings-switch[open]{position:relative}
+ body.navmini .sidebar-study .settings-popup{position:absolute;top:0;left:calc(100% + 14px);width:230px}
+ .settings-mode .sb-scroll>.nav-group{display:none!important}
+ .sb-scroll #mobileTheme{display:none!important}
+ .sidebar .settings-nav{color:#f6f4eb}
+ .sidebar .settings-nav button{color:#f6f4eb}
+ .sidebar .settings-nav button:hover,.sidebar .settings-nav button[aria-current=page]{background:#383832}
  body:not(.portalmode) .sidebar img.logo,body:not(.portalmode) .sidebar img.logo-mini{content:url('/brand/simbolo-claro.svg');margin:0;filter:none}
  body:not(.portalmode) .sidebar .nav-item,body:not(.portalmode) .sidebar .nav-head{color:#f6f4eb}
  body:not(.portalmode) .sidebar .nav-item.active,body:not(.portalmode) .sidebar .nav-item:hover{background:#383832;color:#fffbee;box-shadow:none}

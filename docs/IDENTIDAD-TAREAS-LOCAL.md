@@ -1,5 +1,7 @@
 # Identidad de Tareas — revisión local
 
+Estado posterior: publicación autorizada por el usuario mediante Cerebro. Ver `PUBLICACION-IDENTIDAD-v3.54.0.md`; las menciones anteriores de no publicar describen el alcance histórico, sustituido por esa autorización concreta. No incluye billing.
+
 Rama `taller-tareas-identidad-local`, basada en la versión validada `85f6989`. No publicar automáticamente: la autorización de Imagen es para revisión local. Suscripciones y desarrollo general siguen pausados.
 
 ## Aplicado

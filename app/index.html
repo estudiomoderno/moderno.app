@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=3540">
 </head>
 <body>
 <div class="app">
@@ -920,7 +920,55 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
     <button id="hamburger" aria-label="Abrir menú" onclick="closeModal();document.body.classList.toggle('sbopen')" style="width:44px;height:44px;border-radius:13px;background:var(--card);display:grid;place-items:center;border:none;cursor:pointer;color:var(--ink);flex:none">
       <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
-    <img class="mlogo" alt="Moderno.app" style="height:24px;margin-left:auto">
+    <span class="mlogo" role="img" aria-label="Moderno.app" style="height:24px;width:36px;margin-left:auto"><svg aria-hidden="true" focusable="false"
+   width="28.244148mm"
+   height="18.564325mm"
+   viewBox="0 0 28.244148 18.564325"
+   version="1.1"
+   id="svg1"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm">
+    <inkscape:page
+       x="0"
+       y="1.3473409e-14"
+       width="28.244148"
+       height="18.564323"
+       id="page2"
+       margin="0"
+       bleed="0" />
+  </sodipodi:namedview>
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Capa 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-86.56478,-136.78458)">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:34.5705px;font-family:Acorn;-inkscape-font-specification:'Acorn Bold';text-align:center;writing-mode:lr-tb;direction:ltr;text-anchor:middle;fill:#000000;stroke-width:2.88087"
+       x="100.68689"
+       y="155.34889"
+       id="text1-8"><tspan
+         sodipodi:role="line"
+         id="tspan1-2"
+         style="stroke-width:2.88087"
+         x="100.68689"
+         y="155.34889">m</tspan></text>
+  </g>
+</svg></span>
   </header>
   <div id="sbBackdrop" onclick="document.body.classList.remove('sbopen')"></div>
   <aside class="sidebar" style="position:relative">
@@ -3982,24 +4030,7 @@ function addWorkspaceGo(){
   persistNow(); cloudFlush();          // estructural: a la nube sin esperar al perezoso
   toast("✓ Espacio «"+n+"» creado — ponle logo en Creación de marca");
 }
-function drawSidebarStudy(){
- const el=document.getElementById('sidebarStudy');if(!el)return;
- const keys=visibleWsOrder(),key=keys.includes(state.brandFilter)?state.brandFilter:keys[0];
- const name=key?(BRAND[key]?.name||'Mi estudio'):'Mi estudio',E=ModernoDaily.escape;
- const logo=key&&state.logos?.[key];
- el.innerHTML=`<details class="study-dropdown"><summary aria-label="Menú del estudio: ${E(name)}"><span class="study-avatar">${logo?`<img ${fileImageAttrs(logo)} alt="">`:E(name.slice(0,1))}</span><span class="study-name">${E(name)}</span><span class="study-chevron" aria-hidden="true">⌃<br>⌄</span></summary><div class="study-popup">
- <div class="study-options">${keys.map((k,i)=>`<button type="button" data-study-index="${i}">${E(BRAND[k]?.name||'Mi estudio')}</button>`).join('')}</div>
- <button type="button" data-study-action="settings">${ico('m_settings')||ico('tools')}Ajustes</button>
- ${_accessRole==='admin'?`<button type="button" data-study-action="invite">${ico('m_invitar')||ico('contactos')}Invitar al equipo</button>`:''}
- <button type="button" data-study-action="notifications"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>Notificaciones</button>
- <button type="button" data-study-action="logout">${ico('atras')}Cerrar sesión</button>
- </div></details>`;
- el.querySelectorAll('[data-study-index]').forEach(b=>b.onclick=()=>{state.brandFilter=keys[Number(b.dataset.studyIndex)];drawBrandSwitch();render();});
- el.querySelectorAll('[data-study-action]').forEach(b=>b.onclick=()=>{el.querySelector('details').open=false;const a=b.dataset.studyAction;if(a==='settings')profileMenu();if(a==='invite'&&_accessRole==='admin')inviteUserModal(-1);if(a==='notifications')notifModal();if(a==='logout')sbLogout();});
- el.onkeydown=e=>{if(e.key==='Escape'){el.querySelector('details').open=false;el.querySelector('summary').focus();}};
-}
 function drawBrandSwitch(){
-  drawSidebarStudy();
   const els = [document.getElementById("brandSwitch"), document.getElementById("brandSwitchM")].filter(Boolean);
   const f = state.brandFilter;
   let inner = "";
@@ -11347,7 +11378,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.53.1";
+const MODERNO_VER="v3.54.0";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13166,6 +13197,6 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 </script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>
-<script src="/settings-ui.js?v=353"></script>
+<script src="/settings-ui.js?v=3540-353"></script>
 </body>
 </html>
