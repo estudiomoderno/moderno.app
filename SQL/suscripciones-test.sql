@@ -2,13 +2,13 @@
 begin;
 create table if not exists public.billing_test_accounts(
  estudio_id uuid primary key references public.estudios(id),
- customer_id text unique,subscription_id text unique,status text not null default 'not_started',
+ customer_id text unique,subscription_id text unique,status text not null default 'not_started',plan_slug text,seats integer,
  eligible boolean not null default false,cancel_at_period_end boolean not null default false,period_end bigint,
  sync_token uuid,sync_until timestamptz,sync_request uuid,sync_subscription text,sync_event text,updated_at timestamptz not null default now()
 );
 create table if not exists public.billing_test_checkouts(
  id uuid primary key,estudio_id uuid not null references public.billing_test_accounts(estudio_id),actor uuid not null,
- plan text not null,customer_id text,session_id text unique,created_at timestamptz not null default now(),
+ plan text not null,quantity integer,seat_revision text,customer_id text,session_id text unique,created_at timestamptz not null default now(),
  closed boolean not null default false
 );
 create unique index if not exists billing_test_one_open on public.billing_test_checkouts(estudio_id) where not closed;
@@ -75,7 +75,7 @@ begin
  if a.subscription_id is not null and a.subscription_id<>p_subscription and c.closed then return '{"ignored":true}';end if;
  if a.sync_until>clock_timestamp() then return '{}';end if;
  update public.billing_test_accounts set sync_token=token,sync_until=clock_timestamp()+interval '90 seconds',sync_request=p_request,sync_subscription=p_subscription,sync_event=p_event where estudio_id=p_estudio;
- return jsonb_build_object('token',token,'plan',c.plan);
+ return jsonb_build_object('token',token,'plan',c.plan,'quantity',c.quantity);
 end $$;
 create or replace function public.billing_test_expire(p_actor uuid,p_estudio uuid,p_request uuid,p_session text) returns void
 language plpgsql security definer set search_path='' as $$
@@ -93,6 +93,7 @@ begin
  update public.billing_test_checkouts set closed=true where estudio_id=p_estudio and id=(select sync_request from public.billing_test_accounts where estudio_id=p_estudio);
  update public.billing_test_accounts set subscription_id=p_value->>'subscriptionId',status=p_value->>'status',eligible=p_value->>'status'='active' and coalesce((p_value->>'eligible')::boolean,false),cancel_at_period_end=coalesce((p_value->>'cancelAtPeriodEnd')::boolean,false),period_end=(p_value->>'periodEnd')::bigint,sync_token=null,sync_until=null,sync_request=null,sync_subscription=null,sync_event=null,updated_at=now() where estudio_id=p_estudio;
  insert into public.billing_test_events(id,estudio_id) values(p_event,p_estudio);
+ update public.billing_test_accounts set plan_slug=p_value->>'plan',seats=(p_value->>'seats')::integer where estudio_id=p_estudio;
 end $$;
 create or replace function public.billing_test_release(p_estudio uuid,p_token uuid) returns void
 language sql security definer set search_path='' as $$

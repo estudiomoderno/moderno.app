@@ -1,4 +1,5 @@
 // Test-only billing. No access policy in the existing CRM is changed here.
+import {PLANS,approvedPrice} from './plans.mjs';
 export class BillingError extends Error{constructor(code,status=400){super(code);this.code=code;this.status=status;}}
 const fail=(code,status)=>{throw new BillingError(code,status);};
 const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
@@ -8,7 +9,7 @@ export function validateConfig(c){
  if(!c.enabled)return false;
  if(!/^sk_test_/.test(c.secret||'')||!/^whsec_/.test(c.webhookSecret||'')||!c.projectRef||c.projectRef==='cgqtylvaapwbuwqvpjtb')fail('test_configuration_required',503);
  for(const [name,p] of Object.entries(c.plans||{})){
-  if(!slug(name)||!/^price_\w+$/.test(p.priceId||'')||typeof p.name!=='string'||!p.name.trim()||!Number.isSafeInteger(p.quantity)||p.quantity<1||p.quantity>10000)fail('invalid_catalog',503);
+  if(!['pro','team'].includes(name)||!/^price_\w+$/.test(p.priceId||'')||(p.quantity!==undefined&&p.quantity!==1))fail('invalid_catalog',503);
  }
  return true;
 }
@@ -41,14 +42,17 @@ export function snapshot(subscription,plan,price){
  if(!statuses.includes(subscription.status))fail('unknown_subscription_state');
  // Trial terms are not yet approved. Never grant a trial from a Stripe dashboard change.
  const eligible=matches&&subscription.status==='active'&&!subscription.trial_end&&subscription.latest_invoice?.status==='paid';
+ const periodEnd=items[0]?.current_period_end||subscription.current_period_end||null;
+ const cancelAt=Number.isSafeInteger(subscription.cancel_at)&&subscription.cancel_at>0?subscription.cancel_at:null;
  return {subscriptionId:subscription.id,customerId:id(subscription.customer),status:subscription.status,eligible,
-  cancelAtPeriodEnd:!!subscription.cancel_at_period_end,periodEnd:items[0]?.current_period_end||subscription.current_period_end||null};
+  cancelAtPeriodEnd:!!subscription.cancel_at_period_end||(cancelAt!==null&&cancelAt===periodEnd),cancelAt,periodEnd};
 }
 export function createHandler({config,authenticate,store,stripe,now=()=>Date.now()}){
  return async req=>{
   const origin=req.headers.get('origin');const headers={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};
   if(origin&&(config.origins||[]).includes(origin))headers['Access-Control-Allow-Origin']=origin;
   const reply=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
+  let stage='request';
   try{
    if(origin&&!(config.origins||[]).includes(origin))fail('origin_denied',403);
    if(req.method==='OPTIONS')return new Response(null,{status:204,headers:{...headers,'Access-Control-Allow-Methods':'POST,OPTIONS','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info'}});
@@ -74,31 +78,41 @@ export function createHandler({config,authenticate,store,stripe,now=()=>Date.now
      if(current.metadata?.study_id!==study||current.metadata?.checkout_request_id!==requestId||id(current.customer)!==id(reference.customer))fail('subscription_mismatch');
      const plan=config.plans?.[lease.plan];
      // Failed/canceled states must still propagate when an offer was withdrawn.
-     const price=current.status==='active'&&plan?await stripe.get('/prices/'+plan.priceId):null;const value=snapshot(current,plan,price);
+     const price=current.status==='active'&&plan?await stripe.get('/prices/'+plan.priceId):null;const value=snapshot(current,plan?{...plan,quantity:lease.quantity}:null,price);
+     value.plan=lease.plan;value.seats=lease.quantity;
      await store.finishEvent(event.id,study,lease.token,value);return reply({received:true});
     }catch(error){await store.releaseEvent(study,lease.token).catch(()=>{});throw error;}
    }
    const authorization=req.headers.get('authorization')||'';
    if(!authorization.startsWith('Bearer '))fail('unauthorized',401);
-   const actor=await authenticate(authorization);if(!actor)fail('unauthorized',401);
+   stage='authentication';const actor=await authenticate(authorization);if(!actor)fail('unauthorized',401);
    const input=JSON.parse(await rawBody(req,8192));if(!uuid(input.studyId))fail('invalid_study');
    // Revalidated on each store mutation as well as this initial read.
-   const account=await store.authorize(actor.id,input.studyId);
+   stage='authorization';const account=await store.authorize(actor.id,input.studyId);
    if(input.action==='status'){
     const plans=[];if(enabled)for(const [key,p] of Object.entries(config.plans||{})){
-     const price=await stripe.get('/prices/'+p.priceId);
-     if(price.livemode!==false||!price.active||price.type!=='recurring'||!Number.isSafeInteger(price.unit_amount)||!price.recurring)fail('price_unavailable',503);
-     plans.push({slug:key,name:p.name,amount:price.unit_amount*p.quantity,currency:price.currency,interval:price.recurring.interval,intervalCount:price.recurring.interval_count});
+     stage='stripe_price';const price=await stripe.get('/prices/'+p.priceId);
+     if(!approvedPrice(key,price))fail('price_unavailable',503);
+     stage='seat_quote';const quote=await store.seatQuote(actor.id,input.studyId,key);
+     plans.push({slug:key,name:PLANS[key].name,unitAmount:price.unit_amount,amount:price.unit_amount*quote.quantity,quantity:quote.quantity,perInternalUser:key==='team',seatRevision:quote.revision,ready:quote.ready&&config.taxReady===true,currency:price.currency,interval:price.recurring.interval,intervalCount:price.recurring.interval_count});
     }
-    return reply({available:enabled,mode:'test',account:enabled?account:null,plans});
+    return reply({available:enabled,mode:'test',account:enabled?account:null,plans,terms:PLANS});
+   }
+   if(input.action==='select-free'){
+    if(!config.projectRef||config.projectRef==='cgqtylvaapwbuwqvpjtb')fail('test_configuration_required',503);
+    return reply({entitlements:await store.selectFree(actor.id,input.studyId)});
    }
    if(!enabled)fail('not_configured',503);
    const base=config.returnOrigin;if(!/^https:\/\//.test(base)&&!/^http:\/\/127\.0\.0\.1:\d+$/.test(base))fail('invalid_return_origin',503);
    if(input.action==='checkout'){
     if(!slug(input.plan)||!config.plans?.[input.plan]||!uuid(input.requestId))fail('plan_unavailable');
+    if(config.taxReady!==true)fail('tax_configuration_required',409);
     const plan=config.plans[input.plan],price=await stripe.get('/prices/'+plan.priceId);
-    if(price.livemode!==false||price.active!==true||price.type!=='recurring'||price.unit_amount===null||!price.recurring)fail('price_unavailable');
-    const attempt=await store.beginCheckout(actor.id,input.studyId,input.requestId,input.plan);
+    if(!approvedPrice(input.plan,price))fail('price_unavailable');
+    const quote=await store.seatQuote(actor.id,input.studyId,input.plan);
+    if(!quote.ready)fail('seat_rules_pending',409);if(input.seatRevision!==quote.revision)fail('team_changed',409);
+    const attempt=await store.beginCheckout(actor.id,input.studyId,input.requestId,input.plan,input.seatRevision);
+    if(!Number.isSafeInteger(attempt.quantity)||attempt.quantity<1||(input.plan==='pro'&&attempt.quantity!==1))fail('invalid_seat_quote',409);
     if(attempt.sessionId){const existing=await stripe.get('/checkout/sessions/'+attempt.sessionId);if(existing.livemode!==false||id(existing.customer)!==attempt.customerId||existing.client_reference_id!==input.studyId)fail('session_mismatch');
      if(existing.status==='open'&&existing.url)return reply({url:existing.url});
      if(existing.status==='expired'){await store.expireCheckout(actor.id,input.studyId,attempt.requestId,existing.id);fail('checkout_expired',409);}
@@ -106,7 +120,7 @@ export function createHandler({config,authenticate,store,stripe,now=()=>Date.now
     if(now()-Date.parse(attempt.createdAt)>23*3600000)fail('checkout_requires_reconciliation',409);
     let customerId=attempt.customerId;
     if(!customerId){const customer=await stripe.post('/customers',{'metadata[study_id]':input.studyId},'customer:'+attempt.requestId);if(customer.livemode!==false)fail('test_object_required');customerId=customer.id;await store.setCustomer(actor.id,input.studyId,attempt.requestId,customerId);}
-    const session=await stripe.post('/checkout/sessions',{mode:'subscription',customer:customerId,'line_items[0][price]':plan.priceId,'line_items[0][quantity]':String(plan.quantity),billing_address_collection:'required','customer_update[address]':'auto','customer_update[name]':'auto',locale:'es',client_reference_id:input.studyId,
+    const session=await stripe.post('/checkout/sessions',{mode:'subscription',customer:customerId,'line_items[0][price]':plan.priceId,'line_items[0][quantity]':String(attempt.quantity),'automatic_tax[enabled]':'true','tax_id_collection[enabled]':'true',billing_address_collection:'required','customer_update[address]':'auto','customer_update[name]':'auto',locale:'es',client_reference_id:input.studyId,
      'metadata[study_id]':input.studyId,'metadata[checkout_request_id]':attempt.requestId,'subscription_data[metadata][study_id]':input.studyId,'subscription_data[metadata][checkout_request_id]':attempt.requestId,
      success_url:base+'/es/ajustes?section=facturacion&billing_return=success&session_id={CHECKOUT_SESSION_ID}',cancel_url:base+'/es/ajustes?section=facturacion&billing_return=cancelled'},'checkout:'+attempt.requestId);
     if(session.livemode!==false||!session.url||id(session.customer)!==customerId)fail('session_mismatch');
@@ -127,6 +141,6 @@ export function createHandler({config,authenticate,store,stripe,now=()=>Date.now
     return reply({invoices:(result.data||[]).map(x=>({id:x.id,number:x.number,status:x.status,total:x.total,currency:x.currency,created:x.created,pdf:x.invoice_pdf,url:x.hosted_invoice_url})),hasMore:!!result.has_more});
    }
    return reply({error:'invalid_action'},400);
-  }catch(e){return reply({error:e instanceof BillingError?e.code:'billing_unavailable'},e instanceof BillingError?e.status:503);}
+  }catch(e){return reply({error:e instanceof BillingError?e.code:'billing_unavailable',stage},e instanceof BillingError?e.status:503);}
  };
 }

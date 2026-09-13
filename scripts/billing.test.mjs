@@ -2,8 +2,8 @@ import test from 'node:test';import assert from 'node:assert/strict';import {cre
 import {createHandler,validateConfig,verifySignature,snapshot,subscriptionReference} from '../supabase/functions/billing/core.mjs';
 const intent=createRequire(import.meta.url)('../app/billing-intent.js');
 const study='11111111-1111-4111-8111-111111111111',requestId='22222222-2222-4222-8222-222222222222';
-const config={enabled:true,secret:'sk_test_fixture',webhookSecret:'whsec_fixture',projectRef:'isolated',origins:['http://127.0.0.1:3187'],returnOrigin:'http://127.0.0.1:3187',plans:{synthetic:{name:'Plan de ensayo local',priceId:'price_fixture',quantity:1}}};
-const price={id:'price_fixture',livemode:false,active:true,type:'recurring',unit_amount:100,currency:'eur',recurring:{interval:'month',interval_count:1}};
+const config={enabled:true,taxReady:true,secret:'sk_test_fixture',webhookSecret:'whsec_fixture',projectRef:'isolated',origins:['http://127.0.0.1:3187'],returnOrigin:'http://127.0.0.1:3187',plans:{pro:{name:'Plan de ensayo local',priceId:'price_fixture',quantity:1}}};
+const price={id:'price_fixture',livemode:false,active:true,type:'recurring',unit_amount:2200,tax_behavior:'inclusive',currency:'eur',recurring:{interval:'month',interval_count:1}};
 const subscription={id:'sub_fixture',livemode:false,customer:'cus_fixture',status:'active',latest_invoice:{status:'paid'},metadata:{study_id:study,checkout_request_id:requestId},items:{data:[{price:'price_fixture',quantity:1,current_period_end:1999999999}]}};
 async function signature(body,secret=config.webhookSecret,time=Math.floor(Date.now()/1000)){
  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
@@ -11,10 +11,10 @@ async function signature(body,secret=config.webhookSecret,time=Math.floor(Date.n
 }
 function fixture(overrides={}){
  const calls=[],writes=[];
- const store={authorize:async()=>({customerId:'cus_fixture',status:'not_started'}),beginCheckout:async()=>({requestId,createdAt:new Date().toISOString(),customerId:'cus_fixture'}),setCustomer:async(...a)=>writes.push(['customer',...a]),finishCheckout:async(...a)=>writes.push(['checkout',...a]),expireCheckout:async(...a)=>writes.push(['expire',...a]),claimEvent:async()=>({token:'lease',plan:'synthetic'}),finishEvent:async(...a)=>writes.push(['event',...a]),releaseEvent:async()=>{},...overrides.store};
+ const store={seatQuote:async()=>({ready:true,quantity:1,revision:'fixture-revision'}),authorize:async()=>({customerId:'cus_fixture',status:'not_started'}),beginCheckout:async()=>({requestId,quantity:1,createdAt:new Date().toISOString(),customerId:'cus_fixture'}),setCustomer:async(...a)=>writes.push(['customer',...a]),finishCheckout:async(...a)=>writes.push(['checkout',...a]),expireCheckout:async(...a)=>writes.push(['expire',...a]),claimEvent:async()=>({token:'lease',plan:'pro',quantity:1}),finishEvent:async(...a)=>writes.push(['event',...a]),releaseEvent:async()=>{},...overrides.store};
  const stripe={get:async p=>{calls.push(['get',p]);if(p.startsWith('/prices/'))return price;if(p.startsWith('/subscriptions/'))return subscription;if(p.startsWith('/invoices?'))return {data:[],has_more:false};return {id:'cs_test_fixture',livemode:false,customer:'cus_fixture',client_reference_id:study,status:'open',url:'https://checkout.stripe.com/test'};},post:async(p,body,key)=>{calls.push(['post',p,body,key]);return {id:'cs_test_fixture',livemode:false,customer:'cus_fixture',url:'https://checkout.stripe.com/test'};},...overrides.stripe};
  const handler=createHandler({config:{...config,...overrides.config},authenticate:async()=>({id:'admin'}),store,stripe,...overrides.dependencies});
- return {calls,writes,handler,request:async(action,extra={})=>handler(new Request('https://example.invalid/billing',{method:'POST',headers:{Authorization:'Bearer fixture','Content-Type':'application/json'},body:JSON.stringify({action,studyId:study,...extra})})),webhook:async(event)=>{const body=JSON.stringify(event);return handler(new Request('https://example.invalid/billing/webhook',{method:'POST',headers:{'stripe-signature':await signature(body)},body}));}};
+ return {calls,writes,handler,request:async(action,extra={})=>handler(new Request('https://example.invalid/billing',{method:'POST',headers:{Authorization:'Bearer fixture','Content-Type':'application/json'},body:JSON.stringify({action,studyId:study,seatRevision:'fixture-revision',...extra})})),webhook:async(event)=>{const body=JSON.stringify(event);return handler(new Request('https://example.invalid/billing/webhook',{method:'POST',headers:{'stripe-signature':await signature(body)},body}));}};
 }
 test('billing intention survives redirect without price, arbitrary URL or paid state',()=>{
  const map=new Map(),storage={getItem:k=>map.get(k),setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};
@@ -25,7 +25,7 @@ test('billing intention survives redirect without price, arbitrary URL or paid s
 test('test configuration rejects live keys and production project',()=>{
  assert.equal(validateConfig({enabled:false}),false);
  assert.throws(()=>validateConfig({...config,secret:'sk_live_fixture'}));assert.throws(()=>validateConfig({...config,projectRef:'cgqtylvaapwbuwqvpjtb'}));
- assert.throws(()=>validateConfig({...config,plans:{synthetic:{priceId:'price_fixture',quantity:0}}}));
+ assert.throws(()=>validateConfig({...config,plans:{pro:{priceId:'price_fixture',quantity:0}}}));
 });
 test('signature validates exact body, rejects tampering, old timestamps and wrong secrets',async()=>{
  const raw='{"test":1}',sig=await signature(raw);assert.equal(await verifySignature(raw,sig,config.webhookSecret),true);
@@ -34,42 +34,58 @@ test('signature validates exact body, rejects tampering, old timestamps and wron
 });
 test('disabled billing offers no plans and starts no payment',async()=>{
  const f=fixture({config:{enabled:false}});assert.deepEqual((await (await f.request('status')).json()).plans,[]);
- assert.equal((await f.request('checkout',{plan:'synthetic',requestId})).status,503);assert.equal(f.calls.length,0);
+ assert.equal((await f.request('checkout',{plan:'pro',requestId})).status,503);assert.equal(f.calls.length,0);
 });
 test('server catalog determines price and quantity, browser totals are ignored',async()=>{
- const f=fixture();const r=await f.request('checkout',{plan:'synthetic',requestId,price:'price_attacker',amount:0,quantity:999});assert.equal(r.status,200);
+ const f=fixture();const r=await f.request('checkout',{plan:'pro',requestId,price:'price_attacker',amount:0,quantity:999});assert.equal(r.status,200);
  const call=f.calls.find(c=>c[0]==='post');assert.equal(call[2]['line_items[0][price]'],'price_fixture');assert.equal(call[2]['line_items[0][quantity]'],'1');assert.equal(call[3],'checkout:'+requestId);
  assert.equal(call[2]['subscription_data[metadata][study_id]'],study);assert.equal(f.writes.some(w=>w[0]==='event'),false);
 });
 test('unknown plan cannot reach Stripe',async()=>{const f=fixture();assert.equal((await f.request('checkout',{plan:'unknown',requestId})).status,400);assert.equal(f.calls.length,0);});
+test('Team uses the server seat quantity and inclusive automatic tax',async()=>{
+ const f=fixture({config:{plans:{team:{priceId:'price_team'}}},store:{seatQuote:async()=>({ready:true,quantity:3,revision:'fixture-revision'}),beginCheckout:async()=>({requestId,quantity:3,createdAt:new Date().toISOString(),customerId:'cus_fixture'})},stripe:{get:async()=>({...price,id:'price_team',unit_amount:3800})}});
+ assert.equal((await f.request('checkout',{plan:'team',requestId,quantity:1})).status,200);
+ const body=f.calls.find(c=>c[0]==='post')[2];assert.equal(body['line_items[0][quantity]'],'3');assert.equal(body['automatic_tax[enabled]'],'true');assert.equal(body['tax_id_collection[enabled]'],'true');
+});
+test('tax review and changed membership both block checkout before creating a session',async()=>{
+ const tax=fixture({config:{taxReady:false}});assert.equal((await tax.request('checkout',{plan:'pro',requestId})).status,409);assert.equal(tax.calls.length,0);
+ const seats=fixture();assert.equal((await seats.request('checkout',{plan:'pro',requestId,seatRevision:'stale'})).status,409);assert.equal(seats.calls.some(c=>c[0]==='post'),false);
+});
 test('admin authorization failure prevents checkout and portal',async()=>{
- const f=fixture({store:{authorize:async()=>{throw Error('denied');}}});for(const action of ['checkout','portal','history'])assert.equal((await f.request(action,{plan:'synthetic',requestId})).status,503);assert.equal(f.calls.length,0);
+ const f=fixture({store:{authorize:async()=>{throw Error('denied');}}});for(const action of ['checkout','portal','history'])assert.equal((await f.request(action,{plan:'pro',requestId})).status,503);assert.equal(f.calls.length,0);
 });
 test('missing identity and foreign origins are rejected',async()=>{
  const f=fixture({dependencies:{authenticate:async()=>null}});assert.equal((await f.request('status')).status,401);
  assert.equal((await f.handler(new Request('https://example.invalid/billing',{method:'POST',headers:{Origin:'https://evil.invalid'}}))).status,403);
 });
 test('an open Checkout retry reuses session instead of charging twice',async()=>{
- const f=fixture({store:{beginCheckout:async()=>({requestId,sessionId:'cs_test_fixture',customerId:'cus_fixture'})}});
- assert.equal((await f.request('checkout',{plan:'synthetic',requestId})).status,200);assert.equal(f.calls.some(c=>c[0]==='post'),false);
+ const f=fixture({store:{beginCheckout:async()=>({requestId,quantity:1,sessionId:'cs_test_fixture',customerId:'cus_fixture'})}});
+ assert.equal((await f.request('checkout',{plan:'pro',requestId})).status,200);assert.equal(f.calls.some(c=>c[0]==='post'),false);
 });
 test('uncertain old attempt cannot create a second session after Stripe idempotency retention',async()=>{
- const f=fixture({store:{beginCheckout:async()=>({requestId,createdAt:'2020-01-01',customerId:'cus_fixture'})}});
- assert.equal((await f.request('checkout',{plan:'synthetic',requestId})).status,409);assert.equal(f.calls.some(c=>c[0]==='post'),false);
+ const f=fixture({store:{beginCheckout:async()=>({requestId,quantity:1,createdAt:'2020-01-01',customerId:'cus_fixture'})}});
+ assert.equal((await f.request('checkout',{plan:'pro',requestId})).status,409);assert.equal(f.calls.some(c=>c[0]==='post'),false);
 });
 test('expired Checkout can be closed for a later explicit retry',async()=>{
- const f=fixture({store:{beginCheckout:async()=>({requestId,sessionId:'cs_test_fixture',customerId:'cus_fixture'})},stripe:{get:async p=>p.startsWith('/prices')?price:{id:'cs_test_fixture',status:'expired',livemode:false,customer:'cus_fixture',client_reference_id:study}}});
- assert.equal((await f.request('checkout',{plan:'synthetic',requestId})).status,409);assert.equal(f.writes[0][0],'expire');
+ const f=fixture({store:{beginCheckout:async()=>({requestId,quantity:1,sessionId:'cs_test_fixture',customerId:'cus_fixture'})},stripe:{get:async p=>p.startsWith('/prices')?price:{id:'cs_test_fixture',status:'expired',livemode:false,customer:'cus_fixture',client_reference_id:study}}});
+ assert.equal((await f.request('checkout',{plan:'pro',requestId})).status,409);assert.equal(f.writes[0][0],'expire');
 });
 test('portal uses owned customer and a fixed return URL',async()=>{const f=fixture();await f.request('portal',{customerId:'cus_attacker',return_url:'https://evil.invalid'});const c=f.calls[0];assert.equal(c[2].customer,'cus_fixture');assert.match(c[2].return_url,/127\.0\.0\.1/);});
 test('empty history remains empty; mismatched invoice ownership fails',async()=>{
  const f=fixture();assert.deepEqual((await (await f.request('history')).json()).invoices,[]);
  const bad=fixture({stripe:{get:async()=>({data:[{livemode:false,customer:'cus_other'}]})}});assert.equal((await bad.request('history')).status,400);
 });
+test('portal cancellation date at period end is recognized without legacy flag',()=>{
+ const s={...subscription,items:{data:subscription.items.data.map(i=>({...i,current_period_end:2000000000}))},cancel_at:2000000000,cancel_at_period_end:false};
+ assert.equal(snapshot(s,config.plans.pro,price).cancelAtPeriodEnd,true);
+ assert.equal(snapshot({...s,cancel_at:null},config.plans.pro,price).cancelAtPeriodEnd,false);
+ assert.equal(snapshot({...s,cancel_at:1900000000},config.plans.pro,price).cancelAtPeriodEnd,false);
+ assert.equal(snapshot(s,config.plans.pro,price).eligible,true);
+});
 test('active requires paid invoice, not success URL, trial or pending invoice',()=>{
- assert.equal(snapshot(subscription,config.plans.synthetic,price).eligible,true);
- for(const patch of [{status:'past_due'},{status:'trialing'},{latest_invoice:{status:'open'}},{trial_end:123}])assert.equal(snapshot({...subscription,...patch},config.plans.synthetic,price).eligible,false);
- assert.throws(()=>snapshot({...subscription,livemode:true},config.plans.synthetic,price));
+ assert.equal(snapshot(subscription,config.plans.pro,price).eligible,true);
+ for(const patch of [{status:'past_due'},{status:'trialing'},{latest_invoice:{status:'open'}},{trial_end:123}])assert.equal(snapshot({...subscription,...patch},config.plans.pro,price).eligible,false);
+ assert.throws(()=>snapshot({...subscription,livemode:true},config.plans.pro,price));
 });
 const event={id:'evt_fixture',livemode:false,type:'customer.subscription.updated',data:{object:subscription}};
 test('signed event refreshes Stripe AFTER lease and records server state',async()=>{

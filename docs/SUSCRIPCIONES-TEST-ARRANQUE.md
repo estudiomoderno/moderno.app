@@ -2,6 +2,8 @@
 
 Trabajo separado de producción en `taller-suscripciones-test-20260912`, carpeta de trabajo `C:/Chat Codex/moderno-suscripciones-test`. **No mezclar en main todavía.** La app publicada sigue en v3.53.1.
 
+**Actualización 13/09:** el estado vigente de despliegue, catálogo, credenciales y ensayo está en [STRIPE-TEST-ESTADO.md](STRIPE-TEST-ESTADO.md). Los apartados de comprobación/configuración que siguen conservan el punto de partida del 12/09 y no describen el estado actual del clon. Ya están instalados billing y ambos SQL, existe cálculo inicial de plazas en servidor y se ha ejecutado pago sandbox, factura, portal y cancelación. Sigue pendiente completar todos los controles comerciales antes de producción.
+
 ## Implementación
 
 - `app/billing-intent.js`: conserva un slug validado durante 24 horas en sessionStorage, incluido el retorno de Auth. No conserva importes, destinos arbitrarios ni supuestos pagos. Logout lo elimina.
