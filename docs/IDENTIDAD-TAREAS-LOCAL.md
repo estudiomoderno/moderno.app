@@ -76,3 +76,8 @@ Ajuste posterior: el botón circular se ancla al separador discontinuo (centro v
 ## Tarjetas superpuestas (revisión local posterior a v3.54.0)
 
 Board muestra tarjetas solapadas con expansión animada que desplaza las siguientes. Ratón: al señalar; pantalla táctil y teclado: botón del título. Solo una abierta por columna; Escape cierra. Los detalles conservan vencimiento, proyecto, tipo, importe y asignación; Abrir tarea mantiene el editor existente. Se respeta movimiento reducido. Sin cambios de datos ni SQL. Publicación autorizada por el usuario como v3.54.1. Validación: 318 pruebas correctas y expansión comprobada en navegador con datos ficticios. Vista local en puerto 3196.
+
+
+## v3.54.2 — Tipos y fechas en Mis tareas
+
+Iconos originales adjuntados por el usuario para Diseño, Desarrollo, Reunión, Entrega, Revisión y Contabilidad, con círculos pastel. Contador de tareas abiertas independiente del vencimiento y según alcance personal/equipo. Board agrupa por fecha de vencimiento, incluye Hoy y Sin fecha; arrastrar conserva el cambio de estado existente, sin cambiar vencimientos. Lista transparente, controles sin cambios de tamaño, foco neutro y fundido respetando movimiento reducido. Comprobadas posiciones idénticas de barra, buscador y filtros al cambiar de vista en navegador. Sin cambios SQL ni migraciones.

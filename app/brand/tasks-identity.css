@@ -123,3 +123,25 @@
  .ws-card-open{margin:4px 0;background:#ffffff80!important;color:#20201e!important}
  @media(prefers-reduced-motion:reduce){.ws-card-details,.ws-card-caret{transition:none!important}}
 }
+
+@media screen {
+ html body:not(.portalmode) .main .ws-full .ws-views button,html body:not(.portalmode) .main .ws-full .daily-scope button{font-weight:500!important;transform:none!important;min-height:44px;box-sizing:border-box;line-height:20px;border:1px solid transparent!important}
+ html body:not(.portalmode) .main .ws-full .ws-views button{width:112px;flex:0 0 112px}
+ html body:not(.portalmode) .main .ws-full .daily-scope{display:flex;align-items:center;gap:8px}
+ html body:not(.portalmode) .main .ws-full .daily-scope button{padding:10px 16px!important;margin:0!important}
+ html body:not(.portalmode) .main .ws-full .kcol h4{background:#e4dfce!important;font-family:inherit;font-weight:500}
+ html body:not(.portalmode) .main .ws-full .ws-search input,html body:not(.portalmode) .main .ws-full .ws-search input:focus{background:transparent!important;box-shadow:none!important;outline:none!important;border:0!important}
+ html body:not(.portalmode) .main .ws-full .ws-search:focus-within{background:transparent!important;outline:2px solid #858174;outline-offset:2px}
+ html body:not(.portalmode) .main .ws-full .ws-table-wrap,html body:not(.portalmode) .main .ws-full .ws-task-table,html body:not(.portalmode) .main .ws-full .ws-task-table :is(thead,tbody,tr,th,td){background:transparent!important}
+ .ws-card-title{display:flex;align-items:center;gap:12px}
+ .ws-type-icon{display:inline-flex;width:36px;height:36px;flex:0 0 36px;align-items:center;justify-content:center;border-radius:50%;color:#292922;vertical-align:middle}
+ .ws-type-icon svg{width:21px;height:21px}
+ .ws-task-table .ws-type-icon{margin-right:10px}
+ .ws-timeline-note{font-size:12px;color:#686456;margin:0 0 16px}
+ .ws-date-row{display:grid;grid-template-columns:90px minmax(0,1fr);gap:16px;border-top:1px dashed #bcb6a4;padding:16px 0 22px}
+ .ws-date-label{font-size:12px;line-height:1.6;padding-top:18px;color:#686456}
+ .ws-date-label strong{display:block;color:#20201e;font-weight:700}
+ .ws-date-row.is-today{border-top-color:#575447}
+ .ws-date-row .kanban{width:100%;min-width:0}
+ @media(max-width:700px){.ws-date-row{grid-template-columns:1fr;gap:8px}.ws-date-label{padding-top:0}.ws-date-label strong{display:inline;margin-right:8px}.ws-filter-row{min-height:72px}.ws-full .ws-views{flex-wrap:nowrap}.ws-subtitle{min-height:44px}}
+}

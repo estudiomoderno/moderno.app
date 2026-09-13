@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=3541">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=3542">
 </head>
 <body>
 <div class="app">
@@ -5181,10 +5181,10 @@ function taskIdentityIcon(name){return taskIdentityIcons[name]||'';}
 function wsViewKey(){return LS_KEY+'_vista_tareas_'+(meMail()||'local');}
 const wsSessionViews=new Map();
 function wsViewGet(){return wsSessionViews.get(wsViewKey())||'tablero';}
-function wsViewSet(v){if(!['tablero','lista'].includes(v))return;wsSessionViews.set(wsViewKey(),v);render();}
+function wsViewSet(v){if(!['tablero','lista'].includes(v))return;wsSessionViews.set(wsViewKey(),v);render();if(typeof document!=='undefined'){const content=document.querySelector('.ws-view-content');if(content&&typeof content.animate==='function'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches)content.animate([{opacity:0},{opacity:1}],{duration:240,easing:'ease-out'});}}
 function wsViewControls(){return `<div class="opt-pills daily-scope ws-views" role="group" aria-label="Vista de tareas">${[['tablero','Board','board'],['lista','Lista','list']].map(([v,label,icon])=>`<button aria-pressed="${wsViewGet()===v}" class="${wsViewGet()===v?'on':''}" onclick="wsViewSet('${v}')">${taskIdentityIcon(icon)}${label}</button>`).join('')}</div>`;}
 function wsTaskButton(c){return '<button class="ws-task-link" onclick="openDailyTask('+Number(c.p.id)+','+c.i+')">'+ModernoDaily.escape(c.t.title||'Sin título')+'</button>';}
-function wsList(cards){return '<div class="ws-table-wrap"><table class="ws-task-table"><thead><tr><th>Tarea</th><th>Proyecto</th><th>Responsable</th><th>Vencimiento</th><th>Estado</th></tr></thead><tbody>'+cards.map(c=>'<tr class="'+(c.t.important?'is-important':'')+'"><td>'+(c.t.important?'<span class="task-important-label">Importante</span><br>':'')+wsTaskButton(c)+'</td><td>'+ModernoDaily.escape(c.p.num+' '+c.p.name)+'</td><td>'+ModernoDaily.escape(taskAssignees(c.t).join(', ')||'Sin asignar')+'</td><td>'+dailyDue(c.t)+'</td><td>'+ModernoDaily.escape((KCOLS.find(k=>k[0]===c.t.col)||[])[1]||c.t.col||'Pendiente')+'</td></tr>').join('')+'</tbody></table></div>';}
+function wsList(cards){return '<div class="ws-table-wrap"><table class="ws-task-table"><thead><tr><th>Tarea</th><th>Proyecto</th><th>Responsable</th><th>Vencimiento</th><th>Estado</th></tr></thead><tbody>'+cards.map(c=>'<tr class="'+(c.t.important?'is-important':'')+'"><td>'+(c.t.important?'<span class="task-important-label">Importante</span><br>':'')+wsTypeBadge(c.t.type)+wsTaskButton(c)+'</td><td>'+ModernoDaily.escape(c.p.num+' '+c.p.name)+'</td><td>'+ModernoDaily.escape(taskAssignees(c.t).join(', ')||'Sin asignar')+'</td><td>'+dailyDue(c.t)+'</td><td>'+ModernoDaily.escape((KCOLS.find(k=>k[0]===c.t.col)||[])[1]||c.t.col||'Pendiente')+'</td></tr>').join('')+'</tbody></table></div>';}
 let _wsCalendarMonth='';
 function wsMonthMove(delta){const base=(_wsCalendarMonth||ModernoDaily.today().slice(0,7)).split('-').map(Number);const d=new Date(base[0],base[1]-1+delta,1,12);_wsCalendarMonth=ModernoDaily.today(d).slice(0,7);render();}
 function wsMonthToday(){_wsCalendarMonth=ModernoDaily.today().slice(0,7);render();}
@@ -5194,6 +5194,13 @@ function wsCalendar(cards){
   const title=new Date(month+'-01T12:00:00').toLocaleDateString(APP_LOCALE(),{month:'long',year:'numeric'});
   const item=c=>'<div class="ws-cal-task">'+wsTaskButton(c)+'<small>'+E(c.p.num+' '+c.p.name)+'</small></div>';
   return '<section aria-label="Calendario de vencimientos"><div class="ws-calendar-nav"><button class="btn btn-ghost" aria-label="Mes anterior" onclick="wsMonthMove(-1)">←</button><h2>'+E(title)+'</h2><button class="btn btn-ghost" aria-label="Mes siguiente" onclick="wsMonthMove(1)">→</button><button class="btn btn-ghost" onclick="wsMonthToday()">Hoy</button></div><p class="sec-note">'+shown.length+' tareas en este mes · '+(cards.length-shown.length-undated.length)+' en otros meses · '+undated.length+' sin fecha</p><div class="ws-calendar-wrap"><div class="ws-calendar-grid">'+['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>'<div class="ws-weekday">'+d+'</div>').join('')+days.map(day=>'<div class="ws-calendar-day '+(day===ModernoDaily.today()?'ws-today':'')+'">'+(day?'<time datetime="'+day+'">'+Number(day.slice(-2))+'</time>'+cards.filter(c=>c.t.due===day).map(item).join(''):'')+'</div>').join('')+'</div></div><h3>Sin fecha ('+undated.length+')</h3>'+ (undated.length?undated.map(item).join(''):'<p class="sec-note">Todas las tareas de estos filtros tienen fecha.</p>')+'</section>';
+}
+const wsTypeIcons={"Diseño": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-image-generation\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M3 21v-4a4 4 0 1 1 4 4h-4\" /><path d=\"M21 3a16 16 0 0 0 -12.8 10.2\" /><path d=\"M21 3a16 16 0 0 1 -10.2 12.8\" /><path d=\"M10.6 9a9 9 0 0 1 4.4 4.4\" /><path d=\"M17 19a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2\" /><path d=\"M3 5a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2\" /></svg>", "#d8c9e8"], "Desarrollo": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-infinity-2\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M13.94 9.39a10 10 0 0 1 .232 -.218a4 4 0 1 1 0 5.656a10 10 0 0 1 -2.172 -2.828a10 10 0 0 0 -2.172 -2.828a4 4 0 1 0 0 5.656a10 10 0 0 0 .234 -.219\" /></svg>", "#cad9ed"], "Reunión": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-brand-zoom\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M17.011 9.385v5.128l3.989 3.487v-12l-3.989 3.385\" /><path d=\"M3.887 6h10.08c1.468 0 3.033 1.203 3.033 2.803v8.196a.991 .991 0 0 1 -.975 1h-10.373c-1.667 0 -2.652 -1.5 -2.652 -3l.01 -8a.882 .882 0 0 1 .208 -.71a.841 .841 0 0 1 .67 -.287l-.001 -.002\" /></svg>", "#edcbd7"], "Entrega": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-package-export\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M12 21l-8 -4.5v-9l8 -4.5l8 4.5v4.5\" /><path d=\"M12 12l8 -4.5\" /><path d=\"M12 12v9\" /><path d=\"M12 12l-8 -4.5\" /><path d=\"M15 18h7\" /><path d=\"M19 15l3 3l-3 3\" /></svg>", "#cdddba"], "Revisión": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-file-check\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M14 3v4a1 1 0 0 0 1 1h4\" /><path d=\"M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2\" /><path d=\"M9 15l2 2l4 -4\" /></svg>", "#efd6ad"], "Contabilidad": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-abacus\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M5 3v18\" /><path d=\"M19 21v-18\" /><path d=\"M5 7h14\" /><path d=\"M5 15h14\" /><path d=\"M8 13v4\" /><path d=\"M11 13v4\" /><path d=\"M16 13v4\" /><path d=\"M14 5v4\" /><path d=\"M11 5v4\" /><path d=\"M8 5v4\" /><path d=\"M3 21h18\" /></svg>", "#bcded8"]};
+function wsTypeBadge(type){const entry=wsTypeIcons[type];return '<span class="ws-type-icon" title="'+ModernoDaily.escape(type||'Otro')+'" style="background:'+(entry?entry[1]:'#dedbd1')+'">'+(entry?entry[0]:'<span aria-hidden="true">•</span>')+'</span>';}
+function wsTimeline(cards){
+ const today=ModernoDaily.today(),dates=[...new Set(cards.map(c=>ModernoDaily.due(c.t.due).date).filter(Boolean).concat(today))].sort();
+ if(cards.some(c=>!ModernoDaily.due(c.t.due).date))dates.push('');
+ return '<div class="ws-timeline"><p class="ws-timeline-note">Por fecha de vencimiento</p>'+dates.map(date=>'<section class="ws-date-row '+(date===today?'is-today':'')+'"><div class="ws-date-label">'+(date?'<time datetime="'+date+'">'+(date===today?'<strong>Hoy</strong>':'')+new Date(date+'T12:00:00').toLocaleDateString(APP_LOCALE(),{day:'numeric',month:'short',year:'numeric'})+'</time>':'Sin fecha')+'</div>'+wsBoard(cards.filter(c=>(ModernoDaily.due(c.t.due).date||'')===date))+'</section>').join('')+'</div>';
 }
 function wsExpandCard(card,open){
   if(open)card.parentElement.querySelectorAll('.ws-stack-card.is-expanded').forEach(other=>{if(other!==card)wsExpandCard(other,false)});
@@ -5208,7 +5215,7 @@ function wsBoard(cards){return `  <div class="kanban ws-card-stacks" style="grid
         ${cards.filter(c=>c.t.col===key).map(({p,t,i})=>`
           <div class="task ws-stack-card ${t.important?'is-important':''}" draggable="true" ondragstart="dragTask(event,${p.id},${i});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" onpointerenter="if(event.pointerType==='mouse')wsExpandCard(this,true)" onpointerleave="if(event.pointerType==='mouse'&&!this.contains(document.activeElement))wsExpandCard(this,false)" onfocusout="if(!this.contains(event.relatedTarget))wsExpandCard(this,false)" onkeydown="if(event.key==='Escape'){this.querySelector('.ws-card-summary').focus();wsExpandCard(this,false)}">
             <button type="button" class="ws-card-summary" aria-expanded="false" aria-controls="ws-card-${p.id}-${i}" onclick="wsExpandCard(this.parentElement,event.pointerType==='mouse'||this.getAttribute('aria-expanded')!=='true')">
-              ${t.important?'<span class="task-important-label">Importante</span>':''}<span class="tt">${ModernoDaily.escape(t.title)}</span><span class="ws-card-caret" aria-hidden="true">⌄</span>
+              ${t.important?'<span class="task-important-label">Importante</span>':''}<span class="ws-card-title">${wsTypeBadge(t.type)}<span class="tt">${ModernoDaily.escape(t.title)}</span></span><span class="ws-card-caret" aria-hidden="true">⌄</span>
             </button>
             <div class="ws-card-details" id="ws-card-${p.id}-${i}" inert><div class="ws-card-content">
               ${dailyDue(t)}<div class="tm"><span class="chip ${BRAND[p.brand].chip}">${ModernoDaily.escape(p.num)} ${ModernoDaily.escape(p.name)}</span><span class="chip cm" style="background:var(--card)">${ModernoDaily.escape(t.type||"")}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}${assigneeChips(t)}</div>
@@ -5222,15 +5229,15 @@ function vWorkspace(){
   const query=String(state.wsQuery||''),mine=state.wsMine!==false;
   const all=dailyTaskCards(projs,mine);
   const cards=all.filter(c=>ModernoDaily.projectMatches(c.p,query)||String(c.t.title||'').toLocaleLowerCase().includes(query.toLocaleLowerCase()));
-  const today=dailyTaskCards(projs,true).filter(c=>ModernoDaily.due(c.t.due).date===ModernoDaily.today()).length;
+  const pendingCount=all.length;
   return `<div class="ws-full">
     <h1 class="big">Mis tareas</h1>
-    <p class="ws-subtitle">Tienes <strong>${today} ${today===1?'tarea':'tareas'}</strong> que completar hoy</p>
+    <p class="ws-subtitle">Tienes <strong>${pendingCount} ${pendingCount===1?'tarea':'tareas'}</strong> entre pendientes, en progreso y en revisión</p>
     <div class="ws-toolbar">${wsViewControls()}<button class="btn btn-dark" onclick="wsNewTask('pend')">${taskIdentityIcon('add')}Nueva tarea</button></div>
     <div class="ws-search">${taskIdentityIcon('search')}<input id="wsProjBox" aria-label="Buscar tareas o proyectos" placeholder="Buscar tareas o proyectos" value="${ModernoDaily.escape(query)}" oninput="state.wsQuery=this.value;state.wsProj='all';renderKeep(this)"></div>
     <div class="ws-filter-row">${dailyScope()}<span role="status">${cards.length} ${cards.length===1?'tarea pendiente':'tareas pendientes'}</span></div>
     ${!cards.length?'<div class="empty">No hay tareas pendientes para estos filtros.</div>':''}
-    ${wsViewGet()==='lista'?wsList(cards):wsBoard(cards)}
+    <div class="ws-view-content">${wsViewGet()==='lista'?wsList(cards):wsTimeline(cards)}</div>
   </div>`;
 }
 function wsDrop(ev,col){
@@ -11389,7 +11396,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.1";
+const MODERNO_VER="v3.54.2";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
