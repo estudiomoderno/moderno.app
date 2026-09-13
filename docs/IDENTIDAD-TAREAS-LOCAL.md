@@ -36,3 +36,20 @@ Origen estable: `C:/Users/soyja/Documents/Codex/2026-09-09/esta-tarea-se-llama-c
 - Fuente solo para títulos dentro de la app. Cuerpos y formularios conservan su tipografía. El campo de incrustación fsType vale 8; no acredita por sí mismo una licencia web. Comprobar condiciones al integrar, como indica el README de origen.
 
 No se han modificado recursos visuales, funciones ni producción al recibir este aviso.
+
+## Integración aprobada y comprobada
+
+Imagen trasladó aprobación directa del usuario de la propuesta de 3196. Cerebro confirmó como destino esta misma rama y checkout, sin tocar main ni suscripciones. Base verificada: `85f6989`, seguida de `dab2b1b` y `3785642`. El diseño aprobado ya está integrado en `app/index.html` y `app/brand/tasks-identity.css`; la vista ficticia es solo un instrumento de revisión y no se inserta en el producto.
+
+Se detectó que el filtro servidor de colaboradores descartaba el campo nuevo. `SQL/tareas-importancia.sql` prepara una actualización puntual de `app_colaborador_filtrar`: admite exclusivamente `important` booleano y conserva las restricciones existentes. Se actualiza también el SQL fuente `permisos-colaboradores.sql`. No se ha ejecutado la migración en Supabase; debe acompañar al futuro despliegue aprobado de esta funcionalidad. No publicar interfaz sin comprobar primero la compatibilidad del servidor.
+
+Validación de integración: 37 pruebas JS correctas (formulario real saveTask, vistas, sincronización, fallos y conflictos) y 8 comprobaciones sobre PostgreSQL local PGlite con almacenamiento en disco. Se guardó true, se cerró y reabrió la base, se leyó como colaborador, se guardó false y se reabrió de nuevo. Los importes y documentos ocultos se conservaron exactamente. Se rechazaron valores de importancia no booleanos e intentos de introducir importes desde el perfil colaborador. Datos exclusivamente ficticios; no hubo conexiones ni escrituras en Supabase.
+
+Reproducción:
+
+```
+node --test scripts/task-importance.test.mjs scripts/cloud-save.test.mjs scripts/workspace-views.test.mjs scripts/daily-work.test.mjs
+node scripts/task-importance-sql.mjs /ruta/a/@electric-sql/pglite/dist/index.js
+```
+
+Límites: estas comprobaciones no acreditan un recorrido completo contra Supabase ni revisión móvil integral. Queda pendiente la nueva marca, porque los SVG contienen texto Acorn Bold y la fuente entregada es SemiBold600; no se han redibujado ni sustituido silenciosamente. La propuesta visual aprobada permanece intacta. No desplegar por esta entrega.
