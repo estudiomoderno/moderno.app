@@ -89,3 +89,12 @@ Nuevo cálculo mostrado en código; Team Checkout bloqueado localmente con team_
 - Referencias de implementación para próximo paso: https://docs.stripe.com/billing/subscriptions/pending-updates y https://docs.stripe.com/api/invoices/create_preview. No confundir preview con cobro; conservar proration_date para confirmación, no conceder extras con pago pendiente.
 
 La suite SQL se amplió después: 46 comprobaciones correctas, incluyendo exención permanente conservada al añadir un miembro y bloqueo de lectura pública de exenciones.
+
+## Continuación: ampliación fallida y preparación de prorrateo
+Se añade a la sincronización el estado previo pagado de la cuenta. Una factura de actualización abierta/anulada/incobrable no elimina plazas previamente pagadas si suscripción, cantidad y fin del periodo coinciden y el periodo no ha vencido. No concede plazas nuevas, no cubre facturas de renovación ni prolonga el periodo. Se conserva el requisito de estado activo. Prueba local de fallo, renovación impagada, cantidad distinta y periodo vencido correcta.
+
+seat-change.mjs prepara preview de incremento 1–4 en la suscripción existente, modifica solo extras, conserva proration_date para posterior confirmación y exige impuestos calculados. Rechaza pago anterior pendiente, cliente distinto, cancelación/schedule/pending_update y precios no aprobados; 5+ devuelve ventas sin llamada Stripe. Este módulo NO está conectado aún a una acción HTTP ni cobra: faltan persistencia de propuesta, confirmación admin, ledger/idempotencia de ejecución, sincronización de nuevas cantidades y reducción programada. No presentarlo como ampliación disponible.
+
+Verificaciones de esta continuación: 29 pruebas billing,4 pruebas preparación de ampliación y20 PostgreSQL pasan, Deno check correcto. SQL billing_test_claim actualizado puntualmente en clon con éxito. Backend de protección desplegado en clon; validar respuesta de salud antes de cerrar revisión. Ningún cargo ni cambio de plazas reales.
+
+Salud posterior al despliegue comprobada: Auth200 y billing status200, cuenta ficticia cancelada/eligiblefalse conservada; planes siguen deshabilitados por configuración de ensayo.

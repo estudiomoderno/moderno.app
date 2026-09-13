@@ -34,7 +34,7 @@ export function subscriptionReference(event){
  if(event.type.startsWith('invoice.'))return id(o.parent?.subscription_details?.subscription)||id(o.subscription);
  return null;
 }
-export function snapshot(subscription,plan,price){
+export function snapshot(subscription,plan,price,previous=null,now=Date.now()){
  if(subscription.livemode!==false||(price&&price.livemode!==false))fail('test_object_required');
  const items=subscription.items?.data||[];
  const baseItem=plan?.basePriceId?items.find(i=>id(i.price)===plan.basePriceId):null;
@@ -43,8 +43,11 @@ export function snapshot(subscription,plan,price){
  const statuses=['active','trialing','past_due','unpaid','canceled','incomplete','incomplete_expired','paused'];
  if(!statuses.includes(subscription.status))fail('unknown_subscription_state');
  // Trial terms are not yet approved. Never grant a trial from a Stripe dashboard change.
- const eligible=matches&&subscription.status==='active'&&!subscription.trial_end&&subscription.latest_invoice?.status==='paid';
  const periodEnd=items[0]?.current_period_end||subscription.current_period_end||null;
+ // An unpaid increase must not remove already-paid, unchanged seats. This is
+ // bounded by the paid period stored before the change, never a fresh renewal.
+ const keepPaidAccess=matches&&['open','void','uncollectible'].includes(subscription.latest_invoice?.status)&&subscription.latest_invoice?.billing_reason==='subscription_update'&&previous?.eligible===true&&previous.subscriptionId===subscription.id&&previous.seats===plan?.quantity&&previous.periodEnd===periodEnd&&periodEnd>Math.floor(now/1000);
+ const eligible=matches&&subscription.status==='active'&&!subscription.trial_end&&(subscription.latest_invoice?.status==='paid'||keepPaidAccess);
  const cancelAt=Number.isSafeInteger(subscription.cancel_at)&&subscription.cancel_at>0?subscription.cancel_at:null;
  return {subscriptionId:subscription.id,customerId:id(subscription.customer),status:subscription.status,eligible,
   cancelAtPeriodEnd:!!subscription.cancel_at_period_end||(cancelAt!==null&&cancelAt===periodEnd),cancelAt,periodEnd};
@@ -83,7 +86,7 @@ export function createHandler({config,authenticate,store,stripe,now=()=>Date.now
      const price=current.status==='active'&&plan?await stripe.get('/prices/'+plan.priceId):null;
      const dual=lease.plan==='team'&&current.metadata?.billing_model==='base_plus_extras';
      if(dual&&current.status==='active'){const basePrice=await stripe.get('/prices/'+config.plans.pro.priceId);if(!approvedPrice('pro',basePrice)||!approvedPrice('team',price))fail('price_unavailable');}
-     const value=snapshot(current,plan?{...plan,quantity:lease.quantity,...(dual?{basePriceId:config.plans.pro.priceId}:{})}:null,price);
+     const value=snapshot(current,plan?{...plan,quantity:lease.quantity,...(dual?{basePriceId:config.plans.pro.priceId}:{})}:null,price,lease.previous,now());
      value.plan=lease.plan;value.seats=lease.quantity;
      await store.finishEvent(event.id,study,lease.token,value);return reply({received:true});
     }catch(error){await store.releaseEvent(study,lease.token).catch(()=>{});throw error;}

@@ -139,3 +139,14 @@ test('two-item subscription requires exactly one base and paid extra seats',()=>
 test('existing active subscription cannot create a second subscription',async()=>{
  const f=fixture({store:{authorize:async()=>({subscriptionId:'sub_existing',status:'active'})}});const r=await f.request('checkout',{plan:'pro',requestId});assert.equal(r.status,409);assert.equal(f.calls.length,0);
 });
+
+test('failed increase preserves only the previously paid seats until their original renewal',()=>{
+ const p={priceId:'price_fixture',quantity:1};
+ const prior={subscriptionId:'sub_fixture',eligible:true,seats:1,periodEnd:1999999999};
+ const failed={...subscription,pending_update:{expires_at:1999999000},latest_invoice:{status:'open',billing_reason:'subscription_update'}};
+ assert.equal(snapshot(failed,p,price,prior,1800000000000).eligible,true);
+ assert.equal(snapshot(failed,p,price,prior,2000000000000).eligible,false);
+ assert.equal(snapshot(failed,p,price,{...prior,seats:2},1800000000000).eligible,false);
+ assert.equal(snapshot({...failed,latest_invoice:{status:'open',billing_reason:'subscription_cycle'}},p,price,prior,1800000000000).eligible,false);
+ assert.equal(snapshot({...failed,items:{data:[{price:'price_fixture',quantity:2,current_period_end:1999999999}]}},p,price,prior,1800000000000).eligible,false);
+});

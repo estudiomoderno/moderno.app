@@ -75,7 +75,7 @@ begin
  if a.subscription_id is not null and a.subscription_id<>p_subscription and c.closed then return '{"ignored":true}';end if;
  if a.sync_until>clock_timestamp() then return '{}';end if;
  update public.billing_test_accounts set sync_token=token,sync_until=clock_timestamp()+interval '90 seconds',sync_request=p_request,sync_subscription=p_subscription,sync_event=p_event where estudio_id=p_estudio;
- return jsonb_build_object('token',token,'plan',c.plan,'quantity',c.quantity);
+ return jsonb_build_object('token',token,'plan',c.plan,'quantity',c.quantity,'previous',jsonb_build_object('subscriptionId',a.subscription_id,'eligible',a.eligible,'seats',a.seats,'periodEnd',a.period_end));
 end $$;
 create or replace function public.billing_test_expire(p_actor uuid,p_estudio uuid,p_request uuid,p_session text) returns void
 language plpgsql security definer set search_path='' as $$
