@@ -71,3 +71,8 @@ Originales exactos conservados en `app/brand/Logotipo.svg` e `Isotipo.svg`, fuen
 Por instrucción directa se sitúa el selector debajo del logotipo/isotipo y antes de Inicio, con separación discontinua. Se retira la tarjeta inferior. Menú con espacios visibles del usuario, Ajustes, Invitar al equipo (solo administrador), Notificaciones y Cerrar sesión, conectados a las acciones existentes. Al contraer queda el avatar del estudio y el desplegable sale al lado sin recortarse. Escape cierra el desplegable. La vista ficticia muestra Estudio de ejemplo y no ejecuta invitaciones ni cierres de sesión reales; estas acciones abren un aviso de demostración.
 
 Ajuste posterior: el botón circular se ancla al separador discontinuo (centro vertical sobre la línea), tanto abierto como contraído. Comprobado que queda por debajo del isotipo sin taparlo.
+
+
+## Tarjetas superpuestas (revisión local posterior a v3.54.0)
+
+Board muestra tarjetas solapadas con expansión animada que desplaza las siguientes. Ratón: al señalar; pantalla táctil y teclado: botón del título. Solo una abierta por columna; Escape cierra. Los detalles conservan vencimiento, proyecto, tipo, importe y asignación; Abrir tarea mantiene el editor existente. Se respeta movimiento reducido. Sin cambios de datos ni SQL. Publicación autorizada por el usuario como v3.54.1. Validación: 318 pruebas correctas y expansión comprobada en navegador con datos ficticios. Vista local en puerto 3196.

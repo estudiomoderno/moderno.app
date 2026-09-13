@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=3540">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=3541">
 </head>
 <body>
 <div class="app">
@@ -5195,14 +5195,25 @@ function wsCalendar(cards){
   const item=c=>'<div class="ws-cal-task">'+wsTaskButton(c)+'<small>'+E(c.p.num+' '+c.p.name)+'</small></div>';
   return '<section aria-label="Calendario de vencimientos"><div class="ws-calendar-nav"><button class="btn btn-ghost" aria-label="Mes anterior" onclick="wsMonthMove(-1)">←</button><h2>'+E(title)+'</h2><button class="btn btn-ghost" aria-label="Mes siguiente" onclick="wsMonthMove(1)">→</button><button class="btn btn-ghost" onclick="wsMonthToday()">Hoy</button></div><p class="sec-note">'+shown.length+' tareas en este mes · '+(cards.length-shown.length-undated.length)+' en otros meses · '+undated.length+' sin fecha</p><div class="ws-calendar-wrap"><div class="ws-calendar-grid">'+['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d=>'<div class="ws-weekday">'+d+'</div>').join('')+days.map(day=>'<div class="ws-calendar-day '+(day===ModernoDaily.today()?'ws-today':'')+'">'+(day?'<time datetime="'+day+'">'+Number(day.slice(-2))+'</time>'+cards.filter(c=>c.t.due===day).map(item).join(''):'')+'</div>').join('')+'</div></div><h3>Sin fecha ('+undated.length+')</h3>'+ (undated.length?undated.map(item).join(''):'<p class="sec-note">Todas las tareas de estos filtros tienen fecha.</p>')+'</section>';
 }
-function wsBoard(cards){return `  <div class="kanban" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+function wsExpandCard(card,open){
+  if(open)card.parentElement.querySelectorAll('.ws-stack-card.is-expanded').forEach(other=>{if(other!==card)wsExpandCard(other,false)});
+  card.classList.toggle('is-expanded',open);
+  card.querySelector('.ws-card-summary').setAttribute('aria-expanded',String(open));
+  card.querySelector('.ws-card-details').inert=!open;
+}
+function wsBoard(cards){return `  <div class="kanban ws-card-stacks" style="grid-template-columns:repeat(3,minmax(0,1fr))">
     ${KCOLS.filter(c=>c[0]!=="listo").map(([key,label,color])=>`
       <div class="kcol" data-status="${key}" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="wsDrop(event,'${key}')">
         <h4><span class="kdot" style="background:${color}"></span>${label}<span class="n">${cards.filter(c=>c.t.col===key).length}</span></h4>
         ${cards.filter(c=>c.t.col===key).map(({p,t,i})=>`
-          <div class="task ${t.important?'is-important':''}" draggable="true" ondragstart="dragTask(event,${p.id},${i});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" onclick="taskModal(${p.id},${i})">
-            ${t.important?'<span class="task-important-label">Importante</span>':''}<div class="tt">${ModernoDaily.escape(t.title)}</div>${dailyDue(t)}
-            <div class="tm"><span class="chip ${BRAND[p.brand].chip}">${ModernoDaily.escape(p.num)} ${ModernoDaily.escape(p.name)}</span><span class="chip cm" style="background:var(--card)">${ModernoDaily.escape(t.type||"")}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}${assigneeChips(t)}</div>
+          <div class="task ws-stack-card ${t.important?'is-important':''}" draggable="true" ondragstart="dragTask(event,${p.id},${i});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" onpointerenter="if(event.pointerType==='mouse')wsExpandCard(this,true)" onpointerleave="if(event.pointerType==='mouse'&&!this.contains(document.activeElement))wsExpandCard(this,false)" onfocusout="if(!this.contains(event.relatedTarget))wsExpandCard(this,false)" onkeydown="if(event.key==='Escape'){this.querySelector('.ws-card-summary').focus();wsExpandCard(this,false)}">
+            <button type="button" class="ws-card-summary" aria-expanded="false" aria-controls="ws-card-${p.id}-${i}" onclick="wsExpandCard(this.parentElement,event.pointerType==='mouse'||this.getAttribute('aria-expanded')!=='true')">
+              ${t.important?'<span class="task-important-label">Importante</span>':''}<span class="tt">${ModernoDaily.escape(t.title)}</span><span class="ws-card-caret" aria-hidden="true">⌄</span>
+            </button>
+            <div class="ws-card-details" id="ws-card-${p.id}-${i}" inert><div class="ws-card-content">
+              ${dailyDue(t)}<div class="tm"><span class="chip ${BRAND[p.brand].chip}">${ModernoDaily.escape(p.num)} ${ModernoDaily.escape(p.name)}</span><span class="chip cm" style="background:var(--card)">${ModernoDaily.escape(t.type||"")}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}${assigneeChips(t)}</div>
+              <button type="button" class="btn ws-card-open" onclick="taskModal(${p.id},${i})">Abrir tarea</button>
+            </div></div>
           </div>`).join("")}
       </div>`).join("")}
   </div>`;}
@@ -11378,7 +11389,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.0";
+const MODERNO_VER="v3.54.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

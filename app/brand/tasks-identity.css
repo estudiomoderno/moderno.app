@@ -105,3 +105,21 @@
  @media(max-width:700px){.ws-toolbar{gap:8px}.ws-full .ws-views button,.ws-full .ws-toolbar>.btn{padding:10px 12px;font-size:12px}.ws-filter-row{align-items:flex-start;flex-wrap:wrap}.ws-full .kanban{display:flex;overflow:auto;gap:12px;padding:0 0 12px}.ws-full .kcol{flex:0 0 min(82vw,320px)}.ws-subtitle{font-size:14px}.ws-full .task{padding:18px}}
  @media(prefers-reduced-motion:reduce){body .sidebar,body .sidebar .sb-toggle svg,.ws-full .task{transition:none!important}.ws-full .task:hover{transform:none}}
 }
+
+/* Tarjetas superpuestas: el contenido abierto desplaza las siguientes. */
+@media screen {
+ html body:not(.portalmode) .main .ws-full .ws-card-stacks .ws-stack-card{position:relative;padding:20px 20px 44px;margin-bottom:0;box-shadow:0 -3px 12px #29251b0a;transform:none;transition:box-shadow .28s ease}
+ html body:not(.portalmode) .main .ws-full .ws-card-stacks .ws-stack-card+.ws-stack-card{margin-top:-24px}
+ .ws-card-summary{position:relative;display:block;width:100%;min-height:66px;padding:0 22px 0 0;border:0;background:transparent;color:inherit;text-align:left;cursor:pointer;font:inherit}
+ .ws-card-summary .tt{display:block;margin:0!important}
+ .ws-card-caret{position:absolute;right:0;top:20px;transition:transform .28s ease}
+ .is-expanded>.ws-card-summary .ws-card-caret{transform:rotate(180deg)}
+ .ws-card-summary:focus-visible{outline:2px solid currentColor;outline-offset:5px;border-radius:8px}
+ .ws-card-details{display:grid;grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .32s ease,opacity .22s ease,visibility .32s}
+ .ws-card-content{min-height:0;overflow:hidden}
+ .is-expanded>.ws-card-details{grid-template-rows:1fr;opacity:1;visibility:visible}
+ .ws-card-content .tm{padding-bottom:16px}
+ .ws-card-content>.due{margin-top:12px}
+ .ws-card-open{margin:4px 0;background:#ffffff80!important;color:#20201e!important}
+ @media(prefers-reduced-motion:reduce){.ws-card-details,.ws-card-caret{transition:none!important}}
+}
