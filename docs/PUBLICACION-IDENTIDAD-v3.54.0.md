@@ -23,3 +23,9 @@ Publicar mediante push no forzado del candidato a main y workflow deploy-app.yml
 Si aparece una regresión visual, preparar una reversión de los cambios de app frente a `85f6989`, con número de versión nuevo y comprobaciones, y desplegar por el mismo flujo. Mantener el filtro booleano aditivo: no hace falta borrar importancia ni restaurar bases. Nunca restaurar copias sobre producción para revertir solo la imagen.
 
 El rediseño de las otras pantallas queda para después, por decisión del usuario. Billing permanece sin publicación.
+
+## Resultado verificado
+
+Publicación completada: commit `774e5850a19d20e72a12b3b0e5e183ec6398873a`, workflow https://github.com/estudiomoderno/moderno.app/actions/runs/34775909174, estado completed/success. Pruebas JS y PHP, publicación de recursos y HTML: success.
+
+HTTP público 200 y coincidencia SHA256 con candidato (normalizando CRLF en texto) para index.html, brand/tasks-identity.css, settings-ui.js, brand/Logotipo.svg, brand/Isotipo.svg, brand/acorn/acorn-3.ttf y brand/acorn/acorn-8.ttf. HTML anuncia `v3.54.0`. Fuentes comparadas byte por byte, sin normalización. No se hizo login ni edición con un usuario real de producción durante la comprobación; recorrido funcional realizado con identidad ficticia en clon.
