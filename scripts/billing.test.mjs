@@ -5,6 +5,14 @@ const study='11111111-1111-4111-8111-111111111111',requestId='22222222-2222-4222
 const config={enabled:true,taxReady:true,secret:'sk_test_fixture',webhookSecret:'whsec_fixture',projectRef:'isolated',origins:['http://127.0.0.1:3187'],returnOrigin:'http://127.0.0.1:3187',plans:{pro:{name:'Plan de ensayo local',priceId:'price_fixture',quantity:1}}};
 const price={id:'price_fixture',livemode:false,active:true,type:'recurring',unit_amount:2200,tax_behavior:'inclusive',currency:'eur',recurring:{interval:'month',interval_count:1}};
 const subscription={id:'sub_fixture',livemode:false,customer:'cus_fixture',status:'active',latest_invoice:{status:'paid'},metadata:{study_id:study,checkout_request_id:requestId},items:{data:[{price:'price_fixture',quantity:1,current_period_end:1999999999}]}};
+test('seat preview persists server amount without changing subscription or revealing update parameters',async()=>{
+ const f=fixture({config:{plans:{pro:{priceId:'price_fixture'},team:{priceId:'price_extra'}}},store:{authorize:async()=>({eligible:true,customerId:'cus_fixture',subscriptionId:'sub_fixture'}),saveSeatPreview:async(_a,_s,id,q)=>({...q,quoteId:id})},stripe:{get:async p=>p.startsWith('/subscriptions/')?{...subscription,collection_method:'charge_automatically',metadata:{...subscription.metadata,billing_model:'base_plus_extras'}}:{...price,id:p.includes('price_extra')?'price_extra':'price_fixture',unit_amount:p.includes('price_extra')?3800:2200},post:async(p)=>{assert.equal(p,'/invoices/create_preview');return {livemode:false,customer:'cus_fixture',currency:'eur',amount_due:1234,automatic_tax:{status:'complete'}}}}});
+ const r=await f.request('seat-preview',{requestId,targetSeats:2,amountDue:0});assert.equal(r.status,200);const v=await r.json();assert.equal(v.amountDue,1234);assert.equal(v.quoteId,requestId);assert.equal(v.update,undefined);assert.equal(v.targetSeats,2);
+});
+test('exempt studies and unreviewed taxes cannot request seat preview',async()=>{
+ for(const overrides of [{store:{isExempt:async()=>true}},{config:{taxReady:false}}]){const f=fixture(overrides);assert.equal((await f.request('seat-preview',{requestId,targetSeats:2})).status,409);assert.equal(f.calls.length,0);}
+});
+test('five-seat preview routes to sales without Stripe or a charge',async()=>{const f=fixture();assert.deepEqual(await (await f.request('seat-preview',{requestId,targetSeats:5})).json(),{salesRequired:true});assert.equal(f.calls.length,0);});
 async function signature(body,secret=config.webhookSecret,time=Math.floor(Date.now()/1000)){
  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);
  const b=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(time+'.'+body));return `t=${time},v1=${Buffer.from(b).toString('hex')}`;

@@ -5,7 +5,8 @@ const root=new URL('../',import.meta.url);
 const read=p=>fs.readFileSync(new URL(p,root),'utf8');
 const bundle=()=>"// @ts-nocheck\n"+[
  read('supabase/functions/billing/plans.mjs'),
- read('supabase/functions/billing/core.mjs').replace(/^import .*from '\.\/plans\.mjs';\r?\n/m,''),
+ read('supabase/functions/billing/seat-change.mjs').replace(/^import .*from '\.\/plans\.mjs';\r?\n/m,'').replace(/\bconst id=/,'const seatObjectId=').replace(/\bid\(/g,'seatObjectId('),
+ read('supabase/functions/billing/core.mjs').replace(/^import .*from '\.\/(plans|seat-change)\.mjs';\r?\n/gm,''),
  read('supabase/functions/billing/index.ts').replace(/^import .*from '\.\/core\.mjs';\r?\n/m,'')
 ].join('\n');
 const install=()=>`begin;

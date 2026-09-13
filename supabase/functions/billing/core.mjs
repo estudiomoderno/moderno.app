@@ -1,5 +1,6 @@
 // Test-only billing. No access policy in the existing CRM is changed here.
 import {PLANS,approvedPrice} from './plans.mjs';
+import {previewSeatIncrease} from './seat-change.mjs';
 export class BillingError extends Error{constructor(code,status=400){super(code);this.code=code;this.status=status;}}
 const fail=(code,status)=>{throw new BillingError(code,status);};
 const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
@@ -99,7 +100,7 @@ export function createHandler({config,authenticate,store,stripe,now=()=>Date.now
    stage='authorization';const account=await store.authorize(actor.id,input.studyId);
    const exempt=await store.isExempt(input.studyId);
    if(exempt&&input.action==='status')return reply({available:true,mode:'test',exempt:true,account,plans:[],salesAvailable:false});
-   if(exempt&&['checkout','portal','select-free'].includes(input.action))fail('billing_exempt',409);
+   if(exempt&&['checkout','portal','select-free','seat-preview'].includes(input.action))fail('billing_exempt',409);
    if(input.action==='sales-request'){
     if(config.projectRef!=='szbswxpkhidywaosdfcg')fail('test_configuration_required',503);
     if(!uuid(input.requestId)||typeof input.name!=='string'||!input.name.trim()||input.name.trim().length>120||typeof input.company!=='string'||!input.company.trim()||input.company.trim().length>160||typeof input.email!=='string'||input.email.length>254||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.email.trim())||!Number.isInteger(input.internalUsers)||input.internalUsers<5||input.internalUsers>10000||(input.message!==undefined&&(typeof input.message!=='string'||input.message.length>2000)))fail('invalid_sales_request',400);
@@ -119,6 +120,20 @@ export function createHandler({config,authenticate,store,stripe,now=()=>Date.now
     return reply({entitlements:await store.selectFree(actor.id,input.studyId)});
    }
    if(!enabled)fail('not_configured',503);
+   if(input.action==='seat-preview'){
+    if(config.taxReady!==true)fail('tax_configuration_required',409);
+    if(!uuid(input.requestId)||!Number.isSafeInteger(input.targetSeats)||input.targetSeats<1)fail('invalid_seats');
+    if(input.targetSeats>=5)return reply({salesRequired:true});
+    if(!account.eligible||!/^sub_\w+$/.test(account.subscriptionId||'')||!account.customerId)fail('subscription_unavailable',409);
+    if(!config.plans.pro?.priceId||!config.plans.team?.priceId)fail('price_unavailable',503);
+    const subscription=await stripe.get('/subscriptions/'+account.subscriptionId+'?expand[]=latest_invoice');
+    if(subscription.metadata?.study_id!==input.studyId)fail('subscription_mismatch',409);
+    const basePrice=await stripe.get('/prices/'+config.plans.pro.priceId),extraPrice=await stripe.get('/prices/'+config.plans.team.priceId);
+    const quote=await previewSeatIncrease({subscription,customerId:account.customerId,target:input.targetSeats,basePrice,extraPrice,now:now()},stripe);
+    const saved=await store.saveSeatPreview(actor.id,input.studyId,input.requestId,quote);
+    // Update parameters and Stripe item IDs stay server-side. No payment here.
+    return reply({quoteId:saved.quoteId,currentSeats:saved.currentSeats,targetSeats:saved.targetSeats,amountDue:saved.amountDue,currency:saved.currency,expiresAt:saved.expiresAt,periodEnd:saved.periodEnd,salesRequired:false});
+   }
    const base=config.returnOrigin;if(!/^https:\/\//.test(base)&&!/^http:\/\/127\.0\.0\.1:\d+$/.test(base))fail('invalid_return_origin',503);
    if(input.action==='checkout'){
     if(!slug(input.plan)||!config.plans?.[input.plan]||!uuid(input.requestId))fail('plan_unavailable');

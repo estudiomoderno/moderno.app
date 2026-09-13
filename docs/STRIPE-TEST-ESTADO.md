@@ -98,3 +98,15 @@ seat-change.mjs prepara preview de incremento 1–4 en la suscripción existente
 Verificaciones de esta continuación: 29 pruebas billing,4 pruebas preparación de ampliación y20 PostgreSQL pasan, Deno check correcto. SQL billing_test_claim actualizado puntualmente en clon con éxito. Backend de protección desplegado en clon; validar respuesta de salud antes de cerrar revisión. Ningún cargo ni cambio de plazas reales.
 
 Salud posterior al despliegue comprobada: Auth200 y billing status200, cuenta ficticia cancelada/eligiblefalse conservada; planes siguen deshabilitados por configuración de ensayo.
+
+## Reanudación y cotizaciones persistentes de ampliación
+
+Cerebro trasladó instrucción directa de levantar todas las pausas. Se mantiene rama aislada y requisitos específicos de publicación. Diseño Tareas/menú aprobado integrado en otro checkout, sin mezclar index.html ni publicar. Nueva marca sigue pendiente Bold/SemiBold.
+
+Se conecta `seat-preview` al handler de billing, con autenticación, autorización admin, exención, configuración fiscal y suscripción/cliente/estudio comprobados. Solo calcula en Stripe test y persiste una propuesta mediante `billing_test_seat_preview_save`. La respuesta no revela parámetros internos de actualización. No modifica la suscripción, no concede plazas y no cobra. Desde5 deriva a ventas antes de llamar Stripe.
+
+`SQL/ampliaciones-test.sql` añade cotizaciones privadas con RLS, revalida administrador/exención y cuenta bajo bloqueo, impide reutilizar identificador con otro contenido y exige vigencia máxima de cinco minutos. Importe siempre generado por servidor. El cliente no puede reemplazar el importe. La repetición exacta de una propuesta devuelve el mismo registro; si una nueva consulta de Stripe produce otra cotización con el mismo ID se rechaza, sin realizar cargo.
+
+Validación local: 44 pruebas JS billing/UI/preparación y13 PostgreSQL correctas. No cambios de readiness en producción. SQL y función nuevos todavía no desplegados al clon; la interfaz aún no ofrece esta acción. Faltan confirmación persistente del administrador, ejecución idempotente de ampliación, sincronización de cantidades pagadas, bajas diferidas, PDF y recorrido completo. No presentar como ampliación disponible ni activar CTA.
+
+Referencias verificadas: https://docs.stripe.com/billing/subscriptions/pending-updates y https://docs.stripe.com/api/invoices/create_preview. Se conserva proration_date; preview no constituye pago. No instalar el nuevo handler sin su migración. El transportador de revisión incluye ahora seat-change.mjs y elimina imports relativos al generar su bundle.
