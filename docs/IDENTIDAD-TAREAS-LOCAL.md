@@ -67,3 +67,5 @@ Originales exactos conservados en `app/brand/Logotipo.svg` e `Isotipo.svg`, fuen
 ## Selector de estudio superior
 
 Por instrucción directa se sitúa el selector debajo del logotipo/isotipo y antes de Inicio, con separación discontinua. Se retira la tarjeta inferior. Menú con espacios visibles del usuario, Ajustes, Invitar al equipo (solo administrador), Notificaciones y Cerrar sesión, conectados a las acciones existentes. Al contraer queda el avatar del estudio y el desplegable sale al lado sin recortarse. Escape cierra el desplegable. La vista ficticia muestra Estudio de ejemplo y no ejecuta invitaciones ni cierres de sesión reales; estas acciones abren un aviso de demostración.
+
+Ajuste posterior: el botón circular se ancla al separador discontinuo (centro vertical sobre la línea), tanto abierto como contraído. Comprobado que queda por debajo del isotipo sin taparlo.

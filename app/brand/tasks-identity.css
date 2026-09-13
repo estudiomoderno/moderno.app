@@ -17,7 +17,10 @@
  body:not(.portalmode) .sidebar{background:#111;color:#f6f4eb;border-radius:28px;overflow:visible;transition:width .24s ease,padding .24s ease}
  body:not(.portalmode) .sidebar .sb-head{align-items:center!important;justify-content:center!important;flex-shrink:0;min-height:54px;margin-bottom:20px}
  .sidebar .sb-scroll{display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#555 transparent}
- .sidebar-study{border-top:1px dashed #66665c;padding:16px 0;margin-bottom:12px;position:relative;flex-shrink:0;z-index:97}
+ .sidebar-study-row{position:relative;flex-shrink:0;z-index:97}
+ .sidebar-study{border-top:1px dashed #66665c;padding:16px 0;margin-bottom:12px;position:relative;flex-shrink:0}
+ body:not(.portalmode) .sidebar .sidebar-study-row .sb-toggle{top:0;right:-30px;transform:translateY(-50%)}
+ body.navmini:not(.portalmode) .sidebar .sidebar-study-row .sb-toggle{right:-24px}
  .study-dropdown summary{list-style:none;display:flex;align-items:center;gap:8px;padding:8px;border-radius:13px;background:#eeece3;color:#171714;cursor:pointer;min-height:44px}
  .study-dropdown summary::-webkit-details-marker{display:none}
  .study-dropdown summary::after{display:none!important}
