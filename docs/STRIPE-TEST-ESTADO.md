@@ -59,3 +59,10 @@ Aplicado en código de esta rama: cotización excluye gestoría según perfil re
 Pruebas locales: 35 comprobaciones SQL y 6 BillingUI correctas. SQL nuevo aún no aplicado al clon ni a producción.
 
 Pendiente de implementación integral: estado visible de ampliación, propuesta de importe exacto y pago explícito administrador antes de conceder acceso; baja con revocación inmediata y ajuste Stripe en siguiente renovación conservando historial y último administrador. No confundir contador activo con plazas pagadas vigentes. Mínimo Team y fórmula de prorrateo aún requieren decisión comercial; no se establecen valores por defecto. Pruebas de carreras, renovación y ampliación fallida siguen pendientes.
+
+## Corrección comercial posterior: Team 1–4 y ventas desde 5
+Sustituye las dudas anteriores sobre mínimo y altas: autoservicio Team desde 1 hasta 4 internos activos, 38 EUR/usuario/mes con impuestos incluidos. Desde 5 (también ampliación 4→5) propuesta de ventas; nunca Checkout automático ni descuento inventado. Altas a mitad de periodo con prorrateo hasta renovación e importe exacto con impuestos confirmado por administrador antes de pagar. Bajas conservan reducción en renovación.
+
+Aplicado en esta revisión: SQL cotiza desde 1 sin mínimo configurable antiguo, bloquea autoservicio desde 5; backend impide crear Checkout con 5 o más tanto al cotizar como al validar intento persistido; interfaz no ofrece un total autoservicio para esos equipos e informa de que el receptor de ventas aún no está disponible, sin falso envío. 31 pruebas JS y 35 SQL pasan. No se ha desplegado todavía al clon.
+
+Pendiente: receptor privado y formulario de ventas coordinado con Web, sin desarrollar Panelcontrol; ampliación con factura prorrateada y pago confirmado, estado pendiente de aceptación sin plaza, reducción programada al renovar e integración UI end-to-end. La aprobación comercial del prorrateo no equivale a implementación terminada.

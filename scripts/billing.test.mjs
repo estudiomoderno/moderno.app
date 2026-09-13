@@ -109,3 +109,8 @@ test('invoice reference supports current and legacy Stripe event shapes',()=>{
  assert.equal(subscriptionReference({type:'invoice.paid',data:{object:{parent:{subscription_details:{subscription:'sub_a'}}}}}),'sub_a');
  assert.equal(subscriptionReference({type:'invoice.paid',data:{object:{subscription:'sub_b'}}}),'sub_b');
 });
+
+test('five Team users require sales before creating any payment',async()=>{
+ const f=fixture({config:{plans:{team:{priceId:'price_team'}}},store:{seatQuote:async()=>({ready:true,quantity:5,revision:'fixture-revision'})},stripe:{get:async()=>({...price,id:'price_team',unit_amount:3800})}});
+ const r=await f.request('checkout',{plan:'team',requestId});assert.equal(r.status,409);assert.equal((await r.json()).error,'sales_required');assert.equal(f.calls.filter(c=>c[0]==='post').length,0);
+});

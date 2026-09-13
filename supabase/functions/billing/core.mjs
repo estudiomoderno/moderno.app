@@ -94,7 +94,7 @@ export function createHandler({config,authenticate,store,stripe,now=()=>Date.now
      stage='stripe_price';const price=await stripe.get('/prices/'+p.priceId);
      if(!approvedPrice(key,price))fail('price_unavailable',503);
      stage='seat_quote';const quote=await store.seatQuote(actor.id,input.studyId,key);
-     plans.push({slug:key,name:PLANS[key].name,unitAmount:price.unit_amount,amount:price.unit_amount*quote.quantity,quantity:quote.quantity,perInternalUser:key==='team',seatRevision:quote.revision,ready:quote.ready&&config.taxReady===true,currency:price.currency,interval:price.recurring.interval,intervalCount:price.recurring.interval_count});
+     plans.push({slug:key,name:PLANS[key].name,unitAmount:price.unit_amount,amount:price.unit_amount*quote.quantity,quantity:quote.quantity,perInternalUser:key==='team',seatRevision:quote.revision,salesRequired:key==='team'&&quote.quantity>=5,ready:quote.ready&&config.taxReady===true&&(key!=='team'||quote.quantity<=4),currency:price.currency,interval:price.recurring.interval,intervalCount:price.recurring.interval_count});
     }
     return reply({available:enabled,mode:'test',account:enabled?account:null,plans,terms:PLANS});
    }
@@ -110,9 +110,10 @@ export function createHandler({config,authenticate,store,stripe,now=()=>Date.now
     const plan=config.plans[input.plan],price=await stripe.get('/prices/'+plan.priceId);
     if(!approvedPrice(input.plan,price))fail('price_unavailable');
     const quote=await store.seatQuote(actor.id,input.studyId,input.plan);
+    if(input.plan==='team'&&quote.quantity>=5)fail('sales_required',409);
     if(!quote.ready)fail('seat_rules_pending',409);if(input.seatRevision!==quote.revision)fail('team_changed',409);
     const attempt=await store.beginCheckout(actor.id,input.studyId,input.requestId,input.plan,input.seatRevision);
-    if(!Number.isSafeInteger(attempt.quantity)||attempt.quantity<1||(input.plan==='pro'&&attempt.quantity!==1))fail('invalid_seat_quote',409);
+    if(!Number.isSafeInteger(attempt.quantity)||attempt.quantity<1||(input.plan==='pro'&&attempt.quantity!==1)||(input.plan==='team'&&attempt.quantity>4))fail('invalid_seat_quote',409);
     if(attempt.sessionId){const existing=await stripe.get('/checkout/sessions/'+attempt.sessionId);if(existing.livemode!==false||id(existing.customer)!==attempt.customerId||existing.client_reference_id!==input.studyId)fail('session_mismatch');
      if(existing.status==='open'&&existing.url)return reply({url:existing.url});
      if(existing.status==='expired'){await store.expireCheckout(actor.id,input.studyId,attempt.requestId,existing.id);fail('checkout_expired',409);}

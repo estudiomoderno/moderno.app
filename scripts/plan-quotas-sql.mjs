@@ -40,7 +40,7 @@ try{
  await assert.rejects(db.exec(`update miembros set rol='colaborador' where user_id='${op(181)}';`));checks++;
  await db.exec(`update billing_test_policy set enforced=false;insert into miembros values('${member}','${a}','colaborador');update billing_test_policy set enforced=true;`);
  ok(!(await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'pro'])).q.ready,'Pro cannot buy for two internal members');
- ok(!(await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'team'])).q.ready,'Team pending rules block checkout');
+ ok((await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'team'])).q.ready,'Team two users needs no invented minimum');
  await db.exec(`update billing_test_policy set team_rules_confirmed=true,team_minimum=1 where estudio_id='${a}';`);
  q=(await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'team'])).q;ok(q.ready&&q.quantity===2,'Team calculates actual internal members');
  await assert.rejects(row('select billing_test_begin_plan($1,$2,$3,$4,$5)',[admin,a,op(150),'team','stale']));checks++;

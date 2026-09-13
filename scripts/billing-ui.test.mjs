@@ -25,3 +25,7 @@ test('success confirms only server-eligible account',async()=>{
  const f=fixture({available:true,plans:[],account:{status:'active',eligible:true}});await f.ui.load();assert.match(f.ui.view(),/Suscripción confirmada/);
  const pending=fixture({available:true,plans:[],account:{status:'active',eligible:false}});await pending.ui.load();assert.doesNotMatch(pending.ui.view(),/Suscripción confirmada/);
 });
+
+test('sales threshold hides self-service total and never pretends to send a request',async()=>{
+ const f=fixture({available:true,plans:[{name:'Team',salesRequired:true,amount:19000,currency:'EUR',ready:false}]});await f.ui.load();const html=f.ui.view();assert.match(html,/propuesta personalizada/);assert.match(html,/No se ha enviado ninguna solicitud/);assert.doesNotMatch(html,/190,00|Continuar en prueba/);
+});

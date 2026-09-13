@@ -65,9 +65,9 @@ begin
  ) x;
  select count(*) into pending from public.invitaciones i left join public.app_roles r on r.id=i.role_id where i.estudio_id=p_estudio and coalesce(r.perfil,'admin')<>'cliente';
  -- Pending invitations are informational only; acceptance must pass the paid-seat guard.
- return jsonb_build_object('quantity',case when p_plan='team' then greatest(n,coalesce(p.team_minimum,n)) else 1 end,
- 'internalMembers',n,'unclassified',unknowns,'pendingInvitations',pending,'revision',fingerprint,
- 'ready',coalesce(p.enforced,false) and unknowns=0 and case when p_plan='team' then p.team_rules_confirmed and p.team_minimum is not null else n<=1 end);
+ return jsonb_build_object('quantity',case when p_plan='team' then greatest(n,1) else 1 end,
+ 'salesRequired',p_plan='team' and n>=5,'internalMembers',n,'unclassified',unknowns,'pendingInvitations',pending,'revision',fingerprint,
+ 'ready',coalesce(p.enforced,false) and unknowns=0 and case when p_plan='team' then n between 1 and 4 else n<=1 end);
 end $$;
 
 create or replace function public.billing_test_begin_plan(p_actor uuid,p_estudio uuid,p_request uuid,p_plan text,p_revision text) returns jsonb
