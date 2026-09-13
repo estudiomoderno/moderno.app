@@ -48,7 +48,8 @@ begin
  'pdfLimit',case when plan='free' then 10 else null end,'pdfUnlimited',plan<>'free','pdfDefinitionConfirmed',p.pdf_definition_confirmed);
 end $$;
 
--- Membership-based quote. Clients never count. Ambiguous external profiles block quotation.
+-- Active memberships only. Clients and the restricted gestoria profile never count.
+-- Pending invitations do not reserve seats or authorize payment. Ambiguous profiles block quotation.
 create or replace function public.billing_test_seat_quote(p_actor uuid,p_estudio uuid,p_plan text) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare n integer;unknowns integer;pending integer;fingerprint text;p public.billing_test_policy;
@@ -56,17 +57,17 @@ begin
  perform public.billing_test_authorize(p_actor,p_estudio);
  if p_plan not in ('free','pro','team') then raise exception 'Plan no disponible';end if;
  select * into p from public.billing_test_policy where estudio_id=p_estudio;
- select count(*) filter(where role<>'cliente' and (role in ('admin','colaborador') or kind='internal')),
- count(*) filter(where role not in ('admin','colaborador','cliente') and coalesce(kind,'unresolved')<>'internal'),
- md5(coalesce(string_agg(user_id::text||':'||role||':'||coalesce(kind,''),'|' order by user_id) filter(where role<>'cliente'),''))
+ select count(*) filter(where role not in ('cliente','gestoria') and (role in ('admin','colaborador') or kind='internal')),
+ count(*) filter(where role not in ('admin','colaborador','cliente','gestoria') and coalesce(kind,'unresolved')<>'internal'),
+ md5(coalesce(string_agg(user_id::text||':'||role||':'||coalesce(kind,''),'|' order by user_id) filter(where role not in ('cliente','gestoria')),''))
  into n,unknowns,fingerprint from (
  select m.user_id,public.app_rol_usuario(p_estudio,m.user_id) role,k.kind from public.miembros m left join public.billing_test_member_kind k on k.estudio_id=m.estudio_id and k.user_id=m.user_id where m.estudio_id=p_estudio
  ) x;
  select count(*) into pending from public.invitaciones i left join public.app_roles r on r.id=i.role_id where i.estudio_id=p_estudio and coalesce(r.perfil,'admin')<>'cliente';
- -- Never guess whether pending invitations reserve a paid seat.
+ -- Pending invitations are informational only; acceptance must pass the paid-seat guard.
  return jsonb_build_object('quantity',case when p_plan='team' then greatest(n,coalesce(p.team_minimum,n)) else 1 end,
  'internalMembers',n,'unclassified',unknowns,'pendingInvitations',pending,'revision',fingerprint,
- 'ready',coalesce(p.enforced,false) and unknowns=0 and pending=0 and case when p_plan='team' then p.team_rules_confirmed and p.team_minimum is not null else n<=1 end);
+ 'ready',coalesce(p.enforced,false) and unknowns=0 and case when p_plan='team' then p.team_rules_confirmed and p.team_minimum is not null else n<=1 end);
 end $$;
 
 create or replace function public.billing_test_begin_plan(p_actor uuid,p_estudio uuid,p_request uuid,p_plan text,p_revision text) returns jsonb
@@ -142,7 +143,7 @@ begin
  select user_id into administrator from public.miembros where estudio_id=new.estudio_id and public.app_rol_usuario(estudio_id,user_id)='admin' limit 1;
  q:=public.billing_test_seat_quote(administrator,new.estudio_id,e->>'plan');
  if (q->>'unclassified')::integer>0 then raise exception 'Clasificacion de colaboradores pendiente' using errcode='PT409';end if;
- if (q->>'internalMembers')::integer>(e->>'internalUsers')::integer then raise exception 'Usuarios internos fuera del plan' using errcode='PT409';end if;
+ if (q->>'internalMembers')::integer>(e->>'internalUsers')::integer then raise exception 'Pendiente de ampliación por el administrador: no hay plazas disponibles' using errcode='PT409';end if;
  select quantity into pending_quantity from public.billing_test_checkouts where estudio_id=new.estudio_id and not closed;
  if pending_quantity is not null and (q->>'internalMembers')::integer>pending_quantity then raise exception 'Finaliza o concilia el pago del equipo' using errcode='PT409';end if;
  return new;

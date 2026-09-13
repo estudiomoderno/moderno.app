@@ -35,6 +35,9 @@ try{
  await db.exec(`insert into billing_test_member_kind values('${a}','${client}','internal');`);
  ok((await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'pro'])).q.internalMembers===1,'customer excluded even with stale internal classification');
  await assert.rejects(db.exec(`insert into miembros values('${member}','${a}','colaborador');`));checks++;
+ await db.exec(`insert into miembros values('${op(181)}','${a}','gestoria');insert into billing_test_member_kind values('${a}','${op(181)}','internal');`);
+ ok((await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'pro'])).q.internalMembers===1,'restricted gestoria is free even with stale classification');
+ await assert.rejects(db.exec(`update miembros set rol='colaborador' where user_id='${op(181)}';`));checks++;
  await db.exec(`update billing_test_policy set enforced=false;insert into miembros values('${member}','${a}','colaborador');update billing_test_policy set enforced=true;`);
  ok(!(await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'pro'])).q.ready,'Pro cannot buy for two internal members');
  ok(!(await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'team'])).q.ready,'Team pending rules block checkout');
@@ -43,7 +46,9 @@ try{
  await assert.rejects(row('select billing_test_begin_plan($1,$2,$3,$4,$5)',[admin,a,op(150),'team','stale']));checks++;
  const begin=(await row('select billing_test_begin_plan($1,$2,$3,$4,$5) b',[admin,a,op(150),'team',q.revision])).b;ok(begin.quantity===2,'authoritative quantity persisted');
  await db.exec(`insert into invitaciones values('${a}','pending@example.invalid',null);`);
- ok(!(await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'team'])).q.ready,'pending invitation rules not guessed');
+ ok((await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'team'])).q.ready,'pending invitations do not block or increase paid seats');
+ await assert.rejects(db.exec(`insert into miembros values('${op(180)}','${a}','colaborador');`));checks++;
+ ok((await row('select count(*) n from invitaciones')).n===1,'failed acceptance retains pending invitation');
  await db.exec(`update billing_test_accounts set plan_slug='pro',eligible=true,status='active',seats=1 where estudio_id='${a}';`);
  const pro=(await row('select billing_test_entitlements($1) e',[a])).e;ok(pro.pdfUnlimited&&pro.clientPortal&&!pro.modernoBrand&&pro.captureLimit===null&&!pro.captureUnlimited,'Pro entitlements and undecided capture cap');
  await assert.rejects(row('select billing_test_usage_change($1,$2,$3,$4)',[a,'capture',op(160),'reserve']));checks++;

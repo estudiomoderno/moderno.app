@@ -19,7 +19,7 @@ test('switching study hides prior subscription data',async()=>{
 });
 
 test('Team distinguishes unit price, internal users and tax-inclusive total',async()=>{
- const f=fixture({available:true,plans:[{slug:'team',name:'Team',unitAmount:3800,amount:7600,quantity:2,perInternalUser:true,currency:'EUR',interval:'month',ready:false}]});await f.ui.load();const html=f.ui.view();assert.match(html,/38,00/);assert.match(html,/76,00/);assert.match(html,/2 usuarios internos/);assert.match(html,/impuestos incluidos/);assert.match(html,/clientes invitados no cuentan/);await f.ui.checkout(0);assert.equal(f.calls.length,1);
+ const f=fixture({available:true,plans:[{slug:'team',name:'Team',unitAmount:3800,amount:7600,quantity:2,perInternalUser:true,currency:'EUR',interval:'month',ready:false}]});await f.ui.load();const html=f.ui.view();assert.match(html,/38,00/);assert.match(html,/76,00/);assert.match(html,/2 usuarios internos/);assert.match(html,/impuestos incluidos/);assert.match(html,/invitaciones pendientes no cuentan/);await f.ui.checkout(0);assert.equal(f.calls.length,1);
 });
 test('success confirms only server-eligible account',async()=>{
  const f=fixture({available:true,plans:[],account:{status:'active',eligible:true}});await f.ui.load();assert.match(f.ui.view(),/Suscripción confirmada/);

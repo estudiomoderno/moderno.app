@@ -50,3 +50,12 @@ Decisión posterior de Cerebro: no mostrar paquetes extra en precios públicos. 
 - Seis pruebas automatizadas de BillingUI pasan: incluye confirmación solo con eligible del servidor, separación de estudio y bloqueo de checkout no habilitado.
 - Contratación permanece deshabilitada. Esta revisión NO completa un nuevo recorrido de Checkout desde la UI. Pendientes: habilitación controlada del ensayo, recorridos éxito/cancelación/rechazo y retorno sin sesión, demora de webhook y revisión completa móvil/ordenador.
 - No cambios en producción ni en condiciones comerciales.
+
+## Reglas Team confirmadas por Cerebro (13 septiembre)
+Paga el administrador de una única suscripción. Solo miembros internos activos son facturables. Clientes, perfil servidor gestoría e invitaciones pendientes quedan excluidos. Gestoría conserva permisos restringidos, no obtiene permisos de colaborador por ser gratuita.
+
+Aplicado en código de esta rama: cotización excluye gestoría según perfil real, sin confiar en etiqueta; las invitaciones pendientes no bloquean la cotización ni suman plazas. El guard de miembros impide aceptar internos sin plaza y mantiene la transacción/invitación intacta. No realiza cobros. Cambiar gestoría a colaborador también pasa por el guard.
+
+Pruebas locales: 35 comprobaciones SQL y 6 BillingUI correctas. SQL nuevo aún no aplicado al clon ni a producción.
+
+Pendiente de implementación integral: estado visible de ampliación, propuesta de importe exacto y pago explícito administrador antes de conceder acceso; baja con revocación inmediata y ajuste Stripe en siguiente renovación conservando historial y último administrador. No confundir contador activo con plazas pagadas vigentes. Mínimo Team y fórmula de prorrateo aún requieren decisión comercial; no se establecen valores por defecto. Pruebas de carreras, renovación y ampliación fallida siguen pendientes.
