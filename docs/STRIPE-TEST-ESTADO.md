@@ -41,3 +41,12 @@ No activar CTA ni precios live a partir de este ensayo. La autorización para co
 ## Paquetes Free: ubicación de la oferta
 
 Decisión posterior de Cerebro: no mostrar paquetes extra en precios públicos. Ofrecerlos dentro de la app al intentar autocompletar tras agotar las 25 capturas y cualquier saldo comprado, conservando el formulario. Solo Free; saldo e historial de compras anteriores siguen visibles. Caducidad, acumulación e impuestos están pendientes; esta decisión no habilita su compra real ni confirma condiciones nuevas.
+
+## Vista previa de Facturación (13 septiembre, revisión posterior)
+- `node scripts/billing-preview-server.mjs` sirve esta rama en http://127.0.0.1:3194/setup. Introducir únicamente la clave pública anon del clon. Nunca una clave Stripe ni service_role.
+- Destino fijo: szbswxpkhidywaosdfcg. Acceder únicamente con el usuario ficticio del ensayo. No usar usuarios reales.
+- Comprobado en navegador: inicio de sesión, ruta `/es/ajustes?section=facturacion&plan=team`, precio Pro 22 EUR, Team 38 EUR por usuario y total 76 EUR para los dos miembros ficticios, historial con factura pagada y enlace PDF.
+- Revisada visualmente Facturación a 390×844; restaurado el tamaño del navegador después.
+- Seis pruebas automatizadas de BillingUI pasan: incluye confirmación solo con eligible del servidor, separación de estudio y bloqueo de checkout no habilitado.
+- Contratación permanece deshabilitada. Esta revisión NO completa un nuevo recorrido de Checkout desde la UI. Pendientes: habilitación controlada del ensayo, recorridos éxito/cancelación/rechazo y retorno sin sesión, demora de webhook y revisión completa móvil/ordenador.
+- No cambios en producción ni en condiciones comerciales.
