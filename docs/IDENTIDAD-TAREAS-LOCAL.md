@@ -57,3 +57,9 @@ Límites: estas comprobaciones no acreditan un recorrido completo contra Supabas
 ## Ajuste directo del usuario: botón circular del menú
 
 El usuario precisó la forma: rectángulo negro redondeado y círculo crema que sobresale del borde derecho, con las dos flechas originales de `Downloads/Iconos Web/Logo Contraer Menu.svg` y `Logo Despeglar Menu.svg`. Aplicado sin usar el logo de la captura como referencia. La navegación tiene un contenedor interior desplazable para que el círculo exterior no se recorte ni impida acceder a los enlaces inferiores. Comprobados en navegador ambos estados: flecha izquierda al estar desplegado, derecha al estar contraído; conserva aria-expanded y movimiento reducido. La marca sigue como dependencia independiente.
+
+## Nueva marca aplicada: dependencia tipográfica resuelta
+
+El usuario adjuntó cinco fuentes y ordenó aplicar logotipo en menú abierto, isotipo en cerrado y Acorn en Mis tareas. Metadatos: acorn-3 Bold700, acorn-4 ExtraLight200, acorn-6 Medium500, acorn-7 Regular400, acorn-8 SemiBold600. Bold700 resuelve la dependencia de texto de los SVG; ya no está pendiente esa discrepancia.
+
+Originales exactos conservados en `app/brand/Logotipo.svg` e `Isotipo.svg`, fuentes en `app/brand/acorn/`. Se insertan los SVG originales en el documento para que su texto use Acorn Bold cargada por CSS, sin redibujar ni sustituir su tipografía. Se invierten los colores para verlos claros sobre el menú negro. Menú abierto: logotipo; cerrado: isotipo. Títulos de main/modal: Acorn SemiBold600; cuerpo y formularios conservan fuente anterior. Comprobados visualmente ambos estados y estilo calculado Acorn600 del título. Solo revisión local, sin publicación.

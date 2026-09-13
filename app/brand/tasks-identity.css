@@ -1,5 +1,17 @@
 /* Identidad: revisión local. No afecta a documentos impresos ni portales. */
+@font-face{font-family:Acorn;src:url('/brand/acorn/acorn-3.ttf') format('truetype');font-style:normal;font-weight:700;font-display:swap}
+@font-face{font-family:Acorn;src:url('/brand/acorn/acorn-8.ttf') format('truetype');font-style:normal;font-weight:600;font-display:swap}
+@font-face{font-family:Acorn;src:url('/brand/acorn/acorn-6.ttf') format('truetype');font-style:normal;font-weight:500;font-display:swap}
+@font-face{font-family:Acorn;src:url('/brand/acorn/acorn-7.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:Acorn;src:url('/brand/acorn/acorn-4.ttf') format('truetype');font-style:normal;font-weight:200;font-display:swap}
 @media screen {
+ body:not(.portalmode) .main :is(h1,h2,h3,h4),body:not(.portalmode) #modalBox :is(h1,h2,h3,h4),html body:not(.portalmode) .main .ws-full h1.big{font-family:Acorn,Georgia,serif;font-weight:600;font-synthesis:none}
+ body:not(.portalmode) .sidebar .new-brand{margin:0;flex-shrink:0;line-height:0}
+ body:not(.portalmode) .sidebar .logo.new-brand{display:block;width:170px;max-width:100%}
+ body:not(.portalmode) .sidebar .logo-mini.new-brand{display:none;width:30px}
+ body.navmini:not(.portalmode) .sidebar .logo.new-brand{display:none}
+ body.navmini:not(.portalmode) .sidebar .logo-mini.new-brand{display:block}
+ body:not(.portalmode) .sidebar .new-brand svg{display:block;width:100%;height:auto;filter:invert(1);font-synthesis:none}
  body:not(.portalmode):has(.ws-full){--bg:#f6f4eb;--ui-canvas:#f6f4eb;--ink:#20201e;--ink-soft:#57564e;--card:#eae5d6}
  body:not(.portalmode):has(.ws-full) .main{background:#f6f4eb;color:#20201e}
  body:not(.portalmode) .sidebar{background:#111;color:#f6f4eb;border-radius:28px;overflow:visible;transition:width .24s ease,padding .24s ease}
