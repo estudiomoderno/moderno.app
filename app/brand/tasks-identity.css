@@ -2,18 +2,24 @@
 @media screen {
  body:not(.portalmode):has(.ws-full){--bg:#f6f4eb;--ui-canvas:#f6f4eb;--ink:#20201e;--ink-soft:#57564e;--card:#eae5d6}
  body:not(.portalmode):has(.ws-full) .main{background:#f6f4eb;color:#20201e}
- body:not(.portalmode) .sidebar{background:#181818;color:#f6f4eb;border-radius:28px;transition:width .24s ease,padding .24s ease}
- body:not(.portalmode) .sidebar .sb-head{align-items:center!important;flex-shrink:0;min-height:76px;margin-bottom:20px}
+ body:not(.portalmode) .sidebar{background:#111;color:#f6f4eb;border-radius:28px;overflow:visible;transition:width .24s ease,padding .24s ease}
+ body:not(.portalmode) .sidebar .sb-head{align-items:center!important;justify-content:center!important;flex-shrink:0;min-height:54px;margin-bottom:20px}
+ .sidebar .sb-scroll{display:flex;flex-direction:column;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#555 transparent}
  body:not(.portalmode) .sidebar img.logo,body:not(.portalmode) .sidebar img.logo-mini{content:url('/brand/simbolo-claro.svg');margin:0;filter:none}
  body:not(.portalmode) .sidebar .nav-item,body:not(.portalmode) .sidebar .nav-head{color:#f6f4eb}
  body:not(.portalmode) .sidebar .nav-item.active,body:not(.portalmode) .sidebar .nav-item:hover{background:#383832;color:#fffbee;box-shadow:none}
  body:not(.portalmode) .sidebar .nav-sub{border-color:#44443d}
  body:not(.portalmode) .sidebar .nav-sub .nav-item::before{background:#44443d}
- body:not(.portalmode) .sidebar .sb-toggle{position:static;width:34px;height:34px;min-width:34px;flex-shrink:0;border:1px solid #f6f4eb;background:transparent;color:#f6f4eb;box-shadow:none}
- .sidebar .sb-toggle svg{width:22px;height:22px;transition:transform .24s ease}
+ body:not(.portalmode) .sidebar .usercard{color:#20201e}
+ body:not(.portalmode) .sidebar .usercard strong{color:inherit}
+ body:not(.portalmode) .sidebar .sb-toggle{position:absolute;left:auto;right:-16px;top:40px;width:32px;height:32px;min-width:32px;border-radius:50%;border:3px solid #111;background:#f6f4eb;color:#111;box-shadow:none;z-index:96}
+ .sidebar .sb-toggle svg{position:absolute;inset:2px;width:22px;height:22px;transition:opacity .18s ease,transform .24s ease}
+ .sidebar .sb-toggle .sb-arrow-expand{opacity:0;transform:translateX(-4px)}
  .sidebar .sb-toggle::before{display:none!important}
- body.navmini .sidebar .sb-toggle svg{transform:rotate(180deg)}
- body.navmini .sidebar .sb-head{gap:16px!important;min-height:96px;margin-bottom:12px}
+ body.navmini .sidebar .sb-toggle .sb-arrow-collapse{opacity:0;transform:translateX(4px)}
+ body.navmini .sidebar .sb-toggle .sb-arrow-expand{opacity:1;transform:none}
+ body.navmini .sidebar .sb-head{gap:0!important;min-height:54px;margin-bottom:20px}
+ body.navmini .sb-scroll>div[style*="margin-top:auto"]>div:first-child{display:none}
  .ws-full{color:#20201e;max-width:1500px;margin:auto}
  .ws-full .big{font-size:clamp(28px,3vw,40px);margin:0 0 8px;line-height:1.2}
  .ws-subtitle{font-size:16px;font-weight:400;margin:0 0 28px;color:#57564e}

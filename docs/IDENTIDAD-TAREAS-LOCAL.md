@@ -53,3 +53,7 @@ node scripts/task-importance-sql.mjs /ruta/a/@electric-sql/pglite/dist/index.js
 ```
 
 Límites: estas comprobaciones no acreditan un recorrido completo contra Supabase ni revisión móvil integral. Queda pendiente la nueva marca, porque los SVG contienen texto Acorn Bold y la fuente entregada es SemiBold600; no se han redibujado ni sustituido silenciosamente. La propuesta visual aprobada permanece intacta. No desplegar por esta entrega.
+
+## Ajuste directo del usuario: botón circular del menú
+
+El usuario precisó la forma: rectángulo negro redondeado y círculo crema que sobresale del borde derecho, con las dos flechas originales de `Downloads/Iconos Web/Logo Contraer Menu.svg` y `Logo Despeglar Menu.svg`. Aplicado sin usar el logo de la captura como referencia. La navegación tiene un contenedor interior desplazable para que el círculo exterior no se recorte ni impida acceder a los enlaces inferiores. Comprobados en navegador ambos estados: flecha izquierda al estar desplegado, derecha al estar contraído; conserva aria-expanded y movimiento reducido. La marca sigue como dependencia independiente.

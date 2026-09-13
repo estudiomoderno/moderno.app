@@ -5,7 +5,7 @@ const root=path.resolve(import.meta.dirname,'../app');
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const styles=[...html.matchAll(/<style[^>]*>[\s\S]*?<\/style>/g)].map(m=>m[0]).join('\n');
 const links=[...html.matchAll(/<link[^>]*rel="stylesheet"[^>]*>/g)].map(m=>m[0]).join('\n');
-const sidebar=html.slice(html.indexOf('<aside class="sidebar"'),html.indexOf('</aside>')+8);
+const sidebar=html.slice(html.indexOf('<aside class="sidebar"'),html.indexOf('</aside>')+8).replaceAll('Javier Jiménez','Ana · Ejemplo').replaceAll('hola@estudiomoderno.es','ana@example.invalid');
 const functions=html.slice(html.indexOf('const taskIdentityIcons='),html.indexOf('function wsDrop('));
 const iconCode=html.slice(html.indexOf('const ICONS ='),html.indexOf('/* =================== ROUTER')) ;
 const iconInit=html.slice(html.indexOf('  const put=(sel,name)=>'),html.indexOf('})();',html.indexOf('  const put=(sel,name)=>')));
