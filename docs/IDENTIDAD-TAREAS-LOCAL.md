@@ -63,3 +63,7 @@ El usuario precisó la forma: rectángulo negro redondeado y círculo crema que 
 El usuario adjuntó cinco fuentes y ordenó aplicar logotipo en menú abierto, isotipo en cerrado y Acorn en Mis tareas. Metadatos: acorn-3 Bold700, acorn-4 ExtraLight200, acorn-6 Medium500, acorn-7 Regular400, acorn-8 SemiBold600. Bold700 resuelve la dependencia de texto de los SVG; ya no está pendiente esa discrepancia.
 
 Originales exactos conservados en `app/brand/Logotipo.svg` e `Isotipo.svg`, fuentes en `app/brand/acorn/`. Se insertan los SVG originales en el documento para que su texto use Acorn Bold cargada por CSS, sin redibujar ni sustituir su tipografía. Se invierten los colores para verlos claros sobre el menú negro. Menú abierto: logotipo; cerrado: isotipo. Títulos de main/modal: Acorn SemiBold600; cuerpo y formularios conservan fuente anterior. Comprobados visualmente ambos estados y estilo calculado Acorn600 del título. Solo revisión local, sin publicación.
+
+## Selector de estudio superior
+
+Por instrucción directa se sitúa el selector debajo del logotipo/isotipo y antes de Inicio, con separación discontinua. Se retira la tarjeta inferior. Menú con espacios visibles del usuario, Ajustes, Invitar al equipo (solo administrador), Notificaciones y Cerrar sesión, conectados a las acciones existentes. Al contraer queda el avatar del estudio y el desplegable sale al lado sin recortarse. Escape cierra el desplegable. La vista ficticia muestra Estudio de ejemplo y no ejecuta invitaciones ni cierres de sesión reales; estas acciones abren un aviso de demostración.

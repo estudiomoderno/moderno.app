@@ -1026,6 +1026,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
       <button class="collbtn sb-toggle" title="Contraer el menú" onclick="const mini=document.body.classList.toggle('navmini');this.title=mini?'Expandir el menú':'Contraer el menú';this.setAttribute('aria-expanded',String(!mini))" aria-expanded="true"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sb-arrow-collapse icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-left"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /><path d="M5 12l4 4" /><path d="M5 12l4 -4" /></svg><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sb-arrow-expand icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /><path d="M15 16l4 -4" /><path d="M15 8l4 4" /></svg></button>
     </div>
 
+    <div id="sidebarStudy" class="sidebar-study"></div>
     <div class="sb-scroll">
     <div id="sbMobile">
       <span class="wsLabel" style="font-size:10.5px;color:var(--ink-faint);font-weight:700;letter-spacing:.04em;text-transform:uppercase">Espacio de trabajo</span>
@@ -1070,14 +1071,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
         <span style="font-size:12px;font-weight:700">Modo oscuro</span>
         <button class="themeTgl" title="Modo oscuro" onclick="themeToggle()" style="height:34px;width:34px;border-radius:99px;background:var(--white);font-size:14px;display:grid;place-items:center;margin-left:auto">🌙</button>
       </div>
-      <div class="usercard" onclick="profileMenu()" style="display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;padding:10px 12px;cursor:pointer">
-        <span id="ucAvatar" style="background:var(--gold);border-radius:10px;width:34px;height:34px;display:grid;place-items:center;font-weight:900">J</span>
-        <div style="line-height:1.25;min-width:0">
-          <b id="ucName" style="font-size:12.5px">Javier Jiménez</b> <span id="ucProv" style="display:inline-flex;vertical-align:-2px"></span><br>
-          <small id="ucMail" style="color:var(--ink-faint);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">hola@estudiomoderno.es</small>
-        </div>
-        <span style="margin-left:auto;color:var(--ink-faint)">⚙</span>
-      </div>
+
     </div>
   </div>
 </aside>
@@ -3988,7 +3982,24 @@ function addWorkspaceGo(){
   persistNow(); cloudFlush();          // estructural: a la nube sin esperar al perezoso
   toast("✓ Espacio «"+n+"» creado — ponle logo en Creación de marca");
 }
+function drawSidebarStudy(){
+ const el=document.getElementById('sidebarStudy');if(!el)return;
+ const keys=visibleWsOrder(),key=keys.includes(state.brandFilter)?state.brandFilter:keys[0];
+ const name=key?(BRAND[key]?.name||'Mi estudio'):'Mi estudio',E=ModernoDaily.escape;
+ const logo=key&&state.logos?.[key];
+ el.innerHTML=`<details class="study-dropdown"><summary aria-label="Menú del estudio: ${E(name)}"><span class="study-avatar">${logo?`<img ${fileImageAttrs(logo)} alt="">`:E(name.slice(0,1))}</span><span class="study-name">${E(name)}</span><span class="study-chevron" aria-hidden="true">⌃<br>⌄</span></summary><div class="study-popup">
+ <div class="study-options">${keys.map((k,i)=>`<button type="button" data-study-index="${i}">${E(BRAND[k]?.name||'Mi estudio')}</button>`).join('')}</div>
+ <button type="button" data-study-action="settings">${ico('m_settings')||ico('tools')}Ajustes</button>
+ ${_accessRole==='admin'?`<button type="button" data-study-action="invite">${ico('m_invitar')||ico('contactos')}Invitar al equipo</button>`:''}
+ <button type="button" data-study-action="notifications"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>Notificaciones</button>
+ <button type="button" data-study-action="logout">${ico('atras')}Cerrar sesión</button>
+ </div></details>`;
+ el.querySelectorAll('[data-study-index]').forEach(b=>b.onclick=()=>{state.brandFilter=keys[Number(b.dataset.studyIndex)];drawBrandSwitch();render();});
+ el.querySelectorAll('[data-study-action]').forEach(b=>b.onclick=()=>{el.querySelector('details').open=false;const a=b.dataset.studyAction;if(a==='settings')profileMenu();if(a==='invite'&&_accessRole==='admin')inviteUserModal(-1);if(a==='notifications')notifModal();if(a==='logout')sbLogout();});
+ el.onkeydown=e=>{if(e.key==='Escape'){el.querySelector('details').open=false;el.querySelector('summary').focus();}};
+}
 function drawBrandSwitch(){
+  drawSidebarStudy();
   const els = [document.getElementById("brandSwitch"), document.getElementById("brandSwitchM")].filter(Boolean);
   const f = state.brandFilter;
   let inner = "";
