@@ -25,7 +25,7 @@ end $$;
 commit;
 select 'Billing instalado en clon, datos miembros y archivos conservados, politicas desactivadas' resultado;`;
 http.createServer((req,res)=>{
- if(!['/billing','/install'].includes(req.url)){res.writeHead(404);return res.end();}
+ if(!['/billing','/install','/sales'].includes(req.url)){res.writeHead(404);return res.end();}
  res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Cache-Control','no-store');
- res.end('<pre>'+(req.url==='/billing'?bundle():install()).replaceAll('&','&amp;').replaceAll('<','&lt;')+'</pre>');
-}).listen(3194,'127.0.0.1');
+ res.end('<pre>'+(req.url==='/billing'?bundle():req.url==='/sales'?read('SQL/ventas-solicitudes-test.sql'):install()).replaceAll('&','&amp;').replaceAll('<','&lt;')+'</pre>');
+}).listen(3195,'127.0.0.1');

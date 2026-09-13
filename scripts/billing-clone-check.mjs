@@ -9,6 +9,14 @@ const r=await fetch(base+'/functions/v1/billing',{method:'POST',headers:{apikey:
 const v=await r.json();
 console.log(JSON.stringify({auth:auth.status,status:r.status,available:v.available,mode:v.mode,error:v.error,stage:v.stage,subscriptionStatus:v.account?.status,eligible:v.account?.eligible,cancelAtPeriodEnd:v.account?.cancelAtPeriodEnd,plans:v.plans?.map(p=>({slug:p.slug,unitAmount:p.unitAmount,currency:p.currency,ready:p.ready}))}));
 if(!r.ok)process.exitCode=1;
+if(r.ok&&process.argv[2]==='sales'){
+ const body={action:'sales-request',studyId:'b25c0772-3db1-46ad-a4ed-8f191d1e9781',requestId:'66532183-8f63-4f72-983e-3be226aa4401',name:'Contacto ficticio',company:'Estudio ficticio',email:'sales-fixture@example.invalid',internalUsers:5,message:'Prueba aislada sin propuesta ni correo.'};
+ for(let n=0;n<2;n++){
+  const response=await fetch(base+'/functions/v1/billing',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const result=await response.json();console.log(JSON.stringify({sales:response.status,id:result.id,state:result.status,duplicate:result.duplicate,error:result.error}));
+  if(!response.ok||result.status!=='received'||(n===1&&!result.duplicate))process.exitCode=1;
+ }
+}
 if(r.ok&&['history','portal'].includes(process.argv[2])){
  const action=process.argv[2];const extra=await fetch(base+'/functions/v1/billing',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},body:JSON.stringify({action,studyId:'b25c0772-3db1-46ad-a4ed-8f191d1e9781'})});
  const result=await extra.json();console.log(JSON.stringify({action,status:extra.status,error:result.error,url:result.url,invoices:result.invoices?.map(i=>({status:i.status,total:i.total,currency:i.currency,pdfAvailable:!!i.pdf}))}));if(!extra.ok)process.exitCode=1;

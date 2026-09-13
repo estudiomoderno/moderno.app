@@ -1,31 +1,59 @@
 import test from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';
+
 const source=fs.readFileSync(new URL('../app/billing-ui.js',import.meta.url),'utf8');
+
 function fixture(result){
+
  const calls=[],redirects=[],toasts=[];const ctx={window:{},ModernoDaily:{escape:s=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;')},ESTUDIO_ID:'study',_accessRole:'admin',state:{view:'ajustes',account:{name:'Estudio ficticio'}},render(){},Intl,URL,URLSearchParams,sessionStorage:{},ModernoBillingIntent:{read:()=>({plan:'synthetic'})},location:{search:'?billing_return=success',assign:u=>redirects.push(u)},crypto,prepareAppReload:async()=>true,toast:s=>toasts.push(s),sb:{functions:{invoke:async(name,{body})=>{calls.push(body);return {data:typeof result==='function'?result(body):result};}}}};
+
  vm.runInNewContext(source,ctx);return {ctx,ui:ctx.window.BillingUI,calls,redirects,toasts};
+
 }
+
 test('unconfigured subscriptions show no invented plan or payment button',async()=>{
+
  const f=fixture({available:false});await f.ui.load();assert.match(f.ui.view(),/todavía no está disponible/);assert.doesNotMatch(f.ui.view(),/Continuar en prueba/);
-});
-test('return success never calls checkout or activates access',async()=>{
- const f=fixture({available:true,plans:[],account:{status:'incomplete'}});await f.ui.load();assert.match(f.ui.view(),/no confirma la suscripción/);assert.equal(f.calls.length,1);assert.equal(f.calls[0].action,'status');assert.equal(f.redirects.length,0);
-});
-test('history has truthful empty state and rejects foreign download URLs',async()=>{
- const f=fixture(b=>b.action==='status'?{available:true,plans:[]}:{invoices:[{number:'Ensayo',total:100,currency:'EUR',status:'paid',pdf:'https://evil.invalid/file'}]});await f.ui.load(true);assert.doesNotMatch(f.ui.view(true),/evil.invalid|Descargar PDF/);
- const empty=fixture(b=>b.action==='status'?{available:true,plans:[]}:{invoices:[]});await empty.ui.load(true);assert.match(empty.ui.view(true),/No hay facturas/);
-});
-test('switching study hides prior subscription data',async()=>{
- const f=fixture({available:true,plans:[],account:{status:'active'}});await f.ui.load();f.ctx.ESTUDIO_ID='other';assert.doesNotMatch(f.ui.view(),/Activa/);
+
 });
 
+test('return success never calls checkout or activates access',async()=>{
+
+ const f=fixture({available:true,plans:[],account:{status:'incomplete'}});await f.ui.load();assert.match(f.ui.view(),/no confirma la suscripción/);assert.equal(f.calls.length,1);assert.equal(f.calls[0].action,'status');assert.equal(f.redirects.length,0);
+
+});
+
+test('history has truthful empty state and rejects foreign download URLs',async()=>{
+
+ const f=fixture(b=>b.action==='status'?{available:true,plans:[]}:{invoices:[{number:'Ensayo',total:100,currency:'EUR',status:'paid',pdf:'https://evil.invalid/file'}]});await f.ui.load(true);assert.doesNotMatch(f.ui.view(true),/evil.invalid|Descargar PDF/);
+
+ const empty=fixture(b=>b.action==='status'?{available:true,plans:[]}:{invoices:[]});await empty.ui.load(true);assert.match(empty.ui.view(true),/No hay facturas/);
+
+});
+
+test('switching study hides prior subscription data',async()=>{
+
+ const f=fixture({available:true,plans:[],account:{status:'active'}});await f.ui.load();f.ctx.ESTUDIO_ID='other';assert.doesNotMatch(f.ui.view(),/Activa/);
+
+});
+
+
+
 test('Team distinguishes unit price, internal users and tax-inclusive total',async()=>{
- const f=fixture({available:true,plans:[{slug:'team',name:'Team',unitAmount:3800,amount:7600,quantity:2,perInternalUser:true,currency:'EUR',interval:'month',ready:false}]});await f.ui.load();const html=f.ui.view();assert.match(html,/38,00/);assert.match(html,/76,00/);assert.match(html,/2 usuarios internos/);assert.match(html,/impuestos incluidos/);assert.match(html,/invitaciones pendientes no cuentan/);await f.ui.checkout(0);assert.equal(f.calls.length,1);
+
+ const f=fixture({available:true,plans:[{slug:'team',name:'Team',unitAmount:3800,amount:6000,quantity:2,perInternalUser:true,currency:'EUR',interval:'month',ready:false}]});await f.ui.load();const html=f.ui.view();assert.match(html,/38/);assert.match(html,/60,00/);assert.match(html,/2 usuarios internos/);assert.match(html,/impuestos incluidos/);assert.match(html,/invitaciones pendientes no cuentan/);await f.ui.checkout(0);assert.equal(f.calls.length,1);
+
 });
+
 test('success confirms only server-eligible account',async()=>{
+
  const f=fixture({available:true,plans:[],account:{status:'active',eligible:true}});await f.ui.load();assert.match(f.ui.view(),/Suscripción confirmada/);
+
  const pending=fixture({available:true,plans:[],account:{status:'active',eligible:false}});await pending.ui.load();assert.doesNotMatch(pending.ui.view(),/Suscripción confirmada/);
+
 });
+
 
 test('sales threshold hides self-service total and never pretends to send a request',async()=>{
  const f=fixture({available:true,plans:[{name:'Team',salesRequired:true,amount:19000,currency:'EUR',ready:false}]});await f.ui.load();const html=f.ui.view();assert.match(html,/propuesta personalizada/);assert.match(html,/No se ha enviado ninguna solicitud/);assert.doesNotMatch(html,/190,00|Continuar en prueba/);
 });
+

@@ -1,25 +1,64 @@
 window.BillingUI=(()=>{
+
  const E=ModernoDaily.escape;let data=null,error='',owner='',loading=false,busy=false,historyData=null;
+
  const valid=()=>owner===String(ESTUDIO_ID||'')&&_accessRole==='admin';
+
  const money=(amount,currency)=>{try{return new Intl.NumberFormat('es-ES',{style:'currency',currency}).format(amount/100);}catch{return 'Importe no disponible';}};
+
  const url=value=>{try{const u=new URL(value);return u.protocol==='https:'&&['checkout.stripe.com','billing.stripe.com','invoice.stripe.com','pay.stripe.com','files.stripe.com'].includes(u.hostname)?u.href:null;}catch{return null;}};
+
  const messages={sales_required:'A partir de 5 usuarios, contacta con ventas para una propuesta.',not_configured:'La contratación todavía no está disponible.',seat_rules_pending:'Las condiciones del equipo todavía no están configuradas.',team_changed:'El equipo ha cambiado. Consulta de nuevo antes de continuar.',tax_configuration_required:'La configuración de impuestos está pendiente.',checkout_expired:'El intento ha caducado. Puedes volver a empezar.',checkout_requires_reconciliation:'Estamos comprobando el intento anterior. No se ha iniciado otro pago.',plan_unavailable:'Ese plan todavía no está disponible.',unauthorized:'Vuelve a iniciar sesión para continuar.'};
+
  async function request(action,extra={}){if(!valid())throw Error('Acceso no disponible');const {data:result,error:failure}=await sb.functions.invoke('billing',{body:{action,studyId:owner,...extra}});if(!valid())throw Error('El estudio ha cambiado');if(failure||result?.error)throw Error(messages[result?.error]||'No se pudo consultar la suscripción. Vuelve a intentarlo.');return result;}
+
  async function load(history=false){if(loading)return;owner=String(ESTUDIO_ID||'');data=null;historyData=null;error='';loading=true;
+
   try{data=await request('status');if(history&&data.available)historyData=await request('history');}catch(e){error=e.message;}finally{loading=false;if(valid()&&state.view==='ajustes')render();}
+
  }
+
  function view(history=false){
+
   if(!valid()){data=null;historyData=null;}
+
   const title=history?'Historial de la suscripción':'Suscripción de Moderno.App';
+
   if(!data)return `<section class="settings-section"><h2>${title}</h2><p role="status">${E(error||'Consultando suscripción…')}</p><button type="button" class="btn btn-ghost" onclick="BillingUI.load(${history})">Volver a consultar</button></section>`;
+
   if(!data.available)return `<section class="settings-section"><h2>${title}</h2><p>La contratación de planes todavía no está disponible.</p></section>`;
+
   if(history)return `<section class="settings-section"><h2>${title}</h2><p>Entorno de prueba. No son cobros reales.</p>${!historyData?.invoices?.length?'<p>No hay facturas de suscripción.</p>':historyData.invoices.map(i=>`<article class="settings-role"><div><strong>${E(i.number||i.id)}</strong><p>${E(money(i.total,i.currency))} · ${E(({paid:'Pagada',open:'Pendiente',draft:'En preparación',void:'Anulada',uncollectible:'Sin cobrar'})[i.status]||'Pendiente de comprobación')}</p></div>${url(i.pdf)?`<a class="btn btn-ghost" href="${E(url(i.pdf))}" target="_blank" rel="noopener noreferrer">Descargar PDF</a>`:''}</article>`).join('')}${historyData?.hasMore?'<p>Se muestran las 50 últimas facturas. Consulta el resto desde Gestionar suscripción.</p>':''}</section>`;
+
   const a=data.account||{},labels={not_started:'Sin suscripción',active:'Activa',trialing:'Prueba pendiente de validación',past_due:'Pago pendiente',unpaid:'Pago pendiente',canceled:'Cancelada',incomplete:'Pago sin completar',incomplete_expired:'Intento caducado',paused:'En pausa'};
+
   let intent=null,ret='';try{intent=ModernoBillingIntent.read(sessionStorage);const q=new URLSearchParams(location.search);ret=q.get('billing_return')==='cancelled'?'Has vuelto sin completar el pago.':q.get('billing_return')==='success'?(a.eligible?'Suscripción confirmada. Tu plan ya está activo.':'Estamos comprobando el pago. El regreso no confirma la suscripción; vuelve a consultar el estado en unos instantes.'):'';}catch{}
-  return `<section class="settings-section"><h2>${title}</h2><p>Entorno de prueba. No se realizarán cobros reales.</p><p>Estudio: <strong>${E(state.account?.name||'Tu estudio')}</strong></p><p>${E(labels[a.status]||'Pendiente de comprobación')}${a.cancelAtPeriodEnd?' · Cancelación programada':''}</p>${ret?`<p role="status">${E(ret)}</p>`:''}${intent?`<p>Plan seleccionado: ${E(intent.plan)}</p>`:''}<button type="button" class="btn btn-ghost" onclick="BillingUI.load()">Consultar estado</button>${a.customerId?'<button type="button" class="btn btn-ghost" onclick="BillingUI.portal()">Gestionar suscripción</button>':''}${data.plans.length?data.plans.map((p,i)=>p.salesRequired?`<article class="settings-role"><div><strong>Team � Propuesta para tu equipo</strong><p>A partir de 5 usuarios internos, preparamos una propuesta personalizada.</p><p>El formulario de ventas todav�a no est� disponible. No se ha enviado ninguna solicitud ni cambiado tu suscripci�n.</p></div></article>`:`<article class="settings-role"><div><strong>${E(p.name)}</strong>${p.perInternalUser?`<p>${E(money(p.unitAmount,p.currency))} por usuario interno / mes · ${E(p.quantity)} usuarios internos</p><p>Clientes, gestor�a e invitaciones pendientes no cuentan como usuarios de pago. El administrador gestiona el pago del equipo.</p>`:''}<p>${p.perInternalUser?'Total: ':''}${E(money(p.amount,p.currency))} / ${E(p.intervalCount||1)} ${E({month:'mes',year:'año',week:'semana',day:'día'}[p.interval]||p.interval)} · impuestos incluidos</p>${!p.ready?'<p>La contratación de este plan todavía no está habilitada.</p>':''}</div><button type="button" class="btn btn-dark" onclick="BillingUI.checkout(${i})" ${busy||!p.ready?'disabled':''}>Continuar en prueba</button></article>`).join(''):'<p>Los planes todavía no están configurados.</p>'}</section>`;
+
+  return `<section class="settings-section"><h2>${title}</h2><p>Entorno de prueba. No se realizarán cobros reales.</p><p>Estudio: <strong>${E(state.account?.name||'Tu estudio')}</strong></p><p>${E(labels[a.status]||'Pendiente de comprobación')}${a.cancelAtPeriodEnd?' · Cancelación programada':''}</p>${ret?`<p role="status">${E(ret)}</p>`:''}${intent?`<p>Plan seleccionado: ${E(intent.plan)}</p>`:''}<button type="button" class="btn btn-ghost" onclick="BillingUI.load()">Consultar estado</button>${a.customerId?'<button type="button" class="btn btn-ghost" onclick="BillingUI.portal()">Gestionar suscripción</button>':''}${salesForm()}${data.plans.length?data.plans.map((p,i)=>p.salesRequired?`<article class="settings-role"><div><strong>Team · Propuesta para tu equipo</strong><p>A partir de 5 usuarios internos, preparamos una propuesta personalizada.</p><p>El formulario de ventas todavía no está disponible. No se ha enviado ninguna solicitud ni cambiado tu suscripción.</p></div></article>`:`<article class="settings-role"><div><strong>${E(p.name)}</strong>${p.perInternalUser?`<p>Base: 22 € / mes + 38 € por interno adicional · ${E(p.quantity)} usuarios internos</p><p>Clientes, gestoría e invitaciones pendientes no cuentan como usuarios de pago. El administrador gestiona el pago del equipo.</p>`:''}<p>${p.perInternalUser?'Total: ':''}${E(money(p.amount,p.currency))} / ${E(p.intervalCount||1)} ${E({month:'mes',year:'año',week:'semana',day:'día'}[p.interval]||p.interval)} · impuestos incluidos</p>${!p.ready?'<p>La contratación de este plan todavía no está habilitada.</p>':''}</div><button type="button" class="btn btn-dark" onclick="BillingUI.checkout(${i})" ${busy||!p.ready?'disabled':''}>Continuar en prueba</button></article>`).join(''):'<p>Los planes todavía no están configurados.</p>'}</section>`;
+
+ }
+
+ function salesForm(){return `<details><summary>Solicitar propuesta para 5 o más usuarios</summary>${!data?.salesAvailable?'<p>El formulario todavía no está disponible.</p>':`<form onsubmit="event.preventDefault();BillingUI.sales(this)"><p>No cambia tu plan ni realiza ningún cobro.</p><label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label><label>Estudio o empresa<input name="company" required maxlength="160" autocomplete="organization"></label><label>Email de contacto<input name="email" type="email" required maxlength="254" autocomplete="email"></label><label>Usuarios internos en total, incluido administrador<input name="internalUsers" type="number" min="5" max="10000" step="1" value="5" required></label><label>Mensaje opcional<textarea name="message" maxlength="2000"></textarea></label><button class="btn btn-dark" type="submit">Enviar solicitud</button><p role="status" class="sales-result"></p></form>`}</details>`;}
+ async function sales(form){
+  if(busy||!valid()||!data?.salesAvailable||!form.reportValidity())return;
+  const study=owner,button=form.querySelector('button[type="submit"]'),notice=form.querySelector('.sales-result');
+  busy=true;button.disabled=true;notice.textContent='Guardando solicitud…';
+  try{
+   const key='moderno.sales.request.'+study;let requestId=sessionStorage.getItem(key);
+   if(!requestId){requestId=crypto.randomUUID();sessionStorage.setItem(key,requestId);}
+   const fields=new FormData(form),result=await request('sales-request',{requestId,name:fields.get('name'),company:fields.get('company'),email:fields.get('email'),internalUsers:Number(fields.get('internalUsers')),message:fields.get('message')});
+   if(result.status!=='received'||result.id!==requestId)throw Error('No se pudo confirmar la solicitud. Conserva los datos y vuelve a intentarlo.');
+   notice.textContent='Solicitud recibida. Referencia: '+result.id;
+   form.querySelectorAll('input,textarea,button').forEach(el=>el.disabled=true);
+  }catch(e){notice.textContent=e.message;button.disabled=false;}finally{busy=false;}
  }
  async function leave(action,extra){if(busy||!valid())return;busy=true;try{if(!await prepareAppReload())return;const result=await request(action,extra),target=url(result.url);if(!target)throw Error('El enlace de pago no está disponible.');location.assign(target);}catch(e){toast(e.message);}finally{busy=false;}}
+
  function checkout(index){const p=data?.plans[index];if(p?.ready)return leave('checkout',{plan:p.slug,requestId:crypto.randomUUID(),seatRevision:p.seatRevision});}
+
  const portal=()=>leave('portal',{});
- return {load,view,checkout,portal};
+
+ return {load,view,checkout,portal,sales};
+
 })();
+

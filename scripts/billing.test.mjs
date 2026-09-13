@@ -42,11 +42,11 @@ test('server catalog determines price and quantity, browser totals are ignored',
  assert.equal(call[2]['subscription_data[metadata][study_id]'],study);assert.equal(f.writes.some(w=>w[0]==='event'),false);
 });
 test('unknown plan cannot reach Stripe',async()=>{const f=fixture();assert.equal((await f.request('checkout',{plan:'unknown',requestId})).status,400);assert.equal(f.calls.length,0);});
-test('Team uses the server seat quantity and inclusive automatic tax',async()=>{
- const f=fixture({config:{plans:{team:{priceId:'price_team'}}},store:{seatQuote:async()=>({ready:true,quantity:3,revision:'fixture-revision'}),beginCheckout:async()=>({requestId,quantity:3,createdAt:new Date().toISOString(),customerId:'cus_fixture'})},stripe:{get:async()=>({...price,id:'price_team',unit_amount:3800})}});
- assert.equal((await f.request('checkout',{plan:'team',requestId,quantity:1})).status,200);
- const body=f.calls.find(c=>c[0]==='post')[2];assert.equal(body['line_items[0][quantity]'],'3');assert.equal(body['automatic_tax[enabled]'],'true');assert.equal(body['tax_id_collection[enabled]'],'true');
+test('superseded Team checkout is blocked until base plus extras is implemented',async()=>{
+ const f=fixture({config:{plans:{team:{priceId:'price_team'}}}});
+ const r=await f.request('checkout',{plan:'team',requestId});assert.equal(r.status,409);assert.equal((await r.json()).error,'team_pricing_pending');assert.equal(f.calls.filter(c=>c[0]==='post').length,0);
 });
+
 test('tax review and changed membership both block checkout before creating a session',async()=>{
  const tax=fixture({config:{taxReady:false}});assert.equal((await tax.request('checkout',{plan:'pro',requestId})).status,409);assert.equal(tax.calls.length,0);
  const seats=fixture();assert.equal((await seats.request('checkout',{plan:'pro',requestId,seatRevision:'stale'})).status,409);assert.equal(seats.calls.some(c=>c[0]==='post'),false);
@@ -112,5 +112,12 @@ test('invoice reference supports current and legacy Stripe event shapes',()=>{
 
 test('five Team users require sales before creating any payment',async()=>{
  const f=fixture({config:{plans:{team:{priceId:'price_team'}}},store:{seatQuote:async()=>({ready:true,quantity:5,revision:'fixture-revision'})},stripe:{get:async()=>({...price,id:'price_team',unit_amount:3800})}});
- const r=await f.request('checkout',{plan:'team',requestId});assert.equal(r.status,409);assert.equal((await r.json()).error,'sales_required');assert.equal(f.calls.filter(c=>c[0]==='post').length,0);
+ const r=await f.request('checkout',{plan:'team',requestId});assert.equal(r.status,409);assert.equal((await r.json()).error,'team_pricing_pending');assert.equal(f.calls.filter(c=>c[0]==='post').length,0);
+});
+
+test('sales requires validated fields and confirms only persisted result',async()=>{
+ let writes=0;const f=fixture({config:{projectRef:'szbswxpkhidywaosdfcg'},store:{submitSales:async()=>{writes++;return {id:requestId,status:'received',duplicate:false};}}});
+ const body={requestId,name:'Persona ficticia',company:'Estudio ficticio',email:'test@example.invalid',internalUsers:5};
+ assert.equal((await f.request('sales-request',{...body,internalUsers:4})).status,400);assert.equal(writes,0);
+ const r=await f.request('sales-request',body);assert.equal(r.status,200);assert.equal((await r.json()).status,'received');assert.equal(writes,1);assert.equal(f.calls.length,0);
 });

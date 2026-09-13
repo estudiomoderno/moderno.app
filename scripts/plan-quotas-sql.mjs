@@ -1,70 +1,153 @@
 import fs from 'node:fs/promises';import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';
+
 const {PGlite}=await import(pathToFileURL(process.argv[2]).href);const db=new PGlite();let checks=0;
+
 const row=async(s,p=[])=>(await db.query(s,p)).rows[0],ok=(v,m)=>{assert.ok(v,m);checks++;};
+
 const a='11111111-1111-4111-8111-111111111111',b='11111111-1111-4111-8111-111111111112',admin='22222222-2222-4222-8222-222222222221',client='22222222-2222-4222-8222-222222222222',member='22222222-2222-4222-8222-222222222223';
+
 const op=n=>`33333333-3333-4333-8333-${String(n).padStart(12,'0')}`;
+
 try{
+
  await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;create function auth.uid() returns uuid language sql as $$select '${admin}'::uuid$$;
+
  create table estudios(id uuid primary key);create table miembros(user_id uuid primary key,estudio_id uuid,rol text);create table app_roles(id uuid primary key,perfil text);create table invitaciones(estudio_id uuid,email text,role_id uuid);
+
  create table productos_entrantes(id uuid primary key,estudio_id uuid,estado text);create table datos_estudio(estudio_id uuid,contenido jsonb);
+
  insert into estudios values('${a}'),('${b}');insert into miembros values('${admin}','${a}','admin'),('${client}','${a}','cliente');insert into datos_estudio values('${a}','{"projects":[1,2],"files":["keep"]}');
+
  create function app_rol_usuario(s uuid,u uuid) returns text language sql as $$select coalesce((select rol from public.miembros where estudio_id=s and user_id=u),'sin_acceso')$$;`);
+
  await db.exec(await fs.readFile(new URL('../SQL/suscripciones-test.sql',import.meta.url),'utf8'));
+
  await db.exec(await fs.readFile(new URL('../SQL/planes-cuotas-test.sql',import.meta.url),'utf8'));
+
  ok(!(await row('select billing_test_entitlements($1) e',[a])).e.enforced,'existing pilot not enrolled');
+
  await db.exec(`insert into productos_entrantes values('${op(90)}','${b}','procesando');`);ok((await row('select count(*) n from billing_test_usage')).n===0,'pilot captures uncharged');
+
  await db.exec(`insert into billing_test_policy(estudio_id,enforced,pdf_definition_confirmed) values('${a}',true,true);`);
+
  const e=(await row('select billing_test_entitlements($1) e',[a])).e;ok(e.captureLimit===25&&e.pdfLimit===10&&e.modernoBrand&&!e.clientPortal,'confirmed Free limits');
+
  await assert.rejects(row('select billing_test_usage_change($1,$2,$3,$4)',[a,'capture',op(1),'reserve']));checks++;
+
  await db.exec(`insert into billing_test_periods values('${a}',now()-interval '1 day',now()+interval '29 days');`);
+
  await assert.rejects(db.exec(`insert into billing_test_periods values('${a}',now(),now()+interval '30 days');`));checks++;
+
  for(let n=1;n<=25;n++)await row('select billing_test_usage_change($1,$2,$3,$4)',[a,'capture',op(n),'reserve']);
+
  await assert.rejects(row('select billing_test_usage_change($1,$2,$3,$4)',[a,'capture',op(26),'reserve']));checks++;
+
  await row('select billing_test_usage_change($1,$2,$3,$4)',[a,'capture',op(1),'failure']);
+
  await row('select billing_test_usage_change($1,$2,$3,$4)',[a,'capture',op(26),'success']);
+
  ok((await row('select billing_test_usage_change($1,$2,$3,$4) e',[a,'capture',op(26),'success'])).e.duplicate,'saving twice consumes once');
+
  ok((await row("select count(*) n from billing_test_usage where state='succeeded'")).n===1,'failed capture not consumed');
+
  await db.exec(`update billing_test_usage set reserved_until=now()-interval '1 second' where state='reserved';insert into productos_entrantes values('${op(40)}','${a}','procesando');update productos_entrantes set estado='error' where id='${op(40)}';`);
+
  ok((await row('select state from billing_test_usage where operation_id=$1',[op(40)])).state==='failed','real capture error transition releases quota');
+
  await db.exec(`insert into productos_entrantes values('${op(41)}','${a}','procesando');update productos_entrantes set estado='absorbido' where id='${op(41)}';update productos_entrantes set estado='absorbido' where id='${op(41)}';`);
+
  ok((await row('select count(*) n from billing_test_usage where operation_id=$1 and state=$2',[op(41),'succeeded'])).n===1,'absorption trigger consumes once');
+
  for(let n=101;n<=110;n++)await row('select billing_test_usage_change($1,$2,$3,$4)',[a,'pdf',op(n),'success']);
+
  await assert.rejects(row('select billing_test_usage_change($1,$2,$3,$4)',[a,'pdf',op(111),'success']));checks++;
+
  ok((await row('select billing_test_usage_change($1,$2,$3,$4) e',[a,'pdf',op(101),'success'])).e.duplicate,'PDF revision redownload not consumed twice');
+
  let q=(await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'pro'])).q;ok(q.ready&&q.internalMembers===1,'client excluded from Pro seats');
+
  await db.exec(`insert into billing_test_member_kind values('${a}','${client}','internal');`);
+
  ok((await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'pro'])).q.internalMembers===1,'customer excluded even with stale internal classification');
+
  await assert.rejects(db.exec(`insert into miembros values('${member}','${a}','colaborador');`));checks++;
+
  await db.exec(`insert into miembros values('${op(181)}','${a}','gestoria');insert into billing_test_member_kind values('${a}','${op(181)}','internal');`);
+
  ok((await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'pro'])).q.internalMembers===1,'restricted gestoria is free even with stale classification');
+
  await assert.rejects(db.exec(`update miembros set rol='colaborador' where user_id='${op(181)}';`));checks++;
+
  await db.exec(`update billing_test_policy set enforced=false;insert into miembros values('${member}','${a}','colaborador');update billing_test_policy set enforced=true;`);
+
  ok(!(await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'pro'])).q.ready,'Pro cannot buy for two internal members');
+
  ok((await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'team'])).q.ready,'Team two users needs no invented minimum');
+
  await db.exec(`update billing_test_policy set team_rules_confirmed=true,team_minimum=1 where estudio_id='${a}';`);
+
  q=(await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'team'])).q;ok(q.ready&&q.quantity===2,'Team calculates actual internal members');
+
  await assert.rejects(row('select billing_test_begin_plan($1,$2,$3,$4,$5)',[admin,a,op(150),'team','stale']));checks++;
+
  const begin=(await row('select billing_test_begin_plan($1,$2,$3,$4,$5) b',[admin,a,op(150),'team',q.revision])).b;ok(begin.quantity===2,'authoritative quantity persisted');
+
  await db.exec(`insert into invitaciones values('${a}','pending@example.invalid',null);`);
+
  ok((await row('select billing_test_seat_quote($1,$2,$3) q',[admin,a,'team'])).q.ready,'pending invitations do not block or increase paid seats');
+
  await assert.rejects(db.exec(`insert into miembros values('${op(180)}','${a}','colaborador');`));checks++;
+
  ok((await row('select count(*) n from invitaciones')).n===1,'failed acceptance retains pending invitation');
+
  await db.exec(`update billing_test_accounts set plan_slug='pro',eligible=true,status='active',seats=1 where estudio_id='${a}';`);
+
  const pro=(await row('select billing_test_entitlements($1) e',[a])).e;ok(pro.pdfUnlimited&&pro.clientPortal&&!pro.modernoBrand&&pro.captureLimit===null&&!pro.captureUnlimited,'Pro entitlements and undecided capture cap');
+
  await assert.rejects(row('select billing_test_usage_change($1,$2,$3,$4)',[a,'capture',op(160),'reserve']));checks++;
+
  await db.exec(`update billing_test_accounts set eligible=false,status='canceled' where estudio_id='${a}';`);
+
  ok((await row('select billing_test_entitlements($1) e',[a])).e.plan==='free','cancellation projects Free without deleting data');
+
  ok((await row('select contenido from datos_estudio')).contenido.files[0]==='keep','downgrade preserves files and projects');
+
  await db.exec(`update billing_test_periods set ends_at=now()-interval '1 second';insert into billing_test_periods values('${a}',now()-interval '1 second',now()+interval '30 days');`);
+
  const receipt=(await row('select billing_test_pdf_reserve($1,$2,$3,$4) r',[admin,a,'document:1','revision-a'])).r;
+
  const retry=(await row('select billing_test_pdf_reserve($1,$2,$3,$4) r',[admin,a,'document:1','revision-a'])).r;
+
  ok(receipt.id===retry.id,'same PDF revision shares one operation');
+
  await row('select billing_test_pdf_finish($1,$2,$3,$4,false)',[a,receipt.id,null,null]);
+
  ok((await row('select state from billing_test_usage where operation_id=$1',[receipt.id])).state==='failed','failed PDF has no consumption');
+
  await row('select billing_test_pdf_reserve($1,$2,$3,$4)',[admin,a,'document:1','revision-a']);
+
  await assert.rejects(row('select billing_test_pdf_finish($1,$2,$3,$4,true)',[a,receipt.id,b+'/billing-pdf/'+receipt.id+'.pdf','0'.repeat(64)]));checks++;
+
  await row('select billing_test_pdf_finish($1,$2,$3,$4,true)',[a,receipt.id,a+'/billing-pdf/'+receipt.id+'.pdf','0'.repeat(64)]);
+
  ok((await row('select billing_test_pdf_reserve($1,$2,$3,$4) r',[admin,a,'document:1','revision-a'])).r.cached,'generated revision downloads free');
+
  await db.exec('set role authenticated');await assert.rejects(row('select billing_test_usage_change($1,$2,$3,$4)',[a,'pdf',op(170),'success']));checks++;await assert.rejects(row('select * from billing_test_usage'));checks++;
+
+ await db.exec('reset role');
+ await db.exec(await fs.readFile(new URL('../SQL/ventas-solicitudes-test.sql',import.meta.url),'utf8'));
+ const args=[admin,a,op(190),'Contacto ficticio','Empresa ficticia','test@example.invalid',5,''];
+ const sales=(await row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8) r',args)).r;
+ ok(sales.status==='received'&&!sales.duplicate,'sales acknowledged after persistence');
+ ok((await row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8) r',args)).r.duplicate,'sales retry is idempotent');
+ await assert.rejects(row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8)',[...args.slice(0,7),'changed']));checks++;
+ await assert.rejects(row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8)',[client,...args.slice(1)]));checks++;
+ await assert.rejects(row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8)',[admin,b,...args.slice(2)]));checks++;
+ for(let n=191;n<=192;n++)await row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8)',[admin,a,op(n),...args.slice(3)]);
+ await assert.rejects(row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8)',[admin,a,op(193),...args.slice(3)]));checks++;
+ await db.exec('set role authenticated');await assert.rejects(row('select * from sales_test_requests'));checks++;
+ await assert.rejects(row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8)',args));checks++;
  console.log(`${checks} plan/quota SQL checks passed; no network.`);
+
 }finally{await db.close();}
+

@@ -66,3 +66,14 @@ Sustituye las dudas anteriores sobre mínimo y altas: autoservicio Team desde 1 
 Aplicado en esta revisión: SQL cotiza desde 1 sin mínimo configurable antiguo, bloquea autoservicio desde 5; backend impide crear Checkout con 5 o más tanto al cotizar como al validar intento persistido; interfaz no ofrece un total autoservicio para esos equipos e informa de que el receptor de ventas aún no está disponible, sin falso envío. 31 pruebas JS y 35 SQL pasan. No se ha desplegado todavía al clon.
 
 Pendiente: receptor privado y formulario de ventas coordinado con Web, sin desarrollar Panelcontrol; ampliación con factura prorrateada y pago confirmado, estado pendiente de aceptación sin plaza, reducción programada al renovar e integración UI end-to-end. La aprobación comercial del prorrateo no equivale a implementación terminada.
+
+## Ventas y nueva base por estudio (regla vigente)
+Sustituye Team38 por todos: UNA base22 EUR por estudio +38 por cada interno adicional. Totales 1=22,2=60,3=98,4=136. Desde5 internos totales, ventas. Prorrateo de altas confirmado. No depende del número de administradores.
+
+Estado real 2026-09-13: SQL/ventas-solicitudes-test.sql instalado en clon. Prueba real RPC guardó solicitud ficticia 66532183-8f63-4f72-983e-3be226aa4401 a las 10:50:34 UTC; reintento devolvió mismo ID/fecha y duplicate=true. Sin emails. 43 pruebas SQL y 32 JS pasan; Deno check pasó antes del último mapeo de errores.
+
+Endpoint previsto: POST https://szbswxpkhidywaosdfcg.supabase.co/functions/v1/billing con sesión admin Bearer, action=sales-request, studyId validado servidor, requestId UUID, name1–120, company1–160, email<=254, internalUsers entero5–10000 (total con administrador), message opcional<=2000. Respuesta persistida id/status=received/createdAt/duplicate. Errores 400 invalid_sales_request,403 forbidden,409 sales_request_conflict,429 sales_rate_limited; indisponibilidad503. Sin lectura pública ni permisos a anon/authenticated; solo RPC service_role después de auth. Límite3/hora.
+
+IMPORTANTE: despliegue de función NO confirmado. Panel regresó a confirmación tras Deploying updates sin error visible; API siguió devolviendo invalid_action. No anunciar endpoint disponible ni activar Web. SQL sí está operativo y comprobado. Formulario App preparado, ocultando envío hasta salesAvailable del backend. CORS4317 NO añadido; intención ventas/ruta final aún no entregada. Web acordó formulario final en App tras login, sin traspasar PII ni tokens por URL.
+
+Nuevo cálculo mostrado en código; Team Checkout bloqueado localmente con team_pricing_pending hasta adaptar dos líneas base+extras, webhook y renovación. Clon anterior conserva taxReady=false. No migraciones de suscripciones live. Pendientes despliegue función, UI real del formulario, ampliación prorrateada, bajas renovación y recorrido completo Checkout con nueva fórmula.

@@ -6,7 +6,7 @@ let plans={};try{plans=JSON.parse(Deno.env.get('BILLING_TEST_PLANS')||'{}');}cat
 const secret=Deno.env.get('STRIPE_TEST_SECRET_KEY')||'';
 const config={enabled:Deno.env.get('BILLING_TEST_ENABLED')==='true',taxReady:Deno.env.get('BILLING_TEST_TAX_REVIEWED')==='true',secret,webhookSecret:Deno.env.get('STRIPE_TEST_WEBHOOK_SECRET')||'',projectRef:new URL(url).hostname.split('.')[0],plans,
  origins:(Deno.env.get('BILLING_TEST_ORIGINS')||'').split(',').filter(Boolean),returnOrigin:Deno.env.get('BILLING_TEST_RETURN_ORIGIN')||''};
-async function rpc(name:string,args:Record<string,unknown>){const {data,error}=await server.rpc(name,args);if(error)throw new BillingError('database_'+(/^[A-Z0-9]{5,12}$/.test(error.code||'')?error.code:'unavailable'),503);return data;}
+async function rpc(name:string,args:Record<string,unknown>){const {data,error}=await server.rpc(name,args);if(error){if(name==='sales_test_submit'){const mapped=({PT429:['sales_rate_limited',429],PT409:['sales_request_conflict',409],'22023':['invalid_sales_request',400],'42501':['forbidden',403]} as Record<string,[string,number]>)[error.code];if(mapped)throw new BillingError(mapped[0],mapped[1]);}throw new BillingError('database_'+(/^[A-Z0-9]{5,12}$/.test(error.code||'')?error.code:'unavailable'),503);}return data;}
 async function stripeRequest(path:string,body?:Record<string,string>,key?:string){
  const headers:Record<string,string>={Authorization:'Bearer '+secret};if(body)headers['Content-Type']='application/x-www-form-urlencoded';if(key)headers['Idempotency-Key']=key;
  const response=await fetch('https://api.stripe.com/v1'+path,{method:body?'POST':'GET',headers,body:body?new URLSearchParams(body):undefined,signal:AbortSignal.timeout(20000)});
@@ -16,6 +16,7 @@ Deno.serve(createHandler({config,
  authenticate:async(authorization:string)=>{const client=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});const {data,error}=await client.auth.getUser(authorization.slice(7));return error?null:data.user;},
  stripe:{get:stripeRequest,post:stripeRequest},
  store:{
+  submitSales:(actor:string,study:string,request:string,value:{name:string;company:string;email:string;internalUsers:number;message:string})=>rpc('sales_test_submit',{p_actor:actor,p_estudio:study,p_id:request,p_name:value.name,p_company:value.company,p_email:value.email,p_users:value.internalUsers,p_message:value.message}),
   authorize:(actor:string,study:string)=>rpc('billing_test_authorize',{p_actor:actor,p_estudio:study}),
   selectFree:(actor:string,study:string)=>rpc('billing_test_select_free',{p_actor:actor,p_estudio:study}),
   seatQuote:(actor:string,study:string,plan:string)=>rpc('billing_test_seat_quote',{p_actor:actor,p_estudio:study,p_plan:plan}),
