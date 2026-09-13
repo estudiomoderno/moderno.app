@@ -911,6 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
+<link rel="stylesheet" href="/brand/tasks-identity.css">
 </head>
 <body>
 <div class="app">
@@ -926,7 +927,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
     <div class="sb-head" style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
       <img class="logo" src="/brand/simbolo-grafito.svg?v=351" alt="moderno.app">
       <img class="logo-mini" src="/brand/simbolo-grafito.svg?v=351" alt="Moderno.app">
-      <button class="collbtn sb-toggle" title="Contraer el menú" onclick="const mini=document.body.classList.toggle('navmini');this.title=mini?'Expandir el menú':'Contraer el menú';this.setAttribute('aria-expanded',String(!mini))" aria-expanded="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svgi"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 2l0 20" /><path d="M14 20h-8a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h8" /><path d="M20 6a2 2 0 0 0 -2 -2" /><path d="M18 20a2 2 0 0 0 2 -2" /><path d="M20 10l0 4" /></svg></button>
+      <button class="collbtn sb-toggle" title="Contraer el menú" onclick="const mini=document.body.classList.toggle('navmini');this.title=mini?'Expandir el menú':'Contraer el menú';this.setAttribute('aria-expanded',String(!mini))" aria-expanded="true"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-left"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /><path d="M5 12l4 4" /><path d="M5 12l4 -4" /></svg></button>
     </div>
 
     <div id="sbMobile">
@@ -4202,6 +4203,7 @@ function go(view, arg){
   setTimeout(()=>{ try{ presenceTrack(); }catch(e){} }, 0); if(view!=="presupuestos") state.qView=null; if(view!=="facturas") state.fView=null;
   if(view==="proyecto" && state.view!=="proyecto" && state.view!=="estancia" && state.view!=="presedit") state.projTab="tareas";
   if(view==="contabilidad" && state.view!=="contabilidad"){ state.period=Object.assign(state.period||{}, {mode:"todo", year:new Date().getFullYear(), month:new Date().getMonth()+1, quarter:Math.ceil((new Date().getMonth()+1)/3)}); state.accTab="in"; state.accF={}; state.accQ={}; state.accN={}; state.accSort="desc"; }
+  if(view==="workspace" && state.view!=="workspace") wsSessionViews.delete(wsViewKey());
   state.view=view; state.currentProject = arg ?? state.currentProject;
   document.body.classList.toggle("editing", view==="presedit");
   document.body.classList.toggle("portalmode", view==="portalcli"||view==="portalobra");
@@ -5034,12 +5036,15 @@ function folderCard(p){
 }
 
 function wsProjPick(v){state.wsQuery=String(v||'').trim();state.wsProj='all';render();}
+const taskIdentityIcons={"board": "<svg aria-hidden=\"true\" focusable=\"false\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-layout-kanban\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M4 4l6 0\" /><path d=\"M14 4l6 0\" /><path d=\"M4 10a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2l0 -8\" /><path d=\"M14 10a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2l0 -2\" /></svg>", "list": "<svg aria-hidden=\"true\" focusable=\"false\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-list\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M9 6l11 0\" /><path d=\"M9 12l11 0\" /><path d=\"M9 18l11 0\" /><path d=\"M5 6l0 .01\" /><path d=\"M5 12l0 .01\" /><path d=\"M5 18l0 .01\" /></svg>", "search": "<svg aria-hidden=\"true\" focusable=\"false\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-search\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0\" /><path d=\"M21 21l-6 -6\" /></svg>", "add": "<svg aria-hidden=\"true\" focusable=\"false\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-plus\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M12 5l0 14\" /><path d=\"M5 12l14 0\" /></svg>", "collapse": "<svg aria-hidden=\"true\" focusable=\"false\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-left\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M5 12l14 0\" /><path d=\"M5 12l4 4\" /><path d=\"M5 12l4 -4\" /></svg>", "dashboard": "<svg aria-hidden=\"true\" focusable=\"false\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-layout-dashboard\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M5 4h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1\" /><path d=\"M5 16h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1\" /><path d=\"M15 12h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-6a1 1 0 0 1 1 -1\" /><path d=\"M15 4h4a1 1 0 0 1 1 1v2a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1\" /></svg>"};
+function taskIdentityIcon(name){return taskIdentityIcons[name]||'';}
 function wsViewKey(){return LS_KEY+'_vista_tareas_'+(meMail()||'local');}
-function wsViewGet(){try{const v=localStorage.getItem(wsViewKey());return ['tablero','lista','calendario'].includes(v)?v:'tablero';}catch{return 'tablero';}}
-function wsViewSet(v){if(!['tablero','lista','calendario'].includes(v))return;try{localStorage.setItem(wsViewKey(),v);}catch{toast('No se pudo recordar la vista en este dispositivo');return;}render();}
-function wsViewControls(){return `<div class="opt-pills daily-scope ws-views" role="group" aria-label="Vista de tareas">${[['tablero','Tablero'],['lista','Lista'],['calendario','Calendario']].map(([v,label])=>`<button aria-pressed="${wsViewGet()===v}" class="${wsViewGet()===v?'on':''}" onclick="wsViewSet('${v}')">${label}</button>`).join('')}</div>`;}
+const wsSessionViews=new Map();
+function wsViewGet(){return wsSessionViews.get(wsViewKey())||'tablero';}
+function wsViewSet(v){if(!['tablero','lista'].includes(v))return;wsSessionViews.set(wsViewKey(),v);render();}
+function wsViewControls(){return `<div class="opt-pills daily-scope ws-views" role="group" aria-label="Vista de tareas">${[['tablero','Board','board'],['lista','Lista','list']].map(([v,label,icon])=>`<button aria-pressed="${wsViewGet()===v}" class="${wsViewGet()===v?'on':''}" onclick="wsViewSet('${v}')">${taskIdentityIcon(icon)}${label}</button>`).join('')}</div>`;}
 function wsTaskButton(c){return '<button class="ws-task-link" onclick="openDailyTask('+Number(c.p.id)+','+c.i+')">'+ModernoDaily.escape(c.t.title||'Sin título')+'</button>';}
-function wsList(cards){return '<div class="ws-table-wrap"><table class="ws-task-table"><thead><tr><th>Tarea</th><th>Proyecto</th><th>Responsable</th><th>Vencimiento</th><th>Estado</th></tr></thead><tbody>'+cards.map(c=>'<tr><td>'+wsTaskButton(c)+'</td><td>'+ModernoDaily.escape(c.p.num+' '+c.p.name)+'</td><td>'+ModernoDaily.escape(taskAssignees(c.t).join(', ')||'Sin asignar')+'</td><td>'+dailyDue(c.t)+'</td><td>'+ModernoDaily.escape((KCOLS.find(k=>k[0]===c.t.col)||[])[1]||c.t.col||'Pendiente')+'</td></tr>').join('')+'</tbody></table></div>';}
+function wsList(cards){return '<div class="ws-table-wrap"><table class="ws-task-table"><thead><tr><th>Tarea</th><th>Proyecto</th><th>Responsable</th><th>Vencimiento</th><th>Estado</th></tr></thead><tbody>'+cards.map(c=>'<tr class="'+(c.t.important?'is-important':'')+'"><td>'+(c.t.important?'<span class="task-important-label">Importante</span><br>':'')+wsTaskButton(c)+'</td><td>'+ModernoDaily.escape(c.p.num+' '+c.p.name)+'</td><td>'+ModernoDaily.escape(taskAssignees(c.t).join(', ')||'Sin asignar')+'</td><td>'+dailyDue(c.t)+'</td><td>'+ModernoDaily.escape((KCOLS.find(k=>k[0]===c.t.col)||[])[1]||c.t.col||'Pendiente')+'</td></tr>').join('')+'</tbody></table></div>';}
 let _wsCalendarMonth='';
 function wsMonthMove(delta){const base=(_wsCalendarMonth||ModernoDaily.today().slice(0,7)).split('-').map(Number);const d=new Date(base[0],base[1]-1+delta,1,12);_wsCalendarMonth=ModernoDaily.today(d).slice(0,7);render();}
 function wsMonthToday(){_wsCalendarMonth=ModernoDaily.today().slice(0,7);render();}
@@ -5055,40 +5060,26 @@ function wsBoard(cards){return `  <div class="kanban" style="grid-template-colum
       <div class="kcol" data-status="${key}" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="wsDrop(event,'${key}')">
         <h4><span class="kdot" style="background:${color}"></span>${label}<span class="n">${cards.filter(c=>c.t.col===key).length}</span></h4>
         ${cards.filter(c=>c.t.col===key).map(({p,t,i})=>`
-          <div class="task" draggable="true" ondragstart="dragTask(event,${p.id},${i});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" style="background:${key==='pend'?'var(--gold-soft)':'var(--white)'}" onclick="taskModal(${p.id},${i})">
-            <div class="tt">${ModernoDaily.escape(t.title)}</div>${dailyDue(t)}
-            <div class="tm"><span class="chip ${BRAND[p.brand].chip}">${p.num} ${p.name}</span><span class="chip cm" style="background:var(--card)">${t.type}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}${assigneeChips(t)}</div>
+          <div class="task ${t.important?'is-important':''}" draggable="true" ondragstart="dragTask(event,${p.id},${i});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" onclick="taskModal(${p.id},${i})">
+            ${t.important?'<span class="task-important-label">Importante</span>':''}<div class="tt">${ModernoDaily.escape(t.title)}</div>${dailyDue(t)}
+            <div class="tm"><span class="chip ${BRAND[p.brand].chip}">${ModernoDaily.escape(p.num)} ${ModernoDaily.escape(p.name)}</span><span class="chip cm" style="background:var(--card)">${ModernoDaily.escape(t.type||"")}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}${assigneeChips(t)}</div>
           </div>`).join("")}
-        <button class="addtask" onclick="wsNewTask('${key}')">${ico("mas")} Nueva tarea</button>
       </div>`).join("")}
   </div>`;}
 function vWorkspace(){
-  const projs = sortProjects(byBrand(state.projects.filter(p=>!p.tpl && p.status!=="Archivado")));
-  const previous=projs.find(p=>String(p.id)===String(state.wsProj));
-  const query=state.wsQuery===undefined?(previous?previous.num+' '+previous.name:''):state.wsQuery;
-  const pool = projs.filter(p=>ModernoDaily.projectMatches(p,query));
-  const mine = (state.wsMine!==false);
-  const cards = dailyTaskCards(pool,mine);
+  const projs=sortProjects(byBrand(state.projects.filter(p=>!p.tpl&&p.status!=="Archivado")));
+  const query=String(state.wsQuery||''),mine=state.wsMine!==false;
+  const all=dailyTaskCards(projs,mine);
+  const cards=all.filter(c=>ModernoDaily.projectMatches(c.p,query)||String(c.t.title||'').toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+  const today=dailyTaskCards(projs,true).filter(c=>ModernoDaily.due(c.t.due).date===ModernoDaily.today()).length;
   return `<div class="ws-full">
-  <h1 class="big">${mine?"Mis tareas":"Tareas del equipo"}<br><span class="sec-note">Primero lo que vence antes</span></h1>
-  <div class="wsrow" style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-    <div class="opt-pills daily-scope" style="margin:0">
-      <button class="${mine?"on":""}" onclick="state.wsMine=true;render()">Mis tareas</button>
-      <button class="${!mine?"on":""}" onclick="state.wsMine=false;render()">Todas las tareas</button>
-    </div>
-    <span style="flex:1"></span>
-    <div style="position:relative;display:inline-flex;align-items:center">
-      <span style="position:absolute;left:11px;display:inline-flex;color:var(--ink-faint);pointer-events:none">${ico("buscar")}</span>
-      <input id="wsProjBox" list="wsProjList" class="btn btn-ghost cmb" style="padding-left:34px;min-width:200px;text-align:left" aria-label="Filtrar proyectos" placeholder="Número, nombre o cliente" value="${ModernoDaily.escape(query)}" oninput="state.wsQuery=this.value;state.wsProj='all';renderKeep(this)">
-      <datalist id="wsProjList">${projs.map(p=>`<option value="${p.num} ${p.name}">`).join("")}</datalist>
-    </div>
-    <button class="btn btn-ghost" onclick="newProjectModal()">${ico("mas")} Nuevo proyecto</button>
-    <button class="btn btn-dark" onclick="wsNewTask('pend')">${ico("mas")} Nueva tarea</button>
-  </div>
-  ${wsViewControls()}
-  <div class="daily-filter-info" role="status">${pool.length} proyecto${pool.length===1?'':'s'} · ${cards.length} tarea${cards.length===1?'':'s'} pendiente${cards.length===1?'':'s'}${query?` · Filtro: «${ModernoDaily.escape(query)}» <button class="btn btn-ghost" onclick="wsProjPick('')">Limpiar búsqueda</button>`:''}</div>
-  ${!pool.length?'<div class="empty">No hay proyectos que coincidan con la búsqueda.</div>':!cards.length?'<div class="empty">No hay tareas pendientes para estos filtros. Revisa el proyecto o consulta Todas las tareas.</div>':''}
-  ${wsViewGet()==="lista"?wsList(cards):wsViewGet()==="calendario"?wsCalendar(cards):wsBoard(cards)}
+    <h1 class="big">Mis tareas</h1>
+    <p class="ws-subtitle">Tienes <strong>${today} ${today===1?'tarea':'tareas'}</strong> que completar hoy</p>
+    <div class="ws-toolbar">${wsViewControls()}<button class="btn btn-dark" onclick="wsNewTask('pend')">${taskIdentityIcon('add')}Nueva tarea</button></div>
+    <div class="ws-search">${taskIdentityIcon('search')}<input id="wsProjBox" aria-label="Buscar tareas o proyectos" placeholder="Buscar tareas o proyectos" value="${ModernoDaily.escape(query)}" oninput="state.wsQuery=this.value;state.wsProj='all';renderKeep(this)"></div>
+    <div class="ws-filter-row">${dailyScope()}<span role="status">${cards.length} ${cards.length===1?'tarea pendiente':'tareas pendientes'}</span></div>
+    ${!cards.length?'<div class="empty">No hay tareas pendientes para estos filtros.</div>':''}
+    ${wsViewGet()==='lista'?wsList(cards):wsBoard(cards)}
   </div>`;
 }
 function wsDrop(ev,col){
@@ -9610,6 +9601,7 @@ function taskModal(pid,idx,col){
   const team = state.clients.filter(c=>c.type==="Team");
   modal(`<h3>${idx>=0?"Editar tarea":"Nueva tarea"}</h3>
   <label>Título</label><input id="tkTitle" value="${src.title}" placeholder="Ej: 1º pago">
+  <label class="task-important-option"><input type="checkbox" id="tkImportant" ${src.important?'checked':''}> Marcar como importante</label>
   <label>Estado</label><div class="opt-pills" id="tkCol">${KCOLS.map(([k,l])=>`<button class="${src.col===k?'on':''}" data-v="${k}">${l}</button>`).join("")}</div>
   <label>Tipo</label><div class="opt-pills" id="tkType">${["Diseño","Desarrollo","Reunión","Entrega","Revisión","Contabilidad","Otro"].map(x=>`<button class="${src.type===x?'on':''}" data-v="${x}">${x}</button>`).join("")}</div>
   <div class="row2">
@@ -9748,6 +9740,7 @@ function saveTask(pid,idx){
     id: tk.id || (idx>=0&&p.tasks[idx]&&p.tasks[idx].id) || Date.now(), deps:(tk.deps||[]).filter(d=>d!==tk.id && p.tasks.some(t=>t.id===d)) };
   if(_accessRole==='colaborador'){delete nt.amount;delete nt.acc;}
   nt.deps = nt.deps.filter(d=>!depWouldCycle(p,nt.id,d) || (idx>=0&&(p.tasks[idx].deps||[]).includes(d)));
+  nt.important=Boolean(document.getElementById("tkImportant")?.checked);
   const prevCol = idx>=0 ? p.tasks[idx].col : "pend";
   let pedirOk=false;
   if(nt.col!=="pend" && prevCol==="pend" && taskBlocked(p,nt)){ pedirOk=nt.col; nt.col="pend"; }
@@ -11206,7 +11199,7 @@ state.library.forEach(x=>{ if(x.id===undefined) x.id=state.libSeq++; if(!x.cat |
 applyAccent(state.account.accent||"#fdf880");
 (function(){
   const put=(sel,name)=>{document.querySelectorAll(sel).forEach(el=>el.innerHTML=ico(name));};
-  put(".i-home","home");
+  document.querySelectorAll(".i-home").forEach(el=>el.innerHTML=taskIdentityIcon("dashboard"));
   put(".ico-h","crear"); put(".ico-f","finanzas");
   put(".i-ws","workspace"); put(".i-bib","biblioteca"); put(".i-pro","proyectos");
   put(".i-con","contactos"); put(".i-cal","calendario");
