@@ -16,6 +16,7 @@ Deno.serve(createHandler({config,
  authenticate:async(authorization:string)=>{const client=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});const {data,error}=await client.auth.getUser(authorization.slice(7));return error?null:data.user;},
  stripe:{get:stripeRequest,post:stripeRequest},
  store:{
+  isExempt:(study:string)=>rpc('billing_is_exempt',{p_estudio:study}),
   submitSales:(actor:string,study:string,request:string,value:{name:string;company:string;email:string;internalUsers:number;message:string})=>rpc('sales_test_submit',{p_actor:actor,p_estudio:study,p_id:request,p_name:value.name,p_company:value.company,p_email:value.email,p_users:value.internalUsers,p_message:value.message}),
   authorize:(actor:string,study:string)=>rpc('billing_test_authorize',{p_actor:actor,p_estudio:study}),
   selectFree:(actor:string,study:string)=>rpc('billing_test_select_free',{p_actor:actor,p_estudio:study}),

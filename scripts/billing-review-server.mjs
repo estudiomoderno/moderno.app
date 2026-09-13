@@ -14,7 +14,7 @@ create temp table billing_before on commit drop as
 select (select md5(string_agg(to_jsonb(d)::text,'|' order by estudio_id,bloque)) from public.datos_estudio d) datos,
 (select md5(string_agg(to_jsonb(m)::text,'|' order by to_jsonb(m)::text)) from public.miembros m) miembros,
 (select md5(string_agg(to_jsonb(o)::text,'|' order by id)) from storage.objects o) archivos;
-`+[read('SQL/suscripciones-test.sql'),read('SQL/planes-cuotas-test.sql')].map(s=>s.replace(/^begin;\s*$/gmi,'').replace(/^commit;\s*$/gmi,'')).join('\n')+`
+`+[read('SQL/billing-exemptions.sql'),read('SQL/suscripciones-test.sql'),read('SQL/planes-cuotas-test.sql')].map(s=>s.replace(/^begin;\s*$/gmi,'').replace(/^commit;\s*$/gmi,'')).join('\n')+`
 do $$ declare b record;begin select * into b from billing_before;
 if b.datos is distinct from (select md5(string_agg(to_jsonb(d)::text,'|' order by estudio_id,bloque)) from public.datos_estudio d)
 or b.miembros is distinct from (select md5(string_agg(to_jsonb(m)::text,'|' order by to_jsonb(m)::text)) from public.miembros m)
@@ -25,7 +25,7 @@ end $$;
 commit;
 select 'Billing instalado en clon, datos miembros y archivos conservados, politicas desactivadas' resultado;`;
 http.createServer((req,res)=>{
- if(!['/billing','/install','/sales'].includes(req.url)){res.writeHead(404);return res.end();}
+ if(!['/billing','/install','/sales','/exemptions'].includes(req.url)){res.writeHead(404);return res.end();}
  res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Cache-Control','no-store');
- res.end('<pre>'+(req.url==='/billing'?bundle():req.url==='/sales'?read('SQL/ventas-solicitudes-test.sql'):install()).replaceAll('&','&amp;').replaceAll('<','&lt;')+'</pre>');
+ res.end('<pre>'+(req.url==='/billing'?bundle():req.url==='/sales'?read('SQL/ventas-solicitudes-test.sql'):req.url==='/exemptions'?read('SQL/billing-exemptions.sql'):install()).replaceAll('&','&amp;').replaceAll('<','&lt;')+'</pre>');
 }).listen(3195,'127.0.0.1');

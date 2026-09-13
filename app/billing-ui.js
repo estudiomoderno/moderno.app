@@ -26,6 +26,7 @@ window.BillingUI=(()=>{
 
   if(!data)return `<section class="settings-section"><h2>${title}</h2><p role="status">${E(error||'Consultando suscripción…')}</p><button type="button" class="btn btn-ghost" onclick="BillingUI.load(${history})">Volver a consultar</button></section>`;
 
+  if(data.exempt)return `<section class="settings-section"><h2>${title}</h2><p>Tu estudio y su equipo tienen acceso gratuito permanente. No necesitas contratar una suscripción ni introducir una tarjeta.</p></section>`;
   if(!data.available)return `<section class="settings-section"><h2>${title}</h2><p>La contratación de planes todavía no está disponible.</p></section>`;
 
   if(history)return `<section class="settings-section"><h2>${title}</h2><p>Entorno de prueba. No son cobros reales.</p>${!historyData?.invoices?.length?'<p>No hay facturas de suscripción.</p>':historyData.invoices.map(i=>`<article class="settings-role"><div><strong>${E(i.number||i.id)}</strong><p>${E(money(i.total,i.currency))} · ${E(({paid:'Pagada',open:'Pendiente',draft:'En preparación',void:'Anulada',uncollectible:'Sin cobrar'})[i.status]||'Pendiente de comprobación')}</p></div>${url(i.pdf)?`<a class="btn btn-ghost" href="${E(url(i.pdf))}" target="_blank" rel="noopener noreferrer">Descargar PDF</a>`:''}</article>`).join('')}${historyData?.hasMore?'<p>Se muestran las 50 últimas facturas. Consulta el resto desde Gestionar suscripción.</p>':''}</section>`;
@@ -38,15 +39,15 @@ window.BillingUI=(()=>{
 
  }
 
- function salesForm(){return `<details><summary>Solicitar propuesta para 5 o más usuarios</summary>${!data?.salesAvailable?'<p>El formulario todavía no está disponible.</p>':`<form onsubmit="event.preventDefault();BillingUI.sales(this)"><p>No cambia tu plan ni realiza ningún cobro.</p><label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label><label>Estudio o empresa<input name="company" required maxlength="160" autocomplete="organization"></label><label>Email de contacto<input name="email" type="email" required maxlength="254" autocomplete="email"></label><label>Usuarios internos en total, incluido administrador<input name="internalUsers" type="number" min="5" max="10000" step="1" value="5" required></label><label>Mensaje opcional<textarea name="message" maxlength="2000"></textarea></label><button class="btn btn-dark" type="submit">Enviar solicitud</button><p role="status" class="sales-result"></p></form>`}</details>`;}
+ function salesForm(){return `<details><summary>Solicitar propuesta para 5 o más usuarios</summary>${!data?.salesAvailable?'<p>El formulario todavía no está disponible.</p>':`<div class="sales-form"><p>No cambia tu plan ni realiza ningún cobro.</p><label>Nombre<input name="name" required maxlength="120" autocomplete="name"></label><label>Estudio o empresa<input name="company" required maxlength="160" autocomplete="organization"></label><label>Email de contacto<input name="email" type="email" required maxlength="254" autocomplete="email"></label><label>Usuarios internos en total, incluido administrador<input name="internalUsers" type="number" min="5" max="10000" step="1" value="5" required></label><label>Mensaje opcional<textarea name="message" maxlength="2000"></textarea></label><button class="btn btn-dark" type="button" onclick="BillingUI.sales(this.closest('.sales-form'))">Enviar solicitud</button><p role="status" class="sales-result"></p></div>`}</details>`;}
  async function sales(form){
-  if(busy||!valid()||!data?.salesAvailable||!form.reportValidity())return;
-  const study=owner,button=form.querySelector('button[type="submit"]'),notice=form.querySelector('.sales-result');
+  if(busy||!valid()||!data?.salesAvailable||![...form.querySelectorAll('input,textarea')].every(el=>el.reportValidity()))return;
+  const study=owner,button=form.querySelector('button'),notice=form.querySelector('.sales-result');
   busy=true;button.disabled=true;notice.textContent='Guardando solicitud…';
   try{
    const key='moderno.sales.request.'+study;let requestId=sessionStorage.getItem(key);
    if(!requestId){requestId=crypto.randomUUID();sessionStorage.setItem(key,requestId);}
-   const fields=new FormData(form),result=await request('sales-request',{requestId,name:fields.get('name'),company:fields.get('company'),email:fields.get('email'),internalUsers:Number(fields.get('internalUsers')),message:fields.get('message')});
+   const fields=new Map([...form.querySelectorAll('input,textarea')].map(el=>[el.name,el.value])),result=await request('sales-request',{requestId,name:fields.get('name'),company:fields.get('company'),email:fields.get('email'),internalUsers:Number(fields.get('internalUsers')),message:fields.get('message')});
    if(result.status!=='received'||result.id!==requestId)throw Error('No se pudo confirmar la solicitud. Conserva los datos y vuelve a intentarlo.');
    notice.textContent='Solicitud recibida. Referencia: '+result.id;
    form.querySelectorAll('input,textarea,button').forEach(el=>el.disabled=true);

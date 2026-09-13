@@ -57,3 +57,7 @@ test('sales threshold hides self-service total and never pretends to send a requ
  const f=fixture({available:true,plans:[{name:'Team',salesRequired:true,amount:19000,currency:'EUR',ready:false}]});await f.ui.load();const html=f.ui.view();assert.match(html,/propuesta personalizada/);assert.match(html,/No se ha enviado ninguna solicitud/);assert.doesNotMatch(html,/190,00|Continuar en prueba/);
 });
 
+
+test('sales markup does not nest a form inside Settings form',async()=>{
+ const f=fixture({available:true,salesAvailable:true,plans:[]});await f.ui.load();assert.doesNotMatch(f.ui.view(),/<form/);assert.match(f.ui.view(),/sales-form/);
+});

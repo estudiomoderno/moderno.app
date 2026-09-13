@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {PLANS,approvedPrice} from '../supabase/functions/billing/plans.mjs';
 import {generatePDF} from '../supabase/functions/billing/pdf-job.mjs';
-test('approved plan terms distinguish unlimited from undecided',()=>{assert.equal(PLANS.free.capturesPerMonth,25);assert.equal(PLANS.free.pdfsPerMonth,10);assert.equal(PLANS.pro.unitAmount,2200);assert.equal(PLANS.team.unitAmount,3800);assert.equal(PLANS.team.perInternalUser,true);assert.equal(PLANS.pro.capturesPending,true);assert.equal(PLANS.pro.pdfsUnlimited,true);assert.equal(PLANS.free.personalLibrary,null);});
+test('approved plan terms distinguish unlimited from undecided',()=>{assert.equal(PLANS.free.capturesPerMonth,25);assert.equal(PLANS.free.pdfsPerMonth,10);assert.equal(PLANS.pro.unitAmount,2200);assert.equal(PLANS.team.unitAmount,3800);assert.equal(PLANS.team.perAdditionalInternalUser,true);assert.equal(PLANS.pro.capturesPending,true);assert.equal(PLANS.pro.pdfsUnlimited,true);assert.equal(PLANS.free.personalLibrary,null);});
 test('Stripe prices must be monthly EUR inclusive at approved amount',()=>{
  const p={livemode:false,active:true,type:'recurring',unit_amount:2200,currency:'eur',tax_behavior:'inclusive',recurring:{interval:'month',interval_count:1}};
  assert.equal(approvedPrice('pro',p),true);for(const changes of [{tax_behavior:'exclusive'},{unit_amount:2201},{currency:'usd'},{livemode:true}])assert.equal(approvedPrice('pro',{...p,...changes}),false);

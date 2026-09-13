@@ -11,7 +11,7 @@ async function signature(body,secret=config.webhookSecret,time=Math.floor(Date.n
 }
 function fixture(overrides={}){
  const calls=[],writes=[];
- const store={seatQuote:async()=>({ready:true,quantity:1,revision:'fixture-revision'}),authorize:async()=>({customerId:'cus_fixture',status:'not_started'}),beginCheckout:async()=>({requestId,quantity:1,createdAt:new Date().toISOString(),customerId:'cus_fixture'}),setCustomer:async(...a)=>writes.push(['customer',...a]),finishCheckout:async(...a)=>writes.push(['checkout',...a]),expireCheckout:async(...a)=>writes.push(['expire',...a]),claimEvent:async()=>({token:'lease',plan:'pro',quantity:1}),finishEvent:async(...a)=>writes.push(['event',...a]),releaseEvent:async()=>{},...overrides.store};
+ const store={isExempt:async()=>false,seatQuote:async()=>({ready:true,quantity:1,revision:'fixture-revision'}),authorize:async()=>({customerId:'cus_fixture',status:'not_started'}),beginCheckout:async()=>({requestId,quantity:1,createdAt:new Date().toISOString(),customerId:'cus_fixture'}),setCustomer:async(...a)=>writes.push(['customer',...a]),finishCheckout:async(...a)=>writes.push(['checkout',...a]),expireCheckout:async(...a)=>writes.push(['expire',...a]),claimEvent:async()=>({token:'lease',plan:'pro',quantity:1}),finishEvent:async(...a)=>writes.push(['event',...a]),releaseEvent:async()=>{},...overrides.store};
  const stripe={get:async p=>{calls.push(['get',p]);if(p.startsWith('/prices/'))return price;if(p.startsWith('/subscriptions/'))return subscription;if(p.startsWith('/invoices?'))return {data:[],has_more:false};return {id:'cs_test_fixture',livemode:false,customer:'cus_fixture',client_reference_id:study,status:'open',url:'https://checkout.stripe.com/test'};},post:async(p,body,key)=>{calls.push(['post',p,body,key]);return {id:'cs_test_fixture',livemode:false,customer:'cus_fixture',url:'https://checkout.stripe.com/test'};},...overrides.stripe};
  const handler=createHandler({config:{...config,...overrides.config},authenticate:async()=>({id:'admin'}),store,stripe,...overrides.dependencies});
  return {calls,writes,handler,request:async(action,extra={})=>handler(new Request('https://example.invalid/billing',{method:'POST',headers:{Authorization:'Bearer fixture','Content-Type':'application/json'},body:JSON.stringify({action,studyId:study,seatRevision:'fixture-revision',...extra})})),webhook:async(event)=>{const body=JSON.stringify(event);return handler(new Request('https://example.invalid/billing/webhook',{method:'POST',headers:{'stripe-signature':await signature(body)},body}));}};
@@ -42,9 +42,11 @@ test('server catalog determines price and quantity, browser totals are ignored',
  assert.equal(call[2]['subscription_data[metadata][study_id]'],study);assert.equal(f.writes.some(w=>w[0]==='event'),false);
 });
 test('unknown plan cannot reach Stripe',async()=>{const f=fixture();assert.equal((await f.request('checkout',{plan:'unknown',requestId})).status,400);assert.equal(f.calls.length,0);});
-test('superseded Team checkout is blocked until base plus extras is implemented',async()=>{
- const f=fixture({config:{plans:{team:{priceId:'price_team'}}}});
- const r=await f.request('checkout',{plan:'team',requestId});assert.equal(r.status,409);assert.equal((await r.json()).error,'team_pricing_pending');assert.equal(f.calls.filter(c=>c[0]==='post').length,0);
+test('Team checkout has one base and only additional internal seats',async()=>{
+ for(const count of [1,2,3,4]){
+ const f=fixture({config:{plans:{pro:{priceId:'price_fixture'},team:{priceId:'price_team'}}},store:{seatQuote:async()=>({ready:true,quantity:count,revision:'fixture-revision'}),beginCheckout:async()=>({requestId,quantity:count,createdAt:new Date().toISOString(),customerId:'cus_fixture'})},stripe:{get:async p=>p.includes('price_team')?{...price,id:'price_team',unit_amount:3800}:price}});
+ const r=await f.request('checkout',{plan:'team',requestId});assert.equal(r.status,200);const body=f.calls.find(c=>c[0]==='post')[2];assert.equal(body['line_items[0][quantity]'],'1');assert.equal(body['line_items[0][price]'],'price_fixture');assert.equal(body['line_items[1][quantity]'],count>1?String(count-1):undefined);
+ }
 });
 
 test('tax review and changed membership both block checkout before creating a session',async()=>{
@@ -111,8 +113,8 @@ test('invoice reference supports current and legacy Stripe event shapes',()=>{
 });
 
 test('five Team users require sales before creating any payment',async()=>{
- const f=fixture({config:{plans:{team:{priceId:'price_team'}}},store:{seatQuote:async()=>({ready:true,quantity:5,revision:'fixture-revision'})},stripe:{get:async()=>({...price,id:'price_team',unit_amount:3800})}});
- const r=await f.request('checkout',{plan:'team',requestId});assert.equal(r.status,409);assert.equal((await r.json()).error,'team_pricing_pending');assert.equal(f.calls.filter(c=>c[0]==='post').length,0);
+ const f=fixture({config:{plans:{pro:{priceId:'price_fixture'},team:{priceId:'price_team'}}},store:{seatQuote:async()=>({ready:true,quantity:5,revision:'fixture-revision'})},stripe:{get:async p=>p.includes('price_team')?{...price,id:'price_team',unit_amount:3800}:price}});
+ const r=await f.request('checkout',{plan:'team',requestId});assert.equal(r.status,409);assert.equal((await r.json()).error,'sales_required');assert.equal(f.calls.filter(c=>c[0]==='post').length,0);
 });
 
 test('sales requires validated fields and confirms only persisted result',async()=>{
@@ -120,4 +122,20 @@ test('sales requires validated fields and confirms only persisted result',async(
  const body={requestId,name:'Persona ficticia',company:'Estudio ficticio',email:'test@example.invalid',internalUsers:5};
  assert.equal((await f.request('sales-request',{...body,internalUsers:4})).status,400);assert.equal(writes,0);
  const r=await f.request('sales-request',body);assert.equal(r.status,200);assert.equal((await r.json()).status,'received');assert.equal(writes,1);assert.equal(f.calls.length,0);
+});
+
+test('permanent study exemption blocks payment without consulting Stripe',async()=>{
+ const f=fixture({store:{isExempt:async()=>true}});const s=await f.request('status');assert.equal((await s.json()).exempt,true);
+ for(const action of ['checkout','portal','select-free']){const r=await f.request(action,{plan:'pro',requestId});assert.equal(r.status,409);assert.equal((await r.json()).error,'billing_exempt');}
+ assert.equal(f.calls.length,0);
+});
+
+test('two-item subscription requires exactly one base and paid extra seats',()=>{
+ const plan={priceId:'price_team',basePriceId:'price_fixture',quantity:3};
+ const sub={...subscription,items:{data:[{price:'price_fixture',quantity:1,current_period_end:1999999999},{price:'price_team',quantity:2,current_period_end:1999999999}]}};
+ assert.equal(snapshot(sub,plan,price).eligible,true);
+ for(const items of [[{price:'price_fixture',quantity:2},{price:'price_team',quantity:2}],[{price:'price_fixture',quantity:1},{price:'price_team',quantity:3}],[{price:'price_team',quantity:3}]])assert.equal(snapshot({...sub,items:{data:items}},plan,price).eligible,false);
+});
+test('existing active subscription cannot create a second subscription',async()=>{
+ const f=fixture({store:{authorize:async()=>({subscriptionId:'sub_existing',status:'active'})}});const r=await f.request('checkout',{plan:'pro',requestId});assert.equal(r.status,409);assert.equal(f.calls.length,0);
 });

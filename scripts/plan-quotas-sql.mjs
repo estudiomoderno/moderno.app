@@ -20,6 +20,7 @@ try{
 
  create function app_rol_usuario(s uuid,u uuid) returns text language sql as $$select coalesce((select rol from public.miembros where estudio_id=s and user_id=u),'sin_acceso')$$;`);
 
+ await db.exec(await fs.readFile(new URL('../SQL/billing-exemptions.sql',import.meta.url),'utf8'));
  await db.exec(await fs.readFile(new URL('../SQL/suscripciones-test.sql',import.meta.url),'utf8'));
 
  await db.exec(await fs.readFile(new URL('../SQL/planes-cuotas-test.sql',import.meta.url),'utf8'));
@@ -147,6 +148,11 @@ try{
  await assert.rejects(row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8)',[admin,a,op(193),...args.slice(3)]));checks++;
  await db.exec('set role authenticated');await assert.rejects(row('select * from sales_test_requests'));checks++;
  await assert.rejects(row('select sales_test_submit($1,$2,$3,$4,$5,$6,$7,$8)',args));checks++;
+ await db.exec('reset role');
+ await db.exec(`insert into billing_exemptions(estudio_id,reason,authorization_ref) values('${a}','Synthetic permanent testing exemption','fixture');`);
+ const exempt=(await row('select billing_test_entitlements($1) e',[a])).e;ok(exempt.billingExempt&&!exempt.enforced&&exempt.sharedLibrary,'permanent exemption preserves team access without paid quotas');
+ await db.exec(`insert into miembros values('${op(199)}','${a}','colaborador');`);ok((await row('select billing_is_exempt($1) e',[a])).e,'new team member does not remove study exemption');
+ await db.exec('set role authenticated');await assert.rejects(row('select * from billing_exemptions'));checks++;
  console.log(`${checks} plan/quota SQL checks passed; no network.`);
 
 }finally{await db.close();}
