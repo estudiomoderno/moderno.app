@@ -21,3 +21,18 @@ La vista usa las funciones y estilos actuales con datos ficticios y no carga Sup
 Pruebas: `node --test scripts/workspace-views.test.mjs scripts/daily-work.test.mjs`. Revisión visual de Board/Lista y menú contraído en navegador. No equivale a una validación completa del CRM en móvil ni a un ensayo de persistencia en Supabase.
 
 Pendiente de la revisión de Imagen: detalles internos definitivos de tarjetas. Antes de publicar, integrar la versión aprobada y comprobar formulario/guardado y móvil sobre un entorno de ensayo. Producción no se ha modificado.
+
+## Referencia sustituida — aviso de Cerebro, 13 septiembre
+
+El usuario ha aprobado nuevos originales: `Logotipo.svg`, `Isotipo.svg` y `acorn-8.ttf`. La propuesta local anterior todavía muestra el símbolo anterior; queda pendiente actualizarla cuando Imagen coordine la aplicación. Este aviso actualiza la referencia, no autoriza por sí solo nuevos cambios visuales ni publicación.
+
+Origen estable: `C:/Users/soyja/Documents/Codex/2026-09-09/esta-tarea-se-llama-cerebro-es/outputs/identidad-vigente/`. Originales en `Downloads/Moderno App Fonts/Logotipo/` y `Downloads/Moderno App Fonts/Acom/`.
+
+- Usar los SVG exactos, sin redibujar ni reconstruir con Berlin Sans.
+- SVG inspeccionados: sin scripts, foreignObject, imágenes ni referencias externas. ViewBox de logotipo: `0 0 139.8378 25.858637`; isotipo: `0 0 28.244148 18.564325`.
+- SHA256 logotipo: `0735cff9108680c42bc92626349f66f074651e1c8032a3c7336de235ee4beb0e`.
+- SHA256 isotipo: `a4b7ee63f90836b768fcb136400266cbfe768f68c26174c6184db915888acf05`.
+- Metadatos TTF inspeccionados: familia tipográfica **Acorn**, estilo **SemiBold**, peso **600**, nombre PostScript `Acorn-SemiBold`; familia heredada `Acorn SemiBold`, subfamilia heredada `Regular`. No interpretar ese Regular como peso 400.
+- Fuente solo para títulos dentro de la app. Cuerpos y formularios conservan su tipografía. El campo de incrustación fsType vale 8; no acredita por sí mismo una licencia web. Comprobar condiciones al integrar, como indica el README de origen.
+
+No se han modificado recursos visuales, funciones ni producción al recibir este aviso.
