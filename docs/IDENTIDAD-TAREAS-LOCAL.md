@@ -114,3 +114,7 @@ Fondo crema aplicado también a la capa #view. Encabezado sticky, buscador flexi
 
 ## v3.54.10
 Iconos originales conservados en producción y corregidos en la demostración local. Aumento de carpetas al 116 % con ratón; fondo del encabezado extendido hasta el borde superior sin dejar pasar tarjetas por encima.
+
+
+## v3.54.11
+Forma de carpetas de Proyectos tomada de los dos trazados de carpeta.svg aportado por el usuario. Máscaras recoloreables conservan colores de cada proyecto; fotos sobre la zona superior y contenido fuera de la máscara para evitar recortes.

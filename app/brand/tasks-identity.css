@@ -235,3 +235,16 @@
  .projects-header::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:120px;background:inherit;pointer-events:none}
  @media(min-width:701px){html body:not(.portalmode) .main:has(.projects-identity){padding-top:0!important}}
 }
+
+@media screen {
+ html body:not(.portalmode) .main .projects-identity .folder:not(.add){aspect-ratio:440.73657/334.9469;min-height:230px;width:100%;min-width:0;box-sizing:border-box}
+ html body:not(.portalmode) .main .projects-identity .folder .back{border-radius:0;mask:url('/brand/folder-shape-back.svg') center/100% 100% no-repeat}
+ html body:not(.portalmode) .main .projects-identity .folder .front{height:100%;border:0;border-radius:0;background:transparent!important;isolation:isolate;padding:30% 9% 8%}
+ html body:not(.portalmode) .main .projects-identity .folder .front::before{inset:0;width:100%;height:100%;border-radius:0;background:var(--f-front,#eae5d6)!important;mask:url('/brand/folder-shape-front.svg') center/100% 100% no-repeat;z-index:-1}
+ html body:not(.portalmode) .main .projects-identity .folder-photo{z-index:2;top:6%;bottom:auto;left:9%;width:22%;height:25%;border-width:2px}
+ html body:not(.portalmode) .main .projects-identity .folder-photo-1{left:22%}
+ html body:not(.portalmode) .main .projects-identity .folder-photo-2{left:35%}
+ html body:not(.portalmode) .main .projects-identity .folder .actions{z-index:4}
+}
+
+@media screen {html body:not(.portalmode) .main .projects-identity .folder .fname{min-width:0;width:100%;overflow-wrap:anywhere}html body:not(.portalmode) .main .projects-identity .folder .badges{z-index:3}}
