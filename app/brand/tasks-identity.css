@@ -137,11 +137,10 @@
  .ws-type-icon{display:inline-flex;width:36px;height:36px;flex:0 0 36px;align-items:center;justify-content:center;border-radius:50%;color:#292922;vertical-align:middle}
  .ws-type-icon svg{width:21px;height:21px}
  .ws-task-table .ws-type-icon{margin-right:10px}
- .ws-timeline-note{font-size:12px;color:#686456;margin:0 0 16px}
- .ws-date-row{display:grid;grid-template-columns:90px minmax(0,1fr);gap:16px;border-top:1px dashed #bcb6a4;padding:16px 0 22px}
- .ws-date-label{font-size:12px;line-height:1.6;padding-top:18px;color:#686456}
- .ws-date-label strong{display:block;color:#20201e;font-weight:700}
- .ws-date-row.is-today{border-top-color:#575447}
- .ws-date-row .kanban{width:100%;min-width:0}
- @media(max-width:700px){.ws-date-row{grid-template-columns:1fr;gap:8px}.ws-date-label{padding-top:0}.ws-date-label strong{display:inline;margin-right:8px}.ws-filter-row{min-height:72px}.ws-full .ws-views{flex-wrap:nowrap}.ws-subtitle{min-height:44px}}
+ .ws-timeline{position:relative}
+ .ws-date-overlay{position:absolute;top:60px;left:0;right:0;display:flex;align-items:center;gap:12px;pointer-events:none;z-index:2;color:#797568;font-size:10px;opacity:.6;line-height:16px;transform:translateY(-50%)}
+ .ws-date-overlay time{white-space:nowrap}
+ .ws-date-overlay strong{font-weight:500}
+ .ws-date-overlay span{flex:1;border-top:1px dashed #aaa492}
+ @media(max-width:700px){.ws-filter-row{min-height:72px}.ws-full .ws-views{flex-wrap:nowrap}.ws-subtitle{min-height:44px}}
 }

@@ -81,3 +81,8 @@ Board muestra tarjetas solapadas con expansión animada que desplaza las siguien
 ## v3.54.2 — Tipos y fechas en Mis tareas
 
 Iconos originales adjuntados por el usuario para Diseño, Desarrollo, Reunión, Entrega, Revisión y Contabilidad, con círculos pastel. Contador de tareas abiertas independiente del vencimiento y según alcance personal/equipo. Board agrupa por fecha de vencimiento, incluye Hoy y Sin fecha; arrastrar conserva el cambio de estado existente, sin cambiar vencimientos. Lista transparente, controles sin cambios de tamaño, foco neutro y fundido respetando movimiento reducido. Comprobadas posiciones idénticas de barra, buscador y filtros al cambiar de vista en navegador. Sin cambios SQL ni migraciones.
+
+
+## v3.54.3 — Tablero continuo
+
+Corrección solicitada: una sola cabecera por estado con su total completo. Tarjetas apiladas sin grupos por fecha. Fecha de hoy superpuesta discretamente con línea discontinua, sin interceptar clics ni modificar la colocación de tarjetas. Sustituye la agrupación por vencimiento de v3.54.2.

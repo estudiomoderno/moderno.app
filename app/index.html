@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=3542">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=3543">
 </head>
 <body>
 <div class="app">
@@ -5198,9 +5198,8 @@ function wsCalendar(cards){
 const wsTypeIcons={"Diseño": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-image-generation\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M3 21v-4a4 4 0 1 1 4 4h-4\" /><path d=\"M21 3a16 16 0 0 0 -12.8 10.2\" /><path d=\"M21 3a16 16 0 0 1 -10.2 12.8\" /><path d=\"M10.6 9a9 9 0 0 1 4.4 4.4\" /><path d=\"M17 19a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2\" /><path d=\"M3 5a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2\" /></svg>", "#d8c9e8"], "Desarrollo": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-infinity-2\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M13.94 9.39a10 10 0 0 1 .232 -.218a4 4 0 1 1 0 5.656a10 10 0 0 1 -2.172 -2.828a10 10 0 0 0 -2.172 -2.828a4 4 0 1 0 0 5.656a10 10 0 0 0 .234 -.219\" /></svg>", "#cad9ed"], "Reunión": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-brand-zoom\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M17.011 9.385v5.128l3.989 3.487v-12l-3.989 3.385\" /><path d=\"M3.887 6h10.08c1.468 0 3.033 1.203 3.033 2.803v8.196a.991 .991 0 0 1 -.975 1h-10.373c-1.667 0 -2.652 -1.5 -2.652 -3l.01 -8a.882 .882 0 0 1 .208 -.71a.841 .841 0 0 1 .67 -.287l-.001 -.002\" /></svg>", "#edcbd7"], "Entrega": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-package-export\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M12 21l-8 -4.5v-9l8 -4.5l8 4.5v4.5\" /><path d=\"M12 12l8 -4.5\" /><path d=\"M12 12v9\" /><path d=\"M12 12l-8 -4.5\" /><path d=\"M15 18h7\" /><path d=\"M19 15l3 3l-3 3\" /></svg>", "#cdddba"], "Revisión": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-file-check\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M14 3v4a1 1 0 0 0 1 1h4\" /><path d=\"M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2\" /><path d=\"M9 15l2 2l4 -4\" /></svg>", "#efd6ad"], "Contabilidad": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-abacus\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M5 3v18\" /><path d=\"M19 21v-18\" /><path d=\"M5 7h14\" /><path d=\"M5 15h14\" /><path d=\"M8 13v4\" /><path d=\"M11 13v4\" /><path d=\"M16 13v4\" /><path d=\"M14 5v4\" /><path d=\"M11 5v4\" /><path d=\"M8 5v4\" /><path d=\"M3 21h18\" /></svg>", "#bcded8"]};
 function wsTypeBadge(type){const entry=wsTypeIcons[type];return '<span class="ws-type-icon" title="'+ModernoDaily.escape(type||'Otro')+'" style="background:'+(entry?entry[1]:'#dedbd1')+'">'+(entry?entry[0]:'<span aria-hidden="true">•</span>')+'</span>';}
 function wsTimeline(cards){
- const today=ModernoDaily.today(),dates=[...new Set(cards.map(c=>ModernoDaily.due(c.t.due).date).filter(Boolean).concat(today))].sort();
- if(cards.some(c=>!ModernoDaily.due(c.t.due).date))dates.push('');
- return '<div class="ws-timeline"><p class="ws-timeline-note">Por fecha de vencimiento</p>'+dates.map(date=>'<section class="ws-date-row '+(date===today?'is-today':'')+'"><div class="ws-date-label">'+(date?'<time datetime="'+date+'">'+(date===today?'<strong>Hoy</strong>':'')+new Date(date+'T12:00:00').toLocaleDateString(APP_LOCALE(),{day:'numeric',month:'short',year:'numeric'})+'</time>':'Sin fecha')+'</div>'+wsBoard(cards.filter(c=>(ModernoDaily.due(c.t.due).date||'')===date))+'</section>').join('')+'</div>';
+ const today=ModernoDaily.today();
+ return '<div class="ws-timeline">'+wsBoard(cards)+'<div class="ws-date-overlay"><time datetime="'+today+'"><strong>Hoy</strong> · '+new Date(today+'T12:00:00').toLocaleDateString(APP_LOCALE(),{day:'numeric',month:'short',year:'numeric'})+'</time><span></span></div></div>';
 }
 function wsExpandCard(card,open){
   if(open)card.parentElement.querySelectorAll('.ws-stack-card.is-expanded').forEach(other=>{if(other!==card)wsExpandCard(other,false)});
@@ -11396,7 +11395,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.2";
+const MODERNO_VER="v3.54.3";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
