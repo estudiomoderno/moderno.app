@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=35411">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=35412">
 </head>
 <body>
 <div class="app">
@@ -5164,16 +5164,19 @@ function folderPhotosHtml(p){
   return folderPhotoSources(p).map((src,i)=>'<img class="folder-photo folder-photo-'+i+'" src="'+src+'" alt="" loading="lazy" draggable="false">').join('');
 }
 function folderCard(p){
-  const b=BRAND[p.brand], c=folderColors(p);
+  const c=folderColors(p),E=ModernoDaily.escape;
   return `<div class="folder ${folderPhotoSources(p).length?'has-photos':''}" style="--f-front:${c.front};--f-back:${c.back};--f-ink:${c.ink}" onclick="go('proyecto',${p.id})">
-    <div class="back"></div>
-    ${folderPhotosHtml(p)}
-    ${folderPhotoSources(p).length?"":`<div class="badges" style="display:flex;flex-direction:column;align-items:center;gap:4px">${p.tpl?`<span class="chip tpl">Plantilla</span>`:`<span class="mini">${b.name}</span>`}${!p.tpl&&p.client?`<span class="mini" title="Cliente">${p.client}</span>`:""}</div>`}
+    <div class="back"></div>${folderPhotosHtml(p)}
     <div class="actions">
       <button title="Duplicar" onclick="event.stopPropagation();duplicateProject(${p.id})">${ico('dup_proyecto')}</button>
       <button title="Personalizar" onclick="event.stopPropagation();customizeModal(${p.id})">${ico('editar')}</button>
     </div>
-    <div class="front">${folderPhotoSources(p).length?`<div class="badges" style="display:flex;flex-direction:column;align-items:center;gap:4px">${p.tpl?`<span class="chip tpl">Plantilla</span>`:`<span class="mini">${b.name}</span>`}${!p.tpl&&p.client?`<span class="mini" title="Cliente">${p.client}</span>`:""}</div>`:""}<div class="fname"><span class="folder-title">${p.num} ${p.name}</span>${p.tags&&p.tags.length?`<div class="folder-tags" style="margin-top:5px;font-weight:400">${p.tags.map(t=>`<span class="chip tag" style="font-size:10px">${t}</span>`).join(" ")}</div>`:""}</div></div>
+    <div class="front"><div class="fname">
+      ${p.client?`<span class="folder-client" title="Cliente">${E(p.client)}</span>`:''}
+      ${p.tpl?'<span class="folder-template">Plantilla</span>':''}
+      <span class="folder-title">${E(p.num)} ${E(p.name)}</span>
+      ${p.tags&&p.tags.length?`<div class="folder-hashtags">${p.tags.map(t=>`<span>#${E(String(t).replace(/^#+/,''))}</span>`).join(' ')}</div>`:''}
+    </div></div>
   </div>`;
 }
 
@@ -11423,7 +11426,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.11";
+const MODERNO_VER="v3.54.12";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

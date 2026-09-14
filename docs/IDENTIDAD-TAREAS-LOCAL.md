@@ -118,3 +118,7 @@ Iconos originales conservados en producción y corregidos en la demostración lo
 
 ## v3.54.11
 Forma de carpetas de Proyectos tomada de los dos trazados de carpeta.svg aportado por el usuario. Máscaras recoloreables conservan colores de cada proyecto; fotos sobre la zona superior y contenido fuera de la máscara para evitar recortes.
+
+
+## v3.54.12
+Carpetas sin nombre del espacio de trabajo: cliente en pastilla negra encima del título, todo a la izquierda, etiquetas como #Texto sin fondo. No cambia nombres, etiquetas ni contactos guardados.
