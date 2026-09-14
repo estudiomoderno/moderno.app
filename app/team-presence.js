@@ -3,6 +3,13 @@
  'use strict';
  const initials=name=>String(name||'?').trim().split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
  const color=id=>['#647d6b','#926d5e','#7c729b','#647d91','#977f43'][Array.from(String(id)).reduce((n,c)=>n+c.charCodeAt(0),0)%5];
+ function contextText(view){
+  if(!view)return '';
+  const copy=view.cloneNode(true);
+  // Personal greetings and ticking clocks are not differences in shared content.
+  copy.querySelectorAll('h1,#clock,script,style').forEach(node=>node.remove());
+  return copy.textContent;
+ }
  function peers(state,own){
   const result=new Map();
   for(const entries of Object.values(state||{}))for(const m of entries||[]){
@@ -84,6 +91,6 @@
   doc.addEventListener('scroll',clearCursors,true);root.addEventListener('pagehide',stop);root.addEventListener('pageshow',refresh);root.addEventListener('resize',refresh);
   return {refresh,stop,destroy(){stop();root.clearInterval(timer);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerleave',hide);doc.removeEventListener('visibilitychange',visibility);doc.removeEventListener('scroll',clearCursors,true);root.removeEventListener('pagehide',stop);root.removeEventListener('pageshow',refresh);root.removeEventListener('resize',refresh);}};
  }
- root.ModernoTeamPresence={create,peers,validPointer,initials};
+ root.ModernoTeamPresence={create,peers,validPointer,initials,contextText};
  if(typeof module!=='undefined')module.exports=root.ModernoTeamPresence;
 })(typeof window!=='undefined'?window:globalThis);

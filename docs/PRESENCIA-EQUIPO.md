@@ -17,3 +17,5 @@ Pruebas: `node --test scripts/team-presence.test.mjs`; autorización PostgreSQL 
 El ensayo reproducible `scripts/presence-browser-test.mjs` usa exclusivamente ese clon y dos cuentas ficticias. Recibe la clave pública y contraseña de ensayo en un formulario local; las mantiene en memoria, sin registrarlas. No modifica documentos. El usuario adicional `presence-355@example.invalid` queda limitado al estudio ficticio Product Clipper A, para futuras pruebas. Nunca usar este ensayo con credenciales reales.
 
 Las políticas se instalan antes que la interfaz. Para revertir la interfaz se publica una nueva revisión del código anterior; no se restauran bases de datos ni se borran documentos. Los avatares son identidad declarada por cada cliente del canal, no una prueba de autoría de cambios ni de permisos administrativos. Los permisos siempre se verifican en el servidor.
+
+Revisión v3.55.1: el identificador de la pantalla excluye saludos personales y el reloj; dos compañeros con nombres distintos pueden coincidir en Proyectos. Se incluye el modo de vista para separar Board, Lista y cronología.

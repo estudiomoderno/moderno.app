@@ -11446,7 +11446,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.55.0";
+const MODERNO_VER="v3.55.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11823,7 +11823,7 @@ function presenceTrack(){
  if(!teamPresence)teamPresence=ModernoTeamPresence.create({client:sb,
   identity:()=>({study:ESTUDIO_ID,name:meName()}),
   allowed:()=>!_accessLoading&&['admin','colaborador'].includes(_accessRole)&&!!state.sessionUser,
-  context:()=>JSON.stringify([state.view,['proyecto','estancia','timeline','presedit'].includes(state.view)?state.currentProject:null,state.view==='estancia'?state.currentRoom:null,state.view==='proyecto'?state.projTab:null,document.getElementById('view')?.innerText,innerWidth<701?'mobile':'desktop'])
+  context:()=>JSON.stringify([state.view,['proyecto','estancia','timeline','presedit'].includes(state.view)?state.currentProject:null,state.view==='estancia'?state.currentRoom:null,state.view==='proyecto'?state.projTab:null,ModernoTeamPresence.contextText(document.getElementById('view')),state.view==='proyectos'?state.projView:state.view==='workspace'?wsViewGet():null,innerWidth<701?'mobile':'desktop'])
  });
  teamPresence.refresh().catch(()=>{});
 }
@@ -13252,8 +13252,8 @@ function loginGo(prov){
 /* La ruta se resuelve en el arranque principal (go enrutado); aquí solo se limpia el # heredado */
 try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/"); }catch(e){}
 </script>
-<link rel="stylesheet" href="/team-presence.css?v=3550">
-<script src="/team-presence.js?v=3550"></script>
+<link rel="stylesheet" href="/team-presence.css?v=3551">
+<script src="/team-presence.js?v=3551"></script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>
 <script src="/settings-ui.js?v=3540-353"></script>
