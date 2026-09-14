@@ -11446,7 +11446,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.16";
+const MODERNO_VER="v3.55.0";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11522,6 +11522,7 @@ function sbEnter(user, saluda){
   }
 }
 async function sbLogout(){
+  teamPresence?.stop();
   _accessAttempt++;_accessConnecting=false;_accessError='';window._cloudConflicts={};
   _accessRole=null;_gestoriaData=null;_accessLoading=!!sb;
   clearTimeout(_cloudT);clearTimeout(_cloudRetryT);clearInterval(_rtPoll);_rtPoll=null;
@@ -11815,37 +11816,24 @@ async function cloudPoll(){
     rows.filter(r=>r.updated_at && _cloudSeen[r.bloque]!==r.updated_at).forEach(r=>cloudApplyRemote(r.bloque,r.contenido,r.updated_at));
   }catch(e){syncTag("err",e.message||"No se pudo actualizar la consulta");}
 }
-/* Presencia: avatares de los compañeros conectados, con la pantalla en la que están */
-let _presT=null;
-function presenceWhere(){
-  const v=state.view||"home";
-  if((v==="proyecto"||v==="room"||v==="timeline") && state.currentProject){ const p=state.projects.find(x=>x.id===state.currentProject); if(p) return p.num+" "+p.name; }
-  const L={home:"Inicio",workspace:"Mis tareas",biblioteca:"Biblioteca",proyectos:"Proyectos",compras:"Compras",agenda:"Contactos",calendario:"Calendario",contabilidad:"Contabilidad",informes:"Informes",facturas:"Facturas",presupuestos:"Presupuestos",catalogo:"Catálogo",integraciones:"Integraciones",plantillas:"Plantillas y docs",utilidades:"Utilidades",admin:"Administración",ajustes:"Ajustes"};
-  return L[v]||v;
-}
+/* Presencia: privada independiente de la sincronización de datos. */
+let teamPresence=null;
 function presenceTrack(){
-  if(!_rtChan) return;
-  clearTimeout(_presT);
-  _presT=setTimeout(()=>{ try{ _rtChan.track({name:meName(), mail:meMail(), where:presenceWhere(), at:Date.now()}); }catch(e){} }, 250);
-}
-function presenceDraw(ps){
-  let bar=document.getElementById("presenceBar");
-  const top=document.getElementById("topUser");
-  if(!bar && top){ bar=document.createElement("div"); bar.id="presenceBar"; bar.style.cssText="display:flex;gap:6px;align-items:center;margin-right:2px;height:34px"; top.parentNode.insertBefore(bar, top); }
-  if(!bar) return;
-  const me=meMail(); const seen=new Map();
-  Object.keys(ps||{}).forEach(k=>(ps[k]||[]).forEach(m=>{ if(!m||!m.name) return; const key=(m.mail||m.name).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); if(me&&key===me) return; const prev=seen.get(key); if(!prev||(m.at||0)>(prev.at||0)) seen.set(key,m); }));
-  bar.innerHTML=[...seen.values()].map(m=>`<span title="${(m.name||"").replace(/"/g,"&quot;")} · ${(m.where||"").replace(/"/g,"&quot;")}" style="width:34px;height:34px;border-radius:99px;background:var(--card);display:inline-grid;place-items:center;font-size:12px;font-weight:800;color:var(--ink);cursor:default;box-shadow:inset 0 0 0 2px var(--gold)">${(m.name||"?").split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase()}</span>`).join("");
-  bar.title = seen.size ? [...seen.values()].map(m=>m.name+" · "+m.where).join("\n") : "";
+ if(!sb)return;
+ if(!teamPresence)teamPresence=ModernoTeamPresence.create({client:sb,
+  identity:()=>({study:ESTUDIO_ID,name:meName()}),
+  allowed:()=>!_accessLoading&&['admin','colaborador'].includes(_accessRole)&&!!state.sessionUser,
+  context:()=>JSON.stringify([state.view,['proyecto','estancia','timeline','presedit'].includes(state.view)?state.currentProject:null,state.view==='estancia'?state.currentRoom:null,state.view==='proyecto'?state.projTab:null,document.getElementById('view')?.innerText,innerWidth<701?'mobile':'desktop'])
+ });
+ teamPresence.refresh().catch(()=>{});
 }
 function cloudRealtimeStart(){
   if(!sb || !ESTUDIO_ID) return;
   if(!_rtChan){
     try{
-      _rtChan = sb.channel("datos_"+ESTUDIO_ID, {config:{presence:{key: meMail()||("anon-"+Math.random().toString(36).slice(2))}}});
+      _rtChan = sb.channel("datos_"+ESTUDIO_ID);
       if(_accessRole==='admin')_rtChan.on("postgres_changes",{event:"*",schema:"public",table:"datos_estudio",filter:"estudio_id=eq."+ESTUDIO_ID},()=>{ cloudPoll(); });
-      _rtChan.on("presence",{event:"sync"},()=>{ try{ presenceDraw(_rtChan.presenceState()); }catch(e){} })
-        .subscribe((st)=>{ if(st==="SUBSCRIBED") presenceTrack(); });
+      _rtChan.subscribe((st)=>{if(st==="SUBSCRIBED")presenceTrack();});
     }catch(e){ console.warn("[realtime]", e); }
   }
   if(!_rtPoll){ _rtPoll=setInterval(cloudPoll, 45000); }
@@ -13028,6 +13016,7 @@ render = function(){
   const loading=_accessLoading&&!['portalcli','portalobra'].includes(state.view);
   V.setAttribute('aria-busy',String(!!loading));
   __origRender();persistSoon();roomsHint();routeWrite();
+  try{presenceTrack();}catch(e){}
   const key=state.view+'|'+(state.view==='proyecto'?state.projTab:'')+'|'+state.currentProject+'|'+state.currentRoom+'|'+(typeof presCur!=='undefined'&&presCur?presCur.prid:'');
   if(!loading&&key!==_lastVisualRoute){
     if(_viewFade)_viewFade.cancel();
@@ -13149,7 +13138,7 @@ if(sb){
   sb.auth.onAuthStateChange((ev, session)=>{
     if(ev==="SIGNED_IN" && session && session.user){ sbEnter(session.user, true); gcalAfterOAuth(session); }
     if(ev==="PASSWORD_RECOVERY") setTimeout(passResetModal, 400);
-    if(ev==="SIGNED_OUT"){ state.sessionUser=null; _sbEntered=false; applySessionUI(); showLogin(true); }
+    if(ev==="SIGNED_OUT"){ teamPresence?.stop();state.sessionUser=null; _sbEntered=false; applySessionUI(); showLogin(true); }
   });
 } else if(_resumed && state.sessionUser){
   showLogin(false); applySessionUI();
@@ -13263,6 +13252,8 @@ function loginGo(prov){
 /* La ruta se resuelve en el arranque principal (go enrutado); aquí solo se limpia el # heredado */
 try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/"); }catch(e){}
 </script>
+<link rel="stylesheet" href="/team-presence.css?v=3550">
+<script src="/team-presence.js?v=3550"></script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>
 <script src="/settings-ui.js?v=3540-353"></script>

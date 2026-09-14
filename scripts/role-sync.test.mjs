@@ -44,6 +44,6 @@ test('collaborators never subscribe to raw database payloads',()=>{
  for(const role of ['admin','colaborador']){
   const events=[];const channel={on(event){events.push(event);return this;},subscribe(){return this;}};
   const c={_accessRole:role,sb:{channel:()=>channel},ESTUDIO_ID:'ficticio',_rtChan:null,_rtPoll:null,meMail:()=> 'prueba@example.invalid',cloudPoll(){},setInterval:()=>1,invAutoLoad(){},document:{addEventListener(){}},console};
-  vm.createContext(c);vm.runInContext(section('function cloudRealtimeStart(){','function cloudKeepPendingCopy('),c);c.cloudRealtimeStart();assert.equal(events.includes('postgres_changes'),role==='admin');assert.ok(events.includes('presence'));
+  vm.createContext(c);vm.runInContext(section('function cloudRealtimeStart(){','function cloudKeepPendingCopy('),c);c.cloudRealtimeStart();assert.equal(events.includes('postgres_changes'),role==='admin');assert.equal(events.includes('presence'),false); // Presence now uses its own private channel.
  }
 });
