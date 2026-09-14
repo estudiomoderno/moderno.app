@@ -126,3 +126,7 @@ Carpetas sin nombre del espacio de trabajo: cliente en pastilla negra encima del
 
 ## v3.54.13
 Nombre de cliente reducido a 9 px con pastilla más compacta, manteniendo el título del proyecto.
+
+
+## v3.54.14
+Transición lateral de entrada entre Board/Lista y entre estados móviles según el orden de los botones; sentido inverso al volver. Clic en vista actual no reinicia, animaciones anteriores se cancelan y movimiento reducido omite el efecto.

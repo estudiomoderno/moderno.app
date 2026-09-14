@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=35413">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=35414">
 </head>
 <body>
 <div class="app">
@@ -5186,7 +5186,16 @@ function taskIdentityIcon(name){return taskIdentityIcons[name]||'';}
 function wsViewKey(){return LS_KEY+'_vista_tareas_'+(meMail()||'local');}
 const wsSessionViews=new Map();
 function wsViewGet(){return wsSessionViews.get(wsViewKey())||'tablero';}
-function wsViewSet(v){if(!['tablero','lista'].includes(v))return;wsSessionViews.set(wsViewKey(),v);render();if(typeof document!=='undefined'){const content=document.querySelector('.ws-view-content');if(content&&typeof content.animate==='function'&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches)content.animate([{opacity:0},{opacity:1}],{duration:240,easing:'ease-out'});}}
+function wsSlideView(element,direction){
+ if(!element||typeof element.animate!=='function'||typeof window==='undefined'||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ element.getAnimations().forEach(animation=>animation.cancel());
+ element.animate([{transform:'translateX('+(direction*100)+'%)',opacity:0},{transform:'translateX(0)',opacity:1}],{duration:340,easing:'cubic-bezier(.22,.61,.36,1)'});
+}
+function wsViewSet(v){
+ const order=['tablero','lista'],previous=wsViewGet();if(!order.includes(v)||previous===v)return;
+ wsSessionViews.set(wsViewKey(),v);render();
+ if(typeof document!=='undefined')wsSlideView(document.querySelector('.ws-view-content'),order.indexOf(v)>order.indexOf(previous)?1:-1);
+}
 function wsViewControls(){return `<div class="opt-pills daily-scope ws-views" role="group" aria-label="Vista de tareas">${[['tablero','Board','board'],['lista','Lista','list']].map(([v,label,icon])=>`<button aria-pressed="${wsViewGet()===v}" class="${wsViewGet()===v?'on':''}" onclick="wsViewSet('${v}')">${taskIdentityIcon(icon)}${label}</button>`).join('')}</div>`;}
 function wsTaskButton(c){return '<button class="ws-task-link" onclick="openDailyTask('+Number(c.p.id)+','+c.i+')">'+ModernoDaily.escape(c.t.title||'Sin título')+'</button>';}
 function wsList(cards){return '<div class="ws-table-wrap"><table class="ws-task-table"><thead><tr><th>Tarea</th><th>Proyecto</th><th>Responsable</th><th>Vencimiento</th><th>Estado</th></tr></thead><tbody>'+cards.map(c=>'<tr class="'+(c.t.important?'is-important':'')+'"><td>'+(c.t.important?'<span class="task-important-label">Importante</span><br>':'')+wsTypeBadge(c.t.type)+wsTaskButton(c)+'</td><td>'+ModernoDaily.escape(c.p.num+' '+c.p.name)+'</td><td>'+ModernoDaily.escape(taskAssignees(c.t).join(', ')||'Sin asignar')+'</td><td>'+dailyDue(c.t)+'</td><td>'+ModernoDaily.escape((KCOLS.find(k=>k[0]===c.t.col)||[])[1]||c.t.col||'Pendiente')+'</td></tr>').join('')+'</tbody></table></div>';}
@@ -5221,10 +5230,11 @@ function wsExpandCard(card,open){
 const wsMobileStatuses=new Map();
 function wsMobileStatus(){return wsMobileStatuses.get(wsViewKey())||'pend';}
 function wsMobileStatusSet(button,key){
- if(!['pend','prog','rev'].includes(key))return;
+ const order=['pend','prog','rev'],previous=wsMobileStatus();if(!order.includes(key)||previous===key)return;
  wsMobileStatuses.set(wsViewKey(),key);
  const board=button.closest('.ws-mobile-board');board.dataset.mobileStatus=key;
  board.querySelectorAll('[data-mobile-status-button]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mobileStatusButton===key)));
+ if(typeof board.querySelector==='function')wsSlideView(board.querySelector('.kcol[data-status="'+key+'"]'),order.indexOf(key)>order.indexOf(previous)?1:-1);
 }
 function wsBoard(cards){return `<div class="ws-mobile-board" data-mobile-status="${wsMobileStatus()}"><div class="ws-mobile-statuses" role="group" aria-label="Estado de las tareas">${KCOLS.filter(c=>c[0]!=="listo").map(([key,label])=>`<button type="button" data-mobile-status-button="${key}" aria-pressed="${wsMobileStatus()===key}" onclick="wsMobileStatusSet(this,'${key}')">${label}<span>${cards.filter(c=>c.t.col===key).length}</span></button>`).join('')}</div><div class="kanban ws-card-stacks" style="grid-template-columns:repeat(3,minmax(0,1fr))">
     ${KCOLS.filter(c=>c[0]!=="listo").map(([key,label,color])=>`
@@ -11426,7 +11436,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.13";
+const MODERNO_VER="v3.54.14";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
