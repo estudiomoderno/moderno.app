@@ -106,3 +106,7 @@ Recuentos de tareas sin fondo de color, con Acorn 700: cabeceras del tablero, se
 
 ## v3.54.8 — Proyectos
 Listado de Proyectos con botones redondeados, selección negra, secundarios beige y fondo crema con cuadrícula tenue. Cuadrícula adaptada también al modo oscuro y excluida de impresión. Se conservan colores y fotos individuales de carpetas y todos los controles existentes.
+
+
+## v3.54.9 — Encabezado de Proyectos
+Fondo crema aplicado también a la capa #view. Encabezado sticky, buscador flexible ancho, siguiente número alineado y Proyectos Activos/Archivados con cifra Acorn a la derecha sobre las acciones. Aparición por filas calculada con la posición real, solo al entrar a Proyectos; respeta movimiento reducido. Carpetas se amplían suavemente con ratón. No cambia datos ni numeración.

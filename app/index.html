@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=3548">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=3549">
 </head>
 <body>
 <div class="app">
@@ -4361,8 +4361,10 @@ function render(){
   if(!canView(state.view))state.view='home';
   if(_accessRole==='colaborador'&&['fin','resumen'].includes(state.projTab))state.projTab='tareas';
   const r = {home:vHome, workspace:vWorkspace, biblioteca:vLibrary, proyectos:vProjects, proyecto:vProject, estancia:vRoom, agenda:vAgenda, calendario:vCalendar, contabilidad:vAccounting, prevision:vPrevision, facturas:()=>vInvoice("factura"), presupuestos:()=>vInvoice("presupuesto"), catalogo:vCatalog, compras:vCompras, informes:vInformes, plantillas:vDocs, utilidades:vUtils, integraciones:vIntegraciones, admin:vAdmin, ajustes:vAjustes, presedit:vPresEdit, portalcli:vPortalCli, portalobra:vPortalObra}[state.view];
+  const projectsEntering=state.view==='proyectos'&&!V.querySelector('.projects-identity');
   V.innerHTML = r();
   wire();
+  if(projectsEntering)requestAnimationFrame(projectsFadeRows);
   if(state.view==='compras')ProductOps.overview();
 }
 
@@ -5598,6 +5600,14 @@ function luAdd(i){
 /* Orden natural por serie y número: CM-1, CM-2, … PR-1, PR-2 (prefijo alfabético, número ascendente) */
 function projSortKey(p){ const m=String(p.num||"").match(/^([A-Za-z0-9]+)[\s-]*(\d+)/); return m ? [m[1].toUpperCase(), +m[2]] : [String(p.num||"").toUpperCase(), Number.MAX_SAFE_INTEGER]; }
 function sortProjects(arr){ return arr.slice().sort((a,b)=>{ const [pa,na]=projSortKey(a), [pb,nb]=projSortKey(b); return pa===pb ? na-nb : pa.localeCompare(pb); }); }
+function projectsFadeRows(){
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ document.querySelectorAll('.projects-identity .proj-grid').forEach(grid=>{
+   const cards=[...grid.children].filter(el=>el.classList.contains('folder'));
+   const rows=[...new Set(cards.map(el=>el.offsetTop))].sort((a,b)=>a-b);
+   cards.forEach(el=>{if(typeof el.animate==='function')el.animate([{opacity:0},{opacity:1}],{duration:360,delay:Math.min(rows.indexOf(el.offsetTop)*120,840),fill:'backwards',easing:'ease-out'});});
+ });
+}
 function vProjects(){
   const PQ=(state.projQ||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const pMatch = p => !PQ || (p.num+" "+p.name+" "+(p.client||"")).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(PQ);
@@ -5611,10 +5621,12 @@ function vProjects(){
     <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Número, nombre o cliente…" aria-label="Buscar proyecto" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
   </div>`;
   return `
-  <section class="projects-identity"><h1 class="big" style="margin-bottom:22px">${arch?"Proyectos archivados":"Estos son tus proyectos"}${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
-  <div class="projects-toolbar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
-    ${visibleWsOrder().map(k=>`<span class="counter-box">Serie ${BRAND[k].name||"Mi espacio"} \u00b7 siguiente <b>${projPre(k)}-${nextProjNum(k)}</b></span>`).join("")}
-    <span style="margin-left:auto"></span>
+  <section class="projects-identity"><header class="projects-header"><h1 class="big" style="margin-bottom:22px">${arch?"Proyectos archivados":"Estos son tus proyectos"}${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
+  <div class="projects-meta">
+    <div class="projects-next">${visibleWsOrder().map(k=>`<span class="counter-box">Nº de Siguiente proyecto: <b>${projPre(k)}-${nextProjNum(k)}</b>${visibleWsOrder().length>1?` <small>${ModernoDaily.escape(BRAND[k].name||'Mi espacio')}</small>`:''}</span>`).join('')}</div>
+    <div class="projects-count" role="status">Proyectos ${arch?'Archivados':'Activos'}: <strong>${projs.length}</strong></div>
+  </div>
+  <div class="projects-toolbar">
     ${buscador}
     <div class="brand-switch">
       <button class="${!listMode&&!timeMode?'on':''}" title="Cuadrícula" onclick="state.projView='grid';render()">${ico('grid')}</button>
@@ -5624,7 +5636,8 @@ function vProjects(){
     <button class="btn ${arch?'btn-dark':'btn-ghost'}" onclick="state.showArchived=!state.showArchived;render()">${ico('archivar')} Archivados</button>
     ${arch?"":`<button class="btn btn-dark" onclick="newProject()">${ico("mas")} Nuevo proyecto</button>`}
   </div>
-  <div class="daily-filter-info" role="status">${projs.length} resultado${projs.length===1?'':'s'}${PQ?` para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button>`:''}</div>
+  ${PQ?`<div class="daily-filter-info">Para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button></div>`:''}
+  </header>
   ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
   ${timeMode? vTimeline(projs.filter(x=>!x.tpl)) : listMode? `
   <table class="list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
@@ -11410,7 +11423,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.8";
+const MODERNO_VER="v3.54.9";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

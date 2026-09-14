@@ -209,3 +209,24 @@
  html body:not(.dark):not(.portalmode) .main .projects-identity .folder.add{background:#e4dfce;border:1px dashed #aaa492;color:#57564e;border-radius:24px}
  @media(max-width:700px){.projects-toolbar>.flt{flex:1 1 100%;min-width:0}.projects-toolbar #projQBox{min-width:0!important;width:100%}.projects-toolbar>.btn{flex:1;justify-content:center}.projects-identity{min-height:calc(100vh - 120px)}}
 }
+
+@media screen {
+ html body:not(.dark):not(.portalmode):has(.projects-identity),html body:not(.dark):not(.portalmode) .main:has(.projects-identity),html body:not(.dark):not(.portalmode) .main #view:has(.projects-identity),html body:not(.dark):not(.portalmode) .main .projects-identity{background-color:#f6f4eb!important}
+ html body:not(.portalmode) .main #view:has(.projects-identity){background-image:none!important}
+ html body:not(.dark):not(.portalmode) .main .projects-identity{background-image:linear-gradient(#77715c0a 1px,transparent 1px),linear-gradient(90deg,#77715c0a 1px,transparent 1px);background-size:28px 28px}
+ .projects-header{position:sticky;top:0;z-index:20;background:#f6f4eb;padding:12px 0 18px;margin-bottom:12px}
+ body.dark .projects-header{background:var(--ui-canvas,#242420)}
+ .projects-meta{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:12px}
+ .projects-next{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+ html body:not(.portalmode) .main .projects-identity .counter-box{display:inline-flex;align-items:baseline;gap:6px;padding:0;margin:0;line-height:1.5;background:transparent;border:0}
+ .projects-count{margin-left:auto;text-align:right;font-size:13px;white-space:nowrap}
+ .projects-count strong{font:700 20px Acorn,Georgia,serif}
+ .projects-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+ .projects-toolbar>.flt{flex:1 1 320px;min-width:0}
+ html body:not(.portalmode) .main .projects-identity #projQBox{width:100%;min-width:0!important;box-sizing:border-box}
+ .projects-toolbar>.brand-switch,.projects-toolbar>.btn{flex-shrink:0}
+ html body:not(.portalmode) .main .projects-identity .folder{transition:transform .22s ease;transform-origin:center center}
+ @media(hover:hover) and (pointer:fine){html body:not(.portalmode) .main .projects-identity .folder:hover{transform:scale(1.035)!important;z-index:3}}
+ @media(max-width:700px){.projects-header{padding-top:4px}.projects-meta{align-items:flex-start;flex-wrap:wrap;gap:8px}.projects-count{font-size:12px}.projects-toolbar>.flt{flex:1 1 100%}.projects-toolbar>.btn{flex:1}.projects-header h1{font-size:28px;margin-bottom:14px!important}}
+ @media(prefers-reduced-motion:reduce){html body:not(.portalmode) .main .projects-identity .folder{transition:none!important}}
+}
