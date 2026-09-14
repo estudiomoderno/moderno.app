@@ -134,3 +134,7 @@ Transición lateral de entrada entre Board/Lista y entre estados móviles según
 
 ## v3.54.15
 Transiciones laterales entre Cuadrícula, Lista y Cronograma de Proyectos, con dirección inversa al volver. Solo se anima el contenido, manteniendo fijo el encabezado. Respeta movimiento reducido.
+
+
+## v3.54.16
+El recorte horizontal de Proyectos solo se activa durante el cambio de vista. Al finalizar o cancelarse la animación se permite sobresalir a las carpetas ampliadas.

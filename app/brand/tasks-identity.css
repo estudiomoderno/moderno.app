@@ -262,4 +262,4 @@
 
 @media screen {.ws-full{overflow-x:clip}.ws-mobile-board .kanban{overflow-x:clip}}
 
-@media screen {.projects-identity{overflow-x:clip}.projects-view-content{padding:18px;margin:-18px}}
+@media screen {.projects-identity{overflow:visible}.projects-identity.projects-switching{overflow-x:clip}.projects-view-content{padding:18px;margin:-18px}}
