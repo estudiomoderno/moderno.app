@@ -98,3 +98,7 @@ Board móvil (hasta 700 px): botones Pendientes, En progreso y En revisión con 
 
 ## v3.54.6 — Listado de presupuestos móvil
 Tabla convertida visualmente a fichas etiquetadas hasta 700 px, acciones con ajuste de línea, filtros en rejilla y resúmenes verticales. Escritorio y formato de impresión conservados. Sin cambios en cálculos, estados ni guardado.
+
+
+## v3.54.7
+Recuentos de tareas sin fondo de color, con Acorn 700: cabeceras del tablero, selector móvil y resumen.

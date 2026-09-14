@@ -187,3 +187,7 @@
  .quotes-table td:last-child .btn{min-height:44px;justify-content:center}
  .quotes-table td:last-child .btn:last-child{flex:1 1 100%;white-space:normal}
 }
+
+@media screen {
+ html body:not(.portalmode) .main .ws-full :is(.kcol h4 .n,.ws-mobile-statuses button span,.ws-subtitle strong){background:transparent!important;background-image:none!important;box-shadow:none!important;color:inherit;font-family:Acorn,Georgia,serif!important;font-weight:700!important}
+}
