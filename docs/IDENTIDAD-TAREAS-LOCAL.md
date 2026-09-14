@@ -110,3 +110,7 @@ Listado de Proyectos con botones redondeados, selección negra, secundarios beig
 
 ## v3.54.9 — Encabezado de Proyectos
 Fondo crema aplicado también a la capa #view. Encabezado sticky, buscador flexible ancho, siguiente número alineado y Proyectos Activos/Archivados con cifra Acorn a la derecha sobre las acciones. Aparición por filas calculada con la posición real, solo al entrar a Proyectos; respeta movimiento reducido. Carpetas se amplían suavemente con ratón. No cambia datos ni numeración.
+
+
+## v3.54.10
+Iconos originales conservados en producción y corregidos en la demostración local. Aumento de carpetas al 116 % con ratón; fondo del encabezado extendido hasta el borde superior sin dejar pasar tarjetas por encima.
