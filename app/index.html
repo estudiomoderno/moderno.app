@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=35414">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=35415">
 </head>
 <body>
 <div class="app">
@@ -5621,6 +5621,12 @@ function projectsFadeRows(){
    cards.forEach(el=>{if(typeof el.animate==='function')el.animate([{opacity:0},{opacity:1}],{duration:360,delay:Math.min(rows.indexOf(el.offsetTop)*120,840),fill:'backwards',easing:'ease-out'});});
  });
 }
+function projectsViewSet(view){
+ const order=['grid','list','time'],previous=state.projView||'grid';
+ if(!order.includes(view)||view===previous)return;
+ state.projView=view;render();
+ wsSlideView(document.querySelector('.projects-view-content'),order.indexOf(view)>order.indexOf(previous)?1:-1);
+}
 function vProjects(){
   const PQ=(state.projQ||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const pMatch = p => !PQ || (p.num+" "+p.name+" "+(p.client||"")).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(PQ);
@@ -5642,15 +5648,15 @@ function vProjects(){
   <div class="projects-toolbar">
     ${buscador}
     <div class="brand-switch">
-      <button class="${!listMode&&!timeMode?'on':''}" title="Cuadrícula" onclick="state.projView='grid';render()">${ico('grid')}</button>
-      <button class="${listMode?'on':''}" title="Lista" onclick="state.projView='list';render()">${ico('list')}</button>
-      <button class="${timeMode?'on':''}" title="Cronograma" onclick="state.projView='time';render()" ><svg class="svgi" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8"/><path d="M9 12h9"/><path d="M6 18h7"/><circle cx="16" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg></button>
+      <button class="${!listMode&&!timeMode?'on':''}" title="Cuadrícula" onclick="projectsViewSet('grid')">${ico('grid')}</button>
+      <button class="${listMode?'on':''}" title="Lista" onclick="projectsViewSet('list')">${ico('list')}</button>
+      <button class="${timeMode?'on':''}" title="Cronograma" onclick="projectsViewSet('time')" ><svg class="svgi" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8"/><path d="M9 12h9"/><path d="M6 18h7"/><circle cx="16" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg></button>
     </div>
     <button class="btn ${arch?'btn-dark':'btn-ghost'}" onclick="state.showArchived=!state.showArchived;render()">${ico('archivar')} Archivados</button>
     ${arch?"":`<button class="btn btn-dark" onclick="newProject()">${ico("mas")} Nuevo proyecto</button>`}
   </div>
   ${PQ?`<div class="daily-filter-info">Para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button></div>`:''}
-  </header>
+  </header><div class="projects-view-content">
   ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
   ${timeMode? vTimeline(projs.filter(x=>!x.tpl)) : listMode? `
   <table class="list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
@@ -5674,7 +5680,7 @@ function vProjects(){
     ${arch? (projs.length||PQ?"":`<div class="empty" style="grid-column:1/-1">Nada archivado todavía.</div>`) : PQ&&!projs.length?"":`<div class="folder add" onclick="newProject()">+</div>`}
   </div>
   ${archHits.length?`<h2 class="sec" style="margin-top:22px">Archivados <span class="sec-note">${archHits.length} coincidencia${archHits.length===1?"":"s"}</span></h2><div class="proj-grid">${archHits.map(folderCard).join("")}</div>`:""}`}
-  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">${timeMode?"Consulta las fases y fechas de los proyectos en el cronograma.":listMode?"Pulsa un proyecto para abrirlo. Las acciones de su fila permiten editar, duplicar o archivar sin borrarlo.":"Pulsa una carpeta para abrir el proyecto. Puedes editar, duplicar o archivar desde la vista de lista."}</p>`}</section>`;
+  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">${timeMode?"Consulta las fases y fechas de los proyectos en el cronograma.":listMode?"Pulsa un proyecto para abrirlo. Las acciones de su fila permiten editar, duplicar o archivar sin borrarlo.":"Pulsa una carpeta para abrir el proyecto. Puedes editar, duplicar o archivar desde la vista de lista."}</p>`}</div></section>`;
 }
 function toggleArchive(id){
   const p = state.projects.find(x=>x.id===id);
@@ -11436,7 +11442,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.14";
+const MODERNO_VER="v3.54.15";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

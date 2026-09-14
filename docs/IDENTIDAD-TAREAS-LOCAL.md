@@ -130,3 +130,7 @@ Nombre de cliente reducido a 9 px con pastilla más compacta, manteniendo el tí
 
 ## v3.54.14
 Transición lateral de entrada entre Board/Lista y entre estados móviles según el orden de los botones; sentido inverso al volver. Clic en vista actual no reinicia, animaciones anteriores se cancelan y movimiento reducido omite el efecto.
+
+
+## v3.54.15
+Transiciones laterales entre Cuadrícula, Lista y Cronograma de Proyectos, con dirección inversa al volver. Solo se anima el contenido, manteniendo fijo el encabezado. Respeta movimiento reducido.
