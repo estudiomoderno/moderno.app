@@ -86,3 +86,7 @@ Iconos originales adjuntados por el usuario para Diseño, Desarrollo, Reunión, 
 ## v3.54.3 — Tablero continuo
 
 Corrección solicitada: una sola cabecera por estado con su total completo. Tarjetas apiladas sin grupos por fecha. Fecha de hoy superpuesta discretamente con línea discontinua, sin interceptar clics ni modificar la colocación de tarjetas. Sustituye la agrupación por vencimiento de v3.54.2.
+
+
+## v3.54.4
+Se elimina la referencia de fecha. Abrir tarea adopta botón negro redondeado. Participantes con iniciales circulares; adjuntos debajo del título al desplegar, con apertura mediante el resolvedor privado existente y sin alterar archivos.

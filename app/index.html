@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=3543">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=3544">
 </head>
 <body>
 <div class="app">
@@ -5197,9 +5197,15 @@ function wsCalendar(cards){
 }
 const wsTypeIcons={"Diseño": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-image-generation\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M3 21v-4a4 4 0 1 1 4 4h-4\" /><path d=\"M21 3a16 16 0 0 0 -12.8 10.2\" /><path d=\"M21 3a16 16 0 0 1 -10.2 12.8\" /><path d=\"M10.6 9a9 9 0 0 1 4.4 4.4\" /><path d=\"M17 19a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2\" /><path d=\"M3 5a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2\" /></svg>", "#d8c9e8"], "Desarrollo": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-infinity-2\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M13.94 9.39a10 10 0 0 1 .232 -.218a4 4 0 1 1 0 5.656a10 10 0 0 1 -2.172 -2.828a10 10 0 0 0 -2.172 -2.828a4 4 0 1 0 0 5.656a10 10 0 0 0 .234 -.219\" /></svg>", "#cad9ed"], "Reunión": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-brand-zoom\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M17.011 9.385v5.128l3.989 3.487v-12l-3.989 3.385\" /><path d=\"M3.887 6h10.08c1.468 0 3.033 1.203 3.033 2.803v8.196a.991 .991 0 0 1 -.975 1h-10.373c-1.667 0 -2.652 -1.5 -2.652 -3l.01 -8a.882 .882 0 0 1 .208 -.71a.841 .841 0 0 1 .67 -.287l-.001 -.002\" /></svg>", "#edcbd7"], "Entrega": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-package-export\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M12 21l-8 -4.5v-9l8 -4.5l8 4.5v4.5\" /><path d=\"M12 12l8 -4.5\" /><path d=\"M12 12v9\" /><path d=\"M12 12l-8 -4.5\" /><path d=\"M15 18h7\" /><path d=\"M19 15l3 3l-3 3\" /></svg>", "#cdddba"], "Revisión": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-file-check\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M14 3v4a1 1 0 0 0 1 1h4\" /><path d=\"M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2\" /><path d=\"M9 15l2 2l4 -4\" /></svg>", "#efd6ad"], "Contabilidad": ["<svg aria-hidden=\"true\" xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"icon icon-tabler icons-tabler-outline icon-tabler-abacus\"><path stroke=\"none\" d=\"M0 0h24v24H0z\" fill=\"none\" /><path d=\"M5 3v18\" /><path d=\"M19 21v-18\" /><path d=\"M5 7h14\" /><path d=\"M5 15h14\" /><path d=\"M8 13v4\" /><path d=\"M11 13v4\" /><path d=\"M16 13v4\" /><path d=\"M14 5v4\" /><path d=\"M11 5v4\" /><path d=\"M8 5v4\" /><path d=\"M3 21h18\" /></svg>", "#bcded8"]};
 function wsTypeBadge(type){const entry=wsTypeIcons[type];return '<span class="ws-type-icon" title="'+ModernoDaily.escape(type||'Otro')+'" style="background:'+(entry?entry[1]:'#dedbd1')+'">'+(entry?entry[0]:'<span aria-hidden="true">•</span>')+'</span>';}
-function wsTimeline(cards){
- const today=ModernoDaily.today();
- return '<div class="ws-timeline">'+wsBoard(cards)+'<div class="ws-date-overlay"><time datetime="'+today+'"><strong>Hoy</strong> · '+new Date(today+'T12:00:00').toLocaleDateString(APP_LOCALE(),{day:'numeric',month:'short',year:'numeric'})+'</time><span></span></div></div>';
+function wsTimeline(cards){return wsBoard(cards);}
+function wsParticipants(t){const names=taskAssignees(t),E=ModernoDaily.escape;return '<div class="ws-participants"><span>Participantes</span><div class="ws-participant-list">'+(names.length?names.map(name=>'<span class="ws-participant" title="'+E(name)+'" aria-label="'+E(name)+'">'+E(name.trim().split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())+'</span>').join(''):'<span class="ws-unassigned">Sin asignar</span>')+'</div></div>';}
+function wsAttachments(p,t,i){return (t.files||[]).map((raw,n)=>{const f=tkFileObj(raw),E=ModernoDaily.escape;return '<button type="button" class="ws-attachment" onclick="wsOpenAttachment('+p.id+','+i+','+n+')" '+(!(f.url||f.data)?'disabled':'')+'>'+E(f.name||'Archivo adjunto')+(!(f.url||f.data)?' · Solo nombre':'')+'</button>';}).join('');}
+async function wsOpenAttachment(pid,index,n){
+ const task=state.projects.find(p=>p.id===pid)?.tasks?.[index];if(!task?.files?.[n])return;
+ const f=tkFileObj(task.files[n]),src=await fileResolveForView(f);if(!src)return;
+ if(/^https?:/.test(src)){window.open(src,'_blank','noopener');return;}
+ try{const blob=_dataUrlBlob(src);if(blob){const url=URL.createObjectURL(blob);window.open(url,'_blank','noopener');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}}catch{}
+ const a=document.createElement('a');a.href=src;a.download=f.name||'archivo';a.click();
 }
 function wsExpandCard(card,open){
   if(open)card.parentElement.querySelectorAll('.ws-stack-card.is-expanded').forEach(other=>{if(other!==card)wsExpandCard(other,false)});
@@ -5217,8 +5223,8 @@ function wsBoard(cards){return `  <div class="kanban ws-card-stacks" style="grid
               ${t.important?'<span class="task-important-label">Importante</span>':''}<span class="ws-card-title">${wsTypeBadge(t.type)}<span class="tt">${ModernoDaily.escape(t.title)}</span></span><span class="ws-card-caret" aria-hidden="true">⌄</span>
             </button>
             <div class="ws-card-details" id="ws-card-${p.id}-${i}" inert><div class="ws-card-content">
-              ${dailyDue(t)}<div class="tm"><span class="chip ${BRAND[p.brand].chip}">${ModernoDaily.escape(p.num)} ${ModernoDaily.escape(p.name)}</span><span class="chip cm" style="background:var(--card)">${ModernoDaily.escape(t.type||"")}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}${assigneeChips(t)}</div>
-              <button type="button" class="btn ws-card-open" onclick="taskModal(${p.id},${i})">Abrir tarea</button>
+              ${wsAttachments(p,t,i)}${dailyDue(t)}<div class="tm"><span class="chip ${BRAND[p.brand].chip}">${ModernoDaily.escape(p.num)} ${ModernoDaily.escape(p.name)}</span><span class="chip cm" style="background:var(--card)">${ModernoDaily.escape(t.type||"")}</span>${t.amount?`<span>◉ ${fmt(t.amount)}</span>`:""}</div>
+              ${wsParticipants(t)}<button type="button" class="btn ws-card-open" onclick="taskModal(${p.id},${i})">Abrir tarea</button>
             </div></div>
           </div>`).join("")}
       </div>`).join("")}
@@ -11395,7 +11401,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.3";
+const MODERNO_VER="v3.54.4";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
