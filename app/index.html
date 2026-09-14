@@ -4792,7 +4792,7 @@ function vCalendar(){
   const calProjs = byBrand(state.projects.filter(x=>!x.tpl&&x.status!=="Archivado"));
   const filtP = C.pid ? calProjs.filter(x=>x.id===C.pid) : calProjs;
   const pSel = C.pid ? state.projects.find(x=>x.id===C.pid) : null;
-  const tasks = C.showTasks ? filtP.flatMap(pr=>pr.tasks.map((t,i)=>({pr,t,i})).filter(x=>x.t.due)) : [];
+  const tasks = C.showTasks ? filtP.flatMap(pr=>(pr.tasks||[]).map((t,i)=>({pr,t,i})).filter(x=>x.t.due)) : [];
   const showObra = C.showObra!==false;
   const obraEv = showObra ? filtP.filter(x=>x.obraF).flatMap(pr=>pr.obraF.filter(f=>f.start&&f.end).flatMap(f=>[
     {d:f.start,t:"🏗 "+f.name,pr,tip:"Inicio de fase · "+pr.num+" "+pr.name},
@@ -10750,7 +10750,7 @@ function vQuotesList(){
       <td data-label="Ref."><b>${q.ref}</b></td>
       <td data-label="Fecha">${(q.date||"").split("-").reverse().join("/")}</td>
       <td data-label="Cliente" style="cursor:pointer;text-decoration:underline" onclick="clientCard('${q.client}')">${q.client}</td>
-      <td data-label="Marca"><span class="chip ${BRAND[q.brand].chip}">${BRAND[q.brand].name}</span></td>
+      <td data-label="Marca"><span class="chip ${BRAND[q.brand]?.chip||''}">${BRAND[q.brand]?.name||'—'}</span></td>
       <td data-label="Total" style="text-align:right"><b>${fmt(q.total)}</b></td>
       <td data-label="Estado"><select onchange="setQuoteStatus(${i},this.value)" title="Cambiar el estado del presupuesto" style="background:${QST[st][1]};border:none;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">
         <option value="pend" ${st==="pend"?"selected":""}>Pendiente</option><option value="acc" ${st==="acc"?"selected":""}>Aceptado</option><option value="rej" ${st==="rej"?"selected":""}>Rechazado</option>
@@ -11446,7 +11446,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.55.1";
+const MODERNO_VER="v3.56.0";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13015,7 +13015,7 @@ let _lastVisualRoute='',_viewFade=null;
 render = function(){
   const loading=_accessLoading&&!['portalcli','portalobra'].includes(state.view);
   V.setAttribute('aria-busy',String(!!loading));
-  __origRender();persistSoon();roomsHint();routeWrite();
+  __origRender();V.setAttribute('data-page',state.view);persistSoon();roomsHint();routeWrite();
   try{presenceTrack();}catch(e){}
   const key=state.view+'|'+(state.view==='proyecto'?state.projTab:'')+'|'+state.currentProject+'|'+state.currentRoom+'|'+(typeof presCur!=='undefined'&&presCur?presCur.prid:'');
   if(!loading&&key!==_lastVisualRoute){
@@ -13253,6 +13253,7 @@ function loginGo(prov){
 try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/"); }catch(e){}
 </script>
 <link rel="stylesheet" href="/team-presence.css?v=3551">
+<link rel="stylesheet" href="/brand/app-identity.css?v=3560">
 <script src="/team-presence.js?v=3551"></script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>

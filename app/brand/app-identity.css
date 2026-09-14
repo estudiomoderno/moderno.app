@@ -1,0 +1,92 @@
+/* Shared CRM presentation. Screen only; no icons, data or document templates. */
+@media screen {
+ html body:not(.dark):not(.portalmode){
+  --bg:#f6f4eb;--panel:#f6f4eb;--white:#f8f6ef;--card:#eae5d6;
+  --ink:#20201e;--ink-soft:#57564e;--ink-faint:#716e62;
+  --ui-accent:#181818;--ui-selected:#e4dfce;--ui-selected-ink:#20201e;
+  --ui-line:#d8d2c2;--line:#d8d2c2;--ui-canvas:#f6f4eb;
+  --gold-soft:#eee8cf;--green:#dde8d9;--green-ink:#33513b;
+  --red:#f0dcd5;--red-ink:#8c3932;--pend:#eee5c9;--pend-ink:#6e571f;
+  --radius:20px;--radius-lg:26px;--shadow:0 8px 24px #302a1710;
+  --app-surface:#f8f6ef;--app-control:#e4dfce;--app-selected:#181818;--app-selected-text:#f6f4eb;
+  --app-outline:#969080;--app-grid:#77715c08;
+  --dl-bg:#eae5d6;--dl-line:#d8d2c2;--dl-ink:#20201e;--dl-soft:#57564e;
+ }
+ html body.dark:not(.portalmode){
+  --bg:#242420;--panel:#242420;--white:#2e2e29;--card:#37372f;
+  --ink:#f1eee3;--ink-soft:#ccc8b9;--ink-faint:#aaa696;
+  --ui-accent:#e8e1cd;--ui-selected:#454438;--ui-selected-ink:#f1eee3;
+  --ui-line:#505044;--line:#505044;--ui-canvas:#242420;
+  --gold-soft:#45402e;--green:#334738;--green-ink:#c2ddbd;
+  --red:#503831;--red-ink:#f1c4b9;--pend:#4b432d;--pend-ink:#e8d6a0;
+  --radius:20px;--radius-lg:26px;--shadow:0 8px 24px #0002;
+  --app-surface:#2e2e29;--app-control:#3e3e34;--app-selected:#e8e1cd;--app-selected-text:#20201e;
+  --app-outline:#99947e;--app-grid:#ffffff06;
+  --dl-bg:#37372f;--dl-line:#505044;--dl-ink:#f1eee3;--dl-soft:#ccc8b9;
+ }
+ html body:not(.portalmode) .main{background-color:var(--ui-canvas);color:var(--ink)}
+ html body:not(.portalmode) .main:has(#view:not([data-page="workspace"]):not([data-page="proyectos"])){background-image:linear-gradient(var(--app-grid) 1px,transparent 1px),linear-gradient(90deg,var(--app-grid) 1px,transparent 1px);background-size:28px 28px}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(h1,h2,h3,h4):not(.inv-paper *, .ex-doc *, .ops-print *){font-family:Acorn,Georgia,serif;font-weight:600;font-synthesis:none}
+ html body:not(.portalmode) .main h1.big{font-weight:600;line-height:1.18;letter-spacing:-.035em}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.btn,.dl-btn){border-radius:24px;min-height:42px;line-height:1.3;padding:10px 18px;font-weight:500;box-sizing:border-box;transform:none;box-shadow:none;justify-content:center}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.btn-dark,.dl-btn.pri){background:var(--app-selected);color:var(--app-selected-text);border:1px solid transparent}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.btn-ghost,.dl-btn:not(.pri)){background:var(--app-control);color:var(--ink);border:1px solid transparent}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) .btn-gold{background:var(--gold-soft);color:var(--ink);border:1px solid var(--ui-line)}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.btn,.dl-btn):hover{transform:none;box-shadow:none;filter:brightness(.97)}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.btn-dark,.dl-btn.pri):hover{background:var(--app-selected)}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.pill-tabs,.opt-pills,.ops-tabs,.catalog-view-switch){gap:7px;background:transparent;border:0;padding:0;flex-wrap:wrap}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.pill-tabs,.opt-pills,.ops-tabs,.catalog-view-switch) button{background:var(--app-control);color:var(--ink);border:1px solid transparent;border-radius:24px;min-height:40px;padding:9px 15px;font-weight:500;line-height:1.3;transform:none;box-sizing:border-box}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.pill-tabs,.opt-pills,.ops-tabs,.catalog-view-switch) button:is(.on,[aria-pressed="true"]){background:var(--app-selected);color:var(--app-selected-text);font-weight:500}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) .catalog-view-switch button{width:42px;padding:9px}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]):not([type="hidden"]),select,textarea):not(.inv-paper *, .ex-doc *, .ops-print *){background-color:var(--app-surface)!important;color:var(--ink);border:1px solid var(--app-outline);border-radius:16px;box-sizing:border-box;max-width:100%;min-width:0;box-shadow:none}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]):not([type="hidden"]),select):not(.inv-paper *, .ex-doc *, .ops-print *, .dl-f *, .phone-field *){min-height:42px;padding:10px 13px;line-height:1.3}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) textarea:not(.inv-paper *, .ex-doc *, .ops-print *){padding:12px 14px;line-height:1.55}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(input,textarea,select):focus{background-color:var(--app-surface)!important;box-shadow:none}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(button,input,textarea,select,summary):focus-visible{outline:2px solid var(--app-outline);outline-offset:3px}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(input,textarea)::placeholder{color:var(--ink-faint);opacity:1}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) input:is([type="search"],[placeholder*="Buscar"]){border:1px solid var(--app-outline)!important;background-color:transparent!important;min-height:44px;border-radius:18px!important}
+ html body:not(.portalmode) :is(#view,#modalBox) .phone-control{border-color:var(--app-outline);border-radius:16px;background:var(--app-surface)}
+ html body:not(.portalmode) :is(#view,#modalBox) .phone-control:focus-within{outline:2px solid var(--app-outline);outline-offset:2px}
+ html body:not(.portalmode) :is(#view,#modalBox) .phone-country select{background:transparent!important}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) input:is([type="checkbox"],[type="radio"]){accent-color:var(--app-selected)}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) input[type="file"]::file-selector-button{background:var(--app-control);color:var(--ink);border:0;border-radius:24px;padding:10px 16px;margin-right:12px;font:inherit;cursor:pointer}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.acbox,.project-options-body){background:var(--app-surface);color:var(--ink);border:1px solid var(--ui-line);border-radius:16px}
+ html body:not(.portalmode) select::picker(select){background:var(--app-surface);color:var(--ink);border-color:var(--ui-line);border-radius:16px}
+ html body:not(.portalmode) .main :is(.widget,.settings-section,.ops-card,.dl-card,.dl-row,.calfull){background:var(--app-surface);border:1px solid var(--ui-line);border-radius:24px;box-shadow:none}
+ html body:not(.portalmode) .main :is(.settings-page,.settings-nav,.settings-switch){--settings-line:var(--ui-line);--settings-hover:var(--app-control)}
+ html body:not(.portalmode) .main :is(.settings-section,.ops-card){padding:24px}
+ html body:not(.portalmode) .main .catalog-board{--catalog-sand:var(--app-control)}
+ html body:not(.portalmode) .main .catalog-heading{background:var(--app-control);border-radius:26px}
+ html body:not(.portalmode) .main .catalog-card{background:var(--app-surface);border:1px solid var(--ui-line);border-radius:24px;box-shadow:none}
+ html body:not(.portalmode) .main .catalog-actions .btn{min-width:36px;min-height:36px;padding:8px}
+ html body:not(.portalmode) .main :is(.fin-card,.pm-totals>div){border-radius:24px;border:1px solid var(--ui-line);padding:20px}
+ html body:not(.portalmode) .main .fin-card .lab{background:transparent!important;color:inherit;padding:0;font-weight:500}
+ html body:not(.portalmode) .main :is(.fin-card .val,.pm-totals b,.catalog-price strong,.dl-sum){font-family:Acorn,Georgia,serif;font-weight:700;font-synthesis:none}
+ html body:not(.portalmode) .main .fin-card .val{font-size:clamp(22px,2.3vw,30px);overflow-wrap:anywhere}
+ html body.dark:not(.portalmode) .main .fin-card{border:1px solid var(--ui-line)}
+ html body.dark:not(.portalmode) #mHeader .mlogo:has(svg){content:normal!important}
+ html body:not(.dark):not(.portalmode) .settings-theme button:first-child,html body.dark:not(.portalmode) .settings-theme button:last-child{background:var(--app-selected);color:var(--app-selected-text)}
+ html body:not(.portalmode) .main :is(table.list,table.list tbody,table.list tr,table.list th,table.list td){background:transparent;border-color:var(--ui-line)}
+ html body:not(.portalmode) .main table.list th{font-weight:600;color:var(--ink-soft);padding-top:15px;padding-bottom:15px}
+ html body:not(.portalmode) .main table.list td{padding-top:14px;padding-bottom:14px}
+ html body:not(.portalmode) .main table.list tr:hover td{background:color-mix(in srgb,var(--app-control) 40%,transparent)}
+ html body:not(.portalmode) .main .proj-head{background:var(--app-surface)!important;border:1px solid var(--ui-line);border-radius:26px;box-shadow:none}
+ html body:not(.portalmode) .main .calfull .cd{background:var(--card);border-radius:16px}
+ html body:not(.portalmode) .main .calfull .cd .dn.today{background:var(--app-selected);color:var(--app-selected-text)}
+ html body:not(.portalmode) #modalBox{background:var(--app-surface);color:var(--ink);border:1px solid var(--ui-line);border-radius:26px;padding:26px;line-height:1.5}
+ html body:not(.portalmode) #modalBox :is(.form-grid,.settings-fields){gap:18px}
+ html body:not(.portalmode) #modalBox :is(.modal-foot,.rowbtns){gap:10px}
+ html body:not(.portalmode) .main :is(.inv-paper,.ex-doc,.ops-print){--ink:#141414;--ink-soft:#555;--ink-faint:#777;--white:#fff;--panel:#fff;--card:#f1f1ed;--line:#ddd;background:#fff;color:#141414}
+ html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :disabled{opacity:.5;cursor:not-allowed}
+ @media(max-width:700px){
+  html body:not(.portalmode) .main :is(.pill-tabs,.ops-tabs){flex-wrap:wrap;max-width:100%}
+  html body:not(.portalmode) .main :is(.pill-tabs,.opt-pills) button{min-height:42px;padding:9px 12px}
+  html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) .btn{min-height:44px;padding:10px 14px}
+  html body:not(.portalmode) .main :is(.settings-section,.ops-card,.catalog-card){padding:18px;border-radius:22px}
+  html body:not(.portalmode) .main .fin-card{padding:14px;min-width:0}
+  html body:not(.portalmode) #modalBox{padding:20px 16px;border-radius:24px}
+  html body:not(.portalmode) .main :is(#libUrlImp,#libQ){min-width:0!important}
+  html body:not(.portalmode) .main .flt:has(#agQBox){flex:1 1 100%!important;max-width:none!important}
+ }
+ @media(prefers-reduced-motion:reduce){html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.btn,.dl-btn,.catalog-card,.dl-card){transition:none}}
+}
