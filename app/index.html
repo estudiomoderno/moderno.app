@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=3547">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=3548">
 </head>
 <body>
 <div class="app">
@@ -5611,8 +5611,8 @@ function vProjects(){
     <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Número, nombre o cliente…" aria-label="Buscar proyecto" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
   </div>`;
   return `
-  <h1 class="big" style="margin-bottom:22px">${arch?"Proyectos archivados":"Estos son tus proyectos"}${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+  <section class="projects-identity"><h1 class="big" style="margin-bottom:22px">${arch?"Proyectos archivados":"Estos son tus proyectos"}${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
+  <div class="projects-toolbar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
     ${visibleWsOrder().map(k=>`<span class="counter-box">Serie ${BRAND[k].name||"Mi espacio"} \u00b7 siguiente <b>${projPre(k)}-${nextProjNum(k)}</b></span>`).join("")}
     <span style="margin-left:auto"></span>
     ${buscador}
@@ -5648,7 +5648,7 @@ function vProjects(){
     ${arch? (projs.length||PQ?"":`<div class="empty" style="grid-column:1/-1">Nada archivado todavía.</div>`) : PQ&&!projs.length?"":`<div class="folder add" onclick="newProject()">+</div>`}
   </div>
   ${archHits.length?`<h2 class="sec" style="margin-top:22px">Archivados <span class="sec-note">${archHits.length} coincidencia${archHits.length===1?"":"s"}</span></h2><div class="proj-grid">${archHits.map(folderCard).join("")}</div>`:""}`}
-  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">${timeMode?"Consulta las fases y fechas de los proyectos en el cronograma.":listMode?"Pulsa un proyecto para abrirlo. Las acciones de su fila permiten editar, duplicar o archivar sin borrarlo.":"Pulsa una carpeta para abrir el proyecto. Puedes editar, duplicar o archivar desde la vista de lista."}</p>`}`;
+  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">${timeMode?"Consulta las fases y fechas de los proyectos en el cronograma.":listMode?"Pulsa un proyecto para abrirlo. Las acciones de su fila permiten editar, duplicar o archivar sin borrarlo.":"Pulsa una carpeta para abrir el proyecto. Puedes editar, duplicar o archivar desde la vista de lista."}</p>`}</section>`;
 }
 function toggleArchive(id){
   const p = state.projects.find(x=>x.id===id);
@@ -11410,7 +11410,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.7";
+const MODERNO_VER="v3.54.8";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

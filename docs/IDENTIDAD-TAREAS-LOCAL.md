@@ -102,3 +102,7 @@ Tabla convertida visualmente a fichas etiquetadas hasta 700 px, acciones con aju
 
 ## v3.54.7
 Recuentos de tareas sin fondo de color, con Acorn 700: cabeceras del tablero, selector móvil y resumen.
+
+
+## v3.54.8 — Proyectos
+Listado de Proyectos con botones redondeados, selección negra, secundarios beige y fondo crema con cuadrícula tenue. Cuadrícula adaptada también al modo oscuro y excluida de impresión. Se conservan colores y fotos individuales de carpetas y todos los controles existentes.
