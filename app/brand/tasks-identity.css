@@ -137,11 +137,6 @@
  .ws-type-icon{display:inline-flex;width:36px;height:36px;flex:0 0 36px;align-items:center;justify-content:center;border-radius:50%;color:#292922;vertical-align:middle}
  .ws-type-icon svg{width:21px;height:21px}
  .ws-task-table .ws-type-icon{margin-right:10px}
- .ws-timeline{position:relative}
- .ws-date-overlay{position:absolute;top:60px;left:0;right:0;display:flex;align-items:center;gap:12px;pointer-events:none;z-index:2;color:#797568;font-size:10px;opacity:.6;line-height:16px;transform:translateY(-50%)}
- .ws-date-overlay time{white-space:nowrap}
- .ws-date-overlay strong{font-weight:500}
- .ws-date-overlay span{flex:1;border-top:1px dashed #aaa492}
  @media(max-width:700px){.ws-filter-row{min-height:72px}.ws-full .ws-views{flex-wrap:nowrap}.ws-subtitle{min-height:44px}}
 }
 
