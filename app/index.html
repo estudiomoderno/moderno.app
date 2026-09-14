@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=3545">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=3546">
 </head>
 <body>
 <div class="app">
@@ -10691,7 +10691,7 @@ function vQuotesList(){
   const clientes = [...new Set(qs.map(q=>q.client))].sort();
   const activo = F.from||F.to||F.client||F.status;
   return `
-  <h1 class="big">Todos tus <span class="hl">presupuestos</span></h1>
+  <section class="quotes-page"><h1 class="big">Todos tus <span class="hl">presupuestos</span></h1>
   ${draftsBox("presupuesto")}
   <div class="flt" style="display:flex;align-items:flex-end;gap:12px;margin-bottom:14px;flex-wrap:wrap">
     <div><label>Desde</label><input id="qltFrom" type="date" value="${F.from}" onchange="state.qFilter.from=this.value;render()"></div>
@@ -10709,23 +10709,23 @@ function vQuotesList(){
     <div class="fin-card" style="background:#DDF0DC"><span class="lab" style="background:var(--white)">Aceptados</span><div class="val">${fmt(sum("acc"))}</div></div>
     <div class="fin-card" style="background:#F2B8AC"><span class="lab" style="background:var(--white)">Rechazados</span><div class="val">${fmt(sum("rej"))}</div></div>
   </div>
-  ${shown.length?`<table class="list"><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Marca</th><th style="text-align:right">Total</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
+  ${shown.length?`<table class="list quotes-table"><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Marca</th><th style="text-align:right">Total</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
     ${shown.map(q=>{ const i=state.quotes.indexOf(q), st=q.status||"pend"; return `<tr>
-      <td><b>${q.ref}</b></td>
-      <td>${(q.date||"").split("-").reverse().join("/")}</td>
-      <td style="cursor:pointer;text-decoration:underline" onclick="clientCard('${q.client}')">${q.client}</td>
-      <td><span class="chip ${BRAND[q.brand].chip}">${BRAND[q.brand].name}</span></td>
-      <td style="text-align:right"><b>${fmt(q.total)}</b></td>
-      <td><select onchange="setQuoteStatus(${i},this.value)" title="Cambiar el estado del presupuesto" style="background:${QST[st][1]};border:none;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">
+      <td data-label="Ref."><b>${q.ref}</b></td>
+      <td data-label="Fecha">${(q.date||"").split("-").reverse().join("/")}</td>
+      <td data-label="Cliente" style="cursor:pointer;text-decoration:underline" onclick="clientCard('${q.client}')">${q.client}</td>
+      <td data-label="Marca"><span class="chip ${BRAND[q.brand].chip}">${BRAND[q.brand].name}</span></td>
+      <td data-label="Total" style="text-align:right"><b>${fmt(q.total)}</b></td>
+      <td data-label="Estado"><select onchange="setQuoteStatus(${i},this.value)" title="Cambiar el estado del presupuesto" style="background:${QST[st][1]};border:none;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">
         <option value="pend" ${st==="pend"?"selected":""}>Pendiente</option><option value="acc" ${st==="acc"?"selected":""}>Aceptado</option><option value="rej" ${st==="rej"?"selected":""}>Rechazado</option>
       </select>${q.projectId&&state.projects.find(x=>x.id===q.projectId)?` <span class="chip neutral" style="cursor:pointer" title="${state.projects.find(x=>x.id===q.projectId).name}" onclick="state.projTab='fin';go('proyecto',${q.projectId})">▣ ${state.projects.find(x=>x.id===q.projectId).num}</span>`:""}</td>
-      <td style="text-align:right;white-space:nowrap">
+      <td data-label="Acciones" style="text-align:right;white-space:nowrap">
         <button class="btn btn-ghost" title="Editar el presupuesto" onclick="loadDoc(${i},'presupuesto')">${ico("q_editar")}</button>
         <button class="btn btn-ghost" title="Duplicar: copia lista para otro cliente u obra" onclick="duplicateQuote(${i})">${ico("q_duplicar")}</button>
         <button class="btn btn-ghost" style="color:var(--red-ink)" title="Eliminar este presupuesto" onclick="delQuote(${i})">${ico("eliminar")}</button>
         <button class="btn ${st==="acc"?"btn-gold":"btn-ghost"}" style="${st==="acc"?"":"opacity:.55"}" title="${st==="acc"?"Crear la factura de este presupuesto":"Solo los presupuestos aceptados se convierten en factura"}" onclick="${st==="acc"?`quoteToInvoice(${i})`:`toast('Marca el presupuesto como Aceptado para poder convertirlo en factura')`}">${ico("q_convertir")} Convertir en factura</button>
       </td></tr>`}).join("")}
-  </tbody></table>`:`<div class="empty">${qs.length?"Ningún presupuesto coincide con los filtros.":"Aún no hay presupuestos. Crea el primero con «+ Nuevo presupuesto»."}</div>`}`;
+  </tbody></table>`:`<div class="empty">${qs.length?"Ningún presupuesto coincide con los filtros.":"Aún no hay presupuestos. Crea el primero con «+ Nuevo presupuesto»."}</div>`}</section>`;
 }
 function setQuoteStatus(i,val){
   const q = state.quotes[i], st = q.status||"pend";
@@ -11410,7 +11410,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.54.5";
+const MODERNO_VER="v3.54.6";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

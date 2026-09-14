@@ -94,3 +94,7 @@ Se elimina la referencia de fecha. Abrir tarea adopta botón negro redondeado. P
 
 ## v3.54.5 — Estados en móvil
 Board móvil (hasta 700 px): botones Pendientes, En progreso y En revisión con recuentos; muestra solo el estado seleccionado, conserva la selección por identidad durante la sesión y ofrece estado vacío. Escritorio conserva las tres columnas. No cambia datos, fechas ni permisos.
+
+
+## v3.54.6 — Listado de presupuestos móvil
+Tabla convertida visualmente a fichas etiquetadas hasta 700 px, acciones con ajuste de línea, filtros en rejilla y resúmenes verticales. Escritorio y formato de impresión conservados. Sin cambios en cálculos, estados ni guardado.
