@@ -122,3 +122,7 @@ Forma de carpetas de Proyectos tomada de los dos trazados de carpeta.svg aportad
 
 ## v3.54.12
 Carpetas sin nombre del espacio de trabajo: cliente en pastilla negra encima del título, todo a la izquierda, etiquetas como #Texto sin fondo. No cambia nombres, etiquetas ni contactos guardados.
+
+
+## v3.54.13
+Nombre de cliente reducido a 9 px con pastilla más compacta, manteniendo el título del proyecto.
