@@ -148,3 +148,16 @@
  .ws-attachment{display:block;text-align:left;max-width:100%;margin:10px 0;padding:8px 12px;border-radius:12px;background:#ffffff60;border:1px solid #bdb7a4;color:#292922;font:inherit;font-size:12px;overflow-wrap:anywhere;cursor:pointer}
  .ws-attachment:disabled{opacity:.6;cursor:default}
 }
+
+.ws-mobile-statuses,.ws-mobile-empty{display:none}
+@media screen and (max-width:700px){
+ html body:not(.portalmode) .main .ws-full .ws-mobile-statuses{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 16px}
+ html body:not(.portalmode) .main .ws-full .ws-mobile-statuses button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:46px;padding:8px 4px;border:0;border-radius:16px;background:#e4dfce;color:#20201e;font-size:11px;font-weight:500;transform:none}
+ html body:not(.portalmode) .main .ws-full .ws-mobile-statuses button[aria-pressed="true"]{background:#181818;color:#f6f4eb}
+ .ws-mobile-statuses button span{font-variant-numeric:tabular-nums}
+ html body:not(.portalmode) .main .ws-full .ws-mobile-board .kanban{display:block!important;overflow:visible;padding:0}
+ html body:not(.portalmode) .main .ws-full .ws-mobile-board .kcol{display:none!important;width:100%;min-width:0}
+ html body:not(.portalmode) .main .ws-full .ws-mobile-board[data-mobile-status="pend"] .kcol[data-status="pend"],html body:not(.portalmode) .main .ws-full .ws-mobile-board[data-mobile-status="prog"] .kcol[data-status="prog"],html body:not(.portalmode) .main .ws-full .ws-mobile-board[data-mobile-status="rev"] .kcol[data-status="rev"]{display:block!important}
+ html body:not(.portalmode) .main .ws-full .ws-mobile-board .kcol h4{display:none!important}
+ .ws-mobile-empty{display:block;padding:20px 8px;font-size:13px;color:#57564e}
+}

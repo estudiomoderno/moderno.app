@@ -90,3 +90,7 @@ Corrección solicitada: una sola cabecera por estado con su total completo. Tarj
 
 ## v3.54.4
 Se elimina la referencia de fecha. Abrir tarea adopta botón negro redondeado. Participantes con iniciales circulares; adjuntos debajo del título al desplegar, con apertura mediante el resolvedor privado existente y sin alterar archivos.
+
+
+## v3.54.5 — Estados en móvil
+Board móvil (hasta 700 px): botones Pendientes, En progreso y En revisión con recuentos; muestra solo el estado seleccionado, conserva la selección por identidad durante la sesión y ofrece estado vacío. Escritorio conserva las tres columnas. No cambia datos, fechas ni permisos.
