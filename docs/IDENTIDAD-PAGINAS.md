@@ -31,3 +31,6 @@ Por indicación recibida de Cerebro, el bloque único del estudio pasa debajo de
 
 ## v3.56.5
 Aclaración del usuario: selector anclado al fondo del lateral, fuera de la zona desplazable, sin líneas discontinuas propias. Se conserva el separador junto a la flecha superior. El desplegable mantiene su ajuste al espacio de pantalla.
+
+## v3.56.6
+En lateral contraído se sustituye el nombre del estudio por el settings.svg aportado por el usuario. Se conserva nombre en lateral abierto y cajón móvil, y la misma acción de apertura del desplegable.
