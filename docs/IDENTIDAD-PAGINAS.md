@@ -28,3 +28,6 @@ Selector sin icono del estudio, altura compacta de 34 px y separador discontinuo
 
 ## v3.56.4 — ubicación del estudio
 Por indicación recibida de Cerebro, el bloque único del estudio pasa debajo de Herramientas, dentro del área desplazable. La flecha de contraer y el separador superior permanecen junto al logotipo. El desplegable se posiciona dentro de la ventana, abre hacia arriba si falta altura y permite desplazamiento interno. Verificado visualmente con una maqueta local del marcado y estilos reales en escritorio, contraído y móvil de 390 px. No se cambian acciones, permisos ni protección de cambios pendientes. 325 pruebas automáticas correctas.
+
+## v3.56.5
+Aclaración del usuario: selector anclado al fondo del lateral, fuera de la zona desplazable, sin líneas discontinuas propias. Se conserva el separador junto a la flecha superior. El desplegable mantiene su ajuste al espacio de pantalla.
