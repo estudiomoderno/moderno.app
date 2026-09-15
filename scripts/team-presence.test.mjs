@@ -11,3 +11,5 @@ test('cursor rejects other page, invalid coordinates and unbounded DOM paths',()
  for(const bad of [{room:'other'},{x:Infinity},{y:-1},{path:[-1]},{path:new Array(21).fill(0)},{path:['__proto__']},{path:[]},{x:'0.2'}])assert.equal(presence.validPointer({...p,...bad},'room'),false);
 });
 test('avatars use two initials',()=>assert.equal(presence.initials('  Ana María López '),'AM'));
+
+test('presence photos reject active content and oversized payloads',()=>{assert.equal(presence.avatar('javascript:alert(1)'),'');assert.equal(presence.avatar('data:image/svg+xml;base64,AAAA'),'');assert.equal(presence.avatar('https://example.com/'+'a'.repeat(300000)),'');assert.equal(presence.avatar('https://example.com/photo.jpg'),'https://example.com/photo.jpg');});

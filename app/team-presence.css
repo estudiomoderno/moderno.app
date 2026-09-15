@@ -1,4 +1,4 @@
-.team-presence{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:12px;height:49px;padding:8px 0;background:#f6f4eb;color:var(--ink,#181818);border-bottom:1px dashed #a8a391;box-sizing:border-box;font-size:12px}
+.team-presence{position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:flex-end;gap:12px;height:49px;padding:8px 0;background:#f6f4eb;color:var(--ink,#181818);border-bottom:0;box-sizing:border-box;font-size:12px}
 body.dark .team-presence{background:var(--ui-canvas,#242420)}
 .team-presence-people{display:flex;gap:6px;overflow:auto;min-width:0}
 .team-presence-avatar{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:var(--person-color);color:#fff;font-weight:700;font-size:11px;position:relative}
@@ -10,3 +10,6 @@ body.dark .team-presence{background:var(--ui-canvas,#242420)}
 @media(max-width:700px){html body.has-team-presence:not(.portalmode) .main{padding-top:58px!important}.team-presence{top:0;gap:7px;font-size:10px}.has-team-presence .projects-header{top:49px!important}.team-presence-label{max-width:150px;flex-shrink:1}.team-presence-avatar{width:26px;height:26px;flex-basis:26px}.team-cursors{display:none}}
 @media(prefers-reduced-motion:reduce){.team-cursor{transition:none}}
 @media print{.team-presence,.team-cursors{display:none!important}}
+
+.team-presence-avatar img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover}
+@media(max-width:700px){.team-presence{display:none!important}.has-team-presence .projects-header{top:0!important}}

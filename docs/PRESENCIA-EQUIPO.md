@@ -19,3 +19,6 @@ El ensayo reproducible `scripts/presence-browser-test.mjs` usa exclusivamente es
 Las políticas se instalan antes que la interfaz. Para revertir la interfaz se publica una nueva revisión del código anterior; no se restauran bases de datos ni se borran documentos. Los avatares son identidad declarada por cada cliente del canal, no una prueba de autoría de cambios ni de permisos administrativos. Los permisos siempre se verifican en el servidor.
 
 Revisión v3.55.1: el identificador de la pantalla excluye saludos personales y el reloj; dos compañeros con nombres distintos pueden coincidir en Proyectos. Se incluye el modo de vista para separar Board, Lista y cronología.
+
+## v3.56.1
+La barra se alinea a la derecha, sin separador inferior, y se oculta hasta 700 px (móvil). En tablet y escritorio muestra fotos circulares; conserva iniciales como alternativa si no hay foto o no carga. El nombre permanece en la ayuda accesible, sin texto junto al círculo. La foto de perfil se comparte por el mismo canal privado del equipo, con validación del formato y tamaño; no cambia los permisos ni guarda registros nuevos.

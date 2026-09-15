@@ -2,6 +2,7 @@
 (function(root){
  'use strict';
  const initials=name=>String(name||'?').trim().split(/\s+/).map(s=>s[0]).slice(0,2).join('').toUpperCase();
+ const avatar=value=>typeof value==='string'&&value.length<=300000&&(/^https:\/\//i.test(value)||/^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(value))?value:'';
  const color=id=>['#647d6b','#926d5e','#7c729b','#647d91','#977f43'][Array.from(String(id)).reduce((n,c)=>n+c.charCodeAt(0),0)%5];
  function contextText(view){
   if(!view)return '';
@@ -15,7 +16,7 @@
   for(const entries of Object.values(state||{}))for(const m of entries||[]){
    if(!m||typeof m.user!=='string'||typeof m.name!=='string'||typeof m.session!=='string'||m.user===own)continue;
    if(m.user.length>64||m.session.length>64)continue;
-   result.set(m.session,{user:m.user,session:m.session,name:m.name.slice(0,60)});
+   result.set(m.session,{user:m.user,session:m.session,name:m.name.slice(0,60),avatar:avatar(m.avatar)});
   }
   return result;
  }
@@ -32,14 +33,14 @@
    const unique=new Map([...members.values()].map(m=>[m.user,m]));
    const people=el('div','team-presence-people');
    for(const m of unique.values()){
-    const badge=el('span','team-presence-avatar',initials(m.name));badge.title=m.name;badge.setAttribute('aria-label',m.name+' · conectado');badge.style.setProperty('--person-color',color(m.user));people.append(badge);
+    const badge=el('span','team-presence-avatar',initials(m.name));badge.title=m.name;badge.setAttribute('aria-label',m.name+' · conectado');badge.style.setProperty('--person-color',color(m.user));if(m.avatar){const photo=el('img','');photo.alt='';photo.referrerPolicy='no-referrer';photo.src=m.avatar;photo.onerror=()=>photo.remove();badge.append(photo);}people.append(badge);
    }
    bar.append(people);
    if(!unique.size)bar.append(el('span','team-presence-status','Solo tú por ahora'));
   }
   function clearCursors(){for(const c of cursors.values())c.node.remove();cursors.clear();}
   function stop(){generation++;ready=false;room='';members.clear();clearCursors();bar?.remove();bar=null;layer?.remove();layer=null;doc.body.classList.remove('has-team-presence');if(channel){const old=channel;channel=null;client.removeChannel(old).catch(()=>{});}study=null;user=null;}
-  function track(){if(!doc.hidden&&ready&&channel)channel.track({user,session,name:String(identity().name||'Compañero').slice(0,60)}).catch(()=>{});}
+  function track(){if(!doc.hidden&&ready&&channel)channel.track({user,session,name:String(identity().name||'Compañero').slice(0,60),avatar:avatar(identity().avatar)}).catch(()=>{});}
   async function refresh(){
    if(!allowed()||!identity().study){stop();return;}
    const next=identity();
@@ -91,6 +92,6 @@
   doc.addEventListener('scroll',clearCursors,true);root.addEventListener('pagehide',stop);root.addEventListener('pageshow',refresh);root.addEventListener('resize',refresh);
   return {refresh,stop,destroy(){stop();root.clearInterval(timer);doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerleave',hide);doc.removeEventListener('visibilitychange',visibility);doc.removeEventListener('scroll',clearCursors,true);root.removeEventListener('pagehide',stop);root.removeEventListener('pageshow',refresh);root.removeEventListener('resize',refresh);}};
  }
- root.ModernoTeamPresence={create,peers,validPointer,initials,contextText};
+ root.ModernoTeamPresence={create,peers,validPointer,initials,contextText,avatar};
  if(typeof module!=='undefined')module.exports=root.ModernoTeamPresence;
 })(typeof window!=='undefined'?window:globalThis);
