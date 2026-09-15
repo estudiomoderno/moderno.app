@@ -46,3 +46,6 @@ Instalación validada en Supabase clon szbswxpkhidywaosdfcg: pruebas transaccion
 Producción cgqtylvaapwbuwqvpjtb: instalación aditiva correcta; 18 bloques conservados con huella idéntica antes/después y tablas nuevas vacías. Validación local: 331 tests y suite PostgreSQL scripts/library-brands-sql.mjs, incluyendo aislamiento, denegación de escritura directa, borradores/retirados invisibles, derechos de copia, idempotencia y snapshots intactos. SQL en sql/biblioteca-marcas.sql; rollback no destructivo en sql/biblioteca-marcas.rollback.sql. No hubo transformación de datos ni fue necesario restaurar una copia.
 
 Pendiente fuera de este alcance: contratos y contenido real de marcas, proceso editorial de publicación, portal de fabricantes y actualización voluntaria entre revisiones. Ningún maestro se importa o publica automáticamente.
+
+## v3.57.2 — pestaña siempre visible
+Corrección explícita del usuario: ambas pestañas Mi estudio y Marcas quedan siempre visibles. Marcas muestra Próximamente mientras no hay contenido autorizado disponible. Esto sustituye la decisión anterior de ocultarla; no cambia permisos ni publica productos privados.

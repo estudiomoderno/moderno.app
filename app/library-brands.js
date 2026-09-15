@@ -10,14 +10,15 @@ const ModernoBrands=(()=>{
   sb.rpc('biblioteca_marcas_leer',{p_estudio:study}).then(({data,error})=>{
    if(owner!==next||key()!==next)return;
    const hadRows=rows.length;rows=!error&&Array.isArray(data)?data.filter(ModernoLibraryOrigin.published):[];
-   if(!rows.length)selected=false;
+
    if(state.view==='biblioteca'&&(rows.length||hadRows))render();
   }).catch(()=>{}).finally(()=>{if(owner===next)pending=false;});
  }
- function tabs(){refresh();return rows.length?`<div class="pill-tabs" style="margin:14px 0"><button class="${selected?'':'on'}" onclick="ModernoBrands.choose(false)">Mi estudio</button><button class="${selected?'on':''}" onclick="ModernoBrands.choose(true)">Marcas</button></div>`:'<h2 style="font-size:20px;margin:14px 0 6px">Mi estudio</h2>';}
- function choose(value){selected=!!value&&rows.length>0;render();}
+ function tabs(){refresh();return `<div class="pill-tabs" style="margin:14px 0"><button class="${selected?'':'on'}" onclick="ModernoBrands.choose(false)">Mi estudio</button><button class="${selected?'on':''}" onclick="ModernoBrands.choose(true)">Marcas</button></div>`;}
+ function choose(value){selected=!!value;render();}
  function view(){
-  refresh();if(!selected||!rows.length)return null;
+  refresh();if(!selected)return null;
+  if(!rows.length)return `<h1 class="big">Tu biblioteca de productos</h1>${tabs()}<section class="widget" style="padding:40px 24px;text-align:center"><h2>Próximamente</h2><p>Catálogos de marcas para tus proyectos.</p></section>`;
   const visible=rows.filter(r=>(r.product.name+' '+r.brandName+' '+(r.product.sku||'')).toLowerCase().includes(query.toLowerCase()));
   return `<h1 class="big">Tu biblioteca de productos</h1>${tabs()}<input id="brand-library-search" type="search" placeholder="Buscar producto o marca…" value="${esc(query)}" oninput="ModernoBrands.search(this)" style="width:100%;margin-bottom:16px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">${visible.map(r=>`<article class="widget"><small>${esc(r.brandName)}</small><h3>${esc(r.product.name)}</h3><p>${esc(r.product.sku||'')}</p>${r.rights.saveToStudy?`<button class="btn btn-dark" onclick="ModernoBrands.open(${rows.indexOf(r)})">Guardar en Mi estudio</button>`:''}</article>`).join('')}</div>${visible.length?'':'<p>No hay productos con esa búsqueda.</p>'}`;
  }
