@@ -17,3 +17,6 @@ Filas alineadas: estado y proyecto en columna; botones de editar, duplicar y eli
 
 ## v3.57.8
 Corrección solicitada: Convertido en Factura sustituye al botón Convertir en factura en la cuarta posición de Acciones, con igual ancho. Estado mantiene su selector.
+
+## v3.57.9
+Proyecto asociado debajo de Cliente, con speakerphone.svg aportado por Javier. Botón independiente del enlace de cliente; conserva navegación al proyecto.
