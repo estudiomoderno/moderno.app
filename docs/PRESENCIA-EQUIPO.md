@@ -22,3 +22,6 @@ Revisión v3.55.1: el identificador de la pantalla excluye saludos personales y 
 
 ## v3.56.1
 La barra se alinea a la derecha, sin separador inferior, y se oculta hasta 700 px (móvil). En tablet y escritorio muestra fotos circulares; conserva iniciales como alternativa si no hay foto o no carga. El nombre permanece en la ayuda accesible, sin texto junto al círculo. La foto de perfil se comparte por el mismo canal privado del equipo, con validación del formato y tamaño; no cambia los permisos ni guarda registros nuevos.
+
+## v3.56.2
+La lista incluye primero al usuario actual con foto o iniciales, también cuando está solo. Se elimina el mensaje Solo tú por ahora. Sus otras sesiones siguen excluidas para no duplicar su círculo ni mostrar su propio cursor.

@@ -30,13 +30,14 @@
    if(!bar){bar=el('div','team-presence');bar.setAttribute('role','region');bar.setAttribute('aria-label','Equipo conectado');main.prepend(bar);}
    bar.replaceChildren(el('span','team-presence-label','Conectado ahora de tu equipo:'));
    if(!ready){bar.append(el('span','team-presence-status',status||'Conectando…'));return;}
-   const unique=new Map([...members.values()].map(m=>[m.user,m]));
+   const me=identity();
+   const unique=new Map([[user,{user,name:String(me.name||'Tú').slice(0,60),avatar:avatar(me.avatar)}],...[...members.values()].map(m=>[m.user,m])]);
    const people=el('div','team-presence-people');
    for(const m of unique.values()){
     const badge=el('span','team-presence-avatar',initials(m.name));badge.title=m.name;badge.setAttribute('aria-label',m.name+' · conectado');badge.style.setProperty('--person-color',color(m.user));if(m.avatar){const photo=el('img','');photo.alt='';photo.referrerPolicy='no-referrer';photo.src=m.avatar;photo.onerror=()=>photo.remove();badge.append(photo);}people.append(badge);
    }
    bar.append(people);
-   if(!unique.size)bar.append(el('span','team-presence-status','Solo tú por ahora'));
+
   }
   function clearCursors(){for(const c of cursors.values())c.node.remove();cursors.clear();}
   function stop(){generation++;ready=false;room='';members.clear();clearCursors();bar?.remove();bar=null;layer?.remove();layer=null;doc.body.classList.remove('has-team-presence');if(channel){const old=channel;channel=null;client.removeChannel(old).catch(()=>{});}study=null;user=null;}
