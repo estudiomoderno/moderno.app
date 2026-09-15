@@ -1171,6 +1171,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=333"></script>
 <script src="/specifications.js?v=340"></script>
+<script src="/library-origin.js?v=3570"></script>
 <script src="/project-quotes.js?v=343"></script>
 <script src="/spec-audit.js?v=340"></script>
 <script src="/spec-master.js?v=341"></script>
@@ -5305,7 +5306,8 @@ function vLibrary(){
   state.library.forEach(x=>{ const c=x.cat||"Otros"; (byCat[c]=byCat[c]||[]).push(x); });
   return `
   <h1 class="big">Tu <span class="hl">biblioteca</span> de productos</h1>
-  <p style="color:var(--ink-soft);margin:6px 0 18px;font-size:13.5px;line-height:1.5">Los productos que usas una y otra vez, listos para añadir a cualquier lista de compra sin volver a buscarlos.</p>
+  <h2 style="font-size:20px;margin:14px 0 6px">Mi estudio</h2>
+  <p style="color:var(--ink-soft);margin:6px 0 18px;font-size:13.5px;line-height:1.5">Productos privados de tu estudio, compartidos con tu equipo según sus permisos. Añádelos a tus listas sin volver a buscarlos.</p>
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">
     <input id="libQ" placeholder="⌕ Buscar por nombre, proveedor o SKU…" value="${state.libQ||""}" oninput="state.libQ=this.value;render();const e=document.getElementById('libQ');e.focus();e.setSelectionRange(e.value.length,e.value.length)" style="flex:1;border:none;background:var(--card);border-radius:999px;padding:10px 18px;outline:none">
     <button class="btn btn-dark" onclick="libEdit(-1)">${ico("mas")} Añadir producto</button>
@@ -11448,7 +11450,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.56.6";
+const MODERNO_VER="v3.57.0";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
