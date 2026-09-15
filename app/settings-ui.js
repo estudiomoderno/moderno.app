@@ -138,13 +138,32 @@ window.SettingsUI=(()=>{
       if(owner!==expectedOwner||draft!==expectedDraft)return;draft[key]=value;message='Imagen preparada. Pulsa Guardar cambios.';render();
     }catch(e){status(e.userMessage||'No se ha podido abrir esa imagen. Prueba con otro archivo.',true);}
   }
+  function placeStudyMenu(){
+    const d=document.getElementById('settings-switch');
+    if(!d?.open)return;
+    const popup=d.querySelector('.settings-popup'),anchor=d.querySelector('summary');
+    if(!popup||!anchor)return;
+    const r=anchor.getBoundingClientRect(),gap=8,w=Math.min(240,innerWidth-24);
+    popup.style.width=w+'px';popup.style.maxWidth=w+'px';
+    popup.style.maxHeight=Math.max(80,innerHeight-24)+'px';
+    const h=popup.getBoundingClientRect().height;
+    const mini=document.body.classList.contains('navmini')&&innerWidth>810;
+    const x=mini?r.right+gap:r.left;
+    const y=mini?r.top:(r.bottom+gap+h<=innerHeight-12?r.bottom+gap:r.top-gap-h);
+    popup.style.left=Math.max(12,Math.min(x,innerWidth-w-12))+'px';
+    popup.style.top=Math.max(12,Math.min(y,innerHeight-h-12))+'px';
+  }
+  document.addEventListener('toggle',e=>{if(e.target.id==='settings-switch')placeStudyMenu();},true);
+  document.addEventListener('scroll',placeStudyMenu,true);
+  window.addEventListener('resize',placeStudyMenu);
+  document.addEventListener('transitionend',e=>{if(e.target.classList?.contains('sidebar'))placeStudyMenu();});
   function chrome(){
     document.body.classList.toggle('settings-mode',active());
     let switcher=document.getElementById('settings-switch');
     if(!switcher){switcher=document.createElement('details');switcher.id='settings-switch';switcher.className='settings-switch';(document.getElementById('sidebarStudy')||document.querySelector('.sidebar')).append(switcher);}
     const ws=visibleWsOrder(),name=state.account?.name||'Mi estudio',logo=state.account?.studioDetails?.logo;
     const html=`<summary aria-label="Menú del estudio"><span class="settings-initial">${logo?`<img ${fileImageAttrs(logo)} alt="">`:E(name.slice(0,2).toUpperCase())}</span><span class="settings-switch-name">${E(name)}</span>${icon('Flechas Menu.svg')}</summary><div class="settings-popup">${ws.length>1?'<button type="button" data-workspace="all">Todos los espacios</button>':''}${ws.map((k,i)=>`<button type="button" data-workspace="${i}" aria-pressed="${state.brandFilter===k}">${E(BRAND[k]?.name||'Espacio')}</button>`).join('')}<hr><button type="button" data-section="cuenta">${icon('Ajustes.svg')}Ajustes</button>${isAdmin()?`<button type="button" data-section="equipo">${icon('Invitar Usuario.svg')}Invitar al equipo</button>`:''}<button type="button" data-settings-action="notifications">${icon('Notificaciones.svg')}Notificaciones</button><button type="button" data-settings-action="logout">${icon('Cerrar Sesion.svg')}Cerrar sesión</button></div>`;
-    if(switcher.dataset.html!==html){switcher.innerHTML=html;switcher.dataset.html=html;}
+    if(switcher.dataset.html!==html){switcher.innerHTML=html;switcher.dataset.html=html;placeStudyMenu();}
     let nav=document.getElementById('settings-nav');if(!nav){nav=document.createElement('nav');nav.id='settings-nav';nav.className='settings-nav';nav.setAttribute('aria-label','Ajustes');(document.querySelector('.sb-scroll')||document.querySelector('.sidebar')).prepend(nav);}
     nav.innerHTML=`<button class="settings-back" type="button" data-settings-action="back" aria-label="Volver a la aplicación">${icon('arrow-back-up.svg')}<span class="settings-nav-label">Ajustes</span></button>`+sections.filter(s=>allowed(s[0])).map(([k,t,i])=>`<button type="button" data-section="${k}" title="${t}" ${k===section?'aria-current="page"':''}>${icon(i)}<span class="settings-nav-label">${t}</span></button>`).join('');
   }

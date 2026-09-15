@@ -272,3 +272,5 @@
  body.navmini .sidebar-study :is(.settings-switch-name,.study-name){display:block;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  body.navmini .sidebar-study :is(.settings-switch,.study-dropdown) summary{padding:7px 3px}
 }
+
+@media screen{.sidebar-study-row{border-top:1px dashed #66665c;margin-bottom:12px}.sb-scroll>.sidebar-study{margin-top:12px}.sidebar-study .settings-switch .settings-popup,body.navmini .sidebar-study .settings-switch .settings-popup{position:fixed;box-sizing:border-box;min-width:0;overflow-y:auto;overscroll-behavior:contain}}

@@ -25,3 +25,6 @@ Para futuras páginas, reutilizar estas variables y componentes; evitar colores 
 
 ## v3.56.3 — selector del estudio
 Selector sin icono del estudio, altura compacta de 34 px y separador discontinuo inferior antes de Inicio. Se conserva el separador superior y la flecha de contraer. Con el menú contraído se muestra el nombre abreviado visualmente por espacio, conservando el texto completo en el documento.
+
+## v3.56.4 — ubicación del estudio
+Por indicación recibida de Cerebro, el bloque único del estudio pasa debajo de Herramientas, dentro del área desplazable. La flecha de contraer y el separador superior permanecen junto al logotipo. El desplegable se posiciona dentro de la ventana, abre hacia arriba si falta altura y permite desplazamiento interno. Verificado visualmente con una maqueta local del marcado y estilos reales en escritorio, contraído y móvil de 390 px. No se cambian acciones, permisos ni protección de cambios pendientes. 325 pruebas automáticas correctas.

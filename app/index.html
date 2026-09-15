@@ -911,7 +911,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
-<link rel="stylesheet" href="/brand/tasks-identity.css?v=3563">
+<link rel="stylesheet" href="/brand/tasks-identity.css?v=3564">
 </head>
 <body>
 <div class="app">
@@ -1074,7 +1074,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
       
     </div>
 
-    <div class="sidebar-study-row"><button class="collbtn sb-toggle" title="Contraer el menú" onclick="const mini=document.body.classList.toggle('navmini');this.title=mini?'Expandir el menú':'Contraer el menú';this.setAttribute('aria-expanded',String(!mini))" aria-expanded="true"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sb-arrow-collapse icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-left"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /><path d="M5 12l4 4" /><path d="M5 12l4 -4" /></svg><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sb-arrow-expand icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /><path d="M15 16l4 -4" /><path d="M15 8l4 4" /></svg></button><div id="sidebarStudy" class="sidebar-study"></div></div>
+    <div class="sidebar-study-row"><button class="collbtn sb-toggle" title="Contraer el menú" onclick="const mini=document.body.classList.toggle('navmini');this.title=mini?'Expandir el menú':'Contraer el menú';this.setAttribute('aria-expanded',String(!mini))" aria-expanded="true"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sb-arrow-collapse icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-left"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /><path d="M5 12l4 4" /><path d="M5 12l4 -4" /></svg><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sb-arrow-expand icon icon-tabler icons-tabler-outline icon-tabler-arrow-narrow-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M5 12l14 0" /><path d="M15 16l4 -4" /><path d="M15 8l4 4" /></svg></button></div>
     <div class="sb-scroll">
     <div id="sbMobile">
       <span class="wsLabel" style="font-size:10.5px;color:var(--ink-faint);font-weight:700;letter-spacing:.04em;text-transform:uppercase">Espacio de trabajo</span>
@@ -1114,6 +1114,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
         <button class="nav-item" data-view="utilidades"><span class="ico" style="display:inline-flex"><svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="3"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="8" y2="11.01"/><line x1="12" y1="11" x2="12" y2="11.01"/><line x1="16" y1="11" x2="16" y2="11.01"/><line x1="8" y1="15" x2="8" y2="15.01"/><line x1="12" y1="15" x2="12" y2="15.01"/><line x1="16" y1="15" x2="16" y2="18"/></svg></span> Utilidades</button>
       </div>
     </div>
+    <div id="sidebarStudy" class="sidebar-study"></div>
     <div style="margin-top:auto">
       <div id="mobileTheme" style="display:flex;align-items:center;gap:10px;margin-top:2px">
         <span style="font-size:12px;font-weight:700">Modo oscuro</span>
@@ -11446,7 +11447,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.56.3";
+const MODERNO_VER="v3.56.4";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13257,6 +13258,6 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/team-presence.js?v=3562"></script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>
-<script src="/settings-ui.js?v=3540-353"></script>
+<script src="/settings-ui.js?v=3564"></script>
 </body>
 </html>
