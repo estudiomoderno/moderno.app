@@ -10722,7 +10722,15 @@ function saveDoc(){
 }
 const QST = {pend:["Pendiente","var(--gold-soft)"], acc:["Aceptado","var(--green)"], rej:["Rechazado","var(--red)"]};
 function quoteInvoice(q){
-  return (state.invoices||[]).find(f=>f.brand===q.brand && (f.sourceQuoteRef===q.ref || (!f.sourceQuoteRef && String(f.legend||"").trim()==="Según presupuesto "+q.ref)));
+  if(!q.ref)return;
+  const normalize=v=>String(v||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+  const prefix=normalize("Según presupuesto "+q.ref);
+  return (state.invoices||[]).find(f=>{
+    if(f.brand!==q.brand)return false;
+    if(f.sourceQuoteRef)return f.sourceQuoteRef===q.ref;
+    const legend=normalize(f.legend);
+    return legend.startsWith(prefix) && (!legend.slice(prefix.length) || /^[\s.,;:()]/.test(legend.slice(prefix.length)));
+  });
 }
 function renderQuoteTransition(){
   render();
@@ -11454,7 +11462,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.57.5";
+const MODERNO_VER="v3.57.6";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

@@ -8,3 +8,6 @@
 
 ## v3.57.5
 Fondo de Presupuestos con pequeños gráficos y monedas en trazo tenue (7 %), sustituyendo la cuadrícula. Variante clara y oscura; limitado a pantalla, sin afectar PDF ni datos.
+
+## v3.57.6
+La leyenda histórica puede tener notas después de la referencia. Se reconoce el prefijo Según presupuesto REF con límite de palabra/puntuación, sin confundir referencias más largas ni otras marcas. Comprobado mediante lectura de los datos existentes; sin modificaciones a los documentos.
