@@ -49,3 +49,6 @@ Pendiente fuera de este alcance: contratos y contenido real de marcas, proceso e
 
 ## v3.57.2 — pestaña siempre visible
 Corrección explícita del usuario: ambas pestañas Mi estudio y Marcas quedan siempre visibles. Marcas muestra Próximamente mientras no hay contenido autorizado disponible. Esto sustituye la decisión anterior de ocultarla; no cambia permisos ni publica productos privados.
+
+## v3.57.3
+Retirada únicamente la fila independiente Pegar URL/Importar de Mi estudio. Buscador y Añadir producto conservados. El formulario Añadir mantiene URL de tienda e Importar producto (Product Clipper); Listas no cambia.
