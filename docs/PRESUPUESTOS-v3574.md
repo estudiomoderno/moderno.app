@@ -11,3 +11,6 @@ Fondo de Presupuestos con pequeños gráficos y monedas en trazo tenue (7 %), su
 
 ## v3.57.6
 La leyenda histórica puede tener notas después de la referencia. Se reconoce el prefijo Según presupuesto REF con límite de palabra/puntuación, sin confundir referencias más largas ni otras marcas. Comprobado mediante lectura de los datos existentes; sin modificaciones a los documentos.
+
+## v3.57.7
+Filas alineadas: estado y proyecto en columna; botones de editar, duplicar y eliminar en posiciones constantes, reservando el espacio de conversión en escritorio. En móvil no se reserva un hueco vacío.
