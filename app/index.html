@@ -10696,7 +10696,7 @@ function saveDoc(){
   if(!d.editRef)doc.paymentIban=ModernoSettingsCore.paymentIban(state.account,state.emitter,d);
   else {const old=arr.find(x=>x.ref===d.editRef);if(old&&Object.hasOwn(old,'paymentIban'))doc.paymentIban=old.paymentIban;}
   if(!isF) doc.status = d.editRef ? (arr.find(x=>x.ref===d.editRef)?.status||"pend") : "pend";
-  if(!isF && d.editRef) doc.projectId = arr.find(x=>x.ref===d.editRef)?.projectId;
+  if(isF) doc.sourceQuoteRef=d.sourceQuoteRef || arr.find(x=>x.ref===d.editRef)?.sourceQuoteRef || null;
   if(d.editRef){
     const i = arr.findIndex(x=>x.ref===d.editRef);
     arr[i]=doc;
@@ -10721,56 +10721,62 @@ function saveDoc(){
   state.draft=null; if(!isF) state.qView=null; else state.fView=null; render();
 }
 const QST = {pend:["Pendiente","var(--gold-soft)"], acc:["Aceptado","var(--green)"], rej:["Rechazado","var(--red)"]};
+function quoteInvoice(q){
+  return (state.invoices||[]).find(f=>f.brand===q.brand && (f.sourceQuoteRef===q.ref || (!f.sourceQuoteRef && String(f.legend||"").trim()==="Según presupuesto "+q.ref)));
+}
+function renderQuoteTransition(){
+  render();
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  document.querySelector('.quotes-results')?.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:240,easing:'ease-out'});
+}
 function vQuotesList(){
   const F = state.qFilter = state.qFilter || {from:"",to:"",client:"",status:""};
   const qs = byBrand(state.quotes);
   const shown = qs.filter(q=> (!F.from||(q.date||"")>=F.from) && (!F.to||(q.date||"")<=F.to) && (!F.client||q.client===F.client) && (!F.status||(q.status||"pend")===F.status));
   const sum = st => shown.filter(q=>(q.status||"pend")===st).reduce((s,q)=>s+q.total,0);
   const clientes = [...new Set(qs.map(q=>q.client))].sort();
-  const activo = F.from||F.to||F.client||F.status;
   return `
   <section class="quotes-page"><h1 class="big">Todos tus <span class="hl">presupuestos</span></h1>
   ${draftsBox("presupuesto")}
   <div class="flt" style="display:flex;align-items:flex-end;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-    <div><label>Desde</label><input id="qltFrom" type="date" value="${F.from}" onchange="state.qFilter.from=this.value;render()"></div>
-    <div><label>Hasta</label><input type="date" data-after="qltFrom" min="${F.from||""}" value="${F.to}" onchange="state.qFilter.to=this.value;render()"></div>
-    <div><label>Cliente</label><select onchange="state.qFilter.client=this.value;render()"><option value="">Todos</option>${clientes.map(c=>`<option value="${c}" ${F.client===c?"selected":""}>${c}</option>`).join("")}</select></div>
-    <div><label>Estado</label><div class="pill-tabs" style="margin:0;height:38px;box-sizing:border-box;align-items:center">
-      ${[["pend","Pendiente"],["acc","Aceptado"],["rej","Rechazado"]].map(([k,x])=>`<button class="${F.status===k?'on':''}" onclick="state.qFilter.status=state.qFilter.status==='${k}'?'':'${k}';render()">${x}</button>`).join("")}
+    <div><label>Desde</label><input id="qltFrom" type="date" value="${F.from}" onchange="state.qFilter.from=this.value;renderQuoteTransition()"></div>
+    <div><label>Hasta</label><input type="date" data-after="qltFrom" min="${F.from||""}" value="${F.to}" onchange="state.qFilter.to=this.value;renderQuoteTransition()"></div>
+    <div><label>Cliente</label><select onchange="state.qFilter.client=this.value;renderQuoteTransition()"><option value="">Todos</option>${clientes.map(c=>`<option value="${c}" ${F.client===c?"selected":""}>${c}</option>`).join("")}</select></div>
+    <div><label>Estado</label><div class="pill-tabs" style="margin:0;height:44px;box-sizing:border-box;align-items:center">
+      ${[["pend","Pendiente"],["acc","Aceptado"],["rej","Rechazado"]].map(([k,x])=>`<button class="${F.status===k?'on':''}" onclick="state.qFilter.status=state.qFilter.status==='${k}'?'':'${k}';renderQuoteTransition()">${x}</button>`).join("")}
     </div></div>
-    ${activo?`<button class="btn btn-ghost" onclick="state.qFilter={from:'',to:'',client:'',status:''};render()">✕ Limpiar filtros</button>`:""}
     <span style="flex:1"></span>
-    <button class="btn btn-dark" onclick="state.qView='nuevo';state.draft=null;render()">${ico("mas")} Nuevo presupuesto</button>
+    <button class="btn btn-dark" onclick="state.qView='nuevo';state.draft=null;renderQuoteTransition()">${ico("mas")} Nuevo presupuesto</button>
   </div>
   <div class="fin-cards" style="grid-template-columns:repeat(3,1fr)">
     <div class="fin-card" style="background:var(--gold-soft)"><span class="lab" style="background:var(--white)">Pendientes</span><div class="val">${fmt(sum("pend"))}</div></div>
     <div class="fin-card" style="background:#DDF0DC"><span class="lab" style="background:var(--white)">Aceptados</span><div class="val">${fmt(sum("acc"))}</div></div>
     <div class="fin-card" style="background:#F2B8AC"><span class="lab" style="background:var(--white)">Rechazados</span><div class="val">${fmt(sum("rej"))}</div></div>
   </div>
-  ${shown.length?`<table class="list quotes-table"><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Marca</th><th style="text-align:right">Total</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
-    ${shown.map(q=>{ const i=state.quotes.indexOf(q), st=q.status||"pend"; return `<tr>
+  <div class="quotes-results">${shown.length?`<table class="list quotes-table"><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Marca</th><th style="text-align:right">Total</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
+    ${shown.map(q=>{ const i=state.quotes.indexOf(q), st=q.status||"pend", invoiced=!!quoteInvoice(q); return `<tr class="${invoiced?'quote-invoiced':''}">
       <td data-label="Ref."><b>${q.ref}</b></td>
       <td data-label="Fecha">${(q.date||"").split("-").reverse().join("/")}</td>
       <td data-label="Cliente" style="cursor:pointer;text-decoration:underline" onclick="clientCard('${q.client}')">${q.client}</td>
       <td data-label="Marca"><span class="chip ${BRAND[q.brand]?.chip||''}">${BRAND[q.brand]?.name||'—'}</span></td>
       <td data-label="Total" style="text-align:right"><b>${fmt(q.total)}</b></td>
-      <td data-label="Estado"><select onchange="setQuoteStatus(${i},this.value)" title="Cambiar el estado del presupuesto" style="background:${QST[st][1]};border:none;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">
+      <td data-label="Estado">${invoiced?`<span class="quote-invoiced-badge"><img src="/brand/quote-invoiced.svg" alt="">Convertido en Factura</span>`:`<select onchange="setQuoteStatus(${i},this.value)" title="Cambiar el estado del presupuesto" style="background:${QST[st][1]};border:none;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer">
         <option value="pend" ${st==="pend"?"selected":""}>Pendiente</option><option value="acc" ${st==="acc"?"selected":""}>Aceptado</option><option value="rej" ${st==="rej"?"selected":""}>Rechazado</option>
-      </select>${q.projectId&&state.projects.find(x=>x.id===q.projectId)?` <span class="chip neutral" style="cursor:pointer" title="${state.projects.find(x=>x.id===q.projectId).name}" onclick="state.projTab='fin';go('proyecto',${q.projectId})">▣ ${state.projects.find(x=>x.id===q.projectId).num}</span>`:""}</td>
+      </select>`}${q.projectId&&state.projects.find(x=>x.id===q.projectId)?` <span class="chip neutral" style="cursor:pointer" title="${state.projects.find(x=>x.id===q.projectId).name}" onclick="state.projTab='fin';go('proyecto',${q.projectId})">▣ ${state.projects.find(x=>x.id===q.projectId).num}</span>`:""}</td>
       <td data-label="Acciones" style="text-align:right;white-space:nowrap">
         <button class="btn btn-ghost" title="Editar el presupuesto" onclick="loadDoc(${i},'presupuesto')">${ico("q_editar")}</button>
         <button class="btn btn-ghost" title="Duplicar: copia lista para otro cliente u obra" onclick="duplicateQuote(${i})">${ico("q_duplicar")}</button>
         <button class="btn btn-ghost" style="color:var(--red-ink)" title="Eliminar este presupuesto" onclick="delQuote(${i})">${ico("eliminar")}</button>
-        <button class="btn ${st==="acc"?"btn-gold":"btn-ghost"}" style="${st==="acc"?"":"opacity:.55"}" title="${st==="acc"?"Crear la factura de este presupuesto":"Solo los presupuestos aceptados se convierten en factura"}" onclick="${st==="acc"?`quoteToInvoice(${i})`:`toast('Marca el presupuesto como Aceptado para poder convertirlo en factura')`}">${ico("q_convertir")} Convertir en factura</button>
+        ${invoiced?'':`<button class="btn ${st==="acc"?"btn-gold":"btn-ghost"}" style="${st==="acc"?"":"opacity:.55"}" title="${st==="acc"?"Crear la factura de este presupuesto":"Solo los presupuestos aceptados se convierten en factura"}" onclick="${st==="acc"?`quoteToInvoice(${i})`:`toast('Marca el presupuesto como Aceptado para poder convertirlo en factura')`}">${ico("q_convertir")} Convertir en factura</button>`}
       </td></tr>`}).join("")}
-  </tbody></table>`:`<div class="empty">${qs.length?"Ningún presupuesto coincide con los filtros.":"Aún no hay presupuestos. Crea el primero con «+ Nuevo presupuesto»."}</div>`}</section>`;
+  </tbody></table>`:`<div class="empty">${qs.length?"Ningún presupuesto coincide con los filtros.":"Aún no hay presupuestos. Crea el primero con «+ Nuevo presupuesto»."}</div>`}</div></section>`;
 }
 function setQuoteStatus(i,val){
   const q = state.quotes[i], st = q.status||"pend";
   if(val===st){ return; }
   if(val==="acc" && !q.projectId){ render(); acceptQuote(i); return; }
   q.status = val;
-  render(); toast("Estado de "+q.ref+": "+QST[val][0]);
+  renderQuoteTransition(); toast("Estado de "+q.ref+": "+QST[val][0]);
 }
 function acceptQuote(i){
   const q = state.quotes[i];
@@ -10859,7 +10865,7 @@ function duplicateQuote(i){
 }
 function quoteToInvoice(i){
   const q = state.quotes[i];
-  state.draft = {kind:"factura", brand:q.brand, clientIdx:q.clientIdx, projectId:q.projectId||null, lines:q.lines.filter(lineOn).map(l=>({...l})), iva:{...q.iva}, irpf:{...q.irpf}, disc:{...(q.disc||{on:false,pct:10})}, legend:"Según presupuesto "+q.ref, validUntil:"", num:null, date:new Date().toISOString().slice(0,10), editRef:null};
+  state.draft = {kind:"factura", sourceQuoteRef:q.ref, brand:q.brand, clientIdx:q.clientIdx, projectId:q.projectId||null, lines:q.lines.filter(lineOn).map(l=>({...l})), iva:{...q.iva}, irpf:{...q.irpf}, disc:{...(q.disc||{on:false,pct:10})}, legend:"Según presupuesto "+q.ref, validUntil:"", num:null, date:new Date().toISOString().slice(0,10), editRef:null};
   toast("Presupuesto "+q.ref+" cargado como factura — revisa y guarda");
   go("facturas");
 }
@@ -11448,7 +11454,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.57.3";
+const MODERNO_VER="v3.57.4";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13255,7 +13261,7 @@ function loginGo(prov){
 try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/"); }catch(e){}
 </script>
 <link rel="stylesheet" href="/team-presence.css?v=3561">
-<link rel="stylesheet" href="/brand/app-identity.css?v=3560">
+<link rel="stylesheet" href="/brand/app-identity.css?v=3574">
 <script src="/team-presence.js?v=3562"></script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>

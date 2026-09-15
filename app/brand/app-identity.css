@@ -90,3 +90,15 @@
  }
  @media(prefers-reduced-motion:reduce){html body:not(.portalmode) :is(#view:not([data-page="workspace"]):not([data-page="proyectos"]),#modalBox) :is(.btn,.dl-btn,.catalog-card,.dl-card){transition:none}}
 }
+
+/* Presupuestos: filtros estables y factura guardada vinculada explícitamente. */
+@media screen {
+.quotes-page .flt>div {display:flex;flex-direction:column;gap:6px;}
+.quotes-page .flt>div>label {margin:0;line-height:18px;}
+.quotes-page .flt input,.quotes-page .flt select,.quotes-page .flt .pill-tabs {height:44px;min-height:44px;box-sizing:border-box;}
+.quotes-page .flt .pill-tabs button {white-space:nowrap;}
+.quotes-page .quote-invoiced {background:rgba(132,175,119,.12);}
+.quote-invoiced-badge {display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:20px;background:#deecd8;color:#24432b;font-size:12px;white-space:nowrap;}
+.quote-invoiced-badge img {width:20px;height:20px;}
+.quotes-results {min-width:0;}
+}
