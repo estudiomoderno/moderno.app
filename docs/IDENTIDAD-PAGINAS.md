@@ -22,3 +22,6 @@ Durante la revisión, dos registros incompletos del clon mostraron errores de le
 Usar el servidor local documentado del repositorio (`scripts/identity-clone-server.mjs`) para revisar contra el clon. No incluir páginas auxiliares locales de pruebas en la publicación. Ejecutar `node --test scripts/*.test.mjs` y `git diff --check` antes de subir. El flujo `deploy-app.yml` prueba el candidato y publica recursos antes del HTML al actualizar main.
 
 Para futuras páginas, reutilizar estas variables y componentes; evitar colores literales o reglas globales que alcancen documentos. Para revertir el aspecto, retirar el enlace a esta hoja; las correcciones de lectura pueden permanecer.
+
+## v3.56.3 — selector del estudio
+Selector sin icono del estudio, altura compacta de 34 px y separador discontinuo inferior antes de Inicio. Se conserva el separador superior y la flecha de contraer. Con el menú contraído se muestra el nombre abreviado visualmente por espacio, conservando el texto completo en el documento.

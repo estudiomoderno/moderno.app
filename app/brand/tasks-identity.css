@@ -263,3 +263,12 @@
 @media screen {.ws-full{overflow-x:clip}.ws-mobile-board .kanban{overflow-x:clip}}
 
 @media screen {.projects-identity{overflow:visible}.projects-identity.projects-switching{overflow-x:clip}.projects-view-content{padding:18px;margin:-18px}}
+
+/* Compact study selector, without a separate mark. */
+@media screen{
+ .sidebar-study{border-bottom:1px dashed #66665c;padding:12px 0;margin-bottom:12px}
+ .sidebar-study :is(.settings-initial,.study-avatar){display:none!important}
+ .sidebar-study :is(.settings-switch,.study-dropdown) summary{min-height:34px;box-sizing:border-box;padding:7px 10px;gap:6px;border-radius:11px}
+ body.navmini .sidebar-study :is(.settings-switch-name,.study-name){display:block;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ body.navmini .sidebar-study :is(.settings-switch,.study-dropdown) summary{padding:7px 3px}
+}
