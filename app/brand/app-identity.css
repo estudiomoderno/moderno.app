@@ -120,6 +120,8 @@ html body:not(.portalmode) .main .quotes-table .quote-actions>.btn {width:100%;p
 @media screen and (max-width:700px) {
 .quotes-table .quote-status-stack {min-width:0;}
 .quotes-table .quote-actions {width:100%;grid-template-columns:44px 44px 44px;justify-content:start;}
-.quotes-table .quote-actions>.btn:nth-child(4) {grid-column:1/-1;}
-.quotes-table .quote-convert-placeholder {display:none;}
+.quotes-table .quote-actions>:nth-child(4) {grid-column:1/-1;}
+
 }
+
+@media screen { .quotes-table .quote-actions>.quote-invoiced-badge {width:100%;min-height:42px;justify-content:center;box-sizing:border-box;padding:8px;font-size:11px;gap:6px;} }

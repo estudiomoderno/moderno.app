@@ -14,3 +14,6 @@ La leyenda histórica puede tener notas después de la referencia. Se reconoce e
 
 ## v3.57.7
 Filas alineadas: estado y proyecto en columna; botones de editar, duplicar y eliminar en posiciones constantes, reservando el espacio de conversión en escritorio. En móvil no se reserva un hueco vacío.
+
+## v3.57.8
+Corrección solicitada: Convertido en Factura sustituye al botón Convertir en factura en la cuarta posición de Acciones, con igual ancho. Estado mantiene su selector.
