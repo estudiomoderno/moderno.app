@@ -127,3 +127,12 @@ html body:not(.portalmode) .main .quotes-table .quote-actions>.btn {width:100%;p
 @media screen { .quotes-table .quote-actions>.quote-invoiced-badge {width:100%;min-height:42px;justify-content:center;box-sizing:border-box;padding:8px;font-size:11px;gap:6px;} }
 
 @media screen { .quote-client-stack {display:flex;flex-direction:column;align-items:flex-start;gap:7px;} .quote-project-link {display:inline-flex;align-items:center;gap:5px;border:0;cursor:pointer;font:inherit;font-size:11px;} .quote-project-link img {width:14px;height:14px;} body.dark .quote-project-link img {filter:invert(1);} }
+/* Soft lower edge for fixed page headers; never intercept content clicks. */
+@media screen {
+ body:not(.portalmode) .main :is(.projects-header,.team-presence,.acc-sticky,#paper .head){--header-fade-color:var(--ui-canvas,#f6f4eb);overflow:visible}
+ body:not(.portalmode) .main .acc-sticky{--header-fade-color:var(--card)}
+ body:not(.portalmode) .main #paper .head{--header-fade-color:var(--white)}
+ body:not(.portalmode) .main :is(.projects-header,.team-presence,.acc-sticky,#paper .head)::after{content:"";position:absolute;left:0;right:0;top:100%;height:28px;pointer-events:none;background:linear-gradient(to bottom,var(--header-fade-color) 0%,color-mix(in srgb,var(--header-fade-color) 70%,transparent) 35%,transparent 100%)}
+ body:not(.portalmode) .main:has(.projects-header) .team-presence::after{display:none}
+ @media(max-width:700px){body:not(.portalmode) .main :is(.projects-header,.team-presence,.acc-sticky,#paper .head)::after{height:20px}}
+}
