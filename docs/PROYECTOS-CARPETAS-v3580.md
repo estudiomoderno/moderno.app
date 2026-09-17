@@ -37,3 +37,6 @@ El ancho del trazo se calcula hasta el borde izquierdo real del botón; el recor
 
 ## v3.58.8 — Menú comprimido y estudio
 Se ocultan los trazos en navmini. El desplegable del estudio aparece hacia arriba con fundido de 220 ms, respetando movimiento reducido. 338 tests correctos.
+
+## v3.58.9 — Títulos sin superposición
+Se excluye la barra de presencia del degradado inferior: tapaba Mis tareas al inicio. Se conserva el efecto en encabezados de contenido. 338 pruebas correctas.
