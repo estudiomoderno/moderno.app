@@ -28,3 +28,6 @@ Guiones finos 5/4 px sin halo ni puntos redondos, opacidad 18 % (10 % al previsu
 
 ## v3.58.5 — Encabezados con degradado
 Borde inferior difuminado compartido en encabezados fijos de proyectos, presencia, contabilidad y editor de documentos. Sigue el color de cada superficie y el modo oscuro; 28 px en escritorio y 20 px en móvil. No intercepta clics ni afecta impresión. Comprobación visual con desplazamiento y 338 tests correctos.
+
+## v3.58.6 — Apertura compacta
+Se elimina el margen adicional de apertura y se reduce el recorrido de los folios. Pulsar fuera cierra la carpeta; las acciones y el cambio a otra carpeta siguen funcionando. Verificación visual local, edición y cierre exterior, 338 tests correctos. Sin cambios de datos.
