@@ -40,10 +40,10 @@ body.dark .folio-sheet-0 {background:#69623e;}body.dark .folio-sheet-1 {backgrou
 @keyframes folioReveal {from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
 }
 @media (hover:hover) and (pointer:fine) {
-.project-folio>summary:hover .folio-sheet-0 {transform:translate(-8px,-17px) rotate(-13deg);}
-.project-folio>summary:hover .folio-sheet-1 {transform:translate(8px,-23px) rotate(12deg);}
-.project-folio>summary:hover .folio-sheet-2 {transform:translateY(-29px);}
-.project-folio>summary:hover .folio-flap {transform:rotateX(-18deg);}
+.project-folio:not([open])>summary:hover .folio-sheet-0 {transform:translate(-8px,-17px) rotate(-13deg);}
+.project-folio:not([open])>summary:hover .folio-sheet-1 {transform:translate(8px,-23px) rotate(12deg);}
+.project-folio:not([open])>summary:hover .folio-sheet-2 {transform:translateY(-29px);}
+.project-folio:not([open])>summary:hover .folio-flap {transform:rotateX(-18deg);}
 }
 @media screen and (max-width:600px) {.projects-identity .proj-grid {grid-template-columns:minmax(0,1fr)!important;gap:22px;}.folio-scene{max-width:300px;margin:20px auto 12px}.folio-controls{padding:10px 16px}.folio-caption{padding-left:16px}}
 @media (prefers-reduced-motion:reduce) {.project-folio * {transition:none!important;animation:none!important;}}
@@ -55,3 +55,29 @@ body.dark .folio-sheet-0 {background:#69623e;}body.dark .folio-sheet-1 {backgrou
 @media screen {.folio-scene {height:auto;min-height:190px;padding-top:50px;box-sizing:border-box;} .folio-flap {position:relative;inset:auto;min-height:140px;box-sizing:border-box;gap:10px;} .folio-name {font-family:Acorn,Georgia,serif;font-size:18px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;min-width:0;} .folio-flap>span {flex-shrink:0;} }
 
 @media screen {.folio-flap {color:var(--folio-ink,var(--ink));} .folio-plus {width:24px;height:24px;background:currentColor;mask:url("/brand/project-plus.svg") center/contain no-repeat;} }
+
+/* Silhouette and angles adapted from Rare UI Folder (rareui.com). */
+@media screen {
+.folio-scene {min-height:230px;padding-top:25px;perspective:800px;isolation:isolate;margin-top:28px;}
+.folio-back {inset:0 0 0;border-radius:22px;box-shadow:inset 0 0 6px 2px #ffffff55;}
+.folio-back::before {display:none;}
+.folio-sheet {width:51%;height:79%;left:24.5%;top:8%;border-radius:16px;background:#f1f1ed;box-shadow:inset 2px 3px 6px #fff,0 0 0 1px #deded8;transition:transform 280ms cubic-bezier(.2,.8,.25,1.12);}
+.folio-sheet-0 {transform:translate(24%,-5%) rotate(10deg);}
+.folio-sheet-1 {transform:translate(2%,-9%) rotate(2deg);}
+.folio-sheet-2 {transform:translate(-24%,-10%) rotate(-5deg);}
+.folio-sheet-lines {height:75%;margin:22px 13px;background:repeating-linear-gradient(transparent 0 10px,#d4d4cf 10px 14px);border-radius:5px;}
+.folio-flap {min-height:205px;padding:70px 19px 23px;border-radius:0;background:transparent;box-shadow:none;transform:rotateX(-15deg);transform-style:preserve-3d;isolation:isolate;transition:transform 280ms cubic-bezier(.2,.8,.25,1.12);}
+.folio-flap::before {content:'';position:absolute;inset:0;z-index:-1;background:color-mix(in srgb,var(--folio-front) 65%,transparent);backdrop-filter:blur(6px);mask:url('/brand/folio-rare-shape.svg') center/100% 100% no-repeat;box-shadow:inset 0 0 9px #ffffff70;}
+.folio-name {font-size:17px;text-shadow:0 1px 1px color-mix(in srgb,var(--folio-front) 80%,transparent);}
+.project-folio[open] .folio-scene {margin-top:135px;}
+.project-folio[open] .folio-flap {transform:rotateX(-55deg);}
+.project-folio[open] .folio-sheet-0 {transform:translate(42%,-74%) rotate(18deg);}
+.project-folio[open] .folio-sheet-1 {transform:translate(0,-84%) rotate(-3deg);}
+.project-folio[open] .folio-sheet-2 {transform:translate(-39%,-79%) rotate(-14deg);}
+}
+@media (hover:hover) and (pointer:fine) {
+.project-folio:not([open])>summary:hover .folio-flap {transform:rotateX(-45deg);}
+.project-folio:not([open])>summary:hover .folio-sheet-0 {transform:translate(24%,-14%) rotate(14deg);}
+.project-folio:not([open])>summary:hover .folio-sheet-1 {transform:translate(2%,-16%) rotate(-1deg);}
+.project-folio:not([open])>summary:hover .folio-sheet-2 {transform:translate(-24%,-20%) rotate(-9deg);}
+}
