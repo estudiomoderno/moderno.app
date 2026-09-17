@@ -22,3 +22,6 @@ Validación: 338 pruebas correctas, incluyendo saveCustomize + serialización/re
 - Adaptación de https://www.rareui.com/components/hooksidebar: trazo curvo discontinuo que sigue la selección y previsualiza foco/ratón. Negro con halo claro fino sobre el menú oscuro; iconos existentes intactos.
 - Implementación nativa sin dependencias React. Ambos efectos respetan movimiento reducido. Cierre de carpeta mide altura final cerrada para evitar saltos.
 - Verificación: 338 tests correctos; revisión visual local de carpetas y menú, una sola carpeta abierta y cierre con Escape. No se han realizado cambios en Supabase ni pruebas nuevas de persistencia real del clon.
+
+## v3.58.4 — Trazo del menú
+Guiones finos 5/4 px sin halo ni puntos redondos, opacidad 18 % (10 % al previsualizar). El origen se calcula en el centro del icono de la sección al cambiar el ancho. Revisión visual local y 338 tests correctos.
