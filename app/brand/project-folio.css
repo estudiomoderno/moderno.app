@@ -1,0 +1,53 @@
+/* Inspired by Rare UI folder interaction; native details, no runtime dependency. */
+@media screen {
+.projects-identity .proj-grid {align-items:start;gap:32px 24px;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));}
+.project-folio {min-width:0;position:relative;--folio-paper:#fffdf5;--folio-front:#e4dfce;--folio-back:#cac3ae;color:var(--ink);}
+.project-folio>summary {display:block;cursor:pointer;list-style:none;border-radius:22px;padding:8px;}
+.project-folio summary::-webkit-details-marker {display:none;}
+.project-folio summary::marker {content:'';}
+.project-folio summary:focus-visible,.project-folio button:focus-visible {outline:2px solid var(--ink);outline-offset:5px;}
+.folio-scene {position:relative;display:block;height:180px;perspective:800px;margin:20px 8px 12px;}
+.folio-back {position:absolute;inset:18px 0 0;border-radius:16px;background:var(--folio-back);}
+.folio-back::before {content:'';position:absolute;top:-13px;left:0;width:45%;height:32px;border-radius:14px 18px 0 0;background:inherit;}
+.folio-sheet {position:absolute;left:13%;top:14px;width:74%;height:135px;border-radius:12px;background:var(--folio-paper);box-shadow:0 0 0 1px #18181812,0 4px 10px #18181809;transform-origin:50% 100%;transition:transform 220ms ease;overflow:hidden;}
+.folio-sheet-0 {transform:rotate(-7deg);background:#e8dfb4;}
+.folio-sheet-1 {transform:rotate(6deg);background:#f4edd8;}
+.folio-sheet-2 {transform:translateY(6px);}
+.folio-sheet img {width:100%;height:100%;object-fit:cover;}
+.folio-sheet-lines {display:block;margin:22px 18px;height:60px;background:repeating-linear-gradient(transparent 0 14px,#18181812 14px 16px);}
+.folio-flap {position:absolute;inset:50px 0 0;display:flex;align-items:flex-end;justify-content:space-between;padding:18px 20px;border-radius:14px 22px 18px 18px;background:var(--folio-front);transform-origin:50% 100%;transition:transform 220ms ease;box-shadow:inset 0 1px 0 #ffffff66,0 8px 16px #18181808;}
+.folio-flap>span {font-family:Acorn,Georgia,serif;font-weight:600;font-size:20px;}
+.folio-flap svg {width:24px;height:24px;}
+.folio-caption {display:flex;flex-direction:column;gap:7px;padding:4px 8px;}
+.folio-caption strong {font-family:Acorn,Georgia,serif;font-size:19px;line-height:1.25;overflow-wrap:anywhere;}
+.folio-client {font-size:11px;color:var(--ink-soft);overflow-wrap:anywhere;}
+.folio-state {font-size:10px;border-radius:18px;background:#e8dfb4;color:#26251f;padding:4px 9px;align-self:flex-start;}
+.project-folio[open] .folio-flap {transform:rotateX(-28deg);}
+.project-folio[open] .folio-sheet-0 {transform:translate(-8px,-22px) rotate(-12deg);}
+.project-folio[open] .folio-sheet-1 {transform:translate(8px,-28px) rotate(11deg);}
+.project-folio[open] .folio-sheet-2 {transform:translateY(-38px);}
+.folio-controls {display:flex;flex-wrap:wrap;gap:7px;padding:12px 16px;align-items:center;animation:folioReveal 180ms ease-out;}
+html body .main .folio-controls>.btn {min-height:40px;padding:9px 12px;font-size:12px;}
+.folio-more {position:static;}
+.folio-more>summary {display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--app-control,#e4dfce);font-size:23px;list-style:none;cursor:pointer;}
+.folio-more>div {position:absolute;left:8px;right:8px;top:auto;margin-top:6px;z-index:8;display:grid;min-width:150px;padding:6px;background:var(--app-surface,#f8f6ef);border:1px solid var(--ui-line,#d6d0c2);border-radius:16px;box-shadow:0 6px 20px #0002;}
+.folio-more button {display:flex;align-items:center;gap:8px;background:transparent;color:inherit;border:0;border-radius:10px;padding:11px;font:inherit;font-size:12px;cursor:pointer;text-align:left;}
+.folio-more button:hover {background:var(--app-control,#e4dfce);}
+.folio-more svg {width:16px;height:16px;}
+.project-folio:has(.folio-more[open]) {z-index:8;}
+body.dark .project-folio {--folio-paper:#555348;--folio-front:#37382f;--folio-back:#24261f;}
+body.dark .folio-sheet-0 {background:#69623e;}body.dark .folio-sheet-1 {background:#49483c;}
+@keyframes folioReveal {from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+}
+@media (hover:hover) and (pointer:fine) {
+.project-folio>summary:hover .folio-sheet-0 {transform:translate(-8px,-17px) rotate(-13deg);}
+.project-folio>summary:hover .folio-sheet-1 {transform:translate(8px,-23px) rotate(12deg);}
+.project-folio>summary:hover .folio-sheet-2 {transform:translateY(-29px);}
+.project-folio>summary:hover .folio-flap {transform:rotateX(-18deg);}
+}
+@media screen and (max-width:600px) {.projects-identity .proj-grid {grid-template-columns:minmax(0,1fr)!important;gap:22px;}.folio-scene{max-width:300px;margin:20px auto 12px}.folio-controls{padding:10px 16px}.folio-caption{padding-left:16px}}
+@media (prefers-reduced-motion:reduce) {.project-folio * {transition:none!important;animation:none!important;}}
+
+@media screen {html body .project-folio summary::after {display:none!important;} .project-folio>summary {background:transparent!important;} }
+
+@media screen {html body .main .folio-controls>.btn {padding:9px 10px;font-size:11px;} .folio-controls {padding:12px 8px;gap:6px;} }
