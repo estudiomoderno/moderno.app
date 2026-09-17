@@ -31,3 +31,6 @@ Borde inferior difuminado compartido en encabezados fijos de proyectos, presenci
 
 ## v3.58.6 — Apertura compacta
 Se elimina el margen adicional de apertura y se reduce el recorrido de los folios. Pulsar fuera cierra la carpeta; las acciones y el cambio a otra carpeta siguen funcionando. Verificación visual local, edición y cierre exterior, 338 tests correctos. Sin cambios de datos.
+
+## v3.58.7 — Remate del menú
+El ancho del trazo se calcula hasta el borde izquierdo real del botón; el recorte impide que invada su fondo. Mismo ajuste para selección y previsualización. Verificación visual y geométrica (fin del trazo igual al borde), 338 tests correctos.

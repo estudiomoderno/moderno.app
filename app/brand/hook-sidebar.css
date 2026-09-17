@@ -2,7 +2,7 @@
 @media screen {
 .sidebar .nav-sub {position:relative;border-left:0!important;}
 .sidebar .nav-sub .nav-item::before {display:none!important;}
-.sidebar .nav-sub .hook-rail {position:absolute;left:var(--hook-x,0px);top:var(--hook-start,2px);width:13px;height:var(--hook-y,0px);pointer-events:none;z-index:3;opacity:0;transition:height 260ms cubic-bezier(.2,.8,.3,1),opacity 140ms;}
+.sidebar .nav-sub .hook-rail {position:absolute;left:var(--hook-x,0px);top:var(--hook-start,2px);width:var(--hook-width,13px);overflow:hidden;height:var(--hook-y,0px);pointer-events:none;z-index:3;opacity:0;transition:height 260ms cubic-bezier(.2,.8,.3,1),opacity 140ms;}
 .sidebar .nav-sub .hook-rail.visible {opacity:.18;}
 .sidebar .hook-rail::before {content:'';position:absolute;top:0;bottom:6px;left:0;width:1px;background:repeating-linear-gradient(to top,#bcb7a8 0 5px,transparent 5px 9px);}
 .sidebar .hook-rail svg {position:absolute;bottom:0;left:0;width:13px;height:7px;overflow:visible;}

@@ -11,7 +11,13 @@
  const icon=group.parentElement.querySelector('.nav-head>span:first-child');
  const box=group.getBoundingClientRect(),ib=icon?.getBoundingClientRect();
  const start=ib?ib.top+ib.height/2-box.top:2;
- for(const line of [current,preview]){line.style.setProperty('--hook-x',(ib?ib.left+ib.width/2-box.left:0)+'px');line.style.setProperty('--hook-start',start+'px');}
+ for(const [line,item] of [[current,active],[preview,hover]]){
+ const edge=item?item.getBoundingClientRect().left-box.left:0;
+ const origin=Math.min(ib?ib.left+ib.width/2-box.left:0,edge-6);
+ line.style.setProperty('--hook-x',origin+'px');
+ line.style.setProperty('--hook-width',Math.max(0,edge-origin)+'px');
+ line.style.setProperty('--hook-start',start+'px');
+ }
  const y=active?center(active,group)+2-start:0;
  current.style.setProperty('--hook-y',y+'px');current.classList.toggle('visible',!!active&&group.offsetHeight>0);
  const hy=hover?center(hover,group)+2-start:0,from=y&&hy<=y?Math.max(0,hy-6):y;
