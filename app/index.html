@@ -5165,14 +5165,38 @@ function folderPhotoSources(p){
   return (Array.isArray(p.folderPhotos)?p.folderPhotos:[]).filter(v=>typeof v==='string' && v.length<=48000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v)).slice(0,3);
 }
 function folderPhotosHtml(p){return "";}
+let folioSequence=Promise.resolve();
+function folioToggle(el,closeOnly=false){
+  const shouldOpen=!closeOnly&&!el.open;
+  folioSequence=folioSequence.catch(()=>{}).then(async()=>{
+    for(const other of document.querySelectorAll('.project-folio[open]')){
+      if(other!==el||!shouldOpen)await folioAnimate(other,false);
+    }
+    if(shouldOpen&&!el.open&&el.isConnected)await folioAnimate(el,true);
+  });
+}
+async function folioAnimate(el,opening){
+  const summary=el.querySelector(':scope>summary'), controls=el.querySelector('.folio-controls');
+  el.querySelectorAll('.folio-more[open]').forEach(x=>x.open=false);
+  const from=el.getBoundingClientRect().height;
+  if(opening)el.open=true;
+  const to=opening?el.getBoundingClientRect().height:summary.getBoundingClientRect().height;
+  if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches&&el.animate){
+    el.style.overflow='hidden';
+    const height=el.animate([{height:from+'px'},{height:to+'px'}],{duration:220,easing:'ease-in-out'});
+    controls.animate([{opacity:opening?0:1},{opacity:opening?1:0}],{duration:180,easing:'ease-in-out'});
+    try{await height.finished;}catch{}finally{el.style.overflow='';}
+  }
+  if(!opening)el.open=false;
+}
 function projectFolio(p){
-  const E=ModernoDaily.escape,id=Number(p.id);
+  const E=ModernoDaily.escape,id=Number(p.id),colors=folderColors(p);
   const editable=typeof _accessRole!=='undefined'&&['admin','col'].includes(_accessRole);
-  return `<details class="project-folio" onkeydown="if(event.key==='Escape'){this.open=false;this.querySelector('summary').focus();event.stopPropagation()}">
-    <summary aria-label="Opciones de ${E(p.num+' '+p.name)}">
+  return `<details class="project-folio" style="--folio-front:${colors.front};--folio-back:${colors.back};--folio-ink:${colors.ink}" onkeydown="if(event.key==='Escape'){folioToggle(this,true);this.querySelector('summary').focus();event.stopPropagation()}">
+    <summary onclick="event.preventDefault();folioToggle(this.parentElement)" aria-label="Opciones de ${E(p.num+' '+p.name)}">
       <span class="folio-scene"><span class="folio-back"></span>
       ${[0,1,2].map(i=>`<span class="folio-sheet folio-sheet-${i}"><span class="folio-sheet-lines" aria-hidden="true"></span></span>`).join('')}
-      <span class="folio-flap"><strong class="folio-name">${E(p.num)} ${E(p.name)}</strong><span aria-hidden="true">${ico('carpeta')}</span></span></span>
+      <span class="folio-flap"><strong class="folio-name">${E(p.num)} ${E(p.name)}</strong><span class="folio-plus" aria-hidden="true"></span></span></span>
       <span class="folio-caption"><span class="folio-client">${E(p.client||'Sin cliente asignado')}</span><span class="folio-state">${E(p.status||'En progreso')}</span></span>
     </summary>
     <div class="folio-controls"><button class="btn btn-dark" onclick="go('proyecto',${id})">Abrir proyecto</button>
@@ -11469,7 +11493,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.58.1";
+const MODERNO_VER="v3.58.2";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13277,7 +13301,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 </script>
 <link rel="stylesheet" href="/team-presence.css?v=3561">
 <link rel="stylesheet" href="/brand/app-identity.css?v=3579">
-<link rel="stylesheet" href="/brand/project-folio.css?v=3581">
+<link rel="stylesheet" href="/brand/project-folio.css?v=3582">
 <script src="/team-presence.js?v=3562"></script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>

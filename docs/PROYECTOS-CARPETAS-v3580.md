@@ -10,3 +10,8 @@ Validación: 336 pruebas automatizadas superadas. Revisión visual con seis proy
 
 ## v3.58.1
 Nombre completo dentro de la solapa, con altura adaptable. Retirada la carga y visualización de fotos de carpeta; las fotos ya almacenadas se conservan y guardar la edición no las modifica.
+
+## v3.58.2
+La vista nueva ignoraba p.color: ahora usa folderColors(p) en sus variables de color, incluido contraste de texto. Icono plus.svg aportado por Javier. Apertura/cierre de altura y opacidad de 220/180 ms; cierre secuenciado de la anterior antes de abrir otra. Escape y movimiento reducido soportados.
+
+Validación: 338 pruebas correctas, incluyendo saveCustomize + serialización/recarga simulada del color, apertura exclusiva y movimiento reducido. Comprobación de interacción en navegador a 1280 y 390 px. NO se ha verificado persistencia real en Supabase en esta iteración: el servidor del clon estaba apagado; se reinició, pero la revisión automática bloqueó consultar la página de claves aun con autorización de la clave anon. No se consultaron claves privilegiadas ni se modificaron datos de producción. La prueba de nube queda pendiente.
