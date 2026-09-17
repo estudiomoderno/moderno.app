@@ -34,3 +34,6 @@ Se elimina el margen adicional de apertura y se reduce el recorrido de los folio
 
 ## v3.58.7 — Remate del menú
 El ancho del trazo se calcula hasta el borde izquierdo real del botón; el recorte impide que invada su fondo. Mismo ajuste para selección y previsualización. Verificación visual y geométrica (fin del trazo igual al borde), 338 tests correctos.
+
+## v3.58.8 — Menú comprimido y estudio
+Se ocultan los trazos en navmini. El desplegable del estudio aparece hacia arriba con fundido de 220 ms, respetando movimiento reducido. 338 tests correctos.

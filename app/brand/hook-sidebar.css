@@ -11,3 +11,9 @@
 
 }
 @media(prefers-reduced-motion:reduce){.sidebar .hook-rail{transition:none!important}}
+@media screen {
+ body.navmini .sidebar .nav-sub .hook-rail{display:none!important}
+ .sidebar-study .settings-switch[open] .settings-popup{animation:study-menu-rise 220ms cubic-bezier(.22,.61,.36,1);transform-origin:bottom center}
+ @keyframes study-menu-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+}
+@media(prefers-reduced-motion:reduce){.sidebar-study .settings-switch[open] .settings-popup{animation:none!important}}
