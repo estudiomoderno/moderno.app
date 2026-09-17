@@ -5164,18 +5164,16 @@ function calNew(){
 function folderPhotoSources(p){
   return (Array.isArray(p.folderPhotos)?p.folderPhotos:[]).filter(v=>typeof v==='string' && v.length<=48000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v)).slice(0,3);
 }
-function folderPhotosHtml(p){
-  return folderPhotoSources(p).map((src,i)=>'<img class="folder-photo folder-photo-'+i+'" src="'+src+'" alt="" loading="lazy" draggable="false">').join('');
-}
+function folderPhotosHtml(p){return "";}
 function projectFolio(p){
-  const E=ModernoDaily.escape,id=Number(p.id),photos=folderPhotoSources(p);
+  const E=ModernoDaily.escape,id=Number(p.id);
   const editable=typeof _accessRole!=='undefined'&&['admin','col'].includes(_accessRole);
   return `<details class="project-folio" onkeydown="if(event.key==='Escape'){this.open=false;this.querySelector('summary').focus();event.stopPropagation()}">
     <summary aria-label="Opciones de ${E(p.num+' '+p.name)}">
-      <span class="folio-scene" aria-hidden="true"><span class="folio-back"></span>
-      ${[0,1,2].map(i=>`<span class="folio-sheet folio-sheet-${i}">${photos[i]?`<img src="${photos[i]}" alt="" loading="lazy">`:`<span class="folio-sheet-lines"></span>`}</span>`).join('')}
-      <span class="folio-flap"><span>${E(p.num)}</span>${ico('carpeta')}</span></span>
-      <span class="folio-caption"><span class="folio-client">${E(p.client||'Sin cliente asignado')}</span><strong>${E(p.num)} ${E(p.name)}</strong><span class="folio-state">${E(p.status||'En progreso')}</span></span>
+      <span class="folio-scene"><span class="folio-back"></span>
+      ${[0,1,2].map(i=>`<span class="folio-sheet folio-sheet-${i}"><span class="folio-sheet-lines" aria-hidden="true"></span></span>`).join('')}
+      <span class="folio-flap"><strong class="folio-name">${E(p.num)} ${E(p.name)}</strong><span aria-hidden="true">${ico('carpeta')}</span></span></span>
+      <span class="folio-caption"><span class="folio-client">${E(p.client||'Sin cliente asignado')}</span><span class="folio-state">${E(p.status||'En progreso')}</span></span>
     </summary>
     <div class="folio-controls"><button class="btn btn-dark" onclick="go('proyecto',${id})">Abrir proyecto</button>
     ${editable?`<button class="btn btn-ghost" onclick="customizeModal(${id})">${ico('editar')} Editar</button><details class="folio-more"><summary aria-label="Más acciones de ${E(p.num)}">···</summary><div><button onclick="duplicateProject(${id})">${ico('dup_proyecto')} Duplicar</button><button onclick="toggleArchive(${id})">${ico('archivar')} ${p.status==='Archivado'?'Desarchivar':'Archivar'}</button><button onclick="deleteProject(${id})">${ico('eliminar')} Eliminar</button></div></details>`:''}</div>
@@ -9343,11 +9341,6 @@ function customizeModal(id){
         <label for="czStatus">Estado</label><select id="czStatus" onchange="cz.status=this.value">${['En progreso','En revisión','Entregado','Archivado'].map(x=>`<option ${cz.status===x?'selected':''}>${x}</option>`).join('')}</select>
         <label for="czClient">Cliente</label><select id="czClient" onchange="cz.client=this.value"><option value="">Sin cliente</option>${state.clients.filter(c=>c.type==='Cliente').map(c=>`<option ${cz.client===c.name?'selected':''}>${E(c.name)}</option>`).join('')}</select>
         <label for="czTags">Etiquetas</label><input id="czTags" value="${E(cz.tags)}" placeholder="Reforma, vivienda…" oninput="cz.tags=this.value">
-        <div class="project-editor-photos"><label>Fotos de la carpeta <small>Hasta 3</small></label><p>Fotos o renders que asoman por detrás de la carpeta.</p>
-          <input id="czPhotosInput" type="file" hidden accept="image/jpeg,image/png,image/webp" multiple onchange="czAddPhotos(this.files)">
-          <button id="czPhotosButton" class="btn btn-ghost" type="button" onclick="document.getElementById('czPhotosInput').click()">${ico('subir')} Añadir fotos</button>
-          <div id="czPhotosList" class="folder-photo-editor"></div><p id="czPhotosStatus" role="status"></p>
-        </div>
       </section>
     </div>
     <footer class="project-editor-footer"><button class="project-delete" onclick="deleteProject(${id})">Borrar proyecto</button><div><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button id="czSave" class="btn btn-dark" onclick="saveCustomize(${id})">Guardar cambios</button></div></footer>
@@ -9416,7 +9409,7 @@ function saveCustomize(id){
   const p = state.projects.find(x=>x.id===id);
   if(!p)return;
   if(cz.name && cz.name.trim()) p.name = cz.name.trim();
-  p.folderPhotos = [...folderPhotoSources(cz)];
+  // Existing folder photos are retained; this editor no longer modifies them.
   p.color = cz.color;
   if(cz.status)p.status=cz.status;
   p.tags = cz.tags.split(",").map(s=>s.trim()).filter(Boolean);
@@ -11476,7 +11469,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.58.0";
+const MODERNO_VER="v3.58.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13284,7 +13277,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 </script>
 <link rel="stylesheet" href="/team-presence.css?v=3561">
 <link rel="stylesheet" href="/brand/app-identity.css?v=3579">
-<link rel="stylesheet" href="/brand/project-folio.css?v=3580">
+<link rel="stylesheet" href="/brand/project-folio.css?v=3581">
 <script src="/team-presence.js?v=3562"></script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>

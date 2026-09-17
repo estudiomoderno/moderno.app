@@ -7,3 +7,6 @@ Nombre, cliente y estado siempre visibles. Tarjetas asoman al hover; clic/toque/
 El efecto respeta movimiento reducido. Colores crema, negro y amarillo suave, con variante oscura. La página Inicio conserva sus carpetas previas.
 
 Validación: 336 pruebas automatizadas superadas. Revisión visual con seis proyectos ficticios a 1280 y 390 píxeles: abrir, editar, menú, duplicar (despacho simulado sin datos), Enter y Escape. Ajustado menú para quedar dentro del ancho de la tarjeta y móvil a una columna. Las operaciones de negocio mantienen las funciones existentes.
+
+## v3.58.1
+Nombre completo dentro de la solapa, con altura adaptable. Retirada la carga y visualización de fotos de carpeta; las fotos ya almacenadas se conservan y guardar la edición no las modifica.
