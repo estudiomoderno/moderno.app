@@ -44,3 +44,9 @@ El generador y los documentos guardados se presentan como tarjetas de papel con 
 ## Navegación v3.60.3
 
 Tres pestañas: Generador de documentos, Mis plantillas (incluye las anteriores) y Mis documentos. Cada pestaña conserva su búsqueda durante la sesión, separada por estudio/usuario. Búsqueda sin distinguir tildes o mayúsculas por nombre, cliente o proyecto cuando existe esa información. Transición direccional con fundido, desactivada con movimiento reducido. Guardar como plantilla activa Mis plantillas y limpia su búsqueda para mostrar el resultado.
+
+## v3.60.4
+- Tarjeta cuadrada + para crear documento o plantilla; sin acción Recuperar borrador.
+- Mis documentos en lista con nombre, tipo, cliente, proyecto y estado; presentación adaptable en móvil.
+- Tipo y estado editables (Borrador, En revisión, Finalizado). Los registros antiguos sin estado se muestran como Borrador; crear desde plantilla reinicia el estado.
+- No se eliminan borradores locales ni documentos existentes. 365 pruebas correctas.
