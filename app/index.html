@@ -912,6 +912,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
+<link rel="stylesheet" href="/shopping-cards.css?v=3608">
 </head>
 <body>
 <div class="app">
@@ -7302,52 +7303,20 @@ function vRoom(){
       <span class="line"></span><span class="dl-sum">${fmt(sub)}</span>
     </div>
     ${sec._c?"":`<textarea class="dl-secdesc" rows="1" placeholder="Descripción de la sección…" onchange="getRoom().r.sections[${si}].desc=this.value;toast('Descripción guardada ✓')">${esc(sec.desc||"")}</textarea>
-    <div ondragover="event.preventDefault()" ondrop="dropItemSection(event,${si})">
-    ${visible.map(({it,ii})=>{ const key=si+"-"+ii; const open=!!state.rowOpen[key]; const m=(it.margin==null?(r.margin||null):it.margin);
-      return `
-      <div class="dl-row ${open?"open":""}" draggable="true"
-           ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')"
-           ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')"
-           ondrop="dropItemRow(event,${si},${ii})">
-        <div class="dl-hover"><input type="checkbox" title="Seleccionar" onclick="event.stopPropagation()"><span class="dl-grip" title="Arrastra para reordenar o mover de sección">⠿</span></div>
-        <div class="dl-thumb" title="Ampliar imagen" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="">`:"🛋"}</div>
-        <div class="dl-info">
-          <span class="dl-nm" title="${esc(it.name)}" onclick="itemModal(${si},${ii})">${it.name}</span>
-          ${it.url?`<span class="dl-url"><a href="${it.url}" target="_blank" onclick="event.stopPropagation()" title="${esc(it.url)}">${shortUrl(it.url)}</a><a class="ext" href="${it.url}" target="_blank" title="Abrir enlace" onclick="event.stopPropagation()">↗</a></span>`:`<span class="dl-url">-</span>`}
-          <select class="dl-pill ${ACC.includes(it.status)?"acc":""}" onchange="setItem(${si},${ii},'status',this.value)">${Object.keys(ISTATES).map(st=>`<option ${it.status===st?"selected":""}>${st}</option>`).join("")}</select>
-          ${it.rejected||it.hidden||it.alt||(it.files&&it.files.length)?`<div class="dl-chips">${it.rejected?`<span class="chip" style="background:#F2B8AC;font-size:10px">✕ Rechazado</span>`:""}${it.hidden?`<span class="chip neutral" style="font-size:10px">🚫 Oculto al cliente</span>`:""}${it.alt?`<span class="chip" style="background:var(--gold-soft);font-size:10px">⇄ Alternativa</span>`:""}${it.files&&it.files.length?`<span class="chip neutral" style="font-size:10px">🖇 ${it.files.length}</span>`:""}</div>`:""}
-        </div>
-        <div class="dl-fields">
-          ${F("Dimensiones", inp(si,ii,"dims",it.dims))}
-          ${F("Color", inp(si,ii,"color",it.color))}
-          ${F("Plazo entrega", inp(si,ii,"plazo",it.plazo))}
-          ${F("Precio coste", `<input type="number" step="0.01" value="${it.cost??""}" placeholder="-" onchange="setItem(${si},${ii},'cost',+this.value||0)">`)}
-          ${F("Margen", `<input type="number" step="0.5" value="${it.margin==null?"":it.margin}" placeholder="${r.margin?r.margin+"% gral.":"-"}" title="Margen de esta línea; vacío = margen general de la estancia" onchange="setItem(${si},${ii},'margin',this.value===''?null:(+this.value||0))">`)}
-          ${F("Precio cliente", `<input type="number" step="0.01" value="${it.price}" onchange="setItem(${si},${ii},'price',+this.value||0)">`)}
-          ${F("Material", inp(si,ii,"material",it.material))}
-          ${F("Proveedor", inp(si,ii,"supplier",it.supplier))}
-          ${F("SKU", inp(si,ii,"sku",it.sku))}
-          ${F("Unidades", `<input type="number" step="${it.unit==='m2'?'0.01':'1'}" value="${it.qty}" onchange="setItem(${si},${ii},'qty',Math.max(0,+this.value||0))">`)}
-          ${F("Unidad", isPav?`<select onchange="setItem(${si},${ii},'unit',this.value)">${[...new Set(["ud","m2","m","m3","l","kg","h",it.unit||"ud"])].map(u=>`<option value="${ModernoDaily.escape(u)}" ${(it.unit||"ud")===u?"selected":""}>${ModernoDaily.escape(u)}</option>`).join("")}</select>`:`<span class="v">${ModernoDaily.escape(({m2:"m²",m3:"m³"})[it.unit]||it.unit||"ud")}</span>`)}
-          ${F("Total cliente", `<span class="v b">${fmt(it.price*it.qty)}</span>${itemGain(r,it)?`<span style="display:block;font-size:10px;color:var(--dl-soft)" title="Ganancia interna">${itemGain(r,it)<0?"▼":"▲"} ${fmt(itemGain(r,it))}</span>`:""}`)}
-          ${F("Nota interna", `<textarea rows="1" placeholder="-" onchange="setItem(${si},${ii},'note',this.value)">${esc(it.note||"")}</textarea>`, "span2")}
-          ${isPav?`<div class="dl-f"><span class="k">Despiece</span><button class="dl-addlink sec" style="padding:0" onclick="despiece(${si},${ii})">+10 % despiece</button></div>`:""}
-          ${open?`<div class="dl-extra">
-            ${F("Código", inp(si,ii,"code",it.code))}
-            ${F("Categoría", inp(si,ii,"cat",it.cat))}
-            ${F("Nota extra", `<textarea rows="1" placeholder="-" onchange="setItem(${si},${ii},'note2',this.value)">${esc(it.note2||"")}</textarea>`, "span2")}
-            <div class="dl-menu"><button class="dl-btn" onclick="itemMenu(${si},${ii})">⋯ Más opciones</button></div>
-          </div>`:""}
-        </div>
-        <div class="dl-acts">
-          <button class="dl-rb ${open?"on":""}" title="${open?"Encoger":"Código, categoría, nota extra y opciones"}" onclick="state.rowOpen['${key}']=!state.rowOpen['${key}'];render()">${open?"▴":"▾"}</button>
-          <button class="dl-rb" title="Editar todo" onclick="itemModal(${si},${ii})">${ico("editar")}</button>
-        </div>
-      </div>`; }).join("")}
-    ${(q||filtering)&&!visible.length?`<div style="font-size:12px;color:var(--dl-soft);padding:4px 12px">Sin resultados en esta sección</div>`:""}
+    <div class="shopping-product-grid" ondragover="event.preventDefault()" ondrop="dropItemSection(event,${si})">
+      <button class="shopping-add-card" onclick="itemModal(${si},-1)"><span aria-hidden="true">+</span><strong>Añadir producto</strong></button>
+      ${visible.map(({it,ii})=>`<article class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
+        <button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
+        <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button><strong>${fmt(it.price)}</strong></div>
+        <p class="shopping-product-meta">${ModernoDaily.escape([it.supplier,it.color,it.dims].filter(Boolean).join(' · '))}</p>
+        <p class="shopping-product-meta">${it.qty} ${ModernoDaily.escape(({m2:'m²',m3:'m³'})[it.unit]||it.unit||'ud')} · Total ${fmt(it.price*it.qty)}${it.plazo?' · '+ModernoDaily.escape(it.plazo):''}</p>
+        <div class="shopping-product-controls"><select aria-label="Estado de ${ModernoDaily.escape(it.name)}" class="dl-pill ${ACC.includes(it.status)?'acc':''}" onchange="setItem(${si},${ii},'status',this.value)">${Object.keys(ISTATES).map(st=>`<option ${it.status===st?'selected':''}>${st}</option>`).join('')}</select><button class="dl-btn" aria-label="Editar ${ModernoDaily.escape(it.name)}" onclick="itemModal(${si},${ii})">${ico('editar')}</button><button class="dl-btn" aria-label="Más opciones de ${ModernoDaily.escape(it.name)}" onclick="itemMenu(${si},${ii})">···</button></div>
+        ${it.hidden||it.alt||it.rejected||it.files?.length?`<p class="shopping-product-meta">${[it.hidden?'Oculto al cliente':'',it.alt?'Alternativa':'',it.rejected?'Rechazado':'',it.files?.length?it.files.length+' adjuntos':''].filter(Boolean).join(' · ')}</p>`:''}
+      </article>`).join('')}
+      ${(q||filtering)&&!visible.length?'<p>Sin resultados en esta sección</p>':''}
     </div>
     <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:2px 0 4px">
-      <button class="dl-addlink" onclick="itemModal(${si},-1)">${ico("add_item")} Añadir elemento a la sección</button>
+
       <button class="dl-addlink sec" onclick="itemModal(${si},-1,true)">⚡ Desde URL</button>
       <button class="dl-addlink sec" onclick="libPick(${si})">🗃 Biblioteca</button>
     </div>`}`}).join("")}
@@ -7358,7 +7327,7 @@ function vRoom(){
     <button class="dl-btn" onclick="shareModal()">↗ Compartir con el cliente</button>
     <button class="dl-btn pri" onclick="exportRoomModal()">${ico('pdf')} Exportar PDF / hoja</button>
   </div>
-  <p style="margin-top:10px;font-size:11.5px;color:var(--dl-soft)">Escribe directamente en cualquier campo. Arrastra un producto sobre otro para reordenar o suéltalo en otra sección.</p>
+  <p style="margin-top:10px;font-size:11.5px;color:var(--dl-soft)">Pulsa el nombre o el botón de editar para ver todos los datos. Arrastra un producto sobre otro para reordenar o suéltalo en otra sección.</p>
   </div>`;
 }
 function imgZoom(si,ii){
@@ -11483,7 +11452,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.7";
+const MODERNO_VER="v3.60.8";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
