@@ -1172,7 +1172,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/router.js?v=333"></script>
 <script src="/specifications.js?v=340"></script>
 <script src="/project-insights.js?v=3600"></script>
-<script src="/document-builder.js?v=3600"></script>
+<script src="/document-builder.js?v=3601"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3572"></script>
 <script src="/project-quotes.js?v=343"></script>
@@ -6836,28 +6836,10 @@ function vInformes(){
   <p style="font-size:11px;color:var(--ink-faint);margin-top:12px">En la app real: exportar cada informe a PDF, comparar periodos y filtrar por marca desde arriba (el filtro global CM/EM ya afecta a estos números).</p>`;
 }
 function vDocs(){
-  const tpls=state.projects.filter(x=>x.tpl);
   return `
   <h1 class="big">Plantillas y documentos</h1>
   ${dgHome()}
-  <h2 class="sec" style="margin-top:6px">Plantillas de proyecto</h2>
-  <p class="sub" style="margin-bottom:10px">Proyectos guardados como base: al crear un proyecto nuevo, elige "Plantilla de proyecto" y una de estas.</p>
-  ${tpls.length? tpls.map(x=>`<div class="entry" style="background:var(--white);margin-bottom:6px">
-      <b style="font-size:12.5px;flex:1">${x.name}</b>
-      <small style="color:var(--ink-faint)">${(x.tasks||[]).length} tareas · ${(x.rooms||[]).length} estancias · ${(x.obraF||[]).length} fases de obra</small>
-      <button class="btn btn-ghost" onclick="tplUse(${x.id})">Usar</button>
-      <button class="btn btn-ghost" onclick="tplRename(${x.id})" title="Renombrar">${ico("editar")}</button>
-      <button class="btn btn-ghost" onclick="tplDelete(${x.id})">${ico("eliminar")}</button>
-    </div>`).join("") : `<div class="empty">Aún no hay plantillas de proyecto. Abre un proyecto → Resumen → "Guardar como plantilla de proyecto".</div>`}
-  <h2 class="sec" style="margin-top:22px">Fases de obra</h2>
-  <p class="sub" style="margin-bottom:10px">Conjuntos de fases y puntos de control guardados desde Seguimiento de obra con «Exportar fases». Tráelos a cualquier obra con «Importar fases».</p>
-  ${obraTplList().length? obraTplList().map(t=>`<div class="entry" style="background:var(--white);margin-bottom:6px">
-      <b style="font-size:12.5px;flex:1">${t.name}</b>
-      <small style="color:var(--ink-faint)">${t.fases.length} fase${t.fases.length===1?"":"s"} · ${t.fases.reduce((s,f)=>s+(f.items||[]).length,0)} puntos · ${t.updated||""}</small>
-      <button class="btn btn-ghost" onclick="obraTplRename(${t.id})" title="Renombrar">${ico("editar")}</button>
-      <button class="btn btn-ghost" onclick="obraTplDelete(${t.id})" title="Eliminar">${ico("eliminar")}</button>
-    </div>`).join("") : `<div class="empty">Aún no hay plantillas de fases. Abre un proyecto → Seguimiento de obra → «Exportar fases».</div>`}
-  <h2 class="sec" style="margin-top:22px">Documentos</h2>
+  <h2 class="sec" style="margin-top:22px">Otras plantillas guardadas</h2>
   <p class="sub">Contratos tipo, condiciones, dossieres… los papeles que reutilizas en cada proyecto, listos para llevar a cualquiera.</p>
   <button class="btn btn-dark" style="margin-bottom:14px" onclick="docModal(-1)">${ico("mas")} Nueva plantilla</button>
   <div class="proj-grid" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px">
@@ -11521,7 +11503,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.0";
+const MODERNO_VER="v3.60.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13340,6 +13322,6 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/project-options.css?v=35812">
 <script src="/project-options.js?v=35811"></script>
 <link rel="stylesheet" href="/brand/project-insights.css?v=3594">
-<link rel="stylesheet" href="/brand/document-builder.css?v=3600">
+<link rel="stylesheet" href="/brand/document-builder.css?v=3601">
 </body>
 </html>

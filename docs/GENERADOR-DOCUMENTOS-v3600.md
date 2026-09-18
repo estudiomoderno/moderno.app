@@ -32,3 +32,7 @@ Servir `app/` con el servidor local habitual. Ejecutar `node --test scripts/*.te
 Prueba visual con datos ficticios: selección de proyecto/cliente, edición de un acta, sustitución de marcadores, guardado y copia al proyecto, vista a 390 px. La impresión usa la función existente `printAs`; la prueba local no escribe documentos reales en Supabase ni demuestra una firma electrónica o una subida binaria de PDF.
 
 Despliegue habitual con `deploy-app.yml`, recursos antes que HTML. Reversión de interfaz por commit; conservar los datos nuevos en docs, no borrar ni restaurar bases para retirar la interfaz.
+
+## Presentación v3.60.1
+
+El generador y los documentos guardados se presentan como tarjetas de papel con pliegue, tonos suaves, aparición escalonada y elevación al señalar. En móvil se muestran en dos columnas. Se retiran de esta pantalla las secciones Plantillas de proyecto y Fases de obra sin borrar sus datos ni las funciones de uso desde proyectos/obra.
