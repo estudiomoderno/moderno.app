@@ -26,3 +26,4 @@ test('lost refresh does not claim success and recovered capture opens existing i
 test('local conflicting edits cannot be overwritten or silently treated as a displayed product',async()=>{const f=setup({localConflict:true});await f.save();assert.equal(f.status().closed,false);assert.equal(f.status().removed,false);assert.equal(f.state.library.length,0);assert.match(f.messages[1].textContent,/cambios locales pendientes/);});
 
 test('saving no longer requires a manual review checkbox',async()=>{const f=setup({missing:'#clip-confirm'});await f.save();assert.equal(f.status().calls,1);assert.equal(f.status().closed,true);});
+test('list import reopens the saved product for editing',async()=>{const f=setup({kind:'lista'});let opened;f.c.itemModal=(...args)=>opened=args;await f.save();assert.deepEqual(opened,[0,0]);assert.equal(f.status().calls,1);});

@@ -28,7 +28,19 @@ const ProductClipper=(()=>{
   if(!valid(ctx))return;const dest=ctx.row.destino,item=savedItem(ctx,CLOUD_BLOCKS[dest.kind==='biblioteca'?'compras':'proyectos'].get(),ctx.savedId);
   if(dest.kind==='biblioteca'){state.libQ='';state.libF={cat:item.cat||'Otros',sup:'',min:'',max:''};state.view='biblioteca';}
   else{const p=state.projects.find(p=>String(p.id)===dest.projectId),r=p?.rooms?.find(r=>String(r.id)===dest.roomId);if(p&&r){state.currentProject=p.id;state.currentRoom=r.id;state.roomSearch='';state.rf=null;state.view='estancia';}}
-  localStorage.removeItem(cacheKey());ctx.dialog.close();closeModal();render();toast('Producto añadido.');
+  localStorage.removeItem(cacheKey());ctx.dialog.close();closeModal();render();
+  if(dest.kind==='lista'){
+   const p=state.projects.find(p=>String(p.id)===dest.projectId),r=p?.rooms?.find(r=>String(r.id)===dest.roomId),si=r?.sections?.findIndex(s=>String(s.id)===dest.sectionId),ii=si>=0?r.sections[si].items.findIndex(it=>String(it.id)===String(ctx.savedId)):-1;
+   if(ii>=0&&typeof itemModal==='function'){
+    itemModal(si,ii);
+    const fields=ctx.row.captura?.fields,source=fields?.price?.value,currency=fields?.currency?.value;
+    if(item.price==null&&source!=null&&currency==='EUR'&&Number.isFinite(Number(source))&&Number(source)>=0){
+     const input=document.getElementById('itPrice');if(input){input.value=source;unitSum('itQty','itPrice','itUnit','itSum','itCost');}
+     const origin=document.getElementById('itOrigin');if(origin){const note=document.createElement('p');note.className='clipper-note';note.textContent='Precio encontrado en la tienda: '+source+' EUR'+(ctx.row.captura.tax?.status==='excluded'?' · IVA no incluido':ctx.row.captura.tax?.status==='included'?' · IVA incluido':' · La tienda no indica si incluye IVA')+'. Puedes ajustarlo antes de guardar.';origin.appendChild(note);}
+    }
+   }
+  }else if(typeof libEdit==='function'){const index=state.library.findIndex(it=>String(it.id)===String(ctx.savedId));if(index>=0)libEdit(index);}
+  toast('Producto añadido. Puedes ajustar sus datos en la ficha.');
  }
  async function invoke(body){const {data,error}=await sb.functions.invoke('product-clipper',{body});if(error){let detail;try{detail=await error.context?.json();}catch{}throw Error(detail?.error||'No se pudo consultar el importador. Conserva esta ventana y comprueba el estado.');}return data;}
  function open(kind,sectionIndex){
