@@ -1172,7 +1172,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/router.js?v=333"></script>
 <script src="/specifications.js?v=340"></script>
 <script src="/project-insights.js?v=3600"></script>
-<script src="/document-builder.js?v=3602"></script>
+<script src="/document-builder.js?v=3603"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3572"></script>
 <script src="/project-quotes.js?v=343"></script>
@@ -6835,28 +6835,7 @@ function vInformes(){
   </div>
   <p style="font-size:11px;color:var(--ink-faint);margin-top:12px">En la app real: exportar cada informe a PDF, comparar periodos y filtrar por marca desde arriba (el filtro global CM/EM ya afecta a estos números).</p>`;
 }
-function vDocs(){
-  return `
-  <h1 class="big">Plantillas y documentos</h1>
-  ${dgHome()}
-  <h2 id="my-document-templates" class="sec" style="margin-top:22px">Mis plantillas</h2>
-  ${dgTemplates()}
-  <p class="sub">Contratos tipo, condiciones, dossieres… los papeles que reutilizas en cada proyecto, listos para llevar a cualquiera.</p>
-  <button class="btn btn-dark" style="margin-bottom:14px" onclick="docModal(-1)">${ico("mas")} Nueva plantilla</button>
-  <div class="proj-grid" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px">
-    ${state.docs.map((d,i)=>d.generator?'':`<div class="room-card" style="display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;align-items:center;gap:9px">${ico("docs","lg")}<b style="font-size:13.5px;min-width:0">${d.name}</b></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip ${BRAND[d.brand].chip}">${BRAND[d.brand].name}</span><span class="chip neutral">${d.kind}</span></div>
-      <small style="color:var(--ink-faint)">Actualizada ${d.updated}</small>
-      <div style="display:flex;gap:6px;margin-top:auto">
-        <button class="btn btn-gold" style="flex:1;justify-content:center;font-size:11.5px" onclick="docUse(${i})">→ Usar en proyecto</button>
-        <button class="collbtn" title="Editar" onclick="docModal(${i})">${ico("editar")}</button>
-        <button class="collbtn" title="Eliminar" onclick="askConfirm('¿Eliminar «${d.name.replace(/'/g,"")}»?','Eliminar',()=>{state.docs.splice(${i},1);render()})">✕</button>
-      </div>
-    </div>`).join("")}
-  </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:14px">Usa el generador para completar tus documentos, revisarlos y exportarlos a PDF.</p>`;
-}
+function vDocs(){return `<h1 class="big">Plantillas y documentos</h1>${dgHome()}`;}
 function docModal(i){
   const d = i>=0 ? state.docs[i] : {name:"",brand:"cm",kind:"Contrato",updated:"Hoy",body:""};
   mb.classList.add("wide");
@@ -11504,7 +11483,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.2";
+const MODERNO_VER="v3.60.3";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13323,6 +13302,6 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/project-options.css?v=35812">
 <script src="/project-options.js?v=35811"></script>
 <link rel="stylesheet" href="/brand/project-insights.css?v=3594">
-<link rel="stylesheet" href="/brand/document-builder.css?v=3601">
+<link rel="stylesheet" href="/brand/document-builder.css?v=3603">
 </body>
 </html>

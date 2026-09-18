@@ -40,3 +40,7 @@ El generador y los documentos guardados se presentan como tarjetas de papel con 
 ## Organización v3.60.2
 
 «Guardar como plantilla» añade la plantilla a «Mis plantillas», debajo del generador y los documentos guardados, junto a las plantillas anteriores. Tras guardarla se cierra el editor y se muestra esa sección. Los documentos concretos permanecen en «Mis documentos». No se migran ni eliminan datos.
+
+## Navegación v3.60.3
+
+Tres pestañas: Generador de documentos, Mis plantillas (incluye las anteriores) y Mis documentos. Cada pestaña conserva su búsqueda durante la sesión, separada por estudio/usuario. Búsqueda sin distinguir tildes o mayúsculas por nombre, cliente o proyecto cuando existe esa información. Transición direccional con fundido, desactivada con movimiento reducido. Guardar como plantilla activa Mis plantillas y limpia su búsqueda para mostrar el resultado.
