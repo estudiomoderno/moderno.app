@@ -1171,7 +1171,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=333"></script>
 <script src="/specifications.js?v=340"></script>
-<script src="/project-insights.js?v=3594"></script>
+<script src="/project-insights.js?v=3600"></script>
+<script src="/document-builder.js?v=3600"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3572"></script>
 <script src="/project-quotes.js?v=343"></script>
@@ -6838,6 +6839,7 @@ function vDocs(){
   const tpls=state.projects.filter(x=>x.tpl);
   return `
   <h1 class="big">Plantillas y documentos</h1>
+  ${dgHome()}
   <h2 class="sec" style="margin-top:6px">Plantillas de proyecto</h2>
   <p class="sub" style="margin-bottom:10px">Proyectos guardados como base: al crear un proyecto nuevo, elige "Plantilla de proyecto" y una de estas.</p>
   ${tpls.length? tpls.map(x=>`<div class="entry" style="background:var(--white);margin-bottom:6px">
@@ -6859,7 +6861,7 @@ function vDocs(){
   <p class="sub">Contratos tipo, condiciones, dossieres… los papeles que reutilizas en cada proyecto, listos para llevar a cualquiera.</p>
   <button class="btn btn-dark" style="margin-bottom:14px" onclick="docModal(-1)">${ico("mas")} Nueva plantilla</button>
   <div class="proj-grid" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px">
-    ${state.docs.map((d,i)=>`<div class="room-card" style="display:flex;flex-direction:column;gap:8px">
+    ${state.docs.map((d,i)=>d.generator?'':`<div class="room-card" style="display:flex;flex-direction:column;gap:8px">
       <div style="display:flex;align-items:center;gap:9px">${ico("docs","lg")}<b style="font-size:13.5px;min-width:0">${d.name}</b></div>
       <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip ${BRAND[d.brand].chip}">${BRAND[d.brand].name}</span><span class="chip neutral">${d.kind}</span></div>
       <small style="color:var(--ink-faint)">Actualizada ${d.updated}</small>
@@ -6870,7 +6872,7 @@ function vDocs(){
       </div>
     </div>`).join("")}
   </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:14px">En la app real subes tu Word o PDF y al usarla en un proyecto se rellena sola con los datos del cliente y del proyecto (nombre, NIF, dirección, importe…).</p>`;
+  <p style="font-size:11px;color:var(--ink-faint);margin-top:14px">Usa el generador para completar tus documentos, revisarlos y exportarlos a PDF.</p>`;
 }
 function docModal(i){
   const d = i>=0 ? state.docs[i] : {name:"",brand:"cm",kind:"Contrato",updated:"Hoy",body:""};
@@ -6884,8 +6886,6 @@ function docModal(i){
   <label>Contenido del documento</label>
   <textarea id="dcBody" rows="11" style="font-size:12.5px;line-height:1.5">${(d.body||"").replace(/</g,"&lt;")}</textarea>
   <p style="font-size:11px;color:var(--ink-soft);margin-top:5px;background:var(--card);border-radius:10px;padding:8px 10px">Marcadores que se rellenan solos al llevarla a un proyecto: <b>{{cliente}}</b> · <b>{{cliente_nif}}</b> · <b>{{proyecto}}</b> · <b>{{importe}}</b> · <b>{{fecha}}</b> · <b>{{emisor}}</b> · <b>{{emisor_nif}}</b> · <b>{{emisor_email}}</b> · <b>{{direccion}}</b></p>
-  <label class="btn btn-ghost" style="width:100%;justify-content:center;cursor:pointer;margin-top:4px">${ico("import")} O subir tu archivo (Word / PDF)
-    <input type="file" style="display:none" onchange="toast('En la app real la plantilla queda guardada con tu archivo — aquí se simula')"></label>
   <div class="modal-foot"><button class="btn btn-ghost" onclick="mb.classList.remove('wide');closeModal()">Cancelar</button>
   <button class="btn btn-dark" onclick="saveDocTpl(${i})">Guardar</button></div>`);
 }
@@ -6907,6 +6907,7 @@ function docToProject(kind,i){
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button></div>`);
 }
 function docUse(i){
+  if(typeof dgOpenLegacy==='function')return dgOpenLegacy(i);
   const d = state.docs[i];
   const projs = state.projects.filter(x=>!x.tpl&&x.status!=="Archivado");
   modal(`<h3>→ «${d.name}»</h3>
@@ -9675,7 +9676,7 @@ async function fileView(pid,i,fromPortal){
     ${f.signed?`<span class="chip" style="background:#DBEBDD;color:#2E6B4F">✍ Firmado por ${f.signed.by} · ${f.signed.date}</span>`:""}
     <span style="margin-left:auto"></span>
     ${fromPortal&&!f.signed?`<button class="btn btn-gold" onclick="signModal(${pid},${i})">✍ Firmar online</button>`:""}
-    ${resolvedSrc?`<a class="btn btn-ghost" href="${resolvedSrc}" download="${f.name}" target="_blank" rel="noopener">${ico('download')} Descargar</a>`:`<button class="btn btn-ghost" onclick="toast('Este archivo es de una versión anterior (solo nombre): vuelve a subirlo para poder descargarlo')">${ico('download')} Descargar</button>`}
+    ${resolvedSrc?`<a class="btn btn-ghost" href="${resolvedSrc}" download="${f.name}" target="_blank" rel="noopener">${ico('download')} Descargar</a>`:f.body?`<button class="btn btn-ghost" onclick="documentBodyDownload(${pid},${i})">${ico('download')} Descargar texto</button>`:`<button class="btn btn-ghost" onclick="toast('Este archivo es de una versión anterior (solo nombre): vuelve a subirlo para poder descargarlo')">${ico('download')} Descargar</button>`}
     <button onclick="mb.classList.remove('wide');${fromPortal?`projectPortal(${pid})`:"closeModal()"}" style="font-size:16px">✕</button>
   </div>
   <div style="background:#FBFAF7;color:var(--ink);border-radius:14px;padding:${resolvedSrc?"10px":"34px 38px"};min-height:340px;box-shadow:var(--shadow)">
@@ -11520,7 +11521,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.59.4";
+const MODERNO_VER="v3.60.0";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13339,5 +13340,6 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/project-options.css?v=35812">
 <script src="/project-options.js?v=35811"></script>
 <link rel="stylesheet" href="/brand/project-insights.css?v=3594">
+<link rel="stylesheet" href="/brand/document-builder.css?v=3600">
 </body>
 </html>
