@@ -912,7 +912,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
-<link rel="stylesheet" href="/shopping-cards.css?v=3609">
+<link rel="stylesheet" href="/shopping-cards.css?v=3610">
 </head>
 <body>
 <div class="app">
@@ -7302,9 +7302,9 @@ function vRoom(){
       <span class="secmove"><button title="Renombrar sección" onclick="renameSection(${si})">${ico("editar")}</button><button title="Eliminar sección" onclick="delSection(${si})">${ico("eliminar")}</button><button title="Subir sección" onclick="moveSection(${si},-1)">${ico("sec_up")}</button><button title="Bajar sección" onclick="moveSection(${si},1)">${ico("sec_down")}</button></span>
       <span class="line"></span><span class="dl-sum">${fmt(sub)}</span>
     </div>
-    ${sec._c?"":`<textarea class="dl-secdesc" rows="1" placeholder="Descripción de la sección…" onchange="getRoom().r.sections[${si}].desc=this.value;toast('Descripción guardada ✓')">${esc(sec.desc||"")}</textarea>
+    ${sec._c?"":`
     <div class="shopping-product-grid" ondragover="event.preventDefault()" ondrop="dropItemSection(event,${si})">
-      <div class="shopping-add-wrap"><button class="shopping-add-card" onclick="itemModal(${si},-1)"><span aria-hidden="true">+</span><strong>Añadir producto</strong></button><div class="shopping-add-options"><button class="dl-addlink sec" onclick="itemModal(${si},-1,true)">Desde URL</button><button class="dl-addlink sec" onclick="libPick(${si})">Biblioteca</button></div></div>
+      <div class="shopping-add-wrap"><button class="shopping-add-card" onclick="itemModal(${si},-1)"><span aria-hidden="true">+</span><strong>Añadir producto</strong></button><div class="shopping-add-options"><button class="dl-addlink sec" onclick="itemModal(${si},-1,true)"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-text-scan-ai"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 12h4.5" /><path d="M8 8h6" /><path d="M8 16h2" /><path d="M3 7v-2a2 2 0 0 1 2 -2h2" /><path d="M3 17v2a2 2 0 0 0 2 2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M14 21v-4a2 2 0 1 1 4 0v4" /><path d="M14 19h4" /><path d="M21 15v6" /></svg>Desde URL</button><button class="dl-addlink sec" onclick="libPick(${si})"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-book"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6l0 13" /><path d="M12 6l0 13" /><path d="M21 6l0 13" /></svg>Biblioteca</button></div></div>
       ${visible.map(({it,ii})=>`<article class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
         <button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
         <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button><strong>${fmt(it.price)}</strong></div>
@@ -11448,7 +11448,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.9";
+const MODERNO_VER="v3.60.10";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
