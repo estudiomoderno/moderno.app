@@ -43,3 +43,6 @@ Se excluye la barra de presencia del degradado inferior: tapaba Mis tareas al in
 
 ## v3.58.10 — Favicon actual
 Isotipo m de Acorn convertido desde Isotipo.svg a trazados con Inkscape. Fondo crema y trazo negro; SVG y PNG 16/32/48/180/192/512 actualizados, enlaces de favicon y Apple con nueva versión para caché. Imagen 180 revisada visualmente.
+
+## v3.58.11 — Opciones de la ficha
+Retirado solo el acceso Revisar referencias de la cabecera; SpecAudit permanece. Menú anclado a derecha con panel absoluto, acciones verticales y SVG copy.svg exacto. Apertura/cierre 180 ms, Escape devuelve foco y movimiento reducido sin animación. 339 tests; revisión en escritorio y viewport de iframe 390 px, callbacks simulados de Personalizar/Duplicar operativos. No se duplicaron proyectos reales ni se validó de nuevo persistencia remota.

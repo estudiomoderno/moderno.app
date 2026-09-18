@@ -5762,11 +5762,10 @@ function vProject(){
     ${p.client?`<div style="margin-top:4px;text-decoration:underline;font-size:13px;cursor:pointer" onclick="clientCard(this.dataset.n)" data-n="${p.client}">${p.client}</div>`:""}
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
       <button class="btn btn-ghost" style="background:rgba(255,255,255,.8)" onclick="projLinks(${p.id})">${ico('carpeta')} Carpeta de proyecto</button>
-      ${_accessRole==='admin'?`<button class="btn btn-ghost" onclick="SpecAudit.open(state.currentProject)">Revisar referencias</button>`:''}
     </div>
     <details class="project-options"><summary class="btn btn-ghost">Opciones del proyecto</summary><div class="project-options-body">
       <button class="btn btn-ghost" style="background:rgba(255,255,255,.75)" onclick="customizeModal(${p.id})">${ico('personalizar')} Personalizar</button>
-      <button class="btn btn-dark" onclick="duplicateProject(${p.id})">⧉ Duplicar proyecto</button>
+      <button class="btn btn-dark" onclick="duplicateProject(${p.id})"><img src="/brand/project-copy.svg" width="18" height="18" alt="" aria-hidden="true"> Duplicar proyecto</button>
     </div></details>
   </div>
   <div class="pill-tabs" style="margin:24px 0 22px;flex-wrap:wrap">
@@ -11498,7 +11497,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.58.10";
+const MODERNO_VER="v3.58.11";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13313,5 +13312,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/settings-ui.js?v=3566"></script>
 <link rel="stylesheet" href="/brand/hook-sidebar.css?v=3588">
 <script src="/hook-sidebar.js?v=3587"></script>
+<link rel="stylesheet" href="/brand/project-options.css?v=35811">
+<script src="/project-options.js?v=35811"></script>
 </body>
 </html>
