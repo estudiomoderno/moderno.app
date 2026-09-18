@@ -46,3 +46,6 @@ Isotipo m de Acorn convertido desde Isotipo.svg a trazados con Inkscape. Fondo c
 
 ## v3.58.11 — Opciones de la ficha
 Retirado solo el acceso Revisar referencias de la cabecera; SpecAudit permanece. Menú anclado a derecha con panel absoluto, acciones verticales y SVG copy.svg exacto. Apertura/cierre 180 ms, Escape devuelve foco y movimiento reducido sin animación. 339 tests; revisión en escritorio y viewport de iframe 390 px, callbacks simulados de Personalizar/Duplicar operativos. No se duplicaron proyectos reales ni se validó de nuevo persistencia remota.
+
+## v3.58.12 — Transición de pestañas del proyecto
+Contenido con entrada lateral y fundido de 280 ms; dirección según orden de pestañas, cabecera y navegación quietas. Respeta movimiento reducido y permisos existentes. 339 tests y prueba aislada de ida/vuelta/movimiento reducido correctos.

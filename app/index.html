@@ -4312,7 +4312,18 @@ Object.assign(ICONS,{"mas": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\
 const ico = (n,c="") => (ICONS[n]||"").replace('class=\"svgi\"','class=\"svgi '+c+'\"');
 /* =================== ROUTER =================== */
 const V = document.getElementById("view");
-function projTab(t){ if(myAccessLevel()==="colab" && (t==="fin"||t==="resumen")) { toast("No tienes acceso a los datos económicos"); t="tareas"; } state.projTab=t; render(); window.scrollTo(0,0); const m=document.querySelector(".main"); if(m) m.scrollTop=0; }
+function projTab(t){
+ if(myAccessLevel()==="colab" && (t==="fin"||t==="resumen")){toast("No tienes acceso a los datos económicos");t="tareas";}
+ const previous=state.projTab||'tareas';if(t===previous)return;
+ state.projTab=t;render();window.scrollTo(0,0);const m=document.querySelector('.main');if(m)m.scrollTop=0;
+ const order=['tareas','listas','obra','archivos','fin','cliente','chat','resumen'];
+ const direction=order.indexOf(t)>order.indexOf(previous)?1:-1;
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+ const tabs=document.querySelector('.proj-head+.pill-tabs');
+ for(let content=tabs?.nextElementSibling;content;content=content.nextElementSibling){
+  if(content.animate)content.animate([{opacity:0,transform:'translateX('+(direction*48)+'px)'},{opacity:1,transform:'translateX(0)'}],{duration:280,easing:'cubic-bezier(.22,.61,.36,1)'});
+ }
+}
 var _accessRole=null, _gestoriaData=null, _accessLoading=true;
 var _accessError='',_accessConnecting=false,_accessAttempt=0;
 const VIEW_DENY = {
@@ -11497,7 +11508,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.58.11";
+const MODERNO_VER="v3.58.12";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13312,7 +13323,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/settings-ui.js?v=3566"></script>
 <link rel="stylesheet" href="/brand/hook-sidebar.css?v=3588">
 <script src="/hook-sidebar.js?v=3587"></script>
-<link rel="stylesheet" href="/brand/project-options.css?v=35811">
+<link rel="stylesheet" href="/brand/project-options.css?v=35812">
 <script src="/project-options.js?v=35811"></script>
 </body>
 </html>

@@ -7,3 +7,5 @@
 body.dark .project-options-body img{filter:none}
 @media(max-width:810px){.project-options{position:relative;top:auto;right:auto;margin:12px 0 0 auto}.project-options .project-options-body{max-width:calc(100vw - 64px)}}
 }
+
+@media screen{#view:has(.proj-head){overflow-x:clip}}
