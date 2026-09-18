@@ -16,9 +16,12 @@
 .folio-notifications>summary{pointer-events:auto;list-style:none;position:relative;display:flex;align-items:center;justify-content:center;margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--app-surface,#f8f6ef);color:var(--ink);border:1px solid var(--ui-line,#d6d0c2);cursor:pointer;box-shadow:0 2px 8px #0001}
 .folio-notifications>summary::-webkit-details-marker{display:none}.folio-notifications>summary::marker{content:''}.folio-notifications>summary::after{display:none!important}
 .folio-notifications>summary:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.folio-notifications svg{width:19px;height:19px}
-.folio-notice-dot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--ink);border:2px solid var(--app-surface,#f8f6ef)}
+.folio-notice-count{position:absolute;top:-5px;right:-7px;min-width:19px;height:19px;box-sizing:content-box;padding:0 4px;display:flex;align-items:center;justify-content:center;border-radius:20px;background:var(--ink,#191919);color:var(--app-surface,#f8f6ef);border:2px solid var(--app-surface,#f8f6ef);font-size:11px;font-weight:700;line-height:1;overflow:hidden;font-variant-numeric:tabular-nums}
+.folio-notifications svg{transform-origin:50% 15%}.notice-ring>summary svg{animation:folioBellRing 650ms ease-in-out}.notice-count-change .folio-notice-count>span{animation:folioCountRoll 240ms ease-out}
+@keyframes folioBellRing{0%,100%{transform:rotate(0)}20%{transform:rotate(18deg)}40%{transform:rotate(-15deg)}60%{transform:rotate(10deg)}80%{transform:rotate(-5deg)}}
+@keyframes folioCountRoll{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
 .folio-notice-panel{pointer-events:auto;margin-top:8px;padding:16px;background:var(--app-surface,#f8f6ef);color:var(--ink);border:1px solid var(--ui-line,#d6d0c2);border-radius:18px;box-shadow:0 8px 24px #0002;font-size:12px;max-height:300px;overflow:auto;overflow-wrap:anywhere;animation:folioNoticeIn 160ms ease-out}
 .folio-notice-panel ul{list-style:none;padding:0;margin:8px 0 0}.folio-notice-panel li{padding:10px 0;border-top:1px solid var(--ui-line,#d6d0c2)}.folio-notice-panel li span{display:block;margin-top:5px;font-size:11px;color:var(--ink-soft)}
 @keyframes folioNoticeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
 }
-@media(prefers-reduced-motion:reduce){.folio-notice-panel{animation:none}}
+@media(prefers-reduced-motion:reduce){.folio-notice-panel,.folio-notifications svg,.folio-notice-count>span{animation:none!important}}

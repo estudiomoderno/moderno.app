@@ -7,6 +7,14 @@ const source=fs.readFileSync(new URL('../app/project-insights.js',import.meta.ur
 const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 function context(extra={}){const c={Date,crypto:{randomUUID:()=> 'test'},meName:()=> 'Persona',persistSoon(){},...extra};vm.createContext(c);vm.runInContext(source,c);return c;}
 const api=context().ModernoProjectInsights;
+test('folder bell hides at zero and counts only visible current alerts',()=>{
+ const c=context({_accessRole:'colaborador',state:{sessionUser:{id:'u'}}});
+ const p={id:1,num:'PR-1',tasks:[]};assert.equal(c.projectFolderNotifications(p),'');
+ p.tasks=[{title:'<img>',col:'pend',due:'2000-01-01'},{title:'Done',col:'listo',due:'2000-01-01'}];
+ const first=c.projectFolderNotifications(p);assert.match(first,/folio-notice-count[^>]*><span>1<\/span>/);assert.match(first,/notice-ring/);assert.doesNotMatch(first,/<img>/);assert.match(first,/&lt;img&gt;/);
+ assert.doesNotMatch(c.projectFolderNotifications(p),/notice-ring/);
+ p.tasks[0].col='listo';assert.equal(c.projectFolderNotifications(p),'');
+});
 test('project metrics ignore completed overdue tasks and invalid dates, retain undated work',()=>{
  const p={tasks:[{col:'listo',due:'2026-01-01'},{col:'prog',due:'2026-09-17'},{col:'rev',due:'2026-09-19'},{col:'pend',due:'2026-02-31'},{col:'pend'}]};
  const m=api.metrics(p,'2026-09-18');assert.equal(m.pending,4);assert.equal(m.overdue,1);assert.equal(m.progress,20);assert.equal(m.next.due,'2026-09-19');assert.equal(m.stale,false);

@@ -35,3 +35,7 @@ Se retiran de Proyectos los filtros de responsable, cliente, estado y atención 
 ## Ajuste v3.59.3
 
 Las carpetas muestran solo el cliente debajo del nombre. Se retira la etiqueta de estado y los avisos pasan a una campana independiente, con indicador de avisos y desplegable al pulsar. Incluye tareas vencidas, presupuestos pendientes según permisos e inactividad. Se cierra con Escape, clic fuera o al abrir otra campana. No modifica estados ni datos.
+
+## Ajuste v3.59.4
+
+La campana desaparece cuando no hay avisos. Contador numérico grafito/beige (99+ para cifras mayores); balanceo al aumentar y transición vertical del número cuando cambia, respetando movimiento reducido. Referencia de interacción: https://www.rareui.com/components/notificationbell. Es un recuento de avisos vigentes, no de mensajes sin leer: abrirlos no los elimina.
