@@ -1194,7 +1194,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/phone-vendor.js?v=1.13.13"></script>
 <script src="/phone-controls.js?v=3491"></script>
 <link rel="stylesheet" href="/product-clipper.css?v=3511">
-<script src="/product-clipper.js?v=3511"></script>
+<script src="/product-clipper.js?v=3611"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -8965,7 +8965,7 @@ function itemModal(si,ii,fromUrl){
     <input id="itUrl" value="${ModernoDaily.escape(it.url||"")}" placeholder="https://www.sklum.com/es/…" style="flex:1 1 200px;min-width:0;max-width:100%">
     ${ii<0?`<button class="btn btn-gold" style="flex:0 0 auto" onclick="ProductClipper.open('lista',${si})">Importar producto</button>`:''}
   </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">Importa el producto desde la tienda con revisión previa o completa esta ficha manualmente.</p>
+  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">Añade los datos desde la URL de la tienda o completa esta ficha manualmente.</p>
   <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
     <div class="thumb" id="itThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('itImgFile').click()">${itImg?`<img ${fileImageAttrs(itImg)}>`:"🛋"}</div>
     <div><label style="margin-top:0">Foto</label>
@@ -11448,7 +11448,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.10";
+const MODERNO_VER="v3.60.11";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
