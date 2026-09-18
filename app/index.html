@@ -912,7 +912,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
-<link rel="stylesheet" href="/shopping-cards.css?v=3614">
+<link rel="stylesheet" href="/shopping-cards.css?v=3615">
 </head>
 <body>
 <div class="app">
@@ -7302,17 +7302,17 @@ function vRoom(){
     const sub = sec.items.reduce((a,i)=>a+i.price*i.qty,0);
     const visible = sec.items.map((it,ii)=>({it,ii})).filter(({it})=>match(it));
     return `
-    <div class="dl-sec" id="sec-${si}">
+    <div class="dl-sec" id="sec-${si}" data-shopping-section="${si}"><button class="shopping-grip" aria-label="Mover sección ${ModernoDaily.escape(sec.name)}" title="Arrastra para mover · flechas arriba y abajo" onpointerdown="shoppingMoveStart(event,${si})" onkeydown="shoppingMoveKey(event,${si})">⠿</button>
       <button class="arr ${sec._c?"closed":""}" title="${sec._c?"Desplegar":"Encoger"} la sección" onclick="event.stopPropagation();toggleShoppingSection(${si},this)">${ico("sec_fold")}</button>
       <b title="Pulsa para renombrar la sección" style="cursor:text" onclick="renameSection(${si})">${sec.name}</b><span class="dl-cnt">${sec.items.length}</span>
-      <span class="secmove"><button title="Renombrar sección" onclick="renameSection(${si})">${ico("editar")}</button><button title="Eliminar sección" onclick="delSection(${si})">${ico("eliminar")}</button><button title="Subir sección" onclick="moveSection(${si},-1)">${ico("sec_up")}</button><button title="Bajar sección" onclick="moveSection(${si},1)">${ico("sec_down")}</button></span>
+      <details class="shopping-section-menu"><summary aria-label="Opciones de la sección">···</summary><div><button onclick="renameSection(${si})">Renombrar</button><button onclick="moveSection(${si},-1)" ${si===0?'disabled':''}>Mover arriba</button><button onclick="moveSection(${si},1)" ${si===r.sections.length-1?'disabled':''}>Mover abajo</button><button onclick="delSection(${si})">Eliminar sección</button></div></details>
       <span class="line"></span><span class="dl-sum">${fmt(sub)}</span>
     </div>
     ${sec._c?"":`<div id="shopping-section-${si}">
     <div class="shopping-product-grid" ondragover="event.preventDefault()" ondrop="dropItemSection(event,${si})">
       <div class="shopping-add-wrap"><button class="shopping-add-card" onclick="itemModal(${si},-1)"><span aria-hidden="true">+</span><strong>Añadir producto</strong></button><div class="shopping-add-options"><button class="dl-addlink sec" onclick="itemModal(${si},-1,true)"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-text-scan-ai"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 12h4.5" /><path d="M8 8h6" /><path d="M8 16h2" /><path d="M3 7v-2a2 2 0 0 1 2 -2h2" /><path d="M3 17v2a2 2 0 0 0 2 2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M14 21v-4a2 2 0 1 1 4 0v4" /><path d="M14 19h4" /><path d="M21 15v6" /></svg>Desde URL</button><button class="dl-addlink sec" onclick="libPick(${si})"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-book"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6l0 13" /><path d="M12 6l0 13" /><path d="M21 6l0 13" /></svg>Biblioteca</button></div></div>
-      ${visible.map(({it,ii})=>`<article class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
-        <button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
+      ${visible.map(({it,ii})=>`<article data-shopping-section="${si}" data-shopping-item="${ii}" class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
+        <button class="shopping-grip shopping-product-grip" aria-label="Mover ${ModernoDaily.escape(it.name)}" title="Arrastra para ordenar · usa las flechas con el teclado" onpointerdown="shoppingMoveStart(event,${si},${ii})" onkeydown="shoppingMoveKey(event,${si},${ii})">⠿</button><button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
         <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button><strong>${fmt(it.price)}</strong></div>
         <p class="shopping-product-meta">${ModernoDaily.escape([it.supplier,it.color,it.dims].filter(Boolean).join(' · '))}</p>
         <p class="shopping-product-meta">${it.qty} ${ModernoDaily.escape(({m2:'m²',m3:'m³'})[it.unit]||it.unit||'ud')} · Total ${fmt(it.price*it.qty)}${it.plazo?' · '+ModernoDaily.escape(it.plazo):''}</p>
@@ -8887,6 +8887,18 @@ function marginModal(){
     <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
     <button class="btn btn-dark" onclick="getRoom().r.margin=Math.max(0,+document.getElementById('mgPct').value||0);closeModal();render();toast('Margen general aplicado — ganancia visible por producto')">Aplicar</button>
   </div>`);
+}
+function shoppingReorder(si,ii,toSi,toIi){
+ const {p,r}=getRoom();if(!r.sections[si]||!r.sections[toSi])return;
+ if(ii==null){if(si===toSi)return;specPrepare(p);const section=r.sections.splice(si,1)[0];r.sections.splice(toSi,0,section);}
+ else{if(!r.sections[si].items[ii]||(si===toSi&&ii===toIi))return;specPrepare(p);const item=r.sections[si].items.splice(ii,1)[0];r.sections[toSi].items.splice(toIi==null?r.sections[toSi].items.length:toIi,0,item);}
+ render();
+}
+function shoppingMoveKey(ev,si,ii){if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(ev.key))return;ev.preventDefault();const delta=['ArrowUp','ArrowLeft'].includes(ev.key)?-1:1;const {r}=getRoom();if(ii==null){const next=si+delta;if(next>=0&&next<r.sections.length)shoppingReorder(si,null,next);}else{const next=ii+delta;if(next>=0&&next<r.sections[si].items.length)shoppingReorder(si,ii,si,next);}}
+function shoppingMoveStart(ev,si,ii){
+ if(ev.button!==0)return;ev.preventDefault();ev.stopPropagation();const button=ev.currentTarget,owner=getRoom().r;button.setPointerCapture(ev.pointerId);button.classList.add('moving');
+ const stop=e=>{button.classList.remove('moving');button.removeEventListener('pointerup',stop);button.removeEventListener('pointercancel',stop);if(e.type==='pointercancel'||getRoom().r!==owner)return;const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-shopping-section]');if(!target)return;shoppingReorder(si,ii,Number(target.dataset.shoppingSection),ii==null?null:target.dataset.shoppingItem==null?null:Number(target.dataset.shoppingItem));};
+ button.addEventListener('pointerup',stop);button.addEventListener('pointercancel',stop);
 }
 function moveSection(si,dir){
   specPrepare(getRoom().p);
@@ -11454,7 +11466,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.14";
+const MODERNO_VER="v3.60.15";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
