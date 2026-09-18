@@ -18,10 +18,14 @@ function mergeSavedData(base, local, remote, depth = 0, review = null, path = []
   if (equal(local,remote)) return local;
   if (equal(base,local)) return remote;
   if (equal(base,remote)) return local;
+  // A new project journal may be created on two devices at once. Entries have
+  // unique immutable IDs; merge additions while retaining conflicts on edits.
+  const journal = path.at(-1)==='comments' && [local,remote].every(a=>Array.isArray(a)&&a.every(e=>e&&typeof e.cid==='string'&&e.cid.startsWith('project-change-'))) && (base===missing||Array.isArray(base)&&base.every(e=>e&&typeof e.cid==='string'&&e.cid.startsWith('project-change-')));
+  if(journal && base===missing)base=[];
   if (depth > 100) return conflict('Conflicto: estructura demasiado profunda');
   if ([base,local,remote].every(Array.isArray)) {
     const all = [...base,...local,...remote];
-    const key = ['id','ref'].find(k => all.every(x => x && typeof x === 'object' && !Array.isArray(x) && ['string','number'].includes(typeof x[k])));
+    const key = (journal?['cid']:['id','ref']).find(k => all.every(x => x && typeof x === 'object' && !Array.isArray(x) && ['string','number'].includes(typeof x[k])));
     if (!key) return conflict('Conflicto: dos cambios en la misma lista');
     const id = x => typeof x[key] + ':' + x[key];
     const maps = [base,local,remote].map(a => new Map(a.map(x => [id(x),x])));

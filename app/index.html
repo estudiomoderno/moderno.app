@@ -1163,7 +1163,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <div id="printZone" style="display:none"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/sync-merge.js?v=331"></script>
+<script src="/sync-merge.js?v=3590"></script>
 <script src="/private-files.js?v=20260909"></script>
 <script src="/daily-work.js?v=20260909"></script>
 <script src="/gestoria.js?v=20260909"></script>
@@ -1171,6 +1171,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=333"></script>
 <script src="/specifications.js?v=340"></script>
+<script src="/project-insights.js?v=3590"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3572"></script>
 <script src="/project-quotes.js?v=343"></script>
@@ -4319,7 +4320,7 @@ function projTab(t){
  const order=['tareas','listas','obra','archivos','fin','cliente','chat','resumen'];
  const direction=order.indexOf(t)>order.indexOf(previous)?1:-1;
  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
- const tabs=document.querySelector('.proj-head+.pill-tabs');
+ const tabs=document.querySelector('.project-tabs');
  for(let content=tabs?.nextElementSibling;content;content=content.nextElementSibling){
   if(content.animate)content.animate([{opacity:0,transform:'translateX('+(direction*48)+'px)'},{opacity:1,transform:'translateX(0)'}],{duration:280,easing:'cubic-bezier(.22,.61,.36,1)'});
  }
@@ -5208,10 +5209,10 @@ function projectFolio(p){
       <span class="folio-scene"><span class="folio-back"></span>
       ${[0,1,2].map(i=>`<span class="folio-sheet folio-sheet-${i}"><span class="folio-sheet-lines" aria-hidden="true"></span></span>`).join('')}
       <span class="folio-flap"><strong class="folio-name">${E(p.num)} ${E(p.name)}</strong><span class="folio-plus" aria-hidden="true"></span></span></span>
-      <span class="folio-caption"><span class="folio-client">${E(p.client||'Sin cliente asignado')}</span><span class="folio-state">${E(p.status||'En progreso')}</span></span>
+      <span class="folio-caption"><span class="folio-client">${E(p.client||'Sin cliente asignado')}</span><span class="folio-state">${E(p.status||'En progreso')}</span>${typeof projectAlerts==='function'?projectAlerts(p):''}</span>
     </summary>
     <div class="folio-controls"><button class="btn btn-dark" onclick="go('proyecto',${id})">Abrir proyecto</button>
-    ${editable?`<button class="btn btn-ghost" onclick="customizeModal(${id})">${ico('editar')} Editar</button><details class="folio-more"><summary aria-label="Más acciones de ${E(p.num)}">···</summary><div><button onclick="duplicateProject(${id})">${ico('dup_proyecto')} Duplicar</button><button onclick="toggleArchive(${id})">${ico('archivar')} ${p.status==='Archivado'?'Desarchivar':'Archivar'}</button><button onclick="deleteProject(${id})">${ico('eliminar')} Eliminar</button></div></details>`:''}</div>
+    ${editable?`<button class="btn btn-ghost" onclick="customizeModal(${id})">${ico('editar')} Editar</button><details class="folio-more"><summary aria-label="Más acciones de ${E(p.num)}">···</summary><div><button onclick="customizeModal(${id},'appearance')">${ico('personalizar')} Personalizar carpeta</button><button onclick="duplicateProject(${id})">${ico('dup_proyecto')} Duplicar</button><button onclick="toggleArchive(${id})">${ico('archivar')} ${p.status==='Archivado'?'Desarchivar':'Archivar'}</button><button onclick="deleteProject(${id})">${ico('eliminar')} Eliminar</button></div></details>`:''}</div>
   </details>`;
 }
 function folderCard(p){
@@ -5330,7 +5331,7 @@ function wsDrop(ev,col){
   if(!dragging) return;
   const p = state.projects.find(x=>x.id===dragging.pid);
   const t = p.tasks[dragging.idx];
-  if(t.col!==col){ t.col=col; render(); toast(t.title+" → "+KCOLS.find(k=>k[0]===col)[1]); }
+  if(t.col!==col){ const before=projectChangeStart(p);t.col=col;projectChangeEnd(p,before); render(); toast(t.title+" → "+KCOLS.find(k=>k[0]===col)[1]); }
   dragging=null;
 }
 function wsNewTask(col){
@@ -5687,7 +5688,9 @@ function projectsViewSet(view){
 }
 function vProjects(){
   const PQ=(state.projQ||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const pMatch = p => !PQ || (p.num+" "+p.name+" "+(p.client||"")).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(PQ);
+  const pSearch = p => !PQ || (p.num+" "+p.name+" "+(p.client||"")).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(PQ);
+  const filters=projectFilters();
+  const pMatch=p=>pSearch(p)&&ModernoProjectInsights.matches(p,filters,filters.attention&&projectPendingQuotes(p).length>0);
   const arch = !!state.showArchived;
   const archHits = (PQ && !arch) ? sortProjects(byBrand(state.projects.filter(p=>!p.tpl && p.status==="Archivado")).filter(pMatch)) : [];
   const projs = sortProjects(byBrand(state.projects.filter(p=>!p.tpl)).filter(p => arch ? p.status==="Archivado" : p.status!=="Archivado").filter(pMatch));
@@ -5713,9 +5716,10 @@ function vProjects(){
     <button class="btn ${arch?'btn-dark':'btn-ghost'}" onclick="state.showArchived=!state.showArchived;render()">${ico('archivar')} Archivados</button>
     ${arch?"":`<button class="btn btn-dark" onclick="newProject()">${ico("mas")} Nuevo proyecto</button>`}
   </div>
+  ${projectFiltersHtml()}
   ${PQ?`<div class="daily-filter-info">Para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button></div>`:''}
   </header><div class="projects-view-content">
-  ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
+  ${(PQ||Object.values(filters).some(Boolean))&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número, cliente o filtro.')+'</div>':''}
   ${timeMode? vTimeline(projs.filter(x=>!x.tpl)) : listMode? `
   <table class="list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
     ${projs.length? projs.map(p=>{ const c=folderColors(p); return `<tr style="cursor:pointer" onclick="go('proyecto',${p.id})">
@@ -5723,7 +5727,7 @@ function vProjects(){
       <td><b>${p.icon?p.icon+" ":""}${p.num} ${p.name}</b> ${p.tpl?'<span class="chip tpl">Plantilla</span>':""} ${(p.tags||[]).map(t=>`<span class="chip tag">${t}</span>`).join(" ")}</td>
       <td><span class="chip ${BRAND[p.brand].chip}">${BRAND[p.brand].name}</span></td>
       <td>${p.client||"—"}</td>
-      <td><span class="chip neutral">${p.status}</span></td>
+      <td><span class="chip neutral">${p.status}</span>${projectAlerts(p)}</td>
       <td>${p.tasks.filter(t=>t.col==="listo").length}/${p.tasks.length}</td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn btn-ghost" title="Duplicar" onclick="event.stopPropagation();duplicateProject(${p.id})">${ico('dup_proyecto')}</button>
@@ -5742,7 +5746,9 @@ function vProjects(){
 }
 function toggleArchive(id){
   const p = state.projects.find(x=>x.id===id);
+  const changeBefore=projectChangeStart(p);
   p.status = p.status==="Archivado" ? "En progreso" : "Archivado";
+  projectChangeEnd(p,changeBefore);
   render(); toast(p.status==="Archivado" ? "▣ "+p.num+" archivado" : "↩ "+p.num+" recuperado");
 }
 
@@ -5775,11 +5781,13 @@ function vProject(){
       <button class="btn btn-ghost" style="background:rgba(255,255,255,.8)" onclick="projLinks(${p.id})">${ico('carpeta')} Carpeta de proyecto</button>
     </div>
     <details class="project-options"><summary class="btn btn-ghost">Opciones del proyecto</summary><div class="project-options-body">
-      <button class="btn btn-ghost" style="background:rgba(255,255,255,.75)" onclick="customizeModal(${p.id})">${ico('personalizar')} Personalizar</button>
+      <button class="btn btn-ghost" style="background:rgba(255,255,255,.75)" onclick="customizeModal(${p.id})">${ico('editar')} Editar datos</button>
+      <button class="btn btn-ghost" onclick="customizeModal(${p.id},'appearance')">${ico('personalizar')} Personalizar carpeta</button>
       <button class="btn btn-dark" onclick="duplicateProject(${p.id})"><img src="/brand/project-copy.svg" width="18" height="18" alt="" aria-hidden="true"> Duplicar proyecto</button>
     </div></details>
   </div>
-  <div class="pill-tabs" style="margin:24px 0 22px;flex-wrap:wrap">
+  ${projectOverview(p)}
+  <div class="pill-tabs project-tabs" style="margin:24px 0 22px;flex-wrap:wrap">
     ${[["tareas","tabs.tareas","tab_tareas"],["listas","tabs.listas","tab_listas"],["obra","tabs.obra","tab_obra"],["archivos","tabs.archivos","tab_archivos"],["fin","tabs.fin","finanzas"],["cliente","tabs.cliente","tab_pres"],["chat","tabs.chat","tab_chat"],["resumen","tabs.resumen","resumen_ic"]].map(([k,t,ic])=>`<button class="${tb===k?'on':''}" style="display:inline-flex;align-items:center;gap:6px" onclick="projTab('${k}')">${ico(ic)} ${tr(t)}</button>`).join("")}
   </div>
   ${tb!=="tareas"?"":(function(){ ensurePhases(p); ensureTaskIds(p); const cur=curPhase(p);
@@ -9312,7 +9320,7 @@ function saveAsTemplateDo(pid){
   const name=(document.getElementById("tplName")||{}).value||""; const vaciar=!!(document.getElementById("tplEmpty")||{}).checked;
   if(!name.trim()){ toast("Escribe un nombre para la plantilla"); return; }
   const c=JSON.parse(JSON.stringify(p));
-  c.id=Date.now(); c.tpl=true; c.num="PLANTILLA"; c.name=name.trim(); c.client=null; c.chat=[]; c.files=[]; c.cliShare=null; c.cliChat=[];
+  c.id=Date.now(); c.tpl=true; c.num="PLANTILLA"; c.name=name.trim(); c.client=null; c.comments=[]; c.chat=[]; c.files=[]; c.cliShare=null; c.cliChat=[];
   if(vaciar){ c.tasks=[]; c.rooms=[]; c.phases=null; c.total=0; c.payPlan=[]; c.notes=""; c.docs=[]; c.obraPlanos=[]; c.obraAgenda=[]; }
   closeModal();
   c.tasks=cloneTasksWithDeps(c.tasks, t=>{ t.col="pend"; t.done=false; t.assignee=""; t.assignees=[]; t.comments=[]; });
@@ -9361,12 +9369,12 @@ function doDuplicate(id){
 }
 const SWATCH_HEX = ["#F8E88F","#F6B8CD","#F8C9A4","#B4E4C9","#BFDCF5","#C9B8F0","#EE8B7B","#A9C79B","#E4E1DA","#3A2C27"];
 let cz = null;
-function customizeModal(id){
+function customizeModal(id,mode="data"){
   const p=state.projects.find(x=>x.id===id);if(!p)return;
   const E=ModernoDaily.escape;
-  cz={folderPhotos:[...folderPhotoSources(p)],busy:false,color:p.color||null,icon:p.icon||'',tags:(p.tags||[]).join(', '),client:p.client||'',name:p.name||'',status:p.status||'En progreso'};
-  modal(`<div class="project-editor">
-    <header class="project-editor-header"><div><h3>Editar proyecto</h3><p>Personaliza la carpeta y los datos del proyecto.</p></div><button class="btn btn-ghost" aria-label="Cerrar edición" onclick="closeModal()">×</button></header>
+  cz={mode,folderPhotos:[...folderPhotoSources(p)],busy:false,color:p.color||null,icon:p.icon||'',tags:(p.tags||[]).join(', '),client:p.client||'',name:p.name||'',status:p.status||'En progreso'};
+  modal(`<div class="project-editor" data-mode="${mode==='appearance'?'appearance':'data'}">
+    <header class="project-editor-header"><div><h3>${mode==='appearance'?'Personalizar carpeta':'Editar datos del proyecto'}</h3><p>${mode==='appearance'?'Elige el color de la carpeta.':'Nombre, estado, cliente y etiquetas.'}</p></div><button class="btn btn-ghost" aria-label="Cerrar edición" onclick="closeModal()">×</button></header>
     <div class="project-editor-layout">
       <section class="project-editor-appearance" aria-label="Aspecto de la carpeta">
         <div id="czPreview"></div>
@@ -9447,12 +9455,16 @@ function saveCustomize(id){
   if(!cz||cz.busy)return;
   const p = state.projects.find(x=>x.id===id);
   if(!p)return;
+  const changeBefore=typeof projectChangeStart==='function'?projectChangeStart(p):null;
+  if(cz.mode!=='appearance'){
   if(cz.name && cz.name.trim()) p.name = cz.name.trim();
   // Existing folder photos are retained; this editor no longer modifies them.
-  p.color = cz.color;
+  if(!cz.mode)p.color = cz.color;
   if(cz.status)p.status=cz.status;
   p.tags = cz.tags.split(",").map(s=>s.trim()).filter(Boolean);
   p.client = cz.client || null;
+  }else{p.color=cz.color;}
+  if(typeof projectChangeEnd==='function')projectChangeEnd(p,changeBefore);
   closeModal(); render(); toast("Cambios guardados ✓");
 }
 function deleteProject(id){
@@ -9480,7 +9492,7 @@ function dropTask(ev,col,pid){
   const t = p.tasks[dragging.idx];
   if(t.col!==col){
     const was=t.col;
-    const mover=()=>{ t.col = col; render(); toast(t.title+" → "+KCOLS.find(k=>k[0]===col)[1]); if(col==="listo") taskReleaseCheck(p,t); };
+    const mover=()=>{ const before=projectChangeStart(p);t.col = col;projectChangeEnd(p,before); render(); toast(t.title+" → "+KCOLS.find(k=>k[0]===col)[1]); if(col==="listo") taskReleaseCheck(p,t); };
     if(was==="pend" && col!=="pend" && taskBlocked(p,t)) taskBlockConfirm(p,t,mover); else mover();
   }
   dragging = null;
@@ -9840,7 +9852,7 @@ function taskImportRun(pid){
   const ids=Object.keys(state._tiSel||{}).map(Number); if(!ids.length){ toast("Marca al menos una tarea"); return; }
   const sel=(sp.tasks||[]).filter(t=>ids.includes(t.id));
   const nuevas=cloneTasksWithDeps(sel, t=>{ t.col="pend"; t.done=false; t.assignee=""; t.assignees=[]; t.comments=[]; t.due=""; t.subs=(t.subs||[]).map(s=>({txt:s.txt,done:false})); });
-  p.tasks.push(...nuevas); state._tiSel={}; persistSoon(); closeModal(); render();
+  const before=projectChangeStart(p);p.tasks.push(...nuevas);projectChangeEnd(p,before); state._tiSel={}; persistSoon(); closeModal(); render();
   toast("＋ "+nuevas.length+" tarea"+(nuevas.length===1?"":"s")+" importada"+(nuevas.length===1?"":"s")+" de "+sp.num+" — sin asignar");
 }
 function tkToggleDep(id, el){ const S=new Set(tk.deps||[]); if(S.has(id)) S.delete(id); else S.add(id); tk.deps=[...S]; el.classList.toggle("on",S.has(id)); const c=document.getElementById("tkDepCount"); if(c) c.textContent=tk.deps.length?tk.deps.length+" seleccionada"+(tk.deps.length===1?"":"s"):""; }
@@ -9988,6 +10000,7 @@ function tkSyncSubs(){
 }
 function saveTask(pid,idx){
   const p = state.projects.find(x=>x.id===pid);
+  const changeBefore=typeof projectChangeStart==='function'?projectChangeStart(p):null;
   tkSyncSubs();
   const nt = { title:document.getElementById("tkTitle").value||"Tarea",
     col:document.querySelector("#tkCol .on").dataset.v, type:document.querySelector("#tkType .on").dataset.v,
@@ -10001,8 +10014,9 @@ function saveTask(pid,idx){
   let pedirOk=false;
   if(nt.col!=="pend" && prevCol==="pend" && taskBlocked(p,nt)){ pedirOk=nt.col; nt.col="pend"; }
   if(idx>=0) p.tasks[idx]=nt; else p.tasks.push(nt);
+  if(typeof projectChangeEnd==='function')projectChangeEnd(p,changeBefore);
   state._tkCtx=null;
-  if(pedirOk){ const dest=pedirOk; closeModal(); render(); taskBlockConfirm(p,nt,()=>{ nt.col=dest; render(); if(dest==="listo") taskReleaseCheck(p,nt); }); return; }
+  if(pedirOk){ const dest=pedirOk; closeModal(); render(); taskBlockConfirm(p,nt,()=>{ const before=projectChangeStart(p);nt.col=dest;projectChangeEnd(p,before); render(); if(dest==="listo") taskReleaseCheck(p,nt); }); return; }
   const dc=taskDateConflicts(p,nt); if(dc.length) toast("⚠ Fecha límite anterior a la de "+dc.map(d=>d.title).join(", "));
   if(taskDone(nt) && prevCol!=="listo") taskReleaseCheck(p,nt);
   if(nt.acc && nt.amount && !state.entries.some(e=>e.concept.startsWith(nt.title+" · "+p.num))){
@@ -10011,7 +10025,7 @@ function saveTask(pid,idx){
   }
   closeModal(); render();
 }
-function delTask(pid,idx){ const p=state.projects.find(x=>x.id===pid); const t=p.tasks[idx]; p.tasks.splice(idx,1); if(t&&t.id) p.tasks.forEach(x=>{ if(Array.isArray(x.deps)) x.deps=x.deps.filter(d=>d!==t.id); }); closeModal(); render(); }
+function delTask(pid,idx){ const p=state.projects.find(x=>x.id===pid); const before=projectChangeStart(p);const t=p.tasks[idx]; p.tasks.splice(idx,1);projectChangeEnd(p,before); if(t&&t.id) p.tasks.forEach(x=>{ if(Array.isArray(x.deps)) x.deps=x.deps.filter(d=>d!==t.id); }); closeModal(); render(); }
 
 let impRows=[];
 function importModal(){
@@ -11508,7 +11522,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.58.12";
+const MODERNO_VER="v3.59.0";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11729,6 +11743,7 @@ function absorbComments(localProjects, remoteProjects){
   remoteProjects.forEach(rp=>{ const lp=localProjects.find(p=>p.id===rp.id); if(!lp) return;
     (rp.tasks||[]).forEach((rt,ri)=>{ const lt=(lp.tasks||[]).find(t=>rt.id&&t.id===rt.id) || (!rt.id && (lp.tasks||[])[ri] && (lp.tasks||[])[ri].title===rt.title ? lp.tasks[ri] : null); if(!lt) return;
       if((rt.comments||[]).length) lt.comments=union(lt.comments, rt.comments); });
+    if((rp.comments||[]).length) lp.comments=union(lp.comments, rp.comments);
     if((rp.chat||[]).length) lp.chat=union(lp.chat, rp.chat);
     if((rp.cliChat||[]).length) lp.cliChat=union(lp.cliChat, rp.cliChat);
   });
@@ -13325,5 +13340,6 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/hook-sidebar.js?v=3587"></script>
 <link rel="stylesheet" href="/brand/project-options.css?v=35812">
 <script src="/project-options.js?v=35811"></script>
+<link rel="stylesheet" href="/brand/project-insights.css?v=3590">
 </body>
 </html>
