@@ -912,7 +912,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
-<link rel="stylesheet" href="/shopping-cards.css?v=3610">
+<link rel="stylesheet" href="/shopping-cards.css?v=3614">
 </head>
 <body>
 <div class="app">
@@ -1193,8 +1193,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/contact-controls.css?v=353">
 <script src="/phone-vendor.js?v=1.13.13"></script>
 <script src="/phone-controls.js?v=3491"></script>
-<link rel="stylesheet" href="/product-clipper.css?v=3613">
-<script src="/product-clipper.js?v=3613"></script>
+<link rel="stylesheet" href="/product-clipper.css?v=3614">
+<script src="/product-clipper.js?v=3614"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -7249,6 +7249,12 @@ function roomCost(r){ const items=r.sections.flatMap(s=>s.items);return items.so
 function openRoom(pid,rid){ state.currentProject=pid; state.currentRoom=rid; go("estancia"); }
 function getRoom(){ const p=state.projects.find(x=>x.id===state.currentProject); return {p, r:(p&&p.rooms||[]).find(x=>x.id===state.currentRoom)}; }
 
+function toggleShoppingSection(si,button){
+ const section=getRoom().r.sections[si];section._c=!section._c;
+ button.classList.toggle('closed',!!section._c);button.title=(section._c?'Desplegar':'Encoger')+' la sección';
+ const content=document.getElementById('shopping-section-'+si);
+ if(content)content.hidden=!!section._c;else render();
+}
 function vRoom(){
   const {p,r} = getRoom();
   if(!p||!r) return vProjects();
@@ -7297,12 +7303,12 @@ function vRoom(){
     const visible = sec.items.map((it,ii)=>({it,ii})).filter(({it})=>match(it));
     return `
     <div class="dl-sec" id="sec-${si}">
-      <button class="arr ${sec._c?"closed":""}" title="${sec._c?"Desplegar":"Encoger"} la sección" onclick="event.stopPropagation();getRoom().r.sections[${si}]._c=!getRoom().r.sections[${si}]._c;render()">${ico("sec_fold")}</button>
+      <button class="arr ${sec._c?"closed":""}" title="${sec._c?"Desplegar":"Encoger"} la sección" onclick="event.stopPropagation();toggleShoppingSection(${si},this)">${ico("sec_fold")}</button>
       <b title="Pulsa para renombrar la sección" style="cursor:text" onclick="renameSection(${si})">${sec.name}</b><span class="dl-cnt">${sec.items.length}</span>
       <span class="secmove"><button title="Renombrar sección" onclick="renameSection(${si})">${ico("editar")}</button><button title="Eliminar sección" onclick="delSection(${si})">${ico("eliminar")}</button><button title="Subir sección" onclick="moveSection(${si},-1)">${ico("sec_up")}</button><button title="Bajar sección" onclick="moveSection(${si},1)">${ico("sec_down")}</button></span>
       <span class="line"></span><span class="dl-sum">${fmt(sub)}</span>
     </div>
-    ${sec._c?"":`
+    ${sec._c?"":`<div id="shopping-section-${si}">
     <div class="shopping-product-grid" ondragover="event.preventDefault()" ondrop="dropItemSection(event,${si})">
       <div class="shopping-add-wrap"><button class="shopping-add-card" onclick="itemModal(${si},-1)"><span aria-hidden="true">+</span><strong>Añadir producto</strong></button><div class="shopping-add-options"><button class="dl-addlink sec" onclick="itemModal(${si},-1,true)"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-text-scan-ai"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 12h4.5" /><path d="M8 8h6" /><path d="M8 16h2" /><path d="M3 7v-2a2 2 0 0 1 2 -2h2" /><path d="M3 17v2a2 2 0 0 0 2 2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M14 21v-4a2 2 0 1 1 4 0v4" /><path d="M14 19h4" /><path d="M21 15v6" /></svg>Desde URL</button><button class="dl-addlink sec" onclick="libPick(${si})"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-book"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6l0 13" /><path d="M12 6l0 13" /><path d="M21 6l0 13" /></svg>Biblioteca</button></div></div>
       ${visible.map(({it,ii})=>`<article class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
@@ -7315,7 +7321,7 @@ function vRoom(){
       </article>`).join('')}
       ${(q||filtering)&&!visible.length?'<p>Sin resultados en esta sección</p>':''}
     </div>
-`}`}).join("")}
+</div>`}`}).join("")}
   <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap;align-items:center">
     <button class="dl-btn" onclick="newSection()">${ico("mas")} Añadir sección</button>
     <span style="flex:1"></span>
@@ -11108,8 +11114,8 @@ function fileLoadImage(img,refresh=false){
   _imageLoads.set(img,promise);return promise;
 }
 document.addEventListener('DOMContentLoaded',()=>{
-  const scan=()=>document.querySelectorAll('img[data-private-file]').forEach(img=>{
-    if(!_imageLoads.has(img))fileLoadImage(img).catch(()=>{img.alt='Imagen no disponible';});
+  const scan=()=>document.querySelectorAll('img[data-private-file],.shopping-product-photo img').forEach(img=>{
+    if(!_imageLoads.has(img))fileLoadImage(img).then(()=>{img.classList.add('image-ready');}).catch(()=>{img.alt='Imagen no disponible';img.classList.add('image-failed');});
   });
   new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
 });
@@ -11448,7 +11454,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.13";
+const MODERNO_VER="v3.60.14";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
