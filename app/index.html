@@ -1172,7 +1172,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/router.js?v=333"></script>
 <script src="/specifications.js?v=340"></script>
 <script src="/project-insights.js?v=3600"></script>
-<script src="/document-builder.js?v=3601"></script>
+<script src="/document-builder.js?v=3602"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3572"></script>
 <script src="/project-quotes.js?v=343"></script>
@@ -6839,7 +6839,8 @@ function vDocs(){
   return `
   <h1 class="big">Plantillas y documentos</h1>
   ${dgHome()}
-  <h2 class="sec" style="margin-top:22px">Otras plantillas guardadas</h2>
+  <h2 id="my-document-templates" class="sec" style="margin-top:22px">Mis plantillas</h2>
+  ${dgTemplates()}
   <p class="sub">Contratos tipo, condiciones, dossieres… los papeles que reutilizas en cada proyecto, listos para llevar a cualquiera.</p>
   <button class="btn btn-dark" style="margin-bottom:14px" onclick="docModal(-1)">${ico("mas")} Nueva plantilla</button>
   <div class="proj-grid" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px">
@@ -11503,7 +11504,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.1";
+const MODERNO_VER="v3.60.2";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

@@ -36,3 +36,7 @@ Despliegue habitual con `deploy-app.yml`, recursos antes que HTML. Reversión de
 ## Presentación v3.60.1
 
 El generador y los documentos guardados se presentan como tarjetas de papel con pliegue, tonos suaves, aparición escalonada y elevación al señalar. En móvil se muestran en dos columnas. Se retiran de esta pantalla las secciones Plantillas de proyecto y Fases de obra sin borrar sus datos ni las funciones de uso desde proyectos/obra.
+
+## Organización v3.60.2
+
+«Guardar como plantilla» añade la plantilla a «Mis plantillas», debajo del generador y los documentos guardados, junto a las plantillas anteriores. Tras guardarla se cierra el editor y se muestra esa sección. Los documentos concretos permanecen en «Mis documentos». No se migran ni eliminan datos.
