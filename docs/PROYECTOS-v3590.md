@@ -27,3 +27,7 @@ Para retirar la interfaz, revertir el commit de esta versión y desplegar median
 ## Ajuste v3.59.1
 
 En las carpetas, el aviso de 14 días sin actividad aparece al señalar con el ratón, recibir foco de teclado o desplegar la carpeta (también en móvil). Los demás avisos y el resumen interior conservan su comportamiento.
+
+## Ajuste v3.59.2
+
+Se retiran de Proyectos los filtros de responsable, cliente, estado y atención a petición del usuario. El listado utiliza únicamente el buscador y la selección existente de activos/archivados. Las preferencias antiguas de filtros ya no se leen ni afectan a los resultados.

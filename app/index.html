@@ -5689,8 +5689,7 @@ function projectsViewSet(view){
 function vProjects(){
   const PQ=(state.projQ||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const pSearch = p => !PQ || (p.num+" "+p.name+" "+(p.client||"")).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(PQ);
-  const filters=projectFilters();
-  const pMatch=p=>pSearch(p)&&ModernoProjectInsights.matches(p,filters,filters.attention&&projectPendingQuotes(p).length>0);
+  const pMatch=pSearch;
   const arch = !!state.showArchived;
   const archHits = (PQ && !arch) ? sortProjects(byBrand(state.projects.filter(p=>!p.tpl && p.status==="Archivado")).filter(pMatch)) : [];
   const projs = sortProjects(byBrand(state.projects.filter(p=>!p.tpl)).filter(p => arch ? p.status==="Archivado" : p.status!=="Archivado").filter(pMatch));
@@ -5716,10 +5715,9 @@ function vProjects(){
     <button class="btn ${arch?'btn-dark':'btn-ghost'}" onclick="state.showArchived=!state.showArchived;render()">${ico('archivar')} Archivados</button>
     ${arch?"":`<button class="btn btn-dark" onclick="newProject()">${ico("mas")} Nuevo proyecto</button>`}
   </div>
-  ${projectFiltersHtml()}
   ${PQ?`<div class="daily-filter-info">Para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button></div>`:''}
   </header><div class="projects-view-content">
-  ${(PQ||Object.values(filters).some(Boolean))&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número, cliente o filtro.')+'</div>':''}
+  ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
   ${timeMode? vTimeline(projs.filter(x=>!x.tpl)) : listMode? `
   <table class="list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
     ${projs.length? projs.map(p=>{ const c=folderColors(p); return `<tr style="cursor:pointer" onclick="go('proyecto',${p.id})">
@@ -11522,7 +11520,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.59.1";
+const MODERNO_VER="v3.59.2";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
