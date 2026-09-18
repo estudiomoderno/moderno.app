@@ -23,3 +23,7 @@ Ejecutar desde la raíz: `node --test scripts/*.test.mjs`. La batería incluye c
 La publicación usa el workflow existente `deploy-app.yml`: recursos primero, HTML al final. Confirmar que el workflow del commit termina correctamente y que `https://app.moderno.app/` sirve `MODERNO_VER="v3.59.0"`.
 
 Para retirar la interfaz, revertir el commit de esta versión y desplegar mediante el mismo workflow. No borrar eventos o archivos ni restaurar una base de datos para revertir una presentación. Conservar el tratamiento de unión del historial si hay usuarios que continúan usando la versión nueva.
+
+## Ajuste v3.59.1
+
+En las carpetas, el aviso de 14 días sin actividad aparece al señalar con el ratón, recibir foco de teclado o desplegar la carpeta (también en móvil). Los demás avisos y el resumen interior conservan su comportamiento.
