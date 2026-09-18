@@ -40,3 +40,6 @@ Se ocultan los trazos en navmini. El desplegable del estudio aparece hacia arrib
 
 ## v3.58.9 — Títulos sin superposición
 Se excluye la barra de presencia del degradado inferior: tapaba Mis tareas al inicio. Se conserva el efecto en encabezados de contenido. 338 pruebas correctas.
+
+## v3.58.10 — Favicon actual
+Isotipo m de Acorn convertido desde Isotipo.svg a trazados con Inkscape. Fondo crema y trazo negro; SVG y PNG 16/32/48/180/192/512 actualizados, enlaces de favicon y Apple con nueva versión para caché. Imagen 180 revisada visualmente.
