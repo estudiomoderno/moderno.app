@@ -912,7 +912,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
-<link rel="stylesheet" href="/shopping-cards.css?v=3615">
+<link rel="stylesheet" href="/shopping-cards.css?v=3616">
 </head>
 <body>
 <div class="app">
@@ -8896,9 +8896,24 @@ function shoppingReorder(si,ii,toSi,toIi){
 }
 function shoppingMoveKey(ev,si,ii){if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(ev.key))return;ev.preventDefault();const delta=['ArrowUp','ArrowLeft'].includes(ev.key)?-1:1;const {r}=getRoom();if(ii==null){const next=si+delta;if(next>=0&&next<r.sections.length)shoppingReorder(si,null,next);}else{const next=ii+delta;if(next>=0&&next<r.sections[si].items.length)shoppingReorder(si,ii,si,next);}}
 function shoppingMoveStart(ev,si,ii){
- if(ev.button!==0)return;ev.preventDefault();ev.stopPropagation();const button=ev.currentTarget,owner=getRoom().r;button.setPointerCapture(ev.pointerId);button.classList.add('moving');
- const stop=e=>{button.classList.remove('moving');button.removeEventListener('pointerup',stop);button.removeEventListener('pointercancel',stop);if(e.type==='pointercancel'||getRoom().r!==owner)return;const target=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-shopping-section]');if(!target)return;shoppingReorder(si,ii,Number(target.dataset.shoppingSection),ii==null?null:target.dataset.shoppingItem==null?null:Number(target.dataset.shoppingItem));};
- button.addEventListener('pointerup',stop);button.addEventListener('pointercancel',stop);
+ if(ev.button!==0)return;ev.preventDefault();ev.stopPropagation();
+ const button=ev.currentTarget,owner=getRoom().r,source=button.closest(ii==null?'.dl-sec':'.shopping-product-card');if(!source)return;
+ button.setPointerCapture(ev.pointerId);const rect=source.getBoundingClientRect(),ghost=source.cloneNode(true),gap=document.createElement('div');
+ ghost.removeAttribute('id');ghost.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));ghost.classList.add('shopping-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.style.width=rect.width+'px';ghost.style.height=rect.height+'px';document.body.appendChild(ghost);
+ gap.className='shopping-drop-gap';gap.style.height=rect.height+'px';gap.textContent=ii==null?'Mover sección aquí':'Colocar producto aquí';source.classList.add('shopping-drag-source');
+ let destination=null;const offsetX=ev.clientX-rect.left,offsetY=ev.clientY-rect.top;
+ const move=e=>{
+  ghost.style.left=(e.clientX-offsetX)+'px';ghost.style.top=(e.clientY-offsetY)+'px';
+  const hit=document.elementFromPoint(e.clientX,e.clientY);if(hit===gap)return;
+  if(ii==null){const target=hit?.closest('[data-shopping-section]');if(target){const header=document.getElementById('sec-'+target.dataset.shoppingSection);if(header&&header!==source){const after=e.clientY>header.getBoundingClientRect().top+header.offsetHeight/2;const anchor=after?(document.getElementById('shopping-section-'+target.dataset.shoppingSection)||header):header;anchor[after?'after':'before'](gap);destination={si:Number(target.dataset.shoppingSection)+(after?1:0)};}}}
+  else{const card=hit?.closest('.shopping-product-card'),grid=hit?.closest('.shopping-product-grid');if(card&&card!==source){const box=card.getBoundingClientRect(),after=e.clientX>box.left+box.width/2;card[after?'after':'before'](gap);destination={si:Number(card.dataset.shoppingSection),ii:Number(card.dataset.shoppingItem)+(after?1:0)};}else if(grid&&!card){grid.appendChild(gap);const section=grid.closest('[id^="shopping-section-"]');if(section){const targetSi=Number(section.id.replace('shopping-section-',''));destination={si:targetSi,ii:owner.sections[targetSi].items.length};}}}
+  if(e.clientY<70)window.scrollBy(0,-18);else if(e.clientY>innerHeight-70)window.scrollBy(0,18);
+ };
+ const stop=e=>{button.removeEventListener('pointermove',move);button.removeEventListener('pointerup',stop);button.removeEventListener('pointercancel',stop);document.removeEventListener('keydown',cancel);ghost.remove();gap.remove();source.classList.remove('shopping-drag-source');if(e.type==='pointercancel'||e.key==='Escape'||getRoom().r!==owner||!destination)return;
+  if(ii==null)shoppingReorder(si,null,Math.min(owner.sections.length-1,destination.si-(si<destination.si?1:0)));
+  else shoppingReorder(si,ii,destination.si,destination.ii-(si===destination.si&&ii<destination.ii?1:0));
+ };
+ const cancel=e=>{if(e.key==='Escape')stop(e);};button.addEventListener('pointermove',move);button.addEventListener('pointerup',stop);button.addEventListener('pointercancel',stop);document.addEventListener('keydown',cancel);move(ev);
 }
 function moveSection(si,dir){
   specPrepare(getRoom().p);
@@ -11466,7 +11481,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.15";
+const MODERNO_VER="v3.60.16";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
