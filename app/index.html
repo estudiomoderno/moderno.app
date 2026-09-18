@@ -1171,7 +1171,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=333"></script>
 <script src="/specifications.js?v=340"></script>
-<script src="/project-insights.js?v=3591"></script>
+<script src="/project-insights.js?v=3593"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3572"></script>
 <script src="/project-quotes.js?v=343"></script>
@@ -5204,16 +5204,16 @@ async function folioAnimate(el,opening){
 function projectFolio(p){
   const E=ModernoDaily.escape,id=Number(p.id),colors=folderColors(p);
   const editable=typeof _accessRole!=='undefined'&&['admin','col'].includes(_accessRole);
-  return `<details class="project-folio" style="--folio-front:${colors.front};--folio-back:${colors.back};--folio-ink:${colors.ink}" onkeydown="if(event.key==='Escape'){folioToggle(this,true);this.querySelector('summary').focus();event.stopPropagation()}">
+  return `<div class="project-folio-shell"><details class="project-folio" style="--folio-front:${colors.front};--folio-back:${colors.back};--folio-ink:${colors.ink}" onkeydown="if(event.key==='Escape'){folioToggle(this,true);this.querySelector('summary').focus();event.stopPropagation()}">
     <summary onclick="event.preventDefault();folioToggle(this.parentElement)" aria-label="Opciones de ${E(p.num+' '+p.name)}">
       <span class="folio-scene"><span class="folio-back"></span>
       ${[0,1,2].map(i=>`<span class="folio-sheet folio-sheet-${i}"><span class="folio-sheet-lines" aria-hidden="true"></span></span>`).join('')}
       <span class="folio-flap"><strong class="folio-name">${E(p.num)} ${E(p.name)}</strong><span class="folio-plus" aria-hidden="true"></span></span></span>
-      <span class="folio-caption"><span class="folio-client">${E(p.client||'Sin cliente asignado')}</span><span class="folio-state">${E(p.status||'En progreso')}</span>${typeof projectAlerts==='function'?projectAlerts(p):''}</span>
+      <span class="folio-caption"><span class="folio-client">${E(p.client||'Sin cliente asignado')}</span></span>
     </summary>
     <div class="folio-controls"><button class="btn btn-dark" onclick="go('proyecto',${id})">Abrir proyecto</button>
     ${editable?`<button class="btn btn-ghost" onclick="customizeModal(${id})">${ico('editar')} Editar</button><details class="folio-more"><summary aria-label="Más acciones de ${E(p.num)}">···</summary><div><button onclick="customizeModal(${id},'appearance')">${ico('personalizar')} Personalizar carpeta</button><button onclick="duplicateProject(${id})">${ico('dup_proyecto')} Duplicar</button><button onclick="toggleArchive(${id})">${ico('archivar')} ${p.status==='Archivado'?'Desarchivar':'Archivar'}</button><button onclick="deleteProject(${id})">${ico('eliminar')} Eliminar</button></div></details>`:''}</div>
-  </details>`;
+  </details>${typeof projectFolderNotifications==='function'?projectFolderNotifications(p):''}</div>`;
 }
 function folderCard(p){
   const c=folderColors(p),E=ModernoDaily.escape;
@@ -5671,7 +5671,7 @@ function sortProjects(arr){ return arr.slice().sort((a,b)=>{ const [pa,na]=projS
 function projectsFadeRows(){
  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
  document.querySelectorAll('.projects-identity .proj-grid').forEach(grid=>{
-   const cards=[...grid.children].filter(el=>el.matches('.folder,.project-folio'));
+   const cards=[...grid.children].filter(el=>el.matches('.folder,.project-folio,.project-folio-shell'));
    const rows=[...new Set(cards.map(el=>el.offsetTop))].sort((a,b)=>a-b);
    cards.forEach(el=>{if(typeof el.animate==='function')el.animate([{opacity:0},{opacity:1}],{duration:360,delay:Math.min(rows.indexOf(el.offsetTop)*120,840),fill:'backwards',easing:'ease-out'});});
  });
@@ -11520,7 +11520,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.59.2";
+const MODERNO_VER="v3.59.3";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13338,6 +13338,6 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/hook-sidebar.js?v=3587"></script>
 <link rel="stylesheet" href="/brand/project-options.css?v=35812">
 <script src="/project-options.js?v=35811"></script>
-<link rel="stylesheet" href="/brand/project-insights.css?v=3591">
+<link rel="stylesheet" href="/brand/project-insights.css?v=3593">
 </body>
 </html>

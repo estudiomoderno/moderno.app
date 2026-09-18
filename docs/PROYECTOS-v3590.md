@@ -31,3 +31,7 @@ En las carpetas, el aviso de 14 días sin actividad aparece al señalar con el r
 ## Ajuste v3.59.2
 
 Se retiran de Proyectos los filtros de responsable, cliente, estado y atención a petición del usuario. El listado utiliza únicamente el buscador y la selección existente de activos/archivados. Las preferencias antiguas de filtros ya no se leen ni afectan a los resultados.
+
+## Ajuste v3.59.3
+
+Las carpetas muestran solo el cliente debajo del nombre. Se retira la etiqueta de estado y los avisos pasan a una campana independiente, con indicador de avisos y desplegable al pulsar. Incluye tareas vencidas, presupuestos pendientes según permisos e inactividad. Se cierra con Escape, clic fuera o al abrir otra campana. No modifica estados ni datos.

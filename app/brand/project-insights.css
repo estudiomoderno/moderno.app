@@ -8,3 +8,17 @@
 .project-overview .btn,.project-attention .btn{border-radius:999px;background:var(--app-surface-alt,var(--gold-soft));border:0}.project-overview .btn{margin-top:auto}
 @media(max-width:600px){.project-filters-toggle{display:inline-flex;margin-top:12px}.project-filters-wrap:not(.expanded) .project-filters{display:none}.project-overview{grid-template-columns:repeat(2,minmax(0,1fr))}.project-overview>div{padding:12px}.project-overview strong{font-size:20px}.project-filters label{min-width:calc(50% - 12px)}}
 }
+
+@media screen{
+.project-folio-shell{position:relative;min-width:0}
+.project-folio-shell:has(.folio-notifications[open]),.project-folio-shell:has(.folio-more[open]){z-index:20}
+.folio-notifications{position:absolute;left:8px;right:8px;top:8px;z-index:5;pointer-events:none}
+.folio-notifications>summary{pointer-events:auto;list-style:none;position:relative;display:flex;align-items:center;justify-content:center;margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--app-surface,#f8f6ef);color:var(--ink);border:1px solid var(--ui-line,#d6d0c2);cursor:pointer;box-shadow:0 2px 8px #0001}
+.folio-notifications>summary::-webkit-details-marker{display:none}.folio-notifications>summary::marker{content:''}.folio-notifications>summary::after{display:none!important}
+.folio-notifications>summary:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.folio-notifications svg{width:19px;height:19px}
+.folio-notice-dot{position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--ink);border:2px solid var(--app-surface,#f8f6ef)}
+.folio-notice-panel{pointer-events:auto;margin-top:8px;padding:16px;background:var(--app-surface,#f8f6ef);color:var(--ink);border:1px solid var(--ui-line,#d6d0c2);border-radius:18px;box-shadow:0 8px 24px #0002;font-size:12px;max-height:300px;overflow:auto;overflow-wrap:anywhere;animation:folioNoticeIn 160ms ease-out}
+.folio-notice-panel ul{list-style:none;padding:0;margin:8px 0 0}.folio-notice-panel li{padding:10px 0;border-top:1px solid var(--ui-line,#d6d0c2)}.folio-notice-panel li span{display:block;margin-top:5px;font-size:11px;color:var(--ink-soft)}
+@keyframes folioNoticeIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+}
+@media(prefers-reduced-motion:reduce){.folio-notice-panel{animation:none}}

@@ -46,3 +46,15 @@ function projectOverview(p){const E=ModernoProjectInsights.escape,m=ModernoProje
 function projectHistory(id){const p=state.projects.find(x=>x.id===id);if(!p)return;const E=ModernoProjectInsights.escape,ev=ModernoProjectInsights.events(p).slice().sort((a,b)=>b.ts-a.ts);
  modal(`<h3>Historial de ${E(p.num)}</h3><p>Registro informativo de cambios de datos, carpeta y tareas desde esta versión. Los cambios antiguos no se reconstruyen.</p><div class="project-history">${ev.map(e=>`<article><b>${E(e.who||'Usuario')}</b> · <time>${E(new Date(e.ts).toLocaleString())}</time><p>${E(e.txt).replace(/\n/g,'<br>')}</p></article>`).join('')||'<p>Todavía no hay cambios registrados.</p>'}</div><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>`);
 }
+
+function projectFolderNotifications(p){
+ const E=ModernoProjectInsights.escape,m=ModernoProjectInsights.metrics(p),qs=projectPendingQuotes(p),count=m.overdue+qs.length+(m.stale?1:0);
+ const overdue=(p.tasks||[]).filter(t=>t.col!=='listo'&&ModernoProjectInsights.validDate(t.due)&&t.due<ModernoProjectInsights.today());
+ const items=overdue.map(t=>'<li><b>Tarea vencida</b><span>'+E(t.title||'Tarea')+' · '+E(t.due.split('-').reverse().join('/'))+'</span></li>');
+ if(qs.length)items.push('<li><b>'+qs.length+' presupuesto'+(qs.length===1?' pendiente':'s pendientes')+'</b><span>Pendiente de respuesta del cliente</span></li>');
+ if(m.stale)items.push('<li><b>Sin actividad registrada en 14 días</b><span>Revisa el estado del proyecto cuando puedas.</span></li>');
+ return `<details class="folio-notifications" onclick="event.stopPropagation()" onkeydown="if(event.key==='Escape'){this.open=false;this.querySelector('summary').focus();event.stopPropagation()}"><summary aria-label="Avisos de ${E(p.num)}${count?': '+count:''}" title="Avisos del proyecto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>${count?'<span class="folio-notice-dot" aria-hidden="true"></span>':''}</summary><div class="folio-notice-panel"><strong>Avisos del proyecto</strong>${items.length?'<ul>'+items.join('')+'</ul>':'<p>No hay avisos pendientes.</p>'}</div></details>`;
+}
+if(typeof document!=='undefined'){
+ document.addEventListener('click',e=>{document.querySelectorAll('.folio-notifications[open]').forEach(el=>{if(!el.contains(e.target))el.open=false})},true);
+}
