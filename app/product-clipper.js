@@ -52,7 +52,7 @@ const ProductClipper=(()=>{
   const dialog=document.createElement('dialog');dialog.className='clipper-panel';dialog.setAttribute('aria-label','Importar producto desde una tienda');
   dialog.innerHTML=`<header><div><h2>Importar desde una tienda</h2><p>Pega la URL de una ficha de producto. Añadiremos automáticamente los datos, la imagen y el precio disponible.</p></div><button type="button" class="btn btn-ghost" data-close aria-label="Cerrar importador">×</button></header>
    <label for="clip-url">Enlace del producto</label><div class="clipper-url"><input id="clip-url" type="url" value="${escape(url)}" placeholder="https://…"><button type="button" class="btn btn-dark" data-capture>Añadir desde URL</button></div>
-   <p class="clipper-note">Se creará un producto nuevo en estado Borrador. Los campos de la ficha manual no se usarán; puedes volver a ella cerrando esta ventana.</p>
+   <div class="clipper-analysis" data-analysis hidden><div class="clipper-analysis-head"><span class="clipper-analysis-dot" aria-hidden="true"></span> Analizando producto<span class="clipper-analysis-dots" aria-hidden="true">•••</span></div><div class="clipper-analysis-line" aria-hidden="true">&gt; Leyendo la página de la tienda<span class="clipper-cursor">▌</span></div><div class="clipper-analysis-hint">Buscando datos, imágenes y precio disponibles</div><div class="clipper-analysis-track" aria-hidden="true"></div></div>
    <p data-message role="status" aria-live="polite"></p><div data-result></div><footer><button type="button" class="btn btn-ghost" data-status>Consultar última captura</button><button type="button" class="btn btn-ghost" data-close>Volver</button></footer>`;
   document.body.appendChild(dialog);const ctx={dialog,destination,owner:identity(),study:ESTUDIO_ID,id:null,busy:false,row:null};active=ctx;
   dialog.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>dialog.close());dialog.addEventListener('close',()=>{clearTimeout(ctx.poll);dialog.remove();if(active===ctx)active=null;});
@@ -62,17 +62,17 @@ const ProductClipper=(()=>{
  async function capture(ctx){
   if(!valid(ctx)||ctx.busy)return;const raw=ctx.dialog.querySelector('#clip-url').value.trim();
   try{const u=new URL(raw);if(!['http:','https:'].includes(u.protocol))throw Error();}catch{message(ctx,'Pega una URL completa de producto.');return;}
-  ctx.busy=true;ctx.dialog.querySelector('[data-capture]').disabled=true;
+  ctx.busy=true;ctx.dialog.querySelector('[data-capture]').disabled=true;const analysis=ctx.dialog.querySelector('[data-analysis]');if(analysis)analysis.hidden=false;
   try{
    await cloudFlush();if(!valid(ctx))return;const block=ctx.destination.kind==='biblioteca'?'compras':'proyectos';
    if(_cloudBusy||_cloudHash[block]!==canon(CLOUD_BLOCKS[block].get()))throw Error('Hay cambios pendientes en el destino. Espera a que estén guardados antes de importar.');
-   ctx.id=crypto.randomUUID();localStorage.setItem(cacheKey(),ctx.id);message(ctx,'Leyendo la ficha y guardando las imágenes… Puedes cerrar y consultar la captura más tarde.');
+   ctx.id=crypto.randomUUID();localStorage.setItem(cacheKey(),ctx.id);message(ctx,'Buscando la información del producto…');
    await invoke({action:'capture',id:ctx.id,studyId:ctx.study,url:raw,destination:ctx.destination});if(valid(ctx)){ctx.busy=false;await read(ctx);}
-  }catch(e){message(ctx,e.message);}finally{ctx.busy=false;if(valid(ctx))ctx.dialog.querySelector('[data-capture]').disabled=false;}
+  }catch(e){message(ctx,e.message);}finally{ctx.busy=false;if(valid(ctx)){ctx.dialog.querySelector('[data-capture]').disabled=false;if(ctx.row?.estado!=='procesando'&&analysis)analysis.hidden=true;}}
  }
  async function read(ctx){
   if(!valid(ctx))return;const id=ctx.id||localStorage.getItem(cacheKey());if(!id){message(ctx,'Todavía no hay una captura pendiente en este navegador.');return;}
-  try{const row=await invoke({action:'read',id});if(!valid(ctx))return;ctx.id=id;ctx.row=row;
+  try{const row=await invoke({action:'read',id});if(!valid(ctx))return;ctx.id=id;ctx.row=row;const analysis=ctx.dialog.querySelector('[data-analysis]');if(analysis)analysis.hidden=row.estado!=='procesando';
    if(row.estado==='procesando'){message(ctx,'Estamos leyendo el producto…');clearTimeout(ctx.poll);ctx.poll=setTimeout(()=>{if(valid(ctx))read(ctx)},2500);return;}
    if(row.estado==='error'){message(ctx,'La tienda no se pudo leer ('+(row.error_code||'error')+'). Puedes probar otra ficha o añadir el producto manualmente.');return;}
    if(row.estado==='absorbido'){ctx.savedId=row.item_id;message(ctx,'El producto ya está guardado. Comprobando su destino…');if(await confirmSaved(ctx,ctx.savedId))finishSaved(ctx);return;}
