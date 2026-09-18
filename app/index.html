@@ -912,7 +912,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
-<link rel="stylesheet" href="/shopping-cards.css?v=3608">
+<link rel="stylesheet" href="/shopping-cards.css?v=3609">
 </head>
 <body>
 <div class="app">
@@ -7304,7 +7304,7 @@ function vRoom(){
     </div>
     ${sec._c?"":`<textarea class="dl-secdesc" rows="1" placeholder="Descripción de la sección…" onchange="getRoom().r.sections[${si}].desc=this.value;toast('Descripción guardada ✓')">${esc(sec.desc||"")}</textarea>
     <div class="shopping-product-grid" ondragover="event.preventDefault()" ondrop="dropItemSection(event,${si})">
-      <button class="shopping-add-card" onclick="itemModal(${si},-1)"><span aria-hidden="true">+</span><strong>Añadir producto</strong></button>
+      <div class="shopping-add-wrap"><button class="shopping-add-card" onclick="itemModal(${si},-1)"><span aria-hidden="true">+</span><strong>Añadir producto</strong></button><div class="shopping-add-options"><button class="dl-addlink sec" onclick="itemModal(${si},-1,true)">Desde URL</button><button class="dl-addlink sec" onclick="libPick(${si})">Biblioteca</button></div></div>
       ${visible.map(({it,ii})=>`<article class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
         <button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
         <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button><strong>${fmt(it.price)}</strong></div>
@@ -7315,11 +7315,7 @@ function vRoom(){
       </article>`).join('')}
       ${(q||filtering)&&!visible.length?'<p>Sin resultados en esta sección</p>':''}
     </div>
-    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:2px 0 4px">
-
-      <button class="dl-addlink sec" onclick="itemModal(${si},-1,true)">⚡ Desde URL</button>
-      <button class="dl-addlink sec" onclick="libPick(${si})">🗃 Biblioteca</button>
-    </div>`}`}).join("")}
+`}`}).join("")}
   <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap;align-items:center">
     <button class="dl-btn" onclick="newSection()">${ico("mas")} Añadir sección</button>
     <span style="flex:1"></span>
@@ -11452,7 +11448,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.8";
+const MODERNO_VER="v3.60.9";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
