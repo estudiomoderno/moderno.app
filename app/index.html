@@ -913,7 +913,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
 <link rel="stylesheet" href="/shopping-cards.css?v=3616">
-<script src="/workflow-polish.js?v=3617"></script><link rel="stylesheet" href="/workflow-polish.css?v=3617">
+<script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
 </head>
 <body>
 <div class="app">
@@ -4882,7 +4882,7 @@ function vCalendar(){
     <span style="margin-left:auto"></span>
     <button class="btn ${C.showTasks?'btn-dark':'btn-ghost'}" onclick="state.cal.showTasks=!state.cal.showTasks;render()">${ico("mtareas")} Mostrar tareas</button>
     <button class="btn ${showObra?'btn-dark':'btn-ghost'}" title="Fases de obra planificadas, como barras de inicio a fin" onclick="state.cal.showObra=!showObra;render()">${ico("mobra")} Mostrar obra</button>
-    <label class="calendar-view-label">Vista <select aria-label="Vista del calendario" onchange="WorkflowPolish.calendar(this.value)">${[['dia','Día'],['semana','Semana'],['mes','Mes'],['agenda','Agenda']].map(([key,label])=>`<option value="${key}" ${C.view===key?'selected':''}>${label}</option>`).join('')}</select></label>
+    <label class="calendar-view-label"><select aria-label="Vista del calendario" onchange="WorkflowPolish.calendar(this.value)">${[['dia','Día'],['semana','Semana'],['mes','Mes'],['agenda','Agenda']].map(([key,label])=>`<option value="${key}" ${C.view===key?'selected':''}>${label}</option>`).join('')}</select></label>
     <button class="btn btn-dark" onclick="calNew()">${ico("mas")} Nuevo</button>
   </div>
   <div class="calfull">
@@ -5411,7 +5411,7 @@ function vLibrary(){
         ${x.cat?`<span class="chip neutral" style="font-size:9.5px;cursor:pointer" title="Filtrar por esta categoría" onclick="state.libF.cat='${x.cat}';render()">${x.cat}</span>`:""}
         <div style="display:flex;align-items:center;gap:6px"><b>${fmt(x.price)}</b><small style="color:var(--ink-faint)">/${ModernoDaily.escape(({m2:"m²",m3:"m³"})[x.unit]||x.unit||"ud")}</small>
           <span style="margin-left:auto"></span>
-          <button class="collbtn" title="Editar" onclick="libEdit(${i})">${ico("editar")} Editar</button>
+          <button class="btn btn-dark library-edit" aria-label="Editar ${ModernoDaily.escape(x.name)}" onclick="libEdit(${i})">${ico("editar")}<span>Editar</span></button>
 
         </div>
       </div>
@@ -6251,10 +6251,12 @@ function vAgenda(){
   <h1 class="big">Esta es tu agenda${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
   <div class="contact-toolbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <div class="pill-tabs contact-category-tabs">${["Clientes","Proveedores","Contratistas","Arquitectos / Técnicos","Team","Todos"].map(x=>`<button class="${tab===x?'on':''}" onclick="WorkflowPolish.contact('${x}')">${contactCategoryIcon(x)}${x}</button>`).join("")}</div>
-    <button class="btn btn-ghost" style="margin-left:auto" title="Elige el color de cada tipo de contacto" onclick="typeColorsModal()">${ico("paleta")} Colores</button>
-    <button class="btn btn-ghost" onclick="importModal()">${ico('import')} Importar contactos</button>
-    <button class="btn btn-ghost" title="PDF con el logotipo del estudio, un contacto por fila" onclick="agendaExportPDF()">${ico('pdf')} Exportar</button>
-    <button class="btn btn-dark" onclick="clientModal()">${ico("mas")} Nuevo</button>
+    <button class="btn btn-dark contact-new" onclick="clientModal()">${ico("mas")} Nuevo</button>
+    <details class="contact-more"><summary class="btn btn-ghost" aria-label="Más opciones de contactos">···</summary><div>
+      <button class="btn btn-ghost" onclick="agendaExportPDF()">${ico('pdf')} Exportar</button>
+      <button class="btn btn-ghost" onclick="typeColorsModal()">${ico('paleta')} Colores</button>
+      <button class="btn btn-ghost" onclick="importModal()">${ico('import')} Importar</button>
+    </div></details>
   </div>
   <div style="display:flex;gap:10px;align-items:center;margin:10px 0 2px;flex-wrap:wrap">
     <div class="flt" style="position:relative;display:inline-flex;align-items:center;flex:1;max-width:460px">
@@ -6350,10 +6352,7 @@ function vAccounting(){
   return `
   ${planMigrateBanner()}
   <h1 class="big">Llevas <span class="hl">${fmt(ben)}</span> de beneficio,<br>vamos a por más, <span class="hl">${meName().split(" ")[0]}</span>.</h1>
-  <div class="rowbtns" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
-    <span style="margin-left:auto"></span>
-    <button class="btn btn-ghost" title="Genera las copias de los gastos recurrentes que falten este mes" onclick="genRecurring()">${ico("recurrente")} Recurrentes</button>
-  </div>
+  <div class="account-toolbar"><div class="pill-tabs"><button class="${(state.accTab||'in')==='in'?'on':''}" onclick="WorkflowPolish.accountTab('in')">Ingresos</button><button class="${state.accTab==='out'?'on':''}" onclick="WorkflowPolish.accountTab('out')">Gastos</button></div><div class="account-tools"><button class="btn btn-ghost" onclick="WorkflowPolish.tax()">Resumen fiscal</button><button class="btn btn-ghost" onclick="WorkflowPolish.exportDialog()">Exportar PDF</button><button class="btn btn-ghost" onclick="genRecurring()">${ico('recurrente')} Recurrentes</button></div></div>
   <div class="progressbar"><div style="width:${total?ing/total*100:0}%"></div></div>
   <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-soft)"><span>Cobrado: <b>${fmt(ing)}</b></span><span>Pendiente: <b>${fmt(pen)}</b></span></div>
   <div class="fin-cards">
@@ -6381,7 +6380,7 @@ function vAccounting(){
       <span class="chip" style="background:var(--gold-soft);font-weight:800">${ti} est.${docI?" ("+docI+")":""}: ${fmt(irpfEst)}</span>
       <small style="color:var(--ink-faint);width:100%">Estimación orientativa para ${pais} con las entradas que tienen desglose — no sustituye a tu asesor fiscal.</small>
     </div></div>`})()}
-  <div class="pill-tabs" style="margin:14px 0 10px"><button class="${(state.accTab||"in")==="in"?"on":""}" onclick="WorkflowPolish.accountTab('in')">Ingresos</button><button class="${state.accTab==="out"?"on":""}" onclick="WorkflowPolish.accountTab('out')">Gastos</button><span class="account-toolbar-divider" aria-hidden="true">|</span><button onclick="WorkflowPolish.tax()">Resumen fiscal</button><button onclick="WorkflowPolish.exportDialog()">Exportar PDF</button></div>
+
   <div style="min-height:56vh">
     ${[state.accTab==="out"?"out":"in"].map(kind=>`
     <div class="entry-col" style="display:flex;flex-direction:column">
@@ -11478,7 +11477,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.61.0";
+const MODERNO_VER="v3.61.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
