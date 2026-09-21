@@ -25,4 +25,3 @@ details:not(.settings-switch)>summary{list-style:none}
 details:not(.settings-switch)>summary::-webkit-details-marker{display:none}
 details:not(.settings-switch)>summary::after{content:'';display:inline-block;vertical-align:middle;width:17px;height:17px;margin-left:10px;background:currentColor;mask:url('/select-arrow.svg?v=353') center/contain no-repeat;flex-shrink:0}
 .cap-arrow{display:inline-block!important;font-size:0!important;width:16px;height:16px;background:currentColor;mask:url('/select-arrow.svg?v=353') center/contain no-repeat}
-.collbtn,.dl-rb{font-size:0!important}.collbtn::before,.dl-rb::before{content:'';display:inline-block;width:16px;height:16px;background:currentColor;mask:url('/select-arrow.svg?v=353') center/contain no-repeat}

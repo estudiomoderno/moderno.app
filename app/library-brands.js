@@ -15,7 +15,7 @@ const ModernoBrands=(()=>{
   }).catch(()=>{}).finally(()=>{if(owner===next)pending=false;});
  }
  function tabs(){refresh();return `<div class="pill-tabs" style="margin:14px 0"><button class="${selected?'':'on'}" onclick="ModernoBrands.choose(false)">Mi estudio</button><button class="${selected?'on':''}" onclick="ModernoBrands.choose(true)">Marcas</button></div>`;}
- function choose(value){selected=!!value;render();}
+ function choose(value){const direction=value?1:-1;selected=!!value;if(typeof WorkflowPolish!=='undefined')WorkflowPolish.change(()=>{},direction);else render();}
  function view(){
   refresh();if(!selected)return null;
   if(!rows.length)return `<h1 class="big">Tu biblioteca de productos</h1>${tabs()}<section class="widget" style="padding:40px 24px;text-align:center"><h2>Próximamente</h2><p>Catálogos de marcas para tus proyectos.</p></section>`;
@@ -49,5 +49,5 @@ const ModernoBrands=(()=>{
   }catch(e){if(message.isConnected)message.textContent=e.message;}
   finally{ctx.busy=false;if(button.isConnected)button.disabled=false;}
  }
- return {tabs,view,choose,open,save,search(el){query=el.value;renderKeep(el);}};
+ return {reset(){selected=false;query='';},tabs,view,choose,open,save,search(el){query=el.value;renderKeep(el);}};
 })();

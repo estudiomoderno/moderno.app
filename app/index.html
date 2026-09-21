@@ -913,6 +913,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
 <link rel="stylesheet" href="/shopping-cards.css?v=3616">
+<script src="/workflow-polish.js?v=3617"></script><link rel="stylesheet" href="/workflow-polish.css?v=3617">
 </head>
 <body>
 <div class="app">
@@ -1175,7 +1176,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/project-insights.js?v=3600"></script>
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
-<script src="/library-brands.js?v=3572"></script>
+<script src="/library-brands.js?v=3617"></script>
 <script src="/project-quotes.js?v=343"></script>
 <script src="/spec-audit.js?v=340"></script>
 <script src="/spec-master.js?v=341"></script>
@@ -1188,7 +1189,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <style>#catalogSearch,#catalogPickerSearch{border-radius:12px;border:1px solid var(--card);padding:10px 12px;background:var(--white);color:var(--ink);font:inherit}</style>
 <script src="/catalog-core.js?v=346"></script>
 <link rel="stylesheet" href="/catalog.css?v=3606">
-<link rel="stylesheet" href="/select-controls.css?v=353">
+<link rel="stylesheet" href="/select-controls.css?v=3617">
 <script src="/catalog-ui.js?v=3607"></script>
 <link rel="stylesheet" href="/contact-controls.css?v=353">
 <script src="/phone-vendor.js?v=1.13.13"></script>
@@ -4368,7 +4369,7 @@ function go(view, arg){
   if(view==="portalcli"||view==="portalobra") setTimeout(portalBootDone,0);
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active", b.dataset.view===view || ((view==="proyecto"||view==="estancia")&&b.dataset.view==="proyectos")));
   render(); V.parentElement.scrollTop=0; }
-document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{_wantProject=null;go(b.dataset.view);});
+document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{_wantProject=null;if(b.dataset.view==='biblioteca'){state.libQ='';state.libF={cat:'',sup:'',min:'',max:''};ModernoBrands.reset();}if(b.dataset.view==='agenda'){state.agendaTab='Clientes';state.agQ='';}go(b.dataset.view);});
 drawBrandSwitch();
 
 function render(){
@@ -4382,7 +4383,7 @@ function render(){
   const projectsEntering=state.view==='proyectos'&&!V.querySelector('.projects-identity');
   V.innerHTML = r();
   wire();
-  if(projectsEntering)requestAnimationFrame(projectsFadeRows);
+  /* Main navigation supplies the entrance fade; project view changes retain their local motion. */
   if(state.view==='compras')ProductOps.overview();
 }
 
@@ -4721,7 +4722,7 @@ function dailyTaskCards(projs,mine=state.wsMine!==false){
   return projs.flatMap(p=>(p.tasks||[]).map((t,i)=>({p,t,i}))).filter(c=>c.t.col!=="listo"&&!c.t.done&&(!mine||ModernoDaily.isMine(taskAssignees(c.t),meName(),meMail()))).sort((a,b)=>ModernoDaily.compare(a,b,day));
 }
 function dailyDue(t){const d=ModernoDaily.due(t.due);return '<span class="task-due '+d.kind+'">'+d.label+(d.date?' · '+d.date.split('-').reverse().join('/'):'')+'</span>';}
-function dailyScope(){return '<div class="opt-pills daily-scope"><button class="'+(state.wsMine!==false?'on':'')+'" onclick="state.wsMine=true;render()">Mis tareas</button><button class="'+(state.wsMine===false?'on':'')+'" onclick="state.wsMine=false;render()">Todas las tareas</button></div>';}
+function dailyScope(){return '<div class="opt-pills daily-scope"><button class="'+(state.wsMine!==false?'on':'')+'" onclick="WorkflowPolish.scope(true)">Mis tareas</button><button class="'+(state.wsMine===false?'on':'')+'" onclick="WorkflowPolish.scope(false)">Todas las tareas</button></div>';}
 function openDailyTask(pid,idx){const p=state.projects.find(x=>x.id===pid);if(!p||!p.tasks[idx])return;state.projTab='tareas';go('proyecto',pid);taskModal(pid,idx);}
 function vHome(){
   const projs = byBrand(state.projects.filter(p=>!p.tpl && p.status!=="Archivado"));
@@ -4804,7 +4805,7 @@ function vCalendar(){
   const C = state.cal || (state.cal={view:"mes",off:0,showTasks:true,g:false,a:false,events:[]});
   const today = new Date(); today.setHours(0,0,0,0);
   const base = new Date(today); 
-  if(C.view==="mes") base.setMonth(base.getMonth()+C.off); else base.setDate(base.getDate()+C.off*7);
+  if(C.view==="mes") base.setMonth(base.getMonth()+C.off); else base.setDate(base.getDate()+C.off*(C.view==='dia'?1:7));
   const monName = base.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
   /* Filtro por proyecto: C.pid (id) — se elige escribiendo (buscador con sugerencias) */
   const calProjs = byBrand(state.projects.filter(x=>!x.tpl&&x.status!=="Archivado"));
@@ -4815,12 +4816,12 @@ function vCalendar(){
   const obraEv = showObra ? filtP.filter(x=>x.obraF).flatMap(pr=>pr.obraF.filter(f=>f.start&&f.end).flatMap(f=>[
     {d:f.start,t:"🏗 "+f.name,pr,tip:"Inicio de fase · "+pr.num+" "+pr.name},
     {d:f.end,t:"🏁 "+f.name,pr,tip:"Fin de fase · "+pr.num+" "+pr.name}])) : [];
-  const iso = d => d.toISOString().slice(0,10);
+  const iso = d => WorkflowPolish.iso(d);
   const itemsOf = d => {
     const k = iso(d);
     const tt = tasks.filter(x=>x.t.due===k).map(x=>`<span class="ev" style="background:var(--gold)" title="${x.pr.num} ${x.pr.name}" onclick="taskModal(${x.pr.id},${x.i})">☑ ${x.t.title}</span>`);
     const ob = obraEv.filter(x=>x.d===k).map(x=>`<span class="ev" style="background:#F2C4A0" title="${x.tip}" onclick="state.projTab='obra';go('proyecto',${x.pr.id})">${x.t}</span>`);
-    const ev = C.events.filter(e=>e.date===k).map(e=>`<span class="ev" style="background:${e.src==='g'?'#E8F0FE':e.src==='a'?'#EFEFEF':'var(--card)'};border:1px solid #E2E2E0;cursor:pointer" title="Añadir a mi calendario" onclick="addToCalMenu('${(e.title||"").replace(/'/g,"")}','${e.date}')">${e.src==='g'?ico('google'):e.src==='a'?ico('apple'):(C.g?ico('google'):'')} ${e.title}${C.g&&!e.src?` <span style="opacity:.6" title="Sincronizado con Google Calendar">⟳</span>`:""}</span>`);
+    const ev = C.events.filter(e=>e.date===k).map(e=>`<span class="ev" style="background:${e.src==='g'?'#E8F0FE':e.src==='a'?'#EFEFEF':'var(--card)'};border:1px solid #E2E2E0;cursor:pointer" title="Ver actividad" onclick="WorkflowPolish.eventInfo('${e.date}')">${e.title}</span>`);
     return [...tt,...ev].join("");
   };
   /* Fases de obra con inicio y fin: una barra continua que ocupa todos sus días (como Google Calendar) */
@@ -4849,6 +4850,9 @@ function vCalendar(){
       cells.push(`<div class="cd ${d.getMonth()!==base.getMonth()?"out":""}" data-d="${k}" style="grid-column:${c+1};grid-row:${r+1}" ondragover="if(_calDrag){event.preventDefault();this.classList.add('dragover')}" ondragleave="this.classList.remove('dragover')" ondrop="calSpanDrop(event,'${k}')" onclick="if(event.target===this) calDayMenu('${k}')" title="Pulsa en el hueco para añadir">
         <span class="dn ${k===iso(today)?"today":""}">${d.getDate()}</span>${SR.lanes[r]?`<div style="height:${SR.lanes[r]*20-2}px;flex:none"></div>`:""}${itemsOf(d)}<button class="cd-add" title="Añadir tarea, fase de obra o cita el ${d.getDate()}" onclick="event.stopPropagation();calDayMenu('${k}')">＋</button></div>`); });
     grid = `<div class="cg">${cells.join("")}${SR.bars}</div>`;
+  } else if(C.view==='dia'||C.view==='agenda'){
+    const dates=Array.from({length:C.view==='dia'?1:7},(_,i)=>{const d=new Date(base);d.setDate(d.getDate()+i);return d;});
+    grid='<div class="calendar-agenda">'+dates.map(d=>'<section><h3>'+ModernoDaily.escape(d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'}))+'</h3>'+itemsOf(d)+spans.filter(sp=>sp.s<=iso(d)&&sp.e>=iso(d)).map(sp=>'<button class="btn btn-ghost" onclick="obraPlanModal('+sp.pr.id+','+sp.fi+')">'+ModernoDaily.escape(sp.t)+'</button>').join('')+'<button class="btn btn-ghost" onclick="calDayMenu(\''+iso(d)+'\')">Añadir</button></section>').join('')+'</div>';
   } else {
     const monday = new Date(base); monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
     const cells=[], dates=[];
@@ -4868,33 +4872,26 @@ function vCalendar(){
       ${pSel?`<button class="collbtn" title="Quitar filtro" style="position:absolute;right:6px;top:50%;transform:translateY(-50%)" onclick="calProjClear()">✕</button>`:""}
     </div>
     ${pSel?`<span class="chip" style="background:var(--gold-soft);font-size:11px;cursor:pointer" title="Abrir el proyecto" onclick="go('proyecto',${pSel.id})">${pSel.num} · ${pSel.name}</span>`:""}
-    <button class="btn btn-gold" style="margin-left:auto" title="Para Outlook y otros calendarios: suscríbete una vez y se actualiza solo con fases, obras, tareas y citas" onclick="calSubModal()">${ico("cal_plus")} Enlace de suscripción</button>
+
   </div>
   <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
     <button class="btn btn-ghost" onclick="state.cal.off=0;render()">Hoy</button>
-    <button class="btn btn-ghost" title="Mes anterior" style="padding:8px 12px" onclick="state.cal.off--;render()">${ico("antes","lg")}</button>
-    <button class="btn btn-ghost" title="Mes siguiente" style="padding:8px 12px" onclick="state.cal.off++;render()">${ico("despues","lg")}</button>
+    <button class="btn btn-ghost" title="Periodo anterior" style="padding:8px 12px" onclick="state.cal.off--;render()">${ico("antes","lg")}</button>
+    <button class="btn btn-ghost" title="Periodo siguiente" style="padding:8px 12px" onclick="state.cal.off++;render()">${ico("despues","lg")}</button>
     <b style="font-size:15px">${monName.charAt(0).toUpperCase()+monName.slice(1)}</b>
     <span style="margin-left:auto"></span>
     <button class="btn ${C.showTasks?'btn-dark':'btn-ghost'}" onclick="state.cal.showTasks=!state.cal.showTasks;render()">${ico("mtareas")} Mostrar tareas</button>
     <button class="btn ${showObra?'btn-dark':'btn-ghost'}" title="Fases de obra planificadas, como barras de inicio a fin" onclick="state.cal.showObra=!showObra;render()">${ico("mobra")} Mostrar obra</button>
-    <div class="pill-tabs" style="margin:0">
-      <button class="${C.view==='semana'?'on':''}" onclick="state.cal.view='semana';state.cal.off=0;render()">Semana</button>
-      <button class="${C.view==='mes'?'on':''}" onclick="state.cal.view='mes';state.cal.off=0;render()">Mes</button>
-    </div>
+    <label class="calendar-view-label">Vista <select aria-label="Vista del calendario" onchange="WorkflowPolish.calendar(this.value)">${[['dia','Día'],['semana','Semana'],['mes','Mes'],['agenda','Agenda']].map(([key,label])=>`<option value="${key}" ${C.view===key?'selected':''}>${label}</option>`).join('')}</select></label>
     <button class="btn btn-dark" onclick="calNew()">${ico("mas")} Nuevo</button>
   </div>
   <div class="calfull">
-    <div class="cw">${["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map(d=>`<span>${d}</span>`).join("")}</div>
+    ${['mes','semana'].includes(C.view)?`<div class="cw">${["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"].map(d=>`<span>${d}</span>`).join("")}</div>`:''}
     ${grid}
   </div>
-  <div class="rowbtns" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-    <button class="btn btn-ghost" title="Archivo .ics real con todos los eventos y fases de obra — compatible con Google Calendar, Apple Calendar y Outlook" onclick="calIcsAll()">${ico("descal")} Descargar calendario (.ics)</button>
-    ${gcalButton()}
-  </div>
-  <p style="margin-top:10px;font-size:11.5px;color:var(--ink-faint)">Las tareas con fecha límite aparecen en amarillo; cada fase de obra planificada es una barra 🏗 que ocupa todos sus días, del inicio al fin — clic para abrirla. Con Google Calendar conectado, tus fases, tareas con fecha y citas aparecen en tu calendario de Google al momento.</p>`;
+  <p class="sec-note">Consulta tareas, citas y fases de obra. Pulsa un día para añadir una actividad.</p>`;
 }
-/* ============ EXPORTACIÓN iCALENDAR REAL (.ics conforme RFC 5545) ============ */
+/* Calendar export helpers retained. */
 function icsEsc(s){ return String(s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\r?\n/g,"\\n"); }
 function icsFold(line){
   // RFC 5545: líneas de máx. 75 octetos, continuación con CRLF + espacio
@@ -5382,11 +5379,10 @@ function vLibrary(){
     <small style="margin-left:auto;color:var(--ink-faint)">${items.length} producto${items.length===1?"":"s"}</small>
   </div>
   ${folders?`<div class="proj-grid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px">
-    ${Object.keys(byCat).sort().map(c=>{ const arr=byCat[c];
+    ${WorkflowPolish.categoryOrder(Object.keys(byCat)).map(c=>{ const arr=byCat[c];
       const cim = (state.catImgs||{})[c];
-      return `<div class="room-card" style="padding:0;overflow:hidden;position:relative" onclick="state.libF.cat='${c}';render()">
-      <button class="collbtn" title="Renombrar la categoría" style="position:absolute;top:7px;right:40px;background:rgba(255,255,255,.9);z-index:2" onclick="event.stopPropagation();catRenameModal('${c}')">${ico("editar")}</button>
-      <button class="collbtn" title="Subir imagen de la carpeta" style="position:absolute;top:7px;right:7px;background:rgba(255,255,255,.9);z-index:2" onclick="event.stopPropagation();catImgPick('${c}')">${ico("subir")}</button>
+      return `<div class="room-card library-category" data-category="${ModernoDaily.escape(c)}" style="padding:0;overflow:visible;position:relative" onclick="state.libF.cat=this.dataset.category;render()">
+      <div class="library-category-controls" onclick="event.stopPropagation()">${_accessRole==='admin'?`<button class="shopping-grip" aria-label="Mover categoría ${ModernoDaily.escape(c)}" onpointerdown="WorkflowPolish.categoryDrag(event)" onkeydown="WorkflowPolish.categoryKey(event)">⠿</button><details><summary aria-label="Opciones de categoría">···</summary><div><button onclick="catRenameModal(this.closest('.library-category').dataset.category)">Renombrar</button><button onclick="catImgPick(this.closest('.library-category').dataset.category)">Cambiar imagen</button><button onclick="WorkflowPolish.categoryStep(this,-1)">Mover antes</button><button onclick="WorkflowPolish.categoryStep(this,1)">Mover después</button></div></details>`:''}</div>
       <div class="thumb" style="width:100%;height:130px;border-radius:0;background:var(--gold-soft);color:var(--ink)">${cim?`<img ${fileImageAttrs(cim)}>`:(CAT_ICONS[c]||CAT_ICONS["Otros"])}</div>
       <div style="padding:11px 13px">
         <b style="font-size:13px">${c}</b>
@@ -5402,7 +5398,7 @@ function vLibrary(){
   </div>`
   :items.length?`
   ${F.cat?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-    <button class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px" onclick="state.libF.cat='';render()">${ico("atras")} Carpetas</button>
+    <button class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:6px" onclick="state.libF.cat='';render()">${ico("atras")} Categorías</button>
     <b style="font-size:14px;display:inline-flex;align-items:center;gap:7px">${(CAT_ICONS[F.cat]||CAT_ICONS["Otros"]).replace('width="52" height="52"','width="17" height="17"')} ${F.cat}</b>
   </div>`:""}
   <div class="proj-grid" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px">
@@ -5415,10 +5411,9 @@ function vLibrary(){
         ${x.cat?`<span class="chip neutral" style="font-size:9.5px;cursor:pointer" title="Filtrar por esta categoría" onclick="state.libF.cat='${x.cat}';render()">${x.cat}</span>`:""}
         <div style="display:flex;align-items:center;gap:6px"><b>${fmt(x.price)}</b><small style="color:var(--ink-faint)">/${ModernoDaily.escape(({m2:"m²",m3:"m³"})[x.unit]||x.unit||"ud")}</small>
           <span style="margin-left:auto"></span>
-          <button class="collbtn" title="Editar" onclick="libEdit(${i})">${ico("editar")}</button>
-          <button class="collbtn" title="Eliminar" onclick="state.library.splice(${i},1);render()">✕</button>
+          <button class="collbtn" title="Editar" onclick="libEdit(${i})">${ico("editar")} Editar</button>
+
         </div>
-        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:8px" onclick="libUse(${i})">＋ Usar en proyecto</button>
       </div>
     </div>`}).join("")}
   </div>`:`<div class="empty">Sin resultados. Añade productos aquí o desde cualquier lista con «Añadir a mi biblioteca».</div>`}`;
@@ -5496,7 +5491,7 @@ function catImgLoad(inp){
 }
 function libNewCatFolder(){
   const i=document.getElementById("libNewCatInp"); if(!i||!i.value.trim()) return;
-  if(addLibCat(i.value)){ toast("🗂 Carpeta «"+i.value.trim()+"» creada"); i.value=""; render(); }
+  if(addLibCat(i.value)){ toast("Categoría «"+i.value.trim()+"» creada"); i.value=""; render(); }
 }
 function aiCategory(txt){
   const t=(txt||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
@@ -5552,7 +5547,7 @@ function libEdit(i){
   </div>
   <div id="lbSum" class="entry" style="display:block;background:var(--gold-soft);margin-top:8px;font-size:12.5px"></div>
   ${mgUI("lb", mgAuto(x))}
-  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+  <div class="modal-foot">${i>=0?`<button class="btn btn-ghost" onclick="closeModal();libUse(${i})">Usar en proyecto</button><button class="btn btn-ghost" onclick="WorkflowPolish.removeLibrary(${i})">Eliminar</button>`:''}<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
   <button class="btn btn-dark" onclick="libSave(${i})">Guardar</button></div>`);
   libraryUploadDraft={form:document.getElementById("lbN"),pending:0};
   unitSum("lbQty","lbP","lbU","lbSum","lbC");
@@ -6254,8 +6249,8 @@ function vAgenda(){
   const multiWs = wsOrder.length>1;
   return `
   <h1 class="big">Esta es tu agenda${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-    <div class="pill-tabs contact-category-tabs">${["Clientes","Proveedores","Contratistas","Arquitectos / Técnicos","Team","Todos"].map(x=>`<button class="${tab===x?'on':''}" onclick="state.agendaTab='${x}';render()">${contactCategoryIcon(x)}${x}</button>`).join("")}</div>
+  <div class="contact-toolbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div class="pill-tabs contact-category-tabs">${["Clientes","Proveedores","Contratistas","Arquitectos / Técnicos","Team","Todos"].map(x=>`<button class="${tab===x?'on':''}" onclick="WorkflowPolish.contact('${x}')">${contactCategoryIcon(x)}${x}</button>`).join("")}</div>
     <button class="btn btn-ghost" style="margin-left:auto" title="Elige el color de cada tipo de contacto" onclick="typeColorsModal()">${ico("paleta")} Colores</button>
     <button class="btn btn-ghost" onclick="importModal()">${ico('import')} Importar contactos</button>
     <button class="btn btn-ghost" title="PDF con el logotipo del estudio, un contacto por fila" onclick="agendaExportPDF()">${ico('pdf')} Exportar</button>
@@ -6315,7 +6310,8 @@ function vPrevision(){
   byBrand((state.projects||[]).filter(p=>!p.tpl && p.status!=="Archivado")).forEach(p=>planHitos(p).forEach(h=>{ if(hitoStatus(h)==="previsto") rows.push({p,h}); }));
   rows.sort((a,b)=>(a.h.due||"9999")<(b.h.due||"9999")?-1:(a.h.due||"9999")>(b.h.due||"9999")?1:0);
   const total=rows.reduce((s,r)=>s+(+r.h.amount||0),0), vencido=rows.filter(r=>r.h.due&&r.h.due<hoy).reduce((s,r)=>s+(+r.h.amount||0),0);
-  const meses=[]; rows.forEach(r=>{ const k=r.h.due?r.h.due.slice(0,7):"sin"; let m=meses.find(x=>x.k===k); if(!m){ m={k,rows:[],sum:0}; meses.push(m); } m.rows.push(r); m.sum+=(+r.h.amount||0); });
+  const displayed=WorkflowPolish.forecastRows(rows);
+  const meses=[]; displayed.forEach(r=>{ const k=r.h.due?r.h.due.slice(0,7):"sin"; let m=meses.find(x=>x.k===k); if(!m){ m={k,rows:[],sum:0}; meses.push(m); } m.rows.push(r); m.sum+=(+r.h.amount||0); });
   const mesLabel=k=>k==="sin"?"Sin fecha prevista":(MESES[+k.slice(5,7)-1]+" "+k.slice(0,4));
   const enMes=k=>k===hoy.slice(0,7);
   return `
@@ -6328,7 +6324,8 @@ function vPrevision(){
     <div class="fin-card" style="background:${vencido?"#F6DBD7":"var(--card)"}"><span class="lab" style="background:rgba(255,255,255,.7)">Con fecha vencida</span><div class="val" style="${vencido?"color:var(--red-ink)":""}">${fmt(vencido)}</div><div style="font-size:11px;color:var(--ink-faint);margin-top:3px">${vencido?"toca emitir factura":"todo al día"}</div></div>
     <div class="fin-card" style="background:var(--gold-soft)"><span class="lab" style="background:rgba(255,255,255,.7)">Este mes</span><div class="val">${fmt(rows.filter(r=>r.h.due&&enMes(r.h.due.slice(0,7))).reduce((s,r)=>s+(+r.h.amount||0),0))}</div></div>
   </div>
-  ${rows.length? meses.map(m=>`
+  ${WorkflowPolish.forecastControls()}
+  ${WorkflowPolish.forecastState().view!=='lista'?WorkflowPolish.forecastCalendar(displayed):displayed.length? meses.map(m=>`
     <h2 class="sec" style="display:flex;align-items:baseline;gap:10px">${mesLabel(m.k)}${enMes(m.k)?`<span class="chip" style="font-size:10px;background:var(--gold-soft)">este mes</span>`:""}<span style="margin-left:auto;font-size:14px">${fmt(m.sum)}</span></h2>
     <div class="entry-col" style="margin-bottom:14px">
       ${m.rows.map(({p,h})=>{ const late=h.due&&h.due<hoy; return `<div class="entry prev-row" style="background:var(--white)">
@@ -6374,7 +6371,7 @@ function vAccounting(){
       + (state.invoices||[]).filter(f=>f.irpf&&f.irpf.on&&f.date&&es.some(e=>(e.date||"").split("/")[2]===f.date.split("-")[0])).reduce((s,f)=>s+((f.sub||0)*(f.irpf.pct||0)/100),0) : 0;
     const pais=state.account.country||"España";
     const [tv,ti,docV,docI]=taxNames(pais).concat(["",""]);
-    return `<div class="entry-col" style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 18px">
+    return `<div id="accounting-tax-summary" hidden><div class="entry-col" style="margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:14px 18px">
       <b style="font-size:13px">🏛 Resumen fiscal del periodo</b>
       <small style="color:var(--ink-faint)">*Válido para ${pais}</small>
       <span class="chip cm" style="background:var(--card)">${tv} repercutido ${fmt(ivaRep)}</span>
@@ -6383,8 +6380,8 @@ function vAccounting(){
       <span class="chip" style="background:${ivaRep-ivaSop>=0?"#F6DBD7":"#DDF0DC"};font-weight:800">${tv}${docV?" ("+docV+")":""}: ${ivaRep-ivaSop>=0?"a pagar":"a favor"} ${fmt(Math.abs(ivaRep-ivaSop))}</span>
       <span class="chip" style="background:var(--gold-soft);font-weight:800">${ti} est.${docI?" ("+docI+")":""}: ${fmt(irpfEst)}</span>
       <small style="color:var(--ink-faint);width:100%">Estimación orientativa para ${pais} con las entradas que tienen desglose — no sustituye a tu asesor fiscal.</small>
-    </div>`})()}
-  <div class="pill-tabs" style="margin:14px 0 10px"><button class="${(state.accTab||"in")==="in"?"on":""}" onclick="state.accTab='in';render()">Ingresos</button><button class="${state.accTab==="out"?"on":""}" onclick="state.accTab='out';render()">Gastos</button></div>
+    </div></div>`})()}
+  <div class="pill-tabs" style="margin:14px 0 10px"><button class="${(state.accTab||"in")==="in"?"on":""}" onclick="WorkflowPolish.accountTab('in')">Ingresos</button><button class="${state.accTab==="out"?"on":""}" onclick="WorkflowPolish.accountTab('out')">Gastos</button><span class="account-toolbar-divider" aria-hidden="true">|</span><button onclick="WorkflowPolish.tax()">Resumen fiscal</button><button onclick="WorkflowPolish.exportDialog()">Exportar PDF</button></div>
   <div style="min-height:56vh">
     ${[state.accTab==="out"?"out":"in"].map(kind=>`
     <div class="entry-col" style="display:flex;flex-direction:column">
@@ -6419,7 +6416,7 @@ function vAccounting(){
         <div class="entry acc-row" ${rowDropAttr(e)}>
           <span class="chip ${BRAND[e.brand].chip}" style="flex:none;width:74px;justify-content:center">${BRAND[e.brand].name.split(" ")[0]} M.</span>
           <span style="flex:1;min-width:0">${e.concept}${e.sup?` <small style="color:var(--ink-soft)">· ${e.sup}</small>`:""}${e.rec?` <span class="chip neutral" style="font-size:10px">⟳ ${e.rec}</span>`:""}${e.pid?` <span class="chip neutral" style="cursor:pointer;font-size:10px" onclick="go('proyecto',${e.pid})">▣ ${state.projects.find(x=>x.id===e.pid)?.num||""}</span>`:""}${e.base!=null?`<br><small style="color:var(--ink-faint)">Base ${fmt(e.base)} · IVA ${fmt(e.iva)}${e.irpf>0?` · <span style="color:var(--red-ink)">${retLabel()} −${e.irpf}% −${fmt(e.base*e.irpf/100)}</span>`:""} · Total ${fmt(e.amount)}${e.irpf>0?` · <b>${e.kind==="in"?"A cobrar":"A pagar"} ${fmt(e.amount-e.base*e.irpf/100)}</b>`:""}</small>`:""}${e.kind==="in"&&cobrado(e)>0?`<br><small style="color:var(--ink-soft)">Cobrado <b style="color:#2E6B4F">${fmt(cobrado(e))}</b>${e.status!=="cobr"?` · pendiente <b style="color:var(--red-ink)">${fmt(pendienteCobro(e))}</b>`:""} <span style="color:var(--ink-faint)">(${(e.cobros||[]).length} cobro${(e.cobros||[]).length===1?"":"s"})</span></small>`:""}${e.kind==="in"&&e.status!=="cobr"&&daysLate(e)>0?`<br><small style="color:var(--red-ink);font-weight:800">⚠ Vencida hace ${daysLate(e)} d.</small>`:""}</span>
-          ${(()=>{ const propia=!!(e.link&&(state.invoices||[]).some(f=>f.ref===e.link));
+          <div class="account-row-actions">${(()=>{ const propia=!!(e.link&&(state.invoices||[]).some(f=>f.ref===e.link));
             return (propia
               ? `<button class="collbtn" style="flex-shrink:0;background:var(--gold)" title="Ver / descargar el PDF de la factura ${e.link}" onclick="portalInvoicePrint('${e.link}')">${ico("pdf")}</button>`
               : `<button class="collbtn" style="flex-shrink:0;${e.file?"background:var(--gold)":""}" title="${e.file?"Ver / descargar el archivo: "+((typeof e.file==="object"&&e.file.name)||e.file):"Adjuntar la factura o el justificante"}" onclick="gastoFile(${e.id})">${ico("factura")}</button>`)
@@ -6427,23 +6424,23 @@ function vAccounting(){
               + (propia
                 ? `<button class="collbtn" style="flex-shrink:0" title="Editar la factura ${e.link}" onclick="editInvoiceRef('${e.link}')">${ico("editar")}</button>`
                 : `<button class="collbtn" style="flex-shrink:0" title="Editar asiento" onclick="editEntry(${e.id})">${ico("editar")}</button>`); })()}
-          <button class="collbtn" style="flex-shrink:0" title="Eliminar asiento" onclick="delEntry(${e.id})">${ico("eliminar")}</button>
-          ${stSelect(e.id)}${e.kind==="in"&&e.status!=="cobr"&&cobrado(e)>0?`<span class="chip" style="background:#F5E8CE;font-size:10px;white-space:nowrap" title="Cobrado ${fmt(cobrado(e))} de ${fmt(aCobrar(e))}">Parcial · falta ${fmt(pendienteCobro(e))}</span>`:""}
-          <span class="amt ${kind}">${kind==="in"?"+":"−"}${fmt(e.amount)}<br><small style="font-weight:400;color:var(--ink-faint)">${e.date}</small></span>
+          <button class="collbtn" style="flex-shrink:0" title="Eliminar asiento" onclick="delEntry(${e.id})">${ico("eliminar")}</button></div>
+          <div class="account-row-status">${stSelect(e.id)}</div><div class="account-row-partial">${e.kind==="in"&&e.status!=="cobr"&&cobrado(e)>0?`<span class="chip" style="background:#F5E8CE;font-size:10px;white-space:nowrap" title="Cobrado ${fmt(cobrado(e))} de ${fmt(aCobrar(e))}">Parcial · falta ${fmt(pendienteCobro(e))}</span>`:""}
+          </div><span class="amt ${kind}">${kind==="in"?"+":"−"}${fmt(e.amount)}<br><small style="font-weight:400;color:var(--ink-faint)">${e.date}</small></span>
         </div>`).join("")+mas || `<div class="empty">Sin ${kind==="in"?"ingresos":"gastos"} en este periodo</div>`;
       })()}
     </div>`).join("")}
   </div>
-  <div class="rowbtns acc-foot" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px;background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;position:sticky;bottom:10px;z-index:20">
+  <div hidden id="accounting-export-source">  <div class="rowbtns acc-foot" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px;background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;position:sticky;bottom:10px;z-index:20">
     <b style="font-size:12.5px;color:var(--ink-soft)">Periodo y exportación</b>
-    <div class="pill-tabs" style="margin:0">${[["mes","Mes"],["tri","Trimestre"],["año","Año"],["todo","Todo"]].map(([k,x])=>`<button class="${P.mode===k?'on':''}" onclick="state.period.mode='${k}';render()">${x}</button>`).join("")}</div>
-    ${P.mode!=="todo"?`<select class="sel-pill" onchange="state.period.year=+this.value;render()">${years.map(y=>`<option ${P.year===y?"selected":""}>${y}</option>`).join("")}</select>`:""}
-    ${P.mode==="mes"?`<select class="sel-pill" onchange="state.period.month=+this.value;render()">${MESES.map((m,i)=>`<option value="${i+1}" ${P.month===i+1?"selected":""}>${m}</option>`).join("")}</select>`:""}
-    ${P.mode==="tri"?`<select class="sel-pill" onchange="state.period.quarter=+this.value;render()">${[1,2,3,4].map(t=>`<option value="${t}" ${P.quarter===t?"selected":""}>T${t} (${["ene–mar","abr–jun","jul–sep","oct–dic"][t-1]})</option>`).join("")}</select>`:""}<span style="margin-left:auto"></span>
+    <div class="pill-tabs" style="margin:0">${[["mes","Mes"],["tri","Trimestre"],["año","Año"],["todo","Todo"]].map(([k,x])=>`<button class="${P.mode===k?'on':''}" onclick="state.period.mode='${k}';WorkflowPolish.exportDialog()">${x}</button>`).join("")}</div>
+    ${P.mode!=="todo"?`<select class="sel-pill" onchange="state.period.year=+this.value;WorkflowPolish.exportDialog()">${years.map(y=>`<option ${P.year===y?"selected":""}>${y}</option>`).join("")}</select>`:""}
+    ${P.mode==="mes"?`<select class="sel-pill" onchange="state.period.month=+this.value;WorkflowPolish.exportDialog()">${MESES.map((m,i)=>`<option value="${i+1}" ${P.month===i+1?"selected":""}>${m}</option>`).join("")}</select>`:""}
+    ${P.mode==="tri"?`<select class="sel-pill" onchange="state.period.quarter=+this.value;WorkflowPolish.exportDialog()">${[1,2,3,4].map(t=>`<option value="${t}" ${P.quarter===t?"selected":""}>T${t} (${["ene–mar","abr–jun","jul–sep","oct–dic"][t-1]})</option>`).join("")}</select>`:""}<span style="margin-left:auto"></span>
     <button class="btn btn-ghost" onclick="exportPeriodInvoices()">${ico('download')} Facturas del periodo</button>
     <button class="btn btn-ghost" onclick="exportCSV()">${ico('xlsx')} Excel/CSV</button>
-    <button class="btn btn-dark" title="Exporta solo lo que ves: la pestaña activa, con su periodo, búsqueda y filtros" onclick="exportAccountingPDF()">${ico('pdf')} Exportar PDF (${state.accTab==="out"?"Gastos":"Ingresos"})</button>
-  </div>
+    <button class="btn btn-dark" title="Exporta solo lo que ves: la pestaña activa, con su periodo, búsqueda y filtros" onclick="WorkflowPolish.exportPDF()">${ico('pdf')} Exportar PDF (${state.accTab==="out"?"Gastos":"Ingresos"})</button>
+  </div></div>
 `;
 }
 
@@ -11481,7 +11478,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.60.16";
+const MODERNO_VER="v3.61.0";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13053,10 +13050,10 @@ render = function(){
   V.setAttribute('aria-busy',String(!!loading));
   __origRender();V.setAttribute('data-page',state.view);persistSoon();roomsHint();routeWrite();
   try{presenceTrack();}catch(e){}
-  const key=state.view+'|'+(state.view==='proyecto'?state.projTab:'')+'|'+state.currentProject+'|'+state.currentRoom+'|'+(typeof presCur!=='undefined'&&presCur?presCur.prid:'');
+  const key=state.view+'|'+state.currentProject+'|'+state.currentRoom+'|'+(typeof presCur!=='undefined'&&presCur?presCur.prid:'');
   if(!loading&&key!==_lastVisualRoute){
     if(_viewFade)_viewFade.cancel();
-    if(_lastVisualRoute&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&V.animate)_viewFade=V.animate([{opacity:.65},{opacity:1}],{duration:180,easing:'ease-out'});
+    if(_lastVisualRoute&&(typeof WorkflowPolish==='undefined'||!WorkflowPolish.localMotion)&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&V.animate)_viewFade=V.animate([{opacity:0},{opacity:1}],{duration:260,easing:'cubic-bezier(.22,.61,.36,1)'});
     _lastVisualRoute=key;
   }
 };
@@ -13289,7 +13286,7 @@ function loginGo(prov){
 try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/"); }catch(e){}
 </script>
 <link rel="stylesheet" href="/team-presence.css?v=3561">
-<link rel="stylesheet" href="/brand/app-identity.css?v=3589">
+<link rel="stylesheet" href="/brand/app-identity.css?v=3617">
 <link rel="stylesheet" href="/brand/project-folio.css?v=3586">
 <script src="/team-presence.js?v=3562"></script>
 <script src="/settings-icons.js?v=353"></script>
