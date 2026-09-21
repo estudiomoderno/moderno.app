@@ -913,6 +913,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
 <link rel="stylesheet" href="/shopping-cards.css?v=3625">
+<link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
 <script src="/client-portal-site.js?v=3624"></script>
 <link rel="stylesheet" href="/client-portal-site.css?v=3624">
@@ -1095,7 +1096,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
         <button class="nav-item" data-view="workspace"><span class="ico i-ws"></span> Mis tareas</button>
         <button class="nav-item" data-view="biblioteca"><span class="ico i-bib"></span> Biblioteca</button>
         <button class="nav-item" data-view="proyectos"><span class="ico i-pro"></span> Proyectos</button>
-        <button class="nav-item" data-view="compras"><span class="ico i-comp"></span> Compras</button>
+        <button class="nav-item" data-view="compras"><span class="ico i-comp"></span> Pedidos</button>
         <button class="nav-item" data-view="agenda"><span class="ico i-con"></span> Contactos</button>
         <button class="nav-item" data-view="calendario"><span class="ico i-cal"></span> Calendario</button>
       </div>
@@ -1186,7 +1187,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/purchase-logistics.js?v=344"></script>
 <script src="/dialog-access.js?v=345"></script>
 <script src="/workflow-help.js?v=345"></script>
-<script src="/product-operations.js?v=345"></script>
+<script src="/orders-dashboard.js?v=3626"></script>
+<script src="/product-operations.js?v=3626"></script>
 <script src="/purchase-finance.js?v=339"></script>
 <style>#catalogSearch,#catalogPickerSearch{border-radius:12px;border:1px solid var(--card);padding:10px 12px;background:var(--white);color:var(--ink);font:inherit}</style>
 <script src="/catalog-core.js?v=346"></script>
@@ -4268,7 +4270,7 @@ const I18N = { es: { __on:true,
   "portal.titulo": "Portal del cliente", "portal.solo_lectura": "Portal de solo lectura",
   "portal.pagar_hito": "Pagar hito \u2014 pr\u00f3ximamente",
   "comun.duplicar":"Duplicar","comun.cerrar":"Cerrar","comun.enviar":"Enviar","comun.nuevo":"Nuevo","comun.descargar":"Descargar","comun.pantalla_completa":"Pantalla completa","comun.proximamente":"Pr\u00f3ximamente","comun.idioma_ok":"Idioma guardado \u2713",
-  "menu.workspace":"Mis tareas","menu.biblioteca":"Biblioteca","menu.proyectos":"Proyectos","menu.compras":"Compras","menu.contactos":"Contactos","menu.calendario":"Calendario","menu.contabilidad":"Contabilidad","menu.informes":"Informes","menu.facturas":"Facturas","menu.presupuestos":"Presupuestos","menu.catalogo":"Cat\u00e1logo","menu.integraciones":"Integraciones","menu.plantillas":"Plantillas y docs","menu.utilidades":"Utilidades",
+  "menu.workspace":"Mis tareas","menu.biblioteca":"Biblioteca","menu.proyectos":"Proyectos","menu.compras":"Pedidos","menu.contactos":"Contactos","menu.calendario":"Calendario","menu.contabilidad":"Contabilidad","menu.informes":"Informes","menu.facturas":"Facturas","menu.presupuestos":"Presupuestos","menu.catalogo":"Cat\u00e1logo","menu.integraciones":"Integraciones","menu.plantillas":"Plantillas y docs","menu.utilidades":"Utilidades",
   "tabs.tareas":"Tareas","tabs.listas":"Listas de compra","tabs.obra":"Seguimiento de obra","tabs.archivos":"Archivos y notas","tabs.fin":"Finanzas","tabs.cliente":"Cliente","tabs.chat":"Conversaci\u00f3n","tabs.resumen":"Resumen",
   "pdf.factura":"Factura","pdf.concepto":"Concepto","pdf.uds":"Uds","pdf.precio":"Precio","pdf.importe":"Importe","pdf.total":"Total","pdf.transferencia":"Transferencia","pdf.pagada":"Pagada","pdf.pendiente":"Pendiente",
   "portal.avanza":"As\u00ed avanza tu proyecto","portal.listas":"Tus listas de la compra","portal.facturas":"Tus facturas","portal.conversacion":"Conversaci\u00f3n con tu estudio","portal.escribe":"Escribe a tu estudio\u2026","portal.docs":"Documentos compartidos","portal.resumen_eco":"Resumen econ\u00f3mico","portal.presupuesto":"Presupuesto del proyecto","portal.pagado_hoy":"Pagado hasta hoy","portal.completada":"Completada \u2713","portal.en_curso":"En curso","portal.pendiente":"Pendiente","portal.aprobar":"\u2713 Aprobar","portal.pieza":"pieza","portal.piezas":"piezas","portal.hola":"\u00a1Hola","portal.bienvenida":"Aqu\u00ed puedes seguir tu proyecto y aprobar las piezas que te proponemos."
@@ -6719,9 +6721,9 @@ function vCompras(){
   shown.forEach(x=>{ const k=x.it.supplier||"Sin proveedor"; (groups[k]=groups[k]||[]).push(x); });
   const CST={"Aprobado":"Por pedir","Comprado":"Pedido","En Tránsito":"En tránsito","Instalado":"Instalado"};
   return `
-  <h1 class="big">Compras</h1>
-  ${_accessRole==='admin'?`<div class="flt"><label>Compras y aprobaciones por proyecto<select id="opsProject" onchange="ProductOps.overview()">${byBrand(state.projects.filter(p=>!p.tpl&&p.status!=='Archivado')).map(p=>`<option value="${p.id}">${ModernoDaily.escape(p.num+' '+p.name)}</option>`).join('')}</select></label><button class="btn btn-dark" onclick="ProductOps.open(document.getElementById('opsProject').value)">Gestionar pedidos</button></div><div id="opsOverview" class="widget" aria-live="polite"></div>`:''}
-  <h2 class="sec">Seguimiento manual de las fichas</h2>
+  <div class="orders-heading"><div><h1 class="big">Pedidos</h1><p>Organiza los pedidos de tus proyectos y sigue sus entregas. La selección de productos está en las listas de compra de cada proyecto.</p></div></div>
+  ${_accessRole==='admin'?`<div class="orders-project"><label>Proyecto<select id="opsProject" onchange="ProductOps.overview()">${byBrand(state.projects.filter(p=>!p.tpl&&p.status!=='Archivado')).map(p=>`<option value="${p.id}">${ModernoDaily.escape(p.num+' '+p.name)}</option>`).join('')}</select></label><button class="btn btn-dark" onclick="ProductOps.open(document.getElementById('opsProject').value)">Gestionar pedidos</button></div><div id="opsOverview" aria-live="polite"></div>`:''}
+  <details class="orders-manual"><summary>Seguimiento manual de productos</summary>
   <p class="sub">Etiquetas que el equipo asigna a los productos, agrupadas por proveedor. Los pedidos, recepciones e instalaciones registrados se consultan en Gestionar pedidos.</p>
   <div class="flt" style="display:flex;align-items:center;gap:10px;margin:0 0 14px;flex-wrap:wrap">
     <label style="margin:0">Proyecto</label>
@@ -6752,7 +6754,7 @@ function vCompras(){
       </span>
     </div>`).join("")}
   </div>`).join("")}
-  <p style="font-size:11px;color:var(--ink-faint)">Cambia el estado desde aquí mismo (Pedido → En tránsito → Instalado) y se actualiza en la lista del proyecto. Los instalados salen de la vista general — pulsa su tarjeta para verlos.</p>`;
+  <p style="font-size:11px;color:var(--ink-faint)">Cambia el estado desde aquí mismo (Pedido → En tránsito → Instalado) y se actualiza en la lista del proyecto. Los instalados salen de la vista general — pulsa su tarjeta para verlos.</p></details>`;
 }
 function vInformes(){
   const ins = byBrand(state.entries).filter(e=>e.kind==="in");
@@ -11484,7 +11486,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.62.5";
+const MODERNO_VER="v3.62.6";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
