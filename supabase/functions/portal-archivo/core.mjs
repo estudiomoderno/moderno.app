@@ -2,6 +2,9 @@ export function allowedPaths(payload,type,origins) {
  const project=payload?.proyecto;
  if(!project || !payload.estudio_id) return new Set();
  const files=[...(project.files||[]).filter(f=>f&&f.cli!==false),{url:payload.marca?.logo}];
+ if(type==='cliente'){
+  for(const room of project.rooms||[])if(room.cliMode!=='off')for(const section of room.sections||[])for(const item of section.items||[])if(typeof item.img==='string')files.push({url:item.img});
+ }
  if(type==='obra'){
   files.push(...(project.obraPlanos||[]));
   for(const phase of project.obraF||[]) for(const item of phase.items||[]) if(item.file)files.push(item.file);

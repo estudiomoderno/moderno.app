@@ -20,3 +20,4 @@ test('invalid tokens, request types and failures never sign',async()=>{
  for(const body of [{token:'',type:'cliente',path},{token:'ficticio',type:'admin',path},{token:'ficticio',type:'cliente',path}])assert.ok((await handler(new Request('https://test',{method:'POST',body:JSON.stringify(body)}))).status>=400);
  assert.equal(signed,false);
 });
+test('only shared shopping images in same study can be signed for client',()=>{const data={estudio_id:study,proyecto:{rooms:[{cliMode:'read',sections:[{items:[{img:'storage://archivos/'+study+'/product.jpg'},{img:'storage://archivos/other/no.jpg'}]}]},{cliMode:'off',sections:[{items:[{img:'storage://archivos/'+study+'/hidden.jpg'}]}]}]}};assert.deepEqual([...allowedPaths(data,'cliente',[host])],[study+'/product.jpg']);assert.equal(allowedPaths(data,'obra',[host]).size,0);});

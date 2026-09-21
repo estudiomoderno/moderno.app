@@ -31,8 +31,8 @@ begin
     'obraPlanos',coalesce((select jsonb_agg(public.portal_campos(x,array['name','type','data','url'])) from jsonb_array_elements(coalesce(p->'obraPlanos','[]')) x),'[]'));
  else
    select coalesce(jsonb_agg(public.portal_campos(r,array['id','name','cliMode'])||jsonb_build_object('sections',
-    coalesce((select jsonb_agg(public.portal_campos(s,array['name'])||jsonb_build_object('items',coalesce((select jsonb_agg(public.portal_campos(i,array['id','name','qty','price','cli'])) from jsonb_array_elements(coalesce(s->'items','[]')) i),'[]'))) from jsonb_array_elements(coalesce(r->'sections','[]')) s),'[]'))),'[]') into salas from jsonb_array_elements(coalesce(p->'rooms','[]')) r where r->>'cliMode' is distinct from 'off';
-   resultado:=resultado||public.portal_campos(p,array['cliWelcome'])||jsonb_build_object('rooms',salas,'cliShare',public.portal_campos(p->'cliShare',array['token','active','money','obra','obraContactos']),
+    coalesce((select jsonb_agg(public.portal_campos(s,array['name'])||jsonb_build_object('items',coalesce((select jsonb_agg((public.portal_campos(i,array['id','name','qty','price','cli','unit'])||case when jsonb_typeof(i->'img')='string' then jsonb_build_object('img',i->'img') else '{}'::jsonb end)) from jsonb_array_elements(coalesce(s->'items','[]')) i),'[]'))) from jsonb_array_elements(coalesce(r->'sections','[]')) s),'[]'))),'[]') into salas from jsonb_array_elements(coalesce(p->'rooms','[]')) r where r->>'cliMode' is distinct from 'off';
+   resultado:=resultado||public.portal_campos(p,array['cliWelcome'])||jsonb_build_object('rooms',salas,'tasks',coalesce((select jsonb_agg(public.portal_campos(t,array['title','col','due'])) from jsonb_array_elements(coalesce(p->'tasks','[]')) t where jsonb_typeof(t)='object'),'[]'::jsonb),'cliShare',public.portal_campos(p->'cliShare',array['token','active','money','obra','obraContactos']),
    'cliChat',coalesce((select jsonb_agg(public.portal_campos(x,array['de','t','d'])) from jsonb_array_elements(coalesce(p->'cliChat','[]')) x),'[]'));
    if p#>>'{cliShare,money}'='true' then resultado:=resultado||public.portal_campos(p,array['total']); end if;
  end if;
