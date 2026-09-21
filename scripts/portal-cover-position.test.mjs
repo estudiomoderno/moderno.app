@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
+const c=vm.createContext({fileImageAttrs:()=>''});vm.runInContext(fs.readFileSync(new URL('../app/client-portal-site.js',import.meta.url),'utf8')+';this.portal=ClientPortalSite',c);
+test('cover position defaults safely and clamps coordinates',()=>{assert.equal(c.portal.coverPosition({}).x,50);assert.equal(c.portal.coverPosition({body:'invalid'}).y,50);const p=c.portal.coverPosition({body:JSON.stringify({coverPosition:{x:150,y:-10}})});assert.equal(p.x,100);assert.equal(p.y,0);});
+test('cover position reaches the portal image through shared metadata',()=>{const html=c.portal.coverHTML({name:'Project',files:[{docKind:'portal-cover',type:'image/png',data:'image',body:JSON.stringify({coverPosition:{x:25,y:70}})}]});assert.match(html,/object-position:25% 70%/);});
