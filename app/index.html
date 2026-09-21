@@ -914,8 +914,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
 <link rel="stylesheet" href="/shopping-cards.css?v=3616">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
-<script src="/client-portal-site.js?v=3621"></script>
-<link rel="stylesheet" href="/client-portal-site.css?v=3621">
+<script src="/client-portal-site.js?v=3622"></script>
+<link rel="stylesheet" href="/client-portal-site.css?v=3622">
 </head>
 <body>
 <div class="app">
@@ -3847,10 +3847,11 @@ function obraCalHtml(p){
 }
 /* Calendario mensual de solo lectura para el portal del cliente: fases del proyecto y de la obra como barras */
 function portalCalHtml(p){
+  if(state.portalCalProject!==p.id){state.portalCalProject=p.id;state.portalCalOff=0;}
   const off=state.portalCalOff||0;
   const today=new Date(); today.setHours(0,0,0,0);
-  const base=new Date(today.getFullYear(), today.getMonth()+off, 1);
-  const iso=d=>d.toISOString().slice(0,10);
+  const base=ClientPortalSite.calendarBase(p,today,off);
+  const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const spans=[];
   (p.obraF||[]).forEach(f=>{ if(f.start&&f.end&&f.end>=f.start) spans.push({s:f.start,e:f.end,t:f.name,color:f.color||"#F2C4A0",k:"🏗"}); });
   const first=new Date(base), startDow=(first.getDay()+6)%7; const cur=new Date(first); cur.setDate(cur.getDate()-startDow);
@@ -3861,12 +3862,14 @@ function portalCalHtml(p){
     const used=[]; segs.forEach(g=>{ let l=0; while((used[l]||[]).some(x=>!(g.c1<x.c0||g.c0>x.c1))) l++; (used[l]=used[l]||[]).push(g); g.lane=l; });
     lanes[r]=used.length;
     segs.forEach(g=>bars.push(`<div class="evspan" style="grid-column:${g.c0+1}/${g.c1+2};grid-row:${r+1};margin-top:${24+g.lane*20}px;background:${g.sp.color};cursor:default" title="${g.sp.t} · ${g.sp.s.split("-").reverse().join("/")} → ${g.sp.e.split("-").reverse().join("/")}">${g.sp.s<r0?"…":g.sp.k} ${g.sp.t}</div>`)); }
+  const firstScheduled=spans.map(sp=>sp.s).sort()[0];
   const cells=dates.map((k,i)=>{ const d=new Date(k+"T00:00:00"); const r=Math.floor(i/7), c=i%7;
-    return `<div class="cd ${d.getMonth()!==base.getMonth()?"out":""}" style="grid-column:${c+1};grid-row:${r+1};cursor:default"><span class="dn ${k===iso(today)?"today":""}">${d.getDate()}</span>${lanes[r]?`<div style="height:${lanes[r]*20-2}px;flex:none"></div>`:""}</div>`; });
-  const monName=base.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
+    return `<div class="cd ${d.getMonth()!==base.getMonth()?"out":""}" style="grid-column:${c+1};grid-row:${r+1};cursor:default"><span class="dn ${k===iso(today)?"today":""} ${k===firstScheduled?"portal-first-day":""}">${d.getDate()}</span>${lanes[r]?`<div style="height:${lanes[r]*20-2}px;flex:none"></div>`:""}</div>`; });
+  const month=base.toLocaleDateString("es-ES",{month:"long"});
+  const monName=month[0].toUpperCase()+month.slice(1)+" "+base.getFullYear();
   const enMes=spans.filter(sp=>sp.s<=dates[41]&&sp.e>=dates[0]).length;
   return `<div class="cliCard"><h2 class="sec" style="margin-top:0;display:flex;align-items:center;gap:8px">Calendario de la obra
-      <span style="margin-left:auto;display:flex;gap:4px;align-items:center"><button class="btn btn-ghost" style="padding:4px 9px" onclick="state.portalCalOff=(state.portalCalOff||0)-1;render()">‹</button><b style="font-size:12.5px;text-transform:capitalize;min-width:120px;text-align:center">${monName}</b><button class="btn btn-ghost" style="padding:4px 9px" onclick="state.portalCalOff=(state.portalCalOff||0)+1;render()">›</button>${off?`<button class="btn btn-ghost" style="padding:4px 9px;font-size:11px" onclick="state.portalCalOff=0;render()">Hoy</button>`:""}</span></h2>
+      <span style="margin-left:auto;display:flex;gap:4px;align-items:center"><button class="btn btn-ghost portal-month-arrow" aria-label="Mes anterior" onclick="state.portalCalOff=(state.portalCalOff||0)-1;render()">‹</button><b style="font-size:12.5px;text-transform:capitalize;min-width:120px;text-align:center">${monName}</b><button class="btn btn-ghost portal-month-arrow" aria-label="Mes siguiente" onclick="state.portalCalOff=(state.portalCalOff||0)+1;render()">›</button>${off?`<button class="btn btn-ghost" style="padding:4px 9px;font-size:11px" onclick="state.portalCalOff=0;render()">Inicio de obra</button>`:""}</span></h2>
     <div class="calfull portal-cal"><div class="cg">${cells.join("")}${bars.join("")}</div></div>
     <p style="font-size:11px;color:var(--ink-faint);margin:8px 0 0">${spans.length?`Cada barra es una fase de la obra, del día que empieza al día que termina.${enMes?"":" Este mes no hay fases planificadas."}`:"Aún no hay fases de obra con fechas planificadas."}</p>
   </div>`;
@@ -6083,6 +6086,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
       </div>
     </div>
     <p style="font-size:11px;color:var(--ink-faint);margin-top:8px">El cliente nunca ve costes internos, m\u00e1rgenes, proveedores ni otros proyectos. En la app real, el enlace funciona sin que el cliente se registre.</p>
+    ${ClientPortalSite.coverEditor(p)}
     <h2 class="sec">Mensaje de bienvenida</h2>
     <div class="entry" style="background:var(--white);align-items:flex-start;flex-wrap:wrap;gap:10px">
       ${state._welEdit?`
@@ -11479,7 +11483,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.62.1";
+const MODERNO_VER="v3.62.2";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
