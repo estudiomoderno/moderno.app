@@ -914,6 +914,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
 <link rel="stylesheet" href="/shopping-cards.css?v=3616">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
+<script src="/client-portal-site.js?v=3620"></script>
+<link rel="stylesheet" href="/client-portal-site.css?v=3620">
 </head>
 <body>
 <div class="app">
@@ -3880,38 +3882,38 @@ function vPortalCli(){
   (p.files||[]).forEach((f,i)=>{ const fo=fobj(f); if(fileOk(fo)&&fileCli(fo)) docs.push({proj:true,i,x:{file:fo}}); });
   const fases=(p.phases||[]).map((ph,i)=>({n:(typeof ph==="string"?ph:ph.name||ph.n||("Fase "+(i+1))), st:i<(p.curPhase||0)?"done":i===(p.curPhase||0)?"now":"next"}));
   const cobr=state.entries.filter(e=>e.pid===p.id&&e.kind==="in"&&e.status==="cobr").reduce((s,e)=>s+e.amount,0);
-  return `<div style="min-height:100vh;background:var(--card)">
+  return ClientPortalSite.render(`<div style="min-height:100vh;background:var(--card)">
   <div style="max-width:760px;margin:0 auto;padding:26px 18px 60px">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px">
       ${lg?`<img ${fileImageAttrs(lg)} style="height:46px;max-width:180px;object-fit:contain">`:`<div style="font-weight:900;font-size:24px;letter-spacing:-0.5px">${b.name||state.account.name||""}</div>`}
       <span style="margin-left:auto;font-size:11px;color:var(--ink-faint)">Portal del cliente</span>
     </div>
-    <div class="cliCard" style="padding:22px">
+    <div class="cliCard" data-portal-page="hero" style="padding:22px">
       <p style="font-size:11px;color:var(--ink-faint);margin:0;text-transform:uppercase;letter-spacing:1px">${b.name||""}</p>
       <h1 style="margin:4px 0 2px;font-size:clamp(22px,5vw,30px)">${p.name}</h1>
       <p style="color:var(--ink-soft);font-size:13px;margin:2px 0 0">${p.client?"Para "+p.client+" \u00b7 ":""}${p.num}</p>
     </div>
-    ${fases.length?`<div class="cliCard"><h2 class="sec" style="margin-top:0">${tr("portal.avanza")}</h2>
+    ${fases.length?`<div class="cliCard" data-portal-page="avances"><h2 class="sec" style="margin-top:0">${tr("portal.avanza")}</h2>
       ${fases.map(f=>`<div style="display:flex;align-items:center;gap:12px;padding:7px 0">
         <span style="width:15px;height:15px;border-radius:50%;flex-shrink:0;border:2.5px solid var(--ink);background:${f.st==="done"?"var(--ink)":f.st==="now"?"var(--accent)":"transparent"}"></span>
         <span style="flex:1;font-size:14px;${f.st==="done"?"color:var(--ink-faint)":f.st==="now"?"font-weight:800":""}">${f.n}</span>
         <small style="color:var(--ink-faint)">${f.st==="done"?"Completada \u2713":f.st==="now"?"En curso":"Pendiente"}</small>
       </div>`).join("")}</div>`:""}
-    ${portalCalHtml(p)}
+    ${sh.obra!==false?`<div class="cliCard" data-portal-page="avances">${portalCalHtml(p)}</div>`:""}
     <div class="cliCard"><p style="font-size:13.5px;margin:0;line-height:1.5">${(p.cliWelcome||cliWelcomeDefault(p)).replace(/</g,"&lt;")}</p></div>
     ${(sh.obra!==false && (p.obraF||[]).length)?(function(){ const tot=p.obraF.reduce((s,f)=>s+(f.items||[]).length,0), done=p.obraF.reduce((s,f)=>s+(f.items||[]).filter(x=>x.done).length,0); const pct=tot?Math.round(done/tot*100):0; const fD=s=>s?s.split("-").reverse().join("/"):"";
-      return `<div class="cliCard"><h2 class="sec" style="margin-top:0">Seguimiento de obra</h2>
+      return `<div class="cliCard" data-portal-page="avances"><h2 class="sec" style="margin-top:0">Seguimiento de obra</h2>
       <div style="display:flex;align-items:center;gap:10px;margin:4px 0 12px"><div style="flex:1;height:10px;border-radius:99px;background:var(--card);overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--gold)"></div></div><b style="font-size:13px">${pct}%</b><small style="color:var(--ink-faint)">${done} de ${tot} puntos</small></div>
       ${p.obraF.map(f=>`<div style="margin-bottom:10px"><b style="font-size:13px">■ ${f.name}</b>${f.start&&f.end?` <small style="color:var(--ink-faint)">(${fD(f.start)} → ${fD(f.end)})</small>`:""}
         <div style="font-size:12.5px;margin-top:4px;line-height:1.7">${(f.items||[]).map(x=>`<div style="${x.done?"color:var(--ink-faint)":""}">${x.done?"☑":"☐"} ${x.t}</div>`).join("")||`<small style="color:var(--ink-faint)">Sin puntos</small>`}</div></div>`).join("")}
       </div>`; })():""}
 
-    ${(sh.obraContactos!==false && (p.obraContactos||[]).length)?`<div class="cliCard"><h2 class="sec" style="margin-top:0">Contactos de obra</h2>
+    ${(sh.obraContactos!==false && (p.obraContactos||[]).length)?`<div class="cliCard" data-portal-page="avances"><h2 class="sec" style="margin-top:0">Contactos de obra</h2>
       <div class="entry-col">${p.obraContactos.map(c=>{ const tels=(c.phone||"").split(/\s*[\/,;\-–]\s*(?=\+?\d)/).map(t=>t.trim()).filter(t=>/\d{6,}/.test(t.replace(/\s/g,""))); const fis=(c.fiscal||"").trim(); const showFis=fis&&_capNorm(fis)!==_capNorm(c.name);
         return `<div class="entry oc-row" style="background:var(--white)"><div class="oc-main"><b>${c.name}</b>${showFis?`<small>${fis}</small>`:""}</div><div class="oc-tag">${c.trade?`<span class="chip neutral" style="font-size:10px">${c.trade}</span>`:""}</div><div class="oc-links">${tels.map(t=>`<a href="tel:${t.replace(/\s/g,"")}">\u2706 ${t}</a>`).join("")}${c.email?`<a href="mailto:${c.email}">\u2709 ${c.email}</a>`:""}</div></div>`; }).join("")}</div>
       </div>`:""}
-    ${state.portalAnon?`<div class="cliCard"><h2 class="sec">Aprobaciones por revisión</h2><p>Consulta las fichas que el estudio ha preparado para tu aprobación.</p><button class="btn btn-dark" onclick="ProductOps.portal()">Revisar productos</button></div>`:""}
-    ${(p.rooms||[]).some(r=>cliModeOf(r)!=="off")?`<div class="cliCard"><h2 class="sec" style="margin-top:0">${tr("portal.listas")}</h2>
+    ${state.portalAnon?`<div class="cliCard" data-portal-page="selecciones"><h2 class="sec">Aprobaciones por revisión</h2><p>Consulta las fichas que el estudio ha preparado para tu aprobación.</p><button class="btn btn-dark" onclick="ProductOps.portal()">Revisar productos</button></div>`:""}
+    ${(p.rooms||[]).some(r=>cliModeOf(r)!=="off")?`<div class="cliCard" data-portal-page="selecciones"><h2 class="sec" style="margin-top:0">${tr("portal.listas")}</h2>
       ${(p.rooms||[]).filter(r=>cliModeOf(r)!=="off").map((r,ri)=>{
         const its=(r.sections||[]).flatMap((s,si)=>(s.items||[]).map((it,ii)=>({si,ii,it})));
         const tot=its.reduce((s,x)=>s+(x.it.price||0)*(x.it.qty||1),0);
@@ -3930,7 +3932,7 @@ function vPortalCli(){
       }).join("")}</div>`:""}
     ${(function(){
       const fx = state.portalAnon ? (state.portalFacturas||[]) : (state.invoices||[]).filter(v=>v.client===p.client&&p.client);
-      return fx.length?`<div class="cliCard"><h2 class="sec" style="margin-top:0">${tr("portal.facturas")}</h2>
+      return fx.length?`<div class="cliCard" data-portal-page="facturas"><h2 class="sec" style="margin-top:0">${tr("portal.facturas")}</h2>
       ${fx.map(f=>`<div style="display:flex;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--card)">
         <div style="flex:1"><b style="font-size:13px">${f.ref}</b><span style="font-size:11.5px;color:var(--ink-soft)"> \u00b7 ${(f.date||"").split("-").reverse().join("/")}</span></div>
         <span class="chip ${f.status==="pag"?"cm":"neutral"}">${f.status==="pag"?tr("pdf.pagada"):tr("pdf.pendiente")}</span>
@@ -3938,7 +3940,7 @@ function vPortalCli(){
         <button class="btn btn-ghost" style="padding:5px 10px;font-size:11px" onclick="portalInvoicePrint('${f.ref}')">\u2b07 PDF</button>
       </div>`).join("")}</div>`:"";
     })()}
-    <div class="cliCard"><h2 class="sec" style="margin-top:0">${tr("portal.conversacion")}</h2>
+    <div class="cliCard" data-portal-page="mensajes"><h2 class="sec" style="margin-top:0">${tr("portal.conversacion")}</h2>
       <div style="max-height:240px;overflow:auto">
       ${[...(p.cliChat||[]),...(p.cliChatLocal||[])].length?
         [...(p.cliChat||[]),...(p.cliChatLocal||[])].map(m=>`<div style="display:flex;margin:6px 0;justify-content:${m.de==="cliente"?"flex-end":"flex-start"}"><span style="max-width:80%;background:${m.de==="cliente"?"var(--ink)":"var(--card)"};color:${m.de==="cliente"?"var(--white)":"inherit"};border-radius:14px;padding:8px 12px;font-size:12.5px">${m.t}<br><small style="opacity:.6">${m.de==="cliente"?"T\u00fa":"Tu estudio"} \u00b7 ${m.d}</small></span></div>`).join("")
@@ -3949,7 +3951,7 @@ function vPortalCli(){
         <button class="btn btn-dark" onclick="portalChatSend(${p.id})">Enviar</button>
       </div>
     </div>
-    ${docs.length?`<div class="cliCard"><h2 class="sec" style="margin-top:0">${tr("portal.docs")}</h2>
+    ${docs.length?`<div class="cliCard" data-portal-page="documentos"><h2 class="sec" style="margin-top:0">${tr("portal.docs")}</h2>
       ${docs.map(d=>`<div class="entry" style="background:var(--card);cursor:pointer" onclick="${d.x.file.docRef?`portalInvoicePrint('${d.x.file.docRef}')`:d.x.file.body?`fileView(${p.id},${d.i},true)`:`portalProjFileView(${p.id},${d.i})`}">
         <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">\ud83d\udcc4 ${d.x.file.name}</span>${d.x.file.signed?`<span class="chip" style="background:#DBEBDD;color:#2E6B4F;font-size:10px">\u270d Firmado</span>`:""}<small style="color:var(--ink-faint)">Ver</small>
       </div>`).join("")}</div>`:""}
@@ -3966,7 +3968,7 @@ function vPortalCli(){
       <button class="btn btn-ghost" disabled style="width:100%;justify-content:center;cursor:default">\ud83d\udcb3 ${tr("portal.pagar_hito")}</button>
     </div>
     <p style="text-align:center;font-size:10.5px;color:var(--ink-faint);margin-top:26px">Portal de solo lectura \u00b7 ${b.name||""} con Moderno</p>
-  </div></div>`;
+  </div></div>`,p,sh);
 }
 function wsEditModal(k){
   const b=BRAND[k]; if(!b) return;
@@ -11477,7 +11479,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.61.1";
+const MODERNO_VER="v3.62.0";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
