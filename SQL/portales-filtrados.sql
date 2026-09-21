@@ -1,3 +1,4 @@
+-- After reinstalling this baseline, apply portal-branding.sql to restore the branding capability.
 -- Candidato. Aplicar primero solo al clon; conservar las funciones originales.
 begin;
 create or replace function public.portal_campos(v jsonb, campos text[]) returns jsonb
