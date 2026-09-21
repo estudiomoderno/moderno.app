@@ -912,7 +912,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3566">
-<link rel="stylesheet" href="/shopping-cards.css?v=3616">
+<link rel="stylesheet" href="/shopping-cards.css?v=3625">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
 <script src="/client-portal-site.js?v=3624"></script>
 <link rel="stylesheet" href="/client-portal-site.css?v=3624">
@@ -7320,7 +7320,7 @@ function vRoom(){
         <p class="shopping-product-meta">${ModernoDaily.escape([it.supplier,it.color,it.dims].filter(Boolean).join(' · '))}</p>
         <p class="shopping-product-meta">${it.qty} ${ModernoDaily.escape(({m2:'m²',m3:'m³'})[it.unit]||it.unit||'ud')} · Total ${fmt(it.price*it.qty)}${it.plazo?' · '+ModernoDaily.escape(it.plazo):''}</p>
         <div class="shopping-product-controls"><select aria-label="Estado de ${ModernoDaily.escape(it.name)}" class="dl-pill ${ACC.includes(it.status)?'acc':''}" onchange="setItem(${si},${ii},'status',this.value)">${Object.keys(ISTATES).map(st=>`<option ${it.status===st?'selected':''}>${st}</option>`).join('')}</select><button class="dl-btn" aria-label="Editar ${ModernoDaily.escape(it.name)}" onclick="itemModal(${si},${ii})">${ico('editar')}</button><button class="dl-btn" aria-label="Más opciones de ${ModernoDaily.escape(it.name)}" onclick="itemMenu(${si},${ii})">···</button></div>
-        ${it.hidden||it.alt||it.rejected||it.files?.length?`<p class="shopping-product-meta">${[it.hidden?'Oculto al cliente':'',it.alt?'Alternativa':'',it.rejected?'Rechazado':'',it.files?.length?it.files.length+' adjuntos':''].filter(Boolean).join(' · ')}</p>`:''}
+        <p class="shopping-product-meta shopping-product-footer">${[it.hidden?'Oculto al cliente':'',it.alt?'Alternativa':'',it.rejected?'Rechazado':'',it.files?.length?it.files.length+' adjuntos':''].filter(Boolean).join(' · ')}</p>
       </article>`).join('')}
       ${(q||filtering)&&!visible.length?'<p>Sin resultados en esta sección</p>':''}
     </div>
@@ -11484,7 +11484,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.62.4";
+const MODERNO_VER="v3.62.5";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
