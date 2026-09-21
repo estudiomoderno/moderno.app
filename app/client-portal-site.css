@@ -16,3 +16,11 @@
 @media(prefers-reduced-motion:reduce){.client-site,.client-menu-toggle svg{transition:none!important}}
 .client-brand img.client-moderno-logo{background:transparent;padding:0;filter:brightness(0) invert(1);border-radius:0}.client-brand img.client-brand-full{width:100%;height:48px}.client-brand img.client-brand-symbol{display:none}.client-menu-mini .client-brand img.client-brand-full{display:none}.client-menu-mini .client-brand img.client-brand-symbol{display:block;width:38px;height:38px}
 @media(max-width:760px){.client-brand img.client-brand-full,.client-menu-mini .client-brand img.client-brand-full{display:block;width:140px;height:34px}.client-brand img.client-brand-symbol,.client-menu-mini .client-brand img.client-brand-symbol{display:none}}
+
+/* The outer app is the sole vertical scroll container in the client portal. */
+body.portalmode .team-presence,body.portalmode .team-cursors{display:none!important}
+body.portalmode .client-content{max-height:none;overflow:visible}
+body.portalmode #view{overflow:visible}
+.client-cover-editor>img{aspect-ratio:21/9;max-height:none;object-fit:cover}
+.client-cover-position{align-items:end;margin-bottom:16px}.client-cover-position label{display:grid;gap:8px;flex:1;min-width:180px;font-size:12px}.client-cover-position input{width:100%;accent-color:var(--ink)}
+@media(max-width:760px){.client-cover-editor>img{aspect-ratio:4/3}}

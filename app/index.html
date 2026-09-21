@@ -915,8 +915,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/shopping-cards.css?v=3625">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
-<script src="/client-portal-site.js?v=3624"></script>
-<link rel="stylesheet" href="/client-portal-site.css?v=3624">
+<script src="/client-portal-site.js?v=3627"></script>
+<link rel="stylesheet" href="/client-portal-site.css?v=3627">
 </head>
 <body>
 <div class="app">
@@ -11486,7 +11486,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.62.6";
+const MODERNO_VER="v3.62.7";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11863,7 +11863,7 @@ function presenceTrack(){
  if(!sb)return;
  if(!teamPresence)teamPresence=ModernoTeamPresence.create({client:sb,
   identity:()=>({study:ESTUDIO_ID,name:meName(),avatar:state.sessionUser?.avatar||""}),
-  allowed:()=>!_accessLoading&&['admin','colaborador'].includes(_accessRole)&&!!state.sessionUser,
+  allowed:()=>!_accessLoading&&!['portalcli','portalobra'].includes(state.view)&&['admin','colaborador'].includes(_accessRole)&&!!state.sessionUser,
   context:()=>JSON.stringify([state.view,['proyecto','estancia','timeline','presedit'].includes(state.view)?state.currentProject:null,state.view==='estancia'?state.currentRoom:null,state.view==='proyecto'?state.projTab:null,ModernoTeamPresence.contextText(document.getElementById('view')),state.view==='proyectos'?state.projView:state.view==='workspace'?wsViewGet():null,innerWidth<701?'mobile':'desktop'])
  });
  teamPresence.refresh().catch(()=>{});
