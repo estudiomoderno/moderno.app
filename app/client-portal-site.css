@@ -26,3 +26,13 @@ body.portalmode #view{overflow:visible}
 @media(max-width:760px){.client-cover-editor>img{aspect-ratio:4/3}}
 
 .client-project-links{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 28px}.client-project-links a{display:flex;align-items:center;gap:28px;border-radius:18px;padding:18px 22px;background:#e8e3d4;color:var(--portal-ink);text-decoration:none;font-weight:600;transition:transform .2s}.client-project-links a:hover{transform:translateY(-2px)}.client-link-row{align-items:center;margin-bottom:12px}.client-link-row>span{flex:1;overflow-wrap:anywhere}@media(prefers-reduced-motion:reduce){.client-project-links a{transition:none}}
+
+/* Align product details per row, while allowing full product names. */
+.client-product-card{display:flex;flex-direction:column}
+.client-product-body{display:flex;flex-direction:column;flex:1}
+.client-product-body>strong{flex:1;overflow-wrap:anywhere}
+@supports(grid-template-rows:subgrid){
+ .client-product-card{display:grid;grid-row:span 6;grid-template-rows:subgrid;row-gap:0}
+ .client-product-body{display:grid;grid-row:span 5;grid-template-rows:subgrid;row-gap:0;align-items:start}
+ .client-product-body>.btn{align-self:end}
+}
