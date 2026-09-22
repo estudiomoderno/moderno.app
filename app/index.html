@@ -915,7 +915,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/shopping-cards.css?v=3625">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
-<script src="/client-portal-site.js?v=3628"></script>
+<script src="/client-portal-site.js?v=3629"></script>
 <link rel="stylesheet" href="/client-portal-site.css?v=3628">
 </head>
 <body>
@@ -3885,7 +3885,7 @@ function vPortalCli(){
   const sh=cliEnsure(p);
   const props=cliItems(p,true);
   const docs=[];   // solo los archivos de «Archivos y notas»; los planos y archivos de obra son del portal de obra
-  (p.files||[]).forEach((f,i)=>{ const fo=fobj(f); if(fileOk(fo)&&fileCli(fo)) docs.push({proj:true,i,x:{file:fo}}); });
+  (p.files||[]).forEach((f,i)=>{ const fo=fobj(f); if(fileOk(fo)&&fileCli(fo)&&!["portal-cover","portal-link"].includes(fo.docKind)) docs.push({proj:true,i,x:{file:fo}}); });
   const fases=(p.phases||[]).map((ph,i)=>({n:(typeof ph==="string"?ph:ph.name||ph.n||("Fase "+(i+1))), st:i<(p.curPhase||0)?"done":i===(p.curPhase||0)?"now":"next"}));
   const cobr=state.entries.filter(e=>e.pid===p.id&&e.kind==="in"&&e.status==="cobr").reduce((s,e)=>s+e.amount,0);
   return ClientPortalSite.render(`<div style="min-height:100vh;background:var(--card)">
@@ -11487,7 +11487,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.62.8";
+const MODERNO_VER="v3.62.9";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
