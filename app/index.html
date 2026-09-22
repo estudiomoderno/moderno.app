@@ -915,8 +915,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/shopping-cards.css?v=3625">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
-<script src="/client-portal-site.js?v=3627"></script>
-<link rel="stylesheet" href="/client-portal-site.css?v=3627">
+<script src="/client-portal-site.js?v=3628"></script>
+<link rel="stylesheet" href="/client-portal-site.css?v=3628">
 </head>
 <body>
 <div class="app">
@@ -6090,6 +6090,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
     </div>
     <p style="font-size:11px;color:var(--ink-faint);margin-top:8px">El cliente nunca ve costes internos, m\u00e1rgenes, proveedores ni otros proyectos. En la app real, el enlace funciona sin que el cliente se registre.</p>
     ${ClientPortalSite.coverEditor(p)}
+    ${ClientPortalSite.linksEditor(p)}
     <h2 class="sec">Mensaje de bienvenida</h2>
     <div class="entry" style="background:var(--white);align-items:flex-start;flex-wrap:wrap;gap:10px">
       ${state._welEdit?`
@@ -11486,7 +11487,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.62.7";
+const MODERNO_VER="v3.62.8";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
