@@ -6588,7 +6588,7 @@ function vInvoice(kind){
   if(!d.date) d.date = new Date().toISOString().slice(0,10);
   const b=BRAND[d.brand];
   const cli = d.clientIdx>=0 ? state.clients[d.clientIdx] : null;
-  const clientOpts = state.clients.filter(c=>c.type==="Cliente"&&(c.brand===d.brand||c.brand==="both"));
+  const clientOpts = state.clients.filter(c=>(c.type==="Cliente"&&(c.brand===d.brand||c.brand==="both"))||(isF&&c.type==="Proveedor"));
   const cat = state.catalog.filter(c=>c.brand===d.brand);
   const sub = linesSum(d.lines);
   d.disc = d.disc || {on:false,pct:10};
@@ -6613,8 +6613,8 @@ function vInvoice(kind){
       <div><label>Fecha de factura</label><input id="dDate" type="date" value="${d.date}" onchange="state.draft.date=this.value;render()"></div></div>
       ${isF?`<div class="row2"><div><label>Vencimiento del cobro</label><input type="date" data-after="dDate" min="${d.date||""}" value="${d.due||""}" onchange="state.draft.due=this.value;render()"></div><div><label>&nbsp;</label><button class="btn btn-ghost" style="width:100%" onclick="const dt=new Date(state.draft.date);dt.setDate(dt.getDate()+30);state.draft.due=dt.toISOString().slice(0,10);render()">+30 días</button></div></div>`:""}
       ${isF?"":`<div><label>Válido hasta</label><input type="date" data-after="dDate" min="${d.date||""}" value="${d.validUntil}" onchange="state.draft.validUntil=this.value;render()"></div>`}
-      <label>Cliente (de la Agenda · marca ${b.name})</label>
-      <input id="dCli" list="cliList" placeholder="Escribe para buscar el cliente…" value="${d.clientIdx>=0?(state.clients[d.clientIdx]?.name||""):""}"
+      <label>${isF?"Cliente o proveedor":"Cliente"} (de la Agenda · marca ${b.name})</label>
+      <input id="dCli" list="cliList" placeholder="${isF?"Busca un cliente o proveedor…":"Escribe para buscar el cliente…"}" value="${d.clientIdx>=0?(state.clients[d.clientIdx]?.name||""):""}"
         onchange="pickDraftClient(this.value)" style="width:100%">
       <datalist id="cliList">${clientOpts.map(c=>`<option value="${c.name}" label="${(c.num||"")} · ${c.name}${c.city?" · "+c.city:""}">`).join("")}</datalist>
       ${(()=>{ const pr=d.projectId?state.projects.find(x=>x.id===d.projectId):null; const cliName=d.clientIdx>=0?(state.clients[d.clientIdx]||{}).name:"";
@@ -10695,8 +10695,8 @@ function pickDraftProject(v){
 function pickDraftClient(v){
   const q = (v||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   if(!q){ state.draft.clientIdx=-1; render(); return; }
-  const cand = state.clients.find(c=>c.type==="Cliente" && c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===q)
-    || state.clients.find(c=>c.type==="Cliente" && c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(q));
+  const cand = state.clients.find(c=>(c.type==="Cliente" || (state.draft.kind==="factura"&&c.type==="Proveedor")) && c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===q)
+    || state.clients.find(c=>(c.type==="Cliente" || (state.draft.kind==="factura"&&c.type==="Proveedor")) && c.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(q));
   if(cand && !state.draft.projectId){ const ps=state.projects.filter(x=>!x.tpl&&x.status!=="Archivado"&&x.client===cand.name); if(ps.length===1) state.draft.projectId=ps[0].id; }
   if(cand){ state.draft.clientIdx = state.clients.indexOf(cand); render(); }
   else { state.draft.clientIdx=-1; toast("«"+v+"» no está en Contactos — créalo con ＋ Nuevo"); }
@@ -11487,7 +11487,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.63.0";
+const MODERNO_VER="v3.63.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
