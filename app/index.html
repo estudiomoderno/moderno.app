@@ -10725,7 +10725,7 @@ function saveDoc(){
   if(d.editRef){
     const i = arr.findIndex(x=>x.ref===d.editRef);
     arr[i]=doc;
-    state.entries.forEach(e=>{ if(e.link===d.editRef){ e.link=ref; e.concept="Factura "+ref+" · "+cli.name; e.amount=total; e.base=base; e.iva=(d.iva.on?base*d.iva.pct/100:0); e.brand=d.brand; e.date=dateEs; }
+    state.entries.forEach(e=>{ if(e.link===d.editRef){ e.link=ref; e.concept="Factura "+ref+" · "+cli.name; e.amount=total; e.base=base; e.iva=(d.iva.on?base*d.iva.pct/100:0); e.brand=d.brand; e.date=dateEs; e.due=d.due?d.due.split("-").reverse().join("/"):null; }
       else if(e.concept.includes("("+d.editRef+")")){ e.concept=e.concept.replace("("+d.editRef+")","("+ref+")"); } });
     toast("✓ "+ref+" actualizada — contabilidad sincronizada");
   } else {
@@ -10851,7 +10851,7 @@ function loadDoc(i,kind){
   const doc = (isF?state.invoices:state.quotes)[i];
   state.draft = { ...(Object.hasOwn(doc,'paymentIban')?{paymentIban:doc.paymentIban}:{}), kind, brand:doc.brand, clientIdx:doc.clientIdx, lines:doc.lines.map(l=>({...l})),
     iva:{...doc.iva}, irpf:{...doc.irpf}, disc:{...(doc.disc||{on:false,pct:10})}, legend:doc.legend||"", validUntil:doc.validUntil||"",
-    num:+doc.ref.split("-")[1], date:doc.date||new Date().toISOString().slice(0,10), editRef:doc.ref, fromEntry:null, fromHito:null, capSummary:!!doc.capSummary, projectId:doc.projectId||null };
+    num:+doc.ref.split("-")[1], date:doc.date||new Date().toISOString().slice(0,10), due:doc.due||"", editRef:doc.ref, fromEntry:null, fromHito:null, capSummary:!!doc.capSummary, projectId:doc.projectId||null };
   go(isF?"facturas":"presupuestos");
   if(!isF){ state.qView="nuevo"; render(); }
   toast("✎ Editando "+doc.ref+" — guarda para aplicar los cambios");
@@ -11487,7 +11487,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.63.1";
+const MODERNO_VER="v3.63.2";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

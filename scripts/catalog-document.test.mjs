@@ -24,3 +24,6 @@ test('editing a saved document preserves its fixed bank and legacy absence',()=>
  if(fixed!==undefined)c.state.quotes[0].paymentIban=fixed;c.state.draft.editRef='PS-0000';c.saveDoc();
  assert.equal(c.state.quotes[0].paymentIban,fixed);assert.equal(Object.hasOwn(c.state.quotes[0],'paymentIban'),fixed!==undefined);}
 });
+
+test('invoice editing synchronizes issue and due dates and preserves collection state',()=>{const c=context();c.state.draft.kind='factura';c.state.draft.editRef='PS-0001';c.state.draft.date='2026-10-01';c.state.draft.due='2026-11-15';c.state.invoices=[{ref:'PS-0001'}];c.state.entries=[{link:'PS-0001',concept:'Factura',status:'cobr',date:'01/09/2026',due:'15/09/2026'}];c.saveDoc();assert.equal(c.state.invoices[0].due,'2026-11-15');assert.equal(c.state.entries[0].due,'15/11/2026');assert.equal(c.state.entries[0].date,'01/10/2026');assert.equal(c.state.entries[0].status,'cobr');});
+test('reopening invoice restores saved due date',()=>{const ctx={state:{invoices:[{ref:'F-0001',date:'2026-10-01',due:'2026-11-15',lines:[]}],quotes:[]},go(){},toast(){},render(){}};vm.createContext(ctx);vm.runInContext(html.slice(html.indexOf('function loadDoc(i,kind){'),html.indexOf('function editInvoiceRef(ref){')),ctx);ctx.loadDoc(0,'factura');assert.equal(ctx.state.draft.due,'2026-11-15');assert.equal(ctx.state.draft.date,'2026-10-01');});
