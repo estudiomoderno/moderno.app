@@ -872,6 +872,7 @@ body.dark .mdp{background:#23232A;color:#F2F1EE}
 @media print{
   html,body{margin:0!important;padding:0!important;background:#fff!important}
   body *{visibility:hidden}
+  body> :not(#printZone){display:none!important}
   #printZone,#printZone *{visibility:visible}
   #printZone{position:absolute;left:0;top:0;width:100%;margin:0;padding:0;background:#fff;box-shadow:none;border:none}
   #printZone .pdf-page{min-height:262mm}
@@ -10977,6 +10978,18 @@ function paginatePaper(paper, docTitle, bk){
     const lastUsed=(chunks.length===1?hHead_:hMini_)+hThead_+FOOT_+chunks[chunks.length-1].reduce((s,r)=>s+hRows[rows.indexOf(r)],0);
     if(lastUsed+hAfter_ > PAGE_*SAFE && chunks[chunks.length-1].length>1){ const last=chunks[chunks.length-1]; chunks.push([last.pop()]); }
   }
+  // Validate complete pages: separate row measurements miss column wrapping and margins.
+  document.body.appendChild(probe);
+  const pageHeight=(ch,pi,last)=>hOf(`<div class="pdf-page"><div class="pdf-body inv-paper" style="padding:0;box-shadow:none;aspect-ratio:auto;max-width:none;height:auto">${pi===0?before.join(""):mini}<table class="lines">${thead}<tbody>${ch.map(r=>r.outerHTML).join("")}</tbody></table>${last&&!exclusive?after.join(""):`<p style="font-size:10.5px;color:#9B9B9B;margin-top:10px">Sigue en la página siguiente…</p>`}</div><div class="pdf-pn">${pdfFoot()}<span>Página 99 de 99</span></div></div>`);
+  for(let pi=0;pi<chunks.length;pi++){
+    while(chunks[pi].length>1 && pageHeight(chunks[pi],pi,pi===chunks.length-1)>PAGE_*SAFE){
+      const carry=[chunks[pi].pop()];
+      if(chunks[pi].length>1&&chunks[pi].at(-1).classList.contains("cap-row"))carry.unshift(chunks[pi].pop());
+      if(!chunks[pi+1])chunks.push([]);
+      chunks[pi+1].unshift(...carry);
+    }
+  }
+  probe.remove();
   const total=chunks.length+(exclusive?1:0);
   const pages=chunks.map((ch,pi)=>`<div class="pdf-page"><div class="pdf-body inv-paper" style="padding:0;box-shadow:none;aspect-ratio:auto;max-width:none;height:auto">
       ${pi===0?before.join(""):mini}
@@ -11487,7 +11500,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.63.2";
+const MODERNO_VER="v3.63.3";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
