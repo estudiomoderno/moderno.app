@@ -918,6 +918,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
 <script src="/client-portal-site.js?v=3629"></script>
 <link rel="stylesheet" href="/client-portal-site.css?v=3630">
+<link rel="stylesheet" href="/home-dashboard.css?v=3640">
 </head>
 <body>
 <div class="app">
@@ -4373,6 +4374,7 @@ function go(view, arg){
   if(view==="contabilidad" && state.view!=="contabilidad"){ state.period=Object.assign(state.period||{}, {mode:"todo", year:new Date().getFullYear(), month:new Date().getMonth()+1, quarter:Math.ceil((new Date().getMonth()+1)/3)}); state.accTab="in"; state.accF={}; state.accQ={}; state.accN={}; state.accSort="desc"; }
   if(view==="workspace" && state.view!=="workspace") wsSessionViews.delete(wsViewKey());
   state.view=view; state.currentProject = arg ?? state.currentProject;
+  if(view==="proyecto"&&arg!=null)homeRemember(arg);
   document.body.classList.toggle("editing", view==="presedit");
   document.body.classList.toggle("portalmode", view==="portalcli"||view==="portalobra");
   if(view==="portalcli"||view==="portalobra") setTimeout(portalBootDone,0);
@@ -4733,69 +4735,27 @@ function dailyTaskCards(projs,mine=state.wsMine!==false){
 function dailyDue(t){const d=ModernoDaily.due(t.due);return '<span class="task-due '+d.kind+'">'+d.label+(d.date?' · '+d.date.split('-').reverse().join('/'):'')+'</span>';}
 function dailyScope(){return '<div class="opt-pills daily-scope"><button class="'+(state.wsMine!==false?'on':'')+'" onclick="WorkflowPolish.scope(true)">Mis tareas</button><button class="'+(state.wsMine===false?'on':'')+'" onclick="WorkflowPolish.scope(false)">Todas las tareas</button></div>';}
 function openDailyTask(pid,idx){const p=state.projects.find(x=>x.id===pid);if(!p||!p.tasks[idx])return;state.projTab='tareas';go('proyecto',pid);taskModal(pid,idx);}
+function homeRecent(){try{return JSON.parse(localStorage.getItem(wsViewKey()+'_projects')||'[]');}catch(e){return [];}}
+function homeRemember(id){try{localStorage.setItem(wsViewKey()+'_projects',JSON.stringify([id,...homeRecent().filter(x=>x!==id)].slice(0,20)));}catch(e){}}
+function homeNewInvoice(){state.draft=null;state.fView='nuevo';go('facturas');}
 function vHome(){
-  const projs = byBrand(state.projects.filter(p=>!p.tpl && p.status!=="Archivado"));
-  const pendTasks = dailyTaskCards(projs);
-  const now = new Date();
-  const dayName = now.toLocaleDateString("es-ES",{weekday:"long"});
-  const monName = now.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
-  return `
-  <h1 class="big">${greet()}${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}.<br>¿Cómo va el día?</h1>
-  <div class="home-grid">
-    <div class="widget">
-      <div class="wh"><span>Proyectos activos (${projs.length})</span><i>Los tuyos, por marca</i></div>
-      <div class="proj-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:16px">
-        ${projs.slice(0,3).map(folderCard).join("")}
-        <div class="folder add" onclick="newProject()">+</div>
-      </div>
-    </div>
-
-    <div>
-      <div class="widget clockbox" style="margin-bottom:14px">
-        <span class="day">${dayName.charAt(0).toUpperCase()+dayName.slice(1)}</span>
-        <span class="mon">${monName.charAt(0).toUpperCase()+monName.slice(1)}</span>
-        <div class="clock" id="clock">${now.toLocaleTimeString("es-ES")}</div>
-      </div>
-      <div class="widget">${miniCal(now)}</div>
-    </div>
-  </div>
-  ${(()=>{ const V=ventaEstimada(); if(!V.total&&!V.quotesSum) return ""; return `<div class="widget" style="margin:30px 0 0;cursor:pointer" onclick="go('informes')" title="Ver el detalle en Informes">
-    <div class="wh" style="align-items:center"><span style="display:flex;align-items:center;gap:9px;font-size:16px">${ico("cobros","lg")} Venta estimada — ${fmt(V.total)}</span><i>facturado ${fmt(V.facturado)} · previsto ${fmt(V.previsto)}${V.quotes?" · +"+fmt(V.quotesSum)+" en presupuestos pendientes":""}</i></div>
-  </div>`; })()}
-  ${(()=>{ const od=overdueEntries(); const pend=byBrand(state.entries).filter(e=>e.kind==="in"&&e.status!=="cobr");
-    return pend.length?`<div class="widget" style="margin:30px 0 26px;border:1.5px solid ${od.length?"#EFC9BE":"#E2E2E0"}">
-    <div class="wh" style="align-items:center"><span style="display:flex;align-items:center;gap:9px;font-size:16px">${ico("cobros","lg")} Cobros pendientes — ${fmt(pend.reduce((s,e)=>s+e.amount,0))}</span><i style="${od.length?"color:var(--red-ink);font-weight:700":""}">${od.length?od.length+" vencido"+(od.length===1?"":"s")+" ⚠":"Todo al día"}</i></div>
-    ${od.slice(0,4).map(e=>`<div class="entry" style="background:#F6DBD7;cursor:pointer" onclick="go('contabilidad')">
-      <span>⚠ ${e.concept.split(" · ")[0]}<br><small style="color:var(--red-ink);font-weight:700">Vencida hace ${daysLate(e)} día${daysLate(e)===1?"":"s"}</small></span>
-      <span class="amt in">${fmt(e.amount)}</span></div>`).join("")}
-    ${pend.filter(e=>daysLate(e)<=0).slice(0,3).map(e=>`<div class="entry" style="cursor:pointer" onclick="go('contabilidad')">
-      <span>${e.concept.split(" · ")[0]}<br><small style="color:var(--ink-faint)">Vence ${dueOf(e).toLocaleDateString("es-ES")}</small></span>
-      <span class="amt in">${fmt(e.amount)}</span></div>`).join("")}
-  </div>`:""})()}
-  ${(()=>{ const or=obrasRetrasadas(); return or.length?`<div class="widget" style="margin:0 0 26px;border:1.5px solid #EFC9BE">
-    <div class="wh" style="align-items:center"><span style="display:flex;align-items:center;gap:9px;font-size:16px">🏗 Obras con fases retrasadas</span><i style="color:var(--red-ink);font-weight:700">${or.reduce((s,x)=>s+x.late.length,0)} fase${or.reduce((s,x)=>s+x.late.length,0)===1?"":"s"} ⚠</i></div>
-    ${or.map(x=>`<div class="entry" style="background:#F6DBD7;cursor:pointer" onclick="state.projTab='obra';go('proyecto',${x.p.id})">
-      <span><b>${x.p.num} ${x.p.name}</b><br><small style="color:var(--red-ink);font-weight:700">${x.late.map(f=>f.name).join(", ")}</small></span>
-      <span class="chip" style="background:var(--white)">${x.late.length} retrasada${x.late.length===1?"":"s"}</span></div>`).join("")}
-  </div>`:""})()}
-  <div class="home-grid" style="grid-template-columns:1.15fr 1fr">
-    <div class="widget" style="border:1.5px solid #E2E2E0">
-      <div class="wh" style="align-items:center"><span style="display:flex;align-items:center;gap:9px;font-size:16px">${ico("tpend","lg")} ${state.wsMine!==false?"Mis tareas pendientes":"Tareas del equipo"} (${pendTasks.length})</span><i onclick="go('workspace')" style="cursor:pointer">Ver todas</i></div>
-      ${dailyScope()}
-      ${pendTasks.length? pendTasks.map(({p,t,i})=>`
-        <button class="entry daily-entry" onclick="openDailyTask(${p.id},${i})">
-          <b>${ModernoDaily.escape(t.title)}</b> ${dailyDue(t)} <span class="chip ${BRAND[p.brand].chip}">${ModernoDaily.escape(p.num+" "+p.name)}</span><span class="daily-who">${ModernoDaily.escape(taskAssignees(t).join(", ")||"Sin asignar")}</span>
-          ${t.amount?`<span class="amt in">${fmt(t.amount)}</span>`:""}
-        </button>`).join("") : `<div class="empty">${state.wsMine!==false?"No tienes tareas pendientes asignadas. Puedes consultar Todas las tareas.":"No hay tareas pendientes en estos proyectos."}</div>`}
-    </div>
-    <div class="widget">
-      <div class="wh"><span>Acceso rápido</span></div>
-      <div class="quick">
-        <button onclick="go('facturas')"><span>${ico('nfactura','lg')}</span>Nueva factura</button>
-        <button onclick="clientModal()"><span>${ico('contactos','lg')}</span>Nuevo cliente</button>
-        <button onclick="wsNewTask('pend')"><span>${ico('ntarea','lg')}</span>Nueva tarea</button>
-      </div>
-    </div>
+  const E=ModernoDaily.escape,projs=byBrand(state.projects.filter(p=>!p.tpl&&p.status!=='Archivado'));
+  const tasks=dailyTaskCards(projs),today=ModernoDaily.today(),recent=homeRecent();
+  const ordered=[...projs].sort((a,b)=>{const ai=recent.indexOf(a.id),bi=recent.indexOf(b.id);return (ai<0?999:ai)-(bi<0?999:bi);});
+  const finance=canView('contabilidad'),pending=finance?byBrand(state.entries).filter(e=>e.kind==='in'&&e.status!=='cobr'):[];
+  const late=pending.filter(e=>daysLate(e)>0),works=obrasRetrasadas();
+  const alerts=[...late.map(e=>({title:e.concept.split(' · ')[0],detail:'Cobro vencido · '+fmt(pendienteCobro(e)),action:"go('contabilidad')"})),...works.map(x=>({title:x.p.num+' '+x.p.name,detail:x.late.length+' fases con retraso',action:"go('proyecto',"+x.p.id+");state.projTab='obra';render()"}))];
+  const events=(state.cal?.events||[]).filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+  const date=d=>new Date(d+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'});
+  const V=finance?ventaEstimada():null;
+  return `<div class="home-dashboard">
+    <header class="home-welcome"><div><p class="home-date">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</p><h1>${greet()}${userFirst()?', '+E(userFirst()):''}.</h1><p>Tu estudio, al día.</p></div>
+    <div class="home-actions"><button class="btn btn-dark" onclick="wsNewTask('pend')">${ico('mas')} Nueva tarea</button>${canView('facturas')?`<button class="btn btn-ghost" onclick="homeNewInvoice()">Nueva factura</button>`:''}${canView('agenda')?`<button class="btn btn-ghost" onclick="clientModal()">Nuevo cliente</button>`:''}</div></header>
+    <div class="home-columns"><section class="home-panel"><div class="home-heading"><h2>Hoy en tu estudio</h2><button class="btn btn-ghost" onclick="go('workspace')">Ver todas · ${tasks.length}</button></div>${dailyScope()}
+    <div class="home-task-list">${tasks.slice(0,5).map(({p,t,i})=>`<button class="home-task" onclick="openDailyTask(${p.id},${i})"><span><strong>${E(t.title)}</strong><small>${E(p.num+' '+p.name)}</small></span><span>${dailyDue(t)}<small>${E(t.col==='rev'?'En revisión':t.col==='prog'?'En progreso':'Pendiente')}</small></span></button>`).join('')||'<p class="home-empty">No tienes tareas pendientes en esta selección.</p>'}</div></section>
+    <aside class="home-panel"><div class="home-heading"><h2>Tu agenda</h2><button class="btn btn-ghost" onclick="go('calendario')">Ver calendario</button></div>${events.map(e=>`<button class="home-task" onclick="WorkflowPolish.eventInfo('${e.date}')"><span><strong>${E(e.title)}</strong><small>${date(e.date)}</small></span></button>`).join('')||'<p class="home-empty">No hay próximas citas en tu calendario.</p>'}<div class="home-attention"><h3>Necesita atención <span>${alerts.length}</span></h3>${alerts.slice(0,3).map(a=>`<button class="home-task" onclick="${a.action}"><span><strong>${E(a.title)}</strong><small>${E(a.detail)}</small></span></button>`).join('')||'<p class="home-empty">Sin avisos de cobros ni fases de obra.</p>'}${alerts.length>3?`<details><summary>Ver ${alerts.length-3} avisos más</summary>${alerts.slice(3).map(a=>`<button class="home-task" onclick="${a.action}"><span><strong>${E(a.title)}</strong><small>${E(a.detail)}</small></span></button>`).join('')}</details>`:''}</div></aside></div>
+    <section class="home-projects"><div class="home-heading"><div><h2>${recent.some(id=>projs.some(p=>p.id===id))?'Retoma tus proyectos':'Tus proyectos'}</h2><p>${projs.length} proyectos activos</p></div><button class="btn btn-ghost" onclick="go('proyectos')">Ver proyectos</button></div><div class="home-project-grid">${ordered.slice(0,4).map(folderCard).join('')}<button class="home-add-project" onclick="newProject()"><span>+</span>Nuevo proyecto</button></div></section>
+    ${finance?`<section class="home-finance"><div class="home-heading"><h2>Resumen del estudio</h2><button class="btn btn-ghost" onclick="go('informes')">Ver detalle</button></div><div class="home-metrics"><button onclick="go('contabilidad')"><span>Pendiente de cobrar</span><strong>${fmt(pending.reduce((n,e)=>n+pendienteCobro(e),0))}</strong><small>${late.length?late.length+' cobros vencidos':'Sin cobros vencidos'}</small></button><button onclick="go('facturas')"><span>Facturado</span><strong>${fmt(V.facturado)}</strong><small>Según la marca seleccionada</small></button><button onclick="go('presupuestos')"><span>Presupuestos pendientes</span><strong>${fmt(V.quotesSum)}</strong><small>Por aceptar</small></button></div></section>`:''}
   </div>`;
 }
 
@@ -11516,7 +11476,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.63.4";
+const MODERNO_VER="v3.64.0";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
