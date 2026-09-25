@@ -4749,7 +4749,7 @@ function vHome(){
   const date=d=>new Date(d+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'});
   const V=finance?ventaEstimada():null;
   return `<div class="home-dashboard">
-    <header class="home-welcome"><div><p class="home-date">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</p><h1>${greet()}${userFirst()?', '+E(userFirst()):''}.</h1><p>Tu estudio, al día.</p></div>
+    <header class="home-welcome"><div><p class="home-date">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</p><h1>${greet()}${userFirst()?', '+E(userFirst()):''}.</h1></div>
     <div class="home-actions"><button class="btn btn-dark" onclick="wsNewTask('pend')">${ico('mas')} Nueva tarea</button>${canView('facturas')?`<button class="btn btn-ghost" onclick="homeNewInvoice()">Nueva factura</button>`:''}${canView('agenda')?`<button class="btn btn-ghost" onclick="clientModal()">Nuevo cliente</button>`:''}</div></header>
     <div class="home-columns"><section class="home-panel"><div class="home-heading"><h2>Hoy en tu estudio</h2><button class="btn btn-ghost" onclick="go('workspace')">Ver todas · ${tasks.length}</button></div>${dailyScope()}
     <div class="home-task-list">${tasks.slice(0,5).map(({p,t,i})=>`<button class="home-task" onclick="openDailyTask(${p.id},${i})"><span><strong>${E(t.title)}</strong><small>${E(p.num+' '+p.name)}</small></span><span>${dailyDue(t)}<small>${E(t.col==='rev'?'En revisión':t.col==='prog'?'En progreso':'Pendiente')}</small></span></button>`).join('')||'<p class="home-empty">No tienes tareas pendientes en esta selección.</p>'}</div></section>
@@ -11476,7 +11476,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.64.0";
+const MODERNO_VER="v3.64.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
