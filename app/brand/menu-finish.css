@@ -1,10 +1,10 @@
 @media screen {
 html body:not(.portalmode) .sidebar .sidebar-study-row{border-top:0!important}
-html body:not(.portalmode) .sidebar .nav-item.active{background:var(--app-surface,#f6f4eb)!important;color:var(--ink,#20201e)!important;border-radius:18px 0 0 18px;box-shadow:14px 0 0 var(--app-surface,#f6f4eb);font-weight:600}
+html body:not(.portalmode) .sidebar .nav-item.active{background:var(--app-surface,#f6f4eb)!important;color:var(--ink,#20201e)!important;border-radius:18px;box-shadow:none;font-weight:600}
 html body:not(.portalmode) .sidebar .nav-item.active *{color:inherit!important}
-html body:not(.portalmode) .sidebar .sb-scroll{margin-right:-14px;padding-right:0}
+html body:not(.portalmode) .sidebar .sb-scroll{margin-right:0;padding-right:0}
 html body:not(.portalmode) .sidebar .nav-item{min-height:36px;padding-right:18px;transition:background .2s ease,color .2s ease,border-radius .2s ease}
-html body.navmini:not(.portalmode) .sidebar .nav-item.active{border-radius:14px 0 0 14px}
+html body.navmini:not(.portalmode) .sidebar .nav-item.active{border-radius:14px}
 html body:not(.portalmode) .sidebar .nav-item[data-new-icon] .ico{width:20px;height:20px;flex:0 0 20px;opacity:1;background:currentColor!important;mask:var(--menu-icon) center/contain no-repeat;-webkit-mask:var(--menu-icon) center/contain no-repeat}
 html body:not(.portalmode) .sidebar .nav-item[data-new-icon] .ico>*{display:none!important}
 html body:not(.portalmode) .sidebar .nav-item[data-new-icon] .ico::after,html body:not(.portalmode) .sidebar .nav-item[data-new-icon] .ico::before{display:none!important}
@@ -27,3 +27,5 @@ html body .sidebar [data-view="conversaciones"]{--menu-icon:url("/brand/menu-ico
 html body .sidebar [data-view="agenda"]{--menu-icon:url("/brand/menu-icons/agenda.svg")}
 html body .sidebar [data-view="calendario"]{--menu-icon:url("/brand/menu-icons/calendario.svg")}
 html body .sidebar [data-view="proyectos"]{--menu-icon:url("/brand/menu-icons/proyectos.svg")}
+
+@media screen{html body:not(.portalmode) .sidebar .nav-sub{margin-left:0}html body:not(.portalmode) .sidebar .nav-sub .nav-item{margin-left:0;width:100%;box-sizing:border-box}html body:not(.portalmode) .sidebar .nav-item{padding-left:14px;padding-right:14px}}
