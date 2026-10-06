@@ -1,5 +1,5 @@
 (function(root){
-  const locales={es:{home:'',workspace:'workspace',biblioteca:'biblioteca',proyectos:'proyectos',agenda:'agenda',calendario:'calendario',contabilidad:'contabilidad',prevision:'prevision-cobros',facturas:'facturas',presupuestos:'presupuestos',catalogo:'catalogo',compras:'compras',informes:'informes',plantillas:'plantillas',utilidades:'utilidades',integraciones:'integraciones',admin:'administracion',ajustes:'ajustes'}};
+  const locales={es:{home:'',workspace:'workspace',biblioteca:'biblioteca',proyectos:'proyectos',agenda:'agenda',calendario:'calendario',contabilidad:'contabilidad',prevision:'prevision-cobros',facturas:'facturas',presupuestos:'presupuestos',catalogo:'catalogo',compras:'compras',informes:'informes',plantillas:'plantillas',utilidades:'utilidades',automatizaciones:'automatizaciones',integraciones:'integraciones',admin:'administracion',ajustes:'ajustes'}};
   const id=v=>/^\d+$/.test(String(v))&&Number.isSafeInteger(Number(v))?Number(v):null;
   function authCallback(location){return !!(location.hash&&!/^#\//.test(location.hash)&&location.hash!=='#')||/[?&](code|error|access_token|refresh_token)=/.test(location.search||'');}
   function parse(location){
