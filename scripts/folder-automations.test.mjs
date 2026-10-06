@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import A from '../app/folder-automations.js';
+const base={name:'Reforma',provider:'drive',paths:['Planos','Planos / Versiones']};
+test('folder structures accept nested paths and reject duplicate or unsafe paths',()=>{assert.equal(A.validate(base),'');for(const paths of [['../Privado'],['Planos',' planos '],['Planos//Versiones'],['Planos','Planos'],['Archivo:*'],[]])assert.ok(A.validate({...base,paths}));assert.ok(A.validate({...base,provider:'unknown'}));});
+test('folder preview uses example data and client name only when selected',()=>{assert.ok(!A.preview(base).includes('Cliente de ejemplo'));assert.ok(A.preview({...base,includeClient:true}).includes('Cliente de ejemplo'));assert.ok(A.preview(base).includes('Planos / Versiones'));});

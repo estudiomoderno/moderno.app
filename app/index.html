@@ -920,7 +920,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/client-portal-site.css?v=3630">
 <link rel="stylesheet" href="/home-dashboard.css?v=3640">
 <link rel="stylesheet" href="/menu-polish.css?v=3650">
-</head>
+<link rel="stylesheet" href="/folder-automations.css?v=3651"></head>
 <body>
 <div class="app">
   <!-- ============ SIDEBAR ============ -->
@@ -1165,7 +1165,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/purchase-logistics.js?v=344"></script>
 <script src="/dialog-access.js?v=345"></script>
 <script src="/workflow-help.js?v=345"></script>
-<script src="/orders-dashboard.js?v=3626"></script>
+<script src="/orders-dashboard.js?v=3626"></script><script src="/folder-automations.js?v=3651"></script>
 <script src="/product-operations.js?v=3626"></script>
 <script src="/purchase-finance.js?v=339"></script>
 <style>#catalogSearch,#catalogPickerSearch{border-radius:12px;border:1px solid var(--card);padding:10px 12px;background:var(--white);color:var(--ink);font:inherit}</style>
@@ -6911,7 +6911,7 @@ function vIntegraciones(){
  const plugins=[['Chrome Product Clipper','Captura de productos desde el navegador.'],['SketchUp','Modelos y componentes vinculados al proyecto.'],['Revit','Elementos y espacios del modelo.'],['Rayon Design','Enlaces y exportaciones del proyecto. Conexión nativa pendiente de verificar.']];
  const integrations=[['Google Calendar','Citas y fechas del proyecto.'],['Gmail','Envío de documentos desde tu cuenta.'],['Apple Calendar','Suscripción y exportación de calendario.'],['Google Drive','Archivos y carpetas del proyecto.'],['Dropbox','Archivos y carpetas del proyecto.'],['OneDrive','Archivos y carpetas del proyecto.'],['ChatGPT','Asistencia sobre información autorizada.'],['Claude','Asistencia sobre información autorizada.'],['Zoom','Reuniones vinculadas al proyecto.'],['Notion','Resumen y tareas del proyecto.'],['WhatsApp','Compartir enlaces y documentos.']];
  const cards=rows=>rows.map(([name,desc])=>`<article class="connection-card"><h3>${E(name)}</h3><p>${E(desc)}</p>${name==='Google Calendar'&&_gcal.on?`<span class="chip">Conectado</span><button class="btn btn-ghost" onclick="gcalMenu()">Gestionar conexión</button>`:'<span class="chip">Próximamente</span>'}</article>`).join('');
- return `<section class="connections-page"><h1>Integraciones y plugins</h1><p>Conecta tus herramientas con Moderno. Las nuevas conexiones se habilitarán cuando estén listas.</p><h2>Plugins</h2><div class="connections-grid">${cards(plugins)}</div><h2>Integraciones</h2><div class="connections-grid">${cards(integrations)}</div></section>`;
+ return `<section class="connections-page"><h1>Integraciones y plugins</h1><p>Conecta tus herramientas con Moderno. Las nuevas conexiones se habilitarán cuando estén listas.</p><h2>Plugins</h2><div class="connections-grid">${cards(plugins)}</div><h2>Integraciones</h2><div class="connections-grid">${cards(integrations)}</div>${FolderAutomations.render()}</section>`;
 }
 function vAdmin(){
   const A = state.account, sec = state.adminSec==="conex"?"perfil":(state.adminSec||"perfil");
@@ -11459,7 +11459,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.0";
+const MODERNO_VER="v3.65.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
