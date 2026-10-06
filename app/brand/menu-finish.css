@@ -1,0 +1,29 @@
+@media screen {
+html body:not(.portalmode) .sidebar .sidebar-study-row{border-top:0!important}
+html body:not(.portalmode) .sidebar .nav-item.active{background:var(--app-surface,#f6f4eb)!important;color:var(--ink,#20201e)!important;border-radius:18px 0 0 18px;box-shadow:14px 0 0 var(--app-surface,#f6f4eb);font-weight:600}
+html body:not(.portalmode) .sidebar .nav-item.active *{color:inherit!important}
+html body:not(.portalmode) .sidebar .sb-scroll{margin-right:-14px;padding-right:0}
+html body:not(.portalmode) .sidebar .nav-item{min-height:36px;padding-right:18px;transition:background .2s ease,color .2s ease,border-radius .2s ease}
+html body.navmini:not(.portalmode) .sidebar .nav-item.active{border-radius:14px 0 0 14px}
+html body:not(.portalmode) .sidebar .nav-item[data-new-icon] .ico{width:20px;height:20px;flex:0 0 20px;opacity:1;background:currentColor!important;mask:var(--menu-icon) center/contain no-repeat;-webkit-mask:var(--menu-icon) center/contain no-repeat}
+html body:not(.portalmode) .sidebar .nav-item[data-new-icon] .ico>*{display:none!important}
+html body:not(.portalmode) .sidebar .nav-item[data-new-icon] .ico::after,html body:not(.portalmode) .sidebar .nav-item[data-new-icon] .ico::before{display:none!important}
+}
+@media(prefers-reduced-motion:reduce){html body .sidebar .nav-item{transition:none!important}}
+html body .sidebar [data-view="workspace"]{--menu-icon:url("/brand/menu-icons/workspace.svg")}
+html body .sidebar [data-view="utilidades"]{--menu-icon:url("/brand/menu-icons/utilidades.svg")}
+html body .sidebar [data-view="plugins"]{--menu-icon:url("/brand/menu-icons/plugins.svg")}
+html body .sidebar [data-view="integraciones"]{--menu-icon:url("/brand/menu-icons/integraciones.svg")}
+html body .sidebar [data-view="automatizaciones"]{--menu-icon:url("/brand/menu-icons/automatizaciones.svg")}
+html body .sidebar [data-view="plantillas"]{--menu-icon:url("/brand/menu-icons/plantillas.svg")}
+html body .sidebar [data-view="catalogo"]{--menu-icon:url("/brand/menu-icons/catalogo.svg")}
+html body .sidebar [data-view="biblioteca"]{--menu-icon:url("/brand/menu-icons/biblioteca.svg")}
+html body .sidebar [data-view="prevision"]{--menu-icon:url("/brand/menu-icons/prevision.svg")}
+html body .sidebar [data-view="facturas"]{--menu-icon:url("/brand/menu-icons/facturas.svg")}
+html body .sidebar [data-view="presupuestos"]{--menu-icon:url("/brand/menu-icons/presupuestos.svg")}
+html body .sidebar [data-view="contabilidad"]{--menu-icon:url("/brand/menu-icons/contabilidad.svg")}
+html body .sidebar [data-view="informes"]{--menu-icon:url("/brand/menu-icons/informes.svg")}
+html body .sidebar [data-view="conversaciones"]{--menu-icon:url("/brand/menu-icons/conversaciones.svg")}
+html body .sidebar [data-view="agenda"]{--menu-icon:url("/brand/menu-icons/agenda.svg")}
+html body .sidebar [data-view="calendario"]{--menu-icon:url("/brand/menu-icons/calendario.svg")}
+html body .sidebar [data-view="proyectos"]{--menu-icon:url("/brand/menu-icons/proyectos.svg")}
