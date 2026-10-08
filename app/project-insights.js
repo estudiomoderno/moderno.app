@@ -50,10 +50,8 @@ function projectHistory(id){const p=state.projects.find(x=>x.id===id);if(!p)retu
 const projectNoticeCounts=new Map();
 function projectFolderNotifications(p){
  const E=ModernoProjectInsights.escape,m=ModernoProjectInsights.metrics(p),qs=projectPendingQuotes(p);
- const overdue=(p.tasks||[]).filter(t=>t.col!=='listo'&&ModernoProjectInsights.validDate(t.due)&&t.due<ModernoProjectInsights.today());
+ const overdue=(p.tasks||[]).filter(t=>t.col!=='listo'&&!t.done&&ModernoProjectInsights.validDate(t.due)&&t.due<ModernoProjectInsights.today());
  const items=overdue.map(t=>'<li><b>Tarea vencida</b><span>'+E(t.title||'Tarea')+' · '+E(t.due.split('-').reverse().join('/'))+'</span></li>');
- qs.forEach(q=>items.push('<li><b>Presupuesto pendiente</b><span>'+E(q.ref||'Sin referencia')+' · Pendiente de respuesta del cliente</span></li>'));
- if(m.stale)items.push('<li><b>Recordatorio: 14 días sin actividad registrada</b><span>Revisa el estado del proyecto cuando puedas.</span></li>');
  const count=items.length;
  const key=(typeof ESTUDIO_ID==='undefined'?'':ESTUDIO_ID)+'/'+(state.sessionUser?.id||'')+'/'+p.id,previous=projectNoticeCounts.get(key)||0;projectNoticeCounts.set(key,count);
  if(!count)return '';

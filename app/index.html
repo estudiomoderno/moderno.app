@@ -1154,7 +1154,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=3653"></script>
 <script src="/specifications.js?v=340"></script>
-<script src="/project-insights.js?v=3600"></script>
+<script src="/project-insights.js?v=3656"></script>
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3617"></script>
@@ -4731,7 +4731,7 @@ function vHome(){
     <div class="home-columns"><section class="home-panel"><div class="home-heading"><h2>Hoy en tu estudio</h2><button class="btn btn-ghost" onclick="go('workspace')">Ver todas · ${tasks.length}</button></div>${dailyScope()}
     <div class="home-task-list">${tasks.slice(0,5).map(({p,t,i})=>`<button class="home-task" onclick="openDailyTask(${p.id},${i})"><span><strong>${E(t.title)}</strong><small>${E(p.num+' '+p.name)}</small></span><span>${dailyDue(t)}<small>${E(t.col==='rev'?'En revisión':t.col==='prog'?'En progreso':'Pendiente')}</small></span></button>`).join('')||'<p class="home-empty">No tienes tareas pendientes en esta selección.</p>'}</div></section>
     <aside class="home-panel"><div class="home-heading"><h2>Tu agenda</h2><button class="btn btn-ghost" onclick="go('calendario')">Ver calendario</button></div>${events.map(e=>`<button class="home-task" onclick="WorkflowPolish.eventInfo('${e.date}')"><span><strong>${E(e.title)}</strong><small>${date(e.date)}</small></span></button>`).join('')||'<p class="home-empty">No hay próximas citas en tu calendario.</p>'}<div class="home-attention"><h3>Necesita atención <span>${alerts.length}</span></h3>${alerts.slice(0,3).map(a=>`<button class="home-task" onclick="${a.action}"><span><strong>${E(a.title)}</strong><small>${E(a.detail)}</small></span></button>`).join('')||'<p class="home-empty">Sin avisos de cobros ni fases de obra.</p>'}${alerts.length>3?`<details><summary>Ver ${alerts.length-3} avisos más</summary>${alerts.slice(3).map(a=>`<button class="home-task" onclick="${a.action}"><span><strong>${E(a.title)}</strong><small>${E(a.detail)}</small></span></button>`).join('')}</details>`:''}</div></aside></div>
-    <section class="home-projects"><div class="home-heading"><div><h2>${recent.some(id=>projs.some(p=>p.id===id))?'Retoma tus proyectos':'Tus proyectos'}</h2><p>${projs.length} proyectos activos</p></div><button class="btn btn-ghost" onclick="go('proyectos')">Ver proyectos</button></div><div class="home-project-grid">${ordered.slice(0,4).map(folderCard).join('')}<button class="home-add-project" onclick="newProject()"><span>+</span>Nuevo proyecto</button></div></section>
+    <section class="home-projects"><div class="home-heading"><div><h2>${recent.some(id=>projs.some(p=>p.id===id))?'Retoma tus proyectos':'Tus proyectos'}</h2><p>${projs.length} proyectos activos</p></div><button class="btn btn-ghost" onclick="go('proyectos')">Ver proyectos</button></div><div class="home-project-grid">${ordered.slice(0,4).map(projectFolio).join('')}<button class="home-add-project" onclick="newProject()"><span>+</span>Nuevo proyecto</button></div></section>
     ${finance?`<section class="home-finance"><div class="home-heading"><h2>Resumen del estudio</h2><button class="btn btn-ghost" onclick="go('informes')">Ver detalle</button></div><div class="home-metrics"><button onclick="go('contabilidad')"><span>Pendiente de cobrar</span><strong>${fmt(pending.reduce((n,e)=>n+pendienteCobro(e),0))}</strong><small>${late.length?late.length+' cobros vencidos':'Sin cobros vencidos'}</small></button><button onclick="go('facturas')"><span>Facturado</span><strong>${fmt(V.facturado)}</strong><small>Según la marca seleccionada</small></button><button onclick="go('presupuestos')"><span>Presupuestos pendientes</span><strong>${fmt(V.quotesSum)}</strong><small>Por aceptar</small></button></div></section>`:''}
   </div>`;
 }
@@ -5150,7 +5150,7 @@ function projectFolio(p){
   const E=ModernoDaily.escape,id=Number(p.id),colors=folderColors(p);
   const editable=typeof _accessRole!=='undefined'&&['admin','col'].includes(_accessRole);
   return `<div class="project-folio-shell"><details class="project-folio" style="--folio-front:${colors.front};--folio-back:${colors.back};--folio-ink:${colors.ink}" onkeydown="if(event.key==='Escape'){folioToggle(this,true);this.querySelector('summary').focus();event.stopPropagation()}">
-    <summary onclick="event.preventDefault();folioToggle(this.parentElement)" aria-label="Opciones de ${E(p.num+' '+p.name)}">
+    <summary onclick="event.preventDefault();go('proyecto',${id})" aria-label="Abrir proyecto ${E(p.num+' '+p.name)}">
       <span class="folio-scene"><span class="folio-back"></span>
       ${[0,1,2].map(i=>`<span class="folio-sheet folio-sheet-${i}"><span class="folio-sheet-lines" aria-hidden="true"></span></span>`).join('')}
       <span class="folio-flap"><strong class="folio-name">${E(p.num)} ${E(p.name)}</strong><span class="folio-plus" aria-hidden="true"></span></span></span>
@@ -5662,14 +5662,14 @@ function vProjects(){
   </header><div class="projects-view-content">
   ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
   ${timeMode? vTimeline(projs.filter(x=>!x.tpl)) : listMode? `
-  <table class="list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
+  <table class="list projects-clean-list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
     ${projs.length? projs.map(p=>{ const c=folderColors(p); return `<tr style="cursor:pointer" onclick="go('proyecto',${p.id})">
       <td><span style="display:inline-block;width:22px;height:18px;border-radius:5px;background:linear-gradient(180deg,${c.back} 35%,${c.front} 35%)"></span></td>
       <td><b>${p.icon?p.icon+" ":""}${p.num} ${p.name}</b> ${p.tpl?'<span class="chip tpl">Plantilla</span>':""} ${(p.tags||[]).map(t=>`<span class="chip tag">${t}</span>`).join(" ")}</td>
       <td><span class="chip ${BRAND[p.brand].chip}">${BRAND[p.brand].name}</span></td>
       <td>${p.client||"—"}</td>
-      <td><span class="chip neutral">${p.status}</span>${projectAlerts(p)}</td>
-      <td>${p.tasks.filter(t=>t.col==="listo").length}/${p.tasks.length}</td>
+      <td><span class="chip neutral">${p.status}</span></td>
+      <td><div class="project-task-cell"><span>${p.tasks.filter(t=>t.col==="listo").length}/${p.tasks.length}</span>${projectFolderNotifications(p)}</div></td>
       <td style="text-align:right;white-space:nowrap">
         <button class="btn btn-ghost" title="Duplicar" onclick="event.stopPropagation();duplicateProject(${p.id})">${ico('dup_proyecto')}</button>
         <button class="btn btn-ghost" title="Editar" onclick="event.stopPropagation();customizeModal(${p.id})">${ico('editar')}</button>
@@ -11461,7 +11461,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.5";
+const MODERNO_VER="v3.65.6";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13282,5 +13282,6 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/project-insights.css?v=3594">
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
+<link rel="stylesheet" href="/brand/project-compact.css?v=3656">
 </body>
 </html>
