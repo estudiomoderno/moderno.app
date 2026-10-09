@@ -5263,7 +5263,6 @@ function vWorkspace(){
   const pendingCount=all.length;
   return `<div class="ws-full">
     <h1 class="big">Mis tareas</h1>
-    <p class="ws-subtitle">Tienes <strong>${pendingCount} ${pendingCount===1?'tarea':'tareas'}</strong> entre pendientes, en progreso y en revisión</p>
     <div class="ws-toolbar">${wsViewControls()}<button class="btn btn-dark" onclick="wsNewTask('pend')">${taskIdentityIcon('add')}Nueva tarea</button></div>
     <div class="ws-search">${taskIdentityIcon('search')}<input id="wsProjBox" aria-label="Buscar tareas o proyectos" placeholder="Buscar tareas o proyectos" value="${ModernoDaily.escape(query)}" oninput="state.wsQuery=this.value;state.wsProj='all';renderKeep(this)"></div>
     <div class="ws-filter-row">${dailyScope()}<span role="status">${cards.length} ${cards.length===1?'tarea pendiente':'tareas pendientes'}</span></div>
@@ -11457,7 +11456,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.9";
+const MODERNO_VER="v3.65.10";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
