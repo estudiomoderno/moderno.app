@@ -5637,26 +5637,22 @@ function vProjects(){
   const archHits = (PQ && !arch) ? sortProjects(byBrand(state.projects.filter(p=>!p.tpl && p.status==="Archivado")).filter(pMatch)) : [];
   const projs = sortProjects(byBrand(state.projects.filter(p=>!p.tpl)).filter(p => arch ? p.status==="Archivado" : p.status!=="Archivado").filter(pMatch));
   const listMode = state.projView==="list";
-  const timeMode = state.projView==="time";
+  const timeMode = false;
+  const activeCount = byBrand(state.projects.filter(p=>!p.tpl && p.status!=="Archivado")).length;
   const buscador = `<div class="flt" style="position:relative;display:inline-flex;align-items:center">
     <span style="position:absolute;left:11px;display:inline-flex;color:var(--ink-faint)">${ico("buscar")}</span>
     <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Número, nombre o cliente…" aria-label="Buscar proyecto" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
   </div>`;
   return `
-  <section class="projects-identity"><header class="projects-header"><h1 class="big" style="margin-bottom:22px">${arch?"Proyectos archivados":"Estos son tus proyectos"}${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
-  <div class="projects-meta">
-    <div class="projects-next">${visibleWsOrder().map(k=>`<span class="counter-box">Nº de Siguiente proyecto: <b>${projPre(k)}-${nextProjNum(k)}</b>${visibleWsOrder().length>1?` <small>${ModernoDaily.escape(BRAND[k].name||'Mi espacio')}</small>`:''}</span>`).join('')}</div>
-    <div class="projects-count" role="status">Proyectos ${arch?'Archivados':'Activos'}: <strong>${projs.length}</strong></div>
-  </div>
+  <section class="projects-identity"><header class="projects-header"><h1 class="big" style="margin-bottom:22px">${arch?"Proyectos archivados":`Estos son tus ${activeCount} proyectos`}${userFirst()?`, <span class="hl">${ModernoDaily.escape(userFirst())}</span>`:""}.</h1>
   <div class="projects-toolbar">
     ${buscador}
     <div class="brand-switch">
       <button class="${!listMode&&!timeMode?'on':''}" title="Cuadrícula" onclick="projectsViewSet('grid')">${ico('grid')}</button>
       <button class="${listMode?'on':''}" title="Lista" onclick="projectsViewSet('list')">${ico('list')}</button>
-      <button class="${timeMode?'on':''}" title="Cronograma" onclick="projectsViewSet('time')" ><svg class="svgi" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h8"/><path d="M9 12h9"/><path d="M6 18h7"/><circle cx="16" cy="6" r="1.5"/><circle cx="4.5" cy="12" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/></svg></button>
     </div>
-    <button class="btn ${arch?'btn-dark':'btn-ghost'}" onclick="state.showArchived=!state.showArchived;render()">${ico('archivar')} Archivados</button>
-    ${arch?"":`<button class="btn btn-dark" onclick="newProject()">${ico("mas")} Nuevo proyecto</button>`}
+    <button class="btn ${arch?'btn-dark':'btn-ghost'}" title="Archivados" aria-label="Archivados" style="width:44px;height:44px;padding:0;border-radius:50%;justify-content:center" onclick="state.showArchived=!state.showArchived;render()">${ico('eliminar')}</button>
+    ${arch?"":`<button class="btn btn-dark" title="Nuevo proyecto" aria-label="Nuevo proyecto" style="width:44px;height:44px;padding:0;border-radius:50%;justify-content:center" onclick="newProject()">${ico("mas")}</button>`}
   </div>
   ${PQ?`<div class="daily-filter-info">Para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button></div>`:''}
   </header><div class="projects-view-content">
@@ -11461,7 +11457,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.7";
+const MODERNO_VER="v3.65.8";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
