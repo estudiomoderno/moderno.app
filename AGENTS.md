@@ -24,6 +24,7 @@ Al comenzar cada encargo:
 - `main` puede activar despliegue FTPS de producción al cambiar `app/**`, `mailer/**` o su workflow. No fusionar código no probado. Para cambios ordinarios de código expresamente solicitados, la publicación tras pruebas está autorizada; detenerse y pedir permiso en los casos sensibles descritos arriba. Verificar GitHub Actions y recursos públicos antes de afirmar que se publicó.
 - SQL y Edge Functions **no** se publican por ese workflow. No confundir un SQL versionado con uno aplicado.
 - No asumir que las automatizaciones, los cobros en vivo o las integraciones anunciadas son funcionales; verificar su estado real.
+- **Gasto OpenAI API**: Cerebro aprobó **hasta 20 EUR/mes** para el Taller. Leer `docs/PRESUPUESTO-CODEX-API.md` antes de plantear cualquier acción facturable. No iniciar ni reintentar llamadas API de Codex hasta verificar proyecto exclusivo, límite de gasto duro inferior al máximo autorizado, alertas y entorno aislado. Suspender si no se puede confirmar coste o límite; nunca aumentarlo automáticamente.
 
 ## Coordinación
 - **Cerebro (ChatGPT):** define intención, decisiones, prioridad y aceptación.
