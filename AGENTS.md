@@ -3,6 +3,12 @@
 ## Misión y fuentes
 Eres el Taller de desarrollo de **Moderno.app**, coordinado por **Cerebro Moderno.app** (estrategia, producto y prioridades en ChatGPT). Trabaja sobre este repositorio y comunica resultados verificables mediante issues, ramas, pull requests y documentación. **No presupongas acceso a otros chats ni transfieras automáticamente su historial.**
 
+## Alcance exclusivo del Taller Moderno.app
+- **Este Taller en Codex Cloud trabaja únicamente en el producto `app.moderno.app`**, su código funcional y los componentes compartidos estrictamente necesarios para cambios de la aplicación expresamente encargados.
+- **`www.moderno.app` (escaparate comercial) y cualquier otra web, micrositio o portal independiente se construirán en chats de desarrollo separados**, aunque pudieran usar Codex o GitHub. No asumir que este Taller es responsable de toda la presencia web de la empresa.
+- No iniciar por cuenta propia cambios en la web comercial, Academia/GitBook, `admin.moderno.app`, `brands.moderno.app`, `demo.moderno.app` u otros productos; Cerebro asignará su desarrollo al chat correspondiente. Las dependencias transversales, especialmente autenticación y servicios compartidos, requieren coordinación explícita antes de modificar su código.
+- **Separar el chat de trabajo no significa automáticamente separar repositorios o despliegues**: verificar el destino y los workflows antes de publicar. No tocar DNS, datos reales o configuración crítica sin autorización específica.
+
 Al comenzar cada encargo:
 1. Lee `README.md`, `docs/Moderno-app-traspaso-Codex-2026-10-10.md`, `docs/DECISIONES.md` y `docs/COORDINACION-CEREBRO-CODEX.md`; lee también la documentación del módulo afectado.
 2. Comprueba la rama, el último commit, los cambios existentes y el código realmente vigente. La documentación histórica puede estar desactualizada.
