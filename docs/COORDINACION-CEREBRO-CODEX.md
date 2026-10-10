@@ -23,6 +23,13 @@ Repositorio: https://github.com/estudiomoderno/moderno.app
 
 Esto expresa las responsabilidades *previstas*, no que todas las funcionalidades estén construidas.
 
+## Separación de encargos de desarrollo
+- **🔧 Taller Moderno.app (Codex Cloud) es exclusivo de `app.moderno.app`**: aplicación profesional, sus pruebas y su mantenimiento.
+- El futuro escaparate **`www.moderno.app` tendrá su propio chat de desarrollo**, separado del Taller de la app. Cada nueva web independiente tendrá su chat especializado cuando se aborde, sin reutilizar el Taller de la aplicación.
+- Cerebro coordina prioridades y puede compartir documentación mediante GitHub; esto **no** sincroniza historiales de chats ni autoriza a un chat a modificar otros productos.
+- Para cambios comunes (por ejemplo identidad, autenticación o infraestructura compartida), acordar explícitamente responsables, alcance, pruebas, seguridad y despliegue antes de mezclar trabajo entre productos.
+- Separar chats **no garantiza separación técnica** de repositorio, entorno o despliegue: comprobarla en cada proyecto nuevo antes de tocar producción.
+
 ## Cómo coordinar encargos y entregas
 1. **Cerebro decide** el cambio, prioridad y alcance. Si supone desarrollo, se documenta una tarea en GitHub con objetivo, módulo, criterios de aceptación y restricciones.
 2. **Codex lee** `AGENTS.md`, `README.md`, `docs/Moderno-app-traspaso-Codex-2026-10-10.md`, `docs/DECISIONES.md` y los archivos actuales antes de tocar código. Debe comprobar la vigencia de los documentos.
