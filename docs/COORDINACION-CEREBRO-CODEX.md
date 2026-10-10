@@ -23,6 +23,11 @@ Repositorio: https://github.com/estudiomoderno/moderno.app
 
 Esto expresa las responsabilidades *previstas*, no que todas las funcionalidades estén construidas.
 
+## Prioridad compartida — aplicación multiplataforma (10/10/2026)
+**Terminar Moderno.app es la prioridad principal del equipo.** El objetivo de distribución es **web**, **Windows descargable**, **Mac descargable**, **iPhone**, **iPad** y **Android en móviles y tabletas**. Esto es un compromiso de producto, no una declaración de disponibilidad actual. La responsabilidad de implementación corresponde exclusivamente al Taller de la aplicación; webs comerciales independientes continúan en otros chats.
+
+**Fuente común y tareas por rol:** [PRIORIDAD-APP-MULTIPLATAFORMA.md](PRIORIDAD-APP-MULTIPLATAFORMA.md). Cerebro marca prioridades; Taller audita y propone arquitectura sin reescritura automática; Control valida calidad/seguridad por dispositivo; Negocio revisa impacto comercial; Academia documenta versiones verificadas; Integraciones evalúa necesidades técnicas. Las conversaciones no reciben automáticamente cambios de GitHub: deben consultar esta fuente compartida al iniciar tareas relacionadas.
+
 ## Separación de encargos de desarrollo
 - **🔧 Taller Moderno.app (Codex Cloud) es exclusivo de `app.moderno.app`**: aplicación profesional, sus pruebas y su mantenimiento.
 - El futuro escaparate **`www.moderno.app` tendrá su propio chat de desarrollo**, separado del Taller de la app. Cada nueva web independiente tendrá su chat especializado cuando se aborde, sin reutilizar el Taller de la aplicación.
