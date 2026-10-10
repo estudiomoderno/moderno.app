@@ -1,5 +1,12 @@
 # Decisiones de TALLER
 
+## 2026-10-10 — Prioridad: terminar la app y ofrecerla en web y dispositivos
+
+El propietario establece como **prioridad principal terminar Moderno.app** y preparar su disponibilidad en **navegador web**, **descargas para Windows y Mac**, **iPhone**, **iPad** y **teléfonos/tabletas Android**. Estas son plataformas **objetivo**, no versiones cuya existencia se haya comprobado. 🔧 Taller Moderno.app en Codex Cloud sigue siendo exclusivo de la aplicación, incluidas sus variantes multiplataforma; el escaparate `www.moderno.app` y otras webs independientes se desarrollarán en chats separados.
+
+Coordinar Cerebro, Taller, Control, Negocio, Academia e Integraciones mediante GitHub; la existencia de un documento compartido no sincroniza automáticamente las conversaciones ni inicia Codex. Antes de decidir PWA, contenedores o apps nativas, auditar estado actual, compatibilidad, restricciones y plan de pruebas sin datos reales. **Decisión operativa y responsabilidades completas: [PRIORIDAD-APP-MULTIPLATAFORMA.md](PRIORIDAD-APP-MULTIPLATAFORMA.md).** No se autoriza una reescritura o publicación en tiendas por esta declaración.
+
+
 ## 2026-09-09 — Pausa confirmada y hallazgos previos a v3.30
 
 El usuario confirma que el equipo está en pausa y había guardado sin formularios pendientes ni errores. No se interpreta como cierre de todas las sesiones antiguas. La revisión identifica permisos financieros insuficientes en el candidato y límites precisos de validación del correo; véase ACCESO-CORREO-VALIDACION.md. No publicar ni cambiar permisos productivos basándose solo en la pausa o en que pasen pruebas que reproducen defectos.
