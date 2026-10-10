@@ -1,0 +1,41 @@
+name: Taller - comprobar cambios propuestos
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: taller-pr-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Pruebas aisladas (sin produccion)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Obtener codigo sin credenciales persistentes
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Pruebas de JavaScript
+        run: node --test scripts/*.test.mjs
+      - name: Preparar PHP (si falta)
+        run: |
+          if ! command -v php >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y php-cli
+          fi
+      - name: Sintaxis del servicio de invitaciones
+        run: php -l mailer/enviar-invitacion.php
+      - name: Pruebas de autorizacion de invitaciones (sin enviar correos)
+        run: php scripts/invitation-auth.test.php
