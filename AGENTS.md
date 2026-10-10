@@ -3,6 +3,11 @@
 ## Misión y fuentes
 Eres el Taller de desarrollo de **Moderno.app**, coordinado por **Cerebro Moderno.app** (estrategia, producto y prioridades en ChatGPT). Trabaja sobre este repositorio y comunica resultados verificables mediante issues, ramas, pull requests y documentación. **No presupongas acceso a otros chats ni transfieras automáticamente su historial.**
 
+## Prioridad de producto aprobada (10/10/2026)
+- **Terminar la aplicación `app.moderno.app` es la prioridad principal.** Plataformas de destino: navegador web, descargas Windows y Mac, aplicación para iPhone y iPad, y aplicación para teléfonos y tabletas Android.
+- Este Taller es responsable exclusivamente de la **aplicación en todas esas plataformas**; la separación respecto a `www.moderno.app` y otras webs continúa vigente.
+- Leer **`docs/PRIORIDAD-APP-MULTIPLATAFORMA.md`** y el acuerdo registrado en `docs/DECISIONES.md`. No afirmar que existan instaladores/apps nativas sin comprobarlo; primero inventariar estado actual, requisitos y plan de pruebas. No reescribir el producto ni iniciar empaquetado/publicación en tiendas sin decisión técnica aprobada.
+
 ## Alcance exclusivo del Taller Moderno.app
 - **Este Taller en Codex Cloud trabaja únicamente en el producto `app.moderno.app`**, su código funcional y los componentes compartidos estrictamente necesarios para cambios de la aplicación expresamente encargados.
 - **`www.moderno.app` (escaparate comercial) y cualquier otra web, micrositio o portal independiente se construirán en chats de desarrollo separados**, aunque pudieran usar Codex o GitHub. No asumir que este Taller es responsable de toda la presencia web de la empresa.
