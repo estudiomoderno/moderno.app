@@ -7,6 +7,7 @@
 - **No activo:** ejecución automática de Codex desde los issues o desde ChatGPT. No hay herramienta de Codex Cloud accesible directamente desde Cerebro para iniciar esas sesiones.
 - **Bloqueo del entorno:** `moderno-pruebas` (ref `chsilowzrtumbcofspwv`) está activo, pero la comprobación de solo lectura el 10/10/2026 devolvió 0 tablas `public`, 0 migraciones y 0 Edge Functions. No se han realizado escrituras. Ver [issue #3](https://github.com/estudiomoderno/moderno.app/issues/3).
 - **Bloqueo de automatización:** para un disparador GitHub Actions con Codex, la alternativa oficial es [openai/codex-action](https://github.com/openai/codex-action). Requiere autenticación de OpenAI API, presupuesto/autorización de consumo aparte de ChatGPT y seguridad adicional en un repo público. Ver [issue #4](https://github.com/estudiomoderno/moderno.app/issues/4).
+- **Presupuesto APROBADO, configuración PENDIENTE:** Cerebro autorizó un máximo de **20 EUR por mes** para OpenAI API; el compromiso y los controles de gasto se describen en [PRESUPUESTO-CODEX-API](PRESUPUESTO-CODEX-API.md). El proyecto API dedicado, límite duro, alertas y credenciales privadas todavía no están configurados ni verificados. **No activar la acción facturable** hasta completar los requisitos.
 
 ## Flujo de trabajo mientras no exista el disparador
 
