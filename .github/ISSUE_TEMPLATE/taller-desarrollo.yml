@@ -1,0 +1,58 @@
+name: Tarea para Taller Moderno.app
+description: Propuesta de desarrollo o mejora coordinada por Cerebro.
+title: "[Taller] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Esta propuesta no inicia Codex automaticamente ni autoriza publicar en produccion.
+        Los cambios deben pasar por rama propia, pruebas y revision de riesgos.
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: Objetivo
+      description: Describe el problema y el resultado esperado.
+      placeholder: Queremos que...
+    validations:
+      required: true
+  - type: dropdown
+    id: modulo
+    attributes:
+      label: Modulo
+      options:
+        - app
+        - admin
+        - auth
+        - brands
+        - demo
+        - docs
+        - www
+        - infraestructura
+    validations:
+      required: true
+  - type: textarea
+    id: alcance
+    attributes:
+      label: Alcance y restricciones
+      description: Incluye decisiones de Cerebro, dependencias y limites de seguridad.
+      placeholder: No cambiar produccion ni datos reales.
+    validations:
+      required: true
+  - type: textarea
+    id: aceptacion
+    attributes:
+      label: Criterios de aceptacion y pruebas
+      description: Indica como demostrar que esta completado.
+    validations:
+      required: true
+  - type: dropdown
+    id: riesgo
+    attributes:
+      label: Riesgo
+      options:
+        - Bajo (interfaz y documentacion)
+        - Medio (logica sin datos reales)
+        - Alto (auth, permisos, almacenamiento, base de datos o pagos)
+    validations:
+      required: true
