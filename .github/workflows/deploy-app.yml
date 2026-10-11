@@ -92,3 +92,6 @@ jobs:
           local-dir: ./release-entry/
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           state-name: .ftp-entry-state.json
+
+      - name: Verificar entrada y recursos públicos sin iniciar sesión
+        run: node scripts/verify-app-publication.mjs
