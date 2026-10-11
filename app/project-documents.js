@@ -42,14 +42,15 @@ function projectDocumentTab(pid,section){
   projectDocumentSections.set(pid,section);render();
 }
 let projectPlanDialog=null;
+function projectPlanIdentity(){return fileViewIdentity()+'|'+(state.sessionUser?.mail||state.sessionUser?.id||'');}
 async function projectPlanOpen(pid,index){
   if(projectPlanDialog)return;
   const project=state.projects.find(p=>p.id===pid),file=project?.files?.[index],kind=ModernoDocuments.type(file);
   if(!kind){toast('Este archivo no admite anotaciones');return;}
-  const identity=fileViewIdentity(),source=fileSrc(file);
+  const identity=projectPlanIdentity(),source=fileSrc(file);
   const allowed=()=>{
     const current=state.projects.find(p=>p.id===pid)?.files?.[index];
-    return !_accessLoading&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon&&Boolean(state.sessionUser)&&identity===fileViewIdentity()&&current&&fileSrc(current)===source&&String(current.id??index)===String(file.id??index)&&ModernoDocuments.type(current)===kind;
+    return !_accessLoading&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon&&Boolean(state.sessionUser?.mail||state.sessionUser?.id)&&identity===projectPlanIdentity()&&current&&fileSrc(current)===source&&String(current.id??index)===String(file.id??index)&&ModernoDocuments.type(current)===kind;
   };
   if(!allowed()){toast('Comprueba tu sesión y tu acceso al proyecto');return;}
   const controller=new AbortController(),dialog=document.createElement('dialog');dialog.className='project-plan-dialog';dialog.setAttribute('aria-label','Plano del proyecto');

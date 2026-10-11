@@ -29,7 +29,7 @@ El código anterior aislado del PR #29 se reutiliza en esta entrega explícitame
 - `.github/workflows/deploy-app.yml`, `scripts/verify-app-publication.mjs` y su test: comprobación posterior al despliegue por hash del HTML y cinco módulos/estilos públicos, con destino fijo, sin sesión ni datos privados.
 - `scripts/plan-editor-browser.test.py`: ensayo reproducible offline con Chromium/Playwright y PDF.js 3.11.174 local, la versión existente de la app.
 
-**422 tests Node aprobados**, incluyendo 14 nuevos. La persistencia del modelo se ensaya con adaptador ficticio y NO demuestra guardado/backend real. La suite incluye comprobaciones existentes de archivos privados; tampoco se presenta como una nueva prueba backend de anotaciones.
+**423 tests Node aprobados**, incluyendo 15 nuevos. La persistencia del modelo se ensaya con adaptador ficticio y NO demuestra guardado/backend real. La suite incluye comprobaciones existentes de archivos privados; tampoco se presenta como una nueva prueba backend de anotaciones.
 
 Ensayo Chromium del visor a 1280/390px: PDF ficticio de dos páginas, todas las herramientas, borrado, zoom/undo/redo, texto literal seguro, exportación reabierta por PDF.js con mismo número y tamaño de páginas, original intacto y cierre protegido. PNG generado, PDF con rotación de 90° y errores de formato/tamaño verificados. Ensayo de la pantalla real de proyecto con estado ficticio y red interceptada a 1440/390px: navegación, adjuntos/notas anteriores, visor, exportación, cierre cancelado, logout/rol denegado y proyecto sin cambios. Capturas exclusivamente ficticias:
 

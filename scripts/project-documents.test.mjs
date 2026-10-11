@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
 const require=createRequire(import.meta.url),docs=require('../app/project-documents.js');
 test('plan filtering preserves original indices and excludes generated documents',()=>{
  const p={files:['legacy.pdf',{name:'Notes',body:'text',type:'application/pdf'},{name:'invoice.pdf',docRef:'F-1'},{name:'plan.PDF'},{name:'render',type:'image/png'},{name:'sheet.xlsx'}]};const original=JSON.stringify(p);
@@ -27,4 +28,10 @@ test('publication does not activate cloud annotation saving or replace existing 
  const js=readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8'),html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
  assert.ok(!js.includes('sb.storage')&&!js.includes('sb.rpc')&&!js.includes('localStorage'));
  assert.match(js,/mount\(root,\{document:doc,model\}\)/);assert.match(html,/addFiles\(\$\{p.id\},this.files\)/);assert.match(html,/notes=this.value/);
+});
+test('viewer identity changes for real-format sessions without a user id',()=>{
+ const code=readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8');
+ const context=vm.createContext({state:{sessionUser:{mail:'fictional-a@example.invalid'}},fileViewIdentity:()=> 'fake-study||'});
+ vm.runInContext(code,context);const first=context.projectPlanIdentity();context.state.sessionUser={mail:'fictional-b@example.invalid'};
+ assert.notEqual(context.projectPlanIdentity(),first);context.state.sessionUser=null;assert.notEqual(context.projectPlanIdentity(),first);
 });
