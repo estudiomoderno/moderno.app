@@ -5720,7 +5720,7 @@ function vProject(){
     <details class="project-options"><summary class="btn btn-ghost project-options-trigger" aria-label="Opciones del proyecto" title="Opciones del proyecto">${projectMoreIcon()}</summary><div class="project-options-body">
       <button class="btn btn-ghost" onclick="customizeModal(${p.id})">${ico('editar')} Editar datos</button>
       <button class="btn btn-ghost" onclick="customizeModal(${p.id},'appearance')">${ico('personalizar')} Personalizar proyecto</button>
-      <button class="btn btn-ghost" onclick="duplicateProject(${p.id})"><img src="/brand/project-copy.svg" width="18" height="18" alt="" aria-hidden="true"> Duplicar proyecto</button>
+      <button class="btn btn-ghost" onclick="duplicateProject(${p.id})">${ico('dup_proyecto')} Duplicar proyecto</button>
       <button class="btn btn-ghost project-delete-action" onclick="deleteProject(${p.id})">${ico('eliminar')} Eliminar proyecto</button>
     </div></details>
   </div>
@@ -11464,7 +11464,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.11";
+const MODERNO_VER="v3.65.12";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13282,7 +13282,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36511">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36512">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
