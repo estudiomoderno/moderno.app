@@ -12,7 +12,7 @@ var ModernoDocuments = (() => {
   }
   function tabs(projectId,current='planos') {
     return '<nav class="project-document-tabs" aria-label="Documentos del proyecto">'+[['planos','Planos'],['archivos','Archivos'],['referencias','Referencias'],['revisiones','Revisiones']].map(([key,label])=>
-      `<button type="button" class="btn btn-ghost ${current===key?'on':''}" ${['referencias','revisiones'].includes(key)?'disabled title="Pendiente de implementación"':`aria-pressed="${current===key}" data-project="${E(projectId)}" data-section="${key}" onclick="projectDocumentTab(Number(this.dataset.project),this.dataset.section)"`}>${label}</button>`).join('')+'</nav>';
+      `<button type="button" class="btn btn-ghost ${current===key?'on':''}" ${['referencias','revisiones'].includes(key)?'disabled title="Pendiente de implementación"':`aria-pressed="${current===key}" data-project="${E(projectId)}" data-document-section="${key}" onclick="projectDocumentTab(Number(this.dataset.project),this.dataset.documentSection)"`}>${label}</button>`).join('')+'</nav>';
   }
   function list(project) {
     const items=plans(project);

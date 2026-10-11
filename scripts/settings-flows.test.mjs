@@ -2,13 +2,13 @@ import {test} from 'node:test';import assert from 'node:assert/strict';import vm
 const C=createRequire(import.meta.url)('../app/settings-core.js');
 const source=fs.readFileSync(new URL('../app/settings-ui.js',import.meta.url),'utf8');
 function harness(role='admin'){
- const listeners={},nodes=new Map(),make=()=>({dataset:{},className:'',innerHTML:'',textContent:'',classList:{remove(){},toggle(){}},setAttribute(){},after(){},querySelectorAll(){return[];},reportValidity(){return true;},querySelector(){return {focus(){}};}});
+ const listeners={},nodes=new Map(),make=()=>({dataset:{},className:'',innerHTML:'',textContent:'',classList:{remove(){},toggle(){}},contains(){return false;},setAttribute(){},after(){},querySelectorAll(){return[];},reportValidity(){return true;},querySelector(){return {focus(){}};}});
  const node=id=>{if(!nodes.has(id))nodes.set(id,make());return nodes.get(id);};
  const state={view:'home',account:{name:'Ensayo',vat:0,irpf:'',country:'España',currency:'EUR',taxName:'IVA',iban:'BANCO'},emitter:{name:'Emisor original'},irpf:false,defMargin:0,series:{fc:'FC',ps:'PS'},sessionUser:{mail:'test@example.invalid',name:'Persona Ficticia'},users:[],projects:[],entries:[{id:1,total:33.25}],quotes:[{id:2,total:99.23}]};
  let savedMeta={},update,fail=false,confirm;
- const ctx={state,TeamSettings:{view:()=>"Equipo",load(){}},ModernoDaily:{escape:x=>String(x??'')},ModernoSettingsCore:C,ModernoSettingsIcons:{},ModernoPhone:{field:()=>''},_accessRole:role,_accessLoading:false,ESTUDIO_ID:'ficticio',meMail:()=>state.sessionUser.mail,visibleWsOrder:()=>[],BRAND:{},PAISES:['España'],PAIS_ISO:{},CURR:{EUR:{}},ROLES:{},serie:b=>state.series[b?'fc':'ps'],fileImageAttrs:()=>'',ico:()=>'',render(){},go(v){state.view=v;},vAdmin(){},vAjustes(){},themeToggle(){},prepareAppReload:async()=>true,localStorage:{getItem(){return null},setItem(){}},document:{body:make(),getElementById:node,querySelector:()=>make(),createElement:make,addEventListener:(k,fn)=>listeners[k]=fn},addEventListener(){},toast(){},askConfirm(...args){confirm=args;},persistNow(){},_cloudBusy:false,_saveErr:false,_cloudHash:{},canon:JSON.stringify,CLOUD_BLOCKS:{config:{get:()=>({account:state.account,emitter:state.emitter,series:state.series,irpf:state.irpf,defMargin:state.defMargin})}},cloudFlush:async()=>{if(!fail)ctx._cloudHash.config=JSON.stringify(ctx.CLOUD_BLOCKS.config.get());},sb:{auth:{getUser:async()=>({data:{user:{email:'test@example.invalid',user_metadata:savedMeta}}}),updateUser:async u=>{update=u;if(fail)return {error:{message:'Fallo simulado'}};savedMeta=u.data;return {data:{user:{email:'test@example.invalid',user_metadata:savedMeta}}};}}},sbUserToSession:u=>({mail:u.email,name:u.user_metadata.full_name||'Persona Ficticia'}),applySessionUI(){},setTimeout,Intl};
+ const ctx={state,TeamSettings:{view:()=>"Equipo",load(){}},ModernoDaily:{escape:x=>String(x??'')},ModernoSettingsCore:C,ModernoSettingsIcons:{},ModernoPhone:{field:()=>''},_accessRole:role,_accessLoading:false,ESTUDIO_ID:'ficticio',meMail:()=>state.sessionUser.mail,visibleWsOrder:()=>[],BRAND:{},PAISES:['España'],PAIS_ISO:{},CURR:{EUR:{}},ROLES:{},serie:b=>state.series[b?'fc':'ps'],fileImageAttrs:()=>'',ico:()=>'',render(){},go(v){state.view=v;},vAdmin(){},vAjustes(){},themeToggle(){},prepareAppReload:async()=>true,localStorage:{getItem(){return null},setItem(){}},document:{body:make(),getElementById:node,querySelector:()=>make(),createElement:make,addEventListener:(k,fn)=>(listeners[k]??=[]).push(fn)},addEventListener(){},toast(){},askConfirm(...args){confirm=args;},persistNow(){},_cloudBusy:false,_saveErr:false,_cloudHash:{},canon:JSON.stringify,CLOUD_BLOCKS:{config:{get:()=>({account:state.account,emitter:state.emitter,series:state.series,irpf:state.irpf,defMargin:state.defMargin})}},cloudFlush:async()=>{if(!fail)ctx._cloudHash.config=JSON.stringify(ctx.CLOUD_BLOCKS.config.get());},sb:{auth:{getUser:async()=>({data:{user:{email:'test@example.invalid',user_metadata:savedMeta}}}),updateUser:async u=>{update=u;if(fail)return {error:{message:'Fallo simulado'}};savedMeta=u.data;return {data:{user:{email:'test@example.invalid',user_metadata:savedMeta}}};}}},sbUserToSession:u=>({mail:u.email,name:u.user_metadata.full_name||'Persona Ficticia'}),applySessionUI(){},setTimeout,Intl};
  ctx.window=ctx;vm.createContext(ctx);vm.runInContext(source,ctx);
- return {ctx,state,confirm:()=>confirm,fail:()=>{fail=true},update:()=>update,field:(key,value)=>listeners.input({target:{dataset:{setting:key},type:typeof value==='boolean'?'checkbox':'text',value,checked:value}}),open:async k=>{ctx.SettingsUI.open(k);ctx.SettingsUI.view();await new Promise(r=>setImmediate(r));},status:()=>node('settings-status').textContent};
+ return {ctx,state,confirm:()=>confirm,fail:()=>{fail=true},update:()=>update,click:target=>listeners.click.forEach(fn=>fn({target})),field:(key,value)=>listeners.input.forEach(fn=>fn({target:{dataset:{setting:key},type:typeof value==='boolean'?'checkbox':'text',value,checked:value}})),open:async k=>{ctx.SettingsUI.open(k);ctx.SettingsUI.view();await new Promise(r=>setImmediate(r));},status:()=>node('settings-status').textContent};
 }
 test('saving a study field preserves taxes, documents, files and unedited settings',async()=>{
  const h=harness();const before=JSON.stringify(h.state);await h.open('estudio');h.field('type','Interiorismo');await h.ctx.SettingsUI.save();
@@ -74,4 +74,23 @@ test('single payment setting preserves distinct legacy bank values and old docum
  assert.equal(C.paymentIban(h.state.account,h.state.emitter,{ref:'FC-1'}),'EMISOR');
  assert.equal(C.paymentIban(h.state.account,h.state.emitter,{}),'NUEVA');
  assert.equal(C.paymentIban(h.state.account,h.state.emitter,{ref:'FC-2',paymentIban:'FIJA'}),'FIJA');
+});
+
+
+test('document tabs do not trigger the global settings navigation handler',()=>{
+ const h=harness();h.state.projects=[{id:1,files:[]}];h.state.view='proyecto';
+ const docs=fs.readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8');vm.runInContext(docs,h.ctx);
+ for(const section of ['archivos','planos']){
+  const markup=h.ctx.ModernoDocuments.tabs(1);
+  const button=[...markup.matchAll(/<button[^>]*>/g)].map(m=>m[0]).find(s=>s.includes(`="${section}"`));
+  const dataset={};for(const [,key,value] of button.matchAll(/data-([a-z-]+)="([^"]*)"/g))dataset[key.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=value;
+  const target={dataset,closest:selector=>Object.keys(dataset).some(k=>selector.includes(`[data-${k.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}]`))?target:null};
+  h.ctx.clickedDocumentTab=target;
+  const onclick=button.match(/onclick="([^"]*)"/)[1];vm.runInContext(`(function(){${onclick}}).call(clickedDocumentTab)`,h.ctx);
+  h.click(target);
+  assert.equal(h.state.view,'proyecto',`clicking ${section} must stay in the project`);
+  assert.equal(h.ctx.projectDocumentSection(1),section);
+ }
+ const target={dataset:{section:'estudio'},closest:selector=>selector.includes('[data-section]')?target:null};h.click(target);
+ assert.equal(h.state.view,'ajustes','settings controls still navigate to Settings');
 });
