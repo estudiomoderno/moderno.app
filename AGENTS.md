@@ -23,6 +23,15 @@ Al comenzar cada encargo:
 2. Comprueba la rama, el último commit, los cambios existentes y el código realmente vigente. La documentación histórica puede estar desactualizada.
 3. Delimita el cambio, riesgos y pruebas; evita trabajo incidental fuera del alcance pedido. Si falta una decisión de producto, deja una pregunta concreta para Cerebro.
 
+## Preferencia operativa del propietario — publicar en la app, sin revisiones manuales en una app de pruebas (11/10/2026)
+- **El destino de cada encargo de Taller es `https://app.moderno.app`**, no una versión de pruebas destinada al usuario. El propietario no quiere tener que abrir una app de pruebas, copiar instrucciones ni gestionar publicación manualmente.
+- Para **cambios de presentación, CSS, iconos, textos y lógica ordinaria acotada que no requieran escrituras de datos ni permisos nuevos**: trabajar en rama, ejecutar las pruebas automáticas y las verificaciones pertinentes, revisar el PR y, si todo pasa, integrar mediante el proceso existente para su despliegue en la app real. No pedir validación humana de una app de pruebas como paso rutinario; comunicar el resultado en producción una vez verificado.
+- **No significa programar o probar con datos reales.** Las pruebas automáticas/aisladas y la revisión técnica siguen siendo necesarias y pueden ejecutarse sin que el propietario tenga que entrar en otro entorno.
+- Para funcionalidades que involucren **guardado de datos, anotaciones, PDF privados, RLS, esquemas, Storage, sincronización, permisos o migraciones** (como las tres fases de Planos interactivos): realizar **primero pruebas con entorno y usuarios ficticios aislados**. Si ese entorno aún no existe o falla, el Taller debe desbloquearlo o limitarse a código sin integración y declarar el bloqueo. Nunca probar escrituras en producción por comodidad.
+- El encargo de construir la funcionalidad **no equivale a autorizar una migración ni cambios sensibles en producción**. Preparar pruebas, plan de recuperación y pedir **solo la autorización concreta imprescindible** para su activación productiva. Evitar retrasos o preguntas superfluas para cambios seguros y reversibles.
+- Si se publica algo, verificar el estado final del workflow de despliegue y **no declarar publicado** lo que aún esté solo en una rama, issue o PR.
+- La regla de la unidad compartida Drive «03 Moderno App» y el aislamiento de otros sistemas continúan vigentes.
+
 ## Protección absoluta de producción
 - Existen usuarios, documentos, archivos y datos reales. No borrar, reinicializar, restaurar, migrar ni escribir datos de producción durante el desarrollo o las pruebas.
 - Trabaja con una rama propia y un **entorno de pruebas verificado**. Preferencia: proyecto Supabase `moderno-pruebas`; comprueba identidad, aislamiento, esquema y credenciales ANTES de escribir. Los proyectos de recuperación histórica no son automáticamente entornos de desarrollo.
