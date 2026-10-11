@@ -51,7 +51,7 @@ const projectNoticeCounts=new Map();
 function projectFolderNotifications(p){
  const E=ModernoProjectInsights.escape,m=ModernoProjectInsights.metrics(p),qs=projectPendingQuotes(p);
  const overdue=(p.tasks||[]).filter(t=>t.col!=='listo'&&!t.done&&ModernoProjectInsights.validDate(t.due)&&t.due<ModernoProjectInsights.today());
- const items=overdue.map(t=>'<li><b>Tarea vencida</b><span>'+E(t.title||'Tarea')+' · '+E(t.due.split('-').reverse().join('/'))+'</span></li>');
+ const items=overdue.map(t=>'<li><button type="button" class="project-overdue-task" onclick="event.stopPropagation();openDailyTask('+Number(p.id)+','+(p.tasks||[]).indexOf(t)+')"><b>Tarea vencida</b><span>'+E(t.title||'Tarea')+' · '+E(t.due.split('-').reverse().join('/'))+'</span></button></li>');
  const count=items.length;
  const key=(typeof ESTUDIO_ID==='undefined'?'':ESTUDIO_ID)+'/'+(state.sessionUser?.id||'')+'/'+p.id,previous=projectNoticeCounts.get(key)||0;projectNoticeCounts.set(key,count);
  if(!count)return '';

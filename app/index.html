@@ -1154,7 +1154,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=3653"></script>
 <script src="/specifications.js?v=340"></script>
-<script src="/project-insights.js?v=3656"></script>
+<script src="/project-insights.js?v=36511"></script>
+<script src="/project-ui.js?v=36511"></script>
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3617"></script>
@@ -4304,13 +4305,16 @@ const ico = (n,c="") => (ICONS[n]||"").replace('class=\"svgi\"','class=\"svgi '+
 /* =================== ROUTER =================== */
 const V = document.getElementById("view");
 function projTab(t){
+ if(t==='resumen')t='proyecto';if(t==='chat')t='cliente';
  if(myAccessLevel()==="colab" && (t==="fin"||t==="resumen")){toast("No tienes acceso a los datos económicos");t="tareas";}
  const previous=state.projTab||'tareas';if(t===previous)return;
  state.projTab=t;render();window.scrollTo(0,0);const m=document.querySelector('.main');if(m)m.scrollTop=0;
- const order=['tareas','listas','obra','archivos','fin','cliente','chat','resumen'];
+ const order=['proyecto','tareas','listas','obra','archivos','fin','cliente'];
  const direction=order.indexOf(t)>order.indexOf(previous)?1:-1;
- if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
  const tabs=document.querySelector('.project-tabs');
+ const active=tabs?.querySelector('[aria-selected="true"]');
+ if(active)tabs.scrollLeft=Math.max(0,active.offsetLeft-tabs.offsetLeft-tabs.clientWidth/2+active.clientWidth/2);
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
  for(let content=tabs?.nextElementSibling;content;content=content.nextElementSibling){
   if(content.animate)content.animate([{opacity:0,transform:'translateX('+(direction*48)+'px)'},{opacity:1,transform:'translateX(0)'}],{duration:280,easing:'cubic-bezier(.22,.61,.36,1)'});
  }
@@ -4343,6 +4347,7 @@ function applyRoleNav(){
   document.querySelectorAll("aside.sidebar .nav-group, aside.sidebar details").forEach(g=>{ const items=[...g.querySelectorAll("[data-view]")]; if(items.length) g.style.display = items.some(x=>x.style.display!=="none") ? "" : "none"; });
 }
 function go(view, arg){
+  if(view!=="proyectos")state.showArchived=false;
   if(!canView(view)){ toast("No tienes acceso a esta sección"); view="home"; arg=undefined; }
   if(view==="proyectos" && state.view!=="proyectos") state.projQ="";
   if(draftEditing() && draftDirty() && view!==state.view){ draftExitModal(view, arg); return; }
@@ -5150,13 +5155,12 @@ function projectFolio(p){
   const E=ModernoDaily.escape,id=Number(p.id),colors=folderColors(p);
   const editable=typeof _accessRole!=='undefined'&&['admin','col'].includes(_accessRole);
   return `<div class="project-folio-shell"><details class="project-folio" style="--folio-front:${colors.front};--folio-back:${colors.back};--folio-ink:${colors.ink}" onkeydown="if(event.key==='Escape'){folioToggle(this,true);this.querySelector('summary').focus();event.stopPropagation()}">
-    <summary onclick="event.preventDefault();go('proyecto',${id})" aria-label="Abrir proyecto ${E(p.num+' '+p.name)}">
+    <summary onclick="event.preventDefault();projectOpen(${id})" aria-label="Abrir proyecto ${E(p.num+' '+p.name)}">
       <span class="folio-scene"><span class="folio-back"></span>
       ${[0,1,2].map(i=>`<span class="folio-sheet folio-sheet-${i}"><span class="folio-sheet-lines" aria-hidden="true"></span></span>`).join('')}
-      <span class="folio-flap"><strong class="folio-name">${E(p.num)} ${E(p.name)}</strong><span class="folio-plus" aria-hidden="true"></span></span></span>
-      <span class="folio-caption"><span class="folio-client">${E(p.client||'Sin cliente asignado')}</span></span>
+      <span class="folio-flap"><div class="folio-title-stack">${projectClientAvatar(p)}<strong class="folio-name">${E(p.num)} ${E(p.name)}</strong></div><span class="folio-plus" aria-hidden="true"></span></span></span>
     </summary>
-    <div class="folio-controls"><button class="btn btn-dark" onclick="go('proyecto',${id})">Abrir proyecto</button>
+    <div class="folio-controls"><button class="btn btn-dark" onclick="projectOpen(${id})">Abrir proyecto</button>
     ${editable?`<button class="btn btn-ghost" onclick="customizeModal(${id})">${ico('editar')} Editar</button><details class="folio-more"><summary aria-label="Más acciones de ${E(p.num)}">···</summary><div><button onclick="customizeModal(${id},'appearance')">${ico('personalizar')} Personalizar carpeta</button><button onclick="duplicateProject(${id})">${ico('dup_proyecto')} Duplicar</button><button onclick="toggleArchive(${id})">${ico('archivar')} ${p.status==='Archivado'?'Desarchivar':'Archivar'}</button><button onclick="deleteProject(${id})">${ico('eliminar')} Eliminar</button></div></details>`:''}</div>
   </details>${typeof projectFolderNotifications==='function'?projectFolderNotifications(p):''}</div>`;
 }
@@ -5615,13 +5619,13 @@ function projectsFadeRows(){
  document.querySelectorAll('.projects-identity .proj-grid').forEach(grid=>{
    const cards=[...grid.children].filter(el=>el.matches('.folder,.project-folio,.project-folio-shell'));
    const rows=[...new Set(cards.map(el=>el.offsetTop))].sort((a,b)=>a-b);
-   cards.forEach(el=>{if(typeof el.animate==='function')el.animate([{opacity:0},{opacity:1}],{duration:360,delay:Math.min(rows.indexOf(el.offsetTop)*120,840),fill:'backwards',easing:'ease-out'});});
+   cards.forEach(el=>{if(typeof el.animate==='function')el.animate([{opacity:0,transform:'translateY(-14px)'},{opacity:1,transform:'translateY(0)'}],{duration:360,delay:Math.min(rows.indexOf(el.offsetTop)*120,840),fill:'backwards',easing:'ease-out'});});
  });
 }
 function projectsViewSet(view){
  const order=['grid','list','time'],previous=state.projView||'grid';
- if(!order.includes(view)||view===previous)return;
- state.projView=view;render();
+ if(!order.includes(view)||(view===previous&&!state.showArchived))return;
+ state.showArchived=false;state.projView=view;render();
  const content=document.querySelector('.projects-view-content'),page=content?.closest('.projects-identity');
  if(page)page.classList.add('projects-switching');
  wsSlideView(content,order.indexOf(view)>order.indexOf(previous)?1:-1);
@@ -5640,7 +5644,7 @@ function vProjects(){
   const activeCount = byBrand(state.projects.filter(p=>!p.tpl && p.status!=="Archivado")).length;
   const buscador = `<div class="flt" style="position:relative;display:inline-flex;align-items:center">
     <span style="position:absolute;left:11px;display:inline-flex;color:var(--ink-faint)">${ico("buscar")}</span>
-    <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Número, nombre o cliente…" aria-label="Buscar proyecto" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
+    <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Buscar por proyecto o cliente" aria-label="Buscar por proyecto o cliente" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
   </div>`;
   return `
   <section class="projects-identity"><header class="projects-header"><h1 class="big" style="margin-bottom:22px">${arch?"Proyectos archivados":`Estos son tus ${activeCount} proyectos`}${userFirst()?`, <span class="hl">${ModernoDaily.escape(userFirst())}</span>`:""}.</h1>
@@ -5650,15 +5654,15 @@ function vProjects(){
       <button class="${!listMode&&!timeMode?'on':''}" title="Cuadrícula" onclick="projectsViewSet('grid')">${ico('grid')}</button>
       <button class="${listMode?'on':''}" title="Lista" onclick="projectsViewSet('list')">${ico('list')}</button>
     </div>
-    <button class="btn ${arch?'btn-dark':'btn-ghost'}" title="Archivados" aria-label="Archivados" style="width:44px;height:44px;padding:0;border-radius:50%;justify-content:center" onclick="state.showArchived=!state.showArchived;render()">${ico('eliminar')}</button>
-    ${arch?"":`<button class="btn btn-dark" title="Nuevo proyecto" aria-label="Nuevo proyecto" style="width:44px;height:44px;padding:0;border-radius:50%;justify-content:center" onclick="newProject()">${ico("mas")}</button>`}
+    <button class="btn projects-archive ${arch?'is-active':'btn-ghost'}" title="${arch?'Volver a proyectos activos':'Proyectos archivados'}" aria-label="${arch?'Volver a proyectos activos':'Proyectos archivados'}" aria-pressed="${arch}" style="width:44px;height:44px;padding:0;border-radius:50%;justify-content:center" onclick="projectsArchivedToggle()">${ico('eliminar')}</button>
+    <button class="btn btn-dark" title="Nuevo proyecto" aria-label="Nuevo proyecto" style="width:44px;height:44px;padding:0;border-radius:50%;justify-content:center" onclick="newProject()">${ico("mas")}</button>
   </div>
   ${PQ?`<div class="daily-filter-info">Para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button></div>`:''}
   </header><div class="projects-view-content">
   ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
   ${timeMode? vTimeline(projs.filter(x=>!x.tpl)) : listMode? `
   <table class="list projects-clean-list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
-    ${projs.length? projs.map(p=>{ const c=folderColors(p); return `<tr style="cursor:pointer" onclick="go('proyecto',${p.id})">
+    ${projs.length? projs.map(p=>{ const c=folderColors(p); return `<tr style="cursor:pointer" onclick="projectOpen(${p.id})">
       <td><span style="display:inline-block;width:22px;height:18px;border-radius:5px;background:linear-gradient(180deg,${c.back} 35%,${c.front} 35%)"></span></td>
       <td><b>${p.icon?p.icon+" ":""}${p.num} ${p.name}</b> ${p.tpl?'<span class="chip tpl">Plantilla</span>':""} ${(p.tags||[]).map(t=>`<span class="chip tag">${t}</span>`).join(" ")}</td>
       <td><span class="chip ${BRAND[p.brand].chip}">${BRAND[p.brand].name}</span></td>
@@ -5670,7 +5674,7 @@ function vProjects(){
         <button class="btn btn-ghost" title="Editar" onclick="event.stopPropagation();customizeModal(${p.id})">${ico('editar')}</button>
         <button class="btn btn-ghost" title="${arch?'Desarchivar':'Archivar'}" onclick="event.stopPropagation();toggleArchive(${p.id})">${arch?"↩":ico('archivar')}</button>
       </td></tr>`}).join("") : `<tr><td colspan="7"><div class="empty">${PQ?"Sin resultados para esta búsqueda.":arch?"Nada archivado todavía.":"Sin proyectos."}</div></td></tr>`}
-    ${archHits.length?`<tr><td colspan="7" style="padding-top:14px"><b style="font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em">Archivados</b></td></tr>${archHits.map(p=>`<tr style="cursor:pointer;opacity:.7" onclick="go('proyecto',${p.id})"><td></td><td><b>${p.num}</b> ${p.name}</td><td>${BRAND[p.brand]?.name||""}</td><td>${p.client||""}</td><td><span class="chip neutral">Archivado</span></td><td>${(p.tasks||[]).length}</td><td></td></tr>`).join("")}`:""}
+    ${archHits.length?`<tr><td colspan="7" style="padding-top:14px"><b style="font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em">Archivados</b></td></tr>${archHits.map(p=>`<tr style="cursor:pointer;opacity:.7" onclick="projectOpen(${p.id})"><td></td><td><b>${p.num}</b> ${p.name}</td><td>${BRAND[p.brand]?.name||""}</td><td>${p.client||""}</td><td><span class="chip neutral">Archivado</span></td><td>${(p.tasks||[]).length}</td><td></td></tr>`).join("")}`:""}
   </tbody></table>`
   : `
   <div class="proj-grid">
@@ -5703,29 +5707,26 @@ function vProject(){
   const gastosProj = fin.filter(e=>e.kind==="out").reduce((s,e)=>s+e.amount,0);
   const cobrado = fin.filter(e=>e.status==="cobr"&&e.kind==="in").reduce((s,e)=>s+e.amount,0);
   const pend = fin.filter(e=>e.status==="pend"&&e.kind==="in").reduce((s,e)=>s+e.amount,0);
-  const tb = state.projTab||"tareas";
+  const tb = projectTabKey(state.projTab||"proyecto");
+  const E=ModernoDaily.escape;
   return `
-  <button class="btn btn-ghost" style="margin-bottom:8px" onclick="navBack()" title="Volver a la página anterior">${ico("btn_atras")} Atrás</button>
-  <div class="crumbs"><b>${b.name}</b> / <span data-go onclick="go('proyectos')">Proyectos</span> / <b>${p.num} ${p.name}</b></div>
-  <div class="proj-head" style="--f-front:${pc.front};background:${pc.front}">
-    <span class="chip neutral" style="background:rgba(255,255,255,.7)">▣ Proyecto · ${b.name}</span>
-    ${p.tpl?`<span class="chip tpl">Plantilla</span>`:""}
-    ${p.tags&&p.tags.length?p.tags.map(t=>`<span class="chip tag">${t}</span>`).join(" "):""}
-    <h1>${p.icon?p.icon+" ":""}${p.num} ${p.name}</h1>
-    ${p.client?`<div style="margin-top:4px;text-decoration:underline;font-size:13px;cursor:pointer" onclick="clientCard(this.dataset.n)" data-n="${p.client}">${p.client}</div>`:""}
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-      <button class="btn btn-ghost" style="background:rgba(255,255,255,.8)" onclick="projLinks(${p.id})">${ico('carpeta')} Carpeta de proyecto</button>
-    </div>
-    <details class="project-options"><summary class="btn btn-ghost">Opciones del proyecto</summary><div class="project-options-body">
-      <button class="btn btn-ghost" style="background:rgba(255,255,255,.75)" onclick="customizeModal(${p.id})">${ico('editar')} Editar datos</button>
-      <button class="btn btn-ghost" onclick="customizeModal(${p.id},'appearance')">${ico('personalizar')} Personalizar carpeta</button>
-      <button class="btn btn-dark" onclick="duplicateProject(${p.id})"><img src="/brand/project-copy.svg" width="18" height="18" alt="" aria-hidden="true"> Duplicar proyecto</button>
+  <div class="project-detail">
+  <div class="crumbs"><b>${E(b.name)}</b> / <span data-go onclick="go('proyectos')">Proyectos</span> / <b>${E(p.num)} ${E(p.name)}</b></div>
+  <div class="proj-head project-detail-head">
+    <h1>${p.icon?E(p.icon)+" ":""}${E(p.num)} ${E(p.name)}</h1>
+    ${p.client?`<button class="project-client-link" onclick="projectClientCard(this.dataset.name)" data-name="${E(p.client)}">${E(p.client)}</button>`:""}
+    ${(p.tags||[]).length?`<div class="project-detail-tags">${p.tags.map(t=>`<span>#${E(String(t).replace(/^#+/,''))}</span>`).join(' ')}</div>`:""}
+    ${p.tpl?'<span class="chip tpl">Plantilla</span>':''}
+    <details class="project-options"><summary class="btn btn-ghost project-options-trigger" aria-label="Opciones del proyecto" title="Opciones del proyecto">${projectMoreIcon()}</summary><div class="project-options-body">
+      <button class="btn btn-ghost" onclick="customizeModal(${p.id})">${ico('editar')} Editar datos</button>
+      <button class="btn btn-ghost" onclick="customizeModal(${p.id},'appearance')">${ico('personalizar')} Personalizar proyecto</button>
+      <button class="btn btn-ghost" onclick="duplicateProject(${p.id})"><img src="/brand/project-copy.svg" width="18" height="18" alt="" aria-hidden="true"> Duplicar proyecto</button>
+      <button class="btn btn-ghost project-delete-action" onclick="deleteProject(${p.id})">${ico('eliminar')} Eliminar proyecto</button>
     </div></details>
   </div>
-  ${projectOverview(p)}
-  <div class="pill-tabs project-tabs" style="margin:24px 0 22px;flex-wrap:wrap">
-    ${[["tareas","tabs.tareas","tab_tareas"],["listas","tabs.listas","tab_listas"],["obra","tabs.obra","tab_obra"],["archivos","tabs.archivos","tab_archivos"],["fin","tabs.fin","finanzas"],["cliente","tabs.cliente","tab_pres"],["chat","tabs.chat","tab_chat"],["resumen","tabs.resumen","resumen_ic"]].map(([k,t,ic])=>`<button class="${tb===k?'on':''}" style="display:inline-flex;align-items:center;gap:6px" onclick="projTab('${k}')">${ico(ic)} ${tr(t)}</button>`).join("")}
-  </div>
+  ${projectTabsHtml(tb)}
+  <section class="project-tab-panel" id="project-tab-panel" role="tabpanel" aria-labelledby="project-tab-${tb}" tabindex="0">
+  ${tb==='proyecto'?projectOverview(p):''}
   ${tb!=="tareas"?"":(function(){ ensurePhases(p); ensureTaskIds(p); const cur=curPhase(p);
     return `<h2 class="sec" style="margin-top:0;display:flex;align-items:center;gap:10px">Tareas <span class="sec-note">Mueve, marca, avanza.</span><button class="btn btn-ghost" style="margin-left:auto;padding:6px 10px;font-size:11.5px" title="Trae tareas de otro proyecto con sus subtareas, sin asignar a nadie" onclick="taskImportModal(${p.id})">${ico("rm_importar")} Importar tareas</button></h2>
     <div style="background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:18px">
@@ -5965,13 +5966,13 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
     <div class="room-card" style="display:grid;place-items:center;color:var(--ink-faint);border:2px dashed #D8D8D5;background:transparent;min-height:130px" onclick="presNew(${p.id})">${ico("mas")} Nueva presentación</div>
   </div>
   `}
-  ${tb!=="resumen"?"":`
+  ${tb!=="proyecto"||myAccessLevel()==="colab"?"":`
   ${(function(){ if(!p.obraF) return ""; 
     const hoy=new Date().toISOString().slice(0,10);
     const totO=p.obraF.reduce((s,f)=>s+f.items.length,0), doneO=p.obraF.reduce((s,f)=>s+f.items.filter(x=>x.done).length,0);
     const late=p.obraF.filter(f=>f.start&&f.end&&f.end<hoy&&f.items.length&&f.items.some(x=>!x.done));
     return `<h2 class="sec" style="margin-top:0">Estado de la obra <span class="sec-note">Lo mismo que ve el contratista, en una línea.</span></h2>
-    <div class="entry-col" style="margin-bottom:22px;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="projTab('obra')">
+    <div class="project-work-progress" style="margin-bottom:22px;padding:14px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;cursor:pointer" onclick="projTab('obra')">
       <b style="font-size:15px">${totO?Math.round(doneO/totO*100):0}%</b>
       <div class="progressbar" style="flex:1;min-width:160px"><div style="width:${totO?doneO/totO*100:0}%"></div></div>
       <span style="font-size:12px;color:var(--ink-faint)">${doneO} de ${totO} puntos</span>
@@ -6127,7 +6128,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
         <button class="addtask" onclick="go('contabilidad')">Ver en Contabilidad →</button>
       </div>
     `}
-  ${tb!=="chat"?"":`
+  ${tb!=="cliente"?"":`
   <h2 class="sec" id="pj-chat" style="margin-top:0">Conversación del equipo <span class="sec-note">Comentarios del proyecto, visibles para todo el Team.</span></h2>
   <div class="chatbox">
     ${(p.chat||[]).map(c=>`
@@ -6140,10 +6141,10 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
       <input id="pChat" placeholder="Escribe un comentario para el equipo…" style="flex:1;border:none;background:var(--white);border-radius:12px;padding:10px 14px;outline:none" onkeydown="if(event.key==='Enter')sendChat(${p.id})">
       <button class="btn btn-dark" onclick="sendChat(${p.id})">Comentar</button>
     </div>
-  </div>`}${tb==="resumen"?`<div style="margin-top:28px;padding-top:14px;border-top:1px solid var(--ink-faint);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  </div>`}${tb==="proyecto"?`<div style="margin-top:28px;padding-top:14px;border-top:1px solid var(--ink-faint);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <small style="color:var(--ink-faint);flex:1">¿Este proyecto te sirve de base para otros? Guárdalo como plantilla: tareas, estancias, fases y puntos de obra, listos para reutilizar.</small>
     <button class="btn btn-ghost" onclick="saveAsTemplate(${p.id})">${ico("copiar")} Guardar como plantilla de proyecto</button>
-  </div>`:""}`;
+  </div>`:""}</section></div>`;
 }
 function sendChat(pid){
   const p = state.projects.find(x=>x.id===pid);
@@ -9275,12 +9276,12 @@ function doDuplicate(id){
 }
 const SWATCH_HEX = ["#F8E88F","#F6B8CD","#F8C9A4","#B4E4C9","#BFDCF5","#C9B8F0","#EE8B7B","#A9C79B","#E4E1DA","#3A2C27"];
 let cz = null;
-function customizeModal(id,mode="data"){
+function customizeModal(id,mode="data",draft=null){
   const p=state.projects.find(x=>x.id===id);if(!p)return;
   const E=ModernoDaily.escape;
-  cz={mode,folderPhotos:[...folderPhotoSources(p)],busy:false,color:p.color||null,icon:p.icon||'',tags:(p.tags||[]).join(', '),client:p.client||'',name:p.name||'',status:p.status||'En progreso'};
+  cz=draft||{mode,folderPhotos:[...folderPhotoSources(p)],busy:false,color:p.color||null,icon:p.icon||'',tags:(p.tags||[]).join(', '),client:p.client||'',name:p.name||'',status:p.status||'En progreso'};
   modal(`<div class="project-editor" data-mode="${mode==='appearance'?'appearance':'data'}">
-    <header class="project-editor-header"><div><h3>${mode==='appearance'?'Personalizar carpeta':'Editar datos del proyecto'}</h3><p>${mode==='appearance'?'Elige el color de la carpeta.':'Nombre, estado, cliente y etiquetas.'}</p></div><button class="btn btn-ghost" aria-label="Cerrar edición" onclick="closeModal()">×</button></header>
+    <header class="project-editor-header"><div><h3>${mode==='appearance'?'Personalizar proyecto':'Editar datos del proyecto'}</h3><p>${mode==='appearance'?'Elige el color de la carpeta.':'Nombre, estado, cliente y etiquetas.'}</p></div><button class="btn btn-ghost" aria-label="Cerrar edición" onclick="closeModal()">×</button></header>
     <div class="project-editor-layout">
       <section class="project-editor-appearance" aria-label="Aspecto de la carpeta">
         <div id="czPreview"></div>
@@ -9292,13 +9293,15 @@ function customizeModal(id,mode="data"){
       <section class="project-editor-fields" aria-label="Datos del proyecto">
         <label for="czName">Nombre <small>${E(p.num)}</small></label><input id="czName" value="${E(cz.name)}" oninput="cz.name=this.value;czPreviewDraw(${id})">
         <label for="czStatus">Estado</label><select id="czStatus" onchange="cz.status=this.value">${['En progreso','En revisión','Entregado','Archivado'].map(x=>`<option ${cz.status===x?'selected':''}>${x}</option>`).join('')}</select>
-        <label for="czClient">Cliente</label><select id="czClient" onchange="cz.client=this.value"><option value="">Sin cliente</option>${state.clients.filter(c=>c.type==='Cliente').map(c=>`<option ${cz.client===c.name?'selected':''}>${E(c.name)}</option>`).join('')}</select>
+        <label for="czClient">Cliente</label><input id="czClient" type="search" autocomplete="off" value="${E(cz.client)}" placeholder="Buscar cliente…" aria-controls="czClientMatches" oninput="projectClientSearch(this.value)"><div id="czClientMatches" class="project-client-matches"></div><button type="button" class="btn btn-ghost project-create-client" onclick="projectClientCreate(${id})">＋ Crear cliente nuevo</button>
         <label for="czTags">Etiquetas</label><input id="czTags" value="${E(cz.tags)}" placeholder="Reforma, vivienda…" oninput="cz.tags=this.value">
       </section>
     </div>
-    <footer class="project-editor-footer"><button class="project-delete" onclick="deleteProject(${id})">Borrar proyecto</button><div><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button id="czSave" class="btn btn-dark" onclick="saveCustomize(${id})">Guardar cambios</button></div></footer>
+    <footer class="project-editor-footer"><div><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button id="czSave" class="btn btn-dark" onclick="saveCustomize(${id})">Guardar cambios</button></div></footer>
   </div>`);
   czPreviewDraw(id);
+  if(typeof projectDrawerOpen==='function')projectDrawerOpen();
+  if(mode!=='appearance')projectClientSearch(cz.client);
 }
 
 function czPick(c,btn){
@@ -9361,6 +9364,7 @@ function saveCustomize(id){
   if(!cz||cz.busy)return;
   const p = state.projects.find(x=>x.id===id);
   if(!p)return;
+  if(cz.mode!=='appearance'&&typeof projectClientValidate==='function'&&!projectClientValidate())return;
   const changeBefore=typeof projectChangeStart==='function'?projectChangeStart(p):null;
   if(cz.mode!=='appearance'){
   if(cz.name && cz.name.trim()) p.name = cz.name.trim();
@@ -9375,7 +9379,10 @@ function saveCustomize(id){
 }
 function deleteProject(id){
   const p = state.projects.find(x=>x.id===id);
-  askConfirm("¿Borrar «"+p.num+" "+p.name+"»? Podrás recuperarlo desde la Papelera.","Borrar proyecto",()=>deleteProjectGo(id));
+  if(!p)return;
+  askConfirm("¿Eliminar «"+ModernoDaily.escape(p.num+" "+p.name)+"»? Se moverá a la Papelera y podrás recuperarlo.","Eliminar proyecto",()=>deleteProjectGo(id));
+  mb.classList.add('project-delete-confirm');
+  const title=mb.querySelector('h3');if(title)title.textContent='Eliminar proyecto';
 }
 function deleteProjectGo(id){
   const p = state.projects.find(x=>x.id===id);
@@ -10147,6 +10154,7 @@ function saveClient(editIdx=-1){
     state.clients.push(data); closeModal(); toast("✓ «"+data.name+"» añadido a la agenda"); render();
     const ctx = state.afterClient; state.afterClient=null;
     if(ctx==="draft" && state.draft){ state.draft.clientIdx = state.clients.length-1; render(); }
+    if(ctx==="projectedit"){ projectClientCreateReturn(data.name); }
     if(ctx==="newproject"){ setTimeout(()=>newProject(data.name),120); }
     if(ctx==="gasto"){ setTimeout(()=>{ entryModal('out'); setTimeout(()=>{ enRestore(); const el=document.getElementById('enSup'); if(el) el.value=data.name; },60); },120); }
   }
@@ -11403,8 +11411,8 @@ function askInputCancel(){ const cb=_inpCancel; _inpOk=_inpCancel=null; closeMod
 
 /* =================== UI HELPERS =================== */
 const ov=document.getElementById("overlay"), mb=document.getElementById("modalBox");
-function modal(html){ mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
-function closeModal(){ ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
+function modal(html){ mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
+function closeModal(){ mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
 ov.addEventListener("click",e=>{ /* clic fuera NO cierra: solo Cancelar/Guardar */ });
 document.addEventListener("keydown",e=>{if(ov.classList.contains("open"))ModernoDialog.trap(e,mb);});
 let toastTimer;
@@ -11456,7 +11464,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.10";
+const MODERNO_VER="v3.65.11";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13274,6 +13282,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36511">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
