@@ -5728,9 +5728,9 @@ function vProject(){
   <section class="project-tab-panel" id="project-tab-panel" role="tabpanel" aria-labelledby="project-tab-${tb}" tabindex="0">
   ${tb==='proyecto'?projectOverview(p):''}
   ${tb!=="tareas"?"":(function(){ ensurePhases(p); ensureTaskIds(p); const cur=curPhase(p);
-    return `<h2 class="sec" style="margin-top:0;display:flex;align-items:center;gap:10px">Tareas <span class="sec-note">Mueve, marca, avanza.</span><button class="btn btn-ghost" style="margin-left:auto;padding:6px 10px;font-size:11.5px" title="Trae tareas de otro proyecto con sus subtareas, sin asignar a nadie" onclick="taskImportModal(${p.id})">${ico("rm_importar")} Importar tareas</button></h2>
+    return `<h2 class="sec" style="margin-top:0;display:flex;align-items:center;gap:10px">Tareas <button class="btn btn-ghost project-task-import" title="Importar tareas" aria-label="Importar tareas" onclick="taskImportModal(${p.id})">${ico("rm_importar")}</button></h2>
     <div style="background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:18px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><small style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint)">Fase del proyecto</small><small style="color:var(--ink-faint);font-size:10px">— pulsa la fase en la que estáis</small>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><small style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint)">Fase del proyecto</small>
     <button class="chip neutral" style="margin-left:auto;font-size:10px;cursor:pointer" onclick="phaseModal(${p.id},-1)">＋ Fase</button></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       ${p.phases.map((ph,i)=>{
@@ -5741,7 +5741,7 @@ function vProject(){
           <span onclick="event.stopPropagation();phaseModal(${p.id},${i})" title="Editar fase (nombre, fechas, color)" style="opacity:.5;display:inline-flex">${ico("editar")}</span>
         </button>`;}).join("")}
     </div>
-    <p style="font-size:10.5px;color:var(--ink-faint);margin:8px 0 0">Las fechas de cada fase (lápiz) alimentan la vista Timeline de Proyectos.</p>
+
   </div>`; })()}
   ${tb!=="tareas"?"":`
   <div class="kanban">
@@ -9741,24 +9741,57 @@ function taskBlockConfirm(p,t,ok){
 function taskImportModal(pid){
   const srcs=state.projects.filter(x=>x.id!==pid && (x.tasks||[]).length);
   if(!srcs.length){ toast("No hay otros proyectos con tareas"); return; }
-  state._tiSel={};
-  modal(`<h3>${ico("rm_importar")} Importar tareas</h3>
-  <p style="font-size:12px;color:var(--ink-soft);margin-top:2px">Llegan a Pendientes con sus subtareas (sin marcar) y las dependencias que haya entre ellas. No traen personas asignadas, comentarios ni fecha límite.</p>
-  <label>Proyecto de origen</label><select id="tiP" onchange="taskImportDraw()">${srcs.map(x=>`<option value="${x.id}">${x.num} ${x.name}${x.tpl?" · plantilla":""}</option>`).join("")}</select>
-  <label style="margin-top:10px;display:flex;align-items:center;gap:8px">Tareas <a href="#" style="font-size:11px;color:var(--ink-faint);margin-left:auto" onclick="event.preventDefault();taskImportAll(true)">todas</a><a href="#" style="font-size:11px;color:var(--ink-faint)" onclick="event.preventDefault();taskImportAll(false)">ninguna</a></label>
-  <div id="tiList" style="max-height:46vh;overflow:auto"></div>
-  <p id="tiN" style="font-size:11px;color:var(--ink-faint)"></p>
-  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-dark" id="tiAdd" onclick="taskImportRun(${pid})">Importar</button></div>`);
+  const E=ModernoDaily.escape,first=srcs[0];state._tiSel={};
+  modal(`<div class="task-import-dialog" data-target="${pid}"><h3>${ico("rm_importar")} Importar tareas</h3>
+  <label for="tiProjectQ">Proyecto de origen</label><input type="hidden" id="tiP" value="${first.id}">
+  <input type="search" id="tiProjectQ" autocomplete="off" value="${E(first.num+' '+first.name)}" placeholder="Buscar proyecto…" aria-controls="tiProjects" onfocus="this.select();taskImportProjects('')" oninput="taskImportProjects(this.value)">
+  <div id="tiProjects" class="task-import-projects"></div>
+  <p id="tiSource" class="task-import-source" hidden>${E(first.num)} ${E(first.name)}</p>
+  <label for="tiQ" class="task-import-label">Tareas <button type="button" onclick="taskImportAll(true)">Todas</button><button type="button" onclick="taskImportAll(false)">Ninguna</button></label>
+  <input type="search" id="tiQ" autocomplete="off" placeholder="Buscar tareas…" oninput="taskImportDraw()" aria-controls="tiList">
+  <div id="tiList" class="task-import-list"></div>
+  <p id="tiN" aria-live="polite"></p>
+  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-dark" id="tiAdd" onclick="taskImportRun(${pid})">Importar</button></div></div>`);
   taskImportDraw();
 }
+function taskImportMatch(value,query){
+  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  return norm(value).includes(norm(query).trim());
+}
+function taskImportProjects(query){
+  const box=document.getElementById('tiProjects');if(!box)return;
+  document.getElementById('tiSource').hidden=false;
+  const target=Number(mb.querySelector('.task-import-dialog').dataset.target),selected=Number(document.getElementById('tiP').value),E=ModernoDaily.escape;
+  const srcs=state.projects.filter(p=>p.id!==target&&(p.tasks||[]).length&&taskImportMatch(p.num+' '+p.name+' '+(p.client||''),query));
+  box.innerHTML=srcs.map(p=>`<button type="button" class="task-import-project ${p.id===selected?'is-selected':''}" aria-pressed="${p.id===selected}" onclick="taskImportSource(${p.id})">${E(p.num)} ${E(p.name)}${p.tpl?' · plantilla':''}</button>`).join('')||'<div class="empty">Sin proyectos que coincidan</div>';
+}
+function taskImportSource(id){
+  const source=state.projects.find(p=>p.id===id);if(!source)return;
+  if(Number(document.getElementById('tiP').value)!==id)state._tiSel={};
+  document.getElementById('tiP').value=id;
+  document.getElementById('tiSource').textContent=source.num+' '+source.name;
+  document.getElementById('tiQ').value='';
+  document.getElementById('tiProjectQ').value=source.num+' '+source.name;
+  document.getElementById('tiSource').hidden=true;document.getElementById('tiProjects').innerHTML='';taskImportDraw();
+}
+function taskImportVisible(sp){return (sp.tasks||[]).filter(t=>taskImportMatch(t.title+' '+(t.type||''),document.getElementById('tiQ')?.value||''));}
 function taskImportDraw(){
-  const sp=state.projects.find(x=>x.id===+document.getElementById("tiP").value); if(!sp) return; ensureTaskIds(sp);
-  document.getElementById("tiList").innerHTML=(sp.tasks||[]).map(t=>`<div class="catalog-item catpick ${(state._tiSel||{})[t.id]?"sel":""}" onclick="taskImportToggle(${t.id},this)"><span class="ck"></span><span style="flex:1;min-width:0"><span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</span><small style="color:var(--ink-faint)">${t.type||""}${(t.subs||[]).length?" · "+(t.subs||[]).length+" subtarea"+((t.subs||[]).length===1?"":"s"):""}${(t.deps||[]).length?" · 🔗":""}</small></span></div>`).join("")||`<div class="empty" style="padding:14px">Sin tareas</div>`;
+  const sp=state.projects.find(x=>x.id===Number(document.getElementById("tiP").value));if(!sp)return;ensureTaskIds(sp);
+  const E=ModernoDaily.escape;
+  document.getElementById("tiList").innerHTML=taskImportVisible(sp).map(t=>`<label class="catalog-item task-import-item"><input type="checkbox" data-task-id="${t.id}" ${(state._tiSel||{})[t.id]?'checked':''} onchange="taskImportToggle(${t.id},this)"><span style="flex:1;min-width:0"><span class="task-import-title">${E(t.title)}</span><small>${E(t.type||"")}${(t.subs||[]).length?" · "+(t.subs||[]).length+" subtarea"+((t.subs||[]).length===1?"":"s"):""}${(t.deps||[]).length?" · 🔗":""}</small></span></label>`).join("")||'<div class="empty">Sin tareas que coincidan</div>';
   taskImportCount();
 }
-function taskImportToggle(id,el){ const S=state._tiSel=state._tiSel||{}; if(S[id]) delete S[id]; else S[id]=1; el.classList.toggle("sel",!!S[id]); taskImportCount(); }
-function taskImportAll(on){ const sp=state.projects.find(x=>x.id===+document.getElementById("tiP").value); state._tiSel={}; if(on)(sp.tasks||[]).forEach(t=>state._tiSel[t.id]=1); taskImportDraw(); }
-function taskImportCount(){ const n=Object.keys(state._tiSel||{}).length; const b=document.getElementById("tiAdd"); if(b){ b.textContent=n?`＋ Importar ${n} tarea${n===1?"":"s"}`:"Importar"; b.disabled=!n; b.style.opacity=n?"1":".5"; } const c=document.getElementById("tiN"); if(c) c.textContent=n?`${n} marcada${n===1?"":"s"}`:"Marca las que quieras y tráelas de una vez"; }
+function taskImportToggle(id,el){const S=state._tiSel=state._tiSel||{};if(el.checked)S[id]=1;else delete S[id];taskImportCount();}
+function taskImportAll(on){
+  const sp=state.projects.find(x=>x.id===Number(document.getElementById("tiP").value));if(!sp)return;
+  if(on){state._tiSel=state._tiSel||{};taskImportVisible(sp).forEach(t=>state._tiSel[t.id]=1);}else state._tiSel={};
+  taskImportDraw();
+}
+function taskImportCount(){
+  const n=Object.keys(state._tiSel||{}).length,b=document.getElementById("tiAdd");
+  if(b){b.textContent='Importar';b.disabled=!n;b.style.opacity=n?'1':'.5';}
+  const c=document.getElementById("tiN");if(c)c.textContent=n?`${n} seleccionada${n===1?'':'s'}`:'';
+}
 function taskImportRun(pid){
   const p=state.projects.find(x=>x.id===pid); ensureTaskIds(p);
   const sp=state.projects.find(x=>x.id===+document.getElementById("tiP").value); if(!sp) return;
@@ -11464,7 +11497,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.12";
+const MODERNO_VER="v3.65.13";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13282,7 +13315,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36512">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36513">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
