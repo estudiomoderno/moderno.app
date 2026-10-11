@@ -1,5 +1,10 @@
 # Decisiones de TALLER
 
+## 2026-10-11 — Moderno.app Premium: evolución visual, no reconstrucción
+
+El propietario aprueba convertir `app.moderno.app` en una aplicación de **acabado visual premium**, elegante, moderna y consistente **sin perder ni rehacer lo que ya funciona**. El orden prioritario es **perfeccionar escritorio web (tipografías, botones, iconos, tarjetas, efectos y transiciones)** y **después** la experiencia visual móvil/tablet. No se autoriza una reescritura, cambios de permisos, datos o lógica de negocio por motivos estéticos. El Taller empezará por auditar los estilos existentes y preparar una propuesta de sistema visual más un piloto pequeño y reversible; solo se aplicarán cambios con pruebas verificadas. Referencia: [DIRECCION-VISUAL-PREMIUM.md](DIRECCION-VISUAL-PREMIUM.md).
+
+
 ## 2026-10-10 — Prioridad: terminar la app y ofrecerla en web y dispositivos
 
 El propietario establece como **prioridad principal terminar Moderno.app** y preparar su disponibilidad en **navegador web**, **descargas para Windows y Mac**, **iPhone**, **iPad** y **teléfonos/tabletas Android**. Estas son plataformas **objetivo**, no versiones cuya existencia se haya comprobado. 🔧 Taller Moderno.app en Codex Cloud sigue siendo exclusivo de la aplicación, incluidas sus variantes multiplataforma; el escaparate `www.moderno.app` y otras webs independientes se desarrollarán en chats separados.

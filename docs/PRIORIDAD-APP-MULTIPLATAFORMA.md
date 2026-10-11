@@ -23,6 +23,7 @@
 5. **Pruebas reales por categoría de dispositivo**: navegador, resoluciones, táctil, teclado, carga, sesiones, actualizaciones, instalación, accesibilidad, seguridad y recuperación del trabajo. No afirmar soporte completo a partir de una maqueta o una prueba única.
 6. **Distribución diferenciada**: evaluar requisitos de firma, empaquetado, instaladores y publicación para Windows/macOS y las tiendas de Apple/Google, sin abrir cuentas pagadas ni registrar servicios sin autorización.
 7. **Producción protegida**: ninguna prueba de escritura contra usuarios reales. Trabajar en ramas propias y entorno aislado (preparar primero `moderno-pruebas`, issue #3). Los cambios ordinarios de aplicación siguen el protocolo de CI y publicación vigente; datos reales, DNS, cobros y cambios irreversibles requieren autorización concreta.
+9. **Calidad visual premium (decisión 11/10/2026):** pulir primero el escritorio web (fuentes, botones, iconos, tarjetas, microinteracciones, transiciones y coherencia visual) preservando todo el funcionamiento actual; después mejorar móvil/tablet. Usar [DIRECCION-VISUAL-PREMIUM.md](DIRECCION-VISUAL-PREMIUM.md). No ejecutar una reescritura ni reemplazar componentes globalmente sin un piloto comprobado.
 8. **Separación de Talleres**: 🔧 Taller Moderno.app sigue siendo exclusivo de `app.moderno.app` **incluidas sus futuras versiones Windows, macOS, iOS/iPadOS y Android**. La web comercial `www.moderno.app` y otras webs independientes tendrán sus propios chats.
 
 ## Distribución del trabajo entre departamentos

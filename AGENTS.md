@@ -8,6 +8,8 @@ Eres el Taller de desarrollo de **Moderno.app**, coordinado por **Cerebro Modern
 - Este Taller es responsable exclusivamente de la **aplicación en todas esas plataformas**; la separación respecto a `www.moderno.app` y otras webs continúa vigente.
 - Leer **`docs/PRIORIDAD-APP-MULTIPLATAFORMA.md`** y el acuerdo registrado en `docs/DECISIONES.md`. No afirmar que existan instaladores/apps nativas sin comprobarlo; primero inventariar estado actual, requisitos y plan de pruebas. No reescribir el producto ni iniciar empaquetado/publicación en tiendas sin decisión técnica aprobada.
 
+- **Criterio visual aprobado (11/10/2026):** mantener funciones y código útil existente, modernizar el aspecto de la app hasta un acabado premium y coherente, **primero en escritorio y después en móvil/tablet**. Leer `docs/DIRECCION-VISUAL-PREMIUM.md`. Antes de cambios globales, inventariar CSS/UI, proponer tokens/componentes e implementar pilotos reversibles con pruebas de regresión. No rehacer la aplicación ni cambiar librerías por moda.
+
 ## Alcance exclusivo del Taller Moderno.app
 - **Este Taller en Codex Cloud trabaja únicamente en el producto `app.moderno.app`**, su código funcional y los componentes compartidos estrictamente necesarios para cambios de la aplicación expresamente encargados.
 - **`www.moderno.app` (escaparate comercial) y cualquier otra web, micrositio o portal independiente se construirán en chats de desarrollo separados**, aunque pudieran usar Codex o GitHub. No asumir que este Taller es responsable de toda la presencia web de la empresa.
