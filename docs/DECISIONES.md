@@ -1,5 +1,12 @@
 # Decisiones de TALLER
 
+## 2026-10-11 — Google Drive exclusivo para Moderno.app
+
+El propietario establece **«Unidades compartidas» → «03 Moderno App»** como la **única unidad compartida de Google Drive autorizada** para todo trabajo referente a Moderno.app. Las demás unidades compartidas quedan **fuera del alcance**; no buscar ni trabajar en ellas para el proyecto sin autorización específica. Se ha comprobado en la conexión Google Drive que la unidad existe, es accesible y contiene carpetas internas organizadas por áreas. Los nuevos materiales y documentación se organizarán dentro de esta unidad.
+
+Esto **no** cambia los servicios canónicos de código (GitHub), documentación pública (GitBook) ni datos operativos (Supabase). **No migrar, eliminar ni cambiar ubicaciones de copias automatizadas existentes** sin una revisión de seguridad y permiso concreto. No subir credenciales ni información sensible a repositorios públicos. Referencia de coordinación: [COORDINACION-CEREBRO-CODEX.md](COORDINACION-CEREBRO-CODEX.md).
+
+
 ## 2026-10-11 — Moderno.app Premium: evolución visual, no reconstrucción
 
 El propietario aprueba convertir `app.moderno.app` en una aplicación de **acabado visual premium**, elegante, moderna y consistente **sin perder ni rehacer lo que ya funciona**. El orden prioritario es **perfeccionar escritorio web (tipografías, botones, iconos, tarjetas, efectos y transiciones)** y **después** la experiencia visual móvil/tablet. No se autoriza una reescritura, cambios de permisos, datos o lógica de negocio por motivos estéticos. El Taller empezará por auditar los estilos existentes y preparar una propuesta de sistema visual más un piloto pequeño y reversible; solo se aplicarán cambios con pruebas verificadas. Referencia: [DIRECCION-VISUAL-PREMIUM.md](DIRECCION-VISUAL-PREMIUM.md).
