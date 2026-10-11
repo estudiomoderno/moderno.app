@@ -5731,8 +5731,8 @@ function vProject(){
     return `<h2 class="sec" style="margin-top:0;display:flex;align-items:center;gap:10px">Tareas <button class="btn btn-ghost project-task-import" title="Importar tareas" aria-label="Importar tareas" onclick="taskImportModal(${p.id})">${ico("rm_importar")}</button></h2>
     <div style="background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:18px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><small style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint)">Fase del proyecto</small>
-    <button class="chip neutral" style="margin-left:auto;font-size:10px;cursor:pointer" onclick="phaseModal(${p.id},-1)">＋ Fase</button></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
+    </div>
+    <div class="project-phases" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
       ${p.phases.map((ph,i)=>{
         const past=i<cur, on=i===cur;
         return `<button draggable="true" ondragstart="phDrag(event,${i})" ondragover="event.preventDefault()" ondrop="phDrop(event,${p.id},${i})" title="Arrastra para reordenar" onclick="setPhase(${p.id},${i})" style="cursor:grab;flex:1;min-width:110px;display:flex;align-items:center;gap:7px;justify-content:center;padding:9px 10px;border-radius:11px;font-size:12px;font-weight:${on?800:600};transition:var(--tr);
@@ -5740,6 +5740,7 @@ function vProject(){
           ${past?"✓":`<span style="width:9px;height:9px;border-radius:3px;background:${ph.color};display:inline-block"></span>`} ${ph.name}
           <span onclick="event.stopPropagation();phaseModal(${p.id},${i})" title="Editar fase (nombre, fechas, color)" style="opacity:.5;display:inline-flex">${ico("editar")}</span>
         </button>`;}).join("")}
+      <button type="button" class="btn btn-ghost project-phase-add" title="Nueva fase" aria-label="Nueva fase" onclick="phaseModal(${p.id},-1)">${ico("mas")}</button>
     </div>
 
   </div>`; })()}
@@ -11497,7 +11498,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.13";
+const MODERNO_VER="v3.65.14";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13315,7 +13316,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36513">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36514">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
