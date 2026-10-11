@@ -5763,11 +5763,6 @@ function vProject(){
   ${tb!=="listas"?"":`
   <div class="dl">
   <h2 class="sec" style="margin-top:0">Listas de compra <span class="sec-note">Estancias, pavimentos y todo lo que se compra.</span></h2>
-  ${(p.rooms||[]).length?`<div class="dl-budget">
-    <div><span class="dl-lab">Presupuesto del Proyecto</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px">${(p.rooms||[]).length} lista${(p.rooms||[]).length===1?"":"s"} · ${(p.rooms||[]).reduce((s,r)=>s+r.sections.reduce((a,x)=>a+x.items.length,0),0)} productos</div></div>
-    <button class="dl-btn" title="Crea un presupuesto con las fichas del proyecto, agrupadas por estancia" onclick="listToQuote(${p.id})">${ico("presupuestos")} Generar presupuesto</button>
-    <b class="dl-num">${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</b>
-  </div>`:""}
   ${[["estancia","Estancias","Nueva estancia"],["pav","Pavimentos y Revestimientos","Nueva lista de pavimentos"],["otra","Otras listas","Nueva lista"]].map(([kind,label,addLabel])=>{
     const ck = "g-"+p.id+"-"+kind, closed = !!(state.collapsed&&state.collapsed[ck]===false);   // abiertos por defecto
     const groupRooms = (p.rooms||[]).filter(r=>(r.kind||"estancia")===kind);
@@ -5791,6 +5786,11 @@ function vProject(){
       </div>`}).join("")}
     <div class="dl-add" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</div>
   </div>`}`}).join("")}
+  ${(p.rooms||[]).length?`<div class="dl-budget" style="margin-top:24px">
+    <div><span class="dl-lab">Presupuesto del Proyecto</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px">${(p.rooms||[]).length} lista${(p.rooms||[]).length===1?"":"s"} · ${(p.rooms||[]).reduce((s,r)=>s+r.sections.reduce((a,x)=>a+x.items.length,0),0)} productos</div></div>
+    <button class="dl-btn" title="Crea un presupuesto con las fichas del proyecto, agrupadas por estancia" onclick="listToQuote(${p.id})">${ico("presupuestos")} Generar presupuesto</button>
+    <b class="dl-num">${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</b>
+  </div>`:""}
   <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap">
     <button class="dl-btn" onclick="exportListsModal(${p.id},'pdf')">${ico('pdf')} Exportar PDF</button>
     <button class="dl-btn" onclick="exportListsModal(${p.id},'xlsx')">${ico('xlsx')} Hoja de cálculo</button>
@@ -11498,7 +11498,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.15";
+const MODERNO_VER="v3.65.16";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
