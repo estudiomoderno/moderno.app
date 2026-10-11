@@ -1,5 +1,11 @@
 # Decisiones de TALLER
 
+## 2026-10-11 — Taller entrega en app.moderno.app; pruebas técnicas invisibles para el propietario
+
+El propietario aclara: cuando encargue cambios al 🔧 Taller Codex quiere **verlos funcionando directamente en `app.moderno.app`**, sin gestionar él una aplicación de pruebas. Se prioriza un circuito autónomo: **rama → controles automatizados → PR revisado → despliegue a la app real y comprobación**, siempre que sea un cambio ordinario acotado y seguro.
+
+**No se elimina la obligación de probar antes de publicar.** El entorno aislado es una herramienta interna, no el producto que el propietario deba usar. Las nuevas funciones con guardado, archivos privados, permisos o migraciones —incluyendo «Documentos → Planos interactivos», fases #24–#26— requieren pruebas con datos ficticios, aislamiento entre estudios y autorización específica antes de aplicar cambios sensibles a producción. Si no se dispone del entorno `moderno-pruebas`, resolver el bloqueo #3 y no experimentar con la base real. Evitar pedir aprobaciones reiteradas para cambios visuales ordinarios una vez verificados; informar solo de resultados confirmados.
+
 ## 2026-10-11 — Encargo integral: Documentos y Planos interactivos (3 fases)
 
 **El propietario aprueba la implementación de las tres fases de «Planos interactivos» dentro de «Documentos» en la pantalla de cada proyecto**, con ejecución a cargo de 🔧 **Taller Codex Moderno.app**. La sección existente de «Espacio de trabajo»/«Archivos y notas» evoluciona a «Documentos», sin perder archivos o notas previos. Mantener «Tareas» y «Listas de compra» al mismo nivel del proyecto; **«Planos» no se añade al menú principal**, sino que vive dentro de «Documentos». Organización prevista: **Planos, Archivos, Referencias y Revisiones**. Verificar el estado de la interfaz real porque el propietario está reorganizándola manualmente.
