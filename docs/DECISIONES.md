@@ -1,5 +1,16 @@
 # Decisiones de TALLER
 
+## 2026-10-11 — Encargo integral: Documentos y Planos interactivos (3 fases)
+
+**El propietario aprueba la implementación de las tres fases de «Planos interactivos» dentro de «Documentos» en la pantalla de cada proyecto**, con ejecución a cargo de 🔧 **Taller Codex Moderno.app**. La sección existente de «Espacio de trabajo»/«Archivos y notas» evoluciona a «Documentos», sin perder archivos o notas previos. Mantener «Tareas» y «Listas de compra» al mismo nivel del proyecto; **«Planos» no se añade al menú principal**, sino que vive dentro de «Documentos». Organización prevista: **Planos, Archivos, Referencias y Revisiones**. Verificar el estado de la interfaz real porque el propietario está reorganizándola manualmente.
+
+Las entregas aprobadas y sus criterios son:
+1. [**Fase 1 — Planos, visor y anotaciones**](https://github.com/estudiomoderno/moderno.app/issues/24): PDF/imágenes, dibujar y escribir, zoom/páginas, guardado recuperable de anotaciones sin modificar el original y exportación.
+2. [**Fase 2 — Conexión con tareas y listas de compra**](https://github.com/estudiomoderno/moderno.app/issues/25): convertir anotaciones en elementos de trabajo con vínculos navegables, permisos y trazabilidad.
+3. [**Fase 3 — Lápiz, revisiones y colaboración**](https://github.com/estudiomoderno/moderno.app/issues/26): interacción táctil y stylus compatible, versiones, aprobaciones y trabajo colaborativo con reglas claras de sincronización.
+
+**Encargo general:** [#23](https://github.com/estudiomoderno/moderno.app/issues/23). El Taller desarrollará **por fases con PR y pruebas independientes**, sin reescribir la app ni contratar dependencias de pago. Antes de escrituras integradas, resolver/validar [Supabase de pruebas #3](https://github.com/estudiomoderno/moderno.app/issues/3); no probar con clientes reales. Diseño, migraciones, permisos, RLS y Storage nuevos requieren tests de aislamiento entre estudios y autorización específica **antes de operaciones productivas sensibles**. El usuario ha aprobado el objetivo de las tres fases, no manipular la base productiva. Crear issues y documentos **no inicia una sesión Codex Cloud automáticamente**, ni equivale a haber implementado o publicado nada.
+
 ## 2026-10-11 — Google Drive exclusivo para Moderno.app
 
 El propietario establece **«Unidades compartidas» → «03 Moderno App»** como la **única unidad compartida de Google Drive autorizada** para todo trabajo referente a Moderno.app. Las demás unidades compartidas quedan **fuera del alcance**; no buscar ni trabajar en ellas para el proyecto sin autorización específica. Se ha comprobado en la conexión Google Drive que la unidad existe, es accesible y contiene carpetas internas organizadas por áreas. Los nuevos materiales y documentación se organizarán dentro de esta unidad.
