@@ -9,7 +9,7 @@ function projectClientAvatar(p){
 function projectOpen(id){go('proyecto',id);if(state.projTab!=='proyecto')projTab('proyecto');}
 function projectsArchivedToggle(){state.showArchived=!state.showArchived;render();projectsFadeRows();}
 function projectTabsHtml(current){
- const tabs=[['proyecto','Proyecto','resumen_ic'],['tareas','Tareas','tab_tareas'],['listas','Compras','tab_listas'],['obra','Seguimiento de obra','tab_obra'],['archivos','Archivos y notas','tab_archivos'],['fin','Finanzas','finanzas'],['cliente','Cliente','tab_pres']];
+ const tabs=[['proyecto','Proyecto','resumen_ic'],['tareas','Tareas','tab_tareas'],['listas','Listas de compra','tab_listas'],['obra','Seguimiento de obra','tab_obra'],['archivos','Documentos','tab_archivos'],['fin','Finanzas','finanzas'],['cliente','Cliente','tab_pres']];
  return `<div class="project-tabs" role="tablist" aria-label="Secciones del proyecto">${tabs.filter(([key])=>key!=='fin'||myAccessLevel()!=='colab').map(([key,label,icon])=>`<button type="button" role="tab" id="project-tab-${key}" aria-controls="project-tab-panel" aria-selected="${current===key}" tabindex="${current===key?0:-1}" class="${current===key?'on':''}" title="${label}" aria-label="${label}" onclick="projTab('${key}')">${ico(icon)}<span class="project-tab-label">${label}</span></button>`).join('')}</div>`;
 }
 function projectDrawerOpen(){
