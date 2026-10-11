@@ -24,12 +24,15 @@
  .project-options-trigger::after{display:none!important}
  .project-detail-head .project-options-body{right:0;min-width:225px;background:var(--app-surface,var(--panel));border:1px solid var(--ui-line);box-shadow:0 12px 30px #0001;border-radius:18px}
  .project-options-body .project-delete-action{color:var(--red-ink)!important}
- .project-tabs{display:flex;align-items:flex-end;gap:10px;padding:4px 8px 0;margin:0;overflow-x:auto;scrollbar-width:none;position:relative;z-index:1}
+ .project-tabs{display:flex;align-items:flex-end;gap:10px;padding:4px 36px 0;margin:0;overflow-x:auto;scrollbar-width:none;position:relative;z-index:1}
  .project-tabs::-webkit-scrollbar{display:none}
  .project-tabs [role=tab]{position:relative;display:grid;place-items:center;border:0;background:var(--app-control,var(--card));color:var(--ink);width:48px;height:48px;flex:0 0 48px;border-radius:50%;margin:0 0 16px;padding:0;cursor:pointer;transition:background 180ms,color 180ms,transform 180ms}
  .project-tabs [role=tab] svg{width:21px;height:21px}
- .project-tabs [role=tab].on{height:64px;margin-bottom:0;padding-bottom:16px;border-radius:24px 24px 0 0;background:var(--app-surface,var(--panel));box-shadow:0 -1px 0 var(--ui-line),1px 0 0 var(--ui-line),-1px 0 0 var(--ui-line)}
- .project-tabs [role=tab].on::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--app-surface,var(--panel))}
+ .project-tabs [role=tab].on{height:64px;margin-bottom:0;padding-bottom:16px;border-radius:24px 24px 0 0;background:var(--app-surface,var(--panel));border:1px solid var(--ui-line);border-bottom:0}
+ /* Inverse corner curves join the active tab to the panel without square shoulders. */
+ .project-tabs [role=tab].on::before,.project-tabs [role=tab].on::after{content:'';position:absolute;bottom:0;width:13px;height:13px;pointer-events:none}
+ .project-tabs [role=tab].on::before{left:-13px;background:radial-gradient(circle at 0 0,transparent 11px,var(--ui-line) 11px 12px,var(--app-surface,var(--panel)) 12px)}
+ .project-tabs [role=tab].on::after{right:-13px;background:radial-gradient(circle at 100% 0,transparent 11px,var(--ui-line) 11px 12px,var(--app-surface,var(--panel)) 12px)}
  .project-tabs [role=tab]:hover:not(.on){background:var(--gold-soft);transform:translateY(-2px)}
  .project-tabs [role=tab]:focus-visible,.project-client-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
  .project-tab-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
@@ -59,7 +62,7 @@
  @media(max-width:700px){
   .projects-toolbar>.btn{flex:0 0 44px}
   .project-tab-panel{padding:16px;border-radius:20px}
-  .project-tabs{gap:8px;padding-left:4px;padding-right:4px}
+  .project-tabs{gap:8px;padding-left:32px;padding-right:16px}
   .project-tabs [role=tab]{width:44px;height:44px;flex-basis:44px}
   .project-tabs [role=tab].on{height:60px;border-radius:22px 22px 0 0}
   .project-work-progress .progressbar{min-width:100px!important}
