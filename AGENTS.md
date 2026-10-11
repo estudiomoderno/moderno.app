@@ -40,6 +40,7 @@ Al comenzar cada encargo:
 - **Gasto OpenAI API**: Cerebro aprobó **hasta 20 EUR/mes** para el Taller. Leer `docs/PRESUPUESTO-CODEX-API.md` antes de plantear cualquier acción facturable. No iniciar ni reintentar llamadas API de Codex hasta verificar proyecto exclusivo, límite de gasto duro inferior al máximo autorizado, alertas y entorno aislado. Suspender si no se puede confirmar coste o límite; nunca aumentarlo automáticamente.
 
 ## Coordinación
+- **Google Drive:** unidad compartida exclusiva de Moderno.app: **«03 Moderno App»** (bajo «Unidades compartidas»). **No utilizar otras unidades compartidas** para buscar, leer o guardar materiales de este proyecto sin permiso expreso. Ver `docs/COORDINACION-CEREBRO-CODEX.md` antes de utilizar Drive; reutilizar carpetas existentes, no mover/copiar archivos ni modificar copias programadas sin verificación y autorización.
 - **Cerebro (ChatGPT):** define intención, decisiones, prioridad y aceptación.
 - **Codex / Taller:** implementa, comprueba, prepara/despliega cambios seguros y comunica evidencias.
 - **Control y Negocio (ChatGPT):** revisan riesgos y necesidades comerciales; sus decisiones deben quedar por escrito en una fuente compartida.

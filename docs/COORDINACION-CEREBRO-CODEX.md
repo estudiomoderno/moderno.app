@@ -43,6 +43,14 @@ Esto expresa las responsabilidades *previstas*, no que todas las funcionalidades
 5. **Despliegue:** para cambios ordinarios aprobados, tras pasar pruebas, se admite publicación automática siguiendo la autorización general del usuario y verificando Actions y recursos servidos. **Solicitar autorización específica** si afecta datos reales, DNS, pagos reales o decisiones difíciles de revertir.
 6. **Cierre:** Codex deja enlace al commit/PR y resumen breve con pruebas realmente ejecutadas, limitaciones, versión comprobada y plan de reversión. Actualiza GitBook solo si su vinculación se ha confirmado.
 
+## Unidad compartida oficial de Google Drive (11/10/2026)
+- Para tareas de **Moderno.app**, utilizar **exclusivamente la unidad compartida de Google Workspace «03 Moderno App»**. Es una *unidad compartida*, no una carpeta homónima dentro de Mi unidad. Se ha confirmado que existe y es accesible.
+- **No buscar, leer, copiar, guardar ni modificar archivos en otras unidades compartidas** para este proyecto, aunque sus nombres también mencionen «Moderno», salvo autorización expresa del propietario para un caso concreto. Cuando se use Drive, resolver primero la unidad «03 Moderno App» y acotar las búsquedas a ella.
+- Centralizar **documentación, diseños, materiales de trabajo y nuevos archivos del proyecto** dentro de esa unidad, usando su estructura de carpetas ya existente; evitar duplicados innecesarios.
+- **Excepciones por responsabilidad técnica:** el código fuente y sus versiones permanecen en GitHub; la documentación publicada de usuarios en GitBook; los datos operativos de la aplicación en Supabase según el entorno. «Todo» no autoriza subir credenciales, datos de clientes, exportaciones privadas, ni publicar información sensible en el repositorio público.
+- **No mover archivos ni cambiar destinos de copias automatizadas existentes** sin verificar sus dependencias, su recuperación y sin autorización específica. Esta decisión rige nuevas operaciones y no implica una migración automática.
+- Los demás chats no leen automáticamente esta conversación: consultar este acuerdo en las fuentes compartidas al iniciar un trabajo relacionado.
+
 ## Seguridad y continuidad
 - El proyecto de pruebas preferente es **moderno-pruebas**. Comprobar su aislamiento antes de cualquier escritura. Otros proyectos de recuperación son históricos y no deben utilizarse para nuevas pruebas sin verificarlo.
 - El repositorio es público. No incorporar claves, credenciales, usuarios reales, backups, tokens, registros sensibles ni datos de clientes.
