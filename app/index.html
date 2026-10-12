@@ -1158,8 +1158,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/project-ui.js?v=36519"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
-<script src="/project-documents.js?v=36519"></script>
-<link rel="stylesheet" href="/plan-editor.css?v=36522">
+<script src="/project-documents.js?v=36523"></script>
+<link rel="stylesheet" href="/plan-editor.css?v=36523">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3617"></script>
@@ -5991,13 +5991,11 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
   `}
   ${tb!=="archivos"?"":`
   <div style="max-width:820px">
-      ${ModernoDocuments.heading()}
-      <div class="entry-col">
-        ${(p.files||[]).map((f,i)=>`<div class="entry project-document-row" style="cursor:pointer" onclick="fileView(${p.id},${i})">📄 <span class="project-document-name">${ModernoDaily.escape(fname(f))}</span>
-          ${fobj(f).signed?`<span class="chip" style="background:#DBEBDD;color:#2E6B4F;font-size:10px">✍ Firmado</span>`:""}
-          ${!fileOk(f)?`<span class="chip" style="background:var(--red);color:var(--red-ink);font-size:10px" title="Subido con una versión anterior: solo se guardó el nombre. Súbelo de nuevo para que se vea en la app y en los portales.">Solo nombre · vuelve a subirlo</span>`:fileCli(f)?`<span class="chip" style="background:#DBEBDD;color:#2E6B4F;font-size:10px" title="El cliente lo ve en Documentos (se cambia en la pestaña Cliente)">Lo ve el cliente</span>`:`<span class="chip neutral" style="font-size:10px" title="Oculto al cliente (se cambia en la pestaña Cliente)">Oculto al cliente</span>`}
-          ${ModernoDocuments.action(p,i)}
-          <button class="chip neutral" style="margin-left:auto" onclick="event.stopPropagation();trashFile(${p.id},${i})">✕</button></div>`).join("")||`<div class="empty" style="padding:16px">Sin archivos todavía. Sube planos, renders, contratos…</div>`}
+      ${ModernoProjectDocuments.heading()}
+      <div class="project-files-grid">
+        ${(p.files||[]).map((f,i)=>ModernoProjectDocuments.card(p,i,{available:fileOk(f),clientVisible:fileCli(f)})).join("")||`<div class="empty" style="padding:16px">Sin archivos todavía. Sube planos, renders, contratos…</div>`}
+      </div>
+      <div class="project-file-upload">
         <label class="btn btn-ghost" style="background:var(--white);width:100%;justify-content:center;cursor:pointer">${ico("import")} Subir archivos
           <input type="file" multiple style="display:none" onchange="addFiles(${p.id},this.files)"></label>
         <p style="font-size:11px;color:var(--ink-faint);margin-top:8px">Se guardan en la nube del estudio y aparecen en «Documentos» del portal del cliente y en el portal de obra.</p>
@@ -11503,7 +11501,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.22";
+const MODERNO_VER="v3.65.23";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
