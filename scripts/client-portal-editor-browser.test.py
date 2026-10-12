@@ -35,6 +35,18 @@ with sync_playwright() as p:
         assert page.locator('.client-room-sharing .client-room-modes button').count()==8
         assert page.locator('.client-shared-documents .project-file-card').count()==3
         assert page.evaluate('JSON.stringify(state.projects[0])===original')
+        page.locator('[data-client-welcome]').get_by_role('button',name='Editar',exact=True).click()
+        assert page.locator('#cliWelTa').evaluate('(e)=>e===document.activeElement')
+        assert page.locator('[data-client-welcome]').evaluate('(e)=>e.getAnimations().some(a=>a.effect.getTiming().duration===220)')
+        page.locator('#cliWelTa').fill('Borrador ficticio')
+        page.get_by_role('button',name='Cancelar',exact=True).click()
+        assert page.locator('#cliWelTa').count()==0
+        assert page.evaluate('JSON.stringify(state.projects[0])===original')
+        page.emulate_media(reduced_motion='reduce')
+        page.locator('[data-client-welcome]').get_by_role('button',name='Editar',exact=True).click()
+        assert page.locator('[data-client-welcome]').evaluate('(e)=>e.getAnimations().length')==0
+        page.get_by_role('button',name='Cancelar',exact=True).click()
+        page.emulate_media(reduced_motion='no-preference')
         assert page.get_by_role('checkbox',name='Compartir Histórico.pdf',exact=True).is_disabled()
         assert not page.get_by_role('checkbox',name='Compartir Plano.pdf',exact=True).is_checked()
         assert page.get_by_role('checkbox',name='Compartir Acta.txt',exact=True).is_checked()
