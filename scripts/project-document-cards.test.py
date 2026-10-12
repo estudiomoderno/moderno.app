@@ -32,7 +32,8 @@ with sync_playwright() as p:
         page.evaluate("()=>{window.ModernoDaily={escape:ModernoDocuments.E};window.projectPlanOpen=(id,index)=>calls.push(['annotate',id,index]);document.querySelector('[data-view=plantillas]').onclick=()=>go('plantillas');window.original=JSON.stringify(state.projects);render();}")
         assert page.locator('.project-file-card').count()==3
         assert page.get_by_role('heading',name='Planos y Archivos',exact=True).count()==1
-        assert page.locator('textarea').input_value()=='Notas originales <literal>'
+        assert page.get_by_role('heading',name='Notas del proyecto',exact=True).count()==0
+        assert page.evaluate('state.projects[0].notes')=='Notas originales <literal>'
         first=page.locator('.project-file-card').nth(0).bounding_box();second=page.locator('.project-file-card').nth(1).bounding_box()
         assert abs(first['y']-second['y'])<1 and first['x']!=second['x']
         page.get_by_role('button',name='Abrir Plano ficticio.pdf',exact=True).click()

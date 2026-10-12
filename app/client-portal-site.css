@@ -36,3 +36,7 @@ body.portalmode #view{overflow:visible}
  .client-product-body{display:grid;grid-row:span 5;grid-template-rows:subgrid;row-gap:0;align-items:start}
  .client-product-body>.btn{align-self:end}
 }
+
+.client-room-sharing .dl-card{cursor:default}.client-room-sharing .dl-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}.client-room-modes{margin:0;padding:0 12px 14px;display:flex;flex-wrap:wrap;gap:5px}.client-room-modes button{font-size:11px;white-space:normal}
+.client-document-choices{display:flex;flex-direction:column;gap:8px;max-height:55vh;overflow:auto;margin:14px 0}.client-document-choice{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card,#e7e2d2);border-radius:12px;text-transform:none;letter-spacing:0;font-size:13px;cursor:pointer}.client-document-choice span{flex:1;min-width:0;overflow-wrap:anywhere}.client-document-choice input{width:18px;height:18px;flex:none;accent-color:var(--ink,#242424)}.client-document-choice[hidden]{display:none}.client-document-choice small{font-size:11px;color:var(--ink-soft,#666)}
+@media(max-width:600px){.client-room-sharing .dl-grid{grid-template-columns:minmax(0,1fr)}}

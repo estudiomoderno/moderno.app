@@ -18,14 +18,14 @@ var ModernoProjectDocuments = (() => {
     if(!type(file))return '';
     return `<button type="button" class="btn btn-ghost project-plan-open" ${file.subiendo||!(file.url||file.data)?'disabled title="Archivo pendiente de subida o sin contenido"':''} data-project="${E(project.id)}" data-index="${index}" onclick="event.stopPropagation();projectPlanOpen(Number(this.dataset.project),Number(this.dataset.index))">Ver y anotar</button>`;
   }
-  function card(project,index,{available,clientVisible}={}) {
+  function card(project,index,{available,clientVisible,actions=true}={}) {
     const stored=(project.files||[])[index],file=typeof stored==='string'?{name:stored}:stored||{},name=String(file.name||'Archivo');
     if(available===undefined)available=Boolean(file.url||file.data||file.body||file.docRef);
     if(clientVisible===undefined)clientVisible=file.cli!==false;
     const ext=name.includes('.')?name.split('.').pop().slice(0,5).toUpperCase():'DOC',id=E(project.id),label=E(name);
     const data=`data-project="${id}" data-index="${index}"`;
     const visibility=!available?'<span class="project-file-status is-missing" title="Solo se guardó el nombre. Vuelve a subirlo para abrir el archivo.">Solo nombre</span>':`<span class="project-file-status">${clientVisible?'Lo ve el cliente':'Oculto al cliente'}</span>`;
-    return `<article class="project-file-card"><button type="button" class="project-file-open" ${data} aria-label="Abrir ${label}" onclick="fileView(Number(this.dataset.project),Number(this.dataset.index))"><span class="project-file-sheet" aria-hidden="true"><span class="project-file-fold"></span><span class="project-file-extension">${E(ext)}</span><span class="project-file-lines"></span></span><strong class="project-document-name">${label}</strong></button><div class="project-file-meta">${file.signed?'<span class="project-file-status is-signed">Firmado</span>':''}${visibility}</div><div class="project-file-actions">${action(project,index)}<button type="button" class="project-file-delete" ${data} aria-label="Eliminar archivo ${label}" title="Eliminar archivo" onclick="trashFile(Number(this.dataset.project),Number(this.dataset.index))">×</button></div></article>`;
+    return `<article class="project-file-card"><button type="button" class="project-file-open" ${data} aria-label="Abrir ${label}" onclick="fileView(Number(this.dataset.project),Number(this.dataset.index))"><span class="project-file-sheet" aria-hidden="true"><span class="project-file-fold"></span><span class="project-file-extension">${E(ext)}</span><span class="project-file-lines"></span></span><strong class="project-document-name">${label}</strong></button><div class="project-file-meta">${file.signed?'<span class="project-file-status is-signed">Firmado</span>':''}${visibility}</div>${actions?`<div class="project-file-actions">${action(project,index)}<button type="button" class="project-file-delete" ${data} aria-label="Eliminar archivo ${label}" title="Eliminar archivo" onclick="trashFile(Number(this.dataset.project),Number(this.dataset.index))">×</button></div>`:''}</article>`;
   }
   async function readBlob(source,type,signal) {
     const response=await fetch(source,{signal,credentials:'omit'});
