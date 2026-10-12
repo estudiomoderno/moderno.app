@@ -22,34 +22,57 @@ with sync_playwright() as p:
     for width in [1280,390]:
         page=browser.new_page(viewport={'width':width,'height':1000});errors=[]
         page.on('pageerror',lambda e:errors.append(str(e)));page.route('**/*',lambda r:r.abort())
-        page.set_content('<meta name="viewport" content="width=device-width"><style>'+style+'</style><main id="view" style="max-width:820px;margin:auto;padding:18px"></main><div id="modal" hidden style="position:fixed;inset:8%;overflow:auto;background:#f8f6ef;border:1px solid #ddd;border-radius:20px;padding:24px;z-index:100"></div>')
-        for name in ['client-portal-site.css','plan-editor.css']:page.add_style_tag(path=str(repo/'app'/name))
+        page.set_content('<meta name="viewport" content="width=device-width"><style>'+style+'</style><main id="view" style="margin:auto;padding:18px"></main><div id="modal" hidden style="position:fixed;inset:8%;overflow:auto;background:#f8f6ef;border:1px solid #ddd;border-radius:20px;padding:24px;z-index:100"></div>')
+        for name in ['client-portal-site.css','plan-editor.css','brand/project-options.css']:page.add_style_tag(path=str(repo/'app'/name))
         page.add_script_tag(content=fixture);page.add_script_tag(content=toggle)
         for name in ['project-documents.js','client-portal-site.js']:page.add_script_tag(path=str(repo/'app'/name))
-        page.evaluate("()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const ctx=c.getContext('2d');ctx.fillStyle='#dfd9cb';ctx.fillRect(0,0,600,400);ctx.fillStyle='#f8f6ef';ctx.fillRect(40,40,240,280);ctx.fillStyle='#aebcb2';ctx.fillRect(320,80,240,240);const image=c.toDataURL('image/png');window.fileImageAttrs=()=> 'src="'+image+'"';window.ModernoDaily={escape:s=>String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')};window.original=JSON.stringify(state.projects[0]);render();}")
+        page.evaluate("""()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const ctx=c.getContext('2d');ctx.fillStyle='#dfd9cb';ctx.fillRect(0,0,600,400);ctx.fillStyle='#f8f6ef';ctx.fillRect(40,40,240,280);ctx.fillStyle='#aebcb2';ctx.fillRect(320,80,240,240);const image=c.toDataURL('image/png');window.fileImageAttrs=()=> 'src="'+image+'"';window.ModernoDaily={escape:s=>String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')};window.original=JSON.stringify(state.projects[0]);render();}""")
         text=page.locator('#view').inner_text()
-        for removed in ['El cliente nunca ve costes internos','Una imagen para recibir','Aparecerán en Documentos','Respuestas del cliente','Conversación del equipo']:
+        for removed in ['El cliente nunca ve costes internos','Una imagen para recibir','Aparecerán en Documentos','Respuestas del cliente','Conversación del equipo','Conversación con el cliente','Por cada lista']:
             assert removed not in text
         assert page.locator('.client-room-sharing .dl-card').count()==2
         assert page.locator('.client-room-sharing .dl-mosaic').count()==2
-        assert page.locator('.client-room-sharing .opt-pills button').count()==8
-        assert page.locator('.client-shared-documents .project-file-card').count()==1
-        assert page.evaluate('JSON.stringify(state.projects[0])===original')
-        page.get_by_role('button',name='Seleccionar documentos',exact=True).click()
+        assert page.locator('.client-room-sharing .client-room-modes button').count()==8
+        assert page.locator('.client-shared-documents .project-file-card').count()==3
         assert page.evaluate('JSON.stringify(state.projects[0])===original')
         assert page.get_by_role('checkbox',name='Compartir Histórico.pdf',exact=True).is_disabled()
+        assert not page.get_by_role('checkbox',name='Compartir Plano.pdf',exact=True).is_checked()
+        assert page.get_by_role('checkbox',name='Compartir Acta.txt',exact=True).is_checked()
         assert page.get_by_role('checkbox',name='Compartir Portada.png',exact=True).count()==0
         assert page.get_by_role('checkbox',name='Compartir Enlace',exact=True).count()==0
-        page.get_by_role('searchbox',name='Buscar documentos',exact=True).fill('plano')
-        assert page.locator('.client-document-choice:visible').count()==1
+        geometry=page.evaluate("()=>{const root=document.querySelector('.client-project-editor').getBoundingClientRect(),img=document.querySelector('.client-cover-editor>img').getBoundingClientRect();return {root:root.width,img:img.width,ratio:img.width/img.height,overflow:document.documentElement.scrollWidth>innerWidth,first:document.querySelector('.client-project-editor>h2').nextElementSibling.className}}")
+        assert geometry['root']>width-60,geometry
+        assert abs(geometry['root']-geometry['img'])<2,geometry
+        assert abs(geometry['ratio']-(3 if width>600 else 2))<.05,geometry
+        assert not geometry['overflow'],geometry
+        assert geometry['first']=='client-cover-editor',geometry
+        assert page.locator('.client-room-modes:visible').count()==0
+        assert not page.locator('.client-cover-adjust').evaluate('(e)=>e.open')
+        page.locator('.client-cover-adjust>summary').click()
+        page.locator('[data-cover-x]').fill('25')
+        assert page.locator('.client-cover-editor>img').evaluate('(e)=>e.style.objectPosition')=='25% 50%'
+        page.get_by_role('button',name='Guardar encuadre',exact=True).click()
+        assert page.evaluate('JSON.parse(state.projects[0].files[0].body).coverPosition.x')==25
+        page.locator('.client-cover-adjust>summary').click()
         page.get_by_role('checkbox',name='Compartir Plano.pdf',exact=True).check()
         assert page.evaluate('state.projects[0].files[2].cli')
         assert page.evaluate('state.projects[0].files[0].cli&&state.projects[0].files[1].cli&&state.projects[0].files[3].cli')
-        page.get_by_role('button',name='Listo',exact=True).click()
-        assert page.locator('.client-shared-documents .project-file-card').count()==2
+        page.get_by_role('checkbox',name='Compartir Acta.txt',exact=True).uncheck()
+        assert page.evaluate('!state.projects[0].files[3].cli&&state.projects[0].files[2].cli&&state.projects[0].files[0].cli&&state.projects[0].files[1].cli')
+        assert page.locator('.client-shared-documents .project-file-card').count()==3
         page.get_by_role('button',name='Abrir Plano.pdf',exact=True).click()
         assert page.evaluate('openedFile')==[1,2]
-        page.locator('.client-room-sharing .dl-card').nth(0).get_by_role('button',name='Puede comentar',exact=True).click()
+        room=page.locator('.client-room-sharing .dl-card').nth(0)
+        room.locator('summary').click()
+        assert room.get_by_role('button',name='Solo ver',exact=True).get_attribute('aria-pressed')=='true'
+        page.locator('.client-room-sharing .dl-card').nth(1).locator('summary').click()
+        assert not room.locator('details').evaluate('(e)=>e.open')
+        room.locator('summary').click()
+        room.locator('summary').press('Escape')
+        assert page.locator('.client-room-modes:visible').count()==0
+        room.locator('summary').click()
+        room.get_by_role('button',name='Puede comentar',exact=True).click()
+        assert page.locator('.client-room-modes:visible').count()==0
         assert page.evaluate("state.projects[0].rooms[0].cliMode==='coment'&&state.projects[0].rooms[1].cliMode==='off'")
         assert page.evaluate("state.projects[0].notes==='Notas conservadas'&&state.projects[0].chat[0].txt==='Conversación conservada'&&state.projects[0].cliMsgs[0].t==='Respuesta conservada'")
         if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'client-editor-{width}.png'),full_page=True)
@@ -58,6 +81,6 @@ with sync_playwright() as p:
         assert page.locator('#view textarea').count()==0
         assert page.evaluate("state.projects[0].notes==='Notas conservadas'")
         assert not errors,errors
-        print(width,'PASS: textos y bloques retirados, tarjetas de estancias, selección/búsqueda de archivos, índices y flags correctos, datos históricos conservados')
+        print(width,'PASS: textos y bloques retirados, tarjetas de estancias, selección directa de archivos, portada panorámica a todo el ancho y menú de listas, índices y flags correctos, datos históricos conservados')
         page.close()
     browser.close()
