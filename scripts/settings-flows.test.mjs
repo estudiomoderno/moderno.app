@@ -77,20 +77,16 @@ test('single payment setting preserves distinct legacy bank values and old docum
 });
 
 
-test('document tabs do not trigger the global settings navigation handler',()=>{
- const h=harness();h.state.projects=[{id:1,files:[]}];h.state.view='proyecto';
- const docs=fs.readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8');vm.runInContext(docs,h.ctx);
- for(const section of ['archivos','planos']){
-  const markup=h.ctx.ModernoDocuments.tabs(1);
-  const button=[...markup.matchAll(/<button[^>]*>/g)].map(m=>m[0]).find(s=>s.includes(`="${section}"`));
-  const dataset={};for(const [,key,value] of button.matchAll(/data-([a-z-]+)="([^"]*)"/g))dataset[key.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=value;
-  const target={dataset,closest:selector=>Object.keys(dataset).some(k=>selector.includes(`[data-${k.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}]`))?target:null};
-  h.ctx.clickedDocumentTab=target;
-  const onclick=button.match(/onclick="([^"]*)"/)[1];vm.runInContext(`(function(){${onclick}}).call(clickedDocumentTab)`,h.ctx);
-  h.click(target);
-  assert.equal(h.state.view,'proyecto',`clicking ${section} must stay in the project`);
-  assert.equal(h.ctx.projectDocumentSection(1),section);
- }
- const target={dataset:{section:'estudio'},closest:selector=>selector.includes('[data-section]')?target:null};h.click(target);
+test('document annotation action does not trigger the global settings navigation handler',()=>{
+ const h=harness();h.state.projects=[{id:1,files:[{name:'fake.pdf',data:'fake'}]}];h.state.view='proyecto';
+ vm.runInContext(fs.readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8'),h.ctx);
+ let opened=0;h.ctx.projectPlanOpen=(id,index)=>{assert.equal(id,1);assert.equal(index,0);opened++;};h.ctx.event={stopPropagation(){}};
+ const button=h.ctx.ModernoDocuments.action(h.state.projects[0],0);
+ const dataset={};for(const [,key,value] of button.matchAll(/data-([a-z-]+)="([^"]*)"/g))dataset[key.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=value;
+ const target={dataset,closest:selector=>Object.keys(dataset).some(k=>selector.includes(`[data-${k.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}]`))?target:null};
+ h.ctx.clickedDocumentTab=target;
+ const onclick=button.match(/onclick="([^"]*)"/)[1];vm.runInContext(`(function(){${onclick}}).call(clickedDocumentTab)`,h.ctx);h.click(target);
+ assert.equal(opened,1);assert.equal(h.state.view,'proyecto');
+ const settingsTarget={dataset:{section:'estudio'},closest:selector=>selector.includes('[data-section]')?settingsTarget:null};h.click(settingsTarget);
  assert.equal(h.state.view,'ajustes','settings controls still navigate to Settings');
 });
