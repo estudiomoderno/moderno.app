@@ -1,6 +1,13 @@
 /* Original files are immutable. Cloud saving requires a verified persistence adapter. */
 var ModernoPlanEditor=(()=>{
  const labels={pen:'Lápiz',highlight:'Resaltador',arrow:'Flecha',rect:'Rectángulo',ellipse:'Círculo',text:'Texto',note:'Nota',erase:'Borrador',pan:'Desplazar'};
+ // Annotations stay in original page coordinates at every viewing angle.
+ function sourcePoint(p,turns){const t=((turns%4)+4)%4;return t===1?{x:p.y,y:1-p.x}:t===2?{x:1-p.x,y:1-p.y}:t===3?{x:1-p.y,y:p.x}:{x:p.x,y:p.y};}
+ function rotateCanvas(source,turns){
+  const t=((turns%4)+4)%4;if(!t)return source;
+  const target=window.document.createElement('canvas');target.width=t%2?source.height:source.width;target.height=t%2?source.width:source.height;
+  const ctx=target.getContext('2d');ctx.translate(t===1||t===2?target.width:0,t===2||t===3?target.height:0);ctx.rotate(t*Math.PI/2);ctx.drawImage(source,0,0);return target;
+ }
  function draw(ctx,items,w,h){
   for(const a of items){const p=a.points.map(p=>({x:p.x*w,y:p.y*h})),first=p[0],last=p[p.length-1];ctx.save();ctx.strokeStyle=a.color;ctx.fillStyle=a.color;ctx.lineWidth=a.width*w/1000;ctx.lineCap='round';ctx.lineJoin='round';
    if(a.type==='highlight'){ctx.globalAlpha=.3;ctx.lineWidth*=5;}
@@ -33,9 +40,9 @@ var ModernoPlanEditor=(()=>{
   const start=length;put('xref\n0 '+offsets.length+'\n0000000000 65535 f \n');for(const o of offsets.slice(1))put(String(o).padStart(10,'0')+' 00000 n \n');put('trailer\n<< /Size '+offsets.length+' /Root 1 0 R >>\nstartxref\n'+start+'\n%%EOF');return new Blob(parts,{type:'application/pdf'});
  }
  async function mount(root,{document:doc,model,adapter,onError=()=>{}}){
-  model.check();let page=1,zoom=1,tool='pen',draft=null,pointer=null,closed=false,sequence=0,busy=false;const listeners=[];
-  root.classList.add('plan-editor');root.innerHTML='<h2>Plano</h2><div class="plan-toolbox"><div class="plan-palette" role="group" aria-label="Colores y grosor"></div><div class="plan-toolbar" role="group" aria-label="Herramientas"></div></div><textarea aria-label="Texto o nota" placeholder="Escribe y toca el plano para colocar el texto" maxlength="1000" hidden></textarea><div class="plan-viewport" tabindex="0" aria-label="Área del plano"><div class="plan-paper"><canvas></canvas><canvas tabindex="0" aria-label="Lienzo de anotación"></canvas></div></div><div class="plan-toolbar plan-navigation" role="group" aria-label="Páginas, zoom y exportación"></div><details class="plan-selection"><summary>Anotaciones</summary><label class="plan-sr-only" for="plan-annotation-selection">Seleccionar anotación</label><select id="plan-annotation-selection" aria-label="Seleccionar anotación"><option value="">Ninguna</option></select><button type="button" data-action="delete">Eliminar seleccionada</button></details><p class="plan-status" role="status" aria-live="polite"></p>';
-  const $=s=>root.querySelector(s),toolbar=$('.plan-toolbar'),nav=$('.plan-navigation'),base=$('canvas'),overlay=$('canvas+canvas'),paper=$('.plan-paper'),viewport=$('.plan-viewport'),status=$('.plan-status'),text=$('textarea'),selection=$('select');
+  model.check();let page=1,zoom=1,tool='pen',draft=null,pointer=null,closed=false,sequence=0,busy=false;const listeners=[],rotations=new Map();
+  root.classList.add('plan-editor');root.innerHTML='<h2>Plano</h2><div class="plan-toolbox"><div class="plan-palette" role="group" aria-label="Colores y grosor"></div><div class="plan-toolbar" role="group" aria-label="Herramientas"></div></div><textarea aria-label="Texto o nota" placeholder="Escribe y toca el plano para colocar el texto" maxlength="1000" hidden></textarea><div class="plan-viewport" tabindex="0" aria-label="Área del plano"><div class="plan-paper"><div class="plan-sheet"><canvas></canvas><canvas tabindex="0" aria-label="Lienzo de anotación"></canvas></div></div></div><div class="plan-toolbar plan-navigation" role="group" aria-label="Páginas, zoom y exportación"></div><details class="plan-selection"><summary>Anotaciones</summary><label class="plan-sr-only" for="plan-annotation-selection">Seleccionar anotación</label><select id="plan-annotation-selection" aria-label="Seleccionar anotación"><option value="">Ninguna</option></select><button type="button" data-action="delete">Eliminar seleccionada</button></details><p class="plan-status" role="status" aria-live="polite"></p>';
+  const $=s=>root.querySelector(s),toolbar=$('.plan-toolbar'),nav=$('.plan-navigation'),base=$('canvas'),overlay=$('canvas+canvas'),paper=$('.plan-paper'),sheet=$('.plan-sheet'),viewport=$('.plan-viewport'),status=$('.plan-status'),text=$('textarea'),selection=$('select');
   const listen=(el,event,fn)=>{el.addEventListener(event,fn);listeners.push(()=>el.removeEventListener(event,fn));};
   const report=e=>{status.textContent=e.message||String(e);onError(e);};
   const paths={
@@ -55,11 +62,12 @@ var ModernoPlanEditor=(()=>{
    'Página siguiente':'<path d="m9 5 7 7-7 7"/>',
    'Alejar':'<path d="M5 12h14"/>',
    'Acercar':'<path d="M5 12h14 M12 5v14"/>',
+   'Girar 90°':'<path d="M20 8a8 8 0 1 0 0 8 M20 3v5h-5"/>',
    'Ajustar':'<path d="M9 3H3v6 M15 3h6v6 M3 15v6h6 M21 15v6h-6"/>',
    'Exportar PDF':'<path d="M12 3v12 m-5-5 5 5 5-5 M4 16v5h16v-5"/>'
   };
   function button(label,fn,parent=toolbar){const b=window.document.createElement('button');b.type='button';b.setAttribute('aria-label',label);b.title=label;b.className='plan-icon-button';b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[label]||'')+'</svg>';listen(b,'click',async()=>{try{if(pointer!==null)throw Error('Termina el trazo antes de cambiar de herramienta');await fn();}catch(e){report(e);}});parent.append(b);return b;}
-  const toolButtons={};['pen','highlight','erase','text','note','arrow','rect','ellipse','pan'].forEach(key=>toolButtons[key]=button(labels[key],()=>{tool=key;draft=null;text.hidden=!['text','note'].includes(tool);redraw();}));
+  const toolButtons={};['pen','highlight','erase','text','note','arrow','rect','ellipse','pan'].forEach(key=>toolButtons[key]=button(labels[key],()=>{tool=key;draft=null;text.hidden=!['text','note'].includes(tool);size();redraw();}));
   const palette=$('.plan-palette'),color=window.document.createElement('input');color.type='color';color.value='#242424';color.setAttribute('aria-label','Color');color.title='Otro color';
   const colors=[['Negro','#242424'],['Azul','#1677ff'],['Rosa','#ed43ab'],['Blanco','#ffffff'],['Amarillo','#d9ca4a'],['Verde','#318568'],['Rojo','#ed4d3d']];
   const swatches=[];
@@ -70,32 +78,41 @@ var ModernoPlanEditor=(()=>{
   const save=button('Guardar',async()=>{await model.save(adapter);status.textContent=model.dirty?'Hay cambios posteriores pendientes':'Guardado confirmado';redraw();},nav);save.disabled=!adapter;
   if(!adapter){save.title='Guardado en la nube pendiente de activación';const notice=window.document.createElement('p');notice.className='project-plan-notice';notice.textContent='Anotaciones temporales · Exporta el PDF antes de cerrar.';$('.plan-status').before(notice);}
   const previous=button('Página anterior',()=>changePage(page-1),nav),next=button('Página siguiente',()=>changePage(page+1),nav),pageLabel=window.document.createElement('span');pageLabel.className='plan-page-label';nav.append(pageLabel);
+  button('Girar 90°',()=>{if(busy)throw Error('Espera a que termine la página');model.check();rotations.set(page,((rotations.get(page)||0)+1)%4);zoom=1;size();status.textContent='Página girada · Se incluirá en el PDF exportado';},nav);
   button('Alejar',()=>{zoom=Math.max(.25,zoom-.25);size();},nav);button('Acercar',()=>{zoom=Math.min(4,zoom+.25);size();},nav);button('Ajustar',()=>{zoom=1;size();},nav);
-  button('Exportar PDF',async()=>{if(busy)throw Error('Espera a que termine la página');model.check();const record=model.snapshot(),pages=[];let pixels=0,bytes=0;busy=true;
-   try{for(let i=1;i<=doc.pages;i++){model.check();status.textContent='Exportando página '+i+' de '+doc.pages;const c=window.document.createElement('canvas');await doc.render(i,c);pixels+=c.width*c.height;if(pixels>100e6)throw Error('Exporta un documento más pequeño (límite de 100 megapíxeles)');draw(c.getContext('2d'),record.annotations.filter(a=>a.page===i),c.width,c.height);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));if(!blob)throw Error('No se pudo exportar');bytes+=blob.size;if(bytes>100*1024*1024)throw Error('Exportación demasiado grande');const dimensions=doc.pageSize?await doc.pageSize(i):null;pages.push({width:c.width,height:c.height,pageWidth:dimensions?.width,pageHeight:dimensions?.height,jpeg:new Uint8Array(await blob.arrayBuffer())});c.width=c.height=0;}model.check();const url=URL.createObjectURL(pdf(pages)),a=window.document.createElement('a');a.href=url;a.download='plano-anotado.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent='PDF exportado (páginas rasterizadas)';}finally{busy=false;}
+  button('Exportar PDF',async()=>{if(busy)throw Error('Espera a que termine la página');model.check();const record=model.snapshot(),angles=new Map(rotations),pages=[];let pixels=0,bytes=0;busy=true;
+   try{for(let i=1;i<=doc.pages;i++){model.check();status.textContent='Exportando página '+i+' de '+doc.pages;const c=window.document.createElement('canvas');await doc.render(i,c);pixels+=c.width*c.height;if(pixels>100e6)throw Error('Exporta un documento más pequeño (límite de 100 megapíxeles)');draw(c.getContext('2d'),record.annotations.filter(a=>a.page===i),c.width,c.height);const t=angles.get(i)||0,output=rotateCanvas(c,t);const blob=await new Promise(r=>output.toBlob(r,'image/jpeg',.92));if(!blob)throw Error('No se pudo exportar');bytes+=blob.size;if(bytes>100*1024*1024)throw Error('Exportación demasiado grande');const dimensions=doc.pageSize?await doc.pageSize(i):null;pages.push({width:output.width,height:output.height,pageWidth:t%2?dimensions?.height:dimensions?.width,pageHeight:t%2?dimensions?.width:dimensions?.height,jpeg:new Uint8Array(await blob.arrayBuffer())});c.width=c.height=0;if(output!==c)output.width=output.height=0;}model.check();const url=URL.createObjectURL(pdf(pages)),a=window.document.createElement('a');a.href=url;a.download='plano-anotado.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent='PDF exportado (páginas rasterizadas)';}finally{busy=false;}
   },nav);
   nav.append(save);
-  function size(){if(!base.width)return;const w=Math.max(100,viewport.clientWidth-24)*zoom;paper.style.width=w+'px';paper.style.height=w*base.height/base.width+'px';}
+  function size(){
+   if(!base.width)return;
+   const toolbox=$('.plan-toolbox');root.style.setProperty('--plan-toolbox-height',toolbox.offsetHeight+'px');root.style.setProperty('--plan-text-height',(text.hidden?0:text.offsetHeight+12)+'px');
+   const css=window.getComputedStyle(viewport),w=Math.max(1,viewport.clientWidth-parseFloat(css.paddingLeft)-parseFloat(css.paddingRight)),h=Math.max(1,viewport.clientHeight-parseFloat(css.paddingTop)-parseFloat(css.paddingBottom));
+   const t=rotations.get(page)||0,rotatedW=t%2?base.height:base.width,rotatedH=t%2?base.width:base.height,scale=Math.min(w/rotatedW,h/rotatedH)*zoom,pw=rotatedW*scale,ph=rotatedH*scale;
+   paper.style.width=pw+'px';paper.style.height=ph+'px';paper.style.marginTop=Math.max(0,(h-ph)/2)+'px';
+   sheet.style.width=base.width*scale+'px';sheet.style.height=base.height*scale+'px';sheet.style.transform='translate('+(t===1||t===2?pw:0)+'px,'+(t===2||t===3?ph:0)+'px) rotate('+(t*90)+'deg)';
+  }
+  function pointAt(e){return sourcePoint(ModernoPlanAnnotations.point(e.clientX,e.clientY,overlay.getBoundingClientRect()),rotations.get(page)||0);}
   function redraw(){if(closed)return;overlay.getContext('2d').clearRect(0,0,overlay.width,overlay.height);draw(overlay.getContext('2d'),model.items.filter(a=>a.page===page).concat(draft&&!draft.pan?[draft]:[]),overlay.width,overlay.height);Object.entries(toolButtons).forEach(([k,b])=>b.setAttribute('aria-pressed',k===tool));undo.disabled=!model.undoStack.length;redo.disabled=!model.redoStack.length;previous.disabled=page<=1;next.disabled=page>=doc.pages;pageLabel.textContent=page+' / '+doc.pages;const chosen=selection.value;selection.replaceChildren(new Option('Ninguna',''));model.items.filter(a=>a.page===page).forEach((a,i)=>selection.add(new Option(labels[a.type]+' '+(i+1)+(a.text?' · '+a.text.slice(0,30):''),a.id)));selection.value=chosen;}
   async function changePage(n){if(n<1||n>doc.pages||busy)return;if(pointer!==null)throw Error('Termina el trazo antes de cambiar de página');model.check();busy=true;const token=++sequence;
    try{const c=window.document.createElement('canvas');await doc.render(n,c);model.check();if(closed||token!==sequence)return;page=n;base.width=c.width;base.height=c.height;base.getContext('2d').drawImage(c,0,0);overlay.width=c.width;overlay.height=c.height;size();redraw();}finally{busy=false;}
   }
   listen($('[data-action=delete]'),'click',()=>{try{model.remove(selection.value);redraw();}catch(e){report(e);}});
-  listen(overlay,'pointerdown',e=>{try{if(busy||pointer!==null)return;if(e.button!==0)return;model.check(tool!=='pan');pointer=e.pointerId;overlay.setPointerCapture(pointer);const p=ModernoPlanAnnotations.point(e.clientX,e.clientY,overlay.getBoundingClientRect());
+  listen(overlay,'pointerdown',e=>{try{if(busy||pointer!==null)return;if(e.button!==0)return;model.check(tool!=='pan');pointer=e.pointerId;overlay.setPointerCapture(pointer);const p=pointAt(e);
    if(tool==='pan'){draft={pan:true,x:e.clientX,y:e.clientY,left:viewport.scrollLeft,top:viewport.scrollTop};return;}
    if(tool==='erase'){const hit=[...model.items].reverse().find(a=>a.page===page&&a.points.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<.035));if(hit)model.remove(hit.id);redraw();return;}
    if(['text','note'].includes(tool)&&!text.value.trim()){pointer=null;status.textContent='Escribe el texto antes de colocarlo';text.focus();return;}
    draft={id:crypto.randomUUID(),page,type:tool,color:color.value,width:Number(width.value),points:[p],text:text.value.trim(),createdAt:new Date().toISOString()};redraw();
   }catch(e){pointer=null;report(e);}});
-  listen(overlay,'pointermove',e=>{if(e.pointerId!==pointer||!draft)return;try{model.check(tool!=='pan');if(draft.pan){viewport.scrollLeft=draft.left+draft.x-e.clientX;viewport.scrollTop=draft.top+draft.y-e.clientY;return;}const p=ModernoPlanAnnotations.point(e.clientX,e.clientY,overlay.getBoundingClientRect());if(['pen','highlight'].includes(draft.type)){if(draft.points.length<10000)draft.points.push(p);}else draft.points=[draft.points[0],p];redraw();}catch(e){report(e);}});
+  listen(overlay,'pointermove',e=>{if(e.pointerId!==pointer||!draft)return;try{model.check(tool!=='pan');if(draft.pan){viewport.scrollLeft=draft.left+draft.x-e.clientX;viewport.scrollTop=draft.top+draft.y-e.clientY;return;}const p=pointAt(e);if(['pen','highlight'].includes(draft.type)){if(draft.points.length<10000)draft.points.push(p);}else draft.points=[draft.points[0],p];redraw();}catch(e){report(e);}});
   function finish(e){if(e.pointerId!==pointer)return;try{if(draft&&!draft.pan)model.add(draft);}catch(error){report(error);}finally{draft=null;pointer=null;redraw();}}
   listen(overlay,'pointerup',finish);listen(overlay,'pointercancel',finish);listen(overlay,'lostpointercapture',finish);
   listen(root,'keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;try{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?model.redo():model.undo();redraw();}if(e.key==='Delete'&&selection.value){model.remove(selection.value);redraw();}}catch(error){report(error);}});
   listen(window,'beforeunload',e=>{if(model.dirty||draft){e.preventDefault();e.returnValue='';}});
-  const resize=new ResizeObserver(size);resize.observe(viewport);
+  const resize=new ResizeObserver(size);resize.observe(viewport);resize.observe($('.plan-toolbox'));resize.observe(text);
   try{await changePage(1);}catch(error){closed=true;listeners.forEach(fn=>fn());resize.disconnect();await doc.close?.();throw error;}
   return {async close(){if(model.dirty||draft)throw Error('Hay anotaciones pendientes: exporta o guarda antes de cerrar');closed=true;sequence++;listeners.forEach(fn=>fn());resize.disconnect();await doc.close?.();root.replaceChildren();},discard:async()=>{closed=true;sequence++;listeners.forEach(fn=>fn());resize.disconnect();await doc.close?.();root.replaceChildren();}};
  }
- return {openFile,mount,draw,pdf};
+ return {openFile,mount,draw,pdf,sourcePoint};
 })();
 if(typeof module!=='undefined')module.exports=ModernoPlanEditor;
