@@ -8,10 +8,11 @@ test('plan filtering preserves original indices and excludes generated documents
  const p={files:['legacy.pdf',{name:'Notes',body:'text',type:'application/pdf'},{name:'invoice.pdf',docRef:'F-1'},{name:'plan.PDF'},{name:'render',type:'image/png'},{name:'sheet.xlsx'}]};const original=JSON.stringify(p);
  assert.deepEqual(docs.plans(p).map(x=>x.index),[3,4]);assert.equal(JSON.stringify(p),original);
 });
-test('document markup escapes filenames and marks unavailable sections honestly',()=>{
- const s=docs.list({id:1,files:[{name:'<img src=x onerror=alert(1)>.pdf'}]});assert.ok(s.includes('&lt;img'));assert.ok(!s.includes('<img'));
- const tabs=docs.tabs(1);assert.match(tabs,/disabled title="Pendiente de implementación">Referencias/);assert.match(tabs,/disabled title="Pendiente de implementación">Revisiones/);
- assert.match(s,/anotaciones son temporales/);assert.match(s,/Ver original/);
+test('documents show one heading with annotation actions only for PDF and images',()=>{
+ assert.match(docs.heading(),/>Planos y Archivos<\/h2>/);assert.doesNotMatch(docs.heading(),/<button|<nav|Referencias|Revisiones|data-section/);
+ const project={id:1,files:[{name:'plan.pdf',data:'fake'},{name:'notes.txt',body:'text'},{name:'missing.png'}]};
+ assert.match(docs.action(project,0),/Ver y anotar/);assert.match(docs.action(project,0),/event.stopPropagation\(\)/);assert.equal(docs.action(project,1),'');assert.match(docs.action(project,2),/disabled/);
+ const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');assert.match(html,/ModernoDocuments.heading\(\)/);assert.match(html,/ModernoDocuments.action\(p,i\)/);assert.doesNotMatch(html,/projectDocumentSection|ModernoDocuments.tabs/);
 });
 test('bounded download rejects HTTP and size errors without returning partial content',async()=>{
  const saved=global.fetch;

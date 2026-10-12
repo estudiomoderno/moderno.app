@@ -52,7 +52,16 @@ with sync_playwright() as p:
             page.mouse.down()
             page.mouse.move(box["x"]+box["width"]*.4, box["y"]+box["height"]*.4, steps=5)
             page.mouse.up()
+        # Palette and thickness are usable without opening an extra menu.
+        page.get_by_role('button', name='Color Azul', exact=True).click()
+        page.get_by_label('Grosor', exact=True).fill('5')
+        assert page.get_by_role('button', name='Color Azul', exact=True).get_attribute('aria-pressed') == 'true'
+        assert page.get_by_role('button', name='Lápiz', exact=True).locator('svg').count() == 1
+        assert page.locator('.plan-selection').get_attribute('open') is None
+        assert page.locator('.plan-toolbox').bounding_box()['width'] <= viewport['width']
         stroke()
+        assert page.evaluate("model.items[0].color") == '#1677ff'
+        assert page.evaluate("model.items[0].width") == 5
         assert page.evaluate("model.items.length") == 1
         first = page.evaluate("model.items[0].points[0]")
         assert abs(first["x"]-.2) < .01 and abs(first["y"]-.3) < .01
@@ -63,7 +72,7 @@ with sync_playwright() as p:
         assert page.evaluate("model.items[0].points[0]") == first
         page.get_by_role("button", name="Ajustar", exact=True).click()
         page.get_by_role("button", name="Página siguiente", exact=True).click()
-        page.wait_for_function("document.querySelector('.plan-navigation span').textContent === '2 / 2'")
+        page.wait_for_function("document.querySelector('.plan-page-label').textContent === '2 / 2'")
         page.get_by_role("button", name="Rectángulo", exact=True).click()
         stroke()
         page.get_by_role("button", name="Texto", exact=True).click()

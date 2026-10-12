@@ -34,22 +34,47 @@ var ModernoPlanEditor=(()=>{
  }
  async function mount(root,{document:doc,model,adapter,onError=()=>{}}){
   model.check();let page=1,zoom=1,tool='pen',draft=null,pointer=null,closed=false,sequence=0,busy=false;const listeners=[];
-  root.classList.add('plan-editor');root.innerHTML='<h2>Plano</h2><div class="plan-toolbar" role="group" aria-label="Herramientas"></div><div class="plan-toolbar plan-navigation"></div><textarea aria-label="Texto o nota" placeholder="Texto o nota" maxlength="1000" hidden></textarea><div class="plan-selection"><label>Anotaciones de esta página <select aria-label="Seleccionar anotación"><option value="">Ninguna</option></select></label><button type="button" data-action="delete">Eliminar seleccionada</button></div><div class="plan-viewport" tabindex="0" aria-label="Área del plano"><div class="plan-paper"><canvas></canvas><canvas tabindex="0" aria-label="Lienzo de anotación"></canvas></div></div><p class="plan-status" role="status" aria-live="polite"></p>';
+  root.classList.add('plan-editor');root.innerHTML='<h2>Plano</h2><div class="plan-toolbox"><div class="plan-palette" role="group" aria-label="Colores y grosor"></div><div class="plan-toolbar" role="group" aria-label="Herramientas"></div></div><textarea aria-label="Texto o nota" placeholder="Escribe y toca el plano para colocar el texto" maxlength="1000" hidden></textarea><div class="plan-viewport" tabindex="0" aria-label="Área del plano"><div class="plan-paper"><canvas></canvas><canvas tabindex="0" aria-label="Lienzo de anotación"></canvas></div></div><div class="plan-toolbar plan-navigation" role="group" aria-label="Páginas, zoom y exportación"></div><details class="plan-selection"><summary>Anotaciones</summary><label class="plan-sr-only" for="plan-annotation-selection">Seleccionar anotación</label><select id="plan-annotation-selection" aria-label="Seleccionar anotación"><option value="">Ninguna</option></select><button type="button" data-action="delete">Eliminar seleccionada</button></details><p class="plan-status" role="status" aria-live="polite"></p>';
   const $=s=>root.querySelector(s),toolbar=$('.plan-toolbar'),nav=$('.plan-navigation'),base=$('canvas'),overlay=$('canvas+canvas'),paper=$('.plan-paper'),viewport=$('.plan-viewport'),status=$('.plan-status'),text=$('textarea'),selection=$('select');
   const listen=(el,event,fn)=>{el.addEventListener(event,fn);listeners.push(()=>el.removeEventListener(event,fn));};
   const report=e=>{status.textContent=e.message||String(e);onError(e);};
-  function button(label,fn,parent=toolbar){const b=window.document.createElement('button');b.type='button';b.textContent=label;listen(b,'click',async()=>{try{if(pointer!==null)throw Error('Termina el trazo antes de cambiar de herramienta');await fn();}catch(e){report(e);}});parent.append(b);return b;}
-  const toolButtons={};Object.entries(labels).forEach(([key,label])=>toolButtons[key]=button(label,()=>{tool=key;draft=null;text.hidden=!['text','note'].includes(tool);redraw();}));
-  const color=window.document.createElement('input');color.type='color';color.value='#242424';color.setAttribute('aria-label','Color');toolbar.append(color);
-  const width=window.document.createElement('input');width.type='range';width.min=1;width.max=12;width.value=3;width.setAttribute('aria-label','Grosor');toolbar.append(width);
+  const paths={
+   'Lápiz':'<path d="m4 16 11-11 4 4-11 11H4v-4Z M13 7l4 4"/>',
+   'Resaltador':'<path d="m8 16-3-3 10-10 6 6-10 10-3-3Z M5 13l-3 7h7 M3 22h16"/>',
+   'Borrador':'<path d="m3 14 9-10a2 2 0 0 1 3 0l6 6-10 11H9l-6-5v-2Z M8 9l8 8 M11 21h10"/>',
+   'Texto':'<path d="M4 5h16 M12 5v15 M8 20h8 M4 5v3 M20 5v3"/>',
+   'Nota':'<path d="M4 3h16v12l-6 6H4V3Z M14 21v-6h6 M8 7h8 M8 11h5"/>',
+   'Flecha':'<path d="M4 20 20 4 M8 4h12v12"/>',
+   'Rectángulo':'<rect x="4" y="5" width="16" height="14" rx="2"/>',
+   'Círculo':'<ellipse cx="12" cy="12" rx="9" ry="7"/>',
+   'Desplazar':'<path d="M7 13V7a2 2 0 0 1 4 0v5-8a2 2 0 0 1 4 0v8-6a2 2 0 0 1 4 0v7-3a2 2 0 0 1 4 0v5c0 5-3 7-8 7-3 0-5-2-7-5l-3-4a2 2 0 0 1 3-2l2 2"/>',
+   'Deshacer':'<path d="m9 5-5 5 5 5 M4 10h10a6 6 0 0 1 0 12"/>',
+   'Rehacer':'<path d="m15 5 5 5-5 5 M20 10H10a6 6 0 0 0 0 12"/>',
+   'Guardar':'<path d="M4 3h13l4 4v14H4V3Z M8 3v6h8V3 M8 21v-7h9v7"/>',
+   'Página anterior':'<path d="m15 5-7 7 7 7"/>',
+   'Página siguiente':'<path d="m9 5 7 7-7 7"/>',
+   'Alejar':'<path d="M5 12h14"/>',
+   'Acercar':'<path d="M5 12h14 M12 5v14"/>',
+   'Ajustar':'<path d="M9 3H3v6 M15 3h6v6 M3 15v6h6 M21 15v6h-6"/>',
+   'Exportar PDF':'<path d="M12 3v12 m-5-5 5 5 5-5 M4 16v5h16v-5"/>'
+  };
+  function button(label,fn,parent=toolbar){const b=window.document.createElement('button');b.type='button';b.setAttribute('aria-label',label);b.title=label;b.className='plan-icon-button';b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[label]||'')+'</svg>';listen(b,'click',async()=>{try{if(pointer!==null)throw Error('Termina el trazo antes de cambiar de herramienta');await fn();}catch(e){report(e);}});parent.append(b);return b;}
+  const toolButtons={};['pen','highlight','erase','text','note','arrow','rect','ellipse','pan'].forEach(key=>toolButtons[key]=button(labels[key],()=>{tool=key;draft=null;text.hidden=!['text','note'].includes(tool);redraw();}));
+  const palette=$('.plan-palette'),color=window.document.createElement('input');color.type='color';color.value='#242424';color.setAttribute('aria-label','Color');color.title='Otro color';
+  const colors=[['Negro','#242424'],['Azul','#1677ff'],['Rosa','#ed43ab'],['Blanco','#ffffff'],['Amarillo','#d9ca4a'],['Verde','#318568'],['Rojo','#ed4d3d']];
+  const swatches=[];
+  function syncColors(){swatches.forEach(([value,b])=>b.setAttribute('aria-pressed',color.value===value));}
+  colors.forEach(([name,value])=>{const b=button('Color '+name,()=>{color.value=value;syncColors();},palette);b.className='plan-color';b.style.setProperty('--swatch',value);b.innerHTML='<span aria-hidden="true"></span>';swatches.push([value,b]);});palette.append(color);listen(color,'input',syncColors);syncColors();
+  const width=window.document.createElement('input');width.type='range';width.min=1;width.max=12;width.value=3;width.setAttribute('aria-label','Grosor');width.title='Grosor';palette.append(width);
   const undo=button('Deshacer',()=>{model.undo();redraw();}),redo=button('Rehacer',()=>{model.redo();redraw();});
-  const save=button('Guardar',async()=>{await model.save(adapter);status.textContent=model.dirty?'Hay cambios posteriores pendientes':'Guardado confirmado';redraw();});save.disabled=!adapter;
-  if(!adapter){save.title='Guardado en la nube pendiente de activación';const notice=window.document.createElement('p');notice.className='project-plan-notice';notice.textContent='Anotaciones temporales: exporta el PDF antes de cerrar. Guardado en la nube pendiente.';toolbar.before(notice);status.textContent=notice.textContent;}
-  const previous=button('Página anterior',()=>changePage(page-1),nav),next=button('Página siguiente',()=>changePage(page+1),nav),pageLabel=window.document.createElement('span');nav.append(pageLabel);
+  const save=button('Guardar',async()=>{await model.save(adapter);status.textContent=model.dirty?'Hay cambios posteriores pendientes':'Guardado confirmado';redraw();},nav);save.disabled=!adapter;
+  if(!adapter){save.title='Guardado en la nube pendiente de activación';const notice=window.document.createElement('p');notice.className='project-plan-notice';notice.textContent='Anotaciones temporales · Exporta el PDF antes de cerrar.';$('.plan-status').before(notice);}
+  const previous=button('Página anterior',()=>changePage(page-1),nav),next=button('Página siguiente',()=>changePage(page+1),nav),pageLabel=window.document.createElement('span');pageLabel.className='plan-page-label';nav.append(pageLabel);
   button('Alejar',()=>{zoom=Math.max(.25,zoom-.25);size();},nav);button('Acercar',()=>{zoom=Math.min(4,zoom+.25);size();},nav);button('Ajustar',()=>{zoom=1;size();},nav);
   button('Exportar PDF',async()=>{if(busy)throw Error('Espera a que termine la página');model.check();const record=model.snapshot(),pages=[];let pixels=0,bytes=0;busy=true;
    try{for(let i=1;i<=doc.pages;i++){model.check();status.textContent='Exportando página '+i+' de '+doc.pages;const c=window.document.createElement('canvas');await doc.render(i,c);pixels+=c.width*c.height;if(pixels>100e6)throw Error('Exporta un documento más pequeño (límite de 100 megapíxeles)');draw(c.getContext('2d'),record.annotations.filter(a=>a.page===i),c.width,c.height);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.92));if(!blob)throw Error('No se pudo exportar');bytes+=blob.size;if(bytes>100*1024*1024)throw Error('Exportación demasiado grande');const dimensions=doc.pageSize?await doc.pageSize(i):null;pages.push({width:c.width,height:c.height,pageWidth:dimensions?.width,pageHeight:dimensions?.height,jpeg:new Uint8Array(await blob.arrayBuffer())});c.width=c.height=0;}model.check();const url=URL.createObjectURL(pdf(pages)),a=window.document.createElement('a');a.href=url;a.download='plano-anotado.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent='PDF exportado (páginas rasterizadas)';}finally{busy=false;}
   },nav);
+  nav.append(save);
   function size(){if(!base.width)return;const w=Math.max(100,viewport.clientWidth-24)*zoom;paper.style.width=w+'px';paper.style.height=w*base.height/base.width+'px';}
   function redraw(){if(closed)return;overlay.getContext('2d').clearRect(0,0,overlay.width,overlay.height);draw(overlay.getContext('2d'),model.items.filter(a=>a.page===page).concat(draft&&!draft.pan?[draft]:[]),overlay.width,overlay.height);Object.entries(toolButtons).forEach(([k,b])=>b.setAttribute('aria-pressed',k===tool));undo.disabled=!model.undoStack.length;redo.disabled=!model.redoStack.length;previous.disabled=page<=1;next.disabled=page>=doc.pages;pageLabel.textContent=page+' / '+doc.pages;const chosen=selection.value;selection.replaceChildren(new Option('Ninguna',''));model.items.filter(a=>a.page===page).forEach((a,i)=>selection.add(new Option(labels[a.type]+' '+(i+1)+(a.text?' · '+a.text.slice(0,30):''),a.id)));selection.value=chosen;}
   async function changePage(n){if(n<1||n>doc.pages||busy)return;if(pointer!==null)throw Error('Termina el trazo antes de cambiar de página');model.check();busy=true;const token=++sequence;
