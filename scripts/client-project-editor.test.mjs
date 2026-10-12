@@ -7,7 +7,7 @@ function context(){const c=vm.createContext({});vm.runInContext(source+';globalT
 test('client editor omits descriptions and uses shopping mosaics with the existing modes',()=>{
  const c=context();c.cliModeOf=r=>r.cliMode||'ver';c.fileImageAttrs=()=>'';const project={id:1,rooms:[{id:"r'1",name:'<Salón>',sections:[{items:[{img:'fake'}]}],cliMode:'coment'}],files:[]};const before=JSON.stringify(project);
  const html=c.portal.roomSharingEditor(project);assert.match(html,/dl-grid/);assert.match(html,/dl-mosaic/);assert.match(html,/&lt;Salón&gt;/);for(const title of ['Oculta','Solo ver','Puede comentar','Aprobar / rechazar'])assert.ok(html.includes(title));assert.equal(JSON.stringify(project),before);
- assert.doesNotMatch(c.portal.linksEditor(project),/Aparecerán en Documentos/);assert.doesNotMatch(c.portal.coverEditor(project),/Una imagen para recibir/);
+ assert.doesNotMatch(c.portal.linksEditor(project),/Aparecerán en Documentos/);assert.doesNotMatch(c.portal.coverEditor({...project,files:[{docKind:'portal-cover',type:'image/png',data:'fake'}]}),/Una imagen para recibir|Ajustar encuadre|data-cover-x|data-cover-y/);
 });
 test('document cards have inline sharing selectors and preserve original indices and flags',()=>{
  const c=context();vm.runInContext(fs.readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8'),c);

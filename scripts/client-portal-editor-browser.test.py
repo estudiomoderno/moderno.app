@@ -23,7 +23,7 @@ with sync_playwright() as p:
         page=browser.new_page(viewport={'width':width,'height':1000});errors=[]
         page.on('pageerror',lambda e:errors.append(str(e)));page.route('**/*',lambda r:r.abort())
         page.set_content('<meta name="viewport" content="width=device-width"><style>'+style+'</style><main id="view" style="margin:auto;padding:18px"></main><div id="modal" hidden style="position:fixed;inset:8%;overflow:auto;background:#f8f6ef;border:1px solid #ddd;border-radius:20px;padding:24px;z-index:100"></div>')
-        for name in ['client-portal-site.css','plan-editor.css','brand/project-options.css']:page.add_style_tag(path=str(repo/'app'/name))
+        for name in ['client-portal-site.css','plan-editor.css','brand/project-options.css','select-controls.css']:page.add_style_tag(path=str(repo/'app'/name))
         page.add_script_tag(content=fixture);page.add_script_tag(content=toggle)
         for name in ['project-documents.js','client-portal-site.js']:page.add_script_tag(path=str(repo/'app'/name))
         page.evaluate("""()=>{const c=document.createElement('canvas');c.width=600;c.height=400;const ctx=c.getContext('2d');ctx.fillStyle='#dfd9cb';ctx.fillRect(0,0,600,400);ctx.fillStyle='#f8f6ef';ctx.fillRect(40,40,240,280);ctx.fillStyle='#aebcb2';ctx.fillRect(320,80,240,240);const image=c.toDataURL('image/png');window.fileImageAttrs=()=> 'src="'+image+'"';window.ModernoDaily={escape:s=>String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;')};window.original=JSON.stringify(state.projects[0]);render();}""")
@@ -47,13 +47,8 @@ with sync_playwright() as p:
         assert not geometry['overflow'],geometry
         assert geometry['first']=='client-cover-editor',geometry
         assert page.locator('.client-room-modes:visible').count()==0
-        assert not page.locator('.client-cover-adjust').evaluate('(e)=>e.open')
-        page.locator('.client-cover-adjust>summary').click()
-        page.locator('[data-cover-x]').fill('25')
-        assert page.locator('.client-cover-editor>img').evaluate('(e)=>e.style.objectPosition')=='25% 50%'
-        page.get_by_role('button',name='Guardar encuadre',exact=True).click()
-        assert page.evaluate('JSON.parse(state.projects[0].files[0].body).coverPosition.x')==25
-        page.locator('.client-cover-adjust>summary').click()
+        assert page.locator('.client-room-menu>summary').first.evaluate("e=>getComputedStyle(e,'::after').display")=='none'
+        assert page.locator('.client-cover-adjust, [data-cover-x], [data-cover-y]').count()==0
         page.get_by_role('checkbox',name='Compartir Plano.pdf',exact=True).check()
         assert page.evaluate('state.projects[0].files[2].cli')
         assert page.evaluate('state.projects[0].files[0].cli&&state.projects[0].files[1].cli&&state.projects[0].files[3].cli')
@@ -63,6 +58,24 @@ with sync_playwright() as p:
         page.get_by_role('button',name='Abrir Plano.pdf',exact=True).click()
         assert page.evaluate('openedFile')==[1,2]
         room=page.locator('.client-room-sharing .dl-card').nth(0)
+        room.locator('details').evaluate("e=>{e.style.position='fixed';e.style.bottom='25px';e.style.right='16px'}")
+        room.locator('summary').click()
+        page.wait_for_function("document.querySelector('.client-room-menu').dataset.direction==='up'")
+        if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'client-menu-up-{width}.png'))
+        box=room.locator('.client-room-modes').bounding_box();trigger=room.locator('summary').bounding_box()
+        assert box['y']>=8 and box['y']+box['height']<=trigger['y'],(box,trigger)
+        assert box['x']>=8 and box['x']+box['width']<=width-8,(box,width)
+        room.locator('details').evaluate("e=>{e.style.top='60px';e.style.bottom='auto';document.dispatchEvent(new Event('scroll'))}")
+        page.wait_for_function("document.querySelector('.client-room-menu').dataset.direction==='down'")
+        box=room.locator('.client-room-modes').bounding_box();trigger=room.locator('summary').bounding_box()
+        assert box['y']>=trigger['y']+trigger['height'],(box,trigger)
+        page.set_viewport_size({'width':width,'height':700})
+        page.wait_for_timeout(50)
+        box=room.locator('.client-room-modes').bounding_box()
+        assert box['y']+box['height']<=692,box
+        page.set_viewport_size({'width':width,'height':1000})
+        page.get_by_role('heading',name='Documentos compartidos',exact=True).click()
+        assert page.locator('.client-room-modes:visible').count()==0
         room.locator('summary').click()
         assert room.get_by_role('button',name='Solo ver',exact=True).get_attribute('aria-pressed')=='true'
         page.locator('.client-room-sharing .dl-card').nth(1).locator('summary').click()
