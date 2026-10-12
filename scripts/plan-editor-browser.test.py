@@ -69,6 +69,10 @@ with sync_playwright() as p:
         assert page.get_by_role('button', name='Lápiz', exact=True).locator('svg').count() == 1
         assert page.locator('.plan-selection').get_attribute('open') is None
         assert page.locator('.plan-toolbox').bounding_box()['width'] <= viewport['width']
+        assert page.get_by_role("button",name="Lápiz",exact=True).get_attribute("aria-pressed")=="false"
+        stroke()
+        assert page.evaluate("model.items.length")==0
+        page.get_by_role("button",name="Lápiz",exact=True).click()
         stroke()
         assert page.evaluate("model.items[0].color") == '#1677ff'
         assert page.evaluate("model.items[0].width") == 5

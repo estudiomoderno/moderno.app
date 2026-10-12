@@ -1,6 +1,6 @@
 /* Original files are immutable. Cloud saving requires a verified persistence adapter. */
 var ModernoPlanEditor=(()=>{
- const labels={pen:'Lápiz',highlight:'Resaltador',arrow:'Flecha',rect:'Rectángulo',ellipse:'Círculo',text:'Texto',note:'Nota',erase:'Borrador',pan:'Desplazar'};
+ const labels={pen:'Lápiz',highlight:'Resaltador',arrow:'Flecha',rect:'Rectángulo',ellipse:'Círculo',text:'Texto',note:'Nota',erase:'Borrador',pan:'Desplazar',selector:'Selector',image:'Foto'};
  // Annotations stay in original page coordinates at every viewing angle.
  function sourcePoint(p,turns){const t=((turns%4)+4)%4;return t===1?{x:p.y,y:1-p.x}:t===2?{x:1-p.x,y:1-p.y}:t===3?{x:1-p.y,y:p.x}:{x:p.x,y:p.y};}
  function rotateCanvas(source,turns){
@@ -8,10 +8,11 @@ var ModernoPlanEditor=(()=>{
   const target=window.document.createElement('canvas');target.width=t%2?source.height:source.width;target.height=t%2?source.width:source.height;
   const ctx=target.getContext('2d');ctx.translate(t===1||t===2?target.width:0,t===2||t===3?target.height:0);ctx.rotate(t*Math.PI/2);ctx.drawImage(source,0,0);return target;
  }
- function draw(ctx,items,w,h){
+ function draw(ctx,items,w,h,images=new Map()){
   for(const a of items){const p=a.points.map(p=>({x:p.x*w,y:p.y*h})),first=p[0],last=p[p.length-1];ctx.save();ctx.strokeStyle=a.color;ctx.fillStyle=a.color;ctx.lineWidth=a.width*w/1000;ctx.lineCap='round';ctx.lineJoin='round';
    if(a.type==='highlight'){ctx.globalAlpha=.3;ctx.lineWidth*=5;}
-   if(a.type==='rect')ctx.strokeRect(first.x,first.y,last.x-first.x,last.y-first.y);
+   if(a.type==='image'){const image=images.get(a.imageData);if(image)ctx.drawImage(image,first.x,first.y,last.x-first.x,last.y-first.y);}
+   else if(a.type==='rect')ctx.strokeRect(first.x,first.y,last.x-first.x,last.y-first.y);
    else if(a.type==='ellipse'){ctx.beginPath();ctx.ellipse((first.x+last.x)/2,(first.y+last.y)/2,Math.max(.5,Math.abs(last.x-first.x)/2),Math.max(.5,Math.abs(last.y-first.y)/2),0,0,2*Math.PI);ctx.stroke();}
    else if(a.type==='text'||a.type==='note'){ctx.font=Math.max(10,a.width*w/1000*5)+'px sans-serif';a.text.split('\n').forEach((line,i)=>ctx.fillText(line,first.x,first.y+i*18*w/1000));}
    else{ctx.beginPath();ctx.moveTo(first.x,first.y);for(const q of p.slice(1))ctx.lineTo(q.x,q.y);if(p.length===1)ctx.lineTo(first.x+.1,first.y);ctx.stroke();
@@ -40,12 +41,17 @@ var ModernoPlanEditor=(()=>{
   const start=length;put('xref\n0 '+offsets.length+'\n0000000000 65535 f \n');for(const o of offsets.slice(1))put(String(o).padStart(10,'0')+' 00000 n \n');put('trailer\n<< /Size '+offsets.length+' /Root 1 0 R >>\nstartxref\n'+start+'\n%%EOF');return new Blob(parts,{type:'application/pdf'});
  }
  async function mount(root,{document:doc,model,adapter,onError=()=>{}}){
-  model.check();let page=1,zoom=1,tool='pen',draft=null,pointer=null,closed=false,sequence=0,busy=false;const listeners=[],rotations=new Map();
-  root.classList.add('plan-editor');root.innerHTML='<h2>Plano</h2><div class="plan-toolbox"><div class="plan-palette" role="group" aria-label="Colores y grosor"></div><div class="plan-toolbar" role="group" aria-label="Herramientas"></div></div><textarea aria-label="Texto o nota" placeholder="Escribe y toca el plano para colocar el texto" maxlength="1000" hidden></textarea><div class="plan-viewport" tabindex="0" aria-label="Área del plano"><div class="plan-paper"><div class="plan-sheet"><canvas></canvas><canvas tabindex="0" aria-label="Lienzo de anotación"></canvas></div></div></div><div class="plan-toolbar plan-navigation" role="group" aria-label="Páginas, zoom y exportación"></div><details class="plan-selection"><summary>Anotaciones</summary><label class="plan-sr-only" for="plan-annotation-selection">Seleccionar anotación</label><select id="plan-annotation-selection" aria-label="Seleccionar anotación"><option value="">Ninguna</option></select><button type="button" data-action="delete">Eliminar seleccionada</button></details><p class="plan-status" role="status" aria-live="polite"></p>';
-  const $=s=>root.querySelector(s),toolbar=$('.plan-toolbar'),nav=$('.plan-navigation'),base=$('canvas'),overlay=$('canvas+canvas'),paper=$('.plan-paper'),sheet=$('.plan-sheet'),viewport=$('.plan-viewport'),status=$('.plan-status'),text=$('textarea'),selection=$('select');
+  model.check();let page=1,zoom=1,tool=null,draft=null,pointer=null,closed=false,sequence=0,busy=false;const listeners=[],rotations=new Map(),touches=new Map(),images=new Map(),transientTimers=new Set();let gesture=null,pendingPhoto=null,photoBusy=false,photoSequence=0,thumbnailQueue=Promise.resolve();
+  root.classList.add('plan-editor');root.innerHTML='<h2>Plano</h2><div class="plan-toolbox"><div class="plan-palette" role="group" aria-label="Colores y grosor"></div><div class="plan-toolbar" role="group" aria-label="Herramientas"></div></div><textarea aria-label="Texto o nota" placeholder="Escribe y toca el plano para colocar el texto" maxlength="1000" hidden></textarea><div class="plan-viewport" tabindex="0" aria-label="Área del plano"><div class="plan-paper"><div class="plan-sheet"><canvas></canvas><canvas tabindex="0" aria-label="Lienzo de anotación"></canvas><svg class="plan-pointer-layer" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"></svg></div></div></div><div class="plan-toolbar plan-navigation" role="group" aria-label="Páginas, zoom y exportación"></div><details class="plan-selection"><summary>Anotaciones</summary><label class="plan-sr-only" for="plan-annotation-selection">Seleccionar anotación</label><select id="plan-annotation-selection" aria-label="Seleccionar anotación"><option value="">Ninguna</option></select><button type="button" data-action="delete">Eliminar seleccionada</button></details><aside class="plan-pages-panel" id="plan-pages-panel" aria-label="Páginas del documento" aria-hidden="true" inert><header><strong>Páginas</strong><button type="button" class="plan-pages-close" aria-label="Cerrar páginas">×</button></header><div class="plan-pages-list"></div></aside><input class="plan-photo-gallery" type="file" accept="image/jpeg,image/png,image/webp" hidden><input class="plan-photo-camera" type="file" accept="image/*" capture="environment" hidden><p class="plan-status" role="status" aria-live="polite"></p>';
+  const $=s=>root.querySelector(s),toolbar=$('.plan-toolbar'),nav=$('.plan-navigation'),base=$('canvas'),overlay=$('canvas+canvas'),paper=$('.plan-paper'),sheet=$('.plan-sheet'),viewport=$('.plan-viewport'),status=$('.plan-status'),text=$('textarea'),selection=$('select'),pointerLayer=$('.plan-pointer-layer'),pagesPanel=$('.plan-pages-panel'),pagesList=$('.plan-pages-list');
   const listen=(el,event,fn)=>{el.addEventListener(event,fn);listeners.push(()=>el.removeEventListener(event,fn));};
   const report=e=>{status.textContent=e.message||String(e);onError(e);};
   const paths={
+   'Selector':'<path d="m5 3 14 9-7 2-3 7-4-18Z"/>',
+   'Comentarios':'<path d="M4 4h16v12H9l-5 5V4Z M8 8h8 M8 12h5"/>',
+   'Añadir foto':'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1"/><path d="m3 17 5-5 4 4 4-6 5 7"/>',
+   'Hacer foto':'<path d="M3 7h4l2-3h6l2 3h4v14H3V7Z"/><circle cx="12" cy="13" r="4"/>',
+   'Páginas':'<path d="M4 3h12v16H4V3Z M8 22h12V6 M8 7h4 M8 11h4"/>',
    'Lápiz':'<path d="m4 16 11-11 4 4-11 11H4v-4Z M13 7l4 4"/>',
    'Resaltador':'<path d="m8 16-3-3 10-10 6 6-10 10-3-3Z M5 13l-3 7h7 M3 22h16"/>',
    'Borrador':'<path d="m3 14 9-10a2 2 0 0 1 3 0l6 6-10 11H9l-6-5v-2Z M8 9l8 8 M11 21h10"/>',
@@ -66,8 +72,13 @@ var ModernoPlanEditor=(()=>{
    'Ajustar':'<path d="M9 3H3v6 M15 3h6v6 M3 15v6h6 M21 15v6h-6"/>',
    'Exportar PDF':'<path d="M12 3v12 m-5-5 5 5 5-5 M4 16v5h16v-5"/>'
   };
-  function button(label,fn,parent=toolbar){const b=window.document.createElement('button');b.type='button';b.setAttribute('aria-label',label);b.title=label;b.className='plan-icon-button';b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[label]||'')+'</svg>';listen(b,'click',async()=>{try{if(pointer!==null)throw Error('Termina el trazo antes de cambiar de herramienta');await fn();}catch(e){report(e);}});parent.append(b);return b;}
-  const toolButtons={};['pen','highlight','erase','text','note','arrow','rect','ellipse','pan'].forEach(key=>toolButtons[key]=button(labels[key],()=>{tool=key;draft=null;text.hidden=!['text','note'].includes(tool);size();redraw();}));
+  function button(label,fn,parent=toolbar){const b=window.document.createElement('button');b.type='button';b.setAttribute('aria-label',label);b.title=label;b.className='plan-icon-button';b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(paths[label]||'')+'</svg>';listen(b,'click',async()=>{try{if(pointer!==null||touches.size||photoBusy)throw Error('Termina el trazo antes de cambiar de herramienta');await fn();}catch(e){report(e);}});parent.append(b);return b;}
+  function chooseTool(key){tool=tool===key?null:key;draft=null;pendingPhoto=null;text.hidden=!['text','note'].includes(tool);text.placeholder=tool==='note'?'Escribe el comentario y toca el plano para colocarlo':'Escribe y toca el plano para colocar el texto';redraw();}
+  const toolButtons={};['pen','highlight','erase','text','note','arrow','rect','ellipse','pan','selector'].forEach(key=>toolButtons[key]=button(labels[key],()=>chooseTool(key)));
+  const comments=button('Comentarios',()=>{chooseTool('note');if(tool==='note'){text.focus();status.textContent='Escribe un comentario y toca el plano para colocarlo.';}},nav);
+  const addPhoto=button('Añadir foto',()=>$('.plan-photo-gallery').click(),nav);
+  button('Hacer foto',()=>$('.plan-photo-camera').click(),nav);
+  const pagePicker=button('Páginas',()=>showPages(!pagesPanel.classList.contains('is-open')),nav);pagePicker.setAttribute('aria-expanded','false');pagePicker.setAttribute('aria-controls','plan-pages-panel');
   const palette=$('.plan-palette'),color=window.document.createElement('input');color.type='color';color.value='#242424';color.setAttribute('aria-label','Color');color.title='Otro color';
   const colors=[['Negro','#242424'],['Azul','#1677ff'],['Rosa','#ed43ab'],['Blanco','#ffffff'],['Amarillo','#d9ca4a'],['Verde','#318568'],['Rojo','#ed4d3d']];
   const swatches=[];
@@ -78,12 +89,57 @@ var ModernoPlanEditor=(()=>{
   const save=button('Guardar',async()=>{await model.save(adapter);status.textContent=model.dirty?'Hay cambios posteriores pendientes':'Guardado confirmado';redraw();},nav);save.disabled=!adapter;
   if(!adapter){save.title='Guardado en la nube pendiente de activación';const notice=window.document.createElement('p');notice.className='project-plan-notice';notice.textContent='Anotaciones temporales · Exporta el PDF antes de cerrar.';$('.plan-status').before(notice);}
   const previous=button('Página anterior',()=>changePage(page-1),nav),next=button('Página siguiente',()=>changePage(page+1),nav),pageLabel=window.document.createElement('span');pageLabel.className='plan-page-label';nav.append(pageLabel);
-  button('Girar 90°',()=>{if(busy)throw Error('Espera a que termine la página');model.check();rotations.set(page,((rotations.get(page)||0)+1)%4);zoom=1;size();status.textContent='Página girada · Se incluirá en el PDF exportado';},nav);
+  button('Girar 90°',()=>{if(busy)throw Error('Espera a que termine la página');model.check();rotations.set(page,((rotations.get(page)||0)+1)%4);const preview=pagesList.querySelector('[data-plan-page="'+page+'"]');if(pagesPanel.classList.contains('is-open'))thumbnailQueue=thumbnailQueue.then(()=>thumbnail(preview)).catch(report);zoom=1;size();status.textContent='Página girada · Se incluirá en el PDF exportado';},nav);
   button('Alejar',()=>{zoom=Math.max(.25,zoom-.25);size();},nav);button('Acercar',()=>{zoom=Math.min(4,zoom+.25);size();},nav);button('Ajustar',()=>{zoom=1;size();},nav);
   button('Exportar PDF',async()=>{if(busy)throw Error('Espera a que termine la página');model.check();const record=model.snapshot(),angles=new Map(rotations),pages=[];let pixels=0,bytes=0;busy=true;
-   try{for(let i=1;i<=doc.pages;i++){model.check();status.textContent='Exportando página '+i+' de '+doc.pages;const c=window.document.createElement('canvas');await doc.render(i,c);pixels+=c.width*c.height;if(pixels>100e6)throw Error('Exporta un documento más pequeño (límite de 100 megapíxeles)');draw(c.getContext('2d'),record.annotations.filter(a=>a.page===i),c.width,c.height);const t=angles.get(i)||0,output=rotateCanvas(c,t);const blob=await new Promise(r=>output.toBlob(r,'image/jpeg',.92));if(!blob)throw Error('No se pudo exportar');bytes+=blob.size;if(bytes>100*1024*1024)throw Error('Exportación demasiado grande');const dimensions=doc.pageSize?await doc.pageSize(i):null;pages.push({width:output.width,height:output.height,pageWidth:t%2?dimensions?.height:dimensions?.width,pageHeight:t%2?dimensions?.width:dimensions?.height,jpeg:new Uint8Array(await blob.arrayBuffer())});c.width=c.height=0;if(output!==c)output.width=output.height=0;}model.check();const url=URL.createObjectURL(pdf(pages)),a=window.document.createElement('a');a.href=url;a.download='plano-anotado.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent='PDF exportado (páginas rasterizadas)';}finally{busy=false;}
+   try{for(let i=1;i<=doc.pages;i++){model.check();status.textContent='Exportando página '+i+' de '+doc.pages;const c=window.document.createElement('canvas');await doc.render(i,c);pixels+=c.width*c.height;if(pixels>100e6)throw Error('Exporta un documento más pequeño (límite de 100 megapíxeles)');draw(c.getContext('2d'),record.annotations.filter(a=>a.page===i),c.width,c.height,images);const t=angles.get(i)||0,output=rotateCanvas(c,t);const blob=await new Promise(r=>output.toBlob(r,'image/jpeg',.92));if(!blob)throw Error('No se pudo exportar');bytes+=blob.size;if(bytes>100*1024*1024)throw Error('Exportación demasiado grande');const dimensions=doc.pageSize?await doc.pageSize(i):null;pages.push({width:output.width,height:output.height,pageWidth:t%2?dimensions?.height:dimensions?.width,pageHeight:t%2?dimensions?.width:dimensions?.height,jpeg:new Uint8Array(await blob.arrayBuffer())});c.width=c.height=0;if(output!==c)output.width=output.height=0;}model.check();const url=URL.createObjectURL(pdf(pages)),a=window.document.createElement('a');a.href=url;a.download='plano-anotado.pdf';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent='PDF exportado (páginas rasterizadas)';}finally{busy=false;}
   },nav);
   nav.append(save);
+  function showPages(open){
+   pagesPanel.classList.toggle('is-open',open);pagesPanel.inert=!open;pagesPanel.setAttribute('aria-hidden',String(!open));pagePicker.setAttribute('aria-expanded',String(open));
+   if(open){pagesList.querySelectorAll('button[data-plan-page]').forEach(b=>thumbnailObserver.observe(b));pagesList.querySelector('[aria-current="page"]')?.scrollIntoView({block:'nearest'});}else pagePicker.focus();
+  }
+  const thumbnailObserver=new IntersectionObserver(entries=>{for(const e of entries)if(e.isIntersecting){thumbnailObserver.unobserve(e.target);thumbnailQueue=thumbnailQueue.then(()=>thumbnail(e.target)).catch(error=>{if(!closed)report(error);});}},{root:pagesList,rootMargin:'120px'});
+  async function thumbnail(b){
+   if(closed||!b.isConnected)return;model.check();const n=Number(b.dataset.planPage),c=window.document.createElement('canvas');
+   try{await doc.render(n,c);if(closed)return;model.check();const t=rotations.get(n)||0,target=b.querySelector('canvas'),output=rotateCanvas(c,t),scale=Math.min(140/output.width,180/output.height);target.width=Math.max(1,Math.round(output.width*scale));target.height=Math.max(1,Math.round(output.height*scale));target.getContext('2d').drawImage(output,0,0,target.width,target.height);if(output!==c)output.width=output.height=0;}finally{c.width=c.height=0;}
+  }
+  for(let n=1;n<=doc.pages;n++){
+   const b=window.document.createElement('button');b.type='button';b.dataset.planPage=n;b.setAttribute('aria-label','Página '+n);b.innerHTML='<canvas aria-hidden="true"></canvas><span>Página '+n+'</span>';
+   listen(b,'click',async()=>{try{if(pointer!==null||touches.size)throw Error('Termina el gesto antes de cambiar de página');await changePage(n);}catch(error){report(error);}});pagesList.append(b);
+  }
+  listen($('.plan-pages-close'),'click',()=>showPages(false));
+  async function photo(file){
+   if(!file)return;if(photoBusy||busy||pointer!==null||touches.size)throw Error('Espera a que termine el gesto o la página');
+   if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>15*1024*1024)throw Error('Elige una foto JPG, PNG o WebP de hasta 15 MB');
+   if(images.size>=10)throw Error('Máximo 10 fotos en esta vista');
+   photoBusy=true;const token=++photoSequence;let original=null,bitmap=null;
+   try{
+    model.check(true);original=await createImageBitmap(file);if(original.width*original.height>20e6)throw Error('Foto demasiado grande');
+    const c=window.document.createElement('canvas'),scale=Math.min(1,1200/Math.max(original.width,original.height));c.width=Math.max(1,Math.round(original.width*scale));c.height=Math.max(1,Math.round(original.height*scale));const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(original,0,0,c.width,c.height);
+    let blob;for(const quality of [.8,.6,.4]){blob=await new Promise(r=>c.toBlob(r,'image/jpeg',quality));if(blob?.size<=500000)break;}if(!blob||blob.size>500000)throw Error('Elige una foto más pequeña');
+    const imageData=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('No se pudo leer la foto'));reader.readAsDataURL(blob);});bitmap=await createImageBitmap(blob);c.width=c.height=0;
+    if(closed||token!==photoSequence)return;model.check(true);if(images.has(imageData)){bitmap.close();bitmap=images.get(imageData);}else images.set(imageData,bitmap);pendingPhoto={imageData,width:bitmap.width,height:bitmap.height};bitmap=null;tool='photo';text.hidden=true;redraw();status.textContent='Toca el plano para colocar la foto. Se incluirá al exportar.';
+   }finally{original?.close();bitmap?.close();photoBusy=false;}
+  }
+  for(const input of [$('.plan-photo-gallery'),$('.plan-photo-camera')])listen(input,'change',async()=>{try{await photo(input.files[0]);}catch(error){if(!closed)report(error);}finally{input.value='';}});
+  async function loadImages(){for(const a of model.items.filter(a=>a.type==='image')){model.check();if(images.has(a.imageData))continue;const image=new Image();image.src=a.imageData;await image.decode();if(closed)return;model.check();const bitmap=await createImageBitmap(image);if(bitmap.width*bitmap.height>20e6){bitmap.close();throw Error('Foto demasiado grande');}images.set(a.imageData,bitmap);}}
+  function touchStart(e){
+   touches.set(e.pointerId,{x:e.clientX,y:e.clientY});overlay.setPointerCapture(e.pointerId);startGesture();
+  }
+  function startGesture(){
+   const p=[...touches.values()];if(p.length>=2){const r=paper.getBoundingClientRect(),x=(p[0].x+p[1].x)/2,y=(p[0].y+p[1].y)/2;gesture={zoom,distance:Math.max(1,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)),anchor:{x:(x-r.left)/r.width,y:(y-r.top)/r.height}};}else if(p.length)gesture={x:p[0].x,y:p[0].y,left:viewport.scrollLeft,top:viewport.scrollTop};else gesture=null;
+  }
+  function touchMove(e){
+   touches.set(e.pointerId,{x:e.clientX,y:e.clientY});const p=[...touches.values()];if(p.length>=2&&gesture?.anchor){const x=(p[0].x+p[1].x)/2,y=(p[0].y+p[1].y)/2;zoom=Math.max(.25,Math.min(4,gesture.zoom*Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)/gesture.distance));size();const r=paper.getBoundingClientRect();viewport.scrollLeft+=r.left+gesture.anchor.x*r.width-x;viewport.scrollTop+=r.top+gesture.anchor.y*r.height-y;}else if(gesture){viewport.scrollLeft=gesture.left+gesture.x-e.clientX;viewport.scrollTop=gesture.top+gesture.y-e.clientY;}
+  }
+  function transient(p){
+   const svg=window.document.createElementNS('http://www.w3.org/2000/svg','g'),line=window.document.createElementNS(svg.namespaceURI,'polyline'),dot=window.document.createElementNS(svg.namespaceURI,'circle');line.setAttribute('fill','none');line.setAttribute('stroke','#ed4d3d');line.setAttribute('stroke-width','4');line.setAttribute('vector-effect','non-scaling-stroke');dot.setAttribute('r','.7');dot.setAttribute('fill','#ed4d3d');svg.append(line,dot);pointerLayer.append(svg);return {svg,line,dot,points:[p]};
+  }
+  function moveTransient(mark,p){if(mark.points.length<10000)mark.points.push(p);mark.line.setAttribute('points',mark.points.map(q=>q.x*100+','+q.y*100).join(' '));mark.dot.setAttribute('cx',p.x*100);mark.dot.setAttribute('cy',p.y*100);}
+  function fade(mark){mark.svg.style.transition='opacity 1.5s ease-out';requestAnimationFrame(()=>{mark.svg.style.opacity='0';});const timer=setTimeout(()=>{mark.svg.remove();transientTimers.delete(timer);},1500);transientTimers.add(timer);}
+  function clearTransient(){transientTimers.forEach(clearTimeout);transientTimers.clear();pointerLayer.replaceChildren();}
+  function cleanup(){photoSequence++;thumbnailObserver.disconnect();clearTransient();touches.clear();gesture=null;images.forEach(image=>image.close());images.clear();}
   function size(){
    if(!base.width)return;
    const css=window.getComputedStyle(viewport),w=Math.max(1,viewport.clientWidth-parseFloat(css.paddingLeft)-parseFloat(css.paddingRight)),h=Math.max(1,viewport.clientHeight-parseFloat(css.paddingTop)-parseFloat(css.paddingBottom));
@@ -92,25 +148,37 @@ var ModernoPlanEditor=(()=>{
    sheet.style.width=base.width*scale+'px';sheet.style.height=base.height*scale+'px';sheet.style.transform='translate('+(t===1||t===2?pw:0)+'px,'+(t===2||t===3?ph:0)+'px) rotate('+(t*90)+'deg)';
   }
   function pointAt(e){return sourcePoint(ModernoPlanAnnotations.point(e.clientX,e.clientY,overlay.getBoundingClientRect()),rotations.get(page)||0);}
-  function redraw(){if(closed)return;overlay.getContext('2d').clearRect(0,0,overlay.width,overlay.height);draw(overlay.getContext('2d'),model.items.filter(a=>a.page===page).concat(draft&&!draft.pan?[draft]:[]),overlay.width,overlay.height);Object.entries(toolButtons).forEach(([k,b])=>b.setAttribute('aria-pressed',k===tool));undo.disabled=!model.undoStack.length;redo.disabled=!model.redoStack.length;previous.disabled=page<=1;next.disabled=page>=doc.pages;pageLabel.textContent=page+' / '+doc.pages;const chosen=selection.value;selection.replaceChildren(new Option('Ninguna',''));model.items.filter(a=>a.page===page).forEach((a,i)=>selection.add(new Option(labels[a.type]+' '+(i+1)+(a.text?' · '+a.text.slice(0,30):''),a.id)));selection.value=chosen;}
-  async function changePage(n){if(n<1||n>doc.pages||busy)return;if(pointer!==null)throw Error('Termina el trazo antes de cambiar de página');model.check();busy=true;const token=++sequence;
-   try{const c=window.document.createElement('canvas');await doc.render(n,c);model.check();if(closed||token!==sequence)return;page=n;base.width=c.width;base.height=c.height;base.getContext('2d').drawImage(c,0,0);overlay.width=c.width;overlay.height=c.height;size();redraw();}finally{busy=false;}
+  function redraw(){if(closed)return;overlay.getContext('2d').clearRect(0,0,overlay.width,overlay.height);draw(overlay.getContext('2d'),model.items.filter(a=>a.page===page).concat(draft&&!draft.pan&&!draft.selector?[draft]:[]),overlay.width,overlay.height,images);comments.setAttribute('aria-pressed',tool==='note');addPhoto.setAttribute('aria-pressed',tool==='photo');Object.entries(toolButtons).forEach(([k,b])=>b.setAttribute('aria-pressed',k===tool));undo.disabled=!model.undoStack.length;redo.disabled=!model.redoStack.length;previous.disabled=page<=1;next.disabled=page>=doc.pages;pageLabel.textContent=page+' / '+doc.pages;pagesList.querySelectorAll('button[data-plan-page]').forEach(b=>b.setAttribute('aria-current',Number(b.dataset.planPage)===page?'page':'false'));const chosen=selection.value;selection.replaceChildren(new Option('Ninguna',''));model.items.filter(a=>a.page===page).forEach((a,i)=>selection.add(new Option(labels[a.type]+' '+(i+1)+(a.text?' · '+a.text.slice(0,30):''),a.id)));selection.value=chosen;}
+  async function changePage(n){if(n<1||n>doc.pages||busy)return;if(pointer!==null||touches.size||photoBusy)throw Error('Termina el trazo antes de cambiar de página');model.check();busy=true;const token=++sequence;
+   try{const c=window.document.createElement('canvas');await doc.render(n,c);model.check();if(closed||token!==sequence)return;if(page!==n)clearTransient();page=n;base.width=c.width;base.height=c.height;base.getContext('2d').drawImage(c,0,0);overlay.width=c.width;overlay.height=c.height;size();redraw();}finally{busy=false;}
   }
   listen($('[data-action=delete]'),'click',()=>{try{model.remove(selection.value);redraw();}catch(e){report(e);}});
-  listen(overlay,'pointerdown',e=>{try{if(busy||pointer!==null)return;if(e.button!==0)return;model.check(tool!=='pan');pointer=e.pointerId;overlay.setPointerCapture(pointer);const p=pointAt(e);
-   if(tool==='pan'){draft={pan:true,x:e.clientX,y:e.clientY,left:viewport.scrollLeft,top:viewport.scrollTop};return;}
-   if(tool==='erase'){const hit=[...model.items].reverse().find(a=>a.page===page&&a.points.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<.035));if(hit)model.remove(hit.id);redraw();return;}
+  listen(overlay,'pointerdown',e=>{try{
+   if(busy||photoBusy)return;if(e.button!==0)return;model.check(tool!==null&&!['pan','selector'].includes(tool));
+   if(e.pointerType==='touch'&&(tool===null||tool==='pan')){touchStart(e);e.preventDefault();return;}if(pointer!==null)return;
+   pointer=e.pointerId;overlay.setPointerCapture(pointer);const p=pointAt(e);
+   if(tool===null||tool==='pan'){draft={pan:true,x:e.clientX,y:e.clientY,left:viewport.scrollLeft,top:viewport.scrollTop};return;}
+   if(tool==='selector'){draft={selector:transient(p)};moveTransient(draft.selector,p);return;}
+   if(tool==='photo'&&pendingPhoto){const photo=pendingPhoto,w=Math.min(.28,.4*base.height/base.width*photo.width/photo.height),h=w*base.width/base.height*photo.height/photo.width,x=Math.min(p.x,1-w),y=Math.min(p.y,1-h);model.add({id:crypto.randomUUID(),page,type:'image',color:'#242424',width:1,points:[{x,y},{x:x+w,y:y+h}],text:'',imageData:photo.imageData,createdAt:new Date().toISOString()});pendingPhoto=null;tool=null;pointer=null;redraw();status.textContent='Foto colocada · Exporta el PDF para conservarla';return;}
+   if(tool==='erase'){const hit=[...model.items].reverse().find(a=>a.page===page&&(a.type==='image'?p.x>=a.points[0].x&&p.x<=a.points[1].x&&p.y>=a.points[0].y&&p.y<=a.points[1].y:a.points.some(q=>Math.hypot(q.x-p.x,q.y-p.y)<.035)));if(hit)model.remove(hit.id);redraw();return;}
    if(['text','note'].includes(tool)&&!text.value.trim()){pointer=null;status.textContent='Escribe el texto antes de colocarlo';text.focus();return;}
    draft={id:crypto.randomUUID(),page,type:tool,color:color.value,width:Number(width.value),points:[p],text:text.value.trim(),createdAt:new Date().toISOString()};redraw();
   }catch(e){pointer=null;report(e);}});
-  listen(overlay,'pointermove',e=>{if(e.pointerId!==pointer||!draft)return;try{model.check(tool!=='pan');if(draft.pan){viewport.scrollLeft=draft.left+draft.x-e.clientX;viewport.scrollTop=draft.top+draft.y-e.clientY;return;}const p=pointAt(e);if(['pen','highlight'].includes(draft.type)){if(draft.points.length<10000)draft.points.push(p);}else draft.points=[draft.points[0],p];redraw();}catch(e){report(e);}});
-  function finish(e){if(e.pointerId!==pointer)return;try{if(draft&&!draft.pan)model.add(draft);}catch(error){report(error);}finally{draft=null;pointer=null;redraw();}}
+  listen(overlay,'pointermove',e=>{try{
+   if(touches.has(e.pointerId)){model.check();touchMove(e);e.preventDefault();return;}if(e.pointerId!==pointer||!draft)return;
+   model.check(tool!==null&&!['pan','selector'].includes(tool));if(draft.pan){viewport.scrollLeft=draft.left+draft.x-e.clientX;viewport.scrollTop=draft.top+draft.y-e.clientY;return;}
+   const p=pointAt(e);if(draft.selector){moveTransient(draft.selector,p);return;}if(['pen','highlight'].includes(draft.type)){if(draft.points.length<10000)draft.points.push(p);}else draft.points=[draft.points[0],p];redraw();
+  }catch(e){report(e);}});
+  function finish(e){
+   if(touches.has(e.pointerId)){touches.delete(e.pointerId);startGesture();return;}if(e.pointerId!==pointer)return;
+   try{if(draft?.selector){if(e.type==='pointercancel')draft.selector.svg.remove();else fade(draft.selector);}else if(draft&&!draft.pan&&e.type!=='pointercancel')model.add(draft);}catch(error){report(error);}finally{draft=null;pointer=null;redraw();}
+  }
   listen(overlay,'pointerup',finish);listen(overlay,'pointercancel',finish);listen(overlay,'lostpointercapture',finish);
-  listen(root,'keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;try{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?model.redo():model.undo();redraw();}if(e.key==='Delete'&&selection.value){model.remove(selection.value);redraw();}}catch(error){report(error);}});
-  listen(window,'beforeunload',e=>{if(model.dirty||draft){e.preventDefault();e.returnValue='';}});
+  listen(root,'keydown',e=>{if(e.key==='Escape'&&pagesPanel.classList.contains('is-open')){e.preventDefault();e.stopPropagation();showPages(false);return;}if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;try{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?model.redo():model.undo();redraw();}if(e.key==='Delete'&&selection.value){model.remove(selection.value);redraw();}}catch(error){report(error);}});
+  listen(window,'beforeunload',e=>{if(model.dirty||(draft&&!draft.pan&&!draft.selector)){e.preventDefault();e.returnValue='';}});
   const resize=new ResizeObserver(size);resize.observe(viewport);resize.observe($('.plan-toolbox'));resize.observe(text);
-  try{await changePage(1);}catch(error){closed=true;listeners.forEach(fn=>fn());resize.disconnect();await doc.close?.();throw error;}
-  return {async close(){if(model.dirty||draft)throw Error('Hay anotaciones pendientes: exporta o guarda antes de cerrar');closed=true;sequence++;listeners.forEach(fn=>fn());resize.disconnect();await doc.close?.();root.replaceChildren();},discard:async()=>{closed=true;sequence++;listeners.forEach(fn=>fn());resize.disconnect();await doc.close?.();root.replaceChildren();}};
+  try{await loadImages();await changePage(1);}catch(error){closed=true;listeners.forEach(fn=>fn());resize.disconnect();cleanup();await doc.close?.();throw error;}
+  return {async close(){if(model.dirty||(draft&&!draft.pan&&!draft.selector))throw Error('Hay anotaciones pendientes: exporta o guarda antes de cerrar');closed=true;sequence++;listeners.forEach(fn=>fn());resize.disconnect();cleanup();await doc.close?.();root.replaceChildren();},discard:async()=>{closed=true;sequence++;listeners.forEach(fn=>fn());resize.disconnect();cleanup();await doc.close?.();root.replaceChildren();}};
  }
  return {openFile,mount,draw,pdf,sourcePoint};
 })();

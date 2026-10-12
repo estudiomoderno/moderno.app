@@ -1,6 +1,6 @@
 /* Plan annotations: independent from original files. Persistence must be supplied by an authorized backend. */
 var ModernoPlanAnnotations=(()=>{
- const tools=['pen','highlight','arrow','rect','ellipse','text','note'];
+ const tools=['pen','highlight','arrow','rect','ellipse','text','note','image'];
  const clone=v=>JSON.parse(JSON.stringify(v));
  function point(x,y,rect){if(!rect||rect.width<=0||rect.height<=0)throw Error('Área de dibujo no válida');return {x:Math.max(0,Math.min(1,(x-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(y-rect.top)/rect.height))};}
  function annotation(value,pages){
@@ -8,6 +8,7 @@ var ModernoPlanAnnotations=(()=>{
   if(!tools.includes(a.type)||!Number.isInteger(a.page)||a.page<1||a.page>pages||typeof a.id!=='string'||!a.id||a.id.length>100)throw Error('Anotación no válida');
   if(!/^#[a-f0-9]{6}$/i.test(a.color)||!Number.isFinite(a.width)||a.width<1||a.width>30)throw Error('Estilo no válido');
   if(!Array.isArray(a.points)||!a.points.length||a.points.length>10000||a.points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.x>1||p.y<0||p.y>1))throw Error('Coordenadas no válidas');
+  if(a.type==='image'&&(a.points.length!==2||a.points[1].x<=a.points[0].x||a.points[1].y<=a.points[0].y||typeof a.imageData!=='string'||a.imageData.length>700000||!/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(a.imageData)))throw Error('Imagen no válida');
   a.text=String(a.text||'');if(a.text.length>1000)throw Error('Texto demasiado largo');
   return a;
  }
@@ -21,11 +22,11 @@ var ModernoPlanAnnotations=(()=>{
   snapshot(){this.check();return {schema:1,reference:{...this.reference},pages:this.pages,annotations:clone(this.items)};}
   load(record,revision){this.check();if(record.schema!==1||record.pages!==this.pages||Object.keys(this.reference).some(k=>record.reference?.[k]!==this.reference[k]))throw Error('Documento o revisión distintos');
    if(!Array.isArray(record.annotations)||record.annotations.length>2000)throw Error('Demasiadas anotaciones');
-   const validated=record.annotations.map(a=>annotation(a,this.pages));if(new Set(validated.map(a=>a.id)).size!==validated.length)throw Error('Identificadores duplicados');
+   const validated=record.annotations.map(a=>annotation(a,this.pages));if(validated.filter(a=>a.type==='image').length>10)throw Error('Máximo 10 fotos por plano');if(new Set(validated.map(a=>a.id)).size!==validated.length)throw Error('Identificadores duplicados');
    this.items=validated;this.revision=revision;this.undoStack=[];this.redoStack=[];this.dirty=false;
   }
   change(fn){this.check(true);const before=clone(this.items);fn();this.undoStack.push(before);if(this.undoStack.length>50)this.undoStack.shift();this.redoStack=[];this.dirty=true;}
-  add(value){const a=annotation(value,this.pages);if(this.items.length>=2000||this.items.some(x=>x.id===a.id))throw Error('Límite o identificador duplicado');this.change(()=>this.items.push(a));}
+  add(value){const a=annotation(value,this.pages);if(a.type==='image'&&this.items.filter(a=>a.type==='image').length>=10)throw Error('Máximo 10 fotos por plano');if(this.items.length>=2000||this.items.some(x=>x.id===a.id))throw Error('Límite o identificador duplicado');this.change(()=>this.items.push(a));}
   remove(id){if(this.items.some(a=>a.id===id))this.change(()=>this.items=this.items.filter(a=>a.id!==id));}
   undo(){this.check(true);if(!this.undoStack.length)return;this.redoStack.push(clone(this.items));this.items=this.undoStack.pop();this.dirty=true;}
   redo(){this.check(true);if(!this.redoStack.length)return;this.undoStack.push(clone(this.items));this.items=this.redoStack.pop();this.dirty=true;}

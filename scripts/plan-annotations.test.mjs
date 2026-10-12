@@ -11,3 +11,15 @@ test('scope mismatch, invalid coordinates and duplicate ids are rejected before 
 test('read-only and revoked client scope cannot mutate or confirm a save',async()=>{const m=new Model({reference,pages:1,authorize:edit=>!edit});assert.throws(()=>m.add(ink),/No autorizado/);let allowed=true;const n=new Model({reference,pages:1,authorize:()=>allowed});n.add(ink);await assert.rejects(n.save({write:async()=>{allowed=false;return {revision:'rev'};}}),/No autorizado/);assert.equal(n.dirty,true);assert.equal(n.revision,null);});
 test('missing persistence is explicitly blocked, not simulated with local storage',async()=>{const m=make();m.add(ink);await assert.rejects(m.save(),/pendiente de verificar/);assert.equal(m.dirty,true);});
 test('PDF exporter generates a multipage file with correct byte offsets',async()=>{const result=await pdf([{width:100,height:200,jpeg:new Uint8Array([255,216,255,217])},{width:200,height:100,jpeg:new Uint8Array([255,216,255,217])}]).arrayBuffer();const txt=new TextDecoder().decode(result);assert.match(txt,/\/Count 2/);const start=Number(/startxref\n(\d+)/.exec(txt)[1]);assert.equal(txt.slice(start,start+4),'xref');const offsets=txt.slice(start).split('\n').slice(3,11);offsets.forEach((row,i)=>{const n=Number(row.slice(0,10));assert.ok(txt.slice(n).startsWith((i+1)+' 0 obj'));});});
+
+test('photo annotations preserve bounded raster data, coordinates and history',()=>{
+ const m=make(),image={...ink,id:'photo',type:'image',imageData:'data:image/jpeg;base64,/9j/2Q=='};
+ m.add(image);const record=m.snapshot();m.undo();assert.equal(m.items.length,0);m.redo();assert.deepEqual(m.items[0],image);
+ const reopened=make();reopened.load(record,'photo-revision');assert.deepEqual(reopened.items,[image]);assert.equal(JSON.stringify(image),JSON.stringify(reopened.items[0]));
+});
+test('photo data rejects URLs, SVG, oversized payloads and invalid bounds',()=>{
+ const m=make(),image={...ink,id:'photo',type:'image',imageData:'data:image/jpeg;base64,/9j/2Q=='};
+ for(const imageData of ['https://fake.invalid/photo.jpg','data:image/svg+xml;base64,PHN2Zy8+','data:image/jpeg;base64,PHN2Zy8+','data:image/jpeg;base64,/9j/'+ 'A'.repeat(700001)])assert.throws(()=>m.add({...image,imageData}),/Imagen/);
+ assert.throws(()=>m.add({...image,points:[{x:.8,y:.8},{x:.2,y:.2}]}),/Imagen/);assert.equal(m.items.length,0);
+ for(let i=0;i<10;i++)m.add({...image,id:'photo-'+i});assert.throws(()=>m.add({...image,id:'extra'}),/10 fotos/);
+});
