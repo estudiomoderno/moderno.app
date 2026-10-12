@@ -916,8 +916,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/shopping-cards.css?v=3625">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
-<script src="/client-portal-site.js?v=36524"></script>
-<link rel="stylesheet" href="/client-portal-site.css?v=36524">
+<script src="/client-portal-site.js?v=36525"></script>
+<link rel="stylesheet" href="/client-portal-site.css?v=36525">
 <link rel="stylesheet" href="/home-dashboard.css?v=3640">
 <link rel="stylesheet" href="/menu-polish.css?v=3650">
 <link rel="stylesheet" href="/folder-automations.css?v=3652"></head>
@@ -1158,7 +1158,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/project-ui.js?v=36519"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
-<script src="/project-documents.js?v=36524"></script>
+<script src="/project-documents.js?v=36525"></script>
 <link rel="stylesheet" href="/plan-editor.css?v=36523">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
@@ -6004,9 +6004,9 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
   </div>`}
   ${tb!=="cliente"?"":(function(){
     const sh=cliEnsure(p);
-    setTimeout(()=>cliRespSync(p.id), 80);
-    return `<div style="max-width:820px">
+    return `<div class="client-project-editor">
     <h2 class="sec" style="margin-top:0">Portal del cliente</h2>
+    ${ClientPortalSite.coverEditor(p)}
     <div class="entry" style="background:var(--white);flex-wrap:wrap;gap:10px">
       <input value="${cliLink(p)}" readonly onclick="this.select()" style="flex:1;min-width:220px;font-size:11.5px;border:none;background:var(--card);border-radius:12px;padding:10px 14px;outline:none">
       <button class="btn btn-ghost" onclick="navigator.clipboard&&navigator.clipboard.writeText(cliLink(state.projects.find(x=>x.id===${p.id})));toast('Enlace copiado \u2713')">${ico("copiar")} Copiar</button>
@@ -6021,7 +6021,6 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
         <p style="font-size:11px;color:var(--ink-faint);margin:0">El portal est\u00e1 siempre activo: cualquiera con el enlace puede verlo. Si quieres cortar el acceso, regenera el enlace y el anterior muere.</p>
       </div>
     </div>
-    ${ClientPortalSite.coverEditor(p)}
     ${ClientPortalSite.linksEditor(p)}
     <h2 class="sec">Mensaje de bienvenida</h2>
     <div class="entry" style="background:var(--white);align-items:flex-start;flex-wrap:wrap;gap:10px">
@@ -6037,16 +6036,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
       <div class="entry" style="background:var(--white)"><b style="flex:1;font-size:12.5px">Mostrar seguimiento de obra en el portal</b><small style="color:var(--ink-faint)">Avance, fases y qué está hecho</small><div class="switch ${(p.cliShare&&p.cliShare.obra===false)?"":"on"}" onclick="cliEnsure(state.projects.find(x=>x.id===${p.id})).obra=!(state.projects.find(x=>x.id===${p.id}).cliShare.obra!==false);render()"></div></div>
       <div class="entry" style="background:var(--white)"><b style="flex:1;font-size:12.5px">Mostrar contactos de obra en el portal</b><small style="color:var(--ink-faint)">Oficio, teléfono y correo de cada contacto de obra</small><div class="switch ${(p.cliShare&&p.cliShare.obraContactos===false)?"":"on"}" onclick="cliEnsure(state.projects.find(x=>x.id===${p.id})).obraContactos=!(state.projects.find(x=>x.id===${p.id}).cliShare.obraContactos!==false);render()"></div></div>
     </div>
-    <p style="font-size:11.5px;color:var(--ink-faint);margin-top:-6px">Por cada lista, decide qu\u00e9 puede hacer tu cliente. Si no eliges nada, la lista <b>se ve</b> (solo lectura).</p>
     ${ClientPortalSite.roomSharingEditor(p)}
-    <h2 class="sec">Conversaci\u00f3n con el cliente</h2>
-    ${[...(p.cliChat||[]),...(p.cliChatLocal||[])].length?`<div class="entry-col" style="max-height:260px;overflow:auto">
-      ${[...(p.cliChat||[]),...(p.cliChatLocal||[])].map(m=>`<div class="entry" style="background:${m.de==="estudio"?"var(--white)":"var(--card)"}"><span style="flex:1;font-size:12.5px"><b>${m.de==="estudio"?"T\u00fa":"Cliente"}</b>: ${m.t}<br><small style="color:var(--ink-faint)">${m.d}</small></span></div>`).join("")}
-    </div>`:`<p style="font-size:12px;color:var(--ink-faint);margin:4px 0 0">Sin mensajes todav\u00eda.</p>`}
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <input id="cChatIn" placeholder="Escribe al cliente\u2026" style="flex:1;border:none;background:var(--card);border-radius:12px;padding:11px 14px;outline:none;font-size:13px" onkeydown="if(event.key==='Enter')cliChatSend(${p.id})">
-      <button class="btn btn-dark" onclick="cliChatSend(${p.id})">Enviar</button>
-    </div>
     ${ClientPortalSite.sharedDocumentsEditor(p)}
     </div>`;
   })()}
@@ -11458,7 +11448,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.24";
+const MODERNO_VER="v3.65.25";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
