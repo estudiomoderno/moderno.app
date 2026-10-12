@@ -81,7 +81,7 @@ test('document annotation action does not trigger the global settings navigation
  const h=harness();h.state.projects=[{id:1,files:[{name:'fake.pdf',data:'fake'}]}];h.state.view='proyecto';
  vm.runInContext(fs.readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8'),h.ctx);
  let opened=0;h.ctx.projectPlanOpen=(id,index)=>{assert.equal(id,1);assert.equal(index,0);opened++;};h.ctx.event={stopPropagation(){}};
- const button=h.ctx.ModernoDocuments.action(h.state.projects[0],0);
+ const button=h.ctx.ModernoProjectDocuments.action(h.state.projects[0],0);
  const dataset={};for(const [,key,value] of button.matchAll(/data-([a-z-]+)="([^"]*)"/g))dataset[key.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=value;
  const target={dataset,closest:selector=>Object.keys(dataset).some(k=>selector.includes(`[data-${k.replace(/[A-Z]/g,c=>'-'+c.toLowerCase())}]`))?target:null};
  h.ctx.clickedDocumentTab=target;

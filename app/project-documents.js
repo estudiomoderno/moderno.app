@@ -1,5 +1,5 @@
 /* Document navigation and temporary annotation/export. No database or Storage writes. */
-var ModernoDocuments = (() => {
+var ModernoProjectDocuments = (() => {
   const E = value => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   const types = {pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp'};
   function type(file) {
@@ -18,6 +18,15 @@ var ModernoDocuments = (() => {
     if(!type(file))return '';
     return `<button type="button" class="btn btn-ghost project-plan-open" ${file.subiendo||!(file.url||file.data)?'disabled title="Archivo pendiente de subida o sin contenido"':''} data-project="${E(project.id)}" data-index="${index}" onclick="event.stopPropagation();projectPlanOpen(Number(this.dataset.project),Number(this.dataset.index))">Ver y anotar</button>`;
   }
+  function card(project,index,{available,clientVisible}={}) {
+    const stored=(project.files||[])[index],file=typeof stored==='string'?{name:stored}:stored||{},name=String(file.name||'Archivo');
+    if(available===undefined)available=Boolean(file.url||file.data||file.body||file.docRef);
+    if(clientVisible===undefined)clientVisible=file.cli!==false;
+    const ext=name.includes('.')?name.split('.').pop().slice(0,5).toUpperCase():'DOC',id=E(project.id),label=E(name);
+    const data=`data-project="${id}" data-index="${index}"`;
+    const visibility=!available?'<span class="project-file-status is-missing" title="Solo se guardó el nombre. Vuelve a subirlo para abrir el archivo.">Solo nombre</span>':`<span class="project-file-status">${clientVisible?'Lo ve el cliente':'Oculto al cliente'}</span>`;
+    return `<article class="project-file-card"><button type="button" class="project-file-open" ${data} aria-label="Abrir ${label}" onclick="fileView(Number(this.dataset.project),Number(this.dataset.index))"><span class="project-file-sheet" aria-hidden="true"><span class="project-file-fold"></span><span class="project-file-extension">${E(ext)}</span><span class="project-file-lines"></span></span><strong class="project-document-name">${label}</strong></button><div class="project-file-meta">${file.signed?'<span class="project-file-status is-signed">Firmado</span>':''}${visibility}</div><div class="project-file-actions">${action(project,index)}<button type="button" class="project-file-delete" ${data} aria-label="Eliminar archivo ${label}" title="Eliminar archivo" onclick="trashFile(Number(this.dataset.project),Number(this.dataset.index))">×</button></div></article>`;
+  }
   async function readBlob(source,type,signal) {
     const response=await fetch(source,{signal,credentials:'omit'});
     if(!response.ok) throw Error('No se pudo descargar el plano. Puedes abrir el original desde Documentos.');
@@ -31,19 +40,19 @@ var ModernoDocuments = (() => {
     finally{reader.releaseLock();}
     return new Blob(chunks,{type});
   }
-  return {type,plans,heading,action,readBlob};
+  return {type,plans,heading,action,card,readBlob};
 })();
 
 let projectPlanDialog=null;
 function projectPlanIdentity(){return fileViewIdentity()+'|'+(state.sessionUser?.mail||state.sessionUser?.id||'');}
 async function projectPlanOpen(pid,index){
   if(projectPlanDialog)return;
-  const project=state.projects.find(p=>p.id===pid),file=project?.files?.[index],kind=ModernoDocuments.type(file);
+  const project=state.projects.find(p=>p.id===pid),file=project?.files?.[index],kind=ModernoProjectDocuments.type(file);
   if(!kind){toast('Este archivo no admite anotaciones');return;}
   const identity=projectPlanIdentity(),source=fileSrc(file);
   const allowed=()=>{
     const current=state.projects.find(p=>p.id===pid)?.files?.[index];
-    return !_accessLoading&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon&&Boolean(state.sessionUser?.mail||state.sessionUser?.id)&&identity===projectPlanIdentity()&&current&&fileSrc(current)===source&&String(current.id??index)===String(file.id??index)&&ModernoDocuments.type(current)===kind;
+    return !_accessLoading&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon&&Boolean(state.sessionUser?.mail||state.sessionUser?.id)&&identity===projectPlanIdentity()&&current&&fileSrc(current)===source&&String(current.id??index)===String(file.id??index)&&ModernoProjectDocuments.type(current)===kind;
   };
   if(!allowed()){toast('Comprueba tu sesión y tu acceso al proyecto');return;}
   const controller=new AbortController(),dialog=document.createElement('dialog');dialog.className='project-plan-dialog';dialog.setAttribute('aria-label','Plano del proyecto');
@@ -64,7 +73,7 @@ async function projectPlanOpen(pid,index){
     const resolved=await fileResolveForView(file);
     if(!resolved)throw Error('Archivo no disponible; comprueba tu acceso o vuelve a subirlo desde Archivos.');
     if(closed||!allowed())return;
-    const blob=await ModernoDocuments.readBlob(resolved,kind,controller.signal);
+    const blob=await ModernoProjectDocuments.readBlob(resolved,kind,controller.signal);
     const pdfjs=kind==='application/pdf'?await loadPdfJs():undefined;
     if(closed||!allowed())return;
     doc=await ModernoPlanEditor.openFile(blob,{pdfjs});
@@ -75,4 +84,4 @@ async function projectPlanOpen(pid,index){
     root.querySelector('h2').textContent=file.name;
   }catch(error){if(!closed){root.replaceChildren();const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.name==='AbortError'?'Lectura cancelada':error.message;root.append(message);}}
 }
-if(typeof module!=='undefined')module.exports=ModernoDocuments;
+if(typeof module!=='undefined')module.exports=ModernoProjectDocuments;
