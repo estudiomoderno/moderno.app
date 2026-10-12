@@ -46,6 +46,16 @@ with sync_playwright() as p:
         }""")
         assert page.get_by_role("button", name="Guardar", exact=True).is_disabled()
         canvas = page.get_by_label("Lienzo de anotación")
+        paper=page.locator('.plan-paper').bounding_box();area=page.locator('.plan-viewport').bounding_box();box=page.locator('.plan-toolbox').bounding_box()
+        assert paper['width'] >= area['width']-1 and paper['height'] >= area['height']-1
+        assert paper['y'] <= box['y'] and paper['y']+paper['height'] >= box['y']+box['height']
+        assert box['width'] <= 500
+        def zoom_out_to_draw():
+            for _ in range(4):
+                paper=page.locator('.plan-paper').bounding_box()
+                if paper['width'] <= viewport['width']-40 and paper['height'] <= viewport['height']*.6: break
+                page.get_by_role('button',name='Alejar',exact=True).click()
+        zoom_out_to_draw()
         def stroke():
             box = canvas.bounding_box()
             page.mouse.move(box["x"]+box["width"]*.2, box["y"]+box["height"]*.3)
@@ -68,13 +78,12 @@ with sync_playwright() as p:
         page.get_by_role("button", name="Deshacer", exact=True).click()
         assert page.evaluate("model.items.length") == 0
         page.get_by_role("button", name="Rehacer", exact=True).click()
-        # The fitted page stays clear of the floating bottom toolbox.
-        paper=page.locator('.plan-paper').bounding_box();box=page.locator('.plan-toolbox').bounding_box()
-        assert paper['y']+paper['height'] < box['y']
+        box=page.locator('.plan-toolbox').bounding_box()
         assert box['y'] > viewport['height']*.6
         palette=page.locator('.plan-palette').bounding_box();slider=page.get_by_label('Grosor',exact=True).bounding_box()
         assert abs(slider['x']+slider['width']-palette['x']-palette['width']) < 5
         page.get_by_role('button',name='Girar 90°',exact=True).click()
+        zoom_out_to_draw()
         assert page.evaluate('model.items[0].points[0]') == first
         assert page.locator('.plan-paper').bounding_box()['height'] > page.locator('.plan-paper').bounding_box()['width']
         stroke()
@@ -84,6 +93,7 @@ with sync_playwright() as p:
         assert page.evaluate('model.items.length') == 1
         for x,y in [( .8,.7),(.7,.2),(.2,.3)]:
             page.get_by_role('button',name='Girar 90°',exact=True).click()
+            zoom_out_to_draw()
             stroke();point=page.evaluate('model.items[1].points[0]')
             assert abs(point['x']-x)<.01 and abs(point['y']-y)<.01
             page.get_by_role('button',name='Deshacer',exact=True).click()
@@ -93,12 +103,13 @@ with sync_playwright() as p:
         page.get_by_role("button", name="Ajustar", exact=True).click()
         page.get_by_role("button", name="Página siguiente", exact=True).click()
         page.wait_for_function("document.querySelector('.plan-page-label').textContent === '2 / 2'")
+        zoom_out_to_draw()
         page.get_by_role("button", name="Rectángulo", exact=True).click()
         stroke()
         page.get_by_role("button", name="Texto", exact=True).click()
         page.get_by_label("Texto o nota", exact=True).fill('<script>no ejecutar</script>')
         box = canvas.bounding_box()
-        canvas.click(position={"x": box["width"]*.1, "y": 80})
+        canvas.click(position={"x": box["width"]*.1, "y": box["height"]*.6})
         assert page.evaluate("model.items.length") == 3
         assert page.evaluate("model.items[2].page") == 2
         assert page.locator('main script').count() == 0

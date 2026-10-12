@@ -86,9 +86,8 @@ var ModernoPlanEditor=(()=>{
   nav.append(save);
   function size(){
    if(!base.width)return;
-   const toolbox=$('.plan-toolbox');root.style.setProperty('--plan-toolbox-height',toolbox.offsetHeight+'px');root.style.setProperty('--plan-text-height',(text.hidden?0:text.offsetHeight+12)+'px');
    const css=window.getComputedStyle(viewport),w=Math.max(1,viewport.clientWidth-parseFloat(css.paddingLeft)-parseFloat(css.paddingRight)),h=Math.max(1,viewport.clientHeight-parseFloat(css.paddingTop)-parseFloat(css.paddingBottom));
-   const t=rotations.get(page)||0,rotatedW=t%2?base.height:base.width,rotatedH=t%2?base.width:base.height,scale=Math.min(w/rotatedW,h/rotatedH)*zoom,pw=rotatedW*scale,ph=rotatedH*scale;
+   const t=rotations.get(page)||0,rotatedW=t%2?base.height:base.width,rotatedH=t%2?base.width:base.height,scale=Math.max(w/rotatedW,h/rotatedH)*zoom,pw=rotatedW*scale,ph=rotatedH*scale;
    paper.style.width=pw+'px';paper.style.height=ph+'px';paper.style.marginTop=Math.max(0,(h-ph)/2)+'px';
    sheet.style.width=base.width*scale+'px';sheet.style.height=base.height*scale+'px';sheet.style.transform='translate('+(t===1||t===2?pw:0)+'px,'+(t===2||t===3?ph:0)+'px) rotate('+(t*90)+'deg)';
   }
