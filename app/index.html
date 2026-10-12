@@ -916,7 +916,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/shopping-cards.css?v=3625">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
-<script src="/client-portal-site.js?v=36526"></script>
+<script src="/client-portal-site.js?v=36527"></script>
 <link rel="stylesheet" href="/client-portal-site.css?v=36526">
 <link rel="stylesheet" href="/home-dashboard.css?v=3640">
 <link rel="stylesheet" href="/menu-polish.css?v=3650">
@@ -1155,11 +1155,11 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/router.js?v=3653"></script>
 <script src="/specifications.js?v=340"></script>
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36519"></script>
+<script src="/project-ui.js?v=36527"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
-<script src="/project-documents.js?v=36525"></script>
-<link rel="stylesheet" href="/plan-editor.css?v=36523">
+<script src="/project-documents.js?v=36527"></script>
+<link rel="stylesheet" href="/plan-editor.css?v=36527">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3617"></script>
@@ -5993,13 +5993,10 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
   <div style="max-width:820px">
       ${ModernoProjectDocuments.heading()}
       <div class="project-files-grid">
-        ${(p.files||[]).map((f,i)=>ModernoProjectDocuments.card(p,i,{available:fileOk(f),clientVisible:fileCli(f)})).join("")||`<div class="empty" style="padding:16px">Sin archivos todavía. Sube planos, renders, contratos…</div>`}
+        ${(p.files||[]).map((f,i)=>ModernoProjectDocuments.card(p,i,{available:fileOk(f),clientVisible:fileCli(f)})).join("")}
+        ${ModernoProjectDocuments.uploadCard(p)}
       </div>
-      <div class="project-file-upload">
-        <label class="btn btn-ghost" style="background:var(--white);width:100%;justify-content:center;cursor:pointer">${ico("import")} Subir archivos
-          <input type="file" multiple style="display:none" onchange="addFiles(${p.id},this.files)"></label>
-        <p style="font-size:11px;color:var(--ink-faint);margin-top:8px">Se guardan en la nube del estudio y aparecen en «Documentos» del portal del cliente y en el portal de obra.</p>
-      </div>
+
 
   </div>`}
   ${tb!=="cliente"?"":(function(){
@@ -6023,13 +6020,13 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
     </div>
     ${ClientPortalSite.linksEditor(p)}
     <h2 class="sec">Mensaje de bienvenida</h2>
-    <div class="entry" style="background:var(--white);align-items:flex-start;flex-wrap:wrap;gap:10px">
+    <div class="entry client-welcome-panel" data-client-welcome style="background:var(--white);align-items:flex-start;flex-wrap:wrap;gap:10px">
       ${state._welEdit?`
         <textarea id="cliWelTa" rows="3" style="flex:1 1 100%;border:none;background:var(--card);border-radius:12px;padding:12px;outline:none;font-size:12.5px;resize:vertical">${(p.cliWelcome||cliWelcomeDefault(p)).replace(/</g,"&lt;")}</textarea>
-        <button class="btn btn-ghost" onclick="state._welEdit=false;render()">Cancelar</button>
+        <button class="btn btn-ghost" onclick="ClientPortalSite.setWelcomeEditing(false)">Cancelar</button>
         <button class="btn btn-dark" onclick="cliWelSave(${p.id})">Guardar</button>`
       :`<span style="flex:1;font-size:12.5px;line-height:1.5">${(p.cliWelcome||cliWelcomeDefault(p)).replace(/</g,"&lt;")}</span>
-        <button class="btn btn-ghost" onclick="state._welEdit=true;render()">${ico("editar")} Editar</button>`}
+        <button class="btn btn-ghost" onclick="ClientPortalSite.setWelcomeEditing(true)">${ico("editar")} Editar</button>`}
     </div>
     <h2 class="sec">Listas de la compra en el portal</h2>
     <div class="entry-col" style="margin-bottom:12px">
@@ -6063,14 +6060,14 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
         ${planHitos(p).length? planHitos(p).map(h=>{ const st=hitoStatus(h); const hoy=new Date().toISOString().slice(0,10); const late=st==="previsto"&&h.due&&h.due<hoy;
           return `<div class="entry hito-row" style="background:var(--white)">
           <input class="inp" value="${(h.concept||"").replace(/"/g,"&quot;")}" ${h.invRef?"disabled":""} style="padding:7px 10px;font-size:12.5px" oninput="hitoSet(${p.id},${h.id},'concept',this.value)">
-          <input class="inp" type="number" step="0.01" value="${h.amount??""}" ${h.invRef?"disabled":""} style="text-align:right;padding:7px 10px;font-size:12.5px" onchange="hitoSet(${p.id},${h.id},'amount',this.value)">
+          <label class="finance-amount-field"><input class="inp" aria-label="Importe (${projectCurrencySymbol()})" type="number" step="0.01" value="${h.amount??""}" ${h.invRef?"disabled":""} style="text-align:right;padding:7px 10px;font-size:12.5px" onchange="hitoSet(${p.id},${h.id},'amount',this.value)"><span aria-hidden="true">${projectCurrencySymbol()}</span></label>
           <input class="inp" type="date" value="${h.due||""}" title="Fecha prevista de cobro" style="padding:7px 10px;font-size:12.5px;${late?"border-color:var(--red)":""}" onchange="hitoSet(${p.id},${h.id},'due',this.value)">
           <div class="hito-st">${hitoChip(h)}</div>
-          <div class="hito-act">${st==="previsto"?`<button class="btn btn-dark" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" title="Crea la factura con estos datos (numeración normal) y enlaza el hito" onclick="hitoInvoiceDraft(${p.id},${h.id})">${ico("factura")} Emitir factura</button><button class="collbtn" title="Quitar hito" onclick="hitoDel(${p.id},${h.id})">✕</button>`
+          <div class="hito-act">${st==="previsto"?`<button class="btn btn-dark finance-invoice-action" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" title="Crea la factura con estos datos (numeración normal) y enlaza el hito" onclick="hitoInvoiceDraft(${p.id},${h.id})">${ico("factura")} Emitir factura</button><button class="collbtn" title="Quitar hito" onclick="hitoDel(${p.id},${h.id})">✕</button>`
                            :`<button class="btn btn-ghost" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" onclick="state.draft=null;go('facturas');toast('${h.invRef} — en la lista de facturas')">Ver ${h.invRef}</button><button class="collbtn" title="Quitar del plan (la factura no se toca)" onclick="hitoDel(${p.id},${h.id})">✕</button>`}</div>
         </div>`; }).join("") : `<div class="empty" style="padding:14px">Sin plan de pagos. Define el valor del proyecto y repártelo en hitos con fecha prevista.</div>`}
         ${planHitos(p).length?`<div style="display:flex;justify-content:flex-end;gap:14px;font-size:12px;color:var(--ink-soft);padding:2px 8px">Suman <b>${fmt(planHitos(p).reduce((s,h)=>s+(+h.amount||0),0))}</b>${p.total?` de ${fmt(p.total)}`:""}</div>`:""}
-        <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="addtask" style="flex:1" onclick="hitoAdd(${p.id})">${ico("mas")} Añadir hito</button><button class="btn btn-gold" style="flex:1;justify-content:center" onclick="planModal(${p.id})">€ Valor y reparto${p.total?"":" — definir"}</button></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="addtask" style="flex:1" onclick="hitoAdd(${p.id})">${ico("mas")} Añadir hito</button><button class="btn btn-gold" style="flex:1;justify-content:center" onclick="planModal(${p.id})">${projectCurrencySymbol()} Valor y reparto${p.total?"":" — definir"}</button></div>
       </div>
       ${(()=>{ const qs=(state.quotes||[]).map((q,i)=>({q,i})).filter(x=>x.q.projectId===p.id); const fs=(state.invoices||[]).map((f,i)=>({f,i})).filter(x=>x.f.projectId===p.id||planHitos(p).some(h=>h.invRef===x.f.ref)); if(!qs.length&&!fs.length) return "";
         const QL={pend:["Pendiente","var(--gold-soft)"],acc:["Aceptado","#DBEBDD"],rej:["Rechazado","var(--red)"]};
@@ -6231,7 +6228,7 @@ function vPrevision(){
         <input class="inp" type="date" value="${h.due||""}" style="padding:6px 10px;font-size:12px;${late?"border-color:var(--red)":""}" title="Fecha prevista de cobro" onchange="hitoSet(${p.id},${h.id},'due',this.value)">
         <div class="hito-st">${hitoChip(h)}</div>
         <b style="text-align:right;white-space:nowrap">${fmt(h.amount||0)}</b>
-        <span style="display:flex;gap:6px;align-items:center;justify-content:flex-end"><button class="btn btn-dark" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" onclick="hitoInvoiceDraft(${p.id},${h.id})">${ico("factura")} Emitir factura</button><button class="collbtn" title="Quitar este hito del plan" onclick="hitoDel(${p.id},${h.id})">✕</button></span>
+        <span style="display:flex;gap:6px;align-items:center;justify-content:flex-end"><button class="btn btn-dark finance-invoice-action" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" onclick="hitoInvoiceDraft(${p.id},${h.id})">${ico("factura")} Emitir factura</button><button class="collbtn" title="Quitar este hito del plan" onclick="hitoDel(${p.id},${h.id})">✕</button></span>
       </div>`; }).join("")}
     </div>`).join("") : `<div class="empty">No hay hitos previstos pendientes. Define planes de pago en Finanzas de cada proyecto y aparecerán aquí.</div>`}`;
 }
@@ -6361,7 +6358,7 @@ function cobrosModal(entryId){
   ${historica?`<p class="collections-notice">Esta factura está marcada como cobrada. El desglose de cobros guardado no cubre el total; se conserva su estado sin crear movimientos.</p>`:""}
   ${cobros.length?`<div class="entry-col" style="gap:6px;margin:10px 0">${cobros.map((c,i)=>`<div class="entry" style="background:var(--white);padding:7px 10px;font-size:12px;gap:10px"><b style="min-width:90px">${fmt(c.amount)}</b><span style="color:var(--ink-soft)">${(c.date||"").split("-").reverse().join("/")}</span><span style="flex:1;color:var(--ink-faint)">${c.note||""}</span><button style="color:var(--ink-faint)" title="Quitar este cobro" onclick="cobroDel(${e.id},${i})">✕</button></div>`).join("")}</div>`:`<p style="font-size:11.5px;color:var(--ink-faint);margin:8px 0">No hay un desglose de cobros registrado.</p>`}
   ${pend>0?`<label>Nuevo cobro</label>
-  <div class="row2"><div><label style="font-size:10px">Importe (€)</label><input id="cbImp" type="number" step="0.01" min="0" value="${pend.toFixed(2)}"></div><div><label style="font-size:10px">Fecha</label><input id="cbDate" type="date" value="${hoy}"></div></div>
+  <div class="row2"><div><label style="font-size:10px">Importe (${projectCurrencySymbol()})</label><input id="cbImp" type="number" step="0.01" min="0" value="${pend.toFixed(2)}"></div><div><label style="font-size:10px">Fecha</label><input id="cbDate" type="date" value="${hoy}"></div></div>
   <label style="font-size:10px">Nota <small style="text-transform:none;letter-spacing:0">(transferencia, Bizum, efectivo, «a cuenta»…)</small></label><input id="cbNote" placeholder="Transferencia">
   <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${[25,50,100].map(p=>`<button class="chip neutral" onclick="document.getElementById('cbImp').value=(${tot}*${p}/100).toFixed(2)">${p} % del total</button>`).join("")}<button class="chip neutral" onclick="document.getElementById('cbImp').value='${pend.toFixed(2)}'">Todo lo pendiente</button></div>`:`<p style="font-size:12px;color:#2E6B4F;font-weight:800;margin-top:6px">✓ Cobrada del todo</p>`}
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cerrar</button>${pend>0?`<button class="btn btn-dark" onclick="cobroAdd(${e.id})">Registrar cobro</button>`:""}</div></div>`);
@@ -9432,7 +9429,7 @@ function planModal(pid){
   pp = { pid, total: p.total || projValor(p).total || 0, n: Math.max(1,H.length||3), start: (H[0]&&H[0].due)||new Date().toISOString().slice(0,10), rows: H.map(h=>({...h})) };
   modal(`<h3>Plan de pagos · ${p.num}</h3>
   <p style="font-size:12.5px;color:var(--ink-soft);margin-top:4px">Es una <b>previsión</b>: lo que esperas cobrar y cuándo. No toca Contabilidad. Cada hito se convierte en factura cuando toca, con «Emitir factura».</p>
-  <label>Importe del contrato (€) <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— lo que se reparte en hitos; ya facturado: ${fmt(projValor(p).facturado)}</small></label><input id="ppTotal" type="number" step="0.01" value="${pp.total||""}" onchange="pp.total=+this.value||0;ppDraw()">
+  <label>Importe del contrato (${projectCurrencySymbol()}) <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— lo que se reparte en hitos; ya facturado: ${fmt(projValor(p).facturado)}</small></label><input id="ppTotal" type="number" step="0.01" value="${pp.total||""}" onchange="pp.total=+this.value||0;ppDraw()">
   <div class="row2"><div><label>Dividir en</label><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${[1,2,3,4].map(n=>`<button class="btn btn-ghost" style="padding:6px 10px" onclick="ppSplit(${n})">${n}</button>`).join("")}<input id="ppN" type="number" min="1" max="24" placeholder="N" style="width:56px"><button class="btn btn-ghost" style="padding:6px 10px" onclick="ppSplit(+document.getElementById('ppN').value||1)">Generar</button></div></div>
   <div><label>Primer cobro previsto</label><input id="ppStart" type="date" value="${pp.start}" onchange="pp.start=this.value"></div></div>
   <label>Hitos <span id="ppSum" style="color:var(--ink-faint)"></span></label>
@@ -10267,7 +10264,7 @@ function entryModal(kind){
   </div>`:`<label>De quién (opcional)</label>
   <input id="enSup" list="cliList" class="cmb" value="${ed?(ed.sup||"").replace(/"/g,"&quot;"):""}" placeholder="Cliente, proveedor, colaborador… escribe o elige de la agenda">
   <datalist id="cliList">${["Cliente","Proveedor","Contratista","Técnico","Team"].flatMap(t=>state.clients.filter(c=>c.type===t).map(c=>`<option value="${(c.name||"").replace(/"/g,"&quot;")}" label="${(c.num||t)} · ${(c.name||"").replace(/"/g,"&quot;")}${c.type!=="Cliente"?" · "+c.type:""}">`)).join("")}</datalist>`}
-  <div class="row2"><div><label>Importe total (\u20ac)</label><input id="enA" type="number" step="0.01" value="${ed?ed.amount:""}" placeholder="0.00" onchange="recalcEnBk()"></div>
+  <div class="row2"><div><label>Importe total (${projectCurrencySymbol()})</label><input id="enA" type="number" step="0.01" value="${ed?ed.amount:""}" placeholder="0.00" onchange="recalcEnBk()"></div>
   ${kind==="out"?`<div><label>IVA / impuesto (%)</label><input id="enVat" type="number" step="0.1" value="${ed&&ed.vat!=null?ed.vat:(state.account&&state.account.vat!=null?state.account.vat:21)}" onchange="recalcEnBk()"></div>`:""}
   <div><label>Fecha</label><input id="enD" type="date" value="${esToIso(ed?ed.date:hoyEs())}"></div></div>
   ${state.irpf?`<label style="display:flex;gap:8px;align-items:center;text-transform:none;letter-spacing:0;font-size:12.5px"><input type="checkbox" id="enRetOn" style="width:auto" ${ed&&ed.irpf>0?"checked":""} onchange="recalcEnBk()"> Aplicar ${retLabel()}</label>
@@ -10396,7 +10393,7 @@ function syncEntryToInvoice(e){
 function stSelect(id, extra=""){
   const e = state.entries.find(x=>x.id===id);
   const opts = e.kind==="out" ? ["pend","cobr"] : ["pend","env","cobr"];
-  return `<select class="st ${e.status}" onclick="event.stopPropagation()" onchange="setEntryStatus(${id},this.value)${extra}">
+  return `<select class="st finance-status ${e.status}" onclick="event.stopPropagation()" onchange="setEntryStatus(${id},this.value)${extra}">
     ${opts.map(k=>`<option value="${k}" ${e.status===k?"selected":""}>${(e.kind==="out"&&k==="cobr")?"Pagado":ST_LABEL[k]}</option>`).join("")}
   </select>`;
 }
@@ -10529,7 +10526,7 @@ function provSummaryModal(){
   modal(`<h3>🔒 Exportar partes a colaboradores</h3>
   <p style="font-size:12px;color:var(--ink-soft);margin-top:2px">Interno. Coste = lo que pagas tú (si una línea no tiene coste, se usa su precio de venta y se marca con *). Exporta la parte de cada colaborador para enviársela o para tu control.</p>
   <div class="entry-col" style="max-height:52vh;overflow:auto">${G.map(([k,ls])=>{ const coste=ls.reduce((s,x)=>s+x.l.qty*(x.l.cost!=null?+x.l.cost:+x.l.price),0); const sin=ls.filter(x=>x.l.cost==null).length; const c=state.clients.find(c=>c.name===k);
-    return `<div class="entry prov-row" style="background:var(--white)"><div style="min-width:0"><b style="font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</b>${c?`<small style="color:var(--ink-faint);display:block">${c.type}${c.trade?" · "+c.trade:""}${c.phone?" · "+c.phone:""}</small>`:""}</div><small style="color:var(--ink-soft);white-space:nowrap">${ls.length} línea${ls.length===1?"":"s"}${sin?" · "+sin+" sin coste*":""}</small><b style="white-space:nowrap;text-align:right">${fmt(coste)}</b><div style="text-align:right">${k!=="Sin asignar"?`<button class="btn btn-dark" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" onclick="provExportPDF('${k.replace(/'/g,"\\'")}')">${ico("pdf")} Exportar su parte</button>`:""}</div></div>`; }).join("")}</div>
+    return `<div class="entry prov-row" style="background:var(--white)"><div style="min-width:0"><b style="font-size:12.5px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k}</b>${c?`<small style="color:var(--ink-faint);display:block">${c.type}${c.trade?" · "+c.trade:""}${c.phone?" · "+c.phone:""}</small>`:""}</div><small style="color:var(--ink-soft);white-space:nowrap">${ls.length} línea${ls.length===1?"":"s"}${sin?" · "+sin+" sin coste*":""}</small><b style="white-space:nowrap;text-align:right">${fmt(coste)}</b><div style="text-align:right">${k!=="Sin asignar"?`<button class="btn btn-dark finance-invoice-action" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" onclick="provExportPDF('${k.replace(/'/g,"\\'")}')">${ico("pdf")} Exportar su parte</button>`:""}</div></div>`; }).join("")}</div>
   <div class="modal-foot"><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
 }
 async function provExportPDF(prov){
@@ -11448,7 +11445,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.26";
+const MODERNO_VER="v3.65.27";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -12605,7 +12602,7 @@ const T9N = (function(){
   A("Nombre fiscal","Legal name","Raison sociale","Ragione sociale","Nome fiscal");
   A("Notas internas","Internal notes","Notes internes","Note interne","Notas internas");
   A("Cliente (opcional)","Client (optional)","Client (facultatif)","Cliente (opzionale)","Cliente (opcional)");
-  A("Importe total (\u20ac)","Total amount (\u20ac)","Montant total (\u20ac)","Importo totale (\u20ac)","Valor total (\u20ac)");
+  A("Importe total (${projectCurrencySymbol()})","Total amount (\u20ac)","Montant total (\u20ac)","Importo totale (\u20ac)","Valor total (\u20ac)");
   A("IVA / impuesto (%)","VAT / tax (%)","TVA / taxe (%)","IVA / imposta (%)","IVA / imposto (%)");
   A("Retenci\u00f3n IRPF (%)","Withholding tax (%)","Retenue \u00e0 la source (%)","Ritenuta (%)","Reten\u00e7\u00e3o na fonte (%)");
   A("Proyecto (opcional)","Project (optional)","Projet (facultatif)","Progetto (opzionale)","Projeto (opcional)");
@@ -13266,7 +13263,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36515">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36527">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

@@ -1,3 +1,4 @@
+function projectCurrencySymbol(){return (CURR[state.account?.currency]||CURR.EUR).s;}
 /* Project presentation. Existing editors and persistence remain the source of truth. */
 function projectTabKey(key){return key==='resumen'?'proyecto':key==='chat'?'cliente':key;}
 function projectMoreIcon(){return '<svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>';}

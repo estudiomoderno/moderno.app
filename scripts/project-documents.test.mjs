@@ -28,7 +28,7 @@ test('bounded download rejects HTTP and size errors without returning partial co
 test('publication does not activate cloud annotation saving or replace existing file and note actions',()=>{
  const js=readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8'),html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
  assert.ok(!js.includes('sb.storage')&&!js.includes('sb.rpc')&&!js.includes('localStorage'));
- assert.match(js,/mount\(root,\{document:doc,model\}\)/);assert.match(html,/addFiles\(\$\{p.id\},this.files\)/);assert.doesNotMatch(html,/<h2 class="sec">Notas del proyecto/);
+ assert.match(js,/mount\(root,\{document:doc,model\}\)/);assert.match(html,/ModernoProjectDocuments.uploadCard\(p\)/);assert.match(js,/addFiles\(Number/);assert.doesNotMatch(html,/<h2 class="sec">Notas del proyecto/);
 });
 test('viewer identity changes for real-format sessions without a user id',()=>{
  const code=readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8');
