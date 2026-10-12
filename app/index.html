@@ -916,8 +916,8 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <link rel="stylesheet" href="/shopping-cards.css?v=3625">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
-<script src="/client-portal-site.js?v=3629"></script>
-<link rel="stylesheet" href="/client-portal-site.css?v=3630">
+<script src="/client-portal-site.js?v=36524"></script>
+<link rel="stylesheet" href="/client-portal-site.css?v=36524">
 <link rel="stylesheet" href="/home-dashboard.css?v=3640">
 <link rel="stylesheet" href="/menu-polish.css?v=3650">
 <link rel="stylesheet" href="/folder-automations.css?v=3652"></head>
@@ -1158,7 +1158,7 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 <script src="/project-ui.js?v=36519"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
-<script src="/project-documents.js?v=36523"></script>
+<script src="/project-documents.js?v=36524"></script>
 <link rel="stylesheet" href="/plan-editor.css?v=36523">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
@@ -6000,15 +6000,10 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
           <input type="file" multiple style="display:none" onchange="addFiles(${p.id},this.files)"></label>
         <p style="font-size:11px;color:var(--ink-faint);margin-top:8px">Se guardan en la nube del estudio y aparecen en «Documentos» del portal del cliente y en el portal de obra.</p>
       </div>
-      <h2 class="sec">Notas del proyecto</h2>
-      <textarea rows="5" style="width:100%;border:none;background:var(--card);border-radius:var(--radius);padding:14px;outline:none;resize:vertical;font-size:13px" placeholder="Apuntes sueltos: medidas, acuerdos con el cliente, pendientes…" onchange="state.projects.find(x=>x.id===${p.id}).notes=this.value;toast('Notas guardadas ✓')">${ModernoDaily.escape(p.notes||"")}</textarea>
+
   </div>`}
   ${tb!=="cliente"?"":(function(){
     const sh=cliEnsure(p);
-    const todos=cliItems(p,false);
-    const aprob=todos.filter(x=>x.it.cli==="ok");
-    const docsAll=[];   // el cliente solo ve los archivos de «Archivos y notas»; planos y archivos de obra van al portal de obra
-    (p.files||[]).forEach((f,i)=>docsAll.push({proj:true,i,x:{file:fobj(f)},ok:fileOk(f)}));
     setTimeout(()=>cliRespSync(p.id), 80);
     return `<div style="max-width:820px">
     <h2 class="sec" style="margin-top:0">Portal del cliente</h2>
@@ -6026,7 +6021,6 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
         <p style="font-size:11px;color:var(--ink-faint);margin:0">El portal est\u00e1 siempre activo: cualquiera con el enlace puede verlo. Si quieres cortar el acceso, regenera el enlace y el anterior muere.</p>
       </div>
     </div>
-    <p style="font-size:11px;color:var(--ink-faint);margin-top:8px">El cliente nunca ve costes internos, m\u00e1rgenes, proveedores ni otros proyectos. En la app real, el enlace funciona sin que el cliente se registre.</p>
     ${ClientPortalSite.coverEditor(p)}
     ${ClientPortalSite.linksEditor(p)}
     <h2 class="sec">Mensaje de bienvenida</h2>
@@ -6044,45 +6038,21 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
       <div class="entry" style="background:var(--white)"><b style="flex:1;font-size:12.5px">Mostrar contactos de obra en el portal</b><small style="color:var(--ink-faint)">Oficio, teléfono y correo de cada contacto de obra</small><div class="switch ${(p.cliShare&&p.cliShare.obraContactos===false)?"":"on"}" onclick="cliEnsure(state.projects.find(x=>x.id===${p.id})).obraContactos=!(state.projects.find(x=>x.id===${p.id}).cliShare.obraContactos!==false);render()"></div></div>
     </div>
     <p style="font-size:11.5px;color:var(--ink-faint);margin-top:-6px">Por cada lista, decide qu\u00e9 puede hacer tu cliente. Si no eliges nada, la lista <b>se ve</b> (solo lectura).</p>
-    <div class="entry-col">
-    ${(p.rooms||[]).length? (p.rooms||[]).map(r=>`<div class="entry" style="background:var(--white);flex-wrap:wrap;gap:8px">
-      <b style="flex:1;min-width:120px;font-size:12.5px">${r.name}</b>
-      <div class="opt-pills" style="margin:0">
-        ${[["off","Oculta"],["ver","Solo ver"],["coment","Puede comentar"],["aprob","Aprobar / rechazar"]].map(([v,t])=>
-          `<button class="${cliModeOf(r)===v?"on":""}" onclick="state.projects.find(x=>x.id===${p.id}).rooms.find(x=>String(x.id)==='${r.id}').cliMode='${v}';persistSoon();cloudFlush();render()">${t}</button>`).join("")}
-      </div>
-    </div>`).join("") : `<p style="font-size:12px;color:var(--ink-faint)">Este proyecto a\u00fan no tiene listas de la compra.</p>`}
-    </div>
+    ${ClientPortalSite.roomSharingEditor(p)}
     <h2 class="sec">Conversaci\u00f3n con el cliente</h2>
     ${[...(p.cliChat||[]),...(p.cliChatLocal||[])].length?`<div class="entry-col" style="max-height:260px;overflow:auto">
       ${[...(p.cliChat||[]),...(p.cliChatLocal||[])].map(m=>`<div class="entry" style="background:${m.de==="estudio"?"var(--white)":"var(--card)"}"><span style="flex:1;font-size:12.5px"><b>${m.de==="estudio"?"T\u00fa":"Cliente"}</b>: ${m.t}<br><small style="color:var(--ink-faint)">${m.d}</small></span></div>`).join("")}
-    </div>`:`<p style="font-size:12px;color:var(--ink-faint);margin:4px 0 0">Sin mensajes todav\u00eda. Lo que escribas aqu\u00ed aparece en el portal del cliente; sus mensajes te llegan en Respuestas.</p>`}
+    </div>`:`<p style="font-size:12px;color:var(--ink-faint);margin:4px 0 0">Sin mensajes todav\u00eda.</p>`}
     <div style="display:flex;gap:8px;margin-top:8px">
       <input id="cChatIn" placeholder="Escribe al cliente\u2026" style="flex:1;border:none;background:var(--card);border-radius:12px;padding:11px 14px;outline:none;font-size:13px" onkeydown="if(event.key==='Enter')cliChatSend(${p.id})">
       <button class="btn btn-dark" onclick="cliChatSend(${p.id})">Enviar</button>
     </div>
-    <h2 class="sec">${tr("portal.docs")}</h2>
-    <div class="entry-col">
-    ${docsAll.length? docsAll.map(d=>d.proj?`<label class="entry" style="background:var(--white);gap:10px;cursor:pointer;${d.ok?"":"opacity:.75"}">
-      <input type="checkbox" ${fileCli(d.x.file)?"checked":""} ${d.ok?"":"disabled"} onchange="fileCliToggle(${p.id},${d.i})" title="${d.ok?"Marcado = el cliente lo ve en Documentos":"Sin contenido: no se puede compartir"}" style="width:16px;height:16px;accent-color:var(--ink)">
-      <span style="flex:1;font-size:12.5px">\ud83d\udcc4 ${d.x.file.name}</span>${d.x.file.docRef?`<span class="chip neutral" style="font-size:10px">${d.x.file.docKind==="factura"?"Factura":"Presupuesto"} ${d.x.file.docRef}</span>`:d.ok?`<span class="chip neutral" style="font-size:10px">${fileCli(d.x.file)?"Lo ve el cliente":"Oculto al cliente"}</span>`:`<span class="chip" style="background:var(--red);color:var(--red-ink);font-size:10px" title="Solo se guardó el nombre: súbelo de nuevo en Archivos y notas">Solo nombre · vuelve a subirlo</span>`}
-    </label>`:`<label class="entry" style="background:var(--white);gap:10px;cursor:pointer">
-      <input type="checkbox" ${d.x.file.cli?"checked":""} onchange="${d.plano?`cliPlanoToggle(${p.id},${d.pi})`:`cliDocToggle(${p.id},${d.fi},${d.ii})`}" style="width:16px;height:16px;accent-color:var(--ink)">
-      <span style="flex:1;font-size:12.5px">\ud83d\udcc4 ${d.x.file.name}</span>${d.plano?`<span class="chip neutral" style="font-size:10px">Plano definitivo</span>`:``}
-    </label>`).join("") : `<p style="font-size:12px;color:var(--ink-faint)">Sube documentos en <b>Archivos y notas</b> y marca aqu\u00ed cu\u00e1les ve el cliente. Los planos y archivos de obra solo salen en el portal de obra.</p>`}
-    </div>
-    <h2 class="sec">Respuestas del cliente <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px;margin-left:8px" title="Actualizar" onclick="cliRespSync(${p.id});toast('Actualizando\u2026')">\u27f3</button></h2>
-    <div class="entry-col" id="cliRespCloud"><p style="font-size:12px;color:var(--ink-faint)">Cargando respuestas\u2026</p></div>
-    ${aprob.length||((p.cliMsgs||[]).length)?`<h2 class="sec" style="font-size:12px;color:var(--ink-faint)">Respuestas en pruebas locales</h2>
-    <div class="entry-col">
-      ${aprob.map(({it})=>`<div class="entry" style="background:var(--white)"><span style="flex:1;font-size:12.5px">\u2713 Aprobado: <b>${it.name}</b></span></div>`).join("")}
-      ${(p.cliMsgs||[]).slice().reverse().map(m=>`<div class="entry" style="background:var(--white);align-items:flex-start"><span style="flex:1;font-size:12.5px">\ud83d\udcac <b>${m.item}</b>: ${m.t}<br><small style="color:var(--ink-faint)">${m.d}</small></span></div>`).join("")}
-    </div>`:""}
+    ${ClientPortalSite.sharedDocumentsEditor(p)}
     </div>`;
   })()}
   ${tb!=="fin"?"":`
   <div>
-      <h2 class="sec" id="pj-fin" style="margin-top:0">Finanzas <span class="sec-note">Vinculado a Contabilidad.</span></h2>
+      <h2 class="sec" id="pj-fin" style="margin-top:0">Finanzas</h2>
       ${(()=>{ const V=projValor(p); const cobrBase=fin.filter(e=>e.status==="cobr"&&e.kind==="in").reduce((s,e)=>s+entryBase(e),0); if(!V.total&&!p.total) return ""; const tot=V.total||p.total;
       return `<div class="fin-card" style="background:var(--ink);color:#fff;margin-bottom:8px">
         <span class="lab" style="background:rgba(255,255,255,.15)">Valor del proyecto</span>
@@ -6132,20 +6102,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
         <button class="addtask" onclick="go('contabilidad')">Ver en Contabilidad →</button>
       </div>
     `}
-  ${tb!=="cliente"?"":`
-  <h2 class="sec" id="pj-chat" style="margin-top:0">Conversación del equipo <span class="sec-note">Comentarios del proyecto, visibles para todo el Team.</span></h2>
-  <div class="chatbox">
-    ${(p.chat||[]).map(c=>`
-      <div class="entry" style="background:var(--white);align-items:flex-start">
-        <span style="background:var(--gold);border-radius:8px;width:28px;height:28px;display:grid;place-items:center;font-weight:900;font-size:12px;flex-shrink:0">${c.who[0]}</span>
-        <div><b style="font-size:12.5px">${c.who}</b> <small style="color:var(--ink-faint)">· ${c.when}</small><br>${c.txt}</div>
-      </div>`).join("")||`<div class="empty" style="padding:14px">Aún no hay comentarios. Empieza la conversación con tu equipo.</div>`}
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <span style="background:var(--gold);border-radius:8px;width:34px;height:38px;display:grid;place-items:center;font-weight:900;flex-shrink:0">${(meName()[0]||"?").toUpperCase()}</span>
-      <input id="pChat" placeholder="Escribe un comentario para el equipo…" style="flex:1;border:none;background:var(--white);border-radius:12px;padding:10px 14px;outline:none" onkeydown="if(event.key==='Enter')sendChat(${p.id})">
-      <button class="btn btn-dark" onclick="sendChat(${p.id})">Comentar</button>
-    </div>
-  </div>`}${tb==="proyecto"?`<div style="margin-top:28px;padding-top:14px;border-top:1px solid var(--ink-faint);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+${tb==="proyecto"?`<div style="margin-top:28px;padding-top:14px;border-top:1px solid var(--ink-faint);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <small style="color:var(--ink-faint);flex:1">¿Este proyecto te sirve de base para otros? Guárdalo como plantilla: tareas, estancias, fases y puntos de obra, listos para reutilizar.</small>
     <button class="btn btn-ghost" onclick="saveAsTemplate(${p.id})">${ico("copiar")} Guardar como plantilla de proyecto</button>
   </div>`:""}</section></div>`;
@@ -11501,7 +11458,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.23";
+const MODERNO_VER="v3.65.24";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
