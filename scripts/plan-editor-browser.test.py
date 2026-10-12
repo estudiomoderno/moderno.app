@@ -11,7 +11,7 @@ repo = pathlib.Path(__file__).resolve().parents[1]
 pdfjs = pathlib.Path(sys.argv[1])
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path="/usr/bin/chromium", headless=True, args=["--no-sandbox"])
-    for viewport in [{"width": 1280, "height": 900}, {"width": 390, "height": 844}]:
+    for viewport in [{"width": 1280, "height": 900}, {"width": 390, "height": 844}, {"width": 844, "height": 390}, {"width": 768, "height": 1024}, {"width": 1024, "height": 768}]:
         page = browser.new_page(viewport=viewport, accept_downloads=True)
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
@@ -68,6 +68,26 @@ with sync_playwright() as p:
         page.get_by_role("button", name="Deshacer", exact=True).click()
         assert page.evaluate("model.items.length") == 0
         page.get_by_role("button", name="Rehacer", exact=True).click()
+        # The fitted page stays clear of the floating bottom toolbox.
+        paper=page.locator('.plan-paper').bounding_box();box=page.locator('.plan-toolbox').bounding_box()
+        assert paper['y']+paper['height'] < box['y']
+        assert box['y'] > viewport['height']*.6
+        palette=page.locator('.plan-palette').bounding_box();slider=page.get_by_label('Grosor',exact=True).bounding_box()
+        assert abs(slider['x']+slider['width']-palette['x']-palette['width']) < 5
+        page.get_by_role('button',name='Girar 90°',exact=True).click()
+        assert page.evaluate('model.items[0].points[0]') == first
+        assert page.locator('.plan-paper').bounding_box()['height'] > page.locator('.plan-paper').bounding_box()['width']
+        stroke()
+        point=page.evaluate('model.items[1].points[0]')
+        assert abs(point['x']-.3) < .01 and abs(point['y']-.8) < .01
+        page.get_by_role('button',name='Deshacer',exact=True).click()
+        assert page.evaluate('model.items.length') == 1
+        for x,y in [( .8,.7),(.7,.2),(.2,.3)]:
+            page.get_by_role('button',name='Girar 90°',exact=True).click()
+            stroke();point=page.evaluate('model.items[1].points[0]')
+            assert abs(point['x']-x)<.01 and abs(point['y']-y)<.01
+            page.get_by_role('button',name='Deshacer',exact=True).click()
+        page.get_by_role('button',name='Girar 90°',exact=True).click()
         page.get_by_role("button", name="Acercar", exact=True).click()
         assert page.evaluate("model.items[0].points[0]") == first
         page.get_by_role("button", name="Ajustar", exact=True).click()
@@ -101,14 +121,18 @@ with sync_playwright() as p:
           const pages=pdf.numPages;
           const actual=await pdf.getPage(1),expected=await doc.pageSize(1);
           const viewport=actual.getViewport({scale:1});
-          const sameSize=viewport.width===expected.width&&viewport.height===expected.height;
+          const second=await pdf.getPage(2),secondSize=second.getViewport({scale:1}),originalSecond=await doc.pageSize(2);
+          const sameSize=viewport.width===expected.height&&viewport.height===expected.width&&secondSize.width===originalSecond.width&&secondSize.height===originalSecond.height;
+          const raster=document.createElement('canvas'),v=actual.getViewport({scale:1.5});raster.width=v.width;raster.height=v.height;await actual.render({canvasContext:raster.getContext('2d'),viewport:v}).promise;
+          const ink=raster.getContext('2d').getImageData(Math.round(raster.width*.7)-4,Math.round(raster.height*.2)-4,9,9).data;
+          let aligned=false;for(let i=0;i<ink.length;i+=4)if(ink[i+2]>150&&ink[i]<100)aligned=true;
           await pdf.destroy();
           const unchanged=Array.from(new Uint8Array(original)).every((b,i)=>b===new Uint8Array(window.original)[i]);
           // Compare the source Blob again after editing/export.
           const current=new Uint8Array(await source.arrayBuffer());
-          return {pages,sameSize,unchanged:unchanged&&current.every((b,i)=>b===new Uint8Array(original)[i])};
+          return {pages,sameSize,aligned,unchanged:unchanged&&current.every((b,i)=>b===new Uint8Array(original)[i])};
         }""")
-        assert result == {"pages": 2, "sameSize": True, "unchanged": True}
+        assert result == {"pages": 2, "sameSize": True, "aligned": True, "unchanged": True}
         assert page.evaluate("model.dirty") is True
         assert page.evaluate("async()=>{try{await editor.close();return false}catch{return true}}") is True
         assert not errors, errors
@@ -132,6 +156,24 @@ with sync_playwright() as p:
           const rotated=await ModernoPlanEditor.openFile(new Blob([pdf],{type:'application/pdf'}),{pdfjs:pdfjsLib});const size=await rotated.pageSize(1);await rotated.render(1,target);const rotation=size.width===200&&size.height===300&&target.width===300&&target.height===450;await rotated.close();
           return correct&&errors===3&&rotation;
         }""") is True
-        print(f"PASS {viewport['width']}px: PDF 2 páginas, anotaciones, zoom, undo/redo, texto seguro, exportación, original intacto y cierre protegido")
+        # Rotation/export follows the same path for an uploaded image.
+        page.evaluate("""async()=>{
+          const c=document.createElement('canvas');c.width=100;c.height=50;c.getContext('2d').fillRect(0,0,100,50);
+          window.imageSource=await new Promise(r=>c.toBlob(r,'image/png'));window.imageOriginal=new Uint8Array(await imageSource.arrayBuffer());
+          const image=await ModernoPlanEditor.openFile(imageSource);
+          window.model=new ModernoPlanAnnotations.Model({reference:{studyId:'fake',projectId:'image',fileId:'image',revisionId:'original'},pages:1,authorize:()=>true});
+          window.editor=await ModernoPlanEditor.mount(document.querySelector('main'),{document:image,model});
+        }""")
+        page.get_by_role('button',name='Girar 90°',exact=True).click()
+        with page.expect_download() as download:
+            page.get_by_role('button',name='Exportar PDF',exact=True).click()
+        content=pathlib.Path(download.value.path()).read_bytes()
+        page.evaluate('window.imagePdf=new Uint8Array('+str(list(content))+')')
+        assert page.evaluate("""async()=>{
+          const pdf=await pdfjsLib.getDocument({data:imagePdf,isEvalSupported:false}).promise,p=await pdf.getPage(1),v=p.getViewport({scale:1});await pdf.destroy();
+          const bytes=new Uint8Array(await imageSource.arrayBuffer());return v.width===37.5&&v.height===75&&bytes.every((b,i)=>b===imageOriginal[i]);
+        }""")
+        page.evaluate('editor.discard()')
+        print(f"PASS {viewport['width']}px: PDF 2 páginas, anotaciones, zoom, undo/redo, texto seguro, cuatro giros, PDF e imagen exportados, original intacto y cierre protegido")
         page.close()
     browser.close()
