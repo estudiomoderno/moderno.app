@@ -29,3 +29,12 @@
 @media(max-width:700px){.project-document-name{flex-basis:calc(100% - 40px)}}
 
 @media(max-height:500px){.plan-toolbox{bottom:24px;padding:4px 8px}.plan-editor .plan-icon-button{height:32px;min-height:32px}.plan-navigation{top:4px}.plan-selection{top:68px}.plan-status{top:48px}.plan-editor textarea{top:52px}.project-plan-dialog>header{padding:4px 12px}}
+
+.plan-pointer-layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.plan-pages-panel{position:absolute;z-index:8;right:0;top:0;bottom:0;width:220px;max-width:80%;display:flex;flex-direction:column;background:var(--white,#f8f6ef);border-left:1px solid var(--ui-line,#d8d3cc);box-shadow:-6px 0 20px #24242412;visibility:hidden;opacity:0;transform:translateX(100%);transition:transform .22s ease,opacity .22s ease,visibility .22s}
+.plan-pages-panel.is-open{visibility:visible;opacity:1;transform:translateX(0)}.plan-pages-panel>header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--ui-line,#d8d3cc)}.plan-pages-close{border:0;background:transparent;border-radius:8px;font-size:22px;min-width:36px;height:36px}
+.plan-pages-list{flex:1;min-height:0;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}.plan-pages-list>button{flex:none;width:100%;padding:10px;border:1px solid var(--ui-line,#d8d3cc);border-radius:12px;background:var(--bg,#f8f6ef);display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px}.plan-pages-list>button[aria-current=page]{border-color:var(--ink,#242424);background:var(--card,#e7e2d2)}.plan-pages-list canvas{max-width:100%;height:auto;max-height:180px;object-fit:contain;background:white;box-shadow:0 1px 6px #24242418}
+.plan-photo-gallery[hidden],.plan-photo-camera[hidden]{display:none}
+.project-plan-dialog>header{max-width:calc(100% - 600px)}.plan-navigation{max-width:calc(100% - 200px);flex-wrap:wrap}.plan-status{top:96px}.plan-editor textarea{top:116px}
+@media(max-width:1000px){.project-plan-dialog>header{top:8px;left:8px;max-width:calc(100% - 16px)}.plan-navigation{left:8px;right:8px;top:68px;max-width:none;justify-content:center}.plan-selection{top:164px}.plan-status{top:164px;max-width:65%}.plan-editor textarea{top:208px}}
+@media(prefers-reduced-motion:reduce){.plan-pages-panel{transition:none}}
