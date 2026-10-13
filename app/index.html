@@ -909,7 +909,10 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 
-.account-date-filter{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:16px 0 20px}.account-date-filter label{display:grid;gap:6px;min-width:150px;margin:0;text-transform:none;letter-spacing:normal;font-size:12px}.account-date-label{font-size:12px;color:var(--ink-soft);align-self:center}.account-date-filter input{width:100%}@media(max-width:650px){.account-date-filter label{flex:1;min-width:130px}.account-date-label{flex-basis:100%}}
+ .account-compact-toolbar{flex-wrap:wrap;align-items:center;gap:10px}.account-header-main{display:flex;align-items:center;gap:8px;flex:none}.account-compact-toolbar>.account-tools{margin-left:auto}.account-date-filter{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:0}.account-date-filter[hidden]{display:none}.account-date-filter label{display:grid;gap:4px;width:132px;margin:0;text-transform:none;letter-spacing:normal;font-size:11px}.account-date-filter input{width:100%}
+ html body:not(.portalmode) #view .account-icon-button.btn{width:34px;min-width:34px;min-height:34px!important;height:34px;padding:0;flex:none;display:inline-flex;align-items:center;justify-content:center}.account-icon-button svg{width:20px;height:20px;flex:none}.account-icon-button.is-filtered{outline:1px solid var(--ink);outline-offset:2px}html body:not(.portalmode) #view .account-apply-dates.btn{min-height:34px!important;height:34px;padding:5px 10px;font-size:11px}.account-export-selectors,.account-export-dates{display:flex;gap:10px;flex-wrap:wrap}.account-export-panel label{display:grid;gap:6px;margin:0 0 12px;font-size:12px;text-transform:none;letter-spacing:normal}.account-export-selectors>label,.account-export-dates>label{flex:1;min-width:130px}.account-export-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.account-export-dates{align-items:center}.account-export-panel select,.account-export-panel input{width:100%}
+ @media(max-width:650px){.account-date-filter{order:3;flex-basis:100%}.account-date-filter label{flex:1;min-width:130px}.account-export-actions .btn{flex:1;justify-content:center}}
+
 </style>
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
@@ -6236,7 +6239,7 @@ function vPrevision(){
 }
 function vAccounting(){
   const P = state.period || (state.period={mode:"todo", year:new Date().getFullYear(), month:new Date().getMonth()+1, quarter:Math.ceil((new Date().getMonth()+1)/3)});
-  const years = [...new Set(state.entries.map(e=>+e.date.split("/")[2]))].sort();
+  const years = [...new Set([P.year,new Date().getFullYear(),...state.entries.map(e=>+(accountingISODate(e.date)||"0000").slice(0,4))])].filter(Boolean).sort();
   const es = byBrand(state.entries).filter(inPeriod);
   const ing = es.filter(e=>e.kind==="in"&&e.status==="cobr").reduce((s,e)=>s+e.amount,0);
   const pen = es.filter(e=>e.kind==="in"&&e.status==="pend").reduce((s,e)=>s+e.amount,0);
@@ -6246,14 +6249,13 @@ function vAccounting(){
   return `
   ${planMigrateBanner()}
   <h1 class="big">Llevas <span class="hl">${fmt(ben)}</span> de beneficio,<br>vamos a por más, <span class="hl">${meName().split(" ")[0]}</span>.</h1>
-  <div class="account-toolbar"><div class="pill-tabs"><button class="${(state.accTab||'in')==='in'?'on':''}" onclick="WorkflowPolish.accountTab('in')">Ingresos</button><button class="${state.accTab==='out'?'on':''}" onclick="WorkflowPolish.accountTab('out')">Gastos</button></div><div class="account-tools"><button class="btn btn-ghost" onclick="WorkflowPolish.exportDialog()">Exportar</button></div></div>
-  <form class="account-date-filter" onsubmit="event.preventDefault();applyAccountingDates(this)">
+  <div class="account-toolbar account-compact-toolbar"><div class="account-header-main"><div class="pill-tabs"><button class="${(state.accTab||'in')==='in'?'on':''}" onclick="WorkflowPolish.accountTab('in')">Ingresos</button><button class="${state.accTab==='out'?'on':''}" onclick="WorkflowPolish.accountTab('out')">Gastos</button></div><button class="btn btn-ghost account-icon-button ${P.mode!=='todo'?'is-filtered':''}" type="button" title="Filtrar por fechas" aria-label="Filtrar por fechas" aria-expanded="${!!state.accDateOpen}" aria-controls="account-date-filter" onclick="toggleAccountingDates(this)"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 20l-3 1v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v3" /><path d="M16 19h6" /><path d="M19 16v6" /></svg></button></div>
+  <form id="account-date-filter" class="account-date-filter" ${state.accDateOpen?'':'hidden'} onsubmit="event.preventDefault();applyAccountingDates(this)">
     <label>Desde<input type="date" name="from" aria-label="Desde" required value="${P.mode==='rango'?(accountingISODate(P.from)||''):''}"></label>
     <label>Hasta<input type="date" name="to" aria-label="Hasta" required value="${P.mode==='rango'?(accountingISODate(P.to)||''):''}"></label>
-    <button class="btn btn-dark" type="submit">Aplicar fechas</button>
-    <button class="btn btn-ghost" type="button" onclick="clearAccountingDates()">Todo el histórico</button>
-    <span class="account-date-label">${periodoLabel()}</span>
-  </form>
+    <button class="btn btn-dark account-apply-dates" type="submit">Aplicar fechas</button>
+    <button class="btn btn-ghost account-icon-button" type="button" title="Restablecer" aria-label="Restablecer" onclick="clearAccountingDates()"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-restore"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3.06 13a9 9 0 1 0 .49 -4.087" /><path d="M3 4.001v5h5" /><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg></button>
+  </form><div class="account-tools"><button class="btn btn-ghost" onclick="WorkflowPolish.exportDialog()">Exportar</button></div></div>
   <div class="progressbar"><div style="width:${total?ing/total*100:0}%"></div></div>
   <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-soft)"><span>Cobrado: <b>${fmt(ing)}</b></span><span>Pendiente: <b>${fmt(pen)}</b></span></div>
   <div class="fin-cards">
@@ -6312,18 +6314,16 @@ function vAccounting(){
       })()}
     </div>`).join("")}
   </div>
-  <div hidden id="accounting-export-source">  <div class="rowbtns acc-foot" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px;background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;position:sticky;bottom:10px;z-index:20">
-    <b style="font-size:12.5px;color:var(--ink-soft)">${periodoLabel()}</b>
-    <div class="pill-tabs" style="margin:0">${[["mes","Mes"],["tri","Trimestre"],["año","Año"],["todo","Todo"]].map(([k,x])=>`<button class="${P.mode===k?'on':''}" onclick="state.period.mode='${k}';WorkflowPolish.exportDialog()">${x}</button>`).join("")}</div>
-    ${["mes","tri","año"].includes(P.mode)?`<select class="sel-pill" onchange="state.period.year=+this.value;WorkflowPolish.exportDialog()">${years.map(y=>`<option ${P.year===y?"selected":""}>${y}</option>`).join("")}</select>`:""}
-    ${P.mode==="mes"?`<select class="sel-pill" onchange="state.period.month=+this.value;WorkflowPolish.exportDialog()">${MESES.map((m,i)=>`<option value="${i+1}" ${P.month===i+1?"selected":""}>${m}</option>`).join("")}</select>`:""}
-    ${P.mode==="tri"?`<select class="sel-pill" onchange="state.period.quarter=+this.value;WorkflowPolish.exportDialog()">${[1,2,3,4].map(t=>`<option value="${t}" ${P.quarter===t?"selected":""}>T${t} (${["ene–mar","abr–jun","jul–sep","oct–dic"][t-1]})</option>`).join("")}</select>`:""}<span style="margin-left:auto"></span>
-    <button class="btn btn-ghost" onclick="exportPeriodInvoices()">${ico('download')} Facturas del periodo</button>
-    <button class="btn btn-ghost" onclick="exportCSV()">${ico('xlsx')} CSV (Ingresos y Gastos)</button>
-    <button class="btn btn-dark" onclick="closeModal();render();exportAccountingPDF('in')">${ico('pdf')} PDF de Ingresos</button>
-    <button class="btn btn-dark" onclick="closeModal();render();exportAccountingPDF('out')">${ico('pdf')} PDF de Gastos</button>
-
+  <div hidden id="accounting-export-source"><div class="account-export-panel">
+    <div class="account-export-selectors"><label>Periodo<select aria-label="Periodo para exportar" onchange="state.period.mode=this.value;WorkflowPolish.exportDialog()">${[["todo","Todo el histórico"],["rango","Entre fechas"],["mes","Mes"],["tri","Trimestre"],["año","Año"]].map(([mode,label])=>`<option value="${mode}" ${P.mode===mode?'selected':''}>${label}</option>`).join('')}</select></label>
+    <label>Movimientos<select aria-label="Movimientos para exportar" data-export-kind onchange="state.accExportKind=this.value"><option value="in" ${(state.accExportKind||state.accTab||'in')==='in'?'selected':''}>Ingresos</option><option value="out" ${(state.accExportKind||state.accTab)==='out'?'selected':''}>Gastos</option></select></label></div>
+    ${["mes","tri","año"].includes(P.mode)?`<label>Año<select aria-label="Año para exportar" onchange="state.period.year=+this.value;WorkflowPolish.exportDialog()">${years.map(y=>`<option value="${y}" ${P.year===y?'selected':''}>${y}</option>`).join('')}</select></label>`:''}
+    ${P.mode==='mes'?`<label>Mes<select aria-label="Mes para exportar" onchange="state.period.month=+this.value;WorkflowPolish.exportDialog()">${MESES.map((m,i)=>`<option value="${i+1}" ${P.month===i+1?'selected':''}>${m}</option>`).join('')}</select></label>`:''}
+    ${P.mode==='tri'?`<label>Trimestre<select aria-label="Trimestre para exportar" onchange="state.period.quarter=+this.value;WorkflowPolish.exportDialog()">${[1,2,3,4].map(t=>`<option value="${t}" ${P.quarter===t?'selected':''}>T${t}</option>`).join('')}</select></label>`:''}
+    ${P.mode==='rango'?`<form class="account-export-dates" onsubmit="event.preventDefault();applyAccountingDates(this);"><label>Desde<input type="date" name="from" aria-label="Desde para exportar" required value="${accountingISODate(P.from)||''}"></label><label>Hasta<input type="date" name="to" aria-label="Hasta para exportar" required value="${accountingISODate(P.to)||''}"></label><button class="btn btn-ghost" type="submit">Aplicar fechas</button></form>`:''}
+    <div class="account-export-actions"><button class="btn btn-ghost" onclick="accountingExport(this,'invoices')">${ico('download')} Facturas del periodo</button><button class="btn btn-ghost" onclick="accountingExport(this,'csv')">${ico('xlsx')} CSV</button><button class="btn btn-dark" onclick="accountingExport(this,'pdf')">${ico('pdf')} Exportar PDF</button></div>
   </div></div>
+
 `;
 }
 
@@ -11037,6 +11037,17 @@ function accountingISODate(value){
   if(date.getUTCFullYear()!==y||date.getUTCMonth()!==m-1||date.getUTCDate()!==d)return null;
   return String(y).padStart(4,'0')+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
 }
+function toggleAccountingDates(button){
+  const panel=document.getElementById('account-date-filter');if(!panel)return;
+  state.accDateOpen=panel.hidden;panel.hidden=!state.accDateOpen;button.setAttribute('aria-expanded',String(state.accDateOpen));
+  if(state.accDateOpen){if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&panel.animate)panel.animate([{opacity:0,transform:'translateX(-6px)'},{opacity:1,transform:'none'}],{duration:180,easing:'ease-out'});panel.querySelector('input')?.focus({preventScroll:true});}
+}
+function accountingExport(button,format){
+  const panel=button.closest('.account-export-panel'),dates=panel.querySelector('.account-export-dates');
+  if(dates&&!applyAccountingDates(dates))return;
+  const kind=panel.querySelector('[data-export-kind]').value;if(!['in','out'].includes(kind))return;
+  if(format==='csv')exportCSV(kind);else{closeModal();render();if(format==='pdf')exportAccountingPDF(kind);else if(format==='invoices')exportPeriodInvoices(kind);}
+}
 function applyAccountingDates(form){
   const from=accountingISODate(form.elements.from.value),to=accountingISODate(form.elements.to.value);
   if(!from||!to||from>to){toast('Elige una fecha inicial y una final igual o posterior');return false;}
@@ -11206,8 +11217,8 @@ function clientCard(name){
   <button class="btn btn-ghost" onclick="closeModal();clientModal(${state.clients.indexOf(c)})">\u270e Editar</button>
   <button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
 }
-async function exportPeriodInvoices(){
-  const es = byBrand(state.entries).filter(inPeriod);
+async function exportPeriodInvoices(kind){
+  const es = byBrand(state.entries).filter(inPeriod).filter(e=>!kind||e.kind===kind);
   const facturas = es.filter(e=>e.kind==="in").map(e=>({tipo:"Ingreso",...e}));
   const gastos = es.filter(e=>e.kind==="out").map(e=>({tipo:"Gasto",...e}));
   const z=document.getElementById("printZone");
@@ -11221,11 +11232,11 @@ async function exportPeriodInvoices(){
     </table></div>`;
   z.style.display="block"; await printAs(document.title); z.style.display="none";
 }
-function exportCSV(){
-  const es = byBrand(state.entries).filter(inPeriod);
+function exportCSV(kind){
+  const es = byBrand(state.entries).filter(inPeriod).filter(e=>!kind||e.kind===kind);
   const csv = "Fecha;Concepto;Marca;Tipo;Estado;Importe\n" + es.map(e=>[e.date,e.concept,BRAND[e.brand].name,e.kind==="in"?"Ingreso":"Gasto",e.status==="pend"?"Pendiente":"Cobrado",(e.kind==="in"?"":"-")+e.amount].join(";")).join("\n");
   const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv); a.download="contabilidad-moderno.csv"; a.click();
-  toast("CSV descargado — Ingresos y Gastos · "+periodoLabel());
+  toast("CSV descargado — "+(kind==='in'?'Ingresos':kind==='out'?'Gastos':'Ingresos y Gastos')+" · "+periodoLabel());
 }
 
 /* =================== ONBOARDING =================== */
@@ -11448,7 +11459,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.28";
+const MODERNO_VER="v3.65.29";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
