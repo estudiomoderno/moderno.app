@@ -22,7 +22,15 @@ with sync_playwright() as p:
         assert page.get_by_role('button',name='Resumen fiscal',exact=True).count()==0
         assert page.get_by_role('button',name='Recurrentes',exact=True).count()==0
         assert not page.locator('#account-date-filter').is_visible()
+        names=['Ingresos','Gastos','Filtrar por fechas','Exportar']
+        positions={name:page.get_by_role('button',name=name,exact=True).bounding_box() for name in names}
+        toolbar=page.locator('.account-compact-toolbar').bounding_box();progress=page.locator('.progressbar').bounding_box()
         page.get_by_role('button',name='Filtrar por fechas',exact=True).click()
+        page.wait_for_function("!document.querySelector('#account-date-filter').getAnimations().some(a=>a.playState==='running')")
+        for name in names:assert page.get_by_role('button',name=name,exact=True).bounding_box()==positions[name],(name,positions)
+        assert page.locator('.account-compact-toolbar').bounding_box()==toolbar
+        assert page.locator('.progressbar').bounding_box()==progress
+        panel=page.locator('#account-date-filter').bounding_box();assert panel['y']>toolbar['y']+toolbar['height'];assert panel['x']>=0 and panel['x']+panel['width']<=width
         assert page.get_by_role('button',name='Filtrar por fechas',exact=True).get_attribute('aria-expanded')=='true'
         assert page.get_by_role('button',name='Restablecer',exact=True).get_attribute('title')=='Restablecer'
         for name in ['Ingresos','Gastos','Filtrar por fechas','Exportar']:
@@ -38,11 +46,13 @@ with sync_playwright() as p:
             assert abs(center(controls[0].bounding_box())-center(controls[1].bounding_box()))<1
             assert controls[0].bounding_box()['y']>=datebox['y']+datebox['height']
         for control in controls:assert control.evaluate('(e)=>getComputedStyle(e).fontWeight')!='700'
-        if width>650:
-            for name in ['Ingresos','Gastos','Filtrar por fechas','Exportar']:
-                button=page.get_by_role('button',name=name,exact=True)
-                assert abs(center(button.bounding_box())-center(datebox))<1,(button.bounding_box(),datebox)
-                assert button.evaluate('(e)=>getComputedStyle(e).fontWeight')=='500',name
+        for name in names:
+            button=page.get_by_role('button',name=name,exact=True)
+            assert button.evaluate('(e)=>getComputedStyle(e).fontWeight')=='500',name
+        page.get_by_label('Desde',exact=True).press('Escape');assert not page.locator('#account-date-filter').is_visible()
+        assert page.get_by_role('button',name='Filtrar por fechas',exact=True).evaluate('(e)=>e===document.activeElement')
+        for name in names:assert page.get_by_role('button',name=name,exact=True).bounding_box()==positions[name]
+        page.get_by_role('button',name='Filtrar por fechas',exact=True).click()
         assert page.locator('.account-date-label').count()==0
         assert page.locator('.icon-tabler-filter-plus,.icon-tabler-restore').count()==2
         page.get_by_label('Desde',exact=True).fill('2025-01-01');page.get_by_label('Hasta',exact=True).fill('2027-02-06');page.get_by_role('button',name='Aplicar fechas',exact=True).click()
