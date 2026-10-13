@@ -909,8 +909,10 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 
+ html body:not(.portalmode) #view .account-header-main .pill-tabs button{min-height:32px!important;height:32px!important;padding:5px 10px!important;font-size:12px!important;line-height:1.2!important;flex:none;border-radius:12px!important}
+ html body:not(.portalmode) #view .account-compact-toolbar>.account-tools>.btn{min-height:32px!important;height:32px!important;padding:5px 12px!important;font-size:12px!important;line-height:1.2!important}
  .account-compact-toolbar{flex-wrap:wrap;align-items:center;gap:10px}.account-header-main{display:flex;align-items:center;gap:8px;flex:none}.account-compact-toolbar>.account-tools{margin-left:auto}.account-date-filter{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:0}.account-date-filter[hidden]{display:none}.account-date-filter label{display:grid;gap:4px;width:132px;margin:0;text-transform:none;letter-spacing:normal;font-size:11px}.account-date-filter input{width:100%}
- html body:not(.portalmode) #view .account-icon-button.btn{width:34px;min-width:34px;min-height:34px!important;height:34px;padding:0;flex:none;display:inline-flex;align-items:center;justify-content:center}.account-icon-button svg{width:20px;height:20px;flex:none}.account-icon-button.is-filtered{outline:1px solid var(--ink);outline-offset:2px}html body:not(.portalmode) #view .account-apply-dates.btn{min-height:34px!important;height:34px;padding:5px 10px;font-size:11px}.account-export-selectors,.account-export-dates{display:flex;gap:10px;flex-wrap:wrap}.account-export-panel label{display:grid;gap:6px;margin:0 0 12px;font-size:12px;text-transform:none;letter-spacing:normal}.account-export-selectors>label,.account-export-dates>label{flex:1;min-width:130px}.account-export-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.account-export-dates{align-items:center}.account-export-panel select,.account-export-panel input{width:100%}
+ html body:not(.portalmode) #view .account-icon-button.btn{width:32px!important;min-width:32px!important;min-height:32px!important;height:32px!important;padding:0!important;flex:none;display:inline-flex;align-items:center;justify-content:center}.account-icon-button svg{width:18px;height:18px;flex:none}.account-icon-button.is-filtered{border:1px solid var(--ink)!important}html body:not(.portalmode) #view .account-apply-dates.btn{min-height:32px!important;height:32px!important;padding:5px 10px!important;font-size:12px!important;line-height:1.2!important;border-radius:12px!important}.account-export-selectors,.account-export-dates{display:flex;gap:10px;flex-wrap:wrap}.account-export-panel label{display:grid;gap:6px;margin:0 0 12px;font-size:12px;text-transform:none;letter-spacing:normal}.account-export-selectors>label,.account-export-dates>label{flex:1;min-width:130px}.account-export-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.account-export-dates{align-items:center}.account-export-panel select,.account-export-panel input{width:100%}
  @media(max-width:650px){.account-date-filter{order:3;flex-basis:100%}.account-date-filter label{flex:1;min-width:130px}.account-export-actions .btn{flex:1;justify-content:center}}
 
 </style>
@@ -6239,8 +6241,9 @@ function vPrevision(){
 }
 function vAccounting(){
   const P = state.period || (state.period={mode:"todo", year:new Date().getFullYear(), month:new Date().getMonth()+1, quarter:Math.ceil((new Date().getMonth()+1)/3)});
-  const years = [...new Set([P.year,new Date().getFullYear(),...state.entries.map(e=>+(accountingISODate(e.date)||"0000").slice(0,4))])].filter(Boolean).sort();
+
   const es = byBrand(state.entries).filter(inPeriod);
+  const exportDates=(()=>{if(P.mode==='rango'&&accountingISODate(P.from)&&accountingISODate(P.to))return [P.from,P.to];const dates=es.map(e=>accountingISODate(e.date)).filter(Boolean).sort(),d=new Date(),today=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');return [dates[0]||today,dates[dates.length-1]||today];})();
   const ing = es.filter(e=>e.kind==="in"&&e.status==="cobr").reduce((s,e)=>s+e.amount,0);
   const pen = es.filter(e=>e.kind==="in"&&e.status==="pend").reduce((s,e)=>s+e.amount,0);
   const gas = es.filter(e=>e.kind==="out").reduce((s,e)=>s+e.amount,0);
@@ -6315,12 +6318,8 @@ function vAccounting(){
     </div>`).join("")}
   </div>
   <div hidden id="accounting-export-source"><div class="account-export-panel">
-    <div class="account-export-selectors"><label>Periodo<select aria-label="Periodo para exportar" onchange="state.period.mode=this.value;WorkflowPolish.exportDialog()">${[["todo","Todo el histórico"],["rango","Entre fechas"],["mes","Mes"],["tri","Trimestre"],["año","Año"]].map(([mode,label])=>`<option value="${mode}" ${P.mode===mode?'selected':''}>${label}</option>`).join('')}</select></label>
-    <label>Movimientos<select aria-label="Movimientos para exportar" data-export-kind onchange="state.accExportKind=this.value"><option value="in" ${(state.accExportKind||state.accTab||'in')==='in'?'selected':''}>Ingresos</option><option value="out" ${(state.accExportKind||state.accTab)==='out'?'selected':''}>Gastos</option></select></label></div>
-    ${["mes","tri","año"].includes(P.mode)?`<label>Año<select aria-label="Año para exportar" onchange="state.period.year=+this.value;WorkflowPolish.exportDialog()">${years.map(y=>`<option value="${y}" ${P.year===y?'selected':''}>${y}</option>`).join('')}</select></label>`:''}
-    ${P.mode==='mes'?`<label>Mes<select aria-label="Mes para exportar" onchange="state.period.month=+this.value;WorkflowPolish.exportDialog()">${MESES.map((m,i)=>`<option value="${i+1}" ${P.month===i+1?'selected':''}>${m}</option>`).join('')}</select></label>`:''}
-    ${P.mode==='tri'?`<label>Trimestre<select aria-label="Trimestre para exportar" onchange="state.period.quarter=+this.value;WorkflowPolish.exportDialog()">${[1,2,3,4].map(t=>`<option value="${t}" ${P.quarter===t?'selected':''}>T${t}</option>`).join('')}</select></label>`:''}
-    ${P.mode==='rango'?`<form class="account-export-dates" onsubmit="event.preventDefault();applyAccountingDates(this);"><label>Desde<input type="date" name="from" aria-label="Desde para exportar" required value="${accountingISODate(P.from)||''}"></label><label>Hasta<input type="date" name="to" aria-label="Hasta para exportar" required value="${accountingISODate(P.to)||''}"></label><button class="btn btn-ghost" type="submit">Aplicar fechas</button></form>`:''}
+    <form class="account-export-dates" onsubmit="event.preventDefault();applyAccountingDates(this);"><label>Desde<input type="date" name="from" aria-label="Desde para exportar" required value="${exportDates[0]}"></label><label>Hasta<input type="date" name="to" aria-label="Hasta para exportar" required value="${exportDates[1]}"></label></form>
+    <div class="account-export-selectors"><label>Movimientos<select aria-label="Movimientos para exportar" data-export-kind onchange="state.accExportKind=this.value">${[['in','Ingresos'],['out','Gastos'],['both','Ambos']].map(([value,label])=>`<option value="${value}" ${(state.accExportKind||state.accTab||'in')===value?'selected':''}>${label}</option>`).join('')}</select></label></div>
     <div class="account-export-actions"><button class="btn btn-ghost" onclick="accountingExport(this,'invoices')">${ico('download')} Facturas del periodo</button><button class="btn btn-ghost" onclick="accountingExport(this,'csv')">${ico('xlsx')} CSV</button><button class="btn btn-dark" onclick="accountingExport(this,'pdf')">${ico('pdf')} Exportar PDF</button></div>
   </div></div>
 
@@ -10992,29 +10991,22 @@ function periodoLabel(){
   return "Todo el histórico";
 }
 async function exportAccountingPDF(kind){
-  kind = kind || (state.accTab==="out"?"out":"in");
-  const es = accVisible(kind);
-  if(!es.length){ toast("No hay "+(kind==="in"?"ingresos":"gastos")+" en la vista actual"); return; }
-  const bk = state.brandFilter!=="all" ? state.brandFilter : wsOrder[0];
-  const tot = es.reduce((s,e)=>s+e.amount,0);
-  const z=document.getElementById("printZone");
-  const cell="padding:7px 8px;vertical-align:top;line-height:1.4;word-break:break-word;border-bottom:1px solid #E2E2E0";
-  const titulo=(kind==="in"?"Ingresos":"Gastos")+" \u2013 "+periodoLabel();
-  z.innerHTML = `<div class="pdf-page" style="font-family:Inter,Segoe UI,sans-serif;color:#141414"><div class="pdf-body">
-    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #141414;padding-bottom:12px">
-      ${pdfBrandLogo(bk)}
-      <div style="text-align:right;font-size:12px;color:#5E5E5E">${state.emitter.name||state.account.name||""}${state.emitter.nif?"<br>NIF "+state.emitter.nif:""}<br>${hoyEs()}</div>
-    </div>
-    <h1 style="margin:16px 0 2px;font-size:21px">${kind==="in"?"Ingresos":"Gastos"}</h1>
-    <p style="color:#5E5E5E;font-size:12.5px;margin:0 0 12px">${periodoLabel()} · ${state.brandFilter==="all"?"Todas las marcas":BRAND[state.brandFilter].name} · ${es.length} asiento${es.length===1?"":"s"}</p>
-    <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px">
-    <colgroup><col style="width:13%"><col style="width:auto"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>
-    <tr style="text-align:left;border-bottom:2px solid #141414;font-size:10.5px;color:#5E5E5E;text-transform:uppercase"><th style="padding:6px 8px">Fecha</th><th style="padding:6px 8px">Concepto</th><th style="padding:6px 8px">${kind==="out"?"Proveedor":"Cliente"}</th><th style="padding:6px 8px">Estado</th><th style="padding:6px 8px;text-align:right">Importe</th></tr>
-    ${es.map(e=>`<tr style="page-break-inside:avoid"><td style="${cell};white-space:nowrap">${e.date}</td><td style="${cell}">${e.concept}${e.cat?` <small style="color:#9B9B9B">· ${e.cat}</small>`:""}</td><td style="${cell}">${(kind==="out"?e.sup:e.client)||"\u2014"}</td><td style="${cell}">${e.status==="pend"?"Pendiente":e.status==="env"?"Enviada":(kind==="out"?"Pagado":"Cobrado")}</td><td style="${cell};text-align:right;white-space:nowrap">${kind==="in"?"+":"\u2212"}${fmt(e.amount)}</td></tr>`).join("")}
-    <tr><td colspan="4" style="padding:10px 8px;text-align:right;font-weight:800">Total ${kind==="in"?"ingresos":"gastos"}</td><td style="padding:10px 8px;text-align:right;font-weight:900;white-space:nowrap">${kind==="in"?"+":"\u2212"}${fmt(tot)}</td></tr>
-    </table></div>
-    <div class="pdf-pn">${pdfFoot()}<span>${titulo}</span></div></div>`;
-  z.style.display="block"; await printAs(titulo); z.style.display="none";
+  kind=kind||(state.accTab==='out'?'out':'in');
+  const both=kind==='both',es=both?[...accVisible('in'),...accVisible('out')].sort((a,b)=>{const order=(accountingISODate(a.date)||'').localeCompare(accountingISODate(b.date)||'');return state.accSort==='asc'?order:-order;}):accVisible(kind);
+  if(!es.length){toast('No hay '+(both?'movimientos':kind==='in'?'ingresos':'gastos')+' en la vista actual');return;}
+  const bk=state.brandFilter!=='all'?state.brandFilter:wsOrder[0],label=both?'Ingresos y Gastos':kind==='in'?'Ingresos':'Gastos';
+  const income=es.filter(e=>e.kind==='in').reduce((sum,e)=>sum+e.amount,0),expense=es.filter(e=>e.kind==='out').reduce((sum,e)=>sum+e.amount,0),total=both?income-expense:es.reduce((sum,e)=>sum+e.amount,0);
+  const z=document.getElementById('printZone'),cell='padding:7px 8px;vertical-align:top;line-height:1.4;word-break:break-word;border-bottom:1px solid #E2E2E0',titulo=label+' – '+periodoLabel();
+  z.innerHTML=`<div class="pdf-page" style="font-family:Inter,Segoe UI,sans-serif;color:#141414"><div class="pdf-body">
+    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #141414;padding-bottom:12px">${pdfBrandLogo(bk)}<div style="text-align:right;font-size:12px;color:#5E5E5E">${state.emitter.name||state.account.name||''}${state.emitter.nif?'<br>NIF '+state.emitter.nif:''}<br>${hoyEs()}</div></div>
+    <h1 style="margin:16px 0 2px;font-size:21px">${label}</h1><p style="color:#5E5E5E;font-size:12.5px;margin:0 0 12px">${periodoLabel()} · ${state.brandFilter==='all'?'Todas las marcas':BRAND[state.brandFilter].name} · ${es.length} asiento${es.length===1?'':'s'}</p>
+    <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px"><colgroup><col style="width:13%">${both?'<col style="width:10%">':''}<col style="width:auto"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>
+    <tr style="text-align:left;border-bottom:2px solid #141414;font-size:10.5px;color:#5E5E5E;text-transform:uppercase"><th style="padding:6px 8px">Fecha</th>${both?'<th style="padding:6px 8px">Tipo</th>':''}<th style="padding:6px 8px">Concepto</th><th style="padding:6px 8px">${both?'Cliente / proveedor':kind==='out'?'Proveedor':'Cliente'}</th><th style="padding:6px 8px">Estado</th><th style="padding:6px 8px;text-align:right">Importe</th></tr>
+    ${es.map(e=>`<tr style="page-break-inside:avoid"><td style="${cell};white-space:nowrap">${e.date}</td>${both?`<td style="${cell}">${e.kind==='in'?'Ingreso':'Gasto'}</td>`:''}<td style="${cell}">${e.concept}${e.cat?` <small style="color:#9B9B9B">· ${e.cat}</small>`:''}</td><td style="${cell}">${(e.kind==='out'?e.sup:e.client)||'—'}</td><td style="${cell}">${e.status==='pend'?'Pendiente':e.status==='env'?'Enviada':e.kind==='out'?'Pagado':'Cobrado'}</td><td style="${cell};text-align:right;white-space:nowrap">${e.kind==='in'?'+':'−'}${fmt(e.amount)}</td></tr>`).join('')}
+    <tr><td colspan="${both?5:4}" style="padding:10px 8px;text-align:right;font-weight:800">${both?'Balance':'Total '+(kind==='in'?'ingresos':'gastos')}</td><td style="padding:10px 8px;text-align:right;font-weight:900;white-space:nowrap">${both?'':kind==='in'?'+':'−'}${fmt(total)}</td></tr></table>
+    ${both?`<p style="font-size:12px;text-align:right">Total ingresos: ${fmt(income)} · Total gastos: ${fmt(expense)} · Balance: ${fmt(total)}</p>`:''}
+    </div><div class="pdf-pn">${pdfFoot()}<span>${titulo}</span></div></div>`;
+  z.style.display='block';await printAs(titulo);z.style.display='none';
 }
 function genRecurring(){
   const now=new Date(), mm=now.getMonth()+1, yy=now.getFullYear();
@@ -11045,7 +11037,7 @@ function toggleAccountingDates(button){
 function accountingExport(button,format){
   const panel=button.closest('.account-export-panel'),dates=panel.querySelector('.account-export-dates');
   if(dates&&!applyAccountingDates(dates))return;
-  const kind=panel.querySelector('[data-export-kind]').value;if(!['in','out'].includes(kind))return;
+  const kind=panel.querySelector('[data-export-kind]').value;if(!['in','out','both'].includes(kind))return;
   if(format==='csv')exportCSV(kind);else{closeModal();render();if(format==='pdf')exportAccountingPDF(kind);else if(format==='invoices')exportPeriodInvoices(kind);}
 }
 function applyAccountingDates(form){
@@ -11218,7 +11210,7 @@ function clientCard(name){
   <button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
 }
 async function exportPeriodInvoices(kind){
-  const es = byBrand(state.entries).filter(inPeriod).filter(e=>!kind||e.kind===kind);
+  const es = byBrand(state.entries).filter(inPeriod).filter(e=>!kind||kind==='both'||e.kind===kind);
   const facturas = es.filter(e=>e.kind==="in").map(e=>({tipo:"Ingreso",...e}));
   const gastos = es.filter(e=>e.kind==="out").map(e=>({tipo:"Gasto",...e}));
   const z=document.getElementById("printZone");
@@ -11233,7 +11225,7 @@ async function exportPeriodInvoices(kind){
   z.style.display="block"; await printAs(document.title); z.style.display="none";
 }
 function exportCSV(kind){
-  const es = byBrand(state.entries).filter(inPeriod).filter(e=>!kind||e.kind===kind);
+  const es = byBrand(state.entries).filter(inPeriod).filter(e=>!kind||kind==='both'||e.kind===kind);
   const csv = "Fecha;Concepto;Marca;Tipo;Estado;Importe\n" + es.map(e=>[e.date,e.concept,BRAND[e.brand].name,e.kind==="in"?"Ingreso":"Gasto",e.status==="pend"?"Pendiente":"Cobrado",(e.kind==="in"?"":"-")+e.amount].join(";")).join("\n");
   const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv); a.download="contabilidad-moderno.csv"; a.click();
   toast("CSV descargado — "+(kind==='in'?'Ingresos':kind==='out'?'Gastos':'Ingresos y Gastos')+" · "+periodoLabel());
@@ -11459,7 +11451,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.29";
+const MODERNO_VER="v3.65.30";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
