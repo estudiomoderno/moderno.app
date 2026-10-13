@@ -1,0 +1,19 @@
+// Isolated PostgreSQL: fictitious users, no network or production access.
+import fs from 'node:fs/promises';import assert from 'node:assert/strict';import {pathToFileURL} from 'node:url';
+const {PGlite}=await import(pathToFileURL(process.argv[2]).href),db=new PGlite();
+const a='11111111-1111-4111-8111-111111111111',b='11111111-1111-4111-8111-111111111112';const ids=Array.from({length:6},(_,i)=>'22222222-2222-4222-8222-22222222222'+i);
+try{
+await db.exec(`create role anon;create role authenticated;create schema auth;create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb);create table miembros(user_id uuid,estudio_id uuid,rol text);create table datos_estudio(estudio_id uuid,bloque text,contenido jsonb);create function app_rol(s uuid) returns text language sql security definer as $$select rol from public.miembros where estudio_id=s and user_id=auth.uid()$$;create function app_rol_usuario(s uuid,u uuid) returns text language sql as $$select rol from public.miembros where estudio_id=s and user_id=u$$;
+insert into auth.users select unnest(array[${ids.map(id=>`'${id}'::uuid`).join(',')}]),unnest(array['admin@example.invalid','colab@example.invalid','invited@example.invalid','other@example.invalid','removed@example.invalid','gestoria@example.invalid']),'{"full_name":"Usuario ficticio"}'::jsonb;
+insert into miembros values('${ids[0]}','${a}','admin'),('${ids[1]}','${a}','colaborador'),('${ids[3]}','${b}','admin'),('${ids[5]}','${a}','gestoria');insert into datos_estudio values('${a}','config','{"users":[{"name":"Local name","email":"colab@example.invalid","role":"Colaborador"},{"name":"Gestoría ficticia","email":"gestoria@example.invalid","role":"Gestoría (solo lectura)"},{"name":"Ghost","email":"ghost@example.invalid"},{"name":"Removed","email":"removed@example.invalid"},{"name":"Invite only","email":"invited@example.invalid"}]}');`);
+await db.exec('drop function app_rol(uuid);drop function app_rol_usuario(uuid,uuid);');
+const access=await fs.readFile(new URL('../SQL/permisos-roles.sql',import.meta.url),'utf8');await db.exec(access.slice(access.indexOf('create or replace function public.app_rol_usuario'),access.indexOf('-- Lista explícita')));
+await db.exec(await fs.readFile(new URL('../SQL/tareas-miembros.sql',import.meta.url),'utf8'));
+const before=(await db.query('select jsonb_agg(to_jsonb(d)) as data from datos_estudio d')).rows[0].data;
+await db.exec(`set role authenticated;set "test.uid"='${ids[0]}';`);
+let result=(await db.query('select app_tareas_miembros($1) as data',[a])).rows[0].data;assert.equal(result.length,3);assert.ok(result.some(m=>m.name==='Local name'));assert.ok(!result.some(m=>['invited@example.invalid','removed@example.invalid','ghost@example.invalid','other@example.invalid'].includes(m.email)));
+await db.exec(`set "test.uid"='${ids[1]}';`);assert.equal((await db.query('select app_tareas_miembros($1) as data',[a])).rows[0].data.length,3);await assert.rejects(db.query('select app_tareas_miembros($1)',[b]),/No autorizado/);
+for(const id of [ids[2],ids[3],ids[4],ids[5],'']){await db.exec(`set "test.uid"='${id}';`);await assert.rejects(db.query('select app_tareas_miembros($1)',[a]),/No autorizado/);}
+await db.exec('reset role;set role anon;');await assert.rejects(db.query('select app_tareas_miembros($1)',[a]),/permission denied/);await db.exec('reset role;');assert.deepEqual((await db.query('select jsonb_agg(to_jsonb(d)) as data from datos_estudio d')).rows[0].data,before);
+console.log('PASS: registered memberships only, local display names retained, no invitations/ghosts/removed users, admin+collaborator read, study isolation, unauthenticated/guest/gestoria denied, records unchanged');
+}catch(error){console.error(error.message);process.exitCode=1;}finally{await db.close();}
