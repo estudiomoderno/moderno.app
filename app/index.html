@@ -909,11 +909,11 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 
-/* Accounting toolbar: align controls with the date fields, below their labels. */
-#view .account-compact-toolbar{flex-wrap:wrap;align-items:flex-end;gap:10px}
-.account-header-main{display:flex;align-items:center;gap:6px;flex:none;margin-bottom:2px}
-.account-compact-toolbar>.account-tools{margin-left:auto;margin-bottom:2px}
-.account-date-filter{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin:0}
+/* The date popover never participates in the toolbar layout. */
+#view .account-compact-toolbar{position:relative;flex-wrap:wrap;align-items:center;gap:10px;min-height:28px}
+.account-header-main{display:flex;align-items:center;gap:6px;flex:none;margin-bottom:0}
+.account-compact-toolbar>.account-tools{margin-left:auto;margin-bottom:0}
+.account-date-filter{position:absolute;top:calc(100% + 8px);left:0;z-index:60;display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;width:max-content;max-width:100%;box-sizing:border-box;margin:0;padding:12px;background:var(--white);border:1px solid var(--ui-line,#d8d3cc);border-radius:14px;box-shadow:var(--shadow)}
 .account-date-filter[hidden]{display:none}
 .account-date-filter label{display:grid;gap:4px;width:132px;margin:0;text-transform:none;letter-spacing:normal;font-size:11px;font-weight:400}
 html body:not(.portalmode) #view .account-date-filter input{width:100%;min-height:32px!important;height:32px!important;padding:5px 9px!important;font-size:12px!important;line-height:1.2!important;border-radius:10px!important}
@@ -930,7 +930,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 .account-export-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
 .account-export-dates{align-items:center}
 .account-export-panel select,.account-export-panel input{width:100%}
-@media(max-width:650px){.account-date-filter{order:3;flex-basis:100%}.account-date-filter label{flex:1;min-width:130px}.account-export-actions .btn{flex:1;justify-content:center}}
+@media(max-width:650px){.account-date-filter{width:100%}.account-date-filter label{flex:1;min-width:130px}.account-export-actions .btn{flex:1;justify-content:center}}
 </style>
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
@@ -6269,7 +6269,7 @@ function vAccounting(){
   ${planMigrateBanner()}
   <h1 class="big">Llevas <span class="hl">${fmt(ben)}</span> de beneficio,<br>vamos a por más, <span class="hl">${meName().split(" ")[0]}</span>.</h1>
   <div class="account-toolbar account-compact-toolbar"><div class="account-header-main"><div class="pill-tabs"><button class="${(state.accTab||'in')==='in'?'on':''}" onclick="WorkflowPolish.accountTab('in')">Ingresos</button><button class="${state.accTab==='out'?'on':''}" onclick="WorkflowPolish.accountTab('out')">Gastos</button></div><button class="btn btn-ghost account-icon-button ${P.mode!=='todo'?'is-filtered':''}" type="button" title="Filtrar por fechas" aria-label="Filtrar por fechas" aria-expanded="${!!state.accDateOpen}" aria-controls="account-date-filter" onclick="toggleAccountingDates(this)"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 20l-3 1v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v3" /><path d="M16 19h6" /><path d="M19 16v6" /></svg></button></div>
-  <form id="account-date-filter" class="account-date-filter" ${state.accDateOpen?'':'hidden'} onsubmit="event.preventDefault();applyAccountingDates(this)">
+  <form id="account-date-filter" class="account-date-filter" onkeydown="if(event.key==='Escape'){event.stopPropagation();const button=document.querySelector('[aria-controls=account-date-filter]');toggleAccountingDates(button);button.focus()}" ${state.accDateOpen?'':'hidden'} onsubmit="event.preventDefault();applyAccountingDates(this)">
     <label>Desde<input type="date" name="from" aria-label="Desde" required value="${P.mode==='rango'?(accountingISODate(P.from)||''):''}"></label>
     <label>Hasta<input type="date" name="to" aria-label="Hasta" required value="${P.mode==='rango'?(accountingISODate(P.to)||''):''}"></label>
     <button class="btn btn-dark account-apply-dates" type="submit">Aplicar fechas</button>
@@ -11048,7 +11048,7 @@ function accountingISODate(value){
 function toggleAccountingDates(button){
   const panel=document.getElementById('account-date-filter');if(!panel)return;
   state.accDateOpen=panel.hidden;panel.hidden=!state.accDateOpen;button.setAttribute('aria-expanded',String(state.accDateOpen));
-  if(state.accDateOpen){if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&panel.animate)panel.animate([{opacity:0,transform:'translateX(-6px)'},{opacity:1,transform:'none'}],{duration:180,easing:'ease-out'});panel.querySelector('input')?.focus({preventScroll:true});}
+  if(state.accDateOpen){if(!matchMedia('(prefers-reduced-motion: reduce)').matches&&panel.animate)panel.animate([{opacity:0,transform:'translateY(-4px)'},{opacity:1,transform:'none'}],{duration:180,easing:'ease-out'});panel.querySelector('input')?.focus({preventScroll:true});}
 }
 function accountingExport(button,format){
   const panel=button.closest('.account-export-panel'),dates=panel.querySelector('.account-export-dates');
@@ -11467,7 +11467,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.31";
+const MODERNO_VER="v3.65.32";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
