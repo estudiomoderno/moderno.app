@@ -909,12 +909,28 @@ body.role-colab [onclick="projTab('fin')"], body.role-colab [onclick="projTab('r
 
 .ws-views{margin:12px 0}.ws-table-wrap,.ws-calendar-wrap{width:100%;max-width:100%;overflow-x:auto}.ws-task-table{width:100%;border-collapse:collapse;min-width:640px;font-size:13px}.ws-task-table th,.ws-task-table td{text-align:left;padding:12px;border-bottom:1px solid var(--ink-faint);vertical-align:top}.ws-task-link{background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0;padding:0;overflow-wrap:anywhere}.ws-task-link:hover{text-decoration:underline}.ws-task-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}.ws-calendar-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.ws-calendar-nav h2{margin:0;text-transform:capitalize;font-size:20px}.ws-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:630px;border-top:1px solid var(--ink-faint);border-left:1px solid var(--ink-faint)}.ws-calendar-day,.ws-weekday{padding:8px;border-right:1px solid var(--ink-faint);border-bottom:1px solid var(--ink-faint)}.ws-weekday{font-size:12px;font-weight:600}.ws-calendar-day{min-height:100px}.ws-calendar-day time{font-size:12px;color:var(--ink-soft)}.ws-today{background:var(--gold-soft)}.ws-cal-task{padding:8px;margin:6px 0;background:var(--card);border-radius:8px;font-size:12px}.ws-cal-task small{display:block;color:var(--ink-soft);margin-top:4px}.ws-full{min-width:0}@media(max-width:700px){.ws-calendar-nav h2{font-size:17px}.ws-calendar-wrap:after{content:'Desliza para ver la semana completa';display:block;font-size:11px;color:var(--ink-soft);padding:6px 0}}
 
- html body:not(.portalmode) #view .account-header-main .pill-tabs button{min-height:32px!important;height:32px!important;padding:5px 10px!important;font-size:12px!important;line-height:1.2!important;flex:none;border-radius:12px!important}
- html body:not(.portalmode) #view .account-compact-toolbar>.account-tools>.btn{min-height:32px!important;height:32px!important;padding:5px 12px!important;font-size:12px!important;line-height:1.2!important}
- .account-compact-toolbar{flex-wrap:wrap;align-items:center;gap:10px}.account-header-main{display:flex;align-items:center;gap:8px;flex:none}.account-compact-toolbar>.account-tools{margin-left:auto}.account-date-filter{display:flex;align-items:end;gap:8px;flex-wrap:wrap;margin:0}.account-date-filter[hidden]{display:none}.account-date-filter label{display:grid;gap:4px;width:132px;margin:0;text-transform:none;letter-spacing:normal;font-size:11px}.account-date-filter input{width:100%}
- html body:not(.portalmode) #view .account-icon-button.btn{width:32px!important;min-width:32px!important;min-height:32px!important;height:32px!important;padding:0!important;flex:none;display:inline-flex;align-items:center;justify-content:center}.account-icon-button svg{width:18px;height:18px;flex:none}.account-icon-button.is-filtered{border:1px solid var(--ink)!important}html body:not(.portalmode) #view .account-apply-dates.btn{min-height:32px!important;height:32px!important;padding:5px 10px!important;font-size:12px!important;line-height:1.2!important;border-radius:12px!important}.account-export-selectors,.account-export-dates{display:flex;gap:10px;flex-wrap:wrap}.account-export-panel label{display:grid;gap:6px;margin:0 0 12px;font-size:12px;text-transform:none;letter-spacing:normal}.account-export-selectors>label,.account-export-dates>label{flex:1;min-width:130px}.account-export-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.account-export-dates{align-items:center}.account-export-panel select,.account-export-panel input{width:100%}
- @media(max-width:650px){.account-date-filter{order:3;flex-basis:100%}.account-date-filter label{flex:1;min-width:130px}.account-export-actions .btn{flex:1;justify-content:center}}
-
+/* Accounting toolbar: align controls with the date fields, below their labels. */
+#view .account-compact-toolbar{flex-wrap:wrap;align-items:flex-end;gap:10px}
+.account-header-main{display:flex;align-items:center;gap:6px;flex:none;margin-bottom:2px}
+.account-compact-toolbar>.account-tools{margin-left:auto;margin-bottom:2px}
+.account-date-filter{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;margin:0}
+.account-date-filter[hidden]{display:none}
+.account-date-filter label{display:grid;gap:4px;width:132px;margin:0;text-transform:none;letter-spacing:normal;font-size:11px;font-weight:400}
+html body:not(.portalmode) #view .account-date-filter input{width:100%;min-height:32px!important;height:32px!important;padding:5px 9px!important;font-size:12px!important;line-height:1.2!important;border-radius:10px!important}
+html body:not(.portalmode) #view .account-header-main .pill-tabs button,
+html body:not(.portalmode) #view .account-apply-dates.btn,
+html body:not(.portalmode) #view .account-compact-toolbar>.account-tools>.btn{min-height:28px!important;height:28px!important;padding:4px 9px!important;font-family:inherit;font-size:12px!important;font-weight:500!important;line-height:1.2!important;flex:none;border-radius:10px!important}
+html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;min-width:28px!important;min-height:28px!important;height:28px!important;padding:0!important;flex:none;display:inline-flex;align-items:center;justify-content:center;border-radius:9px!important}
+.account-icon-button svg{width:16px;height:16px;flex:none;stroke-width:1.7}
+.account-icon-button.is-filtered{border:1px solid var(--ink)!important}
+.account-date-filter>.btn{margin-bottom:2px}
+.account-export-selectors,.account-export-dates{display:flex;gap:10px;flex-wrap:wrap}
+.account-export-panel label{display:grid;gap:6px;margin:0 0 12px;font-size:12px;text-transform:none;letter-spacing:normal}
+.account-export-selectors>label,.account-export-dates>label{flex:1;min-width:130px}
+.account-export-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.account-export-dates{align-items:center}
+.account-export-panel select,.account-export-panel input{width:100%}
+@media(max-width:650px){.account-date-filter{order:3;flex-basis:100%}.account-date-filter label{flex:1;min-width:130px}.account-export-actions .btn{flex:1;justify-content:center}}
 </style>
 <link rel="stylesheet" href="/appearance-b.css?v=345">
 <link rel="stylesheet" href="/brand/identity.css?v=351">
@@ -11451,7 +11467,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.30";
+const MODERNO_VER="v3.65.31";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

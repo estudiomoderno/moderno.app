@@ -26,9 +26,23 @@ with sync_playwright() as p:
         assert page.get_by_role('button',name='Filtrar por fechas',exact=True).get_attribute('aria-expanded')=='true'
         assert page.get_by_role('button',name='Restablecer',exact=True).get_attribute('title')=='Restablecer'
         for name in ['Ingresos','Gastos','Filtrar por fechas','Exportar']:
-            box=page.get_by_role('button',name=name,exact=True).bounding_box();assert box['height']==32,box
-        assert page.get_by_role('button',name='Filtrar por fechas',exact=True).bounding_box()['width']==32
-        box=page.get_by_role('button',name='Aplicar fechas',exact=True).bounding_box();assert box['height']==32 and box['width']<130,box
+            box=page.get_by_role('button',name=name,exact=True).bounding_box();assert box['height']==28,box
+        assert page.get_by_role('button',name='Filtrar por fechas',exact=True).bounding_box()['width']==28
+        box=page.get_by_role('button',name='Aplicar fechas',exact=True).bounding_box();assert box['height']==28 and box['width']<130,box
+        controls=page.locator('.account-date-filter>button').all()
+        datebox=page.get_by_label('Desde',exact=True).bounding_box();assert datebox['height']==32,datebox
+        center=lambda box:box['y']+box['height']/2
+        if width>650:
+            for control in controls:assert abs(center(control.bounding_box())-center(datebox))<1,(control.bounding_box(),datebox)
+        else:
+            assert abs(center(controls[0].bounding_box())-center(controls[1].bounding_box()))<1
+            assert controls[0].bounding_box()['y']>=datebox['y']+datebox['height']
+        for control in controls:assert control.evaluate('(e)=>getComputedStyle(e).fontWeight')!='700'
+        if width>650:
+            for name in ['Ingresos','Gastos','Filtrar por fechas','Exportar']:
+                button=page.get_by_role('button',name=name,exact=True)
+                assert abs(center(button.bounding_box())-center(datebox))<1,(button.bounding_box(),datebox)
+                assert button.evaluate('(e)=>getComputedStyle(e).fontWeight')=='500',name
         assert page.locator('.account-date-label').count()==0
         assert page.locator('.icon-tabler-filter-plus,.icon-tabler-restore').count()==2
         page.get_by_label('Desde',exact=True).fill('2025-01-01');page.get_by_label('Hasta',exact=True).fill('2027-02-06');page.get_by_role('button',name='Aplicar fechas',exact=True).click()
