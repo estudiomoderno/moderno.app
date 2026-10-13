@@ -4,7 +4,7 @@ Candidato pendiente de autorización productiva. Rama `fix/asignacion-usuarios-2
 
 El selector actual utiliza `state.users` (incluye ejemplos y nombres locales) y `state._invs` (invitaciones). Ninguna de estas fuentes demuestra que exista una cuenta con membresía activa. Se conserva ese contenido; no se borran contactos, usuarios locales, tareas ni asignaciones.
 
-La lectura de metadatos productivos confirma que `app_equipo` es administrativa y que la política SELECT de `miembros` permite consultar solo la membresía propia. No se han leído nombres ni registros de clientes para esta investigación.
+La lectura de metadatos productivos confirma que `app_equipo` es administrativa y que la política SELECT de `miembros` permite consultar solo la membresía propia. Una comprobación de diagnóstico de solo lectura, limitada al alias y al proyecto indicados por el propietario, confirma una entrada local asociada a una cuenta registrada sin membresía en el estudio afectado. La consulta devuelve únicamente indicadores booleanos; no se exportan identidades, contenido de tareas ni registros de clientes. Estos datos no se utilizan como fixtures de pruebas.
 
 ## Cambio preparado
 
@@ -19,6 +19,7 @@ Asignaciones históricas se conservan y se etiquetan como anteriores si no apare
 ## Verificación
 
 - 441 pruebas Node aprobadas.
+- CI del PR #46 aprobado: pruebas JavaScript, sintaxis PHP y autorización de invitaciones sin envío de correos.
 - PostgreSQL aislado con PGlite 0.3.14, usuarios y estudios ficticios y lógica existente de perfiles: administrador/colaborador pueden consultar su estudio; invitado, retirado, gestoría, anónimo y otro estudio quedan rechazados. Invitaciones/nombres fantasma/retirados no aparecen; configuración permanece intacta.
 - Modal real de tareas en Chromium a 1280/390 px con RPC simulada y red bloqueada: opciones verificadas, borrador conservado, asignación múltiple, retirada explícita de histórico, rechazo de nombre fantasma y tarea original intacta.
 - No se ha instalado la consulta en Supabase de producción ni publicado el candidato. La integración HTTP con Supabase no se presenta como ya verificada.
