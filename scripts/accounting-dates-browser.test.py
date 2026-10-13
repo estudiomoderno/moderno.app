@@ -25,6 +25,10 @@ with sync_playwright() as p:
         page.get_by_role('button',name='Filtrar por fechas',exact=True).click()
         assert page.get_by_role('button',name='Filtrar por fechas',exact=True).get_attribute('aria-expanded')=='true'
         assert page.get_by_role('button',name='Restablecer',exact=True).get_attribute('title')=='Restablecer'
+        for name in ['Ingresos','Gastos','Filtrar por fechas','Exportar']:
+            box=page.get_by_role('button',name=name,exact=True).bounding_box();assert box['height']==32,box
+        assert page.get_by_role('button',name='Filtrar por fechas',exact=True).bounding_box()['width']==32
+        box=page.get_by_role('button',name='Aplicar fechas',exact=True).bounding_box();assert box['height']==32 and box['width']<130,box
         assert page.locator('.account-date-label').count()==0
         assert page.locator('.icon-tabler-filter-plus,.icon-tabler-restore').count()==2
         page.get_by_label('Desde',exact=True).fill('2025-01-01');page.get_by_label('Hasta',exact=True).fill('2027-02-06');page.get_by_role('button',name='Aplicar fechas',exact=True).click()
@@ -38,7 +42,9 @@ with sync_playwright() as p:
         if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'accounting-dates-{width}.png'),full_page=True)
         page.get_by_role('button',name='Exportar',exact=True).click()
         dialog=page.locator('#modalBox')
-        assert dialog.get_by_role('combobox',name='Periodo para exportar',exact=True).input_value()=='rango'
+        assert dialog.get_by_role('combobox',name='Periodo para exportar',exact=True).count()==0
+        assert dialog.get_by_label('Desde para exportar',exact=True).input_value()=='2025-01-01'
+        assert dialog.get_by_label('Hasta para exportar',exact=True).input_value()=='2027-02-06'
         assert dialog.get_by_role('combobox',name='Movimientos para exportar',exact=True).input_value()=='out'
         dialog.get_by_role('button',name='CSV',exact=True).click();csv=page.evaluate('csv')
         assert 'out-registro-1' in csv and 'out-registro-2' in csv and 'in-registro' not in csv and 'registro-0' not in csv and 'registro-3' not in csv
@@ -48,11 +54,14 @@ with sync_playwright() as p:
         dialog.get_by_role('button',name='Exportar PDF',exact=True).click();page.wait_for_function('prints.length===1');assert 'in-registro-1' in page.evaluate('prints[0].html');assert 'out-registro' not in page.evaluate('prints[0].html')
         page.get_by_role('button',name='Exportar',exact=True).click();dialog.get_by_role('combobox',name='Movimientos para exportar',exact=True).select_option('out');dialog.get_by_role('button',name='Exportar PDF',exact=True).click();page.wait_for_function('prints.length===2');assert 'out-registro-2' in page.evaluate('prints[1].html');assert 'in-registro' not in page.evaluate('prints[1].html')
         page.get_by_role('button',name='Exportar',exact=True).click()
-        dialog.get_by_role('combobox',name='Periodo para exportar',exact=True).select_option('mes');assert dialog.get_by_role('combobox',name='Año para exportar',exact=True).count()==1
-        dialog.get_by_role('combobox',name='Año para exportar',exact=True).select_option('2025');dialog.get_by_role('combobox',name='Mes para exportar',exact=True).select_option('1');dialog.get_by_role('button',name='CSV',exact=True).click();csv=page.evaluate('csv');assert 'out-registro-1' in csv and 'registro-2' not in csv
-        dialog.get_by_role('combobox',name='Periodo para exportar',exact=True).select_option('rango')
+        dialog.get_by_role('combobox',name='Movimientos para exportar',exact=True).select_option('both')
+        dialog.get_by_role('button',name='CSV',exact=True).click();csv=page.evaluate('csv');assert 'in-registro-1' in csv and 'out-registro-2' in csv and 'registro-0' not in csv and 'registro-3' not in csv
+        dialog.get_by_role('button',name='Exportar PDF',exact=True).click();page.wait_for_function('prints.length===3');assert 'in-registro-1' in page.evaluate('prints[2].html') and 'out-registro-2' in page.evaluate('prints[2].html');assert 'Balance:' in page.evaluate('prints[2].html')
+        page.get_by_role('button',name='Exportar',exact=True).click()
+        dialog.get_by_label('Hasta para exportar',exact=True).fill('2025-01-31');dialog.get_by_role('button',name='CSV',exact=True).click();csv=page.evaluate('csv');assert 'in-registro-1' in csv and 'out-registro-1' in csv and 'registro-2' not in csv
+        dialog.get_by_label('Hasta para exportar',exact=True).fill('2027-02-06')
         if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'accounting-export-{width}.png'),full_page=True)
-        dialog.get_by_role('button',name='Facturas del periodo',exact=True).click();page.wait_for_function('prints.length===3');assert 'out-registro-1' in page.evaluate('prints[2].html') and 'in-registro' not in page.evaluate('prints[2].html')
+        dialog.get_by_role('button',name='Facturas del periodo',exact=True).click();page.wait_for_function('prints.length===4');assert 'out-registro-1' in page.evaluate('prints[3].html') and 'in-registro-1' in page.evaluate('prints[3].html')
         page.get_by_role('button',name='Exportar',exact=True).click()
         page.get_by_role('button',name='Cerrar',exact=True).click()
         page.get_by_label('Desde',exact=True).fill('2027-02-07');page.get_by_role('button',name='Aplicar fechas',exact=True).click();assert page.evaluate('state.period.from')=='2025-01-01';assert 'posterior' in page.evaluate('lastToast')
