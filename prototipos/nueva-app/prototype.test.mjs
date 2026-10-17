@@ -33,6 +33,23 @@ test('sin conexiones, servicios reales ni modulos productivos', () => {
   for (const p of banned) assert.doesNotMatch(all, p);
 });
 
+test('conserva la marca oficial con recursos exclusivamente locales', () => {
+  const brandCSS = readFileSync(join(dir, 'brand.css'), 'utf8');
+  const symbol = readFileSync(join(dir, 'assets/simbolo-grafito.svg'), 'utf8');
+  const favicon = readFileSync(join(dir, 'assets/favicon.svg'), 'utf8');
+  assert.match(html, /src="\.\/assets\/simbolo-grafito\.svg"/);
+  assert.match(html, /href="\.\/assets\/favicon\.svg"/);
+  assert.match(html, /href="\.\/brand\.css"/);
+  assert.match(symbol, /viewBox="0 0 126\.81361 100\.6104"/);
+  assert.match(symbol, /fill="#323338"/);
+  assert.match(brandCSS, /#f6f4eb/i);
+  assert.match(brandCSS, /#f8f6ef/i);
+  assert.match(brandCSS, /#e4dfce/i);
+  assert.match(brandCSS, /#181818/i);
+  assert.match(brandCSS, /#d8d2c2/i);
+  assert.doesNotMatch(html + brandCSS + favicon, /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b/);
+});
+
 test('script valido, barra superior e inferior y datos simulados', () => {
   assert.doesNotThrow(() => new Function(js));
   assert.match(html, /id="global-nav"/);
