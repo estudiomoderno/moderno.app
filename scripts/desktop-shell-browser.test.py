@@ -72,9 +72,9 @@ with sync_playwright() as p:
   page.get_by_role('button',name='Expandir menú superior',exact=True).click()
   # Open/close/collapse/resizing never rerender or discard the active editor input.
   page.get_by_role('textbox',name='Borrador ficticio').fill('Cambios sin guardar')
-  page.set_viewport_size({'width':1024,'height':1000});assert page.locator('#desktop-header').count()==0
+  page.set_viewport_size({'width':1024,'height':1000});page.wait_for_function("!document.querySelector('#desktop-header')")
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
-  page.set_viewport_size({'width':width,'height':1000});assert page.locator('#desktop-header').count()==1
+  page.set_viewport_size({'width':width,'height':1000});page.wait_for_function("!!document.querySelector('#desktop-header')")
   page.evaluate('dirty=true')
   page.locator('#desktop-header [data-desktop-view=workspace]').click()
   assert page.evaluate('state.view')=='proyecto'
