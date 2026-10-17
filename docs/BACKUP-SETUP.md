@@ -21,6 +21,18 @@ Variables requeridas:
 
 Configurar región del origen si el proveedor la requiere mediante RCLONE_CONFIG_SOURCE_REGION.
 
+## Cambiar el destino de las copias de Storage
+
+El propietario puede elegir una carpeta nueva sin sustituir el JSON de identidad existente. Configurar **ambos** secretos de Actions: `BACKUP_STORAGE_FOLDER_ID` (ID de la carpeta) y `BACKUP_STORAGE_TEAM_DRIVE` (ID de su unidad compartida). Se usan secretos para no publicar las ubicaciones privadas en código o logs. No modificar `BACKUP_GOOGLE_CONFIG`, las claves del origen ni permisos de Supabase. Si ambos secretos están ausentes, se conserva exactamente el destino anterior.
+
+Antes de activar, comprobar que la cuenta de servicio actual puede escribir y recuperar en la carpeta nueva, sin habilitar acceso público. Ejecutar el workflow de copias en main con modo `test-drive`; solo crea y recupera dos archivos ficticios, sin credenciales de Storage. Después ejecutar `backup` y verificar éxito, manifiesto, objetos y COMPLETE.json en la carpeta elegida. El cambio no está completado por añadir secretos o aprobar CI: requiere esa copia real verificada, que solo lee el origen.
+
+Cuando hay un destino alternativo configurado, cada copia comprueba primero la recuperación sintética en esa carpeta. Solo si pasa, copia Storage allí con las comprobaciones actuales de contenido e inventario. Las carpetas `prueba-*` contienen únicamente la evidencia ficticia y se conservan. Si el destino nuevo es incompleto, no válido o no supera la prueba, el modo `backup` mantiene la copia en el destino original y termina con error para que la vigilancia no dé por correcta la nueva ruta. El modo `test-drive` falla sin copiar Storage. No se elimina, mueve ni sobrescribe ninguna copia anterior.
+
+Retorno: retirar los dos secretos alternativos devuelve las próximas copias al destino anterior. La programación, la identidad, la copia física de base de datos en Supabase y la copia manual `backup-service` conservan su configuración previa. Si la cuenta de servicio no tiene acceso, solicitar únicamente el permiso necesario para esa cuenta y carpeta antes de activar; no ampliar acceso a otras unidades por conveniencia.
+
+Preparación del 17/10/2026: el propietario ha indicado un destino y se han comprobado sus metadatos y ubicación, sin descargar datos privados. La conexión de GitHub disponible no permite editar secretos ni lanzar `workflow_dispatch`; no hay una credencial administrativa preparada en el executor. Los IDs se mantienen fuera del repositorio público. El soporte está preparado, pero la activación de los dos secretos y la verificación real siguen pendientes; no afirmar que las copias ya estén redirigidas.
+
 Antes de activar: revisar los permisos de origen y destino; autorizar el procesador que ejecutará la copia; guardar credenciales en su almacén de secretos; comprobar límites de espacio y transferencia. Las claves S3 de Supabase eluden RLS y tienen acceso completo, aunque este programa solo lee el origen. No confundir intención de solo lectura con permisos restringidos.
 
 Primera prueba: usar archivos sintéticos en un entorno aislado, ejecutar copia y descargar el resultado en un directorio temporal para comprobar apertura y contenido. Después validar la primera copia real antes de programar ejecuciones. Este programa no restaura la base de datos, políticas ni metadatos específicos de Supabase; esas protecciones requieren un procedimiento complementario.
