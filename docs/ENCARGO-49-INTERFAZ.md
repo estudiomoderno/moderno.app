@@ -48,11 +48,12 @@ Primera entrega limitada a escritorios de 1100 px o más. Ajustes, edición de p
 
 - Batería Node: 439 pruebas (437 existentes y dos de inactividad/fallo seguro del lote).
 - Chromium sin red, SDK ni credenciales: 1440/1280/1100 px; 1024/390 px mantienen interfaz anterior. Marcado real de navegación, logos, CSS, iconos, projectTabsHtml, handlers go()/projTab() y lógica canView()/myAccessLevel() reales; vistas con contenido ficticio y sesión/perfiles simulados. No equivale a un ensayo de inicio de sesión o guardado HTTP.
+- Aplicación completa mediante el servidor oficial aislado (`desktop-shell-full-app.test.py`): 1440/1100/390 px, conexión y clave ficticias sustituidas en memoria, almacenamiento local separado, SDK desactivado y red externa bloqueada. Se ejecutan todos los renderizadores de navegación originales y las siete pestañas del proyecto, con registros ficticios y colecciones intactas tras un recorrido de calentamiento de normalizaciones existentes. En escritorio los accesos se pulsan con ratón, incluidos sus desplegables. SettingsUI real conserva su borrador al cancelar la salida y solo lo descarta tras pulsar expresamente; el perfil original permanece intacto. La vuelta a la interfaz anterior conserva los nodos. No se prueban autenticación ni RPC/guardado de Supabase.
 - Todas las rutas originales accesibles, siete pestañas, selección/teclado, Escape, comprimir/expandir, opciones según perfil simulado, borrador conservado ante navegación cancelada y todas las colecciones ficticias intactas.
 - Inactividad por defecto, retorno explícito, mismos nodos y SVG antes/después. Se comprueba fallo seguro: error de presentación vuelve a UI anterior sin romper el render original.
 - Revisión visual de escritorio claro y oscuro con identidad actual. No se reutilizan capturas privadas.
 - CI [39050506038](https://github.com/estudiomoderno/moderno.app/actions/runs/39050506038) correcto en el candidato con regresión de tamaño: JavaScript, sintaxis PHP y autorización de invitaciones sin enviar correos. PHP no está instalado en este executor; la validación PHP se ejecutó en Actions.
-- No realizadas: verificación del backup actual de BD, nuevo ensayo de restauración, regresión HTTP contra entorno con esquema/usuarios ficticios, prueba autenticada productiva ni publicación. Esas limitaciones impiden presentar el encargo como terminado.
+- No realizadas: verificación del backup actual de BD, nuevo ensayo de restauración, integración HTTP con Supabase y sus usuarios ficticios, prueba autenticada productiva ni publicación. El ensayo HTTP local anterior valida la interfaz completa, sin sustituir esas verificaciones de backend. Esas limitaciones impiden presentar el encargo como terminado.
 
 ## Activación y reversión
 
