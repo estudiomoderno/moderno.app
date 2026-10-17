@@ -33,20 +33,25 @@ test('sin conexiones, servicios reales ni modulos productivos', () => {
   for (const p of banned) assert.doesNotMatch(all, p);
 });
 
-test('conserva la marca oficial con recursos exclusivamente locales', () => {
+test('imagotipo m y fuentes Acorn originales se sirven localmente', () => {
   const brandCSS = readFileSync(join(dir, 'brand.css'), 'utf8');
-  const symbol = readFileSync(join(dir, 'assets/simbolo-grafito.svg'), 'utf8');
+  const symbol = readFileSync(join(dir, 'assets/icono-m-grafito.svg'), 'utf8');
   const favicon = readFileSync(join(dir, 'assets/favicon.svg'), 'utf8');
-  assert.match(html, /src="\.\/assets\/simbolo-grafito\.svg"/);
+  assert.match(html, /src="\.\/assets\/icono-m-grafito\.svg"/);
   assert.match(html, /href="\.\/assets\/favicon\.svg"/);
   assert.match(html, /href="\.\/brand\.css"/);
-  assert.match(symbol, /viewBox="0 0 126\.81361 100\.6104"/);
+  assert.match(html, /font-src 'self'/);
+  assert.match(symbol, /viewBox="0 0 165\.129 105\.559"/);
   assert.match(symbol, /fill="#323338"/);
-  assert.match(brandCSS, /#f6f4eb/i);
-  assert.match(brandCSS, /#f8f6ef/i);
-  assert.match(brandCSS, /#e4dfce/i);
-  assert.match(brandCSS, /#181818/i);
-  assert.match(brandCSS, /#d8d2c2/i);
+  for (const id of [3,4,6,7,8]) {
+    const filename = `acorn-${id}.ttf`;
+    const file = readFileSync(join(dir, 'assets/fonts', filename));
+    assert.ok(file.length > 90000, filename+' incompleto');
+    assert.ok(brandCSS.includes('./assets/fonts/'+filename), filename+' sin aplicar');
+  }
+  assert.match(brandCSS, /font-family:Acorn/);
+  for (const color of ['#f6f4eb','#f8f6ef','#e4dfce','#181818','#d8d2c2'])
+    assert.ok(brandCSS.includes(color), color+' falta');
   assert.doesNotMatch(html + brandCSS + favicon, /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b/);
 });
 
