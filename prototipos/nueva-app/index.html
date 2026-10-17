@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'none'; connect-src 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'">
+  <meta name="color-scheme" content="light">
+  <title>Moderno.app — Nueva interfaz (prototipo ficticio)</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell" id="app-shell">
+    <header class="global-header" aria-label="Navegación general">
+      <button class="brand" id="brand-button" type="button" aria-label="Ir a Proyectos" title="Moderno.app">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span class="brand-wordmark">moderno<span class="brand-dot">.</span>app</span>
+      </button>
+      <nav class="global-nav" id="global-nav" aria-label="Navegación de Moderno.app"></nav>
+      <div class="header-actions">
+        <span class="header-demo" title="Únicamente datos ficticios">DEMO</span>
+        <button type="button" class="icon-button header-collapse" id="collapse-header" aria-label="Comprimir menú superior" aria-expanded="true" title="Comprimir menú superior"></button>
+        <div class="profile-wrap">
+          <button type="button" class="profile-button" id="profile-button" aria-haspopup="true" aria-expanded="false" aria-controls="profile-menu" title="Perfil y ajustes">
+            <span class="profile-avatar">MR</span><span class="profile-name">Mi espacio</span><span id="profile-chevron"></span>
+          </button>
+          <div class="profile-menu" id="profile-menu" role="menu" hidden>
+            <p class="profile-menu-title">Espacio de demostración</p>
+            <button type="button" role="menuitem" data-profile="Perfil">Perfil <span>↗</span></button>
+            <button type="button" role="menuitem" data-profile="Ajustes">Ajustes <span>↗</span></button>
+            <button type="button" role="menuitem" data-profile="Integraciones">Integraciones <span>↗</span></button>
+            <p class="profile-menu-note">Opciones simuladas · Sin conexión</p>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main class="workspace" id="workspace">
+      <div class="workspace-inner">
+        <div class="context-bar">
+          <div class="breadcrumbs" id="breadcrumbs" aria-label="Ubicación"></div>
+          <div class="context-actions">
+            <span class="mode-indicator"><span class="mode-dot"></span> Prototipo de escritorio</span>
+          </div>
+        </div>
+        <div id="view" class="view-container" tabindex="-1" aria-live="polite"></div>
+      </div>
+    </main>
+    <nav class="tool-dock" id="tool-dock" aria-label="Herramientas del proyecto"></nav>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
