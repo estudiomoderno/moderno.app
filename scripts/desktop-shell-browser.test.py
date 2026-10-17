@@ -11,12 +11,11 @@ go=source[source.index('function go(view, arg)'):source.index('drawBrandSwitch()
 proj=source[source.index('function projTab(t)'):source.index('var _accessRole=',source.index('function projTab(t)'))]
 fixture="""
 window.calls=[];window._wantProject=null;window._accessLoading=false;window._accessRole='admin';
-window.state={view:'proyecto',currentProject:1,projTab:'archivos',account:{name:'Estudio ficticio'},sessionUser:{name:'Persona ficticia'},projects:[{id:1,num:'PR-1',name:'Proyecto ficticio',tasks:[{id:'task-original',title:'Tarea conservada',col:'pend',who:['Equipo ficticio']}],files:[{id:'file-original',name:'Plano ficticio.pdf',ref:'private-path-original'}],rooms:[{id:8,name:'Estancia ficticia'}]}],invoices:[{ref:'FA-1',total:123}],quotes:[{id:9}],entries:[{id:5}],history:[{id:4}]};
+window.state={view:'proyecto',myRole:'admin',currentProject:1,projTab:'archivos',account:{name:'Estudio ficticio'},sessionUser:{name:'Persona ficticia'},projects:[{id:1,num:'PR-1',name:'Proyecto ficticio',tasks:[{id:'task-original',title:'Tarea conservada',col:'pend',who:['Equipo ficticio']}],files:[{id:'file-original',name:'Plano ficticio.pdf',ref:'private-path-original'}],rooms:[{id:8,name:'Estancia ficticia'}]}],invoices:[{ref:'FA-1',total:123}],quotes:[{id:9}],entries:[{id:5}],history:[{id:4}]};
 window.baseline=JSON.stringify({projects:state.projects,invoices:state.invoices,quotes:state.quotes,entries:state.entries,history:state.history});
 window.dirty=false;window.draftEditing=()=>dirty;window.draftDirty=()=>dirty;window.draftExitModal=(...args)=>calls.push(['draft',...args]);
 window.SettingsUI={open:s=>{calls.push(['settings',s]);go('ajustes');}};window.userModal=()=>calls.push(['profile']);
-window.myAccessLevel=()=>_accessRole==='colaborador'?'colab':'owner';
-window.canView=v=>_accessRole!=='colaborador'||!['contabilidad','informes','facturas','presupuestos','prevision','catalogo','integraciones','plantillas','utilidades','automatizaciones','plugins','mail','conversaciones'].includes(v);
+window.sb={};window.ESTUDIO_ID='fictional-study';
 window.toast=s=>calls.push(['toast',s]);window.presenceTrack=()=>{};window.homeRemember=()=>{};window.wsSessionViews=new Set();window.wsViewKey=()=>'';window.portalBootDone=()=>{};
 window.ModernoBrands={reset:()=>{}};window.ico=()=>'<svg class="svgi" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>';
 window.V=document.getElementById('view');window.render=()=>{
@@ -42,6 +41,7 @@ with sync_playwright() as p:
    if path.is_file():page.add_style_tag(path=str(path))
   page.evaluate("document.querySelector('#sidebarStudy').innerHTML='<details id=\"settings-switch\" class=\"settings-switch\"><summary>Estudio ficticio</summary><div class=\"settings-popup\"><button>Historial de versiones</button></div></details>';document.querySelector('#topUserName').textContent='Persona';document.querySelector('#brandSwitch').innerHTML='<button>Espacio ficticio</button>'")
   page.add_script_tag(content=fixture)
+  page.add_script_tag(content=source[source.index('const VIEW_DENY ='):source.index('function applyRoleNav()')])
   page.add_script_tag(content=source[source.index('const ICONS ='):source.index('/* =================== ROUTER')])
   page.add_script_tag(content=(repo/'app/project-ui.js').read_text())
   page.add_script_tag(content=proj+go)
@@ -72,6 +72,9 @@ with sync_playwright() as p:
   page.get_by_role('button',name='Expandir menú superior',exact=True).click()
   # Open/close/collapse/resizing never rerender or discard the active editor input.
   page.get_by_role('textbox',name='Borrador ficticio').fill('Cambios sin guardar')
+  page.set_viewport_size({'width':1024,'height':1000});assert page.locator('#desktop-header').count()==0
+  assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
+  page.set_viewport_size({'width':width,'height':1000});assert page.locator('#desktop-header').count()==1
   page.evaluate('dirty=true')
   page.locator('#desktop-header [data-desktop-view=workspace]').click()
   assert page.evaluate('state.view')=='proyecto'
@@ -89,6 +92,12 @@ with sync_playwright() as p:
   page.evaluate("_accessRole='colaborador';render()")
   assert page.locator('#desktop-header [data-desktop-view=contabilidad]').is_hidden()
   assert page.locator('#project-tab-fin').count()==0
+  for role in ['gestoria','cliente','contratista']:
+   page.evaluate('(role)=>{_accessRole=role;render()}',role)
+   assert page.locator('#desktop-header').count()==0
+  page.evaluate("_accessRole='admin';_accessLoading=true;render()")
+  assert page.locator('#desktop-header').count()==0
+  page.evaluate("_accessLoading=false;render()")
   page.evaluate("_accessRole='admin';state.projTab='archivos';render()")
   if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-light-{width}.png'),full_page=True)
   page.evaluate("document.body.classList.add('dark')")

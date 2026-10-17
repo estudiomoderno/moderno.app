@@ -47,11 +47,11 @@ Primera entrega limitada a escritorios de 1100 px o más. Ajustes, edición de p
 ## Verificaciones y límites
 
 - Batería Node: 439 pruebas (437 existentes y dos de inactividad/fallo seguro del lote).
-- Chromium sin red, SDK ni credenciales: 1440/1280/1100 px; 1024/390 px mantienen interfaz anterior. Marcado real de navegación, logos, CSS, iconos, projectTabsHtml y handlers go()/projTab() reales; vistas con contenido ficticio, canView y sesión simulados. No equivale a un ensayo de inicio de sesión o guardado HTTP.
+- Chromium sin red, SDK ni credenciales: 1440/1280/1100 px; 1024/390 px mantienen interfaz anterior. Marcado real de navegación, logos, CSS, iconos, projectTabsHtml, handlers go()/projTab() y lógica canView()/myAccessLevel() reales; vistas con contenido ficticio y sesión/perfiles simulados. No equivale a un ensayo de inicio de sesión o guardado HTTP.
 - Todas las rutas originales accesibles, siete pestañas, selección/teclado, Escape, comprimir/expandir, opciones según perfil simulado, borrador conservado ante navegación cancelada y todas las colecciones ficticias intactas.
 - Inactividad por defecto, retorno explícito, mismos nodos y SVG antes/después. Se comprueba fallo seguro: error de presentación vuelve a UI anterior sin romper el render original.
 - Revisión visual de escritorio claro y oscuro con identidad actual. No se reutilizan capturas privadas.
-- PHP y CI: documentar los resultados del PR antes de cualquier publicación; PHP no está instalado en este executor.
+- CI [39050323928](https://github.com/estudiomoderno/moderno.app/actions/runs/39050323928) correcto en el primer candidato: JavaScript, sintaxis PHP y autorización de invitaciones sin enviar correos. PHP no está instalado en este executor; la validación PHP se ejecutó en Actions.
 - No realizadas: verificación actual de backups completos, regresión HTTP contra entorno con esquema/usuarios ficticios, prueba autenticada productiva ni publicación. Esas limitaciones impiden presentar el encargo como terminado.
 
 ## Activación y reversión
