@@ -6,15 +6,16 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'none'; connect-src 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'">
   <meta name="color-scheme" content="light">
   <title>Moderno.app — Nueva interfaz (prototipo ficticio)</title>
+  <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./brand.css">
   <script src="./app.js" defer></script>
 </head>
 <body>
   <div class="app-shell" id="app-shell">
     <header class="global-header" aria-label="Navegación general">
       <button class="brand" id="brand-button" type="button" aria-label="Ir a Proyectos" title="Moderno.app">
-        <span class="brand-mark" aria-hidden="true">M</span>
-        <span class="brand-wordmark">moderno<span class="brand-dot">.</span>app</span>
+        <img class="brand-symbol" src="./assets/simbolo-grafito.svg" alt="" width="40" height="32">
       </button>
       <nav class="global-nav" id="global-nav" aria-label="Navegación de Moderno.app"></nav>
       <div class="header-actions">
