@@ -16,12 +16,14 @@ Este archivo tiene precedencia sobre las instrucciones genéricas cuando el trab
 - No fusionar en `main`, no subir a `app.moderno.app`, no publicar web de producción ni usar servidores o secretos productivos.
 - Nunca asumir que la orden de publicar cambios seguros en la app real aplica a este taller. La futura migración exige nueva aprobación expresa.
 
-## Identidad visual obligatoria — revisión del propietario (17/10/2026)
-- El propietario ha rechazado una primera versión con **logo M improvisado y colores inventados**. **No crear una marca nueva:** modernizar la navegación manteniendo la identidad gráfica real de Moderno.app.
-- Logotipo oficial: copia local exacta en `assets/simbolo-grafito.svg` desde `app/brand/simbolo-grafito.svg`. Favicon oficial: `assets/favicon.svg`. No reconstruir la M con texto ni sustituir el icono corporativo.
-- Colores aprobados de la app: `#f6f4eb` (fondo crema), `#f8f6ef` (superficie), `#e4dfce` (beige), `#181818` (acciones grafito), `#20201e` (texto), `#d8d2c2` (líneas). Implementados en `brand.css` (local); diseño original en `app/brand/app-identity.css` y `docs/IDENTIDAD-PAGINAS.md` como referencia **solo lectura**.
-- No importar fuentes con licencias inciertas, ficheros CSS de producción, scripts de la app ni referencias remotas. Usar fallback tipográfico local por ahora.
-- Cambiar **estructura de interfaz y experiencia**; conservar marca, tono visual y reconocimiento inmediato de Moderno.app. Mostrar una vista previa real al propietario para decidir ajustes; no afirmar fidelidad total sin comparación visual.
+## Identidad visual obligatoria — logotipo y Acorn (17/10/2026)
+
+- **Conservar la marca Moderno.app**: el propietario ha señalado que los primeros bocetos no reproducían correctamente su imagotipo ni sus fuentes. No diseñar ni dibujar logotipos aproximados.
+- Para la cabecera experimental, usar **`assets/icono-m-grafito.svg`**, copia exacta del **`app/brand/icono-m-grafito.svg`** oficial (solo lectura del origen); el favicon usa `assets/favicon.svg`. No sustituirlo por el símbolo geométrico `simbolo-grafito.svg`, ni por un carácter «M» de texto.
+- **Acorn original**: usar los cinco archivos locales `assets/fonts/acorn-*.ttf` copiados mediante blobs idénticos de Git desde `app/brand/acorn/` de este mismo repositorio, con pesos y asignaciones del `app/brand/tasks-identity.css`. **No usar Georgia como sustituto si la fuente está presente**; mantener fallbacks para errores de carga.
+- El HTML debe permitir `font-src 'self'` pero mantener `connect-src 'none'` y nunca apuntar a un CDN o dominio para cargar tipografías. No publicar ni enviar archivos de fuentes al propietario.
+- La paleta se mantiene en `brand.css`: `#f6f4eb` (fondo), `#f8f6ef` (superficies), `#e4dfce` (beige), `#181818` (acciones), `#20201e` (texto), `#d8d2c2` (líneas).
+- El diseño nuevo es **la disposición de las herramientas y la navegación**, no la identidad de marca. Antes de mostrar al propietario, comprobar visualmente logo, carga de fuentes, jerarquía tipográfica y los contrastes, sin conectar ni modificar la app real.
 
 ## Implementación
 - Prototipo autocontenido y de solo frontend, preferiblemente HTML, CSS y JavaScript con datos ficticios estáticos, sin dependencias externas; usar solo servidores estáticos de previsualización dentro del entorno aislado de Codex.
