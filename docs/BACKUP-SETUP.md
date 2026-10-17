@@ -31,7 +31,7 @@ Cuando hay un destino alternativo configurado, cada copia comprueba primero la r
 
 Retorno con configuración por secretos: retirar los dos secretos alternativos devuelve las próximas copias al destino anterior. La programación diaria, la identidad, la copia física de base de datos en Supabase y la copia manual `backup-service` conservan su configuración previa. Si la cuenta de servicio no tiene acceso, solicitar únicamente el permiso necesario para esa cuenta y carpeta antes de activar; no ampliar acceso a otras unidades por conveniencia.
 
-Preparación del 17/10/2026: el propietario ha indicado un destino y se han comprobado sus metadatos y ubicación, sin descargar datos privados. La conexión de GitHub disponible no permite editar secretos ni lanzar `workflow_dispatch`; no hay una credencial administrativa preparada en el executor. Los IDs se mantienen fuera del repositorio público. El soporte está preparado, pero la activación de los dos secretos y la verificación real siguen pendientes; no afirmar que las copias ya estén redirigidas.
+Preparación del 17/10/2026: el propietario indicó un destino y se comprobaron sus metadatos y ubicación. La conexión de GitHub no permite editar secretos ni lanzar `workflow_dispatch`; los dos primeros intentos manuales no verificaron el nuevo destino. La ruta privada descrita a continuación resuelve esa configuración y queda comprobada por una copia completa. Los IDs, valores de secretos y nombres/rutas de documentos se mantienen fuera del repositorio público.
 
 ### Ruta privada verificada directamente con Google
 
@@ -45,7 +45,15 @@ Para validar con autonomía los cambios revisados, el workflow también se ejecu
 
 Retorno con ruta privada: renombrar el archivo de control, sin tocar ninguna copia, y retirar ambos secretos alternativos para volver al destino original. Mantener la raíz privada original: contiene la configuración de recuperación y sigue siendo el destino de continuidad. No eliminarla ni moverla como parte de una reorganización de copias históricas. Una nueva ruta requerirá revisar sus dos huellas y permisos, sin publicar sus IDs.
 
-Pruebas aisladas: 456 pruebas Node aprobadas, incluidas ocho del nuevo comprobador (consulta acotada, identidad, ambigüedad, tipo/tamaño, huellas, pertenencia/permisos y errores sin datos privados). La verificación real del destino y primera copia están pendientes del workflow de integración; no se presentan como ya completadas.
+Pruebas aisladas: 456 pruebas Node aprobadas, incluidas ocho del nuevo comprobador (consulta acotada, identidad, ambigüedad, tipo/tamaño, huellas, pertenencia/permisos y errores sin datos privados). CI [39055835275](https://github.com/estudiomoderno/moderno.app/actions/runs/39055835275), correcto, con PHP y autorización de invitaciones sin correo.
+
+### Primera copia en la nueva ruta — 17/10/2026
+
+El [PR #54](https://github.com/estudiomoderno/moderno.app/pull/54), commit `6563165ee8db4338758ece167f7877a794746616`, activó la integración. El run [39055891986](https://github.com/estudiomoderno/moderno.app/actions/runs/39055891986) terminó con success: Google confirmó la carpeta/unidad y capacidad de escritura, la copia y recuperación de dos archivos sintéticos pasó y se completó la copia real con comparación de contenido por descarga e inventario estable. El log detectó que el secreto de carpeta no coincidía con la ruta autorizada y el de unidad sí; la ruta privada verificada tuvo prioridad sin leer ni cambiar esos secretos.
+
+En el destino elegido existen objects, manifest.json y COMPLETE.json. La marca acredita 259 objetos y verificación a las **18:00:55.757 UTC**. Se recuperaron únicamente los dos JSON fuera de Git, no los documentos: versión/recuento coherentes, rutas únicas y seguras, **59.651.801 bytes**. La huella agregada de rutas y tamaños coincide exactamente con una consulta de solo lectura del inventario actual de Supabase; hay un único bucket y el mismo recuento/tamaño que antes de la operación. La comparación de bytes de los documentos la acredita el workflow, no una segunda descarga del executor. No se ha ejecutado una restauración productiva ni se presenta esta copia de archivos como respaldo de BD.
+
+Las próximas ejecuciones usan la ruta privada verificada. La programación diaria y las copias antiguas permanecen; no se movió ni borró ninguna copia, no se hizo pública ninguna carpeta, no se cambiaron permisos desde el código y Supabase solo recibió consultas de lectura. La raíz antigua debe conservarse para el archivo de control y el destino de continuidad. No es necesario mover los históricos para que funcionen las próximas copias.
 
 Antes de activar: revisar los permisos de origen y destino; autorizar el procesador que ejecutará la copia; guardar credenciales en su almacén de secretos; comprobar límites de espacio y transferencia. Las claves S3 de Supabase eluden RLS y tienen acceso completo, aunque este programa solo lee el origen. No confundir intención de solo lectura con permisos restringidos.
 
