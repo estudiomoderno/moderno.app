@@ -1,5 +1,11 @@
 # Decisiones de TALLER
 
+## 2026-10-17 — Segundo taller: «Taller Nueva app Codex», sin conexión a Supabase
+
+El propietario aprueba un segundo taller llamado exactamente **«Taller Nueva app Codex»**, separado del **Taller Codex Moderno.app**. Su misión es probar una nueva navegación de escritorio inspirada en herramientas de diseño, usando **exclusivamente datos ficticios** y **sin ninguna conexión a Supabase** (ni producción ni pruebas), tampoco otros sistemas reales ni credenciales. Trabajo exclusivo en la rama `experimento/taller-nueva-app-codex` y el directorio `prototipos/nueva-app/`, sin modificar `app/`, tocar producción ni fusionar el prototipo a `main`.
+
+Cuando la interfaz resulte convincente y técnicamente verificable, se estudiará **más adelante** un plan de traslado a la app real; no hay permiso actual para migrar ni sustituir nada. El Taller actual sigue construyendo y manteniendo la app productiva. [Instrucciones completas](TALLER-NUEVA-APP-CODEX.md) · [Encargo #47](https://github.com/estudiomoderno/moderno.app/issues/47).
+
 ## 2026-10-11 — Taller entrega en app.moderno.app; pruebas técnicas invisibles para el propietario
 
 El propietario aclara: cuando encargue cambios al 🔧 Taller Codex quiere **verlos funcionando directamente en `app.moderno.app`**, sin gestionar él una aplicación de pruebas. Se prioriza un circuito autónomo: **rama → controles automatizados → PR revisado → despliegue a la app real y comprobación**, siempre que sea un cambio ordinario acotado y seguro.

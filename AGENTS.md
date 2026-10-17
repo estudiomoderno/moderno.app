@@ -50,6 +50,10 @@ Al comenzar cada encargo:
 - No asumir que las automatizaciones, los cobros en vivo o las integraciones anunciadas son funcionales; verificar su estado real.
 - **Gasto OpenAI API**: Cerebro aprobó **hasta 20 EUR/mes** para el Taller. Leer `docs/PRESUPUESTO-CODEX-API.md` antes de plantear cualquier acción facturable. No iniciar ni reintentar llamadas API de Codex hasta verificar proyecto exclusivo, límite de gasto duro inferior al máximo autorizado, alertas y entorno aislado. Suspender si no se puede confirmar coste o límite; nunca aumentarlo automáticamente.
 
+
+## Segundo taller experimental — Taller Nueva app Codex (17/10/2026)
+Existe un **segundo chat distinto** llamado **«Taller Nueva app Codex»** para prototipar **una nueva interfaz de escritorio aislada y 100 % ficticia**. Su trabajo se restringe a la rama `experimento/taller-nueva-app-codex` y al directorio `prototipos/nueva-app/`. **No conectar Supabase (ni pruebas ni producción), APIs reales, autenticación, servicios externos ni ningún dato real; no modificar `app/` ni publicar en producción**. **No fusionar su prototipo a main.** Sus instrucciones particulares están en [`docs/TALLER-NUEVA-APP-CODEX.md`](docs/TALLER-NUEVA-APP-CODEX.md) y [issue #47](https://github.com/estudiomoderno/moderno.app/issues/47). Las instrucciones de despliegue normal de este AGENTS.md **solo se aplican al Taller Codex Moderno.app** y nunca autorizan el despliegue del prototipo. La migración futura exige autorización nueva, planificación y pruebas.
+
 ## Coordinación
 - **Google Drive:** unidad compartida exclusiva de Moderno.app: **«03 Moderno App»** (bajo «Unidades compartidas»). **No utilizar otras unidades compartidas** para buscar, leer o guardar materiales de este proyecto sin permiso expreso. Ver `docs/COORDINACION-CEREBRO-CODEX.md` antes de utilizar Drive; reutilizar carpetas existentes, no mover/copiar archivos ni modificar copias programadas sin verificación y autorización.
 - **Cerebro (ChatGPT):** define intención, decisiones, prioridad y aceptación.
