@@ -1,6 +1,6 @@
 # Encargo #49: resumen del proyecto, segundo lote visual
 
-Candidato v3.65.34 del [PR #51](https://github.com/estudiomoderno/moderno.app/pull/51), en rama `interfaz/49-resumen-proyecto`, actualizado sobre main tras integrar el [PR #50](https://github.com/estudiomoderno/moderno.app/pull/50). El primer lote v3.65.33 ya está publicado y verificado por el run [39052771739](https://github.com/estudiomoderno/moderno.app/actions/runs/39052771739), segundo intento correcto tras un timeout FTPS previo a subir recursos de la app. La cobertura de recuperación se acredita en [ENCARGO-49-INTERFAZ](ENCARGO-49-INTERFAZ.md). Este segundo lote espera CI y publicación propios.
+Publicado en app.moderno.app como v3.65.34 el 17/10/2026 mediante el [PR #51](https://github.com/estudiomoderno/moderno.app/pull/51), commit `4bf3f964194df0f4d9f7296b0b420f4fd20f5f0a`, después de actualizarlo sobre main e integrar el [PR #50](https://github.com/estudiomoderno/moderno.app/pull/50). El primer lote v3.65.33 está publicado y verificado por el run [39052771739](https://github.com/estudiomoderno/moderno.app/actions/runs/39052771739), segundo intento correcto tras un timeout FTPS previo a subir recursos de la app. La cobertura de recuperación se acredita en [ENCARGO-49-INTERFAZ](ENCARGO-49-INTERFAZ.md).
 
 ## Resultado
 
@@ -21,10 +21,12 @@ Sin cambios en SQL, Supabase, Auth, permisos, Storage, sincronización, formatos
 
 Comprobaciones finales repetidas sobre main `f497b1f`, con el candidato activo v3.65.34: 439 pruebas Node aprobadas; ensayo de navegación Chromium a 1440/1280/1100/1024/390 px. Aplicación completa mediante servidor oficial aislado, SDK desactivado y red externa bloqueada: 1440/1100/390 px, todas las rutas y pestañas reales, SettingsUI y sus borradores, acciones del resumen e historial. Colecciones ficticias intactas después del recorrido. Se espera a que terminen las transiciones de tema antes de revisar contraste y capturas. Revisión visual clara y oscura de escritorio.
 
-La comprobación estática contra main confirma que, retirando únicamente el enlace CSS nuevo y el cambio de versión, index.html conserva exactamente su contenido previo. No acredita integración HTTP con Supabase, inicio de sesión ni restauración de respaldos. El PR se dirige ahora a main y debe superar CI antes de integrar; no se presenta como ya ejecutado ese CI.
+La comprobación estática contra main confirma que, retirando únicamente el enlace CSS nuevo y el cambio de versión, index.html conserva exactamente su contenido previo. La comparación final de ambos lotes contra v3.65.32 confirma que solo se añadieron los tres enlaces de recursos y se incrementó la versión; todos los módulos previos de app, backend y archivos permanecen idénticos. No acredita integración HTTP con Supabase, inicio de sesión ni restauración de respaldos.
+
+CI del candidato final: [39053072953](https://github.com/estudiomoderno/moderno.app/actions/runs/39053072953), correcto, incluidas las pruebas Node, sintaxis PHP y autorización de invitaciones sin enviar correo. Despliegue [39053113178](https://github.com/estudiomoderno/moderno.app/actions/runs/39053113178), completado con success, recursos antes del HTML y verificación final de SHA-256 de los 12 recursos públicos contra el commit publicado, sin iniciar sesión. No se ha realizado un recorrido autenticado productivo ni guardados con datos reales.
 
 ## Reversión y publicación
 
 Retirar el enlace a desktop-project-overview.css devuelve la presentación anterior del resumen sin recargar datos ni restaurar la BD. Desactivar el primer lote elimina también el efecto de esta hoja al retirar `desktop-shell`.
 
-Primer lote y recuperación comprobados. Revisar el diff y CI del candidato actualizado, publicar por el workflow habitual y verificar la hoja servida y sus hashes junto al resto de recursos (12 en total). Mantener los recursos previos y no forzar recargas con borradores.
+Ambos lotes publicados y comprobados por el workflow habitual. Se mantienen los recursos previos y no se fuerzan recargas con borradores. El encargo general #49 sigue abierto para siguientes adaptaciones por área y revisión final; estas dos entregas no se presentan como una sustitución completa de todas las pantallas.
