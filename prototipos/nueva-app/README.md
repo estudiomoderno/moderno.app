@@ -2,15 +2,18 @@
 
 **Estado:** primera versión experimental **implementada en la rama aislada** `experimento/taller-nueva-app-codex`. **No está publicada en app.moderno.app** y no se debe integrar en `main`.
 
-## Identidad oficial de Moderno.app (corrección solicitada el 17/10/2026)
+## Logotipo y tipografías originales (corrección 17/10/2026)
 
-**La nueva disposición no debe perder la marca de Moderno.app.** La primera base tenía una M dibujada en texto y tonos gris-azulados inventados; esa elección quedó corregida tras los comentarios del propietario.
+Se revisó la identidad visual tras el comentario del propietario: **los colores no eran suficientes, había que usar el mismo imagotipo y las fuentes originales**.
 
-- **Logo:** `assets/simbolo-grafito.svg` es una copia literal del símbolo aprobado que la aplicación real publica en `app/brand/simbolo-grafito.svg`; `assets/favicon.svg` también procede del branding existente. Ambos se sirven **desde esta carpeta** sin conexión con producción.
-- **Colores:** `brand.css` aplica la paleta documentada en `app/brand/app-identity.css` y `docs/IDENTIDAD-PAGINAS.md`: crema `#f6f4eb`, superficie `#f8f6ef`, beige `#e4dfce`, grafito/negro `#181818`, líneas `#d8d2c2` y textos `#20201e`.
-- **Tipografía:** se mantiene fallback local Georgia para aproximar la jerarquía de títulos; **no se han incorporado ni redistribuido los archivos Acorn**. Verificar posteriormente licencias y disponibilidad para aproximar mejor la fuente real sin pedir recursos externos.
-- **Qué experimentamos:** ubicación de barras, navegación por iconos, jerarquía y facilidad de uso. **Qué conservamos:** identidad visual corporativa y logotipo oficial.
-- Se mantiene prohibición absoluta de Supabase, integraciones y recursos remotos. Cambios solo en la rama experimental; no hay publicación en `app.moderno.app`.
+- **Imagotipo «m» exacto:** `assets/icono-m-grafito.svg` es una copia local del recurso corporativo `app/brand/icono-m-grafito.svg`. No se reconstruye con caracteres ni se inventa una M. El favicon también usa su recurso oficial.
+- **Tipografía real de los títulos:** **Acorn**, con los mismos cinco pesos que el código de la app carga en `app/brand/tasks-identity.css`: 200, 400, 500, 600, 700. Los archivos de fuente se reutilizan como blobs de Git de los ya presentes en el repositorio, **solo en esta rama**, dentro de `assets/fonts/`. No dependen de dominios ni CDNs; no se entregan fuentes como adjuntos.
+- **CSP:** `font-src 'self'` permite fuentes locales; `connect-src 'none'` sigue prohibiendo red hacia Supabase y cualquier otro backend.
+- **Color corporativo:** `brand.css` conserva crema `#f6f4eb`, superficie `#f8f6ef`, beige `#e4dfce`, grafito `#181818`, tinta `#20201e` y líneas `#d8d2c2`.
+- **Menús y texto corriente:** fuentes de interfaz del sistema; títulos, cifras y encabezados principales usan Acorn real. Si se necesita una equivalencia tipográfica adicional, comprobar el CSS vigente antes de improvisar.
+- **No confundimos los distintos símbolos**: el recurso `simbolo-grafito.svg` también existe en la app para otros contextos; la cabecera de este prototipo usa específicamente la **«m» corporativa** solicitada.
+
+**Verificar en la vista previa real:** recargar sin caché, comprobar que se cargan los cinco `.ttf` desde `assets/fonts/` y que el icono mostrado es `icono-m-grafito.svg`. Si Codex muestra una versión anterior, comprobar la rama y la ruta. No se ha publicado nada en `app.moderno.app`.
 
 ## Qué incluye esta versión
 
