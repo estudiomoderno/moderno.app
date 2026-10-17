@@ -2,6 +2,16 @@
 
 **Estado:** primera versión experimental **implementada en la rama aislada** `experimento/taller-nueva-app-codex`. **No está publicada en app.moderno.app** y no se debe integrar en `main`.
 
+## Identidad oficial de Moderno.app (corrección solicitada el 17/10/2026)
+
+**La nueva disposición no debe perder la marca de Moderno.app.** La primera base tenía una M dibujada en texto y tonos gris-azulados inventados; esa elección quedó corregida tras los comentarios del propietario.
+
+- **Logo:** `assets/simbolo-grafito.svg` es una copia literal del símbolo aprobado que la aplicación real publica en `app/brand/simbolo-grafito.svg`; `assets/favicon.svg` también procede del branding existente. Ambos se sirven **desde esta carpeta** sin conexión con producción.
+- **Colores:** `brand.css` aplica la paleta documentada en `app/brand/app-identity.css` y `docs/IDENTIDAD-PAGINAS.md`: crema `#f6f4eb`, superficie `#f8f6ef`, beige `#e4dfce`, grafito/negro `#181818`, líneas `#d8d2c2` y textos `#20201e`.
+- **Tipografía:** se mantiene fallback local Georgia para aproximar la jerarquía de títulos; **no se han incorporado ni redistribuido los archivos Acorn**. Verificar posteriormente licencias y disponibilidad para aproximar mejor la fuente real sin pedir recursos externos.
+- **Qué experimentamos:** ubicación de barras, navegación por iconos, jerarquía y facilidad de uso. **Qué conservamos:** identidad visual corporativa y logotipo oficial.
+- Se mantiene prohibición absoluta de Supabase, integraciones y recursos remotos. Cambios solo en la rama experimental; no hay publicación en `app.moderno.app`.
+
 ## Qué incluye esta versión
 
 - Menú superior con imagotipo «M», navegación general (ficticia), botón de comprimir y perfil con Ajustes/Integraciones simulados.
