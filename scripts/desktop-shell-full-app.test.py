@@ -4,10 +4,17 @@ This exercises actual renderers, router and settings, using synthetic in-memory 
 It does not validate Supabase authentication, RPC or cloud persistence.
 """
 from pathlib import Path
-import json,os,socket,subprocess,time,urllib.request
+import json,os,socket,subprocess,time,urllib.request,sys
 from playwright.sync_api import sync_playwright
 
 repo=Path(__file__).resolve().parents[1]
+def contrast_total(page):
+ colors=page.locator('.project-tab-panel>.entry-col>.entry:last-child').evaluate('(e)=>[getComputedStyle(e).backgroundColor,getComputedStyle(e.querySelector(".amt")).color]')
+ def luminance(color):
+  values=[int(x)/255 for x in color.removeprefix('rgb(').removesuffix(')').split(',')]
+  values=[v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in values]
+  return sum(v*w for v,w in zip(values,[.2126,.7152,.0722]))
+ a,b=sorted(map(luminance,colors));assert (b+.05)/(a+.05)>=4.5,colors
 with socket.socket() as sock:
  sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
 origin=f'http://127.0.0.1:{port}'
@@ -77,6 +84,33 @@ try:
     page.locator('#project-tab-'+key).click(force=width<1100)
     assert page.locator('#project-tab-'+key).get_attribute('aria-selected')=='true'
    assert page.evaluate('fixtureRecords()===fixtureBaseline'),'Navigation changed stored records'
+   page.evaluate("projTab('proyecto')")
+   metrics=page.locator('.project-overview strong').all_inner_texts()
+   assert metrics[:3]==['Sin fecha prevista','1','0%'],metrics
+   assert len(metrics)==4
+   page.get_by_role('button',name='Ver tareas',exact=True).click();assert page.evaluate('state.projTab')=='tareas'
+   page.evaluate("projTab('proyecto')")
+   page.get_by_role('button',name='Ver finanzas',exact=True).click();assert page.evaluate('state.projTab')=='fin'
+   page.evaluate("projTab('proyecto')")
+   page.get_by_role('button',name='Historial de cambios',exact=True).click();assert 'Historial de PR-9001' in page.locator('#modalBox').inner_text()
+   page.get_by_role('button',name='Cerrar',exact=True).click()
+   assert page.evaluate('fixtureRecords()===fixtureBaseline')
+   if width>=1100:
+    contrast_total(page)
+    cards=page.locator('.project-overview>div').all()
+    bounds=[card.bounding_box() for card in cards]
+    assert len(set(round(b['y']) for b in bounds))==1,bounds
+    assert all(b['width']>=220 for b in bounds),bounds
+    for button in ['Ver tareas','Ver finanzas']:
+     size=page.get_by_role('button',name=button,exact=True).bounding_box()
+     assert size['height']<=40 and size['width']<180,size
+   if len(sys.argv)>1:
+    page.screenshot(path=str(Path(sys.argv[1])/f'project-overview-light-{width}.png'),full_page=True)
+    page.evaluate("document.body.classList.add('dark')")
+    page.wait_for_function('getComputedStyle(document.querySelector("#project-tab-tareas svg")).stroke===getComputedStyle(document.body).color')
+    if width>=1100:contrast_total(page)
+    page.screenshot(path=str(Path(sys.argv[1])/f'project-overview-dark-{width}.png'),full_page=True)
+    page.evaluate("document.body.classList.remove('dark')")
    if width>=1100:
     page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Ajustes',exact=True).click()
     assert page.evaluate('state.view')=='ajustes'

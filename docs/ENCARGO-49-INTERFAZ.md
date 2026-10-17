@@ -1,6 +1,6 @@
 # Encargo #49: integración progresiva de la interfaz
 
-Estado del 17/10/2026: candidato v3.65.33 con activación visual preparada tras verificar la cobertura de recuperación; publicación pendiente de pruebas y workflow. [Encargo](https://github.com/estudiomoderno/moderno.app/issues/49). Rama `interfaz/encargo-49`, base `2c56262b124a45d7d4a6d1961b64134e48485228`. Código de app anterior: `fb36f9db0a8113ee26f1d4e1b324611eb6c90650`, v3.65.32. El PR #46 de asignación de usuarios sigue separado; este lote no instala su SQL ni sus permisos.
+Estado del 17/10/2026: navegación v3.65.33 publicada y verificada tras comprobar la cobertura de recuperación. [Encargo](https://github.com/estudiomoderno/moderno.app/issues/49), [PR #50](https://github.com/estudiomoderno/moderno.app/pull/50), commit integrado `f497b1faf966dac93e792f9077f8d103efa38312`. Rama `interfaz/encargo-49`, base `2c56262b124a45d7d4a6d1961b64134e48485228`. Código de app anterior: `fb36f9db0a8113ee26f1d4e1b324611eb6c90650`, v3.65.32. El PR #46 de asignación de usuarios sigue separado; este lote no instala su SQL ni sus permisos.
 
 ## Recuperación: cobertura comprobada antes de activar
 
@@ -63,4 +63,6 @@ Repetir las pruebas pertinentes del candidato activo y revisar diff/CI. Publicar
 
 Retorno inmediato de la pestaña: `ModernoDesktopShell.setEnabled(false)` restituye los nodos y elimina el contenedor nuevo; no recarga ni escribe datos. Retorno permanente: desactivar la constante y publicar por el mismo workflow, o revertir exclusivamente este lote, manteniendo cualquier trabajo posterior. La base estable conserva `app/` íntegro en `fb36f9d`; no restaurar BD por un problema visual. Mantener recursos viejos y nuevos durante la validación para evitar pestañas/cachés incoherentes.
 
-El encargo #49 queda abierto: etapa 0 comprobada con los límites descritos; etapa 1 preparada para publicación y etapa 2 en lotes separados, empezando por el resumen del proyecto. No certificar conservación de datos mediante recuentos aislados ni afirmar despliegue por el mero hecho de crear un PR.
+Publicación del primer lote: CI del candidato activo [39052548648](https://github.com/estudiomoderno/moderno.app/actions/runs/39052548648), correcto; despliegue [39052771739](https://github.com/estudiomoderno/moderno.app/actions/runs/39052771739), segundo intento correcto. El primer intento falló por timeout FTPS al guardar el estado de un servicio sin cambios, antes de subir recursos o entrada de la app. El segundo superó las 439 pruebas Node, PHP y las 24 comprobaciones de autorización sin correo, subió recursos y después HTML, y verificó SHA-256 de los 11 recursos públicos sin iniciar sesión. No se ha realizado un recorrido autenticado con datos reales.
+
+El encargo #49 queda abierto: etapa 0 comprobada con los límites descritos; etapa 1 publicada/verificada y etapa 2 en lotes separados, empezando por el resumen del proyecto. No certificar conservación de datos mediante recuentos aislados ni afirmar despliegue por el mero hecho de crear un PR.
