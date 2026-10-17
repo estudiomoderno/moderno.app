@@ -1,6 +1,11 @@
 name: Verificar y copiar archivos
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/backup-storage.yml'
+      - 'scripts/prepare-backup-destination.mjs'
   schedule:
     - cron: '23 4 * * *'
       timezone: Europe/Madrid
@@ -36,6 +41,7 @@ jobs:
         run: |
           node --test scripts/backup-storage.test.mjs
           node --test scripts/run-backup-ci.test.mjs
+          node --test scripts/prepare-backup-destination.test.mjs
           python3 scripts/backup-service.test.py
       - name: Instalar herramienta de copia
         run: |
@@ -57,16 +63,29 @@ jobs:
           access_token_scopes: https://www.googleapis.com/auth/drive
           create_credentials_file: false
           export_environment_variables: false
+      - name: Resolver y comprobar destino privado
+        id: destination
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'backup-service'
+        continue-on-error: ${{ github.event_name != 'push' }}
+        env:
+          GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
+          BACKUP_STORAGE_FOLDER_ID: ${{ secrets.BACKUP_STORAGE_FOLDER_ID }}
+          BACKUP_STORAGE_TEAM_DRIVE: ${{ secrets.BACKUP_STORAGE_TEAM_DRIVE }}
+        run: node scripts/prepare-backup-destination.mjs
       - name: Copiar y verificar
         if: github.event_name == 'schedule' || inputs.mode != 'backup-service'
         env:
-          BACKUP_MODE: ${{ github.event_name == 'schedule' && 'backup' || inputs.mode }}
+          BACKUP_MODE: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && 'backup' || inputs.mode }}
           GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
           SOURCE_CONFIG: ${{ secrets.BACKUP_SOURCE_CONFIG }}
-          BACKUP_STORAGE_FOLDER_ID: ${{ secrets.BACKUP_STORAGE_FOLDER_ID }}
-          BACKUP_STORAGE_TEAM_DRIVE: ${{ secrets.BACKUP_STORAGE_TEAM_DRIVE }}
+          BACKUP_STORAGE_FOLDER_ID: ${{ env.BACKUP_VERIFIED_FOLDER_ID || secrets.BACKUP_STORAGE_FOLDER_ID }}
+          BACKUP_STORAGE_TEAM_DRIVE: ${{ env.BACKUP_VERIFIED_TEAM_DRIVE || secrets.BACKUP_STORAGE_TEAM_DRIVE }}
         run: node scripts/run-backup-ci.mjs
+      - name: Avisar si no se pudo comprobar la ruta privada
+        if: steps.destination.outcome == 'failure'
+        run: exit 1
       - name: Respaldar código privado del servicio
         if: github.event_name == 'workflow_dispatch' && inputs.mode == 'backup-service'
         env:
