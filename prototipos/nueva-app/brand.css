@@ -1,0 +1,317 @@
+/* La identidad visual se toma de app/brand/app-identity.css y docs/IDENTIDAD-PAGINAS.md
+ * NO importa CSS, scripts, servicios ni otros recursos de la aplicación real.
+ * Los dos SVG locales proceden de app/brand/simbolo-grafito.svg y favicon.svg.
+ * Este prototipo sigue siendo ficticio, sin Supabase ni red externa.
+ */
+:root{
+  --bg:#f6f4eb;
+  --white:#f8f6ef;
+  --ink:#20201e;
+  --ink-soft:#57564e;
+  --muted:#716e62;
+  --line:#d8d2c2;
+  --accent:#181818;
+  --tint:#e4dfce;
+  --brand:#969080;
+  --green:#33513b;
+  --shadow:0 8px 24px #302a1710;
+  --radius:22px;
+}
+html{
+  background:#f6f4eb;
+}
+body{
+  background-color:#f6f4eb;
+  background-image:
+    linear-gradient(#77715c08 1px,transparent 1px),
+    linear-gradient(90deg,#77715c08 1px,transparent 1px);
+  background-size:28px 28px;
+}
+.brand{
+  padding:0 5px 0 0;
+  min-height:45px;
+  justify-content:center;
+}
+.brand-symbol{
+  display:block;
+  width:42px;
+  height:34px;
+  max-width:100%;
+  object-fit:contain;
+}
+.global-header{
+  background:#f8f6ef;
+  border-bottom:1px solid #d8d2c2;
+}
+.global-link{
+  color:#57564e;
+  border-radius:12px;
+}
+.global-link.is-current{
+  background:#e4dfce;
+  color:#20201e;
+}
+.global-link:hover{
+  background:#eae5d6;
+  color:#20201e;
+}
+.header-demo{
+  background:#eee8cf;
+  border-color:#d8d2c2;
+  color:#716e62;
+}
+.profile-button,
+.breadcrumbs strong{
+  color:#20201e;
+}
+.profile-avatar{
+  background:#e4dfce;
+  color:#20201e;
+}
+.profile-menu{
+  background:#f8f6ef;
+  border-color:#d8d2c2;
+  box-shadow:0 20px 50px #302a1721;
+}
+.profile-menu button:hover{
+  background:#eae5d6;
+}
+.icon-button{
+  background:#f8f6ef;
+  border-color:#d8d2c2;
+  color:#57564e;
+}
+.icon-button:hover{
+  background:#e4dfce;
+  color:#20201e;
+}
+.mode-indicator,
+.breadcrumbs{
+  color:#716e62;
+}
+.eyebrow{
+  color:#77715c;
+}
+h1,.view-heading h1,.hero-copy h2{
+  font-family:Acorn,Georgia,"Times New Roman",serif;
+  font-synthesis:none;
+  font-weight:600;
+}
+h1{
+  letter-spacing:-.035em;
+}
+.subtitle,
+.stat>span,
+.stat>small,
+.card-heading p,
+.task-line small,
+.task-date,
+.viewer-controls,
+.hint-line,
+.section-label{
+  color:#716e62;
+}
+.status-chip,
+.pill{
+  background:#eee8cf;
+  color:#33513b;
+  border-color:#d8d2c2;
+}
+.project-hero{
+  background:linear-gradient(113deg,#f8f6ef 0%,#f0ecdf 56%,#eae5d6 100%);
+  border-color:#d8d2c2;
+  border-radius:26px;
+}
+.hero-symbol{
+  background:#f8f6ef;
+  color:#57564e;
+  border-color:#d8d2c2;
+}
+.hero-topline,
+.hero-copy p{
+  color:#716e62;
+}
+.hero-illustration{
+  filter:sepia(.18) saturate(.65);
+}
+.hero-sheet{
+  background:#f8f6ef;
+  border-color:#d8d2c2;
+  box-shadow:0 15px 45px #302a171c;
+}
+.hero-sheet-front{
+  border-color:#f8f6ef;
+  outline-color:#d8d2c2;
+}
+.hero-stamp{
+  background-color:#f8f6ef;
+  background-image:url("./assets/simbolo-grafito.svg");
+  background-position:center;
+  background-repeat:no-repeat;
+  background-size:30px 24px;
+  border:1px solid #d8d2c2;
+  color:transparent;
+  font-size:0;
+  box-shadow:0 8px 20px #302a1717;
+}
+.hero-stamp span{
+  display:none;
+}
+.stat,.surface-card,.viewer-shell{
+  background:#f8f6ef;
+  border:1px solid #d8d2c2;
+  border-radius:22px;
+  box-shadow:0 8px 24px #302a1710;
+}
+.stat>strong,
+.card-heading h2,
+.task-line strong,
+.row-title,
+.quick-grid span,
+.document-tile strong,
+.comment-list strong,
+.feature-tile strong{
+  color:#20201e;
+}
+.stat .progress,
+.progress{
+  background:#e4dfce;
+}
+.progress>span{
+  background:#969080;
+}
+.primary-button{
+  background:#181818;
+  border-color:#181818;
+  color:#f6f4eb;
+  border-radius:22px;
+}
+.primary-button:hover{
+  background:#34332e;
+  border-color:#34332e;
+}
+.secondary-button,
+.mini-button{
+  background:#f8f6ef;
+  color:#20201e;
+  border-color:#d8d2c2;
+  border-radius:16px;
+}
+.secondary-button:hover,
+.mini-button:hover{
+  background:#e4dfce;
+}
+.text-link{
+  color:#57564e;
+}
+.task-line,
+.table-row{
+  border-bottom-color:#d8d2c2;
+}
+.task-dot{
+  border-color:#969080;
+}
+.task-dot.finished{
+  background:#33513b;
+  border-color:#33513b;
+}
+.quick-grid button,
+.document-tile,
+.feature-tile{
+  background:#f6f4eb;
+  border-color:#d8d2c2;
+  border-radius:18px;
+  color:#716e62;
+}
+.quick-grid button:hover,
+.document-tile:hover,
+.feature-tile:hover{
+  background:#eee8cf;
+  border-color:#969080;
+}
+.tool-dock{
+  background:#f8f6ef;
+  border:1px solid #d8d2c2;
+  border-radius:22px;
+  box-shadow:0 15px 50px #302a1729,0 3px 12px #302a170c;
+}
+.dock-button{
+  color:#57564e;
+  border-radius:14px;
+}
+.dock-button:hover,
+.dock-button:focus-visible{
+  background:#e4dfce;
+  color:#20201e;
+}
+.dock-button.is-active,
+.dock-button.is-active:hover{
+  background:#181818;
+  color:#f6f4eb;
+}
+.dock-divider{
+  background:#d8d2c2;
+}
+.dock-tooltip{
+  background:#20201e;
+  color:#f6f4eb;
+}
+.viewer-toolbar{
+  border-bottom-color:#d8d2c2;
+}
+.viewer-file,
+.row-assignee,
+.row-date,
+.row-badge{
+  color:#57564e;
+}
+.plan-canvas{
+  background:#eae5d6;
+}
+.plan-svg{
+  filter:sepia(.15) saturate(.75) drop-shadow(0 14px 20px #302a1717);
+}
+.segmented,
+.row-product-icon{
+  background:#e4dfce;
+}
+.segmented .selected{
+  background:#f8f6ef;
+  color:#20201e;
+}
+.subtabs button{
+  background:#f8f6ef;
+  color:#57564e;
+  border-color:#d8d2c2;
+  border-radius:18px;
+}
+.subtabs button.active{
+  background:#181818;
+  border-color:#181818;
+  color:#f6f4eb;
+}
+.document-tile .ui-icon,
+.row-product-icon,
+.feature-tile .ui-icon{
+  color:#716e62;
+}
+.global-placeholder{
+  background:#f8f6ef;
+  border-color:#d8d2c2;
+  border-radius:26px;
+}
+.global-placeholder h2{
+  font-family:Acorn,Georgia,"Times New Roman",serif;
+}
+.toast{
+  background:#20201e;
+  color:#f6f4eb;
+}
+:focus-visible{
+  outline-color:#969080;
+}
+@media(max-width:740px){
+  .tool-dock{
+    border-radius:16px;
+  }
+}
