@@ -1,0 +1,24 @@
+/* #49, second visual batch. Existing project summary, desktop shell only. */
+@media screen and (min-width:1100px){
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]){max-width:1440px;margin-inline:auto}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .crumbs{font-size:12px;line-height:1.5;margin-bottom:18px;color:var(--ink-soft)}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .project-detail-head{padding:0 68px 24px 0;margin-bottom:4px;min-height:0;background:transparent!important;border:0;box-shadow:none}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .project-detail-head h1{font-size:clamp(28px,2.7vw,38px);line-height:1.2;margin-bottom:10px;letter-spacing:-.025em}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .project-options{top:0;right:0}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .project-tab-panel{padding:0;background:transparent;border:0;border-radius:0;margin-top:0}
+ html body.desktop-shell:not(.portalmode) #view .project-overview{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:0 0 18px;align-items:stretch}
+ html body.desktop-shell:not(.portalmode) #view .project-overview>div{gap:12px;min-height:170px;padding:22px;background:var(--app-surface);border:1px solid var(--ui-line);border-radius:20px;box-shadow:none}
+ html body.desktop-shell:not(.portalmode) #view .project-overview strong{font-size:clamp(23px,2.1vw,30px);line-height:1.25;letter-spacing:-.02em;overflow-wrap:anywhere}
+ html body.desktop-shell:not(.portalmode) #view .project-overview small{color:var(--ink-soft);font-size:12px;line-height:1.4}
+ html body.desktop-shell:not(.portalmode) #view .project-overview span{color:var(--ink-soft);font-size:12px;line-height:1.5}
+ html body.desktop-shell:not(.portalmode) #view .project-overview progress{height:7px;border-radius:8px;overflow:hidden}
+ html body.desktop-shell:not(.portalmode) #view :is(.project-overview,.project-attention) .btn{width:auto;min-height:36px;height:auto;padding:8px 13px;font-size:12px;line-height:1.3;align-self:flex-start;border-radius:12px}
+ html body.desktop-shell:not(.portalmode) #view .project-overview .btn{margin-top:auto;background:var(--app-control)}
+ html body.desktop-shell:not(.portalmode) #view .project-attention{gap:10px;margin-bottom:28px}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .sec{font-size:19px;line-height:1.3;margin-bottom:12px}
+ html body.desktop-shell:not(.portalmode) #view .project-work-progress{padding:18px;background:var(--app-surface);border:1px solid var(--ui-line);border-radius:20px}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .entry-col{padding:8px 16px;background:var(--app-surface);border:1px solid var(--ui-line);border-radius:20px}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .entry-col .entry{padding:14px 12px;gap:14px}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .entry-col .entry:last-child{border-radius:12px;background:var(--app-selected)!important;color:var(--app-selected-text)!important}
+ html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .entry-col .entry:last-child :is(b,.amt){color:inherit!important}
+}
