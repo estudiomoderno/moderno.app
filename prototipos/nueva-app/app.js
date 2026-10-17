@@ -144,7 +144,7 @@ function globalPage(){
 }
 function render(){
  renderNavigation();
- const fn={inicio:initial,planos:plans,obra:work,tareas:tasks,compras:shopping,economia:economy,documentos:docs,ia:ideas,utilidades,comentarios};
+ const fn={inicio:initial,planos:plans,obra:work,tareas:tasks,compras:shopping,economia:economy,documentos:docs,ia:ideas,utilidades:utilities,comentarios:comments};
  view.innerHTML=state.top==="proyectos"?(fn[state.tool]||initial)():globalPage();
 }
 function navigateTool(tool){
