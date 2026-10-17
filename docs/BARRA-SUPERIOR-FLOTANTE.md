@@ -18,6 +18,6 @@ Se eliminó la flecha que la hoja global de selectores añadía debajo del avata
 
 ## Publicación y retorno
 
-Candidato `interfaz/barra-superior-flotante`, base `87dbdbb`. Pendiente de CI y despliegue por el workflow existente, con verificación de los 12 recursos públicos. No forzar recargas con borradores.
+Publicado en app.moderno.app como **v3.65.35** mediante el [PR #56](https://github.com/estudiomoderno/moderno.app/pull/56), commit `ec339e1cbe801aa79953d5091b86d6f7e3ca5009`, base `87dbdbb`. CI [39060067000](https://github.com/estudiomoderno/moderno.app/actions/runs/39060067000), correcto. Despliegue [39060116799, intento 2](https://github.com/estudiomoderno/moderno.app/actions/runs/39060116799/attempts/2), completado con success: 456 pruebas Node, PHP/autorización sin correo, recursos antes del HTML y SHA-256 de los 12 recursos públicos coincidentes con el commit. El primer intento falló al descargar las acciones de GitHub durante la preparación del ejecutor, antes de publicar recursos; se resolvió al reintentar sin cambios de código/configuración. No forzar recargas con borradores.
 
 Retorno inmediato sin recarga: `ModernoDesktopShell.setEnabled(false)`. Restituye campana, atributos, decoraciones, avatar y selector a sus posiciones originales sin escribir datos. Retorno permanente: revertir este lote con su cache/versionado y publicar por el mismo workflow. La base anterior de app v3.65.34 permanece en `4bf3f96`; no restaurar BD por un cambio visual.
