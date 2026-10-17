@@ -35,6 +35,7 @@ jobs:
       - name: Comprobar lógica
         run: |
           node --test scripts/backup-storage.test.mjs
+          node --test scripts/run-backup-ci.test.mjs
           python3 scripts/backup-service.test.py
       - name: Instalar herramienta de copia
         run: |
@@ -63,6 +64,8 @@ jobs:
           GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
           SOURCE_CONFIG: ${{ secrets.BACKUP_SOURCE_CONFIG }}
+          BACKUP_STORAGE_FOLDER_ID: ${{ secrets.BACKUP_STORAGE_FOLDER_ID }}
+          BACKUP_STORAGE_TEAM_DRIVE: ${{ secrets.BACKUP_STORAGE_TEAM_DRIVE }}
         run: node scripts/run-backup-ci.mjs
       - name: Respaldar código privado del servicio
         if: github.event_name == 'workflow_dispatch' && inputs.mode == 'backup-service'
