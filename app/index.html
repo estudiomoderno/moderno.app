@@ -1178,6 +1178,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/router.js?v=3653"></script>
 <script src="/specifications.js?v=340"></script>
 <script src="/project-insights.js?v=36511"></script>
+<script src="/task-members.js?v=36533"></script>
 <script src="/project-ui.js?v=36527"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
@@ -9640,9 +9641,9 @@ function teamOptions(sel){
 function tkToggleWho(btn){
   const tk=state._tk; if(!tk) return;
   const name=btn.dataset.who; let arr=taskAssignees(tk);
-  if(arr.includes(name)) arr=arr.filter(x=>x!==name); else arr=arr.concat([name]);
+  if(arr.includes(name)) arr=arr.filter(x=>x!==name); else {if(!TaskMembers.has(name)){toast("Comprueba primero los usuarios del estudio");return;}arr=arr.concat([name]);}
   taskSetAssignees(tk, arr);
-  const box=btn.parentElement; [...box.querySelectorAll("button")].forEach(b=>{ const on=arr.includes(b.dataset.who); b.classList.toggle("on",on); b.textContent=b.textContent.replace(" ★","")+((on&&arr[0]===b.dataset.who&&arr.length>1)?" ★":""); });
+  const box=btn.parentElement;TaskMembers.refresh();const next=[...box.querySelectorAll('button')].find(b=>b.dataset.who===name)||box.querySelector('button');next?.focus({preventScroll:true});
 }
 /* ===== Dependencias entre tareas =====
    t.id (estable) · t.deps = [ids de tareas del mismo proyecto que deben terminar antes]. Bloqueo SUAVE: avisa, nunca impide. */
@@ -9767,7 +9768,7 @@ function taskModal(pid,idx,col){
       return `<button type="button" class="${on?"on":""}" ${cyc?`disabled style="opacity:.45;cursor:not-allowed" title="Crearía un bucle: ${path.concat([src.title||"esta tarea"]).join(" → ")}. Una cadena de dependencias no puede volver a su origen."`:`title="${taskDone(t)?"Ya terminada":KCOLS.find(k=>k[0]===t.col)?.[1]||""}"`} onclick="${cyc?"":`tkToggleDep(${t.id},this)`}">${taskDone(t)?"✓ ":""}${t.title}${cyc?" ⟲":""}</button>`; }).join("")}</div>
     ${taskBlocked(p,src)?`<p style="font-size:11px;color:var(--ink-soft);margin:4px 0 0">🔒 En espera de: ${taskBlockers(p,src).map(d=>d.title).join(", ")}. No pasa a En progreso hasta que terminen, salvo que lo confirmes expresamente.</p>`:""}
     ${taskDateConflicts(p,src).length?`<p style="font-size:11px;color:var(--red-ink);margin:4px 0 0">⚠ Su fecha límite es anterior a la de ${taskDateConflicts(p,src).map(d=>d.title+" ("+isoToEs(d.due)+")").join(", ")}: no cuadra con sus dependencias.</p>`:""}` : "";
-  const team = state.clients.filter(c=>c.type==="Team");
+  TaskMembers.begin();
   modal(`<h3>${idx>=0?"Editar tarea":"Nueva tarea"}</h3>
   <label>Título</label><input id="tkTitle" value="${src.title}" placeholder="Ej: 1º pago">
   <label class="task-important-option"><input type="checkbox" id="tkImportant" ${src.important?'checked':''}> Marcar como importante</label>
@@ -9777,9 +9778,7 @@ function taskModal(pid,idx,col){
     <div><label>Fecha límite</label><input id="tkDue" type="date" value="${tk.due}">
       <button class="btn btn-ghost" style="margin-top:6px;font-size:11px;padding:5px 10px" title="Genera una invitación .ics para tu calendario" onclick="addToCalMenu((document.getElementById('tkTitle')&&document.getElementById('tkTitle').value)||'Tarea',(document.getElementById('tkDue')&&document.getElementById('tkDue').value)||null)">📅 Añadir a mi calendario</button></div>
     <div><label>Asignado a</label>
-    <div class="opt-pills" id="tkWho" style="flex-wrap:wrap">${(function(){ const me=meName(), mm=meMail(); const sel=taskAssignees(tk);
-      return teamMembers().map(u=>{ const yo=(mm&&(u.email||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===mm)||u.name===me; const on=sel.includes(u.name);
-        return `<button type="button" class="${on?"on":""}" data-who="${(u.name||"").replace(/"/g,"&quot;")}" onclick="tkToggleWho(this)">${yo?"(Yo) ":""}${u.name}${on&&sel[0]===u.name&&sel.length>1?" ★":""}</button>`; }).join(""); })()}</div>
+    <div class="opt-pills" id="tkWho" style="flex-wrap:wrap">${TaskMembers.html(tk)}</div>
     <small style="font-size:10px;color:var(--ink-faint)">Pulsa para añadir o quitar personas · ★ responsable principal (el primero elegido)</small><small style="font-size:10px;color:var(--ink-faint)">Personas del equipo</small></div>
   </div>
   <label>Subtareas <span id="tkSubCount" style="color:var(--ink-faint)">${tk.subs.filter(s=>s.done).length}/${tk.subs.length}</span></label>
@@ -9803,7 +9802,7 @@ function taskModal(pid,idx,col){
   <div class="modal-foot">${idx>=0?`<button class="danger" onclick="delTask(${pid},${idx})">Eliminar tarea</button>`:""}
   <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
   <button class="btn btn-dark" onclick="saveTask(${pid},${idx})">Guardar</button></div>`);
-  pills("tkCol"); pills("tkType"); tkDrawSubs(); tkDrawFiles(); tkDrawComments();
+  pills("tkCol"); pills("tkType"); tkDrawSubs(); tkDrawFiles(); tkDrawComments();TaskMembers.load();
 }
 function tkAddSub(){
   const i=document.getElementById("tkNewSub");
@@ -11467,7 +11466,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.32";
+const MODERNO_VER="v3.65.33";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
