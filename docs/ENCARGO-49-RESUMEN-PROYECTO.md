@@ -19,7 +19,7 @@ Sin cambios en SQL, Supabase, Auth, permisos, Storage, sincronización, formatos
 
 ## Comprobaciones
 
-439 pruebas Node aprobadas. Chromium con la aplicación completa mediante servidor oficial aislado, SDK desactivado y red externa bloqueada: 1440/1100/390 px, todas las rutas y pestañas reales, SettingsUI y sus borradores, acciones del resumen e historial. Colecciones ficticias intactas después del recorrido. Se espera a que terminen las transiciones de tema antes de revisar contraste y capturas. Revisión visual clara y oscura de escritorio.
+Comprobaciones finales repetidas sobre main `f497b1f`, con el candidato activo v3.65.34: 439 pruebas Node aprobadas; ensayo de navegación Chromium a 1440/1280/1100/1024/390 px. Aplicación completa mediante servidor oficial aislado, SDK desactivado y red externa bloqueada: 1440/1100/390 px, todas las rutas y pestañas reales, SettingsUI y sus borradores, acciones del resumen e historial. Colecciones ficticias intactas después del recorrido. Se espera a que terminen las transiciones de tema antes de revisar contraste y capturas. Revisión visual clara y oscura de escritorio.
 
 La comprobación estática contra main confirma que, retirando únicamente el enlace CSS nuevo y el cambio de versión, index.html conserva exactamente su contenido previo. No acredita integración HTTP con Supabase, inicio de sesión ni restauración de respaldos. El PR se dirige ahora a main y debe superar CI antes de integrar; no se presenta como ya ejecutado ese CI.
 
