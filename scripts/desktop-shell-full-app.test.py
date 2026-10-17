@@ -51,6 +51,8 @@ try:
    }""")
    assert page.evaluate('sb===null')
    assert page.evaluate('LS_KEY')=='moderno_pruebas_ui-fixture'
+   assert page.locator('#desktop-header').count()==(1 if width>=1100 else 0)
+   page.evaluate('ModernoDesktopShell.setEnabled(false)')
    assert page.locator('#desktop-header').count()==0
    page.evaluate('ModernoDesktopShell.setEnabled(true)')
    if width>=1100:assert page.locator('#desktop-header').is_visible()

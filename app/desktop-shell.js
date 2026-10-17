@@ -1,8 +1,8 @@
 /* Presentation only. Original navigation handlers, editors and storage remain authoritative. */
 var ModernoDesktopShell=(()=>{
  'use strict';
- // Activation is blocked by issue #49 until database AND Storage recovery are verified.
- const ENABLED=false;
+ // #49 recovery gate verified: production physical backup + separate Storage inventory.
+ const ENABLED=true;
  let enabled=ENABLED,header=null,collapsed=false;
  const moved=[],media=window.matchMedia('(min-width:1100px)');
  const $=s=>document.querySelector(s);

@@ -49,7 +49,9 @@ with sync_playwright() as p:
   logos=page.locator('.sb-head').evaluate('(el)=>el.innerHTML')
   nodes=page.evaluate("()=>{window.originalNodes=['.sb-head','#topUser','#sidebarStudy','.topbar'].map(s=>document.querySelector(s));return true}")
   page.add_script_tag(path=str(repo/'app/desktop-shell.js'))
-  assert page.locator('#desktop-header').count()==0,'candidate must remain disabled until recovery verification'
+  assert page.locator('#desktop-header').count()==(1 if width>=1100 else 0)
+  page.evaluate('ModernoDesktopShell.setEnabled(false)')
+  assert page.locator('#desktop-header').count()==0,'explicit rollback must restore the old UI'
   page.evaluate('ModernoDesktopShell.setEnabled(true)')
   if width<1100:
    assert page.locator('#desktop-header').count()==0
