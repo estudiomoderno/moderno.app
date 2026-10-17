@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-17 — Cabecera flotante y símbolo compacto en escritorio
+
+El propietario solicita una cápsula superior superpuesta como el dock inferior, sin la fila de espacio de trabajo ni el control de tema y con notificaciones junto al perfil. Se usa exclusivamente el símbolo compacto original del menú antiguo comprimido, conservando su SVG, Acorn y paleta; esta indicación actualiza la presentación ancha del primer lote de #49, sin introducir otro logotipo. Los selectores reales de estudio/espacios siguen accesibles dentro del perfil y todos los módulos actuales se mantienen. Alcance, pruebas y reversión en [BARRA-SUPERIOR-FLOTANTE](BARRA-SUPERIOR-FLOTANTE.md).
+
 ## 2026-10-17 — Segundo taller: «Taller Nueva app Codex», sin conexión a Supabase
 
 El propietario aprueba un segundo taller llamado exactamente **«Taller Nueva app Codex»**, separado del **Taller Codex Moderno.app**. Su misión es probar una nueva navegación de escritorio inspirada en herramientas de diseño, usando **exclusivamente datos ficticios** y **sin ninguna conexión a Supabase** (ni producción ni pruebas), tampoco otros sistemas reales ni credenciales. Trabajo exclusivo en la rama `experimento/taller-nueva-app-codex` y el directorio `prototipos/nueva-app/`, sin modificar `app/`, tocar producción ni fusionar el prototipo a `main`.

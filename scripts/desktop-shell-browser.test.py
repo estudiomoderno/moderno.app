@@ -14,7 +14,7 @@ window.calls=[];window._wantProject=null;window._accessLoading=false;window._acc
 window.state={view:'proyecto',myRole:'admin',currentProject:1,projTab:'archivos',account:{name:'Estudio ficticio'},sessionUser:{name:'Persona ficticia'},projects:[{id:1,num:'PR-1',name:'Proyecto ficticio',tasks:[{id:'task-original',title:'Tarea conservada',col:'pend',who:['Equipo ficticio']}],files:[{id:'file-original',name:'Plano ficticio.pdf',ref:'private-path-original'}],rooms:[{id:8,name:'Estancia ficticia'}]}],invoices:[{ref:'FA-1',total:123}],quotes:[{id:9}],entries:[{id:5}],history:[{id:4}]};
 window.baseline=JSON.stringify({projects:state.projects,invoices:state.invoices,quotes:state.quotes,entries:state.entries,history:state.history});
 window.dirty=false;window.draftEditing=()=>dirty;window.draftDirty=()=>dirty;window.draftExitModal=(...args)=>calls.push(['draft',...args]);
-window.SettingsUI={open:s=>{calls.push(['settings',s]);go('ajustes');}};window.userModal=()=>calls.push(['profile']);
+window.SettingsUI={open:s=>{calls.push(['settings',s]);go('ajustes');}};window.userModal=()=>calls.push(['profile']);window.notifModal=()=>calls.push(['notifications']);
 window.sb={};window.ESTUDIO_ID='fictional-study';
 window.toast=s=>calls.push(['toast',s]);window.presenceTrack=()=>{};window.homeRemember=()=>{};window.wsSessionViews=new Set();window.wsViewKey=()=>'';window.portalBootDone=()=>{};
 window.ModernoBrands={reset:()=>{}};window.ico=()=>'<svg class="svgi" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>';
@@ -47,7 +47,9 @@ with sync_playwright() as p:
   page.add_script_tag(content=proj+go)
   page.evaluate('render()')
   logos=page.locator('.sb-head').evaluate('(el)=>el.innerHTML')
+  page.evaluate("window.originalBell=document.querySelector('#nBadge').closest('button');window.originalBellHTML=originalBell.innerHTML;window.originalBellLabel=originalBell.getAttribute('aria-label')")
   nodes=page.evaluate("()=>{window.originalNodes=['.sb-head','#topUser','#sidebarStudy','.topbar'].map(s=>document.querySelector(s));return true}")
+  page.add_script_tag(path=str(repo/'app/settings-icons.js'))
   page.add_script_tag(path=str(repo/'app/desktop-shell.js'))
   assert page.locator('#desktop-header').count()==(1 if width>=1100 else 0)
   page.evaluate('ModernoDesktopShell.setEnabled(false)')
@@ -59,6 +61,26 @@ with sync_playwright() as p:
    print(width,'PASS: unchanged tablet/mobile navigation, inactive desktop shell')
    assert not errors,errors;page.close();continue
   assert page.locator('#desktop-header .sb-head').evaluate('(el)=>el.innerHTML')==logos
+  assert page.locator('#desktop-header .logo').is_hidden()
+  assert page.locator('#desktop-header .logo-mini').is_visible()
+  assert page.locator('.main>.topbar').is_hidden()
+  assert page.locator('#themeBtn').is_hidden()
+  assert page.locator('#brandSwitch').is_hidden()
+  assert page.locator('#desktop-header').evaluate('(e)=>getComputedStyle(e).position')=='fixed'
+  assert page.locator('#desktop-header .desktop-context').count()==0
+  assert page.locator('#desktop-header .desktop-nav').locator('> .desktop-link').all_inner_texts()==['Proyectos','Tareas','Calendario','Agenda','Mail']
+  page.locator('#desktop-header .desktop-actions>button').click()
+  assert page.evaluate('calls.pop()')==['notifications']
+  assert page.locator('#desktop-header .desktop-actions>button').evaluate('(e)=>e===originalBell')
+  bell=page.locator('#desktop-header .desktop-actions>button').bounding_box()
+  profile=page.locator('.desktop-profile>summary').bounding_box()
+  row=page.locator('.desktop-row').bounding_box()
+  assert bell['width']==bell['height']==44
+  assert profile['x']>=bell['x']+bell['width']
+  assert row['x']+row['width']<bell['x']
+  assert max(row['y'],bell['y'])-min(row['y'],bell['y'])<12
+  for rect in page.locator('.desktop-nav>button,.desktop-nav>details>summary,.desktop-collapse').evaluate_all('(els)=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right}})'):
+   assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
   assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]').count()
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
@@ -88,6 +110,10 @@ with sync_playwright() as p:
    assert page.evaluate('state.view')==view,view
   # Profile uses original actions; settings fall back to the unchanged sidebar UI.
   page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Mi perfil',exact=True).click();assert page.evaluate('calls.pop()')==['profile']
+  page.locator('.desktop-profile>summary').click();page.locator('#settings-switch>summary').click()
+  assert page.locator('.desktop-profile').get_attribute('open') is not None
+  assert page.locator('#settings-switch').get_attribute('open') is not None
+  page.locator('#settings-switch>summary').press('Escape')
   page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Ajustes',exact=True).click();assert page.evaluate('state.view')=='ajustes';assert page.locator('#desktop-header').count()==0
   page.evaluate("go('proyecto',1)")
   page.locator('.desktop-group>summary').first.click();page.locator('.desktop-group>summary').first.press('Escape');assert page.locator('.desktop-group[open]').count()==0
@@ -103,7 +129,7 @@ with sync_playwright() as p:
   page.evaluate("_accessRole='admin';state.projTab='archivos';render()")
   if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-light-{width}.png'),full_page=True)
   page.evaluate("document.body.classList.add('dark')")
-  assert page.locator('#desktop-header .logo svg').evaluate('(el)=>getComputedStyle(el).filter')=='invert(1)'
+  assert page.locator('#desktop-header .logo-mini svg').evaluate('(el)=>getComputedStyle(el).filter')=='invert(1)'
   # Check accessible header bounds and the project content remains above the dock.
   assert page.locator('.desktop-profile').bounding_box()['x']+page.locator('.desktop-profile').bounding_box()['width']<=width
   assert page.locator('.desktop-nav').bounding_box()['x']>=page.locator('.desktop-brand').bounding_box()['x']+page.locator('.desktop-brand').bounding_box()['width']
@@ -111,6 +137,7 @@ with sync_playwright() as p:
   page.evaluate('ModernoDesktopShell.setEnabled(false)')
   assert page.locator('#desktop-header').count()==0
   assert page.locator('aside.sidebar .sb-head').evaluate('(el)=>el.innerHTML')==logos
+  assert page.evaluate("originalBell.parentElement.classList.contains('topbar')&&originalBell.innerHTML===originalBellHTML&&originalBell.getAttribute('aria-label')===originalBellLabel")
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
   assert page.evaluate("JSON.stringify({projects:state.projects,invoices:state.invoices,quotes:state.quotes,entries:state.entries,history:state.history})===baseline")
   assert not errors,errors

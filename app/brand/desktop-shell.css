@@ -1,22 +1,21 @@
 /* Issue #49, first batch. Screen/desktop only, removable without a data migration. */
 #desktop-header[hidden],#desktop-header [hidden]{display:none!important}
 @media screen and (min-width:1100px){
- body.desktop-shell .app{height:calc(100dvh - 124px);padding:0;gap:0}
+ body.desktop-shell .app{height:100dvh;padding:0;gap:0}
  body.desktop-shell aside.sidebar{display:none!important}
- html body.desktop-shell:not(.portalmode) .main{border-radius:0;padding:28px clamp(24px,4vw,72px) 120px!important}
- #desktop-header{height:124px;position:relative;z-index:75;background:var(--app-surface,var(--panel));color:var(--ink);border-bottom:1px solid var(--ui-line);box-sizing:border-box}
- #desktop-header .desktop-row{height:74px;display:flex;align-items:center;gap:14px;padding:0 28px}
- #desktop-header .desktop-brand{display:flex;align-items:center;flex:0 0 auto}
+ html body.desktop-shell:not(.portalmode) .main{border-radius:0;padding:104px clamp(24px,4vw,72px) 120px!important;scroll-padding-top:104px}
+ body.desktop-shell .main>.topbar{display:none!important}
+ #desktop-header{position:fixed;top:20px;left:24px;right:24px;z-index:75;display:flex;align-items:flex-start;gap:18px;background:transparent;color:var(--ink);box-sizing:border-box;pointer-events:none}
+ #desktop-header .desktop-row{min-height:58px;display:flex;align-items:center;gap:8px;padding:6px 10px;max-width:calc(100% - 120px);box-sizing:border-box;border:1px solid var(--ui-line);border-radius:28px;background:var(--app-surface,var(--panel));box-shadow:var(--shadow);pointer-events:auto}
+ #desktop-header .desktop-brand{display:flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px;min-height:40px;padding:0 12px 0 0;border:0;border-right:1px solid var(--ui-line);border-radius:0;background:transparent;color:var(--ink)}
  #desktop-header .sb-head{margin:0!important;min-height:0!important;align-items:center!important}
  /* The exact existing logo nodes move here; their SVGs, proportions and dimensions stay intact. */
  #desktop-header .new-brand{margin:0;line-height:0;flex-shrink:0}
- #desktop-header .logo.new-brand{display:block;width:170px;max-width:100%}
- #desktop-header .logo-mini.new-brand{display:none;width:30px}
+ #desktop-header .logo.new-brand{display:none!important}
+ #desktop-header .logo-mini.new-brand{display:block!important;width:30px;margin:0}
  #desktop-header .new-brand svg{display:block;width:100%;height:auto;font-synthesis:none;filter:none}
- body.navmini #desktop-header .logo.new-brand{display:none}
- body.navmini #desktop-header .logo-mini.new-brand{display:block}
  body.dark #desktop-header .new-brand svg{filter:invert(1)}
- #desktop-header .desktop-nav{display:flex;align-items:center;justify-content:center;gap:3px;flex:1;min-width:0}
+ #desktop-header .desktop-nav{display:flex;align-items:center;gap:3px;min-width:0}
  #desktop-header :is(button,summary){font:inherit;font-size:12px;cursor:pointer}
  #desktop-header .desktop-link,#desktop-header .desktop-group>summary{display:flex;align-items:center;gap:7px;min-height:40px;border:0;padding:8px 10px;border-radius:12px;white-space:nowrap;background:transparent;color:var(--ink-soft);text-decoration:none}
  #desktop-header .desktop-nav>.desktop-link>.ico{display:none}
@@ -28,26 +27,36 @@
  #desktop-header [aria-current=page],#desktop-header .is-current>summary{background:var(--app-control);color:var(--ink)}
  #desktop-header :is(button,summary):focus-visible{outline:2px solid var(--app-outline,var(--ink));outline-offset:3px}
  #desktop-header details{position:relative}
+ #desktop-header .desktop-group{border-left:1px solid var(--ui-line);padding-left:6px}
  #desktop-header summary{list-style:none}
  #desktop-header summary::-webkit-details-marker{display:none}
- #desktop-header .desktop-group>summary::after{content:'⌄';font-size:12px}
+ #desktop-header .desktop-group>summary::after{content:'⌄';font-size:12px;width:auto;height:auto;margin-left:2px;background:none;mask:none;-webkit-mask:none}
+ #desktop-header .desktop-more>summary{font-size:22px;padding-inline:8px}
+ #desktop-header .desktop-more>summary::after{display:none}
+ #desktop-header .desktop-more .desktop-menu{left:auto;right:0}
  #desktop-header .desktop-menu{position:absolute;top:calc(100% + 8px);left:0;min-width:210px;max-width:280px;max-height:calc(100dvh - 100px);overflow-y:auto;padding:7px;background:var(--app-surface,var(--panel));color:var(--ink);border:1px solid var(--ui-line);border-radius:16px;box-shadow:var(--shadow);z-index:80}
  #desktop-header .desktop-menu button{width:100%;text-align:left;padding:11px 12px;min-height:40px;border-radius:10px}
  #desktop-header .desktop-menu button:hover{background:var(--app-control)}
- #desktop-header .desktop-collapse{display:grid;place-items:center;min-width:36px;height:36px;border:1px solid var(--ui-line);border-radius:12px;flex-shrink:0}
+ #desktop-header .desktop-collapse{display:grid;place-items:center;width:30px;min-width:30px;height:36px;padding:0;border:0;border-radius:12px;flex-shrink:0;background:transparent;color:var(--ink-soft)}
  #desktop-header .desktop-collapse svg{width:18px;height:18px}
- #desktop-header .desktop-profile>summary{display:flex;align-items:center;padding:4px;border-radius:14px;min-height:40px}
- #desktop-header .desktop-profile .avatar{white-space:nowrap;font-size:12px}
+ #desktop-header .desktop-actions{display:flex;align-items:center;gap:8px;margin-left:auto;min-height:58px;pointer-events:auto}
+ #desktop-header .desktop-profile>summary,#desktop-header .desktop-actions>button{display:grid;place-items:center;width:44px;height:44px;min-height:44px!important;box-sizing:border-box;padding:0;border:1px solid var(--ui-line);border-radius:50%;background:var(--app-surface,var(--panel))!important;color:var(--ink);box-shadow:var(--shadow)}
+ #desktop-header .desktop-actions>button{align-self:center!important;width:44px!important;height:44px!important}
+ #desktop-header .desktop-actions>button:has(.desktop-bell-icon){font-size:0!important}
+ #desktop-header .desktop-bell-icon{display:grid;place-items:center}
+ #desktop-header .desktop-bell-icon svg{width:21px;height:21px}
+ #desktop-header .desktop-profile .avatar{display:grid;place-items:center;width:42px;height:42px;padding:0;background:transparent;white-space:nowrap;font-size:12px}
+ #desktop-header #topUserName{display:none}
+ #desktop-header #topUserDot{width:28px;height:28px}
  #desktop-header .desktop-profile .desktop-menu{left:auto;right:0}
- #desktop-header .desktop-context{display:flex;align-items:center;justify-content:space-between;gap:20px;height:50px;padding:0 28px;border-top:1px solid var(--ui-line)}
- #desktop-header .sidebar-study{border:0;margin:0;padding:0;max-width:250px;min-width:140px}
+ #desktop-header .desktop-profile>summary::after{content:none!important;display:none!important}
+ #desktop-header .sidebar-study{border:0;border-top:1px solid var(--ui-line);margin:7px 0 0;padding:7px 0 0;min-width:0}
  #desktop-header .settings-switch{margin:0}
  #desktop-header .settings-switch>summary{padding:4px 8px;min-height:36px;border-radius:10px;gap:8px}
  #desktop-header .settings-initial{width:24px;height:24px;font-size:12px}
+ #desktop-header .sidebar-study .settings-switch-name{display:block!important;font-size:12px}
+ #desktop-header .study-settings-collapsed{display:none!important}
  #desktop-header .settings-popup{position:fixed;width:240px}
- #desktop-header .topbar{position:static;display:flex;align-items:center;gap:8px;min-width:0}
- #desktop-header .brand-switch{max-width:48vw;overflow-x:auto;scrollbar-width:thin}
- #desktop-header .brand-switch button{white-space:nowrap}
  #desktop-header.is-compact .desktop-nav>.desktop-link .desktop-label{display:none}
  #desktop-header.is-compact .desktop-nav>.desktop-link>.ico{display:grid}
  /* Real project tabs keep IDs, roving keyboard focus, handlers and the panel relationship. */
@@ -59,9 +68,11 @@
  html body.desktop-shell:not(.portalmode) .project-tabs [role=tab]:is(:hover,:focus-visible) .project-tab-label{clip:auto;width:max-content;height:auto;max-width:240px;white-space:nowrap;overflow:visible;bottom:calc(100% + 16px);left:50%;transform:translateX(-50%);padding:7px 10px;border-radius:9px;background:var(--app-selected);color:var(--app-selected-text);font-size:12px;pointer-events:none}
  body.desktop-shell #syncTag{max-width:280px}
  @media(max-width:1290px){
-  #desktop-header .desktop-row{gap:8px;padding:0 20px}
+  #desktop-header{left:16px;right:16px;gap:12px}
+  #desktop-header .desktop-row{gap:5px;padding-inline:8px;max-width:calc(100% - 108px)}
+  #desktop-header .desktop-brand{flex-basis:44px;width:44px;padding-right:10px}
   #desktop-header .desktop-link,#desktop-header .desktop-group>summary{padding:8px 7px;font-size:11px}
-  #desktop-header #topUserName{display:none}
+  #desktop-header .desktop-more>summary{font-size:22px}
  }
 }
 @media print{#desktop-header{display:none!important}}

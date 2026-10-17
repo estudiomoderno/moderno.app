@@ -84,6 +84,22 @@ try:
     page.locator('#project-tab-'+key).click(force=width<1100)
     assert page.locator('#project-tab-'+key).get_attribute('aria-selected')=='true'
    assert page.evaluate('fixtureRecords()===fixtureBaseline'),'Navigation changed stored records'
+   if width>=1100:
+    assert page.locator('#desktop-header .logo').is_hidden()
+    assert page.locator('#desktop-header .logo-mini').is_visible()
+    assert page.locator('.desktop-profile>summary').evaluate('(e)=>e.scrollHeight<=e.clientHeight')
+    assert page.locator('#themeBtn').is_hidden() and page.locator('#brandSwitch').is_hidden()
+    page.evaluate("state.notifs=[{txt:'Aviso ficticio',when:'Hoy',read:false}];notifBadge()")
+    assert page.locator('#desktop-header #nBadge').inner_text()=='1'
+    page.get_by_role('button',name='Notificaciones',exact=True).click()
+    assert 'Aviso ficticio' in page.locator('#modalBox').inner_text()
+    page.get_by_role('button',name='Marcar leídas y cerrar',exact=True).click()
+    assert page.locator('#nBadge').is_hidden()
+    page.locator('.desktop-profile>summary').click()
+    page.locator('#settings-switch>summary').click()
+    assert page.locator('.desktop-profile').get_attribute('open') is not None
+    assert page.locator('#settings-switch .settings-popup').is_visible()
+    page.locator('#settings-switch>summary').press('Escape')
    page.evaluate("projTab('proyecto')")
    metrics=page.locator('.project-overview strong').all_inner_texts()
    assert metrics[:3]==['Sin fecha prevista','1','0%'],metrics
