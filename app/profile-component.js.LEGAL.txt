@@ -87,8 +87,14 @@ lucide-react/dist/esm/context.mjs:
 lucide-react/dist/esm/Icon.mjs:
 lucide-react/dist/esm/createLucideIcon.mjs:
 lucide-react/dist/esm/icons/bell.mjs:
+lucide-react/dist/esm/icons/copy.mjs:
+lucide-react/dist/esm/icons/ellipsis-vertical.mjs:
 lucide-react/dist/esm/icons/ellipsis.mjs:
+lucide-react/dist/esm/icons/palette.mjs:
+lucide-react/dist/esm/icons/pencil.mjs:
 lucide-react/dist/esm/icons/settings.mjs:
+lucide-react/dist/esm/icons/share-2.mjs:
+lucide-react/dist/esm/icons/trash.mjs:
 lucide-react/dist/esm/icons/user.mjs:
 lucide-react/dist/esm/icons/users.mjs:
 lucide-react/dist/esm/lucide-react.mjs:

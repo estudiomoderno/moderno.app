@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Menú original ReUI para ajustes de proyecto
+
+El propietario sustituye su propuesta inicial de botón ghost por un patrón de tres puntos verticales y DropdownMenu original. Se aplica en español, conservando las cinco acciones existentes, fuente y medidas del código. No se incorporan operaciones ni atajos de demostración. Alcance y reversión en [AJUSTES-PROYECTO-REUI.md](AJUSTES-PROYECTO-REUI.md).
+
 ## 2026-10-18 — Notificaciones con el componente original de ReUI
 
 El propietario proporciona el patrón Button/BellIcon/Badge. Se usa el Badge original público de ReUI, conservando fuente, tamaños y clases, dentro del aislamiento visual ya incorporado al perfil. El contador se alimenta de los avisos pendientes existentes y la apertura reutiliza su manejador actual. Sin cambios en datos, permisos, almacenamiento ni dependencias de la aplicación. Comprobaciones y reversión en [NOTIFICACIONES-REUI-ORIGINAL.md](NOTIFICACIONES-REUI-ORIGINAL.md).

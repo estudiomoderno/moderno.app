@@ -271,8 +271,8 @@ try:
     assert page.locator('#ptM2').input_value()=='24'
     assert '4.0 L' in page.locator('#ptRes').inner_text()
     assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
-   page.locator('.project-options>summary').click()
-   page.get_by_role('button',name='Portal del cliente',exact=True).click()
+   page.locator('[data-project-settings-trigger]').click()
+   page.get_by_role('menuitem',name='Portal del cliente',exact=True).click()
    assert page.locator('#project-tab-panel> .client-project-editor').is_visible()
    assert page.locator('.project-tabs [tabindex="0"]').count()==1,'Portal must keep dock reachable by keyboard'
    assert page.evaluate('fixtureRecords()===fixtureBaseline'),'Navigation changed stored records'
