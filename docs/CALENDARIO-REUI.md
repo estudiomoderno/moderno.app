@@ -31,3 +31,7 @@ Chromium con servidor oficial aislado, backend desactivado, identidad y registro
 El PR registra resultados finales y publicación. El proceso habitual compara SHA-256 de 31 recursos públicos, incluidos el nuevo controlador, sus estilos, bundle y los recursos ReUI compartidos.
 
 Reversión: revertir la entrega y desplegar, sin restaurar datos ni borrar almacenamiento. `ModernoCalendarUI.setEnabled(false)` recupera la vista anterior durante diagnóstico. Los nodos/formularios de edición originales se conservan y no se fuerzan recargas de sesiones abiertas.
+
+## Ajustes legibles — v3.65.57
+
+Se corrige la composición del panel de Ajustes: pestañas horizontales arriba, lista de 32 px que no se estira y panel de opciones debajo a todo el ancho. El contenedor Tabs original estaba quedando en fila porque su variante data-horizontal no coincidía con el atributo data-orientation de esta integración. Se explicita la distribución en la composición del calendario, sin cambiar las primitivas originales, Inter 14 px, tamaño de interruptores ni valores/opciones. Verificación geométrica y visual de Vista/Horario/Interacción a 1440/1100/390 px: panel debajo de pestañas, anchos alineados, botones compactos, etiquetas legibles, menú dentro de pantalla, selectores y restablecimiento funcionales. Sin cambios de datos o permisos. Reversión: revertir esta corrección y desplegar.

@@ -81,7 +81,38 @@ try:
    root.get_by_role('button',name='Quitar filtro de proyecto',exact=True).click()
    assert page.evaluate('state.cal.pid') is None
    root.get_by_role('button',name='Ajustes',exact=True).click()
+   settings=root.locator('[data-slot=popover-content]:has([role=tablist])')
+   def check_settings_layout():
+    settings.wait_for(state='visible')
+    settings.evaluate('(e)=>Promise.all(e.getAnimations({subtree:true}).map(a=>a.finished.catch(()=>{})))')
+    row=settings.get_by_role('tablist').bounding_box()
+    panel=settings.get_by_role('tabpanel').bounding_box()
+    popup=settings.bounding_box()
+    assert abs(row['height']-32)<1,row
+    assert panel['y']>=row['y']+row['height'] and abs(panel['x']-row['x'])<1,(row,panel)
+    assert abs(panel['width']-row['width'])<1,(row,panel)
+    assert popup['x']>=0 and popup['x']+popup['width']<=width,(width,popup)
+    tabs=settings.get_by_role('tab').all()
+    boxes=[tab.bounding_box() for tab in tabs]
+    assert max(b['y'] for b in boxes)-min(b['y'] for b in boxes)<1,boxes
+    assert all(20<=b['height']<=32 for b in boxes),boxes
+    assert all(tab.evaluate('(e)=>getComputedStyle(e).fontSize')=='14px' for tab in tabs)
+    for switch in panel_locator.get_by_role('switch').all():
+     assert switch.evaluate('(e)=>{const label=e.parentElement.querySelector("label"),a=label.getBoundingClientRect(),b=e.getBoundingClientRect();return a.right<=b.left-4&&a.height<=32;}')
+   panel_locator=settings.get_by_role('tabpanel')
+   check_settings_layout()
+   if output:page.screenshot(path=str(output/f'calendar-settings-view-{width}.png'),full_page=True)
    root.get_by_role('switch',name='Números de semana',exact=True).click()
+   settings.get_by_role('tab',name='Horario',exact=True).click()
+   check_settings_layout()
+   if output:page.screenshot(path=str(output/f'calendar-settings-time-{width}.png'),full_page=True)
+   settings.locator('#ec-interval').click()
+   root.get_by_role('option',name='30 min',exact=True).click()
+   assert settings.locator('#ec-interval').inner_text()=='30 min'
+   settings.get_by_role('tab',name='Interacción',exact=True).click()
+   check_settings_layout()
+   if output:page.screenshot(path=str(output/f'calendar-settings-interaction-{width}.png'),full_page=True)
+   settings.get_by_role('button',name='Restablecer',exact=True).click()
    page.keyboard.press('Escape')
    # View switcher uses the original menu and stays in the isolated portal.
    root.get_by_role('button',name='Vista del calendario',exact=True).click()
