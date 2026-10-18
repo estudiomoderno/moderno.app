@@ -255,6 +255,7 @@ try:
     page.evaluate('window.originalCalculator=document.querySelector("#ptM2")')
     page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
     settle_header(page)
+    page.locator('#desktop-navigation').wait_for(state='hidden')
     assert page.locator('#desktop-navigation').is_hidden()
     assert page.locator('.desktop-row').bounding_box()['width']<100
     assert page.locator('.desktop-brand').is_visible()
