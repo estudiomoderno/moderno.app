@@ -20,3 +20,7 @@ No cambia la base de datos, autenticación, permisos, archivos, persistencia, do
 - Despliegue habitual y verificación SHA-256 de 28 recursos públicos. El PR registra los resultados efectivos y la publicación completada.
 
 No se certifican dispositivos físicos ni autenticación productiva mediante estas pruebas de presentación. Reversión: revertir el commit y publicar por el proceso habitual; no restaurar datos ni limpiar almacenamiento. Para diagnóstico, `ModernoPageBreadcrumbs.setEnabled(false)` oculta las rutas sin tocar información; `ModernoProjectWorkspace.setEnabled(false)` recupera la cabecera original de proyectos. No se fuerzan recargas de sesiones abiertas.
+
+## Igualar a las pestañas — v3.65.55
+
+A petición del propietario, las rutas adoptan exactamente la tipografía de los nombres de las pestañas: Inter 12 px, peso 500 y línea de 16 px. La tarjeta pasa a 32 px de altura, con el mismo borde superior y centro vertical que las pestañas. Esta indicación actualiza las medidas originales de 14 px/p-2 de la entrega anterior. Primitivas originales sin modificar, mismas rutas y guardas. También se ajusta la recuperación nativa. La prueba de navegador toma las medidas efectivas de una pestaña real y compara fuente, tamaño, peso, línea, altura y posición de las rutas de todos los módulos de escritorio. Móvil conserva su navegación. Reversión: revertir esta entrega y desplegar, sin restaurar datos.
