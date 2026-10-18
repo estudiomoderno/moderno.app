@@ -203,6 +203,12 @@ try:
    page.evaluate('ModernoDesktopShell.setEnabled(true)')
    if width>=1100:assert page.locator('#desktop-header').is_visible()
    else:assert page.locator('#desktop-header').count()==0
+   if width>=1100:
+    page.evaluate("go('proyecto',9001)")
+    reference=page.locator('#project-window-bar .pw-tab-select').first
+    reference.wait_for(state='visible')
+    project_type=reference.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}')
+    project_box=page.locator('#project-window-bar [data-slot=badge]').first.bounding_box()
    # Warm real renderers once, so their existing normalizations are not attributed to the new shell.
    routes=page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades]):not([data-view=conversaciones])').evaluate_all('(bs)=>bs.map(b=>b.dataset.view)')
    assert page.locator('aside.sidebar [data-view=utilidades]').is_hidden()
@@ -221,9 +227,11 @@ try:
       crumb.wait_for(state='visible')
       expected='Inicio' if view=='home' else 'Agenda' if view=='agenda' else page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip()
       assert crumb.inner_text()==expected,(view,crumb.inner_text())
-      assert crumb.evaluate('(e)=>getComputedStyle(e).fontSize')=='14px'
+      assert crumb.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}')==project_type
       assert 'Moderno ReUI Inter' in crumb.evaluate('(e)=>getComputedStyle(e).fontFamily')
       card=page.locator('#page-route-bar [data-slot=card]').bounding_box()
+      assert abs(card['height']-project_box['height'])<1,(view,card,project_box)
+      assert abs(card['y']-project_box['y'])<1,(view,card,project_box)
       profile=page.locator('[data-profile-trigger]').bounding_box()
       assert abs(card['y']+card['height']/2-profile['y']-profile['height']/2)<1,(view,card,profile)
       assert card['x']+card['width']<profile['x'],(view,card,profile)
