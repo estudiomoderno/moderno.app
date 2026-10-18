@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Cabecera compacta por iconos y navegación interna de Finanzas
+
+El propietario pide que el símbolo oficial mantenga el fondo fijo, incluso al pasar el cursor, y que la barra superior muestre únicamente iconos con nombres emergentes. Pulsar Finanzas reorganiza la misma cápsula con Facturas, Presupuestos, Contabilidad, Informes y Previsión de cobros, más una flecha para volver. Cambiar ese grupo no cambia la vista ni descarta formularios; navegar a un módulo sigue usando sus handlers y permisos originales. Se mantiene la identidad, el dock y el alcance de datos existente. Detalles y reversión en [MENU-SUPERIOR-ICONOS](MENU-SUPERIOR-ICONOS.md).
+
 ## 2026-10-18 — Decisiones y aprobaciones integradas en Inicio de proyecto
 
 El propietario **aprueba desarrollar** un módulo de **Decisiones y aprobaciones** como parte del **Inicio de cada proyecto**. **No se añade ningún icono al dock**; la barra actual se mantiene con sus nueve accesos y marca, fuentes y colores corporativos. La función debe vincular elecciones de materiales, mobiliario, planos y presupuestos a la **revisión exacta** del elemento, con responsable, fecha, respuesta e historial; mostrar decisiones pendientes y aprobadas. Vincular con Compras, Tareas, Documentos, Economía y Obra **sin duplicar archivos ni entidades** ni ejecutar pedidos o pagos automáticamente.

@@ -16,12 +16,21 @@ window.baseline=JSON.stringify({projects:state.projects,invoices:state.invoices,
 window.dirty=false;window.draftEditing=()=>dirty;window.draftDirty=()=>dirty;window.draftExitModal=(...args)=>calls.push(['draft',...args]);
 window.SettingsUI={open:s=>{calls.push(['settings',s]);go('ajustes');}};window.userModal=()=>calls.push(['profile']);window.notifModal=()=>calls.push(['notifications']);
 window.sb={};window.ESTUDIO_ID='fictional-study';
+window.meMail=()=> 'persona@example.invalid';
 window.toast=s=>calls.push(['toast',s]);window.presenceTrack=()=>{};window.homeRemember=()=>{};window.wsSessionViews=new Set();window.wsViewKey=()=>'';window.portalBootDone=()=>{};
 window.ModernoBrands={reset:()=>{}};window.ico=()=>'<svg class="svgi" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>';
 window.V=document.getElementById('view');window.render=()=>{
  V.innerHTML=state.view==='proyecto'?'<div class="project-detail"><div class="crumbs">Proyectos / <b>PR-1 Proyecto ficticio</b></div><h1>Proyecto ficticio</h1>'+projectTabsHtml(state.projTab)+'<section class="project-tab-panel" id="project-tab-panel" role="tabpanel" aria-labelledby="project-tab-'+state.projTab+'"><h2>'+state.projTab+'</h2><input aria-label="Borrador ficticio" value="Borrador conservado"><p>Contenido ficticio conservado</p></section></div>':'<h1>'+state.view+'</h1>';
 };
 """
+finance=['facturas','presupuestos','contabilidad','informes','prevision']
+def reveal_route(page,view):
+ if view in finance:
+  if page.locator('#desktop-finance-nav').is_hidden():page.get_by_role('button',name='Finanzas',exact=True).click()
+ elif page.locator('#desktop-primary').is_hidden():page.get_by_role('button',name='Volver al menú principal',exact=True).click()
+ button=page.locator('#desktop-header [data-desktop-view="'+view+'"]')
+ button.evaluate('(b)=>{const d=b.closest("details");if(d)d.open=true;}')
+ return button
 with sync_playwright() as p:
  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
  for width in [1440,1280,1100,1024,390]:
@@ -68,7 +77,16 @@ with sync_playwright() as p:
   assert page.locator('#brandSwitch').is_hidden()
   assert page.locator('#desktop-header').evaluate('(e)=>getComputedStyle(e).position')=='fixed'
   assert page.locator('#desktop-header .desktop-context').count()==0
-  assert page.locator('#desktop-header .desktop-nav').locator('> .desktop-link').all_inner_texts()==['Proyectos','Tareas','Calendario','Agenda','Mail']
+  assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Proyectos','Tareas','Calendario','Agenda','Finanzas','Mail']
+  assert page.locator('#desktop-primary .desktop-icon-only>.desktop-label').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).clip!=="auto")')
+  brand=page.locator('.desktop-brand');background=brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')
+  brand.hover();assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background
+  page.evaluate("go('home')")
+  assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background,'Home selection must not tint the logo'
+  page.evaluate("go('proyecto',1)")
+  page.locator('#desktop-primary [data-desktop-view=proyectos]').hover()
+  assert page.locator('#desktop-primary [data-desktop-view=proyectos] .desktop-label').evaluate('(e)=>getComputedStyle(e).clip')=='auto'
+  page.mouse.move(0,0)
   page.locator('#desktop-header .desktop-actions>button').click()
   assert page.evaluate('calls.pop()')==['notifications']
   assert page.locator('#desktop-header .desktop-actions>button').evaluate('(e)=>e===originalBell')
@@ -79,8 +97,10 @@ with sync_playwright() as p:
   assert profile['x']>=bell['x']+bell['width']
   assert row['x']+row['width']<bell['x']
   assert max(row['y'],bell['y'])-min(row['y'],bell['y'])<12
-  for rect in page.locator('.desktop-nav>button,.desktop-nav>details>summary,.desktop-collapse').evaluate_all('(els)=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right}})'):
+  assert row['width']<540,'Header must remain compact with icon controls'
+  for rect in page.locator('.desktop-nav .desktop-icon-only:visible').evaluate_all('(els)=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width,height:r.height}})'):
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
+   assert rect['width']==rect['height']==44,rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
   assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades])').count()
   assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0
@@ -103,11 +123,24 @@ with sync_playwright() as p:
   assert label.inner_text()=='Utilidades' and label.bounding_box()['y']<dock['y']
   page.mouse.move(0,0);page.locator('#project-tab-utilidades').blur()
   assert label.evaluate('(e)=>getComputedStyle(e).clip')!='auto'
-  page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
-  assert page.get_by_role('button',name='Expandir menú superior',exact=True).get_attribute('aria-expanded')=='false'
-  page.get_by_role('button',name='Expandir menú superior',exact=True).click()
-  # Open/close/collapse/resizing never rerender or discard the active editor input.
+  # Changing only the navigation group must keep the same editor and unsaved input.
   page.get_by_role('textbox',name='Borrador ficticio').fill('Cambios sin guardar')
+  page.evaluate('window.originalDraft=document.querySelector("#view input");dirty=true')
+  page.get_by_role('button',name='Finanzas',exact=True).click()
+  assert page.locator('#desktop-primary').is_hidden() and page.locator('#desktop-finance-nav').is_visible()
+  assert page.locator('#desktop-finance-nav [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==finance
+  assert page.evaluate('state.view')=='proyecto'
+  assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
+  assert page.evaluate('document.querySelector("#view input")===originalDraft')
+  page.locator('#desktop-header [data-desktop-view=facturas]').click()
+  assert page.evaluate('calls.pop()')==['draft','facturas',None]
+  assert page.evaluate('state.view')=='proyecto'
+  page.get_by_role('button',name='Volver al menú principal',exact=True).press('Escape')
+  assert page.locator('#desktop-primary').is_visible()
+  assert page.get_by_role('button',name='Finanzas',exact=True).evaluate('(e)=>document.activeElement===e')
+  assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
+  page.evaluate('dirty=false')
+  # Open/close/resizing never rerender or discard the active editor input.
   page.set_viewport_size({'width':1024,'height':1000});page.wait_for_function("!document.querySelector('#desktop-header')")
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.set_viewport_size({'width':width,'height':1000});page.wait_for_function("!!document.querySelector('#desktop-header')")
@@ -118,7 +151,7 @@ with sync_playwright() as p:
   assert page.evaluate('calls.pop()')==['draft','workspace',None]
   page.evaluate('dirty=false')
   for view in page.locator('#desktop-header [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)'):
-   page.evaluate('(view)=>{const b=document.querySelector(`[data-desktop-view="${view}"]`);const d=b.closest("details");if(d)d.open=true;b.click();}',view)
+   reveal_route(page,view).click()
    assert page.evaluate('state.view')==view,view
   # Profile uses original actions; settings fall back to the unchanged sidebar UI.
   page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Mi perfil',exact=True).click();assert page.evaluate('calls.pop()')==['profile']
@@ -131,15 +164,21 @@ with sync_playwright() as p:
   page.locator('.desktop-group>summary').first.click();page.locator('.desktop-group>summary').first.press('Escape');assert page.locator('.desktop-group[open]').count()==0
   page.evaluate("_accessRole='colaborador';render()")
   assert page.locator('#desktop-header [data-desktop-view=contabilidad]').is_hidden()
+  assert page.locator('[data-desktop-section=finanzas]').is_hidden()
   assert page.locator('#project-tab-fin').count()==0
   assert page.locator('#project-tab-utilidades').count()==0
+  page.evaluate("_accessRole='miembro';state.myRole='miembro';render()")
+  page.get_by_role('button',name='Finanzas',exact=True).click()
+  assert page.locator('#desktop-finance-nav [data-desktop-view]:visible').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['presupuestos','prevision']
+  page.evaluate("_accessRole='colaborador';render()")
+  assert page.locator('#desktop-primary').is_visible(),'Revoked section must return to the primary menu'
   for role in ['gestoria','cliente','contratista']:
    page.evaluate('(role)=>{_accessRole=role;render()}',role)
    assert page.locator('#desktop-header').count()==0
   page.evaluate("_accessRole='admin';_accessLoading=true;render()")
   assert page.locator('#desktop-header').count()==0
   page.evaluate("_accessLoading=false;render()")
-  page.evaluate("_accessRole='admin';state.projTab='archivos';render()")
+  page.evaluate("_accessRole='admin';state.myRole='admin';state.projTab='archivos';render()")
   if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-light-{width}.png'),full_page=True)
   page.evaluate("document.body.classList.add('dark')")
   assert page.locator('#desktop-header .logo-mini svg').evaluate('(el)=>getComputedStyle(el).filter')=='invert(1)'
