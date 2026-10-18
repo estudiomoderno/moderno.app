@@ -7,7 +7,7 @@ import {MoreHorizontalIcon,SettingsIcon,UserIcon,UsersIcon} from 'lucide-react';
 
 /* Owner's c-button-group-5: original components/classes. Only the requested
    actions, translated labels and live data replace the demonstration content. */
-export function Pattern({members,status,items,onWorkspace,onOpenChange,container}:any){
+export function Pattern({members,status,items,onOpenChange,container}:any){
  const online=status==='online';
  return <ButtonGroup aria-label="Equipo y ajustes" className="ha-team-group" data-online={String(online)}>
   <Button variant="outline"><UsersIcon aria-hidden="true"/><span>Equipo</span></Button>
@@ -35,7 +35,6 @@ export function Pattern({members,status,items,onWorkspace,onOpenChange,container
       {index===0?<UserIcon aria-hidden="true"/>:<SettingsIcon aria-hidden="true"/>}<span>{item.label}</span>
      </DropdownMenuItem>)}
     </DropdownMenuGroup>
-    {onWorkspace&&<><DropdownMenuSeparator/><DropdownMenuItem onClick={onWorkspace}><UsersIcon aria-hidden="true"/><span>Cambiar estudio</span></DropdownMenuItem></>}
    </DropdownMenuContent>
   </DropdownMenu>
  </ButtonGroup>;

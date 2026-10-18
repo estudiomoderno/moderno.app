@@ -55,8 +55,7 @@ var ModernoHeaderActions=(()=>{
   const members=online?snapshot.members:[{name:me.name||'Tú',avatar:me.avatar||''}];
   if(component){
    const items=[...nativeProfile.querySelectorAll('.desktop-menu>button')].filter(b=>!b.hidden).map(b=>({label:b.textContent.trim(),run:()=>b.click()}));
-   const onWorkspace=nativeProfile.querySelector('#sidebarStudy')?()=>{const profile=nativeProfile;setTimeout(()=>{if(!profile?.isConnected)return;profile.classList.add('ha-workspace-only');const openPicker=()=>{if(profile.isConnected&&profile.open&&!profile.querySelector('#settings-switch')?.open)profile.querySelector('#settings-switch>summary')?.click();};if(profile.open)openPicker();else{profile.addEventListener('toggle',()=>queueMicrotask(openPicker),{once:true});profile.open=true;}},0);}:null;
-   try{component.update({members:members.map(m=>({...m,avatar:ModernoHeaderPresence.photo(m.avatar),fallback:String(m.name||'?').trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase()})),status:snapshot.status,items,onWorkspace,onOpenChange:open=>{if(open&&nativeProfile)nativeProfile.open=false;}});}catch(error){recover();}
+   try{component.update({members:members.map(m=>({...m,avatar:ModernoHeaderPresence.photo(m.avatar),fallback:String(m.name||'?').trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase()})),status:snapshot.status,items,onOpenChange:open=>{if(open&&nativeProfile)nativeProfile.open=false;}});}catch(error){recover();}
    notifications();measure();return;
   }
   const pictures=group.querySelector('.ha-members');pictures.replaceChildren();
@@ -75,7 +74,7 @@ var ModernoHeaderActions=(()=>{
  }
  function clear(){
   notificationComponent?.unmount();notificationComponent=null;notificationHost?.remove();notificationHost=null;nativeNotification?.classList.remove('ha-original-notification');nativeNotification=null;
-  component?.unmount();component=null;nativeProfile?.classList.remove('ha-original-profile','ha-workspace-only');nativeProfile=null;
+  component?.unmount();component=null;nativeProfile?.classList.remove('ha-original-profile');nativeProfile=null;
   observer?.disconnect();observer=null;group?.remove();group=null;standalone?.remove();standalone=null;host=null;
   document.querySelectorAll('.ha-dots,.ha-bell').forEach(e=>e.remove());
   document.querySelectorAll('.ha-notifications').forEach(e=>{e.classList.remove('ha-notifications');const badge=e.querySelector('#nBadge');if(badge){badge.removeAttribute('hidden');badge.removeAttribute('aria-hidden');}if(e.closest('#desktop-header')){e.setAttribute('aria-label','Notificaciones');e.title='Notificaciones';}});
@@ -90,7 +89,7 @@ var ModernoHeaderActions=(()=>{
  }
  document.addEventListener('moderno:team-presence',paint);
  document.addEventListener('click',e=>{if(host&&!host.contains(e.target))host.querySelectorAll('details[open]').forEach(d=>d.open=false);});
- document.addEventListener('keydown',e=>{if(e.key==='Escape'){const open=host?.querySelector('details[open]');if(open){open.open=false;open.querySelector('summary')?.focus();}if(e.target.closest?.('#sidebarStudy')&&nativeProfile?.classList.contains('ha-workspace-only'))group?.shadowRoot?.querySelector('[data-profile-trigger]')?.focus();}});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){const open=host?.querySelector('details[open]');if(open){open.open=false;open.querySelector('summary')?.focus();}}});
  window.addEventListener('resize',refresh);
  const originalRender=render;render=function(){const result=originalRender.apply(this,arguments);refresh();return result;};
  const originalBadge=notifBadge;notifBadge=function(){const result=originalBadge.apply(this,arguments);notifications();return result;};

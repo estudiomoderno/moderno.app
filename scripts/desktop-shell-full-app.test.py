@@ -132,6 +132,7 @@ def check_header_actions(page,width):
  page.locator('[data-profile-trigger]').focus()
  page.locator('[data-profile-trigger]').press('ArrowDown')
  page.get_by_role('menuitem',name='Mi perfil',exact=True).wait_for(state='visible')
+ assert page.get_by_role('menuitem',name='Cambiar estudio',exact=True).count()==0
  page.keyboard.press('Escape')
  page.get_by_role('menuitem',name='Mi perfil',exact=True).wait_for(state='hidden')
  page.wait_for_function("(()=>{const s=document.querySelector('.ha-component-host').shadowRoot;return s.activeElement===s.querySelector('[data-profile-trigger]');})()")
@@ -289,11 +290,7 @@ try:
     page.get_by_role('button',name='Marcar leídas y cerrar',exact=True).click()
     assert page.locator('#nBadge').is_hidden()
     page.locator('[data-profile-trigger]').click()
-    page.get_by_role('menuitem',name='Cambiar estudio',exact=True).click()
-    page.locator('#settings-switch .settings-popup').wait_for(state='visible')
-    assert page.locator('.ha-original-profile').get_attribute('open') is not None
-    page.locator('#settings-switch>summary').press('Escape')
-    page.locator('[data-profile-trigger]').click()
+    assert page.get_by_role('menuitem',name='Cambiar estudio',exact=True).count()==0
     for tool in ['Automatizaciones','Plugins','Integraciones']:
      page.get_by_role('menuitem',name=tool,exact=True).wait_for(state='visible')
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'profile-tools-{width}.png'),full_page=True)

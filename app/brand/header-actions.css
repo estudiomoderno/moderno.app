@@ -33,9 +33,7 @@
  body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .ha-original-notification {display:none!important}
  .ha-original-profile {position:relative;width:0!important;min-width:0!important;padding:0!important;border:0!important}
  .ha-original-profile>summary {display:none!important}
- .ha-original-profile:not(.ha-workspace-only)>.desktop-menu {display:none!important}
- .ha-original-profile.ha-workspace-only>.desktop-menu>button {display:none!important}
- .ha-original-profile.ha-workspace-only>.desktop-menu {right:0!important;left:auto!important;top:calc(100% + 24px)!important}
+ .ha-original-profile>.desktop-menu {display:none!important}
  .ha-standalone .desktop-profile {position:relative}
  .ha-standalone .desktop-menu {position:absolute;top:calc(100% + 8px);right:0;display:grid;min-width:210px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 84px);overflow:auto;padding:7px;border:1px solid var(--ui-line);border-radius:12px;background:var(--app-surface);color:var(--ink);box-shadow:var(--shadow)}
  .ha-standalone .desktop-menu button {min-height:40px;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
