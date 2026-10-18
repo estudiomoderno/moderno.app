@@ -1,5 +1,12 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — IA de proyectos reservada para algún plan de pago; desarrollo aplazado
+
+La pestaña **AI** del proyecto se ha definido como futuro asistente de **gestión del estudio** (consultar estado y pendientes, proponer tareas y compras revisables, redactar documentos y comunicaciones). **No** será un generador de renders o diseño alternativo a Rayon. Estará incluida en **algún plan de pago de Moderno.app**, todavía sin elegir cuál ni fijar cuotas o precio. El modelo/proveedor y presupuesto de consumo API también quedan por decidir.
+
+**Por orden expresa del propietario, la IA queda en pausa: no implementarla, conectar APIs, contratar servicios, cobrar, activar con clientes o enviar datos reales hasta una futura solicitud explícita.** El foco actual es **terminar el diseño** de Moderno.app. Conservar la pestaña AI existente sin funcionalidad ni gasto. Los requisitos de permisos, confirmación humana antes de escribir, privacidad, coste, fases y seguridad quedan recogidos en [encargo #59](https://github.com/estudiomoderno/moderno.app/issues/59).
+
+
 ## 2026-10-18 — Dock de proyecto por grupos, Planos, AI y Utilidades
 
 El propietario solicita expresamente nueve accesos inferiores solo con iconos y nombres al pasar el ratón: Inicio | Planos / Obra | Tareas / Compras | Economía / Documentos | AI | Utilidades. La cápsula y los separadores siguen su esquema, con identidad oficial. Esta decisión actualiza la restricción histórica que situaba Planos exclusivamente dentro de Documentos: ahora es un acceso del proyecto que filtra los PDF e imágenes existentes; Documentos sigue mostrando todos los archivos. No se crean ni migran entidades. Utilidades se traslada del menú general al proyecto, reutilizando las calculadoras y sus permisos; AI queda vacío hasta concretar su contenido, sin servicios nuevos. El Portal del cliente se conserva en las opciones del proyecto. Pruebas, límites y reversión: [DOCK-PROYECTOS](DOCK-PROYECTOS.md).
