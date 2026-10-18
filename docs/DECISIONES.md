@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Dock de proyecto por grupos, Planos, AI y Utilidades
+
+El propietario solicita expresamente nueve accesos inferiores solo con iconos y nombres al pasar el ratón: Inicio | Planos / Obra | Tareas / Compras | Economía / Documentos | AI | Utilidades. La cápsula y los separadores siguen su esquema, con identidad oficial. Esta decisión actualiza la restricción histórica que situaba Planos exclusivamente dentro de Documentos: ahora es un acceso del proyecto que filtra los PDF e imágenes existentes; Documentos sigue mostrando todos los archivos. No se crean ni migran entidades. Utilidades se traslada del menú general al proyecto, reutilizando las calculadoras y sus permisos; AI queda vacío hasta concretar su contenido, sin servicios nuevos. El Portal del cliente se conserva en las opciones del proyecto. Pruebas, límites y reversión: [DOCK-PROYECTOS](DOCK-PROYECTOS.md).
+
 ## 2026-10-17 — Cabecera flotante y símbolo compacto en escritorio
 
 El propietario solicita una cápsula superior superpuesta como el dock inferior, sin la fila de espacio de trabajo ni el control de tema y con notificaciones junto al perfil. Se usa exclusivamente el símbolo compacto original del menú antiguo comprimido, conservando su SVG, Acorn y paleta; esta indicación actualiza la presentación ancha del primer lote de #49, sin introducir otro logotipo. Los selectores reales de estudio/espacios siguen accesibles dentro del perfil y todos los módulos actuales se mantienen. Alcance, pruebas y reversión en [BARRA-SUPERIOR-FLOTANTE](BARRA-SUPERIOR-FLOTANTE.md).
