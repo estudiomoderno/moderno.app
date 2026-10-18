@@ -8,6 +8,14 @@ import json,os,socket,subprocess,time,urllib.request,sys
 from playwright.sync_api import sync_playwright
 
 repo=Path(__file__).resolve().parents[1]
+finance=['facturas','presupuestos','contabilidad','informes','prevision']
+def reveal_route(page,view):
+ if view in finance:
+  if page.locator('#desktop-finance-nav').is_hidden():page.get_by_role('button',name='Finanzas',exact=True).click()
+ elif page.locator('#desktop-primary').is_hidden():page.get_by_role('button',name='Volver al menú principal',exact=True).click()
+ button=page.locator('#desktop-header [data-desktop-view="'+view+'"]')
+ button.evaluate('(b)=>{const d=b.closest("details");if(d)d.open=true;}')
+ return button
 def contrast_total(page):
  colors=page.locator('.project-tab-panel>.entry-col>.entry:last-child').evaluate('(e)=>[getComputedStyle(e).backgroundColor,getComputedStyle(e.querySelector(".amt")).color]')
  def luminance(color):
@@ -77,8 +85,7 @@ try:
    page.evaluate("window.fixtureRecords=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes,library:state.library,docs:state.docs});window.fixtureBaseline=fixtureRecords()")
    for view in routes:
     if width>=1100:
-     page.evaluate('(view)=>{const b=document.querySelector(`[data-desktop-view="${view}"]`);if(!b||b.hidden)throw Error("Missing route "+view);const d=b.closest("details");if(d)d.open=true;}',view)
-     page.locator(f'#desktop-header [data-desktop-view="{view}"]').click()
+     reveal_route(page,view).click()
     else:page.evaluate('(view)=>document.querySelector(`aside.sidebar .nav-item[data-view="${view}"]`).click()',view)
     assert page.evaluate('state.view')==view
    page.evaluate("go('proyecto',9001)")
@@ -116,6 +123,12 @@ try:
     assert page.locator('.desktop-profile').get_attribute('open') is not None
     assert page.locator('#settings-switch .settings-popup').is_visible()
     page.locator('#settings-switch>summary').press('Escape')
+    if len(sys.argv)>1:
+     page.get_by_role('button',name='Finanzas',exact=True).click()
+     page.mouse.move(0,0)
+     page.locator('#desktop-finance-nav').evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
+     page.screenshot(path=str(Path(sys.argv[1])/f'finance-navigation-{width}.png'),full_page=True)
+     page.get_by_role('button',name='Volver al menú principal',exact=True).click()
    page.evaluate("projTab('proyecto')")
    metrics=page.locator('.project-overview strong').all_inner_texts()
    assert metrics[:3]==['Sin fecha prevista','1','0%'],metrics
