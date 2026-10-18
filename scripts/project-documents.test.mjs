@@ -12,7 +12,8 @@ test('documents show one heading with annotation actions only for PDF and images
  assert.match(docs.heading(),/>Planos y Archivos<\/h2>/);assert.doesNotMatch(docs.heading(),/<button|<nav|Referencias|Revisiones|data-section/);
  const project={id:1,files:[{name:'plan.pdf',data:'fake'},{name:'notes.txt',body:'text'},{name:'missing.png'}]};
  assert.match(docs.action(project,0),/Ver y anotar/);assert.match(docs.action(project,0),/event.stopPropagation\(\)/);assert.equal(docs.action(project,1),'');assert.match(docs.action(project,2),/disabled/);
- const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');assert.match(html,/ModernoProjectDocuments.heading\(\)/);assert.match(html,/ModernoProjectDocuments.card\(p,i,/);assert.doesNotMatch(html,/projectDocumentSection|ModernoProjectDocuments.tabs/);
+ assert.match(docs.heading('planos'),/>Planos<\/h2>/);assert.match(docs.heading('archivos'),/>Documentos<\/h2>/);
+ const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');assert.match(html,/ModernoProjectDocuments.heading\(tb\)/);assert.match(html,/ModernoProjectDocuments.card\(p,i,/);assert.doesNotMatch(html,/projectDocumentSection|ModernoProjectDocuments.tabs/);
 });
 test('bounded download rejects HTTP and size errors without returning partial content',async()=>{
  const saved=global.fetch;

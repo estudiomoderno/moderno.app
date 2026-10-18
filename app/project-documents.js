@@ -10,8 +10,9 @@ var ModernoProjectDocuments = (() => {
   function plans(project) {
     return (project.files || []).map((file,index)=>({file,index,type:type(file)})).filter(x=>x.type);
   }
-  function heading() {
-    return '<h2 class="sec" id="pj-espacio" style="margin-top:0">Planos y Archivos</h2>';
+  function heading(section) {
+    const title=section==='planos'?'Planos':section==='archivos'?'Documentos':'Planos y Archivos';
+    return `<h2 class="sec" id="pj-espacio" style="margin-top:0">${title}</h2>`;
   }
   function action(project,index) {
     const file=(project.files||[])[index];

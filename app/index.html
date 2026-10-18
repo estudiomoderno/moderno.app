@@ -1178,10 +1178,10 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/router.js?v=3653"></script>
 <script src="/specifications.js?v=340"></script>
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36527"></script>
+<script src="/project-ui.js?v=36536"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
-<script src="/project-documents.js?v=36527"></script>
+<script src="/project-documents.js?v=36536"></script>
 <link rel="stylesheet" href="/plan-editor.css?v=36527">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
@@ -4333,10 +4333,11 @@ const ico = (n,c="") => (ICONS[n]||"").replace('class=\"svgi\"','class=\"svgi '+
 const V = document.getElementById("view");
 function projTab(t){
  if(t==='resumen')t='proyecto';if(t==='chat')t='cliente';
+ if(t==='utilidades'&&!canView('utilidades')){toast('No tienes acceso a esta sección');return;}
  if(myAccessLevel()==="colab" && (t==="fin"||t==="resumen")){toast("No tienes acceso a los datos económicos");t="tareas";}
  const previous=state.projTab||'tareas';if(t===previous)return;
  state.projTab=t;render();window.scrollTo(0,0);const m=document.querySelector('.main');if(m)m.scrollTop=0;
- const order=['proyecto','tareas','listas','obra','archivos','fin','cliente'];
+ const order=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','utilidades','cliente'];
  const direction=order.indexOf(t)>order.indexOf(previous)?1:-1;
  const tabs=document.querySelector('.project-tabs');
  const active=tabs?.querySelector('[aria-selected="true"]');
@@ -5747,13 +5748,16 @@ function vProject(){
     <details class="project-options"><summary class="btn btn-ghost project-options-trigger" aria-label="Opciones del proyecto" title="Opciones del proyecto">${projectMoreIcon()}</summary><div class="project-options-body">
       <button class="btn btn-ghost" onclick="customizeModal(${p.id})">${ico('editar')} Editar datos</button>
       <button class="btn btn-ghost" onclick="customizeModal(${p.id},'appearance')">${ico('personalizar')} Personalizar proyecto</button>
+      <button id="project-client-access" class="btn btn-ghost" onclick="projTab('cliente')">${ico('portal')} Portal del cliente</button>
       <button class="btn btn-ghost" onclick="duplicateProject(${p.id})">${ico('dup_proyecto')} Duplicar proyecto</button>
       <button class="btn btn-ghost project-delete-action" onclick="deleteProject(${p.id})">${ico('eliminar')} Eliminar proyecto</button>
     </div></details>
   </div>
   ${projectTabsHtml(tb)}
-  <section class="project-tab-panel" id="project-tab-panel" role="tabpanel" aria-labelledby="project-tab-${tb}" tabindex="0">
+  <section class="project-tab-panel" id="project-tab-panel" role="tabpanel" ${tb==='cliente'?'aria-label="Portal del cliente"':`aria-labelledby="project-tab-${tb}"`} tabindex="0">
   ${tb==='proyecto'?projectOverview(p):''}
+  ${tb==='ai'?'<h2 class="sec" style="margin-top:0">AI</h2>':''}
+  ${tb==='utilidades'&&canView('utilidades')?vUtils():''}
   ${tb!=="tareas"?"":(function(){ ensurePhases(p); ensureTaskIds(p); const cur=curPhase(p);
     return `<h2 class="sec" style="margin-top:0;display:flex;align-items:center;gap:10px">Tareas <button class="btn btn-ghost project-task-import" title="Importar tareas" aria-label="Importar tareas" onclick="taskImportModal(${p.id})">${ico("rm_importar")}</button></h2>
     <div style="background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:18px">
@@ -6012,11 +6016,11 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
     <div class="entry" style="background:var(--ink);color:#fff"><b>Total para el cliente</b><span class="amt" style="color:#fff">${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</span></div>
   </div>
   `}
-  ${tb!=="archivos"?"":`
+  ${!['archivos','planos'].includes(tb)?"":`
   <div style="max-width:820px">
-      ${ModernoProjectDocuments.heading()}
+      ${ModernoProjectDocuments.heading(tb)}
       <div class="project-files-grid">
-        ${(p.files||[]).map((f,i)=>ModernoProjectDocuments.card(p,i,{available:fileOk(f),clientVisible:fileCli(f)})).join("")}
+        ${(p.files||[]).map((f,i)=>({f,i})).filter(({f})=>tb!=='planos'||ModernoProjectDocuments.type(f)).map(({f,i})=>ModernoProjectDocuments.card(p,i,{available:fileOk(f),clientVisible:fileCli(f)})).join("")}
         ${ModernoProjectDocuments.uploadCard(p)}
       </div>
 
@@ -11467,7 +11471,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.35";
+const MODERNO_VER="v3.65.36";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13285,7 +13289,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36527">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36536">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
@@ -13296,8 +13300,8 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
  .has-team-presence .projects-header{top:0!important}
 }
 </style>
-<link rel="stylesheet" href="/brand/desktop-shell.css?v=36535">
+<link rel="stylesheet" href="/brand/desktop-shell.css?v=36536">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=36534">
-<script src="/desktop-shell.js?v=36535"></script>
+<script src="/desktop-shell.js?v=36536"></script>
 </body>
 </html>

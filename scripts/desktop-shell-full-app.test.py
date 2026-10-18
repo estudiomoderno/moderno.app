@@ -50,7 +50,7 @@ try:
     state.account.name='Estudio ficticio';state.account.apiToken='';state.account.billContacts=[];
     BRAND.cm.name='Espacio ficticio';
     const project=structuredClone(state.projects[0]);
-    Object.assign(project,{id:9001,num:'PR-9001',name:'Proyecto ficticio',tpl:false,client:'Cliente ficticio',brand:'cm',files:[],notes:'Nota histórica ficticia',rooms:[{id:8001,kind:'estancia',name:'Estancia ficticia',sections:[{id:'section-fixture',name:'General',items:[]}]}],tasks:[{id:'task-fixture',title:'Tarea ficticia',type:'Diseño',col:'pend',who:['Persona ficticia'],amount:null,acc:false,subs:[],comments:[],files:[]}],links:{drive:'',rayon:''}});
+    Object.assign(project,{id:9001,num:'PR-9001',name:'Proyecto ficticio',tpl:false,client:'Cliente ficticio',brand:'cm',files:[{id:'text-original',name:'Contrato ficticio.txt',body:'Texto ficticio'},{id:'plan-original',name:'Plano ficticio.pdf',data:'data:application/pdf;base64,ZmljdGl0aW91cw=='},{id:'image-original',name:'Imagen ficticia.png',data:'data:image/png;base64,ZmljdGl0aW91cw=='},'Archivo histórico.txt'],notes:'Nota histórica ficticia',rooms:[{id:8001,kind:'estancia',name:'Estancia ficticia',sections:[{id:'section-fixture',name:'General',items:[]}]}],tasks:[{id:'task-fixture',title:'Tarea ficticia',type:'Diseño',col:'pend',who:['Persona ficticia'],amount:null,acc:false,subs:[],comments:[],files:[]}],links:{drive:'',rayon:''}});
     state.projects=[project];state.clients=[{name:'Cliente ficticio',type:'Cliente',brand:'cm',email:'cliente@example.invalid'},{name:'Persona ficticia',type:'Team',brand:'cm',email:'persona@example.invalid'}];
     state.users=[{name:'Persona ficticia',email:'persona@example.invalid',role:'Administrador'}];
     state.entries=[];state.invoices=[];state.quotes=[];state.library=[];state.catalog=[];state.docs=[];state.notifs=[];
@@ -65,13 +65,15 @@ try:
    if width>=1100:assert page.locator('#desktop-header').is_visible()
    else:assert page.locator('#desktop-header').count()==0
    # Warm real renderers once, so their existing normalizations are not attributed to the new shell.
-   routes=page.locator('aside.sidebar .nav-item[data-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.view)')
+   routes=page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades])').evaluate_all('(bs)=>bs.map(b=>b.dataset.view)')
+   assert page.locator('aside.sidebar [data-view=utilidades]').is_hidden()
    for view in routes:
     page.evaluate('(view)=>go(view)',view)
     assert page.evaluate('state.view')==view
     assert page.locator('#view').inner_text().strip(),view
    page.evaluate("go('proyecto',9001)")
-   for key in ['proyecto','tareas','listas','obra','archivos','fin','cliente']:page.evaluate('(key)=>projTab(key)',key)
+   keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','utilidades']
+   for key in keys+['cliente']:page.evaluate('(key)=>projTab(key)',key)
    page.evaluate("window.fixtureRecords=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes,library:state.library,docs:state.docs});window.fixtureBaseline=fixtureRecords()")
    for view in routes:
     if width>=1100:
@@ -80,9 +82,23 @@ try:
     else:page.evaluate('(view)=>document.querySelector(`aside.sidebar .nav-item[data-view="${view}"]`).click()',view)
     assert page.evaluate('state.view')==view
    page.evaluate("go('proyecto',9001)")
-   for key in ['proyecto','tareas','listas','obra','archivos','fin','cliente']:
+   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Planos','Obra','Tareas','Compras','Economía','Documentos','AI','Utilidades']
+   for key in keys:
     page.locator('#project-tab-'+key).click(force=width<1100)
     assert page.locator('#project-tab-'+key).get_attribute('aria-selected')=='true'
+    if key=='planos':
+     assert page.locator('.project-file-open').evaluate_all('(bs)=>bs.map(b=>b.dataset.index)')==['1','2'],'Plan filtering must retain original file indices'
+     assert page.locator('.project-plan-open').count()==2
+    if key=='archivos':
+     assert page.locator('.project-file-open').evaluate_all('(bs)=>bs.map(b=>b.dataset.index)')==['0','1','2','3']
+    if key=='ai':assert page.locator('#project-tab-panel').inner_text().strip()=='AI'
+    if key=='utilidades':
+     assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
+     page.locator('#ptM2').fill('24');assert '4.0 L' in page.locator('#ptRes').inner_text()
+   page.locator('.project-options>summary').click()
+   page.get_by_role('button',name='Portal del cliente',exact=True).click()
+   assert page.locator('#project-tab-panel> .client-project-editor').is_visible()
+   assert page.locator('.project-tabs [tabindex="0"]').count()==1,'Portal must keep dock reachable by keyboard'
    assert page.evaluate('fixtureRecords()===fixtureBaseline'),'Navigation changed stored records'
    if width>=1100:
     assert page.locator('#desktop-header .logo').is_hidden()

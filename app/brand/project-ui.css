@@ -1,5 +1,8 @@
 /* Proyectos pilot: existing cream/ink tokens, scoped to project views and drawers. */
 @media screen {
+ /* Keep the original utility route/handler, with its access now in each project. */
+ aside.sidebar .nav-item[data-view=utilidades]{display:none!important}
+ .project-tab-separator{display:block;width:1px;flex:0 0 1px;height:28px;margin:0 2px 16px;background:var(--ui-line);align-self:center}
  html body:not(.portalmode) .main .projects-toolbar #projQBox{height:44px;border-radius:999px}
  .projects-toolbar .brand-switch{height:44px;display:flex;align-items:center;gap:8px;background:transparent;padding:0}
  .projects-toolbar .brand-switch button{width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;border-radius:50%}

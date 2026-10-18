@@ -6,7 +6,7 @@ var ModernoDesktopShell=(()=>{
  let enabled=ENABLED,header=null,collapsed=false;
  const moved=[],decorations=[],media=window.matchMedia('(min-width:1100px)');
  const $=s=>document.querySelector(s);
- const navigation=['proyectos','workspace','calendario','agenda',['Finanzas',['informes','contabilidad','presupuestos','facturas','prevision']],'mail',['Productos y servicios',['biblioteca','catalogo']],['Más herramientas',['conversaciones','plantillas','automatizaciones','utilidades','integraciones','plugins'],'⋯']];
+ const navigation=['proyectos','workspace','calendario','agenda',['Finanzas',['informes','contabilidad','presupuestos','facturas','prevision']],'mail',['Productos y servicios',['biblioteca','catalogo']],['Más herramientas',['conversaciones','plantillas','automatizaciones','integraciones','plugins'],'⋯']];
  const originals=()=>[...document.querySelectorAll('aside.sidebar .nav-item[data-view]')];
  const original=view=>originals().find(b=>b.dataset.view===view);
  const available=view=>!_accessLoading&&canView(view)&&!!original(view);

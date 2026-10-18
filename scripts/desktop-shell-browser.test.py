@@ -82,15 +82,27 @@ with sync_playwright() as p:
   for rect in page.locator('.desktop-nav>button,.desktop-nav>details>summary,.desktop-collapse').evaluate_all('(els)=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right}})'):
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
-  assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]').count()
+  assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades])').count()
+  assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
   assert page.locator('.project-tabs').bounding_box()['y']>850
-  assert page.locator('.project-tabs [role=tab]').count()==7
-  for key in ['proyecto','tareas','listas','obra','archivos','fin','cliente']:
+  keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','utilidades']
+  assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.id.replace("project-tab-",""))')==keys
+  assert page.locator('.project-tabs [role=separator]').count()==5
+  dock=page.locator('.project-tabs').bounding_box()
+  assert dock['x']>0 and dock['x']+dock['width']<width
+  assert page.locator('.project-tabs').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
+  for key in keys:
    page.locator('#project-tab-'+key).click();assert page.evaluate('state.projTab')==key
    assert page.locator('#project-tab-'+key).get_attribute('aria-selected')=='true'
-  page.locator('#project-tab-cliente').press('Home');assert page.evaluate('state.projTab')=='proyecto'
-  page.locator('#project-tab-proyecto').press('ArrowRight');assert page.evaluate('state.projTab')=='tareas'
+  page.locator('#project-tab-utilidades').press('Home');assert page.evaluate('state.projTab')=='proyecto'
+  page.locator('#project-tab-proyecto').press('ArrowRight');assert page.evaluate('state.projTab')=='planos'
+  page.locator('#project-tab-planos').press('End');assert page.evaluate('state.projTab')=='utilidades'
+  page.locator('#project-tab-utilidades').hover()
+  label=page.locator('#project-tab-utilidades .project-tab-label')
+  assert label.inner_text()=='Utilidades' and label.bounding_box()['y']<dock['y']
+  page.mouse.move(0,0);page.locator('#project-tab-utilidades').blur()
+  assert label.evaluate('(e)=>getComputedStyle(e).clip')!='auto'
   page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
   assert page.get_by_role('button',name='Expandir menú superior',exact=True).get_attribute('aria-expanded')=='false'
   page.get_by_role('button',name='Expandir menú superior',exact=True).click()
@@ -120,6 +132,7 @@ with sync_playwright() as p:
   page.evaluate("_accessRole='colaborador';render()")
   assert page.locator('#desktop-header [data-desktop-view=contabilidad]').is_hidden()
   assert page.locator('#project-tab-fin').count()==0
+  assert page.locator('#project-tab-utilidades').count()==0
   for role in ['gestoria','cliente','contratista']:
    page.evaluate('(role)=>{_accessRole=role;render()}',role)
    assert page.locator('#desktop-header').count()==0
