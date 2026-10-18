@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Menú general lateral y pestañas de proyectos en la primera fila
+
+El propietario aprueba la propuesta de colocar la cápsula del menú general en vertical a la izquierda y las pestañas de proyectos arriba del todo, manteniendo el perfil/notificaciones arriba a la derecha y el dock inferior. Se conservan identidad, plegado animado, rutas, permisos, buscador de proyectos y protección de ediciones. Esta decisión sustituye la disposición horizontal anterior. Pruebas y retorno: [MENU-LATERAL-PESTANAS-ARRIBA](MENU-LATERAL-PESTANAS-ARRIBA.md).
+
 ## 2026-10-18 — Pestañas de proyectos y retirada de la cabecera grande en escritorio
 
 El propietario pide más área útil y poder alternar entre proyectos abiertos como en Rayon/Chrome. Se sustituye la cabecera grande por pestañas compactas con nombre, cierre y «+» para buscar otro proyecto existente. Cliente y etiquetas quedan en información desplegable, con las opciones originales accesibles. Cada pestaña recuerda su sección durante la sesión; cerrarla no elimina datos. Sin cambios de backend o guardado, con protección de ediciones y reversión: [PESTANAS-PROYECTOS](PESTANAS-PROYECTOS.md).

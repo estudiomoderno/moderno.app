@@ -129,7 +129,7 @@ try:
     page.evaluate("go('proyecto',9001);projTab('utilidades')")
     page.locator('#ptM2').fill('24')
     page.evaluate('window.originalCalculator=document.querySelector("#ptM2")')
-    page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+    page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
     settle_header(page)
     assert page.locator('#desktop-navigation').is_hidden()
     assert page.locator('.desktop-row').bounding_box()['width']<100
@@ -140,7 +140,7 @@ try:
     if len(sys.argv)>1:
      page.mouse.move(0,0)
      page.screenshot(path=str(Path(sys.argv[1])/f'header-collapsed-{width}.png'),full_page=True)
-    page.get_by_role('button',name='Desplegar menú superior',exact=True).press('Enter')
+    page.get_by_role('button',name='Desplegar menú lateral',exact=True).press('Enter')
     settle_header(page)
     assert page.locator('#desktop-navigation').is_visible()
     assert page.evaluate('document.querySelector("#ptM2")===originalCalculator')
