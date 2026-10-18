@@ -16,9 +16,9 @@ function projectTabsHtml(current){
   [['planos','Planos','planos'],['obra','Obra','tab_obra']],
   [['tareas','Tareas','tab_tareas'],['listas','Compras','tab_listas']],
   [['fin','Economía','finanzas'],['archivos','Documentos','tab_archivos']],
-  [['ai','AI','ai']],
+  [['ai','AI','ai'],['conversaciones','Conversaciones','tab_chat']],
   [['utilidades','Utilidades','tools']]
- ].map(group=>group.filter(([key])=>(key!=='fin'||myAccessLevel()!=='colab')&&(key!=='utilidades'||canView('utilidades')))).filter(group=>group.length);
+ ].map(group=>group.filter(([key])=>(key!=='fin'||myAccessLevel()!=='colab')&&(!['utilidades','conversaciones'].includes(key)||canView(key)))).filter(group=>group.length);
  const first=groups.flat()[0][0],selected=groups.flat().some(([key])=>key===current)?current:first;
  const special={planos:'<path d="M3 3h18v18H3zM3 10h8V3m0 7v5h10M8 21v-6H3"/>',ai:'<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6ZM20 3v4m-2-2h4"/>'};
  return `<div class="project-tabs" role="tablist" aria-label="Secciones del proyecto">${groups.map(group=>group.map(([key,label,icon])=>`<button type="button" role="tab" id="project-tab-${key}" aria-controls="project-tab-panel" aria-selected="${current===key}" tabindex="${selected===key?0:-1}" class="${current===key?'on':''}" aria-label="${label}" onclick="projTab('${key}')">${key==='fin'?projectFinanceIcon():special[key]?`<svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${special[key]}</svg>`:ico(icon)}<span class="project-tab-label" aria-hidden="true">${label}</span></button>`).join('')).join('<span class="project-tab-separator" role="separator" aria-orientation="vertical"></span>')}</div>`;
