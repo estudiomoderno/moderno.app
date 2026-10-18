@@ -101,7 +101,7 @@ var ModernoProjectWorkspace=(()=>{
   const head=$('#view .project-detail-head');
   if(head&&project){
    move(head.querySelector('.project-options-control')||head.querySelector('.project-options'),tools);
-   const info=node('details','pw-info'),summary=node('summary');summary.setAttribute('aria-label','Información del proyecto');summary.title='Información del proyecto';summary.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg>';info.append(summary);const body=node('div','pw-info-body');info.append(body);tools.prepend(info);move(head,body);
+   const retained=node('div','pw-retained-head');retained.hidden=true;bar.append(retained);move(head,retained);
   }
   document.body.append(bar);document.body.classList.add('project-windows');
   tabs.querySelector('[aria-selected=true]')?.scrollIntoView({block:'nearest',inline:'nearest'});
@@ -110,7 +110,7 @@ var ModernoProjectWorkspace=(()=>{
  document.addEventListener('click',e=>{if(bar&&!bar.contains(e.target)){closePicker();bar.querySelectorAll('details[open]').forEach(d=>d.open=false);}});
  document.addEventListener('keydown',e=>{
   if(!bar||!bar.contains(e.target))return;
-  if(e.key==='Escape'){if(!bar.querySelector('.pw-picker').hidden){e.preventDefault();closePicker(true);}const info=bar.querySelector('.pw-info[open]');if(info){info.open=false;info.querySelector('summary').focus();}return;}
+  if(e.key==='Escape'){if(!bar.querySelector('.pw-picker').hidden){e.preventDefault();closePicker(true);}return;}
   const tab=e.target.closest('[role=tab]');if(!tab||!['ArrowLeft','ArrowRight','Home','End','Delete'].includes(e.key))return;e.preventDefault();
   if(e.key==='Delete'){close(tab.dataset.project);return;}
   const buttons=[...bar.querySelectorAll('[role=tab]')],index=buttons.indexOf(tab),next=e.key==='Home'?0:e.key==='End'?buttons.length-1:(index+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;buttons[next].click();
