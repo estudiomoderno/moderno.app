@@ -8,6 +8,8 @@ import json,os,socket,subprocess,time,urllib.request,sys
 from playwright.sync_api import sync_playwright
 
 repo=Path(__file__).resolve().parents[1]
+def settle_header(page):
+ page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
 finance=['facturas','presupuestos','contabilidad','informes','prevision']
 def reveal_route(page,view):
  if view in finance:
@@ -121,8 +123,14 @@ try:
      assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
      page.locator('#ptM2').fill('24');assert '4.0 L' in page.locator('#ptRes').inner_text()
    if width>=1100:
+    page.locator('.desktop-brand').click();assert page.evaluate('state.view')=='proyecto'
+    assert page.locator('#desktop-primary [data-desktop-view=home] svg').count()==1
+    page.get_by_role('button',name='Inicio',exact=True).click();assert page.evaluate('state.view')=='home'
+    page.evaluate("go('proyecto',9001);projTab('utilidades')")
+    page.locator('#ptM2').fill('24')
     page.evaluate('window.originalCalculator=document.querySelector("#ptM2")')
     page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+    settle_header(page)
     assert page.locator('#desktop-navigation').is_hidden()
     assert page.locator('.desktop-row').bounding_box()['width']<100
     assert page.locator('.desktop-brand').is_visible()
@@ -133,6 +141,7 @@ try:
      page.mouse.move(0,0)
      page.screenshot(path=str(Path(sys.argv[1])/f'header-collapsed-{width}.png'),full_page=True)
     page.get_by_role('button',name='Desplegar menú superior',exact=True).press('Enter')
+    settle_header(page)
     assert page.locator('#desktop-navigation').is_visible()
     assert page.evaluate('document.querySelector("#ptM2")===originalCalculator')
     assert page.locator('#ptM2').input_value()=='24'
