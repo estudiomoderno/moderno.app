@@ -1,0 +1,5 @@
+/* The original calendar component owns its isolated styles and typography. */
+.calendar-layout{width:100%;min-width:0}
+.calendar-component-host{display:block;width:100%;min-width:0}
+.calendar-native[hidden]{display:none!important}
+@media print{#calendar-reui{display:none!important}.calendar-native[hidden]{display:block!important}}

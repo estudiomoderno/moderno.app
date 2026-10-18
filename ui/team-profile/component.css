@@ -7,7 +7,8 @@
 @source "./project-settings.tsx";
 @source "./project-windows.tsx";
 @source "./page-breadcrumbs.tsx";
-@source "./vendor/reui/*.tsx";
+@source "./vendor/reui/**/*.tsx";
+@source "./calendar-pattern.tsx";
 @custom-variant dark (&:is(.dark *));
 @custom-variant style-nova (&:where(.style-nova *));
 @theme inline {
@@ -46,3 +47,8 @@
 .route-card [data-slot=breadcrumb-list] {flex-wrap:nowrap;white-space:nowrap}
 .route-card [data-slot=breadcrumb-item]:last-child {min-width:0}
 .route-card [aria-current=page] {overflow:hidden;text-overflow:ellipsis}
+
+.calendar-layout {width:100%}
+.calendar-pattern {width:100%;min-width:0}
+.calendar-pattern [data-slot=event-calendar] {height:clamp(480px,calc(100dvh - 200px),880px)}
+@media(max-width:700px){.calendar-pattern [data-slot=event-calendar]{height:640px}.calendar-nav-row>[data-slot=event-calendar-nav]{flex-basis:100%}.calendar-nav-row>[data-slot=event-calendar-toolbar]{margin-left:auto;padding-bottom:8px}}

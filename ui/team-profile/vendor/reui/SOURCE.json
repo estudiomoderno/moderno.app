@@ -54,9 +54,115 @@
       "path": "registry/bases/base/ui/card.tsx",
       "git_blob": "2062884f29a8044fa48edf86605182eca29f8716",
       "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-lib.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-lib.tsx",
+      "git_blob": "0e65c641be3bd0991f75bc0d56bdd6fbd4b99293",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-event.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-event.tsx",
+      "git_blob": "25897e048459332e686831af8633f566a0e50a2a",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-dnd.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-dnd.tsx",
+      "git_blob": "2fda22286bff673472234ce5bfc36c6fcfdc96ef",
+      "adaptation": "Keep drag carry and hint in the originating isolated portal; body remains the fallback."
+    },
+    "event-calendar/event-calendar-nav.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-nav.tsx",
+      "git_blob": "3805be04c9d967111c2b89fd486ec005c73b0dc6",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-time-grid.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-time-grid.tsx",
+      "git_blob": "3c4f2b6f4f9d61c75b481314d1e3c7bafb01c6f7",
+      "adaptation": "Unchanged source."
+    },
+    "tabs.tsx": {
+      "path": "registry/bases/base/ui/tabs.tsx",
+      "git_blob": "2b39bbfe73883fcb8a6630e0d6af953ed0b08f49",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-resource-view.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-resource-view.tsx",
+      "git_blob": "3568d6acf8ed1a6f2f896070c4d049ea16c83a01",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-agenda-view.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-agenda-view.tsx",
+      "git_blob": "c58ff197b8f64735aba59bffd97615955fda54a4",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-recurrence.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-recurrence.tsx",
+      "git_blob": "305055e7fc5966a5ec4e6526d81cb8f013289ab1",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-content.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-content.tsx",
+      "git_blob": "9c1dd6ce7225edc715a84bc72d3e5d5f4d2c537e",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-i18n.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-i18n.tsx",
+      "git_blob": "e9c7dd1191c56b6dc838c2cb636cd1db5b6e5ab3",
+      "adaptation": "Unchanged source."
+    },
+    "popover.tsx": {
+      "path": "registry/bases/base/ui/popover.tsx",
+      "git_blob": "808aa62dc13b4b9c37efbe9c676c09b8e06c0738",
+      "adaptation": "Add optional portal container for CSS isolation."
+    },
+    "select.tsx": {
+      "path": "registry/bases/base/ui/select.tsx",
+      "git_blob": "2cb76c117197336324cfaed1300e92ca65273b40",
+      "adaptation": "Add optional portal container for CSS isolation."
+    },
+    "label.tsx": {
+      "path": "registry/bases/base/ui/label.tsx",
+      "git_blob": "3b0886ba1826c80e7c6e0c22b699a43cb6df5bc9",
+      "adaptation": "Unchanged source."
+    },
+    "switch.tsx": {
+      "path": "registry/bases/base/ui/switch.tsx",
+      "git_blob": "753fd22a92536c103d3ff4c4c6171d48f428ead7",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar.tsx",
+      "git_blob": "863d5fbf04f271b32c657d4c393317c1a6f430a1",
+      "adaptation": "Unchanged source."
+    },
+    "icon-stack.tsx": {
+      "path": "registry-reui/bases/base/reui/icon-stack.tsx",
+      "git_blob": "6593f7be5634c0491f17b3d50ce1e43824b4083d",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-month-view.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-month-view.tsx",
+      "git_blob": "d182bbda95b2bff5503e1144141089155349b395",
+      "adaptation": "Reserve one existing event lane for the overflow trigger when a contained month row overflows; prevent the +N more button from being clipped."
+    },
+    "calendar.tsx": {
+      "path": "registry/bases/base/ui/calendar.tsx",
+      "git_blob": "568ab9fd00a03d1651d1b42cb8915eed282cf1a4",
+      "adaptation": "Unchanged source."
+    },
+    "event-calendar/event-calendar-types.tsx": {
+      "path": "registry-reui/bases/base/reui/event-calendar/event-calendar-types.tsx",
+      "git_blob": "51351e843222eabc638d863c38525c40cacd2ea6",
+      "adaptation": "Unchanged source."
+    },
+    "tooltip.tsx": {
+      "path": "registry/bases/base/ui/tooltip.tsx",
+      "git_blob": "8fbd22dacb65913e7e31cde7ad800dce6f889116",
+      "adaptation": "Add optional portal container for CSS isolation."
     }
   },
-  "css": "Original Avatar, Button, Button Group Dropdown Menu Scroll Area, Breadcrumb and Card sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css.",
+  "css": "Original Avatar, Button, Button Group Dropdown Menu Scroll Area, Breadcrumb and Card sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css. Original Calendar, Popover, Tooltip, Select, Switch, Tabs and Label sections from the same Nova source.",
   "license": "MIT; see LICENSE.md",
-  "notifications": "Owner-provided Button/BellIcon/Badge pattern. The ReUI badge is original, not the shadcn UI badge."
+  "notifications": "Owner-provided Button/BellIcon/Badge pattern. The ReUI badge is original, not the shadcn UI badge.",
+  "calendar": "Owner-provided c-event-calendar-1 composition adapted to existing application data and native handlers. Original engine in registry-reui/bases/base/reui/event-calendar; demo data are not instantiated."
 }

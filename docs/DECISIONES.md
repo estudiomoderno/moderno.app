@@ -218,3 +218,7 @@ Las entregas se publican tras validación y comprobación de recursos. La invita
 ## 2026-10-18 — Casa permanente y rutas superiores
 
 El propietario solicita mantener la casa de Todos los proyectos incluso sin pestañas abiertas. El resto de páginas generales usa su patrón original ReUI Card/Breadcrumb, en español, alineado por centro con los controles superiores. Mantener fuente, tamaños y separación de origen, navegación y guardas actuales, sin cambios de datos ni permisos. Alcance, pruebas y recuperación: [RUTA-SUPERIOR-REUI](RUTA-SUPERIOR-REUI.md).
+
+## 2026-10-18 — Calendario original ReUI
+
+El propietario proporciona la composición EventCalendar y solicita retirar el saludo «Tu calendario». Se utiliza el motor original, con español y medidas Nova, sobre tareas/citas/fases ya cargadas y formularios existentes, sin eventos ni personas de demostración. Se conservan permisos, ámbitos, registros, guardado y servicios; el arrastre de fases mantiene fechas locales. Detalles, pruebas y recuperación: [CALENDARIO-REUI](CALENDARIO-REUI.md).
