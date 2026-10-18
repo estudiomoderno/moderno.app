@@ -16,6 +16,9 @@
 @property --tw-exit-scale{syntax:"*";inherits:false;initial-value:1}
 @property --tw-exit-translate-x{syntax:"*";inherits:false;initial-value:0}
 @property --tw-exit-translate-y{syntax:"*";inherits:false;initial-value:0}
+@property --tw-translate-x{syntax:"*";inherits:false;initial-value:0}
+@property --tw-translate-y{syntax:"*";inherits:false;initial-value:0}
+@property --tw-translate-z{syntax:"*";inherits:false;initial-value:0}
 @property --tw-space-x-reverse{syntax:"*";inherits:false;initial-value:0}
 @property --tw-border-style{syntax:"*";inherits:false;initial-value:solid}
 @property --tw-leading{syntax:"*";inherits:false}
@@ -49,8 +52,8 @@
 @property --tw-drop-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}
 @property --tw-drop-shadow-size{syntax:"*";inherits:false}
 @property --tw-content{syntax:"*";inherits:false;initial-value:""}
-@property --tw-translate-x{syntax:"*";inherits:false;initial-value:0}
-@property --tw-translate-y{syntax:"*";inherits:false;initial-value:0}
-@property --tw-translate-z{syntax:"*";inherits:false;initial-value:0}
+@property --tw-scale-x{syntax:"*";inherits:false;initial-value:1}
+@property --tw-scale-y{syntax:"*";inherits:false;initial-value:1}
+@property --tw-scale-z{syntax:"*";inherits:false;initial-value:1}
 @property --tw-duration{syntax:"*";inherits:false}
 @property --tw-tracking{syntax:"*";inherits:false}

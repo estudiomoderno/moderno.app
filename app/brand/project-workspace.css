@@ -22,7 +22,7 @@
  #project-window-bar .pw-all svg{width:18px;height:18px}
  #project-window-bar :is(button,summary,input):focus-visible{outline:2px solid var(--app-outline,var(--ink));outline-offset:2px}
  #project-window-bar .pw-tools{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
- #project-window-bar .pw-window-host{display:block;flex:0 1 auto;min-width:0;max-width:calc(100% - 80px);align-self:center;line-height:0}
+ #project-window-bar .pw-window-host{display:block;flex:0 1 auto;min-width:0;max-width:calc(100% - 40px);align-self:center;line-height:0}
  #project-window-bar .project-options{position:relative;top:auto;right:auto;margin:0;width:34px;max-width:none}
  #project-window-bar .project-options-trigger{display:grid;place-items:center;width:34px;height:34px;min-height:34px!important;padding:0!important;border:0;border-radius:9px;background:transparent;color:var(--ink);list-style:none}
  #project-window-bar .project-options-trigger:hover{background:var(--app-control)}

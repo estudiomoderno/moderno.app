@@ -1,7 +1,7 @@
 /* Desktop project windows: session-only navigation, never project records or persistence. */
 var ModernoProjectWorkspace=(()=>{
  'use strict';
- let enabled=true,owner='',bar=null,moved=[],windowHost=null,windowComponent=null,useOriginal=true,pendingFocus=false;
+ let enabled=true,owner='',bar=null,moved=[],windowHost=null,windowComponent=null,useOriginal=true,pendingFocus=false,searchOpen=false,windowProps=null;
  const windows=new Map(),media=window.matchMedia('(min-width:1100px)');
  const $=selector=>document.querySelector(selector),key=id=>String(id);
  const projectViews=['proyecto','estancia'];
@@ -12,7 +12,7 @@ var ModernoProjectWorkspace=(()=>{
  function active(){return enabled&&media.matches&&document.body.classList.contains('desktop-shell')&&sessionReady();}
  function projects(){return byBrand((state.projects||[]).filter(p=>!p.tpl));}
  function sync(){
-  const next=identity();if(next!==owner){owner=next;windows.clear();}
+  const next=identity();if(next!==owner){owner=next;windows.clear();searchOpen=false;}
   if(!sessionReady()){windows.clear();return [];}
   const pool=projects(),ids=new Set(pool.map(p=>key(p.id)));
   for(const id of windows.keys())if(!ids.has(id))windows.delete(id);
@@ -34,10 +34,15 @@ var ModernoProjectWorkspace=(()=>{
  function move(el,target){if(!el)return;const marker=document.createComment('project-workspace: original position');el.before(marker);moved.push({el,marker});target.append(el);}
  function restore(){for(const {el,marker} of moved.splice(0).reverse())if(marker.isConnected)marker.replaceWith(el);bar?.remove();bar=null;document.body.classList.remove('project-windows');}
  function tabButtons(){return [...(windowHost?.shadowRoot||bar)?.querySelectorAll('[role=tab]')||[]];}
- function discardComponent(){windowComponent?.unmount();windowComponent=null;windowHost?.remove();windowHost=null;pendingFocus=false;}
+ function discardComponent(){windowComponent?.unmount();windowComponent=null;windowHost?.remove();windowHost=null;pendingFocus=false;searchOpen=false;windowProps=null;}
  function componentFailed(){useOriginal=false;queueMicrotask(()=>{discardComponent();safeRefresh();});}
  function ready(){tabButtons().find(b=>b.getAttribute('aria-selected')==='true')?.scrollIntoView({block:'nearest',inline:'nearest'});if(pendingFocus)focusCurrent();}
- function closePicker(focus=false){const picker=bar?.querySelector('.pw-picker');if(!picker)return;picker.hidden=true;const plus=bar.querySelector('.pw-add');plus.setAttribute('aria-expanded','false');if(focus)plus.focus();}
+ function paintWindows(){if(windowComponent&&windowProps)windowComponent.update({...windowProps,searchOpen,onSearchToggle:toggleSearch,onSearchClose:closePicker,onSearchLayout:ready});}
+ function toggleSearch(){if(!searchOpen&&blocked())return;searchOpen=!searchOpen;paintWindows();}
+ function closePicker(focus=false){
+  if(windowComponent){if(searchOpen){searchOpen=false;paintWindows();}if(focus)windowHost?.shadowRoot?.querySelector('.pw-add')?.focus();return;}
+  const picker=bar?.querySelector('.pw-picker');if(!picker)return;picker.hidden=true;const plus=bar.querySelector('.pw-add');plus.setAttribute('aria-expanded','false');if(focus)plus.focus();
+ }
  function focusCurrent(){if(windowHost&&windowHost.dataset.reuiReady!=='true'){pendingFocus=true;return;}pendingFocus=false;(tabButtons().find(b=>b.getAttribute('aria-selected')==='true')||tabButtons()[0]||$('#projQBox'))?.focus({preventScroll:true});}
  function open(id){
   if(!active())return false;
@@ -66,7 +71,7 @@ var ModernoProjectWorkspace=(()=>{
   }
   windows.delete(key(id));safeRefresh();focusCurrent();return true;
  }
- function listProjects(){if(blocked())return;capture();go('proyectos');}
+ function listProjects(){if(blocked())return;closePicker();capture();go('proyectos');}
  function picker(){
   const popup=node('section','pw-picker');popup.id='project-window-picker';popup.hidden=true;popup.setAttribute('aria-label','Abrir proyecto');
   const label=node('label','pw-search-label','Abrir proyecto');label.htmlFor='project-window-search';popup.append(label);
@@ -97,7 +102,7 @@ var ModernoProjectWorkspace=(()=>{
   if(enhanced){
    if(!windowComponent){windowHost=node('span','pw-window-host');windowComponent=ModernoProfileComponent.mountProjectWindows(windowHost,componentFailed,ready);}
    bar.append(windowHost);
-   windowComponent.update({tabs:[...windows.keys()].map((id,index)=>{const p=pool.find(p=>key(p.id)===id),selected=Boolean(project&&key(project.id)===id);return {id,title:title(p),selected,tabIndex:selected||!project&&index===0?0:-1};}),onList:listProjects,onOpen:open,onClose:close});
+   windowProps={tabs:[...windows.keys()].map((id,index)=>{const p=pool.find(p=>key(p.id)===id),selected=Boolean(project&&key(project.id)===id);return {id,title:title(p),selected,tabIndex:selected||!project&&index===0?0:-1};}),projects:pool.map(p=>({id:key(p.id),value:title(p)+(p.status==='Archivado'?' · Archivado':''),search:title(p)+' '+(p.client||'')})),onList:listProjects,onOpen:open,onClose:close};paintWindows();
   }else{
   const all=button('Ver todos los proyectos',listProjects,'pw-all');all.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 10 9-7 9 7v10H3V10Z"/><path d="M9 20v-8h6v8"/></svg>';bar.append(all);
   const tabs=node('div','pw-tabs');tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','Proyectos abiertos');bar.append(tabs);
@@ -107,7 +112,9 @@ var ModernoProjectWorkspace=(()=>{
    const closeButton=button('Cerrar pestaña de '+title(p),()=>close(p.id),'pw-close');closeButton.dataset.project=id;closeButton.textContent='×';wrap.append(b,closeButton);tabs.append(wrap);
   }
   }
+  if(!enhanced){
   const plus=button('Abrir otro proyecto',()=>{const popup=bar.querySelector('.pw-picker'),opening=popup.hidden;closePicker();if(opening){popup.hidden=false;plus.setAttribute('aria-expanded','true');popup.draw();popup.querySelector('input').focus();}},'pw-add');plus.textContent='+';plus.setAttribute('aria-expanded','false');plus.setAttribute('aria-controls','project-window-picker');bar.append(plus,picker());
+  }
   const tools=node('div','pw-tools');bar.append(tools);
   const head=$('#view .project-detail-head');
   if(head&&project){
@@ -121,7 +128,7 @@ var ModernoProjectWorkspace=(()=>{
  document.addEventListener('click',e=>{if(bar&&!bar.contains(e.target)){closePicker();bar.querySelectorAll('details[open]').forEach(d=>d.open=false);}});
  document.addEventListener('keydown',e=>{
   if(!bar||!bar.contains(e.target))return;
-  if(e.key==='Escape'){if(!bar.querySelector('.pw-picker').hidden){e.preventDefault();closePicker(true);}return;}
+  if(e.key==='Escape'){if(windowComponent?searchOpen:bar.querySelector('.pw-picker')&&!bar.querySelector('.pw-picker').hidden){e.preventDefault();closePicker(true);}return;}
   const tab=e.composedPath().find(node=>node?.getAttribute?.('role')==='tab');if(!tab||!['ArrowLeft','ArrowRight','Home','End','Delete'].includes(e.key))return;e.preventDefault();
   if(e.key==='Delete'){close(tab.dataset.project);return;}
   const buttons=tabButtons(),index=buttons.indexOf(tab),next=e.key==='Home'?0:e.key==='End'?buttons.length-1:(index+(e.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;buttons[next].click();

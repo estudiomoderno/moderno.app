@@ -1,3 +1,3 @@
-import {CheckIcon,ChevronRightIcon} from 'lucide-react';
+import {CheckIcon,ChevronRightIcon,ChevronsUpDownIcon,XIcon} from 'lucide-react';
 // The original registry supports several icon libraries. This example selects Lucide.
-export function IconPlaceholder({lucide,className}:any){const Icon=lucide==='ChevronRightIcon'?ChevronRightIcon:CheckIcon;return <Icon aria-hidden="true" className={className}/>;}
+export function IconPlaceholder({lucide,className}:any){const Icon=({CheckIcon,ChevronRightIcon,ChevronsUpDownIcon,XIcon} as any)[lucide]||CheckIcon;return <Icon aria-hidden="true" className={className}/>;}

@@ -81,7 +81,7 @@ try:
    assert home.locator('svg').evaluate('(e)=>getComputedStyle(e).width')=='16px'
    assert home.locator('svg.lucide-house').count()==1
    badge=page.locator('.pw-window-host [data-slot=badge]')
-   assert badge.count()==1 and badge.evaluate('(e)=>getComputedStyle(e).height')=='20px'
+   assert badge.count()==1 and badge.evaluate('(e)=>getComputedStyle(e).height')=='32px'
    assert badge.evaluate('(e)=>getComputedStyle(e).fontSize')=='12px'
    assert badge.locator('.pw-close').evaluate('(e)=>getComputedStyle(e).width')=='12px'
    assert badge.locator('.pw-close svg').evaluate('(e)=>getComputedStyle(e).width')=='12px'
@@ -106,14 +106,38 @@ try:
    assert page.get_by_label('Información del proyecto',exact=True).count()==0
    assert page.locator('.pw-info').count()==0
    assert page.locator('.pw-retained-head .project-detail-head').is_hidden()
-   controls=page.locator('.pw-window-host .pw-all,[data-project-settings-trigger],.ha-notification-host button,[data-profile-trigger]')
+   controls=page.locator('.pw-window-host .pw-all,.pw-window-host .pw-tab,.pw-window-host .pw-add,[data-project-settings-trigger],.ha-notification-host button,[data-profile-trigger]')
    boxes=controls.evaluate_all('(es)=>es.map(e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height}))')
-   assert len(boxes)==4 and max(b['top'] for b in boxes)-min(b['top'] for b in boxes)<1,boxes
+   assert len(boxes)==6 and max(b['top'] for b in boxes)-min(b['top'] for b in boxes)<1,boxes
    assert all(b['height']==32 for b in boxes),boxes
    page.get_by_role('button',name='Abrir otro proyecto',exact=True).click()
-   page.get_by_role('searchbox',name='Buscar proyecto para abrir',exact=True).fill('alvaro')
+   search=page.get_by_role('combobox',name='Buscar proyecto para abrir',exact=True)
+   panel=page.locator('.pw-search-collapse')
+   panel.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
+   assert panel.evaluate('(e)=>getComputedStyle(e).transitionProperty').startswith('width')
+   assert search.evaluate('(e)=>getComputedStyle(e).height')=='32px'
+   assert search.evaluate('(e)=>getComputedStyle(e).fontSize')=='14px'
+   add=page.get_by_role('button',name='Abrir otro proyecto',exact=True).bounding_box();field=search.bounding_box()
+   assert field['x']>=add['x']+add['width'] and abs(field['y']-add['y'])<1,(add,field)
+   assert field['x']+field['width']<trigger.bounding_box()['x'],field
+   assert page.locator('.pw-picker').count()==0
+   search.fill('ningun-proyecto-ficticio-coincide')
+   page.get_by_text('No hay proyectos que coincidan.',exact=True).wait_for(state='visible')
+   search.press('Escape');search.wait_for(state='hidden')
+   assert page.get_by_role('button',name='Abrir otro proyecto',exact=True).get_attribute('aria-expanded')=='false'
+   assert page.evaluate('(()=>{const s=document.querySelector(".pw-window-host").shadowRoot;return s.activeElement===s.querySelector(".pw-add");})()')
+   page.emulate_media(reduced_motion='reduce')
+   page.get_by_role('button',name='Abrir otro proyecto',exact=True).press('Enter')
+   assert panel.evaluate('(e)=>getComputedStyle(e).transitionDuration')=='0s'
+   search.fill('9001');page.locator('.pw-project-choice').click()
+   assert page.evaluate('state.currentProject')==9001
+   page.emulate_media(reduced_motion='no-preference')
+   page.get_by_role('button',name='Abrir otro proyecto',exact=True).click()
+   search.fill('alvaro')
+   panel.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
    choices=page.locator('.pw-project-choice');assert choices.count()==1
-   choices.click();assert page.evaluate('state.currentProject')==9002 and page.evaluate('state.projTab')=='proyecto'
+   if output:page.screenshot(path=str(output/f'project-autocomplete-{width}.png'),full_page=True)
+   search.press('Enter');assert page.evaluate('state.currentProject')==9002 and page.evaluate('state.projTab')=='proyecto'
    assert tabs.count()==2;assert page.locator('.pw-tab-title').last.evaluate('e=>e.scrollWidth>e.clientWidth')
    page.locator('#project-tab-tareas').click()
    page.locator('#project-window-9001').click();assert page.evaluate('state.projTab')=='planos'
