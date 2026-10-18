@@ -129,7 +129,10 @@ def check_header_actions(page,width):
  assert page.locator('.ha-team-group').count()==1
  page.locator('.ha-status').wait_for(state='visible')
  assert page.locator('.ha-status').inner_text()=='Sin conexión'
+ # Let the rebuilt Base UI root finish its first paint before keyboard input.
+ page.locator('.ha-component-host').evaluate('()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))')
  page.locator('[data-profile-trigger]').focus()
+ page.wait_for_function('(()=>{const s=document.querySelector(".ha-component-host").shadowRoot;return s.activeElement===s.querySelector("[data-profile-trigger]");})()')
  page.locator('[data-profile-trigger]').press('ArrowDown')
  page.get_by_role('menuitem',name='Mi perfil',exact=True).wait_for(state='visible')
  assert page.get_by_role('menuitem',name='Cambiar estudio',exact=True).count()==0

@@ -151,4 +151,14 @@
     @apply shadow-lg;
   }
 
+
+  /* MARK: Scroll Area */
+  .cn-scroll-area-scrollbar {
+    @apply data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:border-t data-horizontal:border-t-transparent data-vertical:h-full data-vertical:w-2.5 data-vertical:border-l data-vertical:border-l-transparent;
+  }
+
+  .cn-scroll-area-thumb {
+    @apply rounded-full;
+  }
+
 }

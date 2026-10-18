@@ -33,4 +33,8 @@
 .pw-tab-select {min-width:0;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .pw-tab-title {display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pw-tab-select:focus-visible {outline:2px solid var(--ring);outline-offset:1px}
+.pw-search-group {display:flex;align-items:center;flex:none}
+.pw-search-collapse {--search-width:clamp(176px,22vw,280px);width:0;height:38px;margin-left:0;overflow:clip;opacity:0;visibility:hidden;transition:width 220ms ease,margin-left 220ms ease,opacity 180ms ease,visibility 0s 220ms}
+.pw-search-collapse[data-open=true] {width:calc(var(--search-width) + 6px);margin-left:5px;opacity:1;visibility:visible;transition:width 220ms ease,margin-left 220ms ease,opacity 180ms ease}
+.pw-search-inner {width:calc(var(--search-width) + 6px);height:38px;max-width:none;box-sizing:border-box;padding:3px}
 @media(prefers-reduced-motion:reduce){*,::before,::after{animation:none!important;transition:none!important}}

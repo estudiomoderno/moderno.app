@@ -10,6 +10,7 @@ test('the original ReUI components retain their upstream source identity',async(
  for(const [name,info] of Object.entries(source.files)){
   let text=await readFile(new URL('vendor/reui/'+name,base),'utf8');
   if(name==='dropdown-menu.tsx')text=text.replace('  className,\n  container,\n  ...props\n}: MenuPrimitive.Popup.Props & {container?: HTMLElement}','  className,\n  ...props\n}: MenuPrimitive.Popup.Props').replace('<MenuPrimitive.Portal container={container}>','<MenuPrimitive.Portal>');
+  if(name==='autocomplete.tsx')text=text.replace('  showBackdrop?: boolean\n  container?: HTMLElement\n','  showBackdrop?: boolean\n').replace('  anchor,\n  container,\n  ...props','  anchor,\n  ...props').replace('<AutocompletePortal container={container}>','<AutocompletePortal>');
   const bytes=Buffer.from(text),blob=createHash('sha1').update(Buffer.from('blob '+bytes.length+'\0')).update(bytes).digest('hex');
   assert.equal(blob,info.git_blob,name+' differs from the original source beyond the declared portal adaptation');
  }
@@ -23,5 +24,5 @@ test('the published profile artifacts match the checked-in sources and local fon
  for(const name of ['app/profile-component.js','app/brand/reui/team-profile.css','app/brand/reui/font.css','app/brand/reui/inter-latin-wght-normal.woff2','ui/team-profile/package-lock.json'])assert.ok(manifest[name]);
  new vm.Script(await readFile(new URL('app/profile-component.js',root),'utf8'));
  const html=await readFile(new URL('app/index.html',root),'utf8');
- assert.ok(html.indexOf('/profile-component.js?v=36552')<html.indexOf('/header-actions.js?v=36552'));
+ assert.ok(html.indexOf('/profile-component.js?v=36553')<html.indexOf('/header-actions.js?v=36553'));
 });

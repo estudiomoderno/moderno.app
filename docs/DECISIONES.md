@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Franja uniforme y Autocomplete después del «+»
+
+El propietario solicita alinear la franja de proyectos y abrir un buscador con transición de izquierda a derecha después del «+», usando su Autocomplete original. Se unifica la altura a 32 px, manteniendo las fuentes y tamaños de texto. Se buscan proyectos existentes con los permisos y guardas actuales; no se crean registros ni se cambia el modelo de datos. Detalles y reversión en [PESTANAS-PROYECTOS.md](PESTANAS-PROYECTOS.md).
+
 ## 2026-10-18 — Casa para Todos los proyectos y pestañas Badge originales
 
 El propietario pide reemplazar los cuadrados por una casa con el Button usado para notificaciones, y aplicar a cada pestaña su patrón Badge outline con cierre XIcon. Se utilizan los componentes originales y sus medidas, conservando navegación, permisos y guardas de borradores. Cerrar una pestaña no elimina proyectos. Detalles y reversión en [PESTANAS-PROYECTOS.md](PESTANAS-PROYECTOS.md).
