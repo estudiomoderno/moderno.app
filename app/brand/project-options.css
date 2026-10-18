@@ -9,3 +9,14 @@ body.dark .project-options-body img{filter:none}
 }
 
 @media screen{#view:has(.proj-head){overflow-x:clip}}
+
+/* Only the wrapper positions the original isolated ReUI menu. */
+.project-options-control{display:contents}
+.project-settings-host{display:inline-block;flex:none;line-height:0;font-size:16px}
+@media screen{
+ .project-options-control.has-project-settings{display:block;position:absolute;top:22px;right:22px;z-index:30;width:max-content}
+ .project-options-control.has-project-settings>.project-options{display:none!important}
+ @media(max-width:810px){.project-options-control.has-project-settings{position:relative;top:auto;right:auto;margin:12px 0 0 auto}}
+ #project-window-bar .project-options-control.has-project-settings{position:relative;top:auto;right:auto;margin:0;flex:none}
+}
+@media print{.project-settings-host{display:none!important}}

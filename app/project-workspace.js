@@ -100,7 +100,7 @@ var ModernoProjectWorkspace=(()=>{
   const tools=node('div','pw-tools');bar.append(tools);
   const head=$('#view .project-detail-head');
   if(head&&project){
-   move(head.querySelector('.project-options'),tools);
+   move(head.querySelector('.project-options-control')||head.querySelector('.project-options'),tools);
    const info=node('details','pw-info'),summary=node('summary');summary.setAttribute('aria-label','Información del proyecto');summary.title='Información del proyecto';summary.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></svg>';info.append(summary);const body=node('div','pw-info-body');info.append(body);tools.prepend(info);move(head,body);
   }
   document.body.append(bar);document.body.classList.add('project-windows');

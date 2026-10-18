@@ -41,10 +41,36 @@ try:
     window.records=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes});window.baseline=records();
    }""")
    assert page.evaluate('sb===null')
+   trigger=page.locator('[data-project-settings-trigger]')
+   assert trigger.get_attribute('aria-label')=='Ajustes del proyecto'
+   assert trigger.evaluate('(e)=>getComputedStyle(e).height')=='32px'
+   assert trigger.locator('svg').evaluate('(e)=>getComputedStyle(e).width')=='16px'
+   trigger.press('ArrowDown')
+   menu=page.locator('.project-settings-host [role=menu]')
+   menu.wait_for(state='visible')
+   assert menu.get_by_role('menuitem').all_text_contents()==['Editar datos','Personalizar proyecto','Portal del cliente','Duplicar proyecto','Eliminar proyecto']
+   assert menu.locator('[data-slot=dropdown-menu-label]').inner_text()=='Acciones'
+   assert menu.get_by_role('menuitem',name='Eliminar proyecto').get_attribute('data-variant')=='destructive'
+   assert menu.locator('[data-slot=dropdown-menu-shortcut],[data-slot=dropdown-menu-sub-trigger]').count()==0
+   assert menu.get_by_role('menuitem').first.evaluate('(e)=>getComputedStyle(e).fontSize')=='14px'
+   assert 'Moderno ReUI Inter' in menu.evaluate('(e)=>getComputedStyle(e).fontFamily')
+   rect=menu.bounding_box();assert rect['x']>=0 and rect['x']+rect['width']<=width,rect
+   if output:page.screenshot(path=str(output/f'project-settings-{width}.png'),full_page=True)
+   page.keyboard.press('Escape');menu.wait_for(state='hidden')
+   assert page.evaluate('(()=>{const s=document.querySelector(".project-settings-host").shadowRoot;return s.activeElement===s.querySelector("[data-project-settings-trigger]");})()')
+   trigger.click();menu.get_by_role('menuitem',name='Personalizar proyecto').click()
+   assert page.locator('.project-editor').get_attribute('data-mode')=='appearance'
+   page.evaluate('closeModal()')
+   assert page.evaluate('records()===baseline')
    if width<1100:
     assert page.locator('#project-window-bar').count()==0
     assert page.locator('#view .project-detail-head').is_visible()
     page.evaluate('projectOpen(9002)');assert page.evaluate('state.currentProject')==9002 and page.evaluate('state.projTab')=='proyecto'
+    page.evaluate('document.querySelector(".project-settings-host").shadowRoot.querySelector("link").dispatchEvent(new Event("error"))')
+    page.locator('.project-settings-host').wait_for(state='detached')
+    page.locator('.project-options>summary').click()
+    page.get_by_role('button',name='Editar datos',exact=True).click()
+    assert page.locator('#czName').is_visible();page.evaluate('closeModal()')
     assert page.evaluate('records()===baseline')
     assert not errors,errors;assert not writes,writes
     print(width,'PASS: original mobile navigation and project heading unchanged');page.close();continue
@@ -87,13 +113,13 @@ try:
    page.locator('#project-tab-listas').click();page.evaluate('openRoom(9001,9101)');assert page.evaluate('state.view')=='estancia'
    page.locator('#project-window-9002').click();page.locator('#project-window-9001').click();assert page.evaluate('state.view')=='estancia' and page.evaluate('state.currentRoom')==9101
    page.evaluate("go('proyecto',9001);projTab('planos')")
-   page.locator('.project-options>summary').click();page.get_by_role('button',name='Editar datos',exact=True).click()
+   page.locator('[data-project-settings-trigger]').click();page.get_by_role('menuitem',name='Editar datos',exact=True).click()
    page.locator('#czName').fill('Nombre ficticio sin guardar')
    assert not page.evaluate('ModernoProjectWorkspace.open(9002)');assert not page.evaluate('ModernoProjectWorkspace.close(9001)')
    assert page.locator('#czName').input_value()=='Nombre ficticio sin guardar';assert tabs.count()==2
    assert page.evaluate('state.currentProject')==9001 and page.evaluate('records()===baseline')
    page.wait_for_function('!document.querySelector(".project-options").open');page.evaluate('closeModal()')
-   page.locator('.project-options>summary').click();page.get_by_role('button',name='Portal del cliente',exact=True).click()
+   page.locator('[data-project-settings-trigger]').click();page.get_by_role('menuitem',name='Portal del cliente',exact=True).click()
    page.evaluate('ClientPortalSite.setWelcomeEditing(true)');page.locator('#cliWelTa').fill('Bienvenida ficticia pendiente')
    assert not page.evaluate('ModernoProjectWorkspace.open(9002)');assert page.locator('#cliWelTa').input_value()=='Bienvenida ficticia pendiente'
    page.evaluate('ClientPortalSite.setWelcomeEditing(false)')

@@ -8,6 +8,8 @@ Componente aislado encargado por el propietario el 18/10/2026 desde https://reui
 
 `notifications.tsx` incorpora el patrón Button/BellIcon/Badge enviado después por el propietario. Badge procede de `registry-reui/bases/base/reui/badge.tsx`, sin modificaciones; no es la primitiva Badge de shadcn/ui. Se conservan `size="icon"`, `variant="outline"`, el Badge destructivo `xs` y sus clases de posición. El ejemplo fijo 8 se sustituye por el contador actual de avisos no leídos, oculto a cero y abreviado a 99+; la etiqueta accesible conserva el total completo. La acción delega en el botón original de la aplicación, sin sustituir su lógica.
 
+`project-settings.tsx` utiliza el último patrón DropdownMenu enviado por el propietario para las opciones del proyecto: Button outline/icon con EllipsisVerticalIcon, contenido w-48 alineado al final, etiqueta Acciones y eliminación destructiva separada. Se conservan las cinco acciones actuales mediante sus botones nativos; no se añaden submenús, atajos o acciones ficticias del ejemplo. Comparte fuente, primitiva y estilos originales con los otros componentes aislados.
+
 `index.tsx` monta React exclusivamente en el perfil y la campana, en árboles Shadow DOM separados que comparten los mismos recursos locales. El resto de la app mantiene su HTML, JavaScript, navegación y persistencia. El menú usa Base UI original, con posicionamiento, Escape, teclado y retorno del foco. Ante un fallo del componente o de su CSS se recupera la presentación nativa anterior.
 
 Construcción reproducible, desde la raíz del repositorio:

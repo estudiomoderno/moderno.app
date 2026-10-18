@@ -23,5 +23,5 @@ test('the published profile artifacts match the checked-in sources and local fon
  for(const name of ['app/profile-component.js','app/brand/reui/team-profile.css','app/brand/reui/font.css','app/brand/reui/inter-latin-wght-normal.woff2','ui/team-profile/package-lock.json'])assert.ok(manifest[name]);
  new vm.Script(await readFile(new URL('app/profile-component.js',root),'utf8'));
  const html=await readFile(new URL('app/index.html',root),'utf8');
- assert.ok(html.indexOf('/profile-component.js?v=36548')<html.indexOf('/header-actions.js?v=36548'));
+ assert.ok(html.indexOf('/profile-component.js?v=36549')<html.indexOf('/header-actions.js?v=36549'));
 });
