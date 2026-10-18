@@ -10,7 +10,9 @@ Componente aislado encargado por el propietario el 18/10/2026 desde https://reui
 
 `project-settings.tsx` utiliza el último patrón DropdownMenu enviado por el propietario para las opciones del proyecto: Button outline/icon con EllipsisVerticalIcon, contenido w-48 alineado al final, etiqueta Acciones y eliminación destructiva separada. Se conservan las cinco acciones actuales mediante sus botones nativos; no se añaden submenús, atajos o acciones ficticias del ejemplo. Comparte fuente, primitiva y estilos originales con los otros componentes aislados.
 
-`index.tsx` monta React exclusivamente en el perfil y la campana, en árboles Shadow DOM separados que comparten los mismos recursos locales. El resto de la app mantiene su HTML, JavaScript, navegación y persistencia. El menú usa Base UI original, con posicionamiento, Escape, teclado y retorno del foco. Ante un fallo del componente o de su CSS se recupera la presentación nativa anterior.
+`project-windows.tsx` incorpora el patrón Badge outline con `gap-0.5` y Button ghost/icon `size-3 hover:bg-transparent` que envió el propietario: el título selecciona la pestaña y XIcon la cierra. Conserva las medidas originales del Badge (20 px, texto 12 px) y del cierre (12 px). La casa usa el mismo Button outline/icon de 32 px que las notificaciones, con HouseIcon de 16 px y sin contador. El código de ventanas mantiene sus guardas y callbacks; el estado de navegación no se duplica en React. Se conserva el componente entre cambios de pestaña, y se elimina al salir de su ámbito. La variante style-nova procede literalmente de styles/globals.css para respetar el radio original del Badge.
+
+`index.tsx` monta React exclusivamente en el perfil, campana, menú de proyecto y presentación de sus pestañas, en árboles Shadow DOM separados que comparten los mismos recursos locales. El resto de la app mantiene su HTML, JavaScript, navegación y persistencia. El menú usa Base UI original, con posicionamiento, Escape, teclado y retorno del foco. Ante un fallo del componente o de su CSS se recupera la presentación nativa anterior.
 
 Construcción reproducible, desde la raíz del repositorio:
 

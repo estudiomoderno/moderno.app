@@ -76,6 +76,19 @@ try:
     print(width,'PASS: original mobile navigation and project heading unchanged');page.close();continue
    tabs=page.locator('#project-window-bar [role=tab]')
    assert tabs.count()==1
+   home=page.locator('.pw-window-host .pw-all')
+   assert home.evaluate('(e)=>getComputedStyle(e).height')=='32px'
+   assert home.locator('svg').evaluate('(e)=>getComputedStyle(e).width')=='16px'
+   assert home.locator('svg.lucide-house').count()==1
+   badge=page.locator('.pw-window-host [data-slot=badge]')
+   assert badge.count()==1 and badge.evaluate('(e)=>getComputedStyle(e).height')=='20px'
+   assert badge.evaluate('(e)=>getComputedStyle(e).fontSize')=='12px'
+   assert badge.locator('.pw-close').evaluate('(e)=>getComputedStyle(e).width')=='12px'
+   assert badge.locator('.pw-close svg').evaluate('(e)=>getComputedStyle(e).width')=='12px'
+   home.click();assert page.evaluate('state.view')=='proyectos'
+   page.locator('#project-window-9001').click()
+   assert page.evaluate('state.currentProject')==9001 and page.evaluate('state.projTab')=='planos'
+   assert page.evaluate('records()===baseline')
    page.evaluate('window.originalOptions=document.querySelector(".project-options")')
    page.evaluate('ModernoProjectWorkspace.setEnabled(false)')
    before=page.locator('#project-tab-panel').bounding_box()['y']
@@ -93,9 +106,9 @@ try:
    assert page.get_by_label('Información del proyecto',exact=True).count()==0
    assert page.locator('.pw-info').count()==0
    assert page.locator('.pw-retained-head .project-detail-head').is_hidden()
-   controls=page.locator('[data-project-settings-trigger],.ha-notification-host button,[data-profile-trigger]')
+   controls=page.locator('.pw-window-host .pw-all,[data-project-settings-trigger],.ha-notification-host button,[data-profile-trigger]')
    boxes=controls.evaluate_all('(es)=>es.map(e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height}))')
-   assert len(boxes)==3 and max(b['top'] for b in boxes)-min(b['top'] for b in boxes)<1,boxes
+   assert len(boxes)==4 and max(b['top'] for b in boxes)-min(b['top'] for b in boxes)<1,boxes
    assert all(b['height']==32 for b in boxes),boxes
    page.get_by_role('button',name='Abrir otro proyecto',exact=True).click()
    page.get_by_role('searchbox',name='Buscar proyecto para abrir',exact=True).fill('alvaro')
@@ -152,6 +165,11 @@ try:
    assert page.locator('.pw-tabs').evaluate('e=>e.scrollWidth>e.clientWidth')
    box=page.locator('#project-window-9031').bounding_box();assert 0<=box['x'] and box['x']+box['width']<=width,box
    assert page.locator('.pw-tab-title img').count()==0 and page.evaluate('typeof window.attacked')=='undefined'
+   snapshot=page.evaluate('records()')
+   page.evaluate('document.querySelector(".pw-window-host").shadowRoot.querySelector("link").dispatchEvent(new Event("error"))')
+   page.locator('.pw-window-host').wait_for(state='detached')
+   assert tabs.count()==12 and page.get_by_role('button',name='Ver todos los proyectos',exact=True).is_visible()
+   assert page.evaluate('records()')==snapshot
    page.evaluate("state.brandFilter='not-a-visible-space';render()")
    assert page.locator('#project-window-bar').count()==0
    page.evaluate("state.brandFilter='all';projectOpen(9001);projectOpen(9002)")
