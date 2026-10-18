@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Longitud uniforme del menú lateral desplegado
+
+El propietario pide que el menú desplegado se extienda hasta abajo por estética. La cápsula ocupa la altura disponible de la ventana, con los iconos arriba y la flecha inferior dentro de pantalla; al cerrar mantiene el logotipo compacto y la transición. Ajuste exclusivo de CSS, sin datos ni lógica nueva. Detalles: [MENU-LATERAL-ALTURA-COMPLETA](MENU-LATERAL-ALTURA-COMPLETA.md).
+
 ## 2026-10-18 — Menú general lateral y pestañas de proyectos en la primera fila
 
 El propietario aprueba la propuesta de colocar la cápsula del menú general en vertical a la izquierda y las pestañas de proyectos arriba del todo, manteniendo el perfil/notificaciones arriba a la derecha y el dock inferior. Se conservan identidad, plegado animado, rutas, permisos, buscador de proyectos y protección de ediciones. Esta decisión sustituye la disposición horizontal anterior. Pruebas y retorno: [MENU-LATERAL-PESTANAS-ARRIBA](MENU-LATERAL-PESTANAS-ARRIBA.md).
