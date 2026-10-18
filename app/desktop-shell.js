@@ -42,10 +42,17 @@ var ModernoDesktopShell=(()=>{
   trigger.classList.toggle('is-current',finance.includes(state.view));
   $('.desktop-nav').setAttribute('aria-label',expanded?'Navegación de Finanzas':'Navegación general');
   const nav=$('#desktop-navigation'),toggle=$('#desktop-header .desktop-toggle');
-  $('.desktop-nav-clip').style.setProperty('--desktop-nav-width',nav.getBoundingClientRect().width+'px');
+  $('.desktop-nav-clip').style.setProperty('--desktop-nav-height',nav.getBoundingClientRect().height+'px');
   nav.inert=collapsed;nav.setAttribute('aria-hidden',String(collapsed));$('.desktop-row').classList.toggle('is-collapsed',collapsed);
+  positionMenus();
   toggle.setAttribute('aria-expanded',String(!collapsed));
-  const caption=collapsed?'Desplegar menú superior':'Comprimir menú superior';toggle.setAttribute('aria-label',caption);toggle.querySelector('.desktop-label').textContent=caption;
+  const caption=collapsed?'Desplegar menú lateral':'Comprimir menú lateral';toggle.setAttribute('aria-label',caption);toggle.querySelector('.desktop-label').textContent=caption;
+ }
+ function positionMenus(){
+  header?.querySelectorAll('.desktop-group[open]>.desktop-menu').forEach(menu=>{
+   menu.style.top='0px';const bounds=menu.getBoundingClientRect();
+   menu.style.top=Math.max(12-bounds.top,Math.min(0,window.innerHeight-12-bounds.bottom))+'px';
+  });
  }
  function finishFold(){
   if(foldTimer!==null){clearTimeout(foldTimer);foldTimer=null;}
@@ -67,7 +74,7 @@ var ModernoDesktopShell=(()=>{
   const brand=document.createElement('div');brand.className='desktop-brand';row.append(brand);move($('aside.sidebar .sb-head'),brand);
   const clip=document.createElement('div');clip.className='desktop-nav-clip';row.append(clip);
   const nav=document.createElement('nav');nav.id='desktop-navigation';nav.className='desktop-nav';nav.setAttribute('aria-label','Navegación general');clip.append(nav);
-  clip.addEventListener('transitionend',event=>{if(event.target===clip&&event.propertyName==='width')finishFold();});
+  clip.addEventListener('transitionend',event=>{if(event.target===clip&&event.propertyName==='height')finishFold();});
   const primary=document.createElement('div');primary.id='desktop-primary';primary.className='desktop-primary';nav.append(primary);
   const financial=document.createElement('div');financial.id='desktop-finance-nav';financial.className='desktop-subnav';financial.hidden=true;nav.append(financial);
   const back=action('',()=>setSection(null,true));back.className='desktop-link desktop-icon-only desktop-back';const arrow=$('.sidebar .sb-arrow-collapse').cloneNode(true);arrow.setAttribute('class','desktop-back-icon');back.append(arrow);label(back,'Volver al menú principal');financial.append(back);
@@ -83,7 +90,7 @@ var ModernoDesktopShell=(()=>{
    label(s,name);d.append(s);
    const menu=document.createElement('div');menu.className='desktop-menu';for(const view of views){const b=button(view);if(b)menu.append(b);}d.append(menu);primary.append(d);
   }
-  const toggle=action('',toggleFold);toggle.className='desktop-toggle desktop-icon-only';toggle.setAttribute('aria-controls','desktop-navigation');label(toggle,'Comprimir menú superior');
+  const toggle=action('',toggleFold);toggle.className='desktop-toggle desktop-icon-only';toggle.setAttribute('aria-controls','desktop-navigation');label(toggle,'Comprimir menú lateral');
   for(const name of ['collapse','expand']){const arrow=$('.sidebar .sb-arrow-'+name).cloneNode(true);arrow.setAttribute('class','desktop-arrow-'+name);toggle.append(arrow);}
   row.append(toggle);
   const actions=document.createElement('div');actions.className='desktop-actions';header.append(actions);
@@ -101,7 +108,7 @@ var ModernoDesktopShell=(()=>{
    const b=event.target.closest('[data-desktop-view]');if(!b||!available(b.dataset.desktopView))return;
    closeMenus();original(b.dataset.desktopView)?.click();
   });
-  header.addEventListener('toggle',event=>{if(event.target.open)closeMenus(event.target);},true);
+  header.addEventListener('toggle',event=>{if(event.target.open){closeMenus(event.target);positionMenus();}},true);
  }
  function restore(){
   if(foldTimer!==null){clearTimeout(foldTimer);foldTimer=null;}
@@ -126,6 +133,7 @@ var ModernoDesktopShell=(()=>{
  function safeRefresh(){try{refresh();}catch(error){enabled=false;restore();console.warn('Navegación de escritorio desactivada; se conserva la interfaz anterior.',error);}}
  document.addEventListener('click',e=>{if(header&&!header.contains(e.target))closeMenus();});
  document.addEventListener('keydown',e=>{if(e.key!=='Escape'||!header)return;const open=header.querySelector('details[open]');if(open){closeMenus();open.querySelector('summary')?.focus();}else if(section==='finanzas'&&!collapsed&&header.contains(e.target))setSection(null,true);});
+ window.addEventListener('resize',()=>{if(header)syncNavigation();});
  media.addEventListener('change',safeRefresh);
  const originalRender=render;render=function(){const result=originalRender.apply(this,arguments);safeRefresh();return result;};
  safeRefresh();

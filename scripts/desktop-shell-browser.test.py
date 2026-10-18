@@ -28,13 +28,13 @@ def settle_header(page):
  page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
 def sample_fold(page):
  result=page.evaluate("""()=>{
-  const clip=document.querySelector('.desktop-nav-clip'),start=clip.getBoundingClientRect().width;
+  const clip=document.querySelector('.desktop-nav-clip'),start=clip.getBoundingClientRect().height;
   document.querySelector('.desktop-toggle').click();
   return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
-   const animation=clip.getAnimations().find(a=>a.transitionProperty==='width');
+   const animation=clip.getAnimations().find(a=>a.transitionProperty==='height');
    if(!animation){resolve({start,missing:true});return;}
    animation.pause();animation.currentTime=120;
-   const middle=clip.getBoundingClientRect().width;
+   const middle=clip.getBoundingClientRect().height;
    animation.finish();resolve({start,middle});
   })));
  }""")
@@ -118,7 +118,7 @@ with sync_playwright() as p:
   assert profile['x']>=bell['x']+bell['width']
   assert row['x']+row['width']<bell['x']
   assert max(row['y'],bell['y'])-min(row['y'],bell['y'])<12
-  assert row['width']<540,'Header must remain compact with icon controls'
+  assert row['width']==68 and row['height']>350,'Navigation must be a narrow vertical rail'
   for rect in page.locator('.desktop-nav .desktop-icon-only:visible').evaluate_all('(els)=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width,height:r.height}})'):
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
    assert rect['width']==rect['height']==44,rect
@@ -159,22 +159,22 @@ with sync_playwright() as p:
    page.locator('#desktop-navigation').wait_for(state='hidden');settle_header(page)
    result=sample_fold(page);assert result['start']==0 and 0<result['middle'],result
    settle_header(page)
-  page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+  page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
   settle_header(page)
   assert page.locator('#desktop-navigation').is_hidden()
   assert page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
   assert page.locator('.desktop-row [data-desktop-view]:visible').count()==0
   assert page.locator('.desktop-brand .logo-mini').is_visible()
   assert page.locator('.desktop-row').bounding_box()['width']<100
-  assert page.locator('.desktop-row').bounding_box()['width']<row['width']/3
-  assert page.get_by_role('button',name='Desplegar menú superior',exact=True).get_attribute('aria-expanded')=='false'
-  assert page.get_by_role('button',name='Desplegar menú superior',exact=True).evaluate('(e)=>document.activeElement===e')
+  assert page.locator('.desktop-row').bounding_box()['height']<row['height']/3
+  assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).get_attribute('aria-expanded')=='false'
+  assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).evaluate('(e)=>document.activeElement===e')
   assert page.evaluate('document.querySelector("#view input")===originalDraft')
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.locator('.desktop-profile>summary').click()
   assert page.get_by_role('button',name='Ajustes',exact=True).is_visible()
   page.locator('.desktop-profile>summary').press('Escape')
-  page.get_by_role('button',name='Desplegar menú superior',exact=True).press('Enter')
+  page.get_by_role('button',name='Desplegar menú lateral',exact=True).press('Enter')
   settle_header(page)
   assert page.locator('#desktop-navigation').is_visible()
   assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
@@ -184,8 +184,8 @@ with sync_playwright() as p:
   assert page.evaluate('state.view')=='proyecto'
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   assert page.evaluate('document.querySelector("#view input")===originalDraft')
-  page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
-  page.get_by_role('button',name='Desplegar menú superior',exact=True).click()
+  page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
+  page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
   settle_header(page)
   assert page.locator('#desktop-finance-nav').is_visible(),'Expanding must retain the Finance group'
   page.locator('#desktop-header [data-desktop-view=facturas]').click()
@@ -197,12 +197,12 @@ with sync_playwright() as p:
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.evaluate('dirty=false')
   # Compact state and the original unsaved editor survive removal/rebuild at tablet width.
-  page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+  page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
   page.set_viewport_size({'width':1024,'height':1000});page.wait_for_function("!document.querySelector('#desktop-header')")
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.set_viewport_size({'width':width,'height':1000});page.wait_for_function("!!document.querySelector('#desktop-header')")
   assert page.locator('#desktop-navigation').is_hidden()
-  page.get_by_role('button',name='Desplegar menú superior',exact=True).press('Space')
+  page.get_by_role('button',name='Desplegar menú lateral',exact=True).press('Space')
   settle_header(page)
   assert page.locator('#desktop-navigation').is_visible()
   # Reversing during the actual transition must not leave the navigation clipped or hidden.
@@ -210,10 +210,10 @@ with sync_playwright() as p:
   settle_header(page)
   assert page.locator('#desktop-navigation').is_visible() and not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
   page.emulate_media(reduced_motion='reduce')
-  page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+  page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
   assert page.locator('#desktop-navigation').is_hidden()
   assert page.locator('.desktop-nav-clip').evaluate('(e)=>e.getAnimations().length')==0
-  page.get_by_role('button',name='Desplegar menú superior',exact=True).click()
+  page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
   assert page.locator('#desktop-navigation').is_visible()
   page.emulate_media(reduced_motion='no-preference')
   page.evaluate('dirty=true')
@@ -258,8 +258,27 @@ with sync_playwright() as p:
   assert page.locator('#desktop-header .logo-mini svg').evaluate('(el)=>getComputedStyle(el).filter')=='invert(1)'
   # Check accessible header bounds and the project content remains above the dock.
   assert page.locator('.desktop-profile').bounding_box()['x']+page.locator('.desktop-profile').bounding_box()['width']<=width
-  assert page.locator('.desktop-nav').bounding_box()['x']>=page.locator('.desktop-brand').bounding_box()['x']+page.locator('.desktop-brand').bounding_box()['width']
+  assert page.locator('.desktop-nav').bounding_box()['y']>=page.locator('.desktop-brand').bounding_box()['y']+page.locator('.desktop-brand').bounding_box()['height']
   if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-{width}.png'),full_page=True)
+  # Short windows keep every icon reachable and open the product menu inside the viewport.
+  for height in [500,400]:
+   page.set_viewport_size({'width':width,'height':height})
+   page.wait_for_function('Math.abs(document.querySelector(".desktop-nav-clip").getBoundingClientRect().height-document.querySelector("#desktop-navigation").getBoundingClientRect().height)<0.5&&!document.querySelector(".desktop-nav-clip").getAnimations().some(a=>a.playState==="running")')
+   last=page.locator('.desktop-group>summary').first
+   last.click()
+   menu=page.locator('.desktop-group[open]>.desktop-menu');menu.wait_for(state='visible')
+   box=menu.bounding_box();rail=page.locator('.desktop-row').bounding_box();toggle=page.locator('.desktop-toggle').bounding_box()
+   assert box['x']>rail['x']+rail['width'] and box['y']>=11 and box['y']+box['height']<=height-11,(box,rail,height)
+   assert toggle['y']+toggle['height']<=height,(toggle,height)
+   for control in page.locator('.desktop-nav .desktop-icon-only:visible').all():
+    rect=control.bounding_box();assert rect['y']>=0 and rect['y']+rect['height']<=height and rect['height']>=28,(rect,height)
+   if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-short-{width}-{height}.png'),full_page=True)
+   last.press('Escape')
+   page.locator('.desktop-profile>summary').click()
+   box=page.locator('.desktop-profile>.desktop-menu').bounding_box()
+   assert box['y']>=0 and box['y']+box['height']<=height-12,(box,height)
+   page.locator('.desktop-profile>summary').press('Escape')
+  page.set_viewport_size({'width':width,'height':1000})
   page.evaluate('ModernoDesktopShell.setEnabled(false)')
   assert page.locator('#desktop-header').count()==0
   assert page.locator('aside.sidebar .sb-head').evaluate('(el)=>el.innerHTML')==logos

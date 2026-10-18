@@ -56,6 +56,11 @@ try:
    assert page.locator('#view .project-detail-head').is_visible()
    page.evaluate('ModernoProjectWorkspace.setEnabled(true)')
    after=page.locator('#project-tab-panel').bounding_box()['y'];assert before-after>100,(before,after)
+   rail=page.locator('.desktop-row').bounding_box();bar=page.locator('#project-window-bar').bounding_box();profile=page.locator('.desktop-actions').bounding_box()
+   assert rail['width']==68 and rail['height']>rail['width']*4,rail
+   assert bar['y']<=24 and bar['x']>rail['x']+rail['width'],(bar,rail)
+   assert bar['x']+bar['width']<profile['x'] and abs(bar['y']-profile['y'])<8,(bar,profile)
+   assert after<100,after
    assert page.evaluate('originalOptions===document.querySelector(".project-options")')
    assert page.locator('#view .project-detail-head').count()==0
    assert not page.locator('#view .crumbs').is_visible()

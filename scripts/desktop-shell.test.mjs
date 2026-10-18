@@ -6,7 +6,7 @@ const code=await readFile(new URL('../app/desktop-shell.js',import.meta.url),'ut
 function fixture(){
  const events={},calls=[];
  const context=vm.createContext({
-  window:{matchMedia:()=>({matches:true,addEventListener:(k,fn)=>events[k]=fn})},
+  window:{matchMedia:()=>({matches:true,addEventListener:(k,fn)=>events[k]=fn}),addEventListener:(k,fn)=>events[k]=fn},
   document:{addEventListener(){},querySelector(){throw Error('No DOM changes allowed before recovery verification');},body:{classList:{remove(){calls.push('restore');}}}},
   state:{view:'home'},_accessLoading:true,_accessRole:'admin',console:{warn(){calls.push('warning');}},render:function(...args){calls.push(args);return 'original-render';}
  });
