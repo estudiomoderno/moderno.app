@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — El perfil deja de ofrecer Cambiar estudio
+
+El propietario decide que no necesita cambiar de estudio y pide retirar esa opción del menú junto a su foto. Se elimina el acceso y su puente de navegación, conservando los demás ajustes y la identidad/datos/permisos existentes. No se interpreta como autorización para fusionar estudios o migrar el modelo de datos. Detalles y reversión en [PERFIL-REUI-ORIGINAL.md](PERFIL-REUI-ORIGINAL.md).
+
 ## 2026-10-18 — Alineación de ajustes y retirada de información de proyecto
 
 El propietario solicita alinear el menú de proyecto con la campana/perfil y retirar el icono Información del proyecto. Se unifica el centro vertical de los controles manteniendo tamaños y tipografía originales. La cabecera se conserva oculta para la reversión, sin borrar datos; móvil conserva su ficha. Detalles en [AJUSTES-PROYECTO-REUI.md](AJUSTES-PROYECTO-REUI.md).
