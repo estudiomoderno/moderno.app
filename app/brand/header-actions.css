@@ -29,6 +29,8 @@
  body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) :is(button,summary):focus-visible {outline:2px solid var(--app-outline);outline-offset:3px}
  .ha-standalone {position:fixed;top:20px;right:24px;z-index:94}
  .ha-component-host {display:inline-block;flex:none;line-height:0}
+ .ha-notification-host {display:inline-block;flex:none;line-height:0;margin-right:8px}
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .ha-original-notification {display:none!important}
  .ha-original-profile {position:relative;width:0!important;min-width:0!important;padding:0!important;border:0!important}
  .ha-original-profile>summary {display:none!important}
  .ha-original-profile:not(.ha-workspace-only)>.desktop-menu {display:none!important}
@@ -61,6 +63,7 @@
  body.has-header-actions:has(.ha-component-host) #mHeader .mlogo {margin-top:10px}
  body.has-header-actions .ha-standalone:has(.ha-component-host) {top:60px;right:12px}
  body.has-header-actions .ha-standalone:has(.ha-component-host)>.ha-notifications {position:fixed!important;top:9px!important;right:12px!important;margin:0!important}
+ body.has-header-actions .ha-standalone:has(.ha-component-host)>.ha-notification-host {position:fixed;top:9px;right:12px;margin:0}
  body.has-header-actions:not(.desktop-shell):not(.editing):not(.portalmode):has(.ha-component-host) .main {padding-top:122px!important}
 }
 @media screen and (pointer:coarse) {
@@ -71,4 +74,4 @@
 }
 @keyframes headerMenuIn {from{opacity:0;translate:0 -4px}to{opacity:1;translate:0 0}}
 @media(prefers-reduced-motion:reduce) {body.has-header-actions details[open]>.desktop-menu {animation:none!important}}
-@media print {.ha-standalone,.ha-team-group,.ha-dots,.ha-bell {display:none!important}}
+@media print {.ha-standalone,.ha-team-group,.ha-dots,.ha-bell,.ha-notification-host {display:none!important}}

@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Notificaciones con el componente original de ReUI
+
+El propietario proporciona el patrón Button/BellIcon/Badge. Se usa el Badge original público de ReUI, conservando fuente, tamaños y clases, dentro del aislamiento visual ya incorporado al perfil. El contador se alimenta de los avisos pendientes existentes y la apertura reutiliza su manejador actual. Sin cambios en datos, permisos, almacenamiento ni dependencias de la aplicación. Comprobaciones y reversión en [NOTIFICACIONES-REUI-ORIGINAL.md](NOTIFICACIONES-REUI-ORIGINAL.md).
+
 ## 2026-10-18 — Longitud uniforme del menú lateral desplegado
 
 El propietario pide que el menú desplegado se extienda hasta abajo por estética. La cápsula ocupa la altura disponible de la ventana, con los iconos arriba y la flecha inferior dentro de pantalla; al cerrar mantiene el logotipo compacto y la transición. Ajuste exclusivo de CSS, sin datos ni lógica nueva. Detalles: [MENU-LATERAL-ALTURA-COMPLETA](MENU-LATERAL-ALTURA-COMPLETA.md).

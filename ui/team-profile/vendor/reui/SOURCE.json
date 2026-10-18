@@ -29,8 +29,14 @@
       "path": "registry/bases/base/ui/separator.tsx",
       "git_blob": "d69c13426761105ab42e5a6bd364dc54bd70f78c",
       "adaptation": "Unchanged source."
+    },
+    "badge.tsx": {
+      "path": "registry-reui/bases/base/reui/badge.tsx",
+      "git_blob": "aa6f8c5cd6b772867434a17d1d57492c173a45c5",
+      "adaptation": "Unchanged source."
     }
   },
   "css": "Original Avatar, Button, Button Group and Dropdown Menu sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css.",
-  "license": "MIT; see LICENSE.md"
+  "license": "MIT; see LICENSE.md",
+  "notifications": "Owner-provided Button/BellIcon/Badge pattern. The ReUI badge is original, not the shadcn UI badge."
 }
