@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Casa para Todos los proyectos y pestañas Badge originales
+
+El propietario pide reemplazar los cuadrados por una casa con el Button usado para notificaciones, y aplicar a cada pestaña su patrón Badge outline con cierre XIcon. Se utilizan los componentes originales y sus medidas, conservando navegación, permisos y guardas de borradores. Cerrar una pestaña no elimina proyectos. Detalles y reversión en [PESTANAS-PROYECTOS.md](PESTANAS-PROYECTOS.md).
+
 ## 2026-10-18 — El perfil deja de ofrecer Cambiar estudio
 
 El propietario decide que no necesita cambiar de estudio y pide retirar esa opción del menú junto a su foto. Se elimina el acceso y su puente de navegación, conservando los demás ajustes y la identidad/datos/permisos existentes. No se interpreta como autorización para fusionar estudios o migrar el modelo de datos. Detalles y reversión en [PERFIL-REUI-ORIGINAL.md](PERFIL-REUI-ORIGINAL.md).
