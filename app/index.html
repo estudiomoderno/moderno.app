@@ -8,7 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg?v=35810">
 <link rel="icon" type="image/png" sizes="32x32" href="/brand/icon-32.png?v=35810">
 <link rel="apple-touch-icon" sizes="180x180" href="/brand/icon-180.png?v=35810">
-<meta name="theme-color" content="#f3f0e9">
+<meta name="theme-color" content="#ffffff">
 <title>Moderno.app — gestión para estudios de diseño</title>
 <style>
 :root{
@@ -4086,7 +4086,7 @@ const PALETTE = {
   teja:{front:"#F2D3BE",back:"#D9A177"}, piedra:{front:"#E4E1DA",back:"#BDB8AE"} };
 function darken(hex,f=0.82){ const n=hex.replace("#",""); const v=[0,2,4].map(i=>Math.round(parseInt(n.substr(i,2),16)*f)); return "#"+v.map(x=>x.toString(16).padStart(2,"0")).join(""); }
 function folderColors(p){
-  let c={front:'#f5f2ec',back:'#e4dfd5'};
+  let c={front:'#eeeeee',back:'#d5d5d5'};
   if(/^#[0-9a-f]{6}$/i.test(p.color||'')) c={front:p.color,back:darken(p.color)};
   else if(PALETTE[p.color]) c=PALETTE[p.color];
   const rgb=[1,3,5].map(i=>parseInt(c.front.slice(i,i+2),16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
@@ -11467,7 +11467,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.44";
+const MODERNO_VER="v3.65.45";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13301,5 +13301,6 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/desktop-shell.js?v=36543"></script>
 <link rel="stylesheet" href="/brand/project-workspace.css?v=36543">
 <script src="/project-workspace.js?v=36542"></script>
+<link rel="stylesheet" href="/brand/neutral-theme.css?v=36545">
 </body>
 </html>
