@@ -90,11 +90,13 @@ try:
    assert page.evaluate('originalOptions===document.querySelector(".project-options")')
    assert page.locator('#view .project-detail-head').count()==0
    assert not page.locator('#view .crumbs').is_visible()
-   page.get_by_label('Información del proyecto',exact=True).click()
-   assert page.locator('.pw-info .project-client-link').inner_text()=='Cliente ficticio'
-   assert '#Ejemplo' in page.locator('.pw-info').inner_text()
-   page.locator('.pw-info .project-client-link').click();assert 'Cliente ficticio' in page.locator('#modalBox').inner_text();page.evaluate('closeModal()')
-   page.locator('.pw-info>summary').press('Escape')
+   assert page.get_by_label('Información del proyecto',exact=True).count()==0
+   assert page.locator('.pw-info').count()==0
+   assert page.locator('.pw-retained-head .project-detail-head').is_hidden()
+   controls=page.locator('[data-project-settings-trigger],.ha-notification-host button,[data-profile-trigger]')
+   boxes=controls.evaluate_all('(es)=>es.map(e=>({top:e.getBoundingClientRect().top,height:e.getBoundingClientRect().height}))')
+   assert len(boxes)==3 and max(b['top'] for b in boxes)-min(b['top'] for b in boxes)<1,boxes
+   assert all(b['height']==32 for b in boxes),boxes
    page.get_by_role('button',name='Abrir otro proyecto',exact=True).click()
    page.get_by_role('searchbox',name='Buscar proyecto para abrir',exact=True).fill('alvaro')
    choices=page.locator('.pw-project-choice');assert choices.count()==1

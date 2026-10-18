@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Alineación de ajustes y retirada de información de proyecto
+
+El propietario solicita alinear el menú de proyecto con la campana/perfil y retirar el icono Información del proyecto. Se unifica el centro vertical de los controles manteniendo tamaños y tipografía originales. La cabecera se conserva oculta para la reversión, sin borrar datos; móvil conserva su ficha. Detalles en [AJUSTES-PROYECTO-REUI.md](AJUSTES-PROYECTO-REUI.md).
+
 ## 2026-10-18 — Menú original ReUI para ajustes de proyecto
 
 El propietario sustituye su propuesta inicial de botón ghost por un patrón de tres puntos verticales y DropdownMenu original. Se aplica en español, conservando las cinco acciones existentes, fuente y medidas del código. No se incorporan operaciones ni atajos de demostración. Alcance y reversión en [AJUSTES-PROYECTO-REUI.md](AJUSTES-PROYECTO-REUI.md).
