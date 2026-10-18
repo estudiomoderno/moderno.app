@@ -96,7 +96,7 @@ var ModernoProjectWorkspace=(()=>{
   const project=projectViews.includes(state.view)?pool.find(p=>key(p.id)===key(state.currentProject)):null;
   if(project&&!windows.has(key(project.id)))windows.set(key(project.id),{section:projectTabKey(state.projTab||'proyecto'),view:state.view,room:state.currentRoom,scroll:0});
   const item=current();if(item){item.section=projectTabKey(state.projTab||'proyecto');item.view=state.view;item.room=state.currentRoom;}
-  if(!windows.size||projectViews.includes(state.view)&&!project){discardComponent();return;}
+  if(projectViews.includes(state.view)&&!project){discardComponent();return;}
   bar=node('nav','project-window-bar');bar.id='project-window-bar';bar.setAttribute('aria-label','Proyectos abiertos');
   const enhanced=useOriginal&&window.ModernoProfileComponent?.mountProjectWindows;
   if(enhanced){

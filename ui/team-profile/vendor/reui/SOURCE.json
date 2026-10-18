@@ -44,9 +44,19 @@
       "path": "registry/bases/base/ui/scroll-area.tsx",
       "git_blob": "a7acc33718ff8d558e276048c9cc191d8d0d5b2b",
       "adaptation": "Unchanged source."
+    },
+    "breadcrumb.tsx": {
+      "path": "registry/bases/base/ui/breadcrumb.tsx",
+      "git_blob": "e0a0a2f1f55e4bba083ddf7a44f85bd34ce91804",
+      "adaptation": "Unchanged source."
+    },
+    "card.tsx": {
+      "path": "registry/bases/base/ui/card.tsx",
+      "git_blob": "2062884f29a8044fa48edf86605182eca29f8716",
+      "adaptation": "Unchanged source."
     }
   },
-  "css": "Original Avatar, Button, Button Group Dropdown Menu and Scroll Area sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css.",
+  "css": "Original Avatar, Button, Button Group Dropdown Menu Scroll Area, Breadcrumb and Card sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css.",
   "license": "MIT; see LICENSE.md",
   "notifications": "Owner-provided Button/BellIcon/Badge pattern. The ReUI badge is original, not the shadcn UI badge."
 }

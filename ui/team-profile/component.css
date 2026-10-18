@@ -6,11 +6,13 @@
 @source "./notifications.tsx";
 @source "./project-settings.tsx";
 @source "./project-windows.tsx";
+@source "./page-breadcrumbs.tsx";
 @source "./vendor/reui/*.tsx";
 @custom-variant dark (&:is(.dark *));
 @custom-variant style-nova (&:where(.style-nova *));
 @theme inline {
  --font-sans: "Moderno ReUI Inter", sans-serif;
+ --color-card:var(--card);--color-card-foreground:var(--card-foreground);
  --color-background:var(--background);--color-foreground:var(--foreground);
  --color-primary:var(--primary);--color-primary-foreground:var(--primary-foreground);
  --color-popover:var(--popover);--color-popover-foreground:var(--popover-foreground);
@@ -38,3 +40,9 @@
 .pw-search-collapse[data-open=true] {width:calc(var(--search-width) + 6px);margin-left:5px;opacity:1;visibility:visible;transition:width 220ms ease,margin-left 220ms ease,opacity 180ms ease}
 .pw-search-inner {width:calc(var(--search-width) + 6px);height:38px;max-width:none;box-sizing:border-box;padding:3px}
 @media(prefers-reduced-motion:reduce){*,::before,::after{animation:none!important;transition:none!important}}
+
+/* Keep a long route on the shared header row; source typography is unchanged. */
+.route-card {max-width:100%}
+.route-card [data-slot=breadcrumb-list] {flex-wrap:nowrap;white-space:nowrap}
+.route-card [data-slot=breadcrumb-item]:last-child {min-width:0}
+.route-card [aria-current=page] {overflow:hidden;text-overflow:ellipsis}
