@@ -1,5 +1,12 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Decisiones y aprobaciones integradas en Inicio de proyecto
+
+El propietario **aprueba desarrollar** un módulo de **Decisiones y aprobaciones** como parte del **Inicio de cada proyecto**. **No se añade ningún icono al dock**; la barra actual se mantiene con sus nueve accesos y marca, fuentes y colores corporativos. La función debe vincular elecciones de materiales, mobiliario, planos y presupuestos a la **revisión exacta** del elemento, con responsable, fecha, respuesta e historial; mostrar decisiones pendientes y aprobadas. Vincular con Compras, Tareas, Documentos, Economía y Obra **sin duplicar archivos ni entidades** ni ejecutar pedidos o pagos automáticamente.
+
+Implementación a cargo de **Taller Codex Moderno.app**, en etapas pequeñas: (1) UI/recorrido de presentación y demostración con datos inventados, sin persistencia real; (2) aprobación interna persistente y auditada, con RLS y modelo de revisiones **solo tras validación y nueva autorización específica de operaciones sensibles productivas**; (3) vínculos comprobados con tareas/compras/planos/presupuestos; (4) opción de aprobación por cliente solo con identidad/alcance/evidencia verificables y autorización separada. Los permisos, copias de BD/Storage, pruebas aisladas y rollback sin restaurar datos son condiciones imprescindibles. No modificar el logotipo actual ni implementar IA (que sigue aplazada). **Encargo principal: [#60](https://github.com/estudiomoderno/moderno.app/issues/60).**
+
+
 ## 2026-10-18 — IA de proyectos reservada para algún plan de pago; desarrollo aplazado
 
 La pestaña **AI** del proyecto se ha definido como futuro asistente de **gestión del estudio** (consultar estado y pendientes, proponer tareas y compras revisables, redactar documentos y comunicaciones). **No** será un generador de renders o diseño alternativo a Rayon. Estará incluida en **algún plan de pago de Moderno.app**, todavía sin elegir cuál ni fijar cuotas o precio. El modelo/proveedor y presupuesto de consumo API también quedan por decidir.
