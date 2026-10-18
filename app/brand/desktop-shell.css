@@ -6,16 +6,15 @@
  html body.desktop-shell:not(.portalmode) .main{border-radius:0;padding:104px clamp(24px,4vw,72px) 120px!important;scroll-padding-top:104px}
  body.desktop-shell .main>.topbar{display:none!important}
  #desktop-header{position:fixed;top:20px;left:24px;right:24px;z-index:75;display:flex;align-items:flex-start;gap:18px;background:transparent;color:var(--ink);box-sizing:border-box;pointer-events:none}
- #desktop-header .desktop-row{min-height:58px;display:flex;align-items:center;gap:8px;padding:6px 10px;max-width:calc(100% - 120px);box-sizing:border-box;border:1px solid var(--ui-line);border-radius:28px;background:var(--app-surface,var(--panel));box-shadow:var(--shadow);pointer-events:auto}
- #desktop-header .desktop-brand{display:flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px;min-height:40px;padding:0 12px 0 0;border:0;border-right:1px solid var(--ui-line);border-radius:0;background:transparent;color:var(--ink)}
- #desktop-header .desktop-brand:is(:hover,:focus,:active),#desktop-header .desktop-brand[aria-current=page]{background:transparent!important;color:var(--ink);box-shadow:none}
+ #desktop-header .desktop-row{--desktop-rail-bg:#111;--desktop-rail-ink:#f6f4eb;--desktop-rail-hover:#383832;--desktop-rail-line:#44443d;position:relative;min-height:58px;display:flex;align-items:center;gap:8px;padding:6px 28px 6px 10px;max-width:calc(100% - 120px);box-sizing:border-box;border:1px solid var(--desktop-rail-bg);border-radius:28px;background:var(--desktop-rail-bg);color:var(--desktop-rail-ink);box-shadow:var(--shadow);pointer-events:auto}
+ #desktop-header .desktop-brand{display:flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px;min-height:40px;padding:0 12px 0 0;border:0;border-right:1px solid var(--desktop-rail-line);border-radius:0;background:transparent;color:inherit}
+ #desktop-header .desktop-brand:is(:hover,:focus,:active),#desktop-header .desktop-brand[aria-current=page]{background:transparent!important;color:inherit;box-shadow:none}
  #desktop-header .sb-head{margin:0!important;min-height:0!important;align-items:center!important}
  /* The exact existing logo nodes move here; their SVGs, proportions and dimensions stay intact. */
  #desktop-header .new-brand{margin:0;line-height:0;flex-shrink:0}
  #desktop-header .logo.new-brand{display:none!important}
  #desktop-header .logo-mini.new-brand{display:block!important;width:30px;margin:0}
- #desktop-header .new-brand svg{display:block;width:100%;height:auto;font-synthesis:none;filter:none}
- body.dark #desktop-header .new-brand svg{filter:invert(1)}
+ #desktop-header .new-brand svg{display:block;width:100%;height:auto;font-synthesis:none;filter:invert(1)}
  #desktop-header .desktop-nav,#desktop-header .desktop-primary,#desktop-header .desktop-subnav{display:flex;align-items:center;gap:4px;min-width:0}
  #desktop-header :is(.desktop-primary,.desktop-subnav){animation:desktopNavIn 160ms ease-out}
  #desktop-header :is(button,summary){font:inherit;font-size:12px;cursor:pointer}
@@ -36,6 +35,22 @@
  #desktop-header .desktop-finance{border-radius:0 12px 12px 0}
  #desktop-header .desktop-back{border-right:1px solid var(--ui-line);border-radius:0;margin-right:4px}
  #desktop-header .desktop-back svg{width:22px;height:22px}
+ /* Original dark sidebar palette; popup menus retain their own surface tokens. */
+ #desktop-header .desktop-row .desktop-group,#desktop-header .desktop-row .desktop-finance,#desktop-header .desktop-row .desktop-back{border-color:var(--desktop-rail-line)}
+ #desktop-header .desktop-row .desktop-icon-only{color:var(--desktop-rail-ink)}
+ #desktop-header .desktop-row .desktop-icon-only:hover{background:var(--desktop-rail-hover);color:var(--desktop-rail-ink)}
+ #desktop-header .desktop-row .desktop-icon-only[aria-current=page],#desktop-header .desktop-row .is-current>summary,#desktop-header .desktop-row .desktop-finance:is(.is-current,[aria-expanded=true]){background:var(--desktop-rail-ink);color:var(--desktop-rail-bg)}
+ #desktop-header .desktop-row :is(button,summary):focus-visible{outline-color:var(--desktop-rail-ink)}
+ #desktop-header .desktop-row .desktop-menu :is(button,summary):focus-visible{outline-color:var(--app-outline,var(--ink))}
+ /* The original light circular arrow overlaps the rounded edge of the dark rail. */
+ #desktop-header .desktop-toggle{position:absolute;right:-22px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent!important;color:var(--desktop-rail-bg)!important;z-index:1}
+ #desktop-header .desktop-toggle::before{content:'';position:absolute;inset:6px;border:3px solid var(--desktop-rail-bg);border-radius:50%;background:var(--desktop-rail-ink);pointer-events:none}
+ #desktop-header .desktop-toggle svg{position:absolute;inset:11px;width:22px;height:22px;transition:opacity .18s ease,transform .24s ease}
+ #desktop-header .desktop-arrow-expand{opacity:0;transform:translateX(-4px)}
+ #desktop-header .is-collapsed .desktop-arrow-collapse{opacity:0;transform:translateX(4px)}
+ #desktop-header .is-collapsed .desktop-arrow-expand{opacity:1;transform:none}
+ #desktop-header .desktop-row.is-collapsed{padding-inline:10px}
+ #desktop-header .desktop-row.is-collapsed .desktop-brand{padding:0;border-right:0}
  #desktop-header summary{list-style:none}
  #desktop-header summary::-webkit-details-marker{display:none}
  #desktop-header .desktop-group>summary::after{content:none!important;display:none!important}
@@ -71,7 +86,7 @@
  body.desktop-shell #syncTag{max-width:280px}
  @media(max-width:1290px){
   #desktop-header{left:16px;right:16px;gap:12px}
-  #desktop-header .desktop-row{gap:5px;padding-inline:8px;max-width:calc(100% - 108px)}
+  #desktop-header .desktop-row{gap:5px;padding-inline:8px 28px;max-width:calc(100% - 108px)}
   #desktop-header .desktop-brand{flex-basis:44px;width:44px;padding-right:10px}
  }
 }

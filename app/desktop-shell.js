@@ -3,7 +3,7 @@ var ModernoDesktopShell=(()=>{
  'use strict';
  // #49 recovery gate verified: production physical backup + separate Storage inventory.
  const ENABLED=true;
- let enabled=ENABLED,header=null,section=null,lastView=null;
+ let enabled=ENABLED,header=null,section=null,lastView=null,collapsed=false;
  const moved=[],decorations=[],media=window.matchMedia('(min-width:1100px)');
  const $=s=>document.querySelector(s);
  const finance=['facturas','presupuestos','contabilidad','informes','prevision'];
@@ -41,6 +41,10 @@ var ModernoDesktopShell=(()=>{
   trigger.hidden=!finance.some(available);trigger.setAttribute('aria-expanded',String(expanded));
   trigger.classList.toggle('is-current',finance.includes(state.view));
   $('.desktop-nav').setAttribute('aria-label',expanded?'Navegación de Finanzas':'Navegación general');
+  const nav=$('#desktop-navigation'),toggle=$('#desktop-header .desktop-toggle');
+  nav.hidden=collapsed;nav.inert=collapsed;$('.desktop-row').classList.toggle('is-collapsed',collapsed);
+  toggle.setAttribute('aria-expanded',String(!collapsed));
+  const caption=collapsed?'Desplegar menú superior':'Comprimir menú superior';toggle.setAttribute('aria-label',caption);toggle.querySelector('.desktop-label').textContent=caption;
  }
  function setSection(value,focus=false){
   section=value;closeMenus();syncNavigation();
@@ -50,7 +54,7 @@ var ModernoDesktopShell=(()=>{
   header=document.createElement('header');header.id='desktop-header';header.setAttribute('aria-label','Moderno.app');
   const row=document.createElement('div');row.className='desktop-row';header.append(row);
   const brand=document.createElement('button');brand.type='button';brand.className='desktop-brand';brand.dataset.desktopView='home';brand.title='Inicio';brand.setAttribute('aria-label','Inicio');row.append(brand);move($('aside.sidebar .sb-head'),brand);
-  const nav=document.createElement('nav');nav.className='desktop-nav';nav.setAttribute('aria-label','Navegación general');row.append(nav);
+  const nav=document.createElement('nav');nav.id='desktop-navigation';nav.className='desktop-nav';nav.setAttribute('aria-label','Navegación general');row.append(nav);
   const primary=document.createElement('div');primary.id='desktop-primary';primary.className='desktop-primary';nav.append(primary);
   const financial=document.createElement('div');financial.id='desktop-finance-nav';financial.className='desktop-subnav';financial.hidden=true;nav.append(financial);
   const back=action('',()=>setSection(null,true));back.className='desktop-link desktop-icon-only desktop-back';const arrow=$('.sidebar .sb-arrow-collapse').cloneNode(true);arrow.setAttribute('class','desktop-back-icon');back.append(arrow);label(back,'Volver al menú principal');financial.append(back);
@@ -66,6 +70,9 @@ var ModernoDesktopShell=(()=>{
    label(s,name);d.append(s);
    const menu=document.createElement('div');menu.className='desktop-menu';for(const view of views){const b=button(view);if(b)menu.append(b);}d.append(menu);primary.append(d);
   }
+  const toggle=action('',()=>{collapsed=!collapsed;syncNavigation();});toggle.className='desktop-toggle desktop-icon-only';toggle.setAttribute('aria-controls','desktop-navigation');label(toggle,'Comprimir menú superior');
+  for(const name of ['collapse','expand']){const arrow=$('.sidebar .sb-arrow-'+name).cloneNode(true);arrow.setAttribute('class','desktop-arrow-'+name);toggle.append(arrow);}
+  row.append(toggle);
   const actions=document.createElement('div');actions.className='desktop-actions';header.append(actions);
   const notifications=$('#nBadge')?.closest('button');move(notifications,actions);
   if(notifications){const label=notifications.getAttribute('aria-label');notifications.setAttribute('aria-label','Notificaciones');decorations.push(()=>{if(label===null)notifications.removeAttribute('aria-label');else notifications.setAttribute('aria-label',label);});}
@@ -104,7 +111,7 @@ var ModernoDesktopShell=(()=>{
  }
  function safeRefresh(){try{refresh();}catch(error){enabled=false;restore();console.warn('Navegación de escritorio desactivada; se conserva la interfaz anterior.',error);}}
  document.addEventListener('click',e=>{if(header&&!header.contains(e.target))closeMenus();});
- document.addEventListener('keydown',e=>{if(e.key!=='Escape'||!header)return;const open=header.querySelector('details[open]');if(open){closeMenus();open.querySelector('summary')?.focus();}else if(section==='finanzas'&&header.contains(e.target))setSection(null,true);});
+ document.addEventListener('keydown',e=>{if(e.key!=='Escape'||!header)return;const open=header.querySelector('details[open]');if(open){closeMenus();open.querySelector('summary')?.focus();}else if(section==='finanzas'&&!collapsed&&header.contains(e.target))setSection(null,true);});
  media.addEventListener('change',safeRefresh);
  const originalRender=render;render=function(){const result=originalRender.apply(this,arguments);safeRefresh();return result;};
  safeRefresh();
