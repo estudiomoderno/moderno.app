@@ -17,6 +17,7 @@ with sync_playwright() as p:
             f=repo/'app'/path.lstrip('/')
             if f.exists():page.add_style_tag(path=str(f))
         page.add_script_tag(content=fixture)
+        page.add_script_tag(path=str(repo/'app/accounting-report.js'))
         for name in ['vAccounting','accountingISODate','applyAccountingDates','clearAccountingDates','inPeriod','accVisible','periodoLabel','exportAccountingPDF','exportCSV','stSelect','toggleAccountingDates','accountingExport','exportPeriodInvoices']:page.add_script_tag(content=function(name))
         page.add_script_tag(path=str(repo/'app/workflow-polish.js'));page.evaluate('window.original=JSON.stringify(state.entries);render()')
         assert page.get_by_role('button',name='Resumen fiscal',exact=True).count()==0
