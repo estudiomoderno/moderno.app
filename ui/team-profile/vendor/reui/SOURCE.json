@@ -1,0 +1,36 @@
+{
+  "repository": "https://github.com/keenthemes/reui",
+  "commit": "067aa0dc7f8bbfec1cd76fc5ad31f842be5f569a",
+  "pattern": "registry-reui/bases/base/components/button-group/c-button-group-5.tsx",
+  "default_font": "Inter",
+  "style": "base-nova",
+  "files": {
+    "button.tsx": {
+      "path": "registry/bases/base/ui/button.tsx",
+      "git_blob": "2007374034d564bb926915baa057e500cab631a4",
+      "adaptation": "Unchanged source."
+    },
+    "button-group.tsx": {
+      "path": "registry/bases/base/ui/button-group.tsx",
+      "git_blob": "9bdfea8e85060ffbc302fab7dad64ca761b4b073",
+      "adaptation": "Unchanged source."
+    },
+    "avatar.tsx": {
+      "path": "registry/bases/base/ui/avatar.tsx",
+      "git_blob": "d46f2e9392747cd065e6e760092a7a2b500b4634",
+      "adaptation": "Unchanged source."
+    },
+    "dropdown-menu.tsx": {
+      "path": "registry/bases/base/ui/dropdown-menu.tsx",
+      "git_blob": "4c4543e2954441c012d3a7dc1d850e99613f5651",
+      "adaptation": "Add optional portal container for CSS isolation."
+    },
+    "separator.tsx": {
+      "path": "registry/bases/base/ui/separator.tsx",
+      "git_blob": "d69c13426761105ab42e5a6bd364dc54bd70f78c",
+      "adaptation": "Unchanged source."
+    }
+  },
+  "css": "Original Avatar, Button, Button Group and Dropdown Menu sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css.",
+  "license": "MIT; see LICENSE.md"
+}
