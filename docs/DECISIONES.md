@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Informe de Contabilidad con desglose y presentación detallada
+
+El propietario aclara que quiere mejorar el informe PDF de movimientos, conservando el selector de fechas e Ingresos/Gastos/Ambos. Se añade resumen y detalle de referencias, cliente/proveedor, proyecto, impuestos, retenciones y cobros cuando consten, usando solo registros ya cargados. Los datos históricos ausentes no se completan por suposición; se conservan importes, originales y permisos. Pruebas y reversión: [CONTABILIDAD-PDF-DETALLADO](CONTABILIDAD-PDF-DETALLADO.md).
+
 ## 2026-10-18 — Transición de la cabecera e Inicio separado del logotipo
 
 El propietario solicita movimiento al plegar/desplegar y que el símbolo oficial deje de navegar. La cápsula interpola su anchura y los iconos se desplazan/desvanecen, respetando movimiento reducido. El logotipo pasa a ser una marca no interactiva; Inicio es ahora el primer icono del menú superior y utiliza su handler original. Se conservan el fondo oscuro, flecha, Finanzas, herramientas del perfil y dock. Detalles y retorno en [TRANSICION-CABECERA-INICIO](TRANSICION-CABECERA-INICIO.md).

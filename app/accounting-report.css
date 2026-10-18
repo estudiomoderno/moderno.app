@@ -1,0 +1,39 @@
+/* Printable ledger only. Fixed official colors remain legible in either app theme. */
+#printZone .accounting-report{font:11px/1.45 Inter,Segoe UI,sans-serif;color:#20201e;background:#fff;width:100%;box-sizing:border-box}
+.accounting-report .ar-heading{display:flex;justify-content:space-between;gap:24px;border-bottom:2px solid #20201e;padding-bottom:16px;margin-bottom:16px;break-inside:avoid}
+.accounting-report h1{font:600 25px/1.2 Acorn,Georgia,serif;margin:14px 0 7px;color:#20201e}
+.accounting-report p{margin:4px 0}
+.accounting-report .ar-issuer{display:flex;flex-direction:column;text-align:right;max-width:42%;gap:3px;overflow-wrap:anywhere}
+.accounting-report .ar-summary,.accounting-report .ar-tax{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;break-inside:avoid}
+.accounting-report .ar-summary>div{padding:13px 15px;border:1px solid #d8d2c2;border-radius:12px;background:#f8f6ef}
+.accounting-report .ar-summary>div:last-child{background:#eae5d6}
+.accounting-report .ar-summary span,.accounting-report .ar-tax span{display:block;font-size:10px;color:#57564e}
+.accounting-report .ar-summary strong{display:block;font-size:22px;font-weight:650;overflow-wrap:anywhere;margin-top:3px;font-variant-numeric:tabular-nums}
+.accounting-report .ar-note{color:#57564e;font-size:9px;margin:8px 0 16px}
+.accounting-report .ar-ledger{width:100%;table-layout:fixed;border-collapse:collapse;font:inherit}
+.accounting-report thead{display:table-header-group}
+.accounting-report th{text-align:left;padding:9px 8px;border-bottom:2px solid #20201e;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+.accounting-report td{vertical-align:top;overflow-wrap:anywhere;font:inherit}
+.accounting-report .ar-right{text-align:right}
+.accounting-report .ar-main td{padding:13px 8px 8px;background:#f8f6ef;border-top:1px solid #d8d2c2}
+.accounting-report .ar-main td:first-child{white-space:nowrap;font-variant-numeric:tabular-nums}
+.accounting-report .ar-main td>span{display:block;font-size:10px;color:#57564e;margin-top:3px}
+.accounting-report .ar-main td:last-child>strong{font-size:14px;font-variant-numeric:tabular-nums}
+.accounting-report .ar-detail>td{padding:3px 10px 12px;border-bottom:1px solid #d8d2c2}
+.accounting-report .ar-movement{break-inside:avoid;page-break-inside:avoid}
+.accounting-report .ar-main{break-after:avoid;page-break-after:avoid}
+.accounting-report .ar-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 18px;margin:10px 0}
+.accounting-report .ar-details dt{font-size:9px;color:#57564e}
+.accounting-report .ar-details dd{margin:1px 0 0;overflow-wrap:anywhere}
+.accounting-report .ar-tax{padding:10px 0;border-top:1px solid #eae5d6;border-bottom:1px solid #eae5d6}
+.accounting-report .ar-tax strong{display:block;margin-top:2px;font-size:11px;font-variant-numeric:tabular-nums}
+.accounting-report .ar-payments{margin:10px 0}
+.accounting-report .ar-payments>b,.accounting-report .ar-documents>b{font-size:9px;color:#57564e}
+.accounting-report .ar-payments ul{list-style:none;padding:0;margin:4px 0}
+.accounting-report .ar-payments li{display:flex;gap:12px;align-items:baseline;padding:3px 0;overflow-wrap:anywhere}
+.accounting-report .ar-payments li>strong{font-variant-numeric:tabular-nums}
+.accounting-report .ar-payments li>span{min-width:0}
+.accounting-report .ar-documents{display:flex;flex-direction:column;gap:3px;margin-top:9px;overflow-wrap:anywhere}
+.accounting-report .ar-item-end{text-align:right;font-size:8px;color:#716e62;padding-top:7px}
+.accounting-report .ar-footer{border-top:2px solid #20201e;padding-top:10px;margin-top:18px;color:#57564e;font-size:9px;break-inside:avoid}
+@media print{#printZone .accounting-report{font-size:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.accounting-report .ar-heading{break-after:avoid}.accounting-report .ar-summary strong{font-size:20px}}

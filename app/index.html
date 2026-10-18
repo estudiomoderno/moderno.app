@@ -1177,6 +1177,8 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=3653"></script>
 <script src="/specifications.js?v=340"></script>
+<script src="/accounting-report.js?v=36541"></script>
+<link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
 <script src="/project-ui.js?v=36538"></script>
 <script src="/plan-annotations.js?v=36522"></script>
@@ -11016,18 +11018,11 @@ async function exportAccountingPDF(kind){
   const both=kind==='both',es=both?[...accVisible('in'),...accVisible('out')].sort((a,b)=>{const order=(accountingISODate(a.date)||'').localeCompare(accountingISODate(b.date)||'');return state.accSort==='asc'?order:-order;}):accVisible(kind);
   if(!es.length){toast('No hay '+(both?'movimientos':kind==='in'?'ingresos':'gastos')+' en la vista actual');return;}
   const bk=state.brandFilter!=='all'?state.brandFilter:wsOrder[0],label=both?'Ingresos y Gastos':kind==='in'?'Ingresos':'Gastos';
-  const income=es.filter(e=>e.kind==='in').reduce((sum,e)=>sum+e.amount,0),expense=es.filter(e=>e.kind==='out').reduce((sum,e)=>sum+e.amount,0),total=both?income-expense:es.reduce((sum,e)=>sum+e.amount,0);
-  const z=document.getElementById('printZone'),cell='padding:7px 8px;vertical-align:top;line-height:1.4;word-break:break-word;border-bottom:1px solid #E2E2E0',titulo=label+' – '+periodoLabel();
-  z.innerHTML=`<div class="pdf-page" style="font-family:Inter,Segoe UI,sans-serif;color:#141414"><div class="pdf-body">
-    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #141414;padding-bottom:12px">${pdfBrandLogo(bk)}<div style="text-align:right;font-size:12px;color:#5E5E5E">${state.emitter.name||state.account.name||''}${state.emitter.nif?'<br>NIF '+state.emitter.nif:''}<br>${hoyEs()}</div></div>
-    <h1 style="margin:16px 0 2px;font-size:21px">${label}</h1><p style="color:#5E5E5E;font-size:12.5px;margin:0 0 12px">${periodoLabel()} · ${state.brandFilter==='all'?'Todas las marcas':BRAND[state.brandFilter].name} · ${es.length} asiento${es.length===1?'':'s'}</p>
-    <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px"><colgroup><col style="width:13%">${both?'<col style="width:10%">':''}<col style="width:auto"><col style="width:16%"><col style="width:13%"><col style="width:16%"></colgroup>
-    <tr style="text-align:left;border-bottom:2px solid #141414;font-size:10.5px;color:#5E5E5E;text-transform:uppercase"><th style="padding:6px 8px">Fecha</th>${both?'<th style="padding:6px 8px">Tipo</th>':''}<th style="padding:6px 8px">Concepto</th><th style="padding:6px 8px">${both?'Cliente / proveedor':kind==='out'?'Proveedor':'Cliente'}</th><th style="padding:6px 8px">Estado</th><th style="padding:6px 8px;text-align:right">Importe</th></tr>
-    ${es.map(e=>`<tr style="page-break-inside:avoid"><td style="${cell};white-space:nowrap">${e.date}</td>${both?`<td style="${cell}">${e.kind==='in'?'Ingreso':'Gasto'}</td>`:''}<td style="${cell}">${e.concept}${e.cat?` <small style="color:#9B9B9B">· ${e.cat}</small>`:''}</td><td style="${cell}">${(e.kind==='out'?e.sup:e.client)||'—'}</td><td style="${cell}">${e.status==='pend'?'Pendiente':e.status==='env'?'Enviada':e.kind==='out'?'Pagado':'Cobrado'}</td><td style="${cell};text-align:right;white-space:nowrap">${e.kind==='in'?'+':'−'}${fmt(e.amount)}</td></tr>`).join('')}
-    <tr><td colspan="${both?5:4}" style="padding:10px 8px;text-align:right;font-weight:800">${both?'Balance':'Total '+(kind==='in'?'ingresos':'gastos')}</td><td style="padding:10px 8px;text-align:right;font-weight:900;white-space:nowrap">${both?'':kind==='in'?'+':'−'}${fmt(total)}</td></tr></table>
-    ${both?`<p style="font-size:12px;text-align:right">Total ingresos: ${fmt(income)} · Total gastos: ${fmt(expense)} · Balance: ${fmt(total)}</p>`:''}
-    </div><div class="pdf-pn">${pdfFoot()}<span>${titulo}</span></div></div>`;
-  z.style.display='block';await printAs(titulo);z.style.display='none';
+  const z=document.getElementById('printZone'),titulo=label+' – '+periodoLabel();
+  const report=ModernoAccountingReport.model(es,{projects:state.projects||[],invoices:state.invoices||[],brands:BRAND});
+  z.innerHTML=ModernoAccountingReport.render(report,{title:label,period:periodoLabel(),scope:state.brandFilter==='all'?'Todos los espacios':BRAND[bk]?.name||'',issuedOn:hoyEs(),issuer:{...state.emitter,name:state.emitter.name||state.account.name||''},logoHTML:pdfBrandLogo(bk),footerHTML:pdfFoot(),formatMoney:fmt});
+  const display=z.style.display;z.style.display='block';
+  try{await printAs(titulo);}finally{z.style.display=display;}
 }
 function genRecurring(){
   const now=new Date(), mm=now.getMonth()+1, yy=now.getFullYear();
@@ -11472,7 +11467,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.40";
+const MODERNO_VER="v3.65.41";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
