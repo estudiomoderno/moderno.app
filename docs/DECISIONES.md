@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Pestañas de proyectos y retirada de la cabecera grande en escritorio
+
+El propietario pide más área útil y poder alternar entre proyectos abiertos como en Rayon/Chrome. Se sustituye la cabecera grande por pestañas compactas con nombre, cierre y «+» para buscar otro proyecto existente. Cliente y etiquetas quedan en información desplegable, con las opciones originales accesibles. Cada pestaña recuerda su sección durante la sesión; cerrarla no elimina datos. Sin cambios de backend o guardado, con protección de ediciones y reversión: [PESTANAS-PROYECTOS](PESTANAS-PROYECTOS.md).
+
 ## 2026-10-18 — Informe de Contabilidad con desglose y presentación detallada
 
 El propietario aclara que quiere mejorar el informe PDF de movimientos, conservando el selector de fechas e Ingresos/Gastos/Ambos. Se añade resumen y detalle de referencias, cliente/proveedor, proyecto, impuestos, retenciones y cobros cuando consten, usando solo registros ya cargados. Los datos históricos ausentes no se completan por suposición; se conservan importes, originales y permisos. Pruebas y reversión: [CONTABILIDAD-PDF-DETALLADO](CONTABILIDAD-PDF-DETALLADO.md).

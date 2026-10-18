@@ -1,0 +1,49 @@
+/* Compact desktop project windows. Original mobile/tablet and print remain available. */
+#project-window-bar [hidden]{display:none!important}
+@media screen and (min-width:1100px){
+ html body.desktop-shell.project-windows:not(.portalmode) .main{padding-top:146px!important;scroll-padding-top:146px}
+ body.project-windows #view>.project-detail>.crumbs{display:none}
+ #project-window-bar{position:fixed;top:92px;left:clamp(24px,4vw,72px);right:clamp(24px,4vw,72px);height:38px;z-index:71;display:flex;align-items:center;gap:6px;color:var(--ink);font:500 12px/1.3 Inter,Segoe UI,sans-serif;box-sizing:border-box}
+ #project-window-bar :is(button,summary){font:inherit;box-sizing:border-box;cursor:pointer;color:inherit}
+ #project-window-bar button{border:0}
+ #project-window-bar .pw-tabs{display:flex;align-items:center;gap:5px;min-width:0;max-width:calc(100% - 160px);overflow-x:auto;scrollbar-width:none;height:38px;padding:0 2px}
+ #project-window-bar .pw-tabs::-webkit-scrollbar{display:none}
+ #project-window-bar .pw-tab{display:flex;align-items:center;flex:0 0 auto;min-width:90px;max-width:244px;height:36px;border:1px solid transparent;border-radius:10px;background:var(--app-control);color:var(--ink-soft);animation:projectWindowIn 160ms ease-out}
+ #project-window-bar .pw-tab.is-active{background:var(--app-surface);color:var(--ink);border-color:var(--ui-line);box-shadow:0 2px 5px #00000006}
+ #project-window-bar .pw-tab-select{display:flex;align-items:center;min-width:0;height:34px;padding:0 4px 0 12px;border-radius:9px 0 0 9px;background:transparent;text-align:left}
+ #project-window-bar .is-active .pw-tab-select{font-weight:650}
+ #project-window-bar .pw-tab-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ #project-window-bar .pw-close{flex:0 0 28px;width:28px;height:28px;margin-right:3px;padding:0;border-radius:7px;font-size:19px;background:transparent;color:var(--ink-soft);font-weight:400}
+ #project-window-bar :is(.pw-close,.pw-add,.pw-all):hover{background:var(--app-control);color:var(--ink)}
+ #project-window-bar .pw-tab:hover{color:var(--ink)}
+ #project-window-bar :is(.pw-add,.pw-all){display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;padding:0;border-radius:9px;background:transparent}
+ #project-window-bar .pw-add{font-size:24px;font-weight:400}
+ #project-window-bar .pw-all{border-right:1px solid var(--ui-line);border-radius:0;margin-right:4px}
+ #project-window-bar .pw-all svg{width:18px;height:18px}
+ #project-window-bar :is(button,summary,input):focus-visible{outline:2px solid var(--app-outline,var(--ink));outline-offset:2px}
+ #project-window-bar .pw-tools{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
+ #project-window-bar .project-options{position:relative;top:auto;right:auto;margin:0;width:34px;max-width:none}
+ #project-window-bar :is(.project-options-trigger,.pw-info>summary){display:grid;place-items:center;width:34px;height:34px;min-height:34px!important;padding:0!important;border:0;border-radius:9px;background:transparent;color:var(--ink);list-style:none}
+ #project-window-bar :is(.project-options-trigger,.pw-info>summary):hover{background:var(--app-control)}
+ #project-window-bar .project-options-trigger svg{width:20px;height:20px}
+ #project-window-bar .project-options-body .btn{min-height:36px;padding:9px 12px;border-radius:10px;font-size:12px;background:var(--app-control);color:var(--ink);text-align:left}
+ #project-window-bar .pw-info{position:relative}
+ #project-window-bar summary::-webkit-details-marker{display:none}
+ #project-window-bar .pw-info>summary::after{display:none!important;content:none!important}
+ #project-window-bar .pw-info-body,#project-window-bar .pw-picker{border:1px solid var(--ui-line);border-radius:18px;box-shadow:var(--shadow);background:var(--app-surface);color:var(--ink)}
+ #project-window-bar .pw-info-body{position:absolute;top:calc(100% + 10px);right:0;width:min(360px,calc(100vw - 96px));padding:20px;box-sizing:border-box}
+ #project-window-bar .project-detail-head{padding:0;margin:0;min-height:0;border:0;box-shadow:none;border-radius:0;background:transparent}
+ #project-window-bar .project-detail-head h1{font:600 21px/1.25 Acorn,Georgia,serif;margin:0 0 12px;overflow-wrap:anywhere}
+ #project-window-bar .pw-picker{position:absolute;top:calc(100% + 10px);left:44px;width:min(390px,calc(100vw - 96px));padding:14px;box-sizing:border-box;animation:projectWindowIn 160ms ease-out}
+ #project-window-bar .pw-search-label{display:block;margin:0 0 9px;font-size:12px;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:normal}
+ #project-window-bar input{width:100%;min-height:36px;padding:8px 11px;border:1px solid var(--app-outline);border-radius:10px;background:var(--app-surface);color:var(--ink);font:inherit}
+ #project-window-bar .pw-results{display:grid;gap:3px;max-height:min(420px,calc(100dvh - 240px));overflow-y:auto;margin-top:9px}
+ #project-window-bar .pw-project-choice{display:flex;flex-direction:column;gap:3px;width:100%;padding:10px 12px;border-radius:10px;text-align:left;background:transparent;overflow-wrap:anywhere}
+ #project-window-bar .pw-project-choice:hover,#project-window-bar .pw-project-choice:focus-visible{background:var(--app-control)}
+ #project-window-bar .pw-project-choice strong{font-weight:550}
+ #project-window-bar .pw-project-choice span,#project-window-bar .pw-empty{font-size:11px;color:var(--ink-soft)}
+ #project-window-bar .pw-empty{padding:8px;margin:0}
+}
+@keyframes projectWindowIn{from{opacity:.5;translate:0 -3px}to{opacity:1;translate:0 0}}
+@media(prefers-reduced-motion:reduce){#project-window-bar *{animation:none!important;transition:none!important}}
+@media print{#project-window-bar{display:none!important}}
