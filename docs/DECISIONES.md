@@ -214,3 +214,7 @@ Biblioteca, ficha, lámina, presupuesto y pedido conservan copias independientes
 Una aprobación pertenece a una revisión exacta y no revive por volver a un valor anterior. Comparar ofertas exige iguales fichas/revisiones/cantidades/unidades. Fecha, incidencia, recepción, instalación, factura y pago son registros separados. Registrar un pago no mueve dinero.
 
 Las entregas se publican tras validación y comprobación de recursos. La invitación hasta un buzón real y alta productiva necesita destinatario/alta concretos; no se certifica con pruebas locales. Mantener las limitaciones y evidencias en ENTREGA-V345.md y el estado en ESTADO-TALLER.md.
+
+## 2026-10-18 — Casa permanente y rutas superiores
+
+El propietario solicita mantener la casa de Todos los proyectos incluso sin pestañas abiertas. El resto de páginas generales usa su patrón original ReUI Card/Breadcrumb, en español, alineado por centro con los controles superiores. Mantener fuente, tamaños y separación de origen, navegación y guardas actuales, sin cambios de datos ni permisos. Alcance, pruebas y recuperación: [RUTA-SUPERIOR-REUI](RUTA-SUPERIOR-REUI.md).

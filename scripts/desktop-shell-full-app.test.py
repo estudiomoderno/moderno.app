@@ -212,6 +212,23 @@ try:
     assert page.evaluate('state.view')==view
     assert page.locator('#view').inner_text().strip(),view
     neutral_canvas(page)
+    if width>=1100:
+     if view=='proyectos':
+      assert page.locator('#page-route-bar').count()==0
+      page.get_by_role('button',name='Ver todos los proyectos',exact=True).wait_for(state='visible')
+     else:
+      crumb=page.locator('#page-route-bar [aria-current=page]').last
+      crumb.wait_for(state='visible')
+      expected='Inicio' if view=='home' else 'Agenda' if view=='agenda' else page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip()
+      assert crumb.inner_text()==expected,(view,crumb.inner_text())
+      assert crumb.evaluate('(e)=>getComputedStyle(e).fontSize')=='14px'
+      assert 'Moderno ReUI Inter' in crumb.evaluate('(e)=>getComputedStyle(e).fontFamily')
+      card=page.locator('#page-route-bar [data-slot=card]').bounding_box()
+      profile=page.locator('[data-profile-trigger]').bounding_box()
+      assert abs(card['y']+card['height']/2-profile['y']-profile['height']/2)<1,(view,card,profile)
+      assert card['x']+card['width']<profile['x'],(view,card,profile)
+      if view in finance:assert 'Finanzas' in page.locator('#page-route-bar [data-slot=breadcrumb-list]').inner_text()
+    else:assert page.locator('#page-route-bar').count()==0
     if view=='workspace':
      page.get_by_role('button',name='Todas las tareas',exact=True).click()
      assert page.locator('.ws-full .kanban .task').count()>0
@@ -219,6 +236,21 @@ try:
     if len(sys.argv)>1 and view in ['home','proyectos','workspace','contabilidad']:
      page.wait_for_timeout(250)
      page.screenshot(path=str(Path(sys.argv[1])/f'neutral-{view}-{width}.png'),full_page=True)
+   if width>=1100:
+    page.evaluate("go('contabilidad')")
+    page.locator('#page-route-bar').get_by_role('button',name='Inicio',exact=True).click()
+    assert page.evaluate('state.view')=='home'
+    page.evaluate('ModernoPageBreadcrumbs.setEnabled(false)')
+    assert page.locator('#page-route-bar').count()==0
+    page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
+    page.locator('#page-route-bar [aria-current=page]').wait_for(state='visible')
+    assert page.locator('#page-route-bar [aria-current=page]').inner_text()=='Inicio'
+    page.evaluate('document.querySelector(".route-component-host").shadowRoot.querySelector("link").dispatchEvent(new Event("error"))')
+    page.locator('.route-component-host').wait_for(state='detached')
+    assert page.locator('#page-route-bar [aria-current=page]').inner_text()=='Inicio'
+    page.evaluate("go('contabilidad')")
+    page.locator('#page-route-bar').get_by_role('button',name='Inicio',exact=True).click()
+    assert page.evaluate('state.view')=='home'
    page.evaluate("go('proyecto',9001)")
    keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
    for key in keys+['cliente']:page.evaluate('(key)=>projTab(key)',key)

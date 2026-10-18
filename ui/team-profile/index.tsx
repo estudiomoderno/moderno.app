@@ -5,10 +5,11 @@ import {Pattern} from './pattern';
 import {Notifications} from './notifications';
 import {ProjectSettings} from './project-settings';
 import {ProjectWindows} from './project-windows';
+import {PageBreadcrumbs} from './page-breadcrumbs';
 
 function mountComponent(host:HTMLElement,Component:React.ComponentType<any>,onError?:()=>void,onReady?:()=>void){
  const shadow=host.attachShadow({mode:'open'});
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=36553';
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=36554';
  const frame=document.createElement('div');frame.className='style-nova';
  const content=document.createElement('div'),portals=document.createElement('div');portals.className='reui-portals';frame.append(content,portals);
  shadow.append(sheet,frame);host.style.visibility='hidden';sheet.addEventListener('load',()=>{host.style.visibility='';host.dataset.reuiReady='true';onReady?.();});
@@ -22,3 +23,5 @@ export function mount(host:HTMLElement,onError?:()=>void){return mountComponent(
 export function mountNotifications(host:HTMLElement,onError?:()=>void){return mountComponent(host,Notifications,onError);}
 export function mountProjectSettings(host:HTMLElement,onError?:()=>void){return mountComponent(host,ProjectSettings,onError);}
 export function mountProjectWindows(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,ProjectWindows,onError,onReady);}
+
+export function mountBreadcrumbs(host:HTMLElement,onError?:()=>void){return mountComponent(host,PageBreadcrumbs,onError);}

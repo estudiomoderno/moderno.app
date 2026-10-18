@@ -36,6 +36,8 @@ try:
     state.clients=[{name:'Cliente ficticio',type:'Cliente',brand:'cm',email:'cliente@example.invalid'},{name:'Cliente Álvaro ficticio',type:'Cliente',brand:'cm',email:'alvaro@example.invalid'}];state.users=[{name:'Persona ficticia',email:'persona@example.invalid',role:'Administrador'}];
     state.entries=[];state.invoices=[];state.quotes=[];state.library=[];state.catalog=[];state.docs=[];state.notifs=[];
     applySessionUI();drawBrandSwitch();showLogin(false);
+    go('proyectos');
+    if(window.matchMedia('(min-width:1100px)').matches&&!document.querySelector('#project-window-bar'))throw Error('Home must exist before opening a project');
     for(const id of [9001,9002]){go('proyecto',id);for(const section of ['proyecto','planos','tareas','listas','fin','archivos','cliente','utilidades'])projTab(section);}
     go('proyecto',9001);projTab('planos');ModernoProjectWorkspace.close(9002);
     window.records=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes});window.baseline=records();
@@ -181,7 +183,7 @@ try:
     page.mouse.move(0,0);page.screenshot(path=str(output/f'project-windows-light-{width}.png'),full_page=True)
     page.evaluate("document.body.classList.add('dark')");page.screenshot(path=str(output/f'project-windows-dark-{width}.png'),full_page=True);page.evaluate("document.body.classList.remove('dark')")
    page.locator('#project-window-9001').press('Delete');assert page.evaluate('state.currentProject')==9002 and tabs.count()==1
-   page.locator('#project-window-9002').press('Delete');assert page.evaluate('state.view')=='proyectos' and page.locator('#project-window-bar').count()==0 and page.evaluate('state.projects.length')==2
+   page.locator('#project-window-9002').press('Delete');assert page.evaluate('state.view')=='proyectos' and page.locator('#project-window-bar').count()==1 and page.locator('#project-window-bar [role=tab]').count()==0 and page.get_by_role('button',name='Ver todos los proyectos',exact=True).is_visible() and page.evaluate('state.projects.length')==2
    assert page.evaluate('records()===baseline')
    # Many tabs remain inside the viewport; untrusted names are text, never markup.
    page.evaluate("""()=>{const base=structuredClone(state.projects[0]);for(let i=0;i<12;i++)state.projects.push({...structuredClone(base),id:9020+i,num:'PR-'+(9020+i),name:i===11?'<img src=x onerror=window.attacked=1>':'Proyecto adicional ficticio '+i});for(let i=0;i<12;i++)projectOpen(9020+i);} """)
