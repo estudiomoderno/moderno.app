@@ -1,0 +1,60 @@
+/* Header reference: white outline buttons, sans-serif text and destructive badge. */
+@media screen {
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) {display:flex;align-items:center;gap:0;font:500 14px/1.4 Inter,Segoe UI,sans-serif;color:var(--ink);min-height:36px}
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .ha-notifications,
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .desktop-profile>summary {
+  position:relative;display:grid;place-items:center;box-sizing:border-box;width:36px!important;height:36px!important;min-height:36px!important;padding:0!important;border:1px solid var(--ui-line);border-radius:8px;background:var(--app-surface)!important;color:var(--ink)!important;box-shadow:0 1px 2px #00000005;cursor:pointer;list-style:none;
+ }
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .ha-notifications {margin-right:8px;font-size:0!important;align-self:center!important;border-radius:8px!important}
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .desktop-profile>summary {border-radius:0 8px 8px 0}
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .desktop-profile>summary::after {display:none!important;content:none!important}
+ body.has-header-actions .desktop-profile>summary::-webkit-details-marker {display:none}
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .desktop-profile>summary .avatar {display:none!important}
+ body.has-header-actions :is(.ha-dots,.ha-bell) {display:grid;place-items:center}
+ body.has-header-actions :is(.ha-dots,.ha-bell,.desktop-bell-icon) svg {width:18px!important;height:18px!important}
+ body.has-header-actions .ha-notifications :is(#nBadge,.ha-badge) {position:absolute;top:-5px;right:-5px;display:grid!important;place-items:center;min-width:16px;height:16px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:#dc2626;color:#fff;font:600 10px/1 Inter,Segoe UI,sans-serif;border:1px solid var(--app-surface)}
+ body.has-header-actions .ha-notifications :is(#nBadge,.ha-badge)[hidden] {display:none!important}
+ .ha-team-group {height:36px;display:flex;align-items:center;gap:0;box-sizing:border-box;border:1px solid var(--ui-line);border-right:0;border-radius:8px 0 0 8px;background:var(--app-surface);box-shadow:0 1px 2px #00000005}
+ .ha-team-label {display:flex;align-items:center;gap:7px;height:100%;padding:0 10px;border-right:1px solid var(--ui-line);white-space:nowrap}
+ .ha-team-label svg {flex:none;width:18px;height:18px}
+ .ha-members {display:flex;align-items:center;padding:0 0 0 10px;min-width:0}
+ .ha-avatar {display:grid;place-items:center;position:relative;flex:0 0 22px;width:22px;height:22px;margin-left:-5px;border:2px solid var(--app-surface);border-radius:50%;background:var(--app-control);color:var(--ink);font-size:8px;font-weight:600;line-height:1;box-sizing:border-box}
+ .ha-avatar:first-child {margin-left:0}
+ .ha-avatar img {position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover}
+ .ha-extra {font-size:8px}
+ .ha-status {display:flex;align-items:center;gap:5px;padding:0 9px 0 7px;white-space:nowrap;color:var(--ink-soft);font-size:12px}
+ .ha-status::before {content:'';width:6px;height:6px;flex:none;border-radius:50%;background:#888}
+ [data-online=true]>.ha-status::before {background:#22c55e}
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) :is(button,summary):hover {background:var(--app-control)!important}
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) :is(button,summary):focus-visible {outline:2px solid var(--app-outline);outline-offset:3px}
+ .ha-standalone {position:fixed;top:20px;right:24px;z-index:94}
+ .ha-standalone .desktop-profile {position:relative}
+ .ha-standalone .desktop-menu {position:absolute;top:calc(100% + 8px);right:0;display:grid;min-width:210px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 84px);overflow:auto;padding:7px;border:1px solid var(--ui-line);border-radius:12px;background:var(--app-surface);color:var(--ink);box-shadow:var(--shadow)}
+ .ha-standalone .desktop-menu button {min-height:40px;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+ body.has-header-actions .main>.topbar {display:none!important}
+ body.has-header-actions:not(.desktop-shell):not(.editing):not(.portalmode) .main {padding-top:80px!important}
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) details[open]>.desktop-menu {animation:headerMenuIn 140ms ease-out}
+ body.has-header-actions:has(dialog[open]) :is(#desktop-header .desktop-actions,.ha-standalone) {visibility:hidden}
+}
+@media screen and (min-width:1100px) {
+ body.has-header-actions #project-window-bar {right:max(148px,calc(var(--header-actions-width,104px) + 40px))}
+}
+@media screen and (max-width:700px) {
+ .ha-standalone {top:11px;right:12px}
+ body.has-header-actions #mHeader .mlogo {margin-left:0!important}
+ .ha-team-label {padding:0 7px;border:0}
+ .ha-team-label span {display:none}
+ .ha-members {padding-left:0}
+ .ha-members .ha-avatar:nth-child(n+3) {display:none}
+ .ha-status {font-size:10px;padding:0 6px;gap:4px}
+ body.has-header-actions:not(.desktop-shell):not(.editing):not(.portalmode) .main {padding-top:80px!important}
+}
+@media screen and (pointer:coarse) {
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .ha-notifications,
+ body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .desktop-profile>summary {width:44px!important;height:44px!important;min-height:44px!important}
+ .ha-team-group {height:44px}
+ .ha-standalone {top:7px}
+}
+@keyframes headerMenuIn {from{opacity:0;translate:0 -4px}to{opacity:1;translate:0 0}}
+@media(prefers-reduced-motion:reduce) {body.has-header-actions details[open]>.desktop-menu {animation:none!important}}
+@media print {.ha-standalone,.ha-team-group,.ha-dots,.ha-bell {display:none!important}}

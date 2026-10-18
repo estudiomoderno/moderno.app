@@ -4,7 +4,7 @@ This exercises actual renderers, router and settings, using synthetic in-memory 
 It does not validate Supabase authentication, RPC or cloud persistence.
 """
 from pathlib import Path
-import json,os,socket,subprocess,time,urllib.request,sys
+import json,os,socket,subprocess,time,urllib.request,sys,re
 from playwright.sync_api import sync_playwright
 
 repo=Path(__file__).resolve().parents[1]
@@ -47,6 +47,51 @@ def neutral_canvas(page):
  assert styles['canvas']=='rgb(255, 255, 255)',styles
  assert styles['grid']=='none' and all(v=='none' for v in styles['projects']),styles
  assert styles['surface']=='#fff' and styles['control']=='#eee',styles
+def check_header_actions(page,width):
+ assert page.locator('.ha-team-group').count()==1
+ assert page.locator('.ha-status').inner_text()=='Sin conexión'
+ assert page.locator('.desktop-profile>summary .ha-dots svg').count()==1
+ assert page.locator('.ha-team-group button').count()==0,'No invitation or history actions in the reference'
+ page.evaluate("state.notifs=Array.from({length:8},(_,i)=>({txt:'Aviso ficticio '+i,read:false})).concat([{txt:'Leído',read:true}]);notifBadge()")
+ assert page.get_by_role('button',name='Notificaciones (8)',exact=True).count()==1
+ assert page.locator('.ha-notifications').locator('#nBadge,.ha-badge').inner_text()=='8'
+ page.get_by_role('button',name='Notificaciones (8)',exact=True).click()
+ assert 'Aviso ficticio 0' in page.locator('#modalBox').inner_text()
+ page.get_by_role('button',name='Marcar leídas y cerrar',exact=True).click()
+ assert page.locator('.ha-notifications').locator('#nBadge,.ha-badge').is_hidden()
+ page.evaluate("""()=>{
+  const scope=ESTUDIO_ID,key=state.sessionUser.mail;
+  const image='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=';
+  teamPresence={snapshot:()=>({status:'online',study:scope,key,members:[{user:'a',name:'Ana ficticia',avatar:image},{user:'b',name:'Luis ficticio',avatar:image},{user:'c',name:'<script>Texto seguro</script>',avatar:'javascript:alert(1)'}]})};
+  ModernoHeaderActions.refresh();
+ }""")
+ assert page.locator('.ha-status').inner_text()=='3 en línea'
+ assert page.locator('.ha-team-group').get_attribute('data-online')=='true'
+ assert page.locator('.ha-members script').count()==0
+ assert page.locator('.ha-members img').count()==2
+ current_study=page.evaluate('ESTUDIO_ID')
+ page.evaluate("ESTUDIO_ID='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';ModernoHeaderActions.refresh()")
+ assert page.locator('.ha-status').inner_text()=='Conectando…'
+ assert page.locator('.ha-members [title=\"Ana ficticia · conectado\"]').count()==0
+ page.evaluate('(study)=>{ESTUDIO_ID=study;ModernoHeaderActions.refresh()}',current_study)
+ assert all(s.startswith('data:image/png;') for s in page.locator('.ha-members img').evaluate_all('(es)=>es.map(e=>e.src)'))
+ box=page.locator('#desktop-header .desktop-actions,.ha-standalone').bounding_box()
+ assert box['x']>=0 and box['x']+box['width']<=width,box
+ if width>=1100:
+  bar=page.locator('#project-window-bar')
+  if bar.count():
+   b=bar.bounding_box();assert b['x']+b['width']<=box['x']-8,(b,box)
+ else:
+  logo=page.locator('#mHeader .mlogo').bounding_box()
+  assert logo['x']+logo['width']<box['x'],(logo,box)
+ if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'header-online-{width}.png'),full_page=True)
+ page.evaluate("teamPresence=null;state.notifs=[];notifBadge();ModernoHeaderActions.refresh()")
+ page.evaluate('ModernoHeaderActions.setEnabled(false)')
+ assert page.locator('.ha-team-group,.ha-standalone').count()==0
+ if width>=1100:assert page.locator('#desktop-header #topUser').is_visible()
+ page.evaluate('ModernoHeaderActions.setEnabled(true)')
+ assert page.locator('.ha-team-group').count()==1
+ assert page.locator('.ha-status').inner_text()=='Sin conexión'
 with socket.socket() as sock:
  sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
 origin=f'http://127.0.0.1:{port}'
@@ -104,6 +149,7 @@ try:
    page.evaluate('document.body.classList.remove("portalmode")')
    page.emulate_media(media='screen')
    assert page.evaluate('LS_KEY')=='moderno_pruebas_ui-fixture'
+   check_header_actions(page,width)
    assert page.locator('#desktop-header').count()==(1 if width>=1100 else 0)
    page.evaluate('ModernoDesktopShell.setEnabled(false)')
    assert page.locator('#desktop-header').count()==0
@@ -194,7 +240,7 @@ try:
     assert page.locator('#themeBtn').is_hidden() and page.locator('#brandSwitch').is_hidden()
     page.evaluate("state.notifs=[{txt:'Aviso ficticio',when:'Hoy',read:false}];notifBadge()")
     assert page.locator('#desktop-header #nBadge').inner_text()=='1'
-    page.get_by_role('button',name='Notificaciones',exact=True).click()
+    page.get_by_role('button',name=re.compile(r'^Notificaciones')).click()
     assert 'Aviso ficticio' in page.locator('#modalBox').inner_text()
     page.get_by_role('button',name='Marcar leídas y cerrar',exact=True).click()
     assert page.locator('#nBadge').is_hidden()
