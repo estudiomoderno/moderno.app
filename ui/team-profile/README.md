@@ -6,7 +6,9 @@ Componente aislado encargado por el propietario el 18/10/2026 desde https://reui
 
 `pattern.tsx` utiliza los mismos componentes y clases del código enviado. Cambios funcionales solicitados: retirar + y reloj, sustituir usuarios/cifra de ejemplo por presencia existente y utilizar acciones actuales del menú, con etiquetas en español. Muestra cuatro retratos y el total real de conectados. El selector de estudio existente sigue fuera del árbol aislado para conservar sus manejadores y su protección de borradores.
 
-`index.tsx` monta React exclusivamente en el perfil, dentro de Shadow DOM. El resto de la app mantiene su HTML, JavaScript, navegación y persistencia. El menú usa Base UI original, con posicionamiento, Escape, teclado y retorno del foco. Ante un fallo del componente o de su CSS se recupera la presentación nativa anterior.
+`notifications.tsx` incorpora el patrón Button/BellIcon/Badge enviado después por el propietario. Badge procede de `registry-reui/bases/base/reui/badge.tsx`, sin modificaciones; no es la primitiva Badge de shadcn/ui. Se conservan `size="icon"`, `variant="outline"`, el Badge destructivo `xs` y sus clases de posición. El ejemplo fijo 8 se sustituye por el contador actual de avisos no leídos, oculto a cero y abreviado a 99+; la etiqueta accesible conserva el total completo. La acción delega en el botón original de la aplicación, sin sustituir su lógica.
+
+`index.tsx` monta React exclusivamente en el perfil y la campana, en árboles Shadow DOM separados que comparten los mismos recursos locales. El resto de la app mantiene su HTML, JavaScript, navegación y persistencia. El menú usa Base UI original, con posicionamiento, Escape, teclado y retorno del foco. Ante un fallo del componente o de su CSS se recupera la presentación nativa anterior.
 
 Construcción reproducible, desde la raíz del repositorio:
 

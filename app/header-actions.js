@@ -1,7 +1,7 @@
 /* Existing app handlers bridge to the isolated original ReUI profile component. */
 var ModernoHeaderActions=(()=>{
  'use strict';
- let enabled=true,standalone=null,host=null,group=null,observer=null,component=null,nativeProfile=null,useOriginal=true;
+ let enabled=true,standalone=null,host=null,group=null,observer=null,component=null,nativeProfile=null,useOriginal=true,notificationHost=null,notificationComponent=null,nativeNotification=null;
  const $=selector=>document.querySelector(selector);
  const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls;if(text!==undefined)el.textContent=text;return el;};
  const svg=paths=>'<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
@@ -15,6 +15,7 @@ var ModernoHeaderActions=(()=>{
    button.setAttribute('aria-label',n?'Notificaciones ('+n+')':'Notificaciones');button.title=n?'Notificaciones ('+n+')':'Notificaciones';
    const badge=button.querySelector('.ha-badge,#nBadge');if(badge){badge.textContent=n>99?'99+':String(n);badge.hidden=!n;badge.setAttribute('aria-hidden','true');}
   }
+  if(notificationComponent)try{notificationComponent.update({count:n,onOpen:()=>nativeNotification?.click()});}catch(error){recover();}
  }
  function action(caption,fn){const b=node('button','desktop-link',caption);b.type='button';b.addEventListener('click',()=>{standalone?.querySelectorAll('details[open]').forEach(d=>d.open=false);fn();});return b;}
  function fallback(){
@@ -32,9 +33,11 @@ var ModernoHeaderActions=(()=>{
   if(notification){notification.classList.add('ha-notifications');if(!notification.querySelector('.desktop-bell-icon')){const icon=node('span','ha-bell');icon.innerHTML=bell;notification.prepend(icon);}}
   const summary=target.querySelector('.desktop-profile>summary');
   if(useOriginal&&window.ModernoProfileComponent){
-   try{nativeProfile=summary?.closest('details');nativeProfile?.classList.add('ha-original-profile');
+   try{nativeNotification=target.querySelector('.ha-notifications');
+    if(nativeNotification){notificationHost=node('span','ha-notification-host');nativeNotification.before(notificationHost);notificationComponent=ModernoProfileComponent.mountNotifications(notificationHost,recover);nativeNotification.classList.add('ha-original-notification');}
+    nativeProfile=summary?.closest('details');nativeProfile?.classList.add('ha-original-profile');
     group=node('span','ha-component-host');target.insertBefore(group,nativeProfile||null);component=ModernoProfileComponent.mount(group,recover);return;
-   }catch(error){useOriginal=false;group?.remove();group=null;nativeProfile?.classList.remove('ha-original-profile');nativeProfile=null;}
+   }catch(error){useOriginal=false;notificationComponent?.unmount();notificationComponent=null;notificationHost?.remove();notificationHost=null;nativeNotification?.classList.remove('ha-original-notification');nativeNotification=null;group?.remove();group=null;nativeProfile?.classList.remove('ha-original-profile');nativeProfile=null;}
   }
   if(summary&&!summary.querySelector('.ha-dots')){const icon=node('span','ha-dots');icon.innerHTML=more;summary.append(icon);summary.title='Perfil y ajustes';}
   group=node('div','ha-team-group');
@@ -71,6 +74,7 @@ var ModernoHeaderActions=(()=>{
   notifications();measure();
  }
  function clear(){
+  notificationComponent?.unmount();notificationComponent=null;notificationHost?.remove();notificationHost=null;nativeNotification?.classList.remove('ha-original-notification');nativeNotification=null;
   component?.unmount();component=null;nativeProfile?.classList.remove('ha-original-profile','ha-workspace-only');nativeProfile=null;
   observer?.disconnect();observer=null;group?.remove();group=null;standalone?.remove();standalone=null;host=null;
   document.querySelectorAll('.ha-dots,.ha-bell').forEach(e=>e.remove());

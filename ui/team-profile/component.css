@@ -3,6 +3,7 @@
 @import "./vendor/reui/theme.css";
 @import "./vendor/reui/style-nova.css" layer(base);
 @source "./pattern.tsx";
+@source "./notifications.tsx";
 @source "./vendor/reui/*.tsx";
 @custom-variant dark (&:is(.dark *));
 @theme inline {

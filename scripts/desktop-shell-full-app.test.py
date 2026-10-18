@@ -58,11 +58,31 @@ def check_header_actions(page,width):
  assert page.locator('.ha-team-group button').count()==2,'No invitation or history actions in the reference'
  page.evaluate("state.notifs=Array.from({length:8},(_,i)=>({txt:'Aviso ficticio '+i,read:false})).concat([{txt:'Leído',read:true}]);notifBadge()")
  assert page.get_by_role('button',name='Notificaciones (8)',exact=True).count()==1
- assert page.locator('.ha-notifications').locator('#nBadge,.ha-badge').inner_text()=='8'
- page.get_by_role('button',name='Notificaciones (8)',exact=True).click()
+ bell=page.locator('.ha-notification-host .ha-notifications')
+ badge=bell.locator('[data-slot=badge]')
+ assert badge.inner_text()=='8'
+ assert bell.evaluate('(e)=>getComputedStyle(e).height')=='32px'
+ assert bell.evaluate('(e)=>getComputedStyle(e).width')=='32px'
+ assert bell.locator('svg').evaluate('(e)=>getComputedStyle(e).width')=='16px'
+ assert badge.evaluate('(e)=>getComputedStyle(e).height')=='16px'
+ assert badge.evaluate('(e)=>getComputedStyle(e).fontSize')=='9.6px'
+ assert badge.evaluate('(e)=>getComputedStyle(e).position')=='absolute'
+ assert badge.evaluate('(e)=>getComputedStyle(e).top')=='-4px'
+ assert badge.evaluate('(e)=>getComputedStyle(e).right')=='-4px'
+ assert 'Moderno ReUI Inter' in badge.evaluate('(e)=>getComputedStyle(e).fontFamily')
+ assert badge.get_attribute('aria-hidden')=='true'
+ assert page.locator('.ha-original-notification').is_hidden()
+ if len(sys.argv)>1:page.locator('.ha-notification-host').screenshot(path=str(Path(sys.argv[1])/f'notification-eight-{width}.png'))
+ page.get_by_role('button',name='Notificaciones (8)',exact=True).press('Enter')
  assert 'Aviso ficticio 0' in page.locator('#modalBox').inner_text()
  page.get_by_role('button',name='Marcar leídas y cerrar',exact=True).click()
- assert page.locator('.ha-notifications').locator('#nBadge,.ha-badge').is_hidden()
+ assert badge.count()==0
+ assert bell.get_attribute('aria-label')=='Notificaciones'
+ page.evaluate("state.notifs=Array.from({length:123},()=>({txt:'Aviso ficticio',read:false}));notifBadge()")
+ assert badge.inner_text()=='99+'
+ assert bell.get_attribute('aria-label')=='Notificaciones (123)'
+ page.evaluate("state.notifs=[];notifBadge()")
+ assert badge.count()==0
  page.evaluate("""()=>{
   const scope=ESTUDIO_ID,key=state.sessionUser.mail;
   const image='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=';
@@ -97,7 +117,7 @@ def check_header_actions(page,width):
  else:
   logo=page.locator('#mHeader .mlogo').bounding_box()
   assert logo['x']+logo['width']<box['x'] or logo['y']+logo['height']<box['y'],(logo,box)
-  bell=page.locator('.ha-notifications').bounding_box()
+  bell=page.locator('.ha-notification-host .ha-notifications').bounding_box()
   group=page.locator('.ha-team-group').bounding_box()
   assert bell['x']>=logo['x']+logo['width'] and bell['y']+bell['height']<group['y'],(bell,group,logo)
  if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'header-online-{width}.png'),full_page=True)
@@ -337,8 +357,10 @@ try:
    assert page.locator('aside.sidebar .sb-head').count()==1
    page.evaluate('ModernoHeaderActions.refresh()')
    assert page.locator('.ha-component-host').count()==1
-   page.evaluate("document.querySelector('.ha-component-host').shadowRoot.querySelector('link').dispatchEvent(new Event('error'))")
+   page.evaluate('(selector)=>document.querySelector(selector).shadowRoot.querySelector("link").dispatchEvent(new Event("error"))','.ha-notification-host' if width==390 else '.ha-component-host')
    page.locator('.ha-component-host').wait_for(state='detached')
+   assert page.locator('.ha-notification-host,.ha-original-notification').count()==0
+   assert page.locator('.ha-notifications').is_visible()
    assert page.locator('.ha-team-group').count()==1
    assert page.locator('.desktop-profile>summary').is_visible()
    assert page.evaluate('fixtureRecords()===fixtureBaseline'),'CSS recovery changed records'
