@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
-const files=['index.html','accounting-report.js','accounting-report.css','project-ui.js','project-documents.js','plan-annotations.js','plan-editor.js','plan-editor.css','client-portal-site.js','client-portal-site.css','brand/project-ui.css','desktop-shell.js','brand/desktop-shell.css','brand/desktop-project-overview.css'];
+const files=['index.html','project-workspace.js','brand/project-workspace.css','accounting-report.js','accounting-report.css','project-ui.js','project-documents.js','plan-annotations.js','plan-editor.js','plan-editor.css','client-portal-site.js','client-portal-site.css','brand/project-ui.css','desktop-shell.js','brand/desktop-shell.css','brand/desktop-project-overview.css'];
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 export async function verifyPublication({fetchResource=fetch,readResource=name=>readFile(new URL('../app/'+name,import.meta.url)),revision='check'}={}){
   // Fixed public origin and resources, no authentication or arbitrary target URLs.
