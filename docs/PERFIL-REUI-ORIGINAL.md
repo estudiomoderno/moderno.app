@@ -1,0 +1,13 @@
+# Perfil con el componente original de ReUI — v3.65.47
+
+Petición del propietario del 18/10/2026: usar el código de https://reui.io/components/button-group conservando su fuente y tamaños. Rama `interfaz/perfil-medidas-originales`, base `a5e07cc` (#70).
+
+Se utiliza el ejemplo público `c-button-group-5`, Base UI/Nova, con sus componentes originales Button, ButtonGroup, Avatar y DropdownMenu; su licencia MIT está incluida. La configuración predeterminada consultada de ReUI (`registry/config.ts`) usa Inter. Sus medidas se conservan: botones de 32 px, texto de botón de 14 px, estado de 12 px, avatares `size-5` de 20 px e iconos según los estilos originales. No se reduce la tipografía en móvil: hasta 480 px el grupo ocupa una segunda fila bajo el logotipo.
+
+La app incorpora React solo dentro del perfil, con una compilación aislada y reproducible. Shadow DOM evita que Tailwind o las reglas antiguas de Moderno alteren el componente y que sus estilos cambien el resto de la aplicación. Fuente y dependencias se sirven desde la app, con versiones fijadas y licencias. Las únicas declaraciones generales añadidas son el registro de una familia local de Inter y los valores iniciales originales de propiedades CSS `--tw-*`; no se añaden selectores generales de diseño. Detalles y procedencia: `ui/team-profile/README.md` y `vendor/reui/SOURCE.json`.
+
+Se retiran los controles + y reloj del ejemplo. La presencia existente sustituye los nombres/fotos/cifra ficticios del patrón. Los tres puntos ejecutan las acciones actuales del perfil, ajustes y herramientas a través de sus controles originales; «Cambiar estudio» abre el selector existente. No se modifican Supabase, autenticación, permisos, sincronización, guardado ni registros. Las limitaciones de la validación de Realtime de #70 siguen vigentes: este cambio es del componente de presentación.
+
+Comprobaciones: 475 pruebas Node, integridad de artefactos y procedencia literal de componentes (salvo el contenedor opcional del portal), app completa aislada en Chromium con datos ficticios, medidas/fuente originales en escritorio y móvil, acciones y teclado del menú, selector de estudio, borradores, pestañas de proyectos y recuperación de la presentación anterior. PHP se comprueba en Actions sin enviar correos. No se usan cuentas reales ni dispositivos físicos.
+
+Publicación por PR y proceso habitual, con SHA-256 de 24 recursos públicos, incluido el JS compilado, CSS y fuente locales. El resultado final y las pruebas realmente ejecutadas se registran en el PR. Revertir este commit recupera #70 sin restaurar datos; `ModernoHeaderActions.setEnabled(false)` conserva también la desactivación local existente. No se fuerzan recargas de sesiones abiertas.

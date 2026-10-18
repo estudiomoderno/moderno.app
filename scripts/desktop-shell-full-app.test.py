@@ -12,6 +12,9 @@ def settle_header(page):
  page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
 finance=['facturas','presupuestos','contabilidad','informes','prevision']
 def reveal_route(page,view):
+ if view in ['automatizaciones','plugins','integraciones']:
+  page.locator('[data-profile-trigger]').click()
+  return page.get_by_role('menuitem',name={'automatizaciones':'Automatizaciones','plugins':'Plugins','integraciones':'Integraciones'}[view],exact=True)
  if view in finance:
   if page.locator('#desktop-finance-nav').is_hidden():page.get_by_role('button',name='Finanzas',exact=True).click()
  elif page.locator('#desktop-primary').is_hidden():page.get_by_role('button',name='Volver al menú principal',exact=True).click()
@@ -49,9 +52,10 @@ def neutral_canvas(page):
  assert styles['surface']=='#fff' and styles['control']=='#eee',styles
 def check_header_actions(page,width):
  assert page.locator('.ha-team-group').count()==1
+ page.locator('.ha-status').wait_for(state='visible')
  assert page.locator('.ha-status').inner_text()=='Sin conexión'
- assert page.locator('.desktop-profile>summary .ha-dots svg').count()==1
- assert page.locator('.ha-team-group button').count()==0,'No invitation or history actions in the reference'
+ assert page.locator('[data-profile-trigger] svg').count()==1
+ assert page.locator('.ha-team-group button').count()==2,'No invitation or history actions in the reference'
  page.evaluate("state.notifs=Array.from({length:8},(_,i)=>({txt:'Aviso ficticio '+i,read:false})).concat([{txt:'Leído',read:true}]);notifBadge()")
  assert page.get_by_role('button',name='Notificaciones (8)',exact=True).count()==1
  assert page.locator('.ha-notifications').locator('#nBadge,.ha-badge').inner_text()=='8'
@@ -66,8 +70,17 @@ def check_header_actions(page,width):
   ModernoHeaderActions.refresh();
  }""")
  assert page.locator('.ha-status').inner_text()=='3 en línea'
+ assert page.locator('.ha-status').evaluate('(e)=>getComputedStyle(e).fontSize')=='12px'
+ assert page.locator('.ha-avatar').first.evaluate('(e)=>getComputedStyle(e).width')=='20px'
+ assert page.locator('[data-profile-trigger]').evaluate('(e)=>getComputedStyle(e).height')=='32px'
+ assert 'Moderno ReUI Inter' in page.locator('.ha-status').evaluate('(e)=>getComputedStyle(e).fontFamily')
+ page.evaluate('document.fonts.load(\'500 14px "Moderno ReUI Inter"\')')
+ assert page.evaluate('document.fonts.check(\'500 14px "Moderno ReUI Inter"\')')
+ assert page.locator('.ha-team-group button').first.evaluate('(e)=>getComputedStyle(e).fontSize')=='14px'
+ assert page.locator('body').evaluate('(e)=>getComputedStyle(e).fontSize')=='14px'
  assert page.locator('.ha-team-group').get_attribute('data-online')=='true'
  assert page.locator('.ha-members script').count()==0
+ page.locator('.ha-members img').first.wait_for()
  assert page.locator('.ha-members img').count()==2
  current_study=page.evaluate('ESTUDIO_ID')
  page.evaluate("ESTUDIO_ID='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';ModernoHeaderActions.refresh()")
@@ -83,7 +96,10 @@ def check_header_actions(page,width):
    b=bar.bounding_box();assert b['x']+b['width']<=box['x']-8,(b,box)
  else:
   logo=page.locator('#mHeader .mlogo').bounding_box()
-  assert logo['x']+logo['width']<box['x'],(logo,box)
+  assert logo['x']+logo['width']<box['x'] or logo['y']+logo['height']<box['y'],(logo,box)
+  bell=page.locator('.ha-notifications').bounding_box()
+  group=page.locator('.ha-team-group').bounding_box()
+  assert bell['x']>=logo['x']+logo['width'] and bell['y']+bell['height']<group['y'],(bell,group,logo)
  if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'header-online-{width}.png'),full_page=True)
  page.evaluate("teamPresence=null;state.notifs=[];notifBadge();ModernoHeaderActions.refresh()")
  page.evaluate('ModernoHeaderActions.setEnabled(false)')
@@ -91,7 +107,14 @@ def check_header_actions(page,width):
  if width>=1100:assert page.locator('#desktop-header #topUser').is_visible()
  page.evaluate('ModernoHeaderActions.setEnabled(true)')
  assert page.locator('.ha-team-group').count()==1
+ page.locator('.ha-status').wait_for(state='visible')
  assert page.locator('.ha-status').inner_text()=='Sin conexión'
+ page.locator('[data-profile-trigger]').focus()
+ page.locator('[data-profile-trigger]').press('ArrowDown')
+ page.get_by_role('menuitem',name='Mi perfil',exact=True).wait_for(state='visible')
+ page.keyboard.press('Escape')
+ page.get_by_role('menuitem',name='Mi perfil',exact=True).wait_for(state='hidden')
+ page.wait_for_function("(()=>{const s=document.querySelector('.ha-component-host').shadowRoot;return s.activeElement===s.querySelector('[data-profile-trigger]');})()")
 with socket.socket() as sock:
  sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
 origin=f'http://127.0.0.1:{port}'
@@ -215,9 +238,9 @@ try:
     assert page.locator('#desktop-navigation').is_hidden()
     assert page.locator('.desktop-row').bounding_box()['width']<100
     assert page.locator('.desktop-brand').is_visible()
-    assert page.locator('.desktop-profile>summary').is_visible()
-    page.locator('.desktop-profile>summary').click();assert page.get_by_role('button',name='Automatizaciones',exact=True).is_visible()
-    page.locator('.desktop-profile>summary').press('Escape')
+    assert page.locator('[data-profile-trigger]').is_visible()
+    page.locator('[data-profile-trigger]').click();page.get_by_role('menuitem',name='Automatizaciones',exact=True).wait_for(state='visible')
+    page.locator('[data-profile-trigger]').press('Escape')
     if len(sys.argv)>1:
      page.mouse.move(0,0)
      page.screenshot(path=str(Path(sys.argv[1])/f'header-collapsed-{width}.png'),full_page=True)
@@ -236,7 +259,7 @@ try:
    if width>=1100:
     assert page.locator('#desktop-header .logo').is_hidden()
     assert page.locator('#desktop-header .logo-mini').is_visible()
-    assert page.locator('.desktop-profile>summary').evaluate('(e)=>e.scrollHeight<=e.clientHeight')
+    assert page.locator('[data-profile-trigger]').evaluate('(e)=>e.scrollHeight<=e.clientHeight')
     assert page.locator('#themeBtn').is_hidden() and page.locator('#brandSwitch').is_hidden()
     page.evaluate("state.notifs=[{txt:'Aviso ficticio',when:'Hoy',read:false}];notifBadge()")
     assert page.locator('#desktop-header #nBadge').inner_text()=='1'
@@ -244,16 +267,16 @@ try:
     assert 'Aviso ficticio' in page.locator('#modalBox').inner_text()
     page.get_by_role('button',name='Marcar leídas y cerrar',exact=True).click()
     assert page.locator('#nBadge').is_hidden()
-    page.locator('.desktop-profile>summary').click()
-    page.locator('#settings-switch>summary').click()
-    assert page.locator('.desktop-profile').get_attribute('open') is not None
-    assert page.locator('#settings-switch .settings-popup').is_visible()
+    page.locator('[data-profile-trigger]').click()
+    page.get_by_role('menuitem',name='Cambiar estudio',exact=True).click()
+    page.locator('#settings-switch .settings-popup').wait_for(state='visible')
+    assert page.locator('.ha-original-profile').get_attribute('open') is not None
     page.locator('#settings-switch>summary').press('Escape')
-    page.locator('.desktop-profile>summary').click()
+    page.locator('[data-profile-trigger]').click()
     for tool in ['Automatizaciones','Plugins','Integraciones']:
-     assert page.get_by_role('button',name=tool,exact=True).is_visible()
+     page.get_by_role('menuitem',name=tool,exact=True).wait_for(state='visible')
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'profile-tools-{width}.png'),full_page=True)
-    page.locator('.desktop-profile>summary').press('Escape')
+    page.locator('[data-profile-trigger]').press('Escape')
     if len(sys.argv)>1:
      page.get_by_role('button',name='Finanzas',exact=True).click()
      page.mouse.move(0,0)
@@ -292,7 +315,7 @@ try:
     page.screenshot(path=str(Path(sys.argv[1])/f'project-overview-dark-{width}.png'),full_page=True)
     page.evaluate("document.body.classList.remove('dark')")
    if width>=1100:
-    page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Ajustes',exact=True).click()
+    page.locator('[data-profile-trigger]').click();page.get_by_role('menuitem',name='Ajustes',exact=True).click()
     assert page.evaluate('state.view')=='ajustes'
     assert page.locator('#desktop-header').count()==0
     assert page.locator('aside.sidebar #settings-nav').count()==1
@@ -312,6 +335,13 @@ try:
    page.evaluate('ModernoDesktopShell.setEnabled(false)')
    assert page.locator('#desktop-header').count()==0
    assert page.locator('aside.sidebar .sb-head').count()==1
+   page.evaluate('ModernoHeaderActions.refresh()')
+   assert page.locator('.ha-component-host').count()==1
+   page.evaluate("document.querySelector('.ha-component-host').shadowRoot.querySelector('link').dispatchEvent(new Event('error'))")
+   page.locator('.ha-component-host').wait_for(state='detached')
+   assert page.locator('.ha-team-group').count()==1
+   assert page.locator('.desktop-profile>summary').is_visible()
+   assert page.evaluate('fixtureRecords()===fixtureBaseline'),'CSS recovery changed records'
    assert not writes,writes
    assert not errors,errors
    assert all(not u.startswith(('https://auth.moderno.app','https://app.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co')) for u in external)

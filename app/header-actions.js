@@ -1,7 +1,7 @@
-/* Native adaptation of the owner's notification/avatar references. No React dependency. */
+/* Existing app handlers bridge to the isolated original ReUI profile component. */
 var ModernoHeaderActions=(()=>{
  'use strict';
- let enabled=true,standalone=null,host=null,group=null,observer=null;
+ let enabled=true,standalone=null,host=null,group=null,observer=null,component=null,nativeProfile=null,useOriginal=true;
  const $=selector=>document.querySelector(selector);
  const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls;if(text!==undefined)el.textContent=text;return el;};
  const svg=paths=>'<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
@@ -26,10 +26,16 @@ var ModernoHeaderActions=(()=>{
   profile.append(menu);box.append(profile);document.body.append(box);return box;
  }
  function measure(){if(host?.isConnected)document.body.style.setProperty('--header-actions-width',Math.ceil(host.getBoundingClientRect().width)+'px');}
+ function recover(){useOriginal=false;queueMicrotask(()=>{clear();refresh();});}
  function decorate(target){
   const notification=target.querySelector('button:has(#nBadge)');
   if(notification){notification.classList.add('ha-notifications');if(!notification.querySelector('.desktop-bell-icon')){const icon=node('span','ha-bell');icon.innerHTML=bell;notification.prepend(icon);}}
   const summary=target.querySelector('.desktop-profile>summary');
+  if(useOriginal&&window.ModernoProfileComponent){
+   try{nativeProfile=summary?.closest('details');nativeProfile?.classList.add('ha-original-profile');
+    group=node('span','ha-component-host');target.insertBefore(group,nativeProfile||null);component=ModernoProfileComponent.mount(group,recover);return;
+   }catch(error){useOriginal=false;group?.remove();group=null;nativeProfile?.classList.remove('ha-original-profile');nativeProfile=null;}
+  }
   if(summary&&!summary.querySelector('.ha-dots')){const icon=node('span','ha-dots');icon.innerHTML=more;summary.append(icon);summary.title='Perfil y ajustes';}
   group=node('div','ha-team-group');
   const label=node('div','ha-team-label');label.innerHTML=team;label.append(node('span','','Equipo'));group.append(label);
@@ -44,6 +50,12 @@ var ModernoHeaderActions=(()=>{
   if(snapshot.status==='online'&&(snapshot.study!==ESTUDIO_ID||snapshot.key!==state.sessionUser?.mail))snapshot={status:'connecting',members:[]};
   const online=snapshot.status==='online',me=state.sessionUser||{};
   const members=online?snapshot.members:[{name:me.name||'Tú',avatar:me.avatar||''}];
+  if(component){
+   const items=[...nativeProfile.querySelectorAll('.desktop-menu>button')].filter(b=>!b.hidden).map(b=>({label:b.textContent.trim(),run:()=>b.click()}));
+   const onWorkspace=nativeProfile.querySelector('#sidebarStudy')?()=>{const profile=nativeProfile;setTimeout(()=>{if(!profile?.isConnected)return;profile.classList.add('ha-workspace-only');const openPicker=()=>{if(profile.isConnected&&profile.open&&!profile.querySelector('#settings-switch')?.open)profile.querySelector('#settings-switch>summary')?.click();};if(profile.open)openPicker();else{profile.addEventListener('toggle',()=>queueMicrotask(openPicker),{once:true});profile.open=true;}},0);}:null;
+   try{component.update({members:members.map(m=>({...m,avatar:ModernoHeaderPresence.photo(m.avatar),fallback:String(m.name||'?').trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase()})),status:snapshot.status,items,onWorkspace,onOpenChange:open=>{if(open&&nativeProfile)nativeProfile.open=false;}});}catch(error){recover();}
+   notifications();measure();return;
+  }
   const pictures=group.querySelector('.ha-members');pictures.replaceChildren();
   for(const member of members.slice(0,4)){
    const avatar=node('span','ha-avatar',String(member.name||'?').trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase());
@@ -59,6 +71,7 @@ var ModernoHeaderActions=(()=>{
   notifications();measure();
  }
  function clear(){
+  component?.unmount();component=null;nativeProfile?.classList.remove('ha-original-profile','ha-workspace-only');nativeProfile=null;
   observer?.disconnect();observer=null;group?.remove();group=null;standalone?.remove();standalone=null;host=null;
   document.querySelectorAll('.ha-dots,.ha-bell').forEach(e=>e.remove());
   document.querySelectorAll('.ha-notifications').forEach(e=>{e.classList.remove('ha-notifications');const badge=e.querySelector('#nBadge');if(badge){badge.removeAttribute('hidden');badge.removeAttribute('aria-hidden');}if(e.closest('#desktop-header')){e.setAttribute('aria-label','Notificaciones');e.title='Notificaciones';}});
@@ -73,7 +86,7 @@ var ModernoHeaderActions=(()=>{
  }
  document.addEventListener('moderno:team-presence',paint);
  document.addEventListener('click',e=>{if(host&&!host.contains(e.target))host.querySelectorAll('details[open]').forEach(d=>d.open=false);});
- document.addEventListener('keydown',e=>{if(e.key==='Escape'){const open=host?.querySelector('details[open]');if(open){open.open=false;open.querySelector('summary')?.focus();}}});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'){const open=host?.querySelector('details[open]');if(open){open.open=false;open.querySelector('summary')?.focus();}if(e.target.closest?.('#sidebarStudy')&&nativeProfile?.classList.contains('ha-workspace-only'))group?.shadowRoot?.querySelector('[data-profile-trigger]')?.focus();}});
  window.addEventListener('resize',refresh);
  const originalRender=render;render=function(){const result=originalRender.apply(this,arguments);refresh();return result;};
  const originalBadge=notifBadge;notifBadge=function(){const result=originalBadge.apply(this,arguments);notifications();return result;};
