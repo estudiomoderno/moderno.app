@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Herramientas en el perfil y Conversaciones en el proyecto
+
+El propietario retira Documentos del menú superior, mueve Conversaciones al dock de cada proyecto junto a AI y reúne Automatizaciones, Plugins e Integraciones en el menú del icono del usuario. Desaparece el grupo superior Más herramientas. Se conservan las rutas y los documentos existentes; Documentos del proyecto mantiene todos sus archivos. Conversaciones reutiliza su estado preparatorio «Próximamente», sin implementar chat ni guardado. Se mantienen los permisos actuales de cada apartado. Esta petición amplía el dock con un décimo acceso para los perfiles que ya tenían permitido Conversaciones. Detalles: [REUBICACION-HERRAMIENTAS](REUBICACION-HERRAMIENTAS.md).
+
 ## 2026-10-18 — Cabecera compacta por iconos y navegación interna de Finanzas
 
 El propietario pide que el símbolo oficial mantenga el fondo fijo, incluso al pasar el cursor, y que la barra superior muestre únicamente iconos con nombres emergentes. Pulsar Finanzas reorganiza la misma cápsula con Facturas, Presupuestos, Contabilidad, Informes y Previsión de cobros, más una flecha para volver. Cambiar ese grupo no cambia la vista ni descarta formularios; navegar a un módulo sigue usando sus handlers y permisos originales. Se mantiene la identidad, el dock y el alcance de datos existente. Detalles y reversión en [MENU-SUPERIOR-ICONOS](MENU-SUPERIOR-ICONOS.md).

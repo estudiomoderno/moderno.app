@@ -73,23 +73,27 @@ try:
    if width>=1100:assert page.locator('#desktop-header').is_visible()
    else:assert page.locator('#desktop-header').count()==0
    # Warm real renderers once, so their existing normalizations are not attributed to the new shell.
-   routes=page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades])').evaluate_all('(bs)=>bs.map(b=>b.dataset.view)')
+   routes=page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades]):not([data-view=conversaciones])').evaluate_all('(bs)=>bs.map(b=>b.dataset.view)')
    assert page.locator('aside.sidebar [data-view=utilidades]').is_hidden()
+   assert page.locator('aside.sidebar [data-view=conversaciones]').is_hidden()
    for view in routes:
     page.evaluate('(view)=>go(view)',view)
     assert page.evaluate('state.view')==view
     assert page.locator('#view').inner_text().strip(),view
    page.evaluate("go('proyecto',9001)")
-   keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','utilidades']
+   keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
    for key in keys+['cliente']:page.evaluate('(key)=>projTab(key)',key)
    page.evaluate("window.fixtureRecords=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes,library:state.library,docs:state.docs});window.fixtureBaseline=fixtureRecords()")
    for view in routes:
     if width>=1100:
+     if view=='plantillas':
+      assert page.locator('#desktop-header [data-desktop-view=plantillas]').count()==0
+      continue
      reveal_route(page,view).click()
     else:page.evaluate('(view)=>document.querySelector(`aside.sidebar .nav-item[data-view="${view}"]`).click()',view)
     assert page.evaluate('state.view')==view
    page.evaluate("go('proyecto',9001)")
-   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Planos','Obra','Tareas','Compras','Economía','Documentos','AI','Utilidades']
+   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Planos','Obra','Tareas','Compras','Economía','Documentos','AI','Conversaciones','Utilidades']
    for key in keys:
     page.locator('#project-tab-'+key).click(force=width<1100)
     assert page.locator('#project-tab-'+key).get_attribute('aria-selected')=='true'
@@ -99,6 +103,10 @@ try:
     if key=='archivos':
      assert page.locator('.project-file-open').evaluate_all('(bs)=>bs.map(b=>b.dataset.index)')==['0','1','2','3']
     if key=='ai':assert page.locator('#project-tab-panel').inner_text().strip()=='AI'
+    if key=='conversaciones':
+     assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
+     assert 'Conversaciones' in page.locator('#project-tab-panel').inner_text()
+     assert 'Próximamente' in page.locator('#project-tab-panel').inner_text()
     if key=='utilidades':
      assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
      page.locator('#ptM2').fill('24');assert '4.0 L' in page.locator('#ptRes').inner_text()
@@ -123,6 +131,11 @@ try:
     assert page.locator('.desktop-profile').get_attribute('open') is not None
     assert page.locator('#settings-switch .settings-popup').is_visible()
     page.locator('#settings-switch>summary').press('Escape')
+    page.locator('.desktop-profile>summary').click()
+    for tool in ['Automatizaciones','Plugins','Integraciones']:
+     assert page.get_by_role('button',name=tool,exact=True).is_visible()
+    if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'profile-tools-{width}.png'),full_page=True)
+    page.locator('.desktop-profile>summary').press('Escape')
     if len(sys.argv)>1:
      page.get_by_role('button',name='Finanzas',exact=True).click()
      page.mouse.move(0,0)

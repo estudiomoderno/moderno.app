@@ -7,7 +7,7 @@ var ModernoDesktopShell=(()=>{
  const moved=[],decorations=[],media=window.matchMedia('(min-width:1100px)');
  const $=s=>document.querySelector(s);
  const finance=['facturas','presupuestos','contabilidad','informes','prevision'];
- const navigation=['proyectos','workspace','calendario','agenda',['Finanzas',finance,'contabilidad'],'mail',['Productos y servicios',['biblioteca','catalogo'],'catalogo'],['Más herramientas',['conversaciones','plantillas','automatizaciones','integraciones','plugins'],'⋯']];
+ const navigation=['proyectos','workspace','calendario','agenda',['Finanzas',finance,'contabilidad'],'mail',['Productos y servicios',['biblioteca','catalogo'],'catalogo']];
  const originals=()=>[...document.querySelectorAll('aside.sidebar .nav-item[data-view]')];
  const original=view=>originals().find(b=>b.dataset.view===view);
  const available=view=>!_accessLoading&&canView(view)&&!!original(view);
@@ -62,7 +62,7 @@ var ModernoDesktopShell=(()=>{
     const b=action('',()=>setSection('finanzas',true));b.className='desktop-link desktop-icon-only desktop-finance';b.dataset.desktopSection='finanzas';b.setAttribute('aria-controls','desktop-finance-nav');b.setAttribute('aria-expanded','false');const copy=icon(symbol);if(copy)b.append(copy);label(b,name);primary.append(b);continue;
    }
    const d=document.createElement('details');d.className='desktop-group';const s=document.createElement('summary');s.className='desktop-icon-only';
-   if(symbol==='⋯'){const dots=document.createElement('span');dots.className='desktop-dots';dots.textContent=symbol;dots.setAttribute('aria-hidden','true');s.append(dots);d.classList.add('desktop-more');}else{const copy=icon(symbol);if(copy)s.append(copy);}
+   const copy=icon(symbol);if(copy)s.append(copy);
    label(s,name);d.append(s);
    const menu=document.createElement('div');menu.className='desktop-menu';for(const view of views){const b=button(view);if(b)menu.append(b);}d.append(menu);primary.append(d);
   }
@@ -73,7 +73,8 @@ var ModernoDesktopShell=(()=>{
   if(notifications&&bell){const icon=document.createElement('span');icon.className='desktop-bell-icon';icon.setAttribute('aria-hidden','true');icon.innerHTML=bell;notifications.prepend(icon);decorations.push(()=>icon.remove());}
   const profile=document.createElement('details');profile.className='desktop-profile';const summary=document.createElement('summary');summary.setAttribute('aria-label','Perfil y ajustes');move($('#topUser'),summary);profile.append(summary);
   const popup=document.createElement('div');popup.className='desktop-menu';popup.append(action('Mi perfil',()=>userModal()),action('Ajustes',()=>SettingsUI.open('cuenta')));
-  const integrations=action('Integraciones',()=>original('integraciones')?.click());integrations.dataset.desktopAccess='integraciones';popup.append(integrations);move($('#sidebarStudy'),popup);profile.append(popup);actions.append(profile);
+  for(const view of ['automatizaciones','plugins','integraciones']){const b=button(view);if(b)popup.append(b);}
+  move($('#sidebarStudy'),popup);profile.append(popup);actions.append(profile);
   document.querySelector('.app').before(header);
   header.addEventListener('click',event=>{
    if(event.target.closest('[data-workspace]'))closeMenus();
@@ -99,7 +100,6 @@ var ModernoDesktopShell=(()=>{
    if(selected)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');
   }
   for(const d of header.querySelectorAll('.desktop-group')){d.hidden=![...d.querySelectorAll('[data-desktop-view]')].some(b=>!b.hidden);d.classList.toggle('is-current',!!d.querySelector('[aria-current="page"]'));}
-  for(const b of header.querySelectorAll('[data-desktop-access]'))b.hidden=!available(b.dataset.desktopAccess);
   syncNavigation();
  }
  function safeRefresh(){try{refresh();}catch(error){enabled=false;restore();console.warn('Navegación de escritorio desactivada; se conserva la interfaz anterior.',error);}}

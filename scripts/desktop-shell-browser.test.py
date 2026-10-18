@@ -102,11 +102,14 @@ with sync_playwright() as p:
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
    assert rect['width']==rect['height']==44,rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
-  assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades])').count()
+  assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades]):not([data-view=conversaciones]):not([data-view=plantillas])').count()
   assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0
+  assert page.locator('#desktop-header [data-desktop-view=plantillas],#desktop-header [data-desktop-view=conversaciones]').count()==0
+  assert page.locator('.desktop-nav [data-desktop-view]:is([data-desktop-view=automatizaciones],[data-desktop-view=plugins],[data-desktop-view=integraciones])').count()==0
+  assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['automatizaciones','plugins','integraciones']
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
   assert page.locator('.project-tabs').bounding_box()['y']>850
-  keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','utilidades']
+  keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.id.replace("project-tab-",""))')==keys
   assert page.locator('.project-tabs [role=separator]').count()==5
   dock=page.locator('.project-tabs').bounding_box()
@@ -167,6 +170,8 @@ with sync_playwright() as p:
   assert page.locator('[data-desktop-section=finanzas]').is_hidden()
   assert page.locator('#project-tab-fin').count()==0
   assert page.locator('#project-tab-utilidades').count()==0
+  assert page.locator('#project-tab-conversaciones').count()==0
+  assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.every(b=>b.hidden)')
   page.evaluate("_accessRole='miembro';state.myRole='miembro';render()")
   page.get_by_role('button',name='Finanzas',exact=True).click()
   assert page.locator('#desktop-finance-nav [data-desktop-view]:visible').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['presupuestos','prevision']
