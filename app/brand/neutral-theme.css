@@ -1,0 +1,80 @@
+/* White canvas and neutral controls. Screen only: preserve printed documents,
+   client portals, semantic status colours and custom project/annotation colours.
+   Loaded last; remove its index.html link to recover the previous palette. */
+@media screen {
+ html body:not(.dark):not(.portalmode) {
+  --bg:#fff;--panel:#fff;--white:#fff;--card:#f5f5f5;
+  --ink:#202020;--ink-soft:#555;--ink-faint:#666;
+  --ui-accent:#181818;--ui-selected:#eee;--ui-selected-ink:#202020;
+  --ui-line:#dedede;--line:#dedede;--ui-canvas:#fff;
+  --gold:#eee;--gold-soft:#eee;--pend:#eee;--pend-ink:#555;
+  --shadow:0 8px 24px #00000010;
+  --app-surface:#fff;--app-control:#eee;--app-selected:#181818;--app-selected-text:#fff;
+  --app-outline:#858585;--app-grid:transparent;
+  --dl-bg:#f5f5f5;--dl-line:#dedede;--dl-ink:#202020;--dl-soft:#555;
+ }
+ html body.dark:not(.portalmode) {
+  --bg:#202020;--panel:#202020;--white:#292929;--card:#333;
+  --ink:#f5f5f5;--ink-soft:#ccc;--ink-faint:#aaa;
+  --ui-accent:#eee;--ui-selected:#444;--ui-selected-ink:#f5f5f5;
+  --ui-line:#505050;--line:#505050;--ui-canvas:#202020;
+  --gold:#444;--gold-soft:#444;--pend:#444;--pend-ink:#ddd;
+  --app-surface:#292929;--app-control:#3e3e3e;--app-selected:#eee;--app-selected-text:#202020;
+  --app-outline:#999;--app-grid:transparent;
+  --dl-bg:#333;--dl-line:#505050;--dl-ink:#f5f5f5;--dl-soft:#ccc;
+ }
+ /* Earlier workspace/project styles define their own canvas and grid. */
+ html body:not(.portalmode) .main,
+ html body:is(.dark,:not(.dark)):not(.portalmode) .main:has(.projects-identity),
+ html body:is(.dark,:not(.dark)):not(.portalmode) .main #view:has(.projects-identity),
+ html body:is(.dark,:not(.dark)):not(.portalmode) .main .projects-identity {
+  background-color:var(--ui-canvas)!important;background-image:none!important;
+ }
+ html body:not(.dark):not(.portalmode):has(.projects-identity) {background-color:var(--bg)!important}
+ html body:not(.portalmode) .projects-header {background:var(--ui-canvas)}
+ html body:not(.portalmode) #desktop-header .desktop-row {
+  --desktop-rail-ink:#fff;--desktop-rail-hover:#383838;--desktop-rail-line:#444;
+ }
+ html body:not(.portalmode) .sidebar {color:#fff}
+ html body:not(.portalmode) .sidebar :is(.nav-item,.nav-head,.settings-nav,.settings-nav button) {color:#fff}
+ html body:not(.portalmode) .sidebar :is(.nav-item,.settings-nav button):is(:hover,.active,[aria-current=page]) {background:#383838;color:#fff}
+ html body:not(.portalmode) .sidebar .sb-toggle {background:var(--app-surface);color:var(--ink)}
+ html body:not(.portalmode) :is(.study-dropdown,.sidebar-study .settings-switch) summary {background:var(--app-control);color:var(--ink)}
+ html body:not(.portalmode) :is(.study-popup,.sidebar-study .settings-popup) {background:var(--app-surface);color:var(--ink);border-color:var(--ui-line)}
+ html body:not(.portalmode) :is(.study-popup,.sidebar-study .settings-popup) button {color:var(--ink)}
+ html body:not(.portalmode) .study-popup button:hover {background:var(--app-control)}
+ html body:not(.portalmode) .study-options {border-color:var(--ui-line)}
+ html body:not(.portalmode) .home-panel {background:var(--app-surface);border-color:var(--ui-line)}
+ html body:not(.portalmode) :is(.home-task,.home-attention,.home-finance,.home-add-project) {border-color:var(--ui-line)}
+ html body:not(.portalmode) .home-dashboard .home-task:hover {background:var(--app-control)}
+ html body:not(.portalmode) .home-metrics button {background:var(--card);border-color:var(--ui-line)}
+ html body:not(.portalmode) .connection-card {background:var(--app-surface);border-color:var(--ui-line)}
+ html body:not(.portalmode) .folder-automations {border-color:var(--ui-line)}
+ html body:not(.portalmode) .automation-editor pre {background:var(--card)}
+ html body:not(.portalmode) .dg-document-sheet {background:var(--card)}
+ html body:not(.portalmode) .dg-document-fold {background:var(--app-control)}
+ html body:not(.portalmode) :is(.connection-card .chip,.folio-state,.order-stage:not(.ordered):not(.received)) {background:var(--app-control);color:var(--ink)}
+ html body:not(.portalmode) .project-folio {--folio-paper:var(--app-surface)}
+ html body:not(.portalmode) .folio-sheet {background:var(--card);box-shadow:inset 2px 3px 6px var(--app-surface),0 0 0 1px var(--ui-line)}
+ html body:not(.portalmode) .folio-sheet-lines {background:repeating-linear-gradient(transparent 0 10px,var(--ui-line) 10px 14px)}
+ html body:not(.portalmode) .main .projects-identity :is(.btn-ghost,.brand-switch button:not(.on),.folder.add) {background:var(--app-control);color:var(--ink);border-color:var(--ui-line)}
+ html body:not(.portalmode) .main .projects-identity :is(.btn-dark,.brand-switch button.on) {background:var(--app-selected)!important;color:var(--app-selected-text)!important}
+ html body:not(.portalmode) .folder-client {background:var(--app-selected);color:var(--app-selected-text)}
+ /* Task cards retain the existing important-task indicator. */
+ html body:not(.portalmode) .main .ws-full {color:var(--ink)}
+ html body:not(.portalmode) .ws-full :is(.ws-subtitle,.ws-filter-row,.ws-participants,.ws-mobile-empty,.task .tm,.ws-task-table th) {color:var(--ink-soft)}
+ html body:not(.portalmode) .main .ws-full :is(.ws-search input,.ws-task-link,.ws-type-icon) {color:var(--ink)}
+ html body:not(.portalmode) .main .ws-full .ws-search {border-color:var(--app-outline)}
+ html body:not(.portalmode) .main .ws-full .ws-search:focus-within {outline-color:var(--app-outline)}
+ html body:not(.portalmode) .main .ws-full .kanban .task:not(.is-important) {background:var(--card)!important;color:var(--ink)}
+ html body:not(.portalmode) .main .ws-full .kanban .task.is-important {color:#202020}
+ html body:not(.portalmode) .main .ws-full .task.is-important :is(.tm,.ws-participants,.ws-type-icon) {color:#444}
+ html body:not(.portalmode) .main .ws-full .kcol h4 {background:var(--app-control)!important;color:var(--ink)}
+ html body:not(.portalmode) .main .ws-full :is(.ws-views button,.daily-scope button,.ws-mobile-statuses button) {color:var(--ink-soft)}
+ html body:not(.portalmode) .main .ws-full :is(.daily-scope:not(.ws-views) button.on,.ws-mobile-statuses button) {background:var(--app-control);color:var(--ink)}
+ html body:not(.portalmode) .main .ws-full :is(.ws-views button.on,.ws-toolbar>.btn,.ws-mobile-statuses button[aria-pressed=true]) {background:var(--app-selected);color:var(--app-selected-text)}
+ html body:not(.portalmode) .main .ws-full .ws-card-open {background:var(--app-selected)!important;color:var(--app-selected-text)!important}
+ html body:not(.portalmode) .ws-full .task .chip {background:var(--app-surface)!important;color:var(--ink)}
+ html body:not(.portalmode) .ws-participant {background:var(--app-control);color:var(--ink);border-color:var(--app-surface)}
+ html body:not(.portalmode) .ws-attachment {background:var(--app-surface);color:var(--ink);border-color:var(--ui-line)}
+}

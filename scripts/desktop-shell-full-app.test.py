@@ -35,6 +35,18 @@ def contrast_navigation(page):
   colors=page.locator(selector).evaluate('(e)=>[getComputedStyle(e).backgroundColor,getComputedStyle(e).color]')
   if colors[0]=='rgba(0, 0, 0, 0)':colors[0]=row.evaluate('(e)=>getComputedStyle(e).backgroundColor')
   a,b=sorted(map(luminance,colors));assert (b+.05)/(a+.05)>=4.5,colors
+def neutral_canvas(page):
+ # Exercise computed styles on the real renderers, including legacy grid overrides.
+ styles=page.evaluate("""()=>{
+  const main=getComputedStyle(document.querySelector('.main'));
+  const body=getComputedStyle(document.body);
+  return {canvas:main.backgroundColor,grid:main.backgroundImage,
+   surface:body.getPropertyValue('--app-surface').trim(),control:body.getPropertyValue('--app-control').trim(),
+   projects:[...document.querySelectorAll('.projects-identity,#view:has(.projects-identity)')].map(e=>getComputedStyle(e).backgroundImage)};
+ }""")
+ assert styles['canvas']=='rgb(255, 255, 255)',styles
+ assert styles['grid']=='none' and all(v=='none' for v in styles['projects']),styles
+ assert styles['surface']=='#fff' and styles['control']=='#eee',styles
 with socket.socket() as sock:
  sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
 origin=f'http://127.0.0.1:{port}'
@@ -77,6 +89,20 @@ try:
     applySessionUI();drawBrandSwitch();showLogin(false);go('proyectos');
    }""")
    assert page.evaluate('sb===null')
+   assert page.evaluate("folderColors({}).front")=='#eeeeee'
+   assert page.evaluate("folderColors({color:'#123456'}).front")=='#123456'
+   assert page.evaluate("folderColors({color:'salvia'}).front")=='#D3DDC8'
+   # The neutral app skin must not recolour printing or the independent client portal.
+   for media,portal in [('print',False),('screen',True)]:
+    page.emulate_media(media=media)
+    page.evaluate('(portal)=>document.body.classList.toggle("portalmode",portal)',portal)
+    palette="()=>[getComputedStyle(document.body).getPropertyValue('--bg'),getComputedStyle(document.body).getPropertyValue('--card'),getComputedStyle(document.querySelector('.main')).backgroundColor]"
+    before=page.evaluate(palette)
+    page.evaluate("document.querySelector('link[href*=\"neutral-theme.css\"]').disabled=true")
+    assert page.evaluate(palette)==before,(media,portal)
+    page.evaluate("document.querySelector('link[href*=\"neutral-theme.css\"]').disabled=false")
+   page.evaluate('document.body.classList.remove("portalmode")')
+   page.emulate_media(media='screen')
    assert page.evaluate('LS_KEY')=='moderno_pruebas_ui-fixture'
    assert page.locator('#desktop-header').count()==(1 if width>=1100 else 0)
    page.evaluate('ModernoDesktopShell.setEnabled(false)')
@@ -92,6 +118,14 @@ try:
     page.evaluate('(view)=>go(view)',view)
     assert page.evaluate('state.view')==view
     assert page.locator('#view').inner_text().strip(),view
+    neutral_canvas(page)
+    if view=='workspace':
+     page.get_by_role('button',name='Todas las tareas',exact=True).click()
+     assert page.locator('.ws-full .kanban .task').count()>0
+     assert page.locator('.ws-full .kanban .task').first.evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(245, 245, 245)'
+    if len(sys.argv)>1 and view in ['home','proyectos','workspace','contabilidad']:
+     page.wait_for_timeout(250)
+     page.screenshot(path=str(Path(sys.argv[1])/f'neutral-{view}-{width}.png'),full_page=True)
    page.evaluate("go('proyecto',9001)")
    keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
    for key in keys+['cliente']:page.evaluate('(key)=>projTab(key)',key)
@@ -109,6 +143,7 @@ try:
    for key in keys:
     page.locator('#project-tab-'+key).click(force=width<1100)
     assert page.locator('#project-tab-'+key).get_attribute('aria-selected')=='true'
+    neutral_canvas(page)
     if key=='planos':
      assert page.locator('.project-file-open').evaluate_all('(bs)=>bs.map(b=>b.dataset.index)')==['1','2'],'Plan filtering must retain original file indices'
      assert page.locator('.project-plan-open').count()==2
@@ -203,6 +238,8 @@ try:
    if len(sys.argv)>1:
     page.screenshot(path=str(Path(sys.argv[1])/f'project-overview-light-{width}.png'),full_page=True)
     page.evaluate("document.body.classList.add('dark')")
+    assert page.locator('.main').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(32, 32, 32)'
+    assert page.locator('.main').evaluate('(e)=>getComputedStyle(e).backgroundImage')=='none'
     page.wait_for_function('getComputedStyle(document.querySelector("#project-tab-tareas svg")).stroke===getComputedStyle(document.body).color')
     if width>=1100:contrast_total(page)
     if width>=1100:contrast_navigation(page)
