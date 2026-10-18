@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Cabecera horizontal oscura y plegado hasta el símbolo
+
+El propietario recupera la identidad del menú lateral anterior: fondo negro, formas redondeadas y flecha circular clara con borde oscuro, ahora aplicados a la cabecera horizontal. La flecha comprime todos los accesos de la cápsula, dejando únicamente el símbolo compacto oficial y el control para desplegar. Al abrir reaparecen los iconos y se conserva el grupo de navegación. Esta petición sustituye la retirada del control de plegado de v3.65.37. El perfil y las notificaciones permanecen independientes. Alcance y reversión: [CABECERA-OSCURA-PLEGABLE](CABECERA-OSCURA-PLEGABLE.md).
+
 ## 2026-10-18 — Herramientas en el perfil y Conversaciones en el proyecto
 
 El propietario retira Documentos del menú superior, mueve Conversaciones al dock de cada proyecto junto a AI y reúne Automatizaciones, Plugins e Integraciones en el menú del icono del usuario. Desaparece el grupo superior Más herramientas. Se conservan las rutas y los documentos existentes; Documentos del proyecto mantiene todos sus archivos. Conversaciones reutiliza su estado preparatorio «Próximamente», sin implementar chat ni guardado. Se mantienen los permisos actuales de cada apartado. Esta petición amplía el dock con un décimo acceso para los perfiles que ya tenían permitido Conversaciones. Detalles: [REUBICACION-HERRAMIENTAS](REUBICACION-HERRAMIENTAS.md).

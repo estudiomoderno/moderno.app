@@ -23,6 +23,16 @@ def contrast_total(page):
   values=[v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in values]
   return sum(v*w for v,w in zip(values,[.2126,.7152,.0722]))
  a,b=sorted(map(luminance,colors));assert (b+.05)/(a+.05)>=4.5,colors
+def contrast_navigation(page):
+ def luminance(color):
+  values=[int(x)/255 for x in color.removeprefix('rgb(').removesuffix(')').split(',')]
+  values=[v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in values]
+  return sum(v*w for v,w in zip(values,[.2126,.7152,.0722]))
+ row=page.locator('.desktop-row')
+ for selector in ['#desktop-primary [data-desktop-view=proyectos]','#desktop-primary [data-desktop-view=workspace]']:
+  colors=page.locator(selector).evaluate('(e)=>[getComputedStyle(e).backgroundColor,getComputedStyle(e).color]')
+  if colors[0]=='rgba(0, 0, 0, 0)':colors[0]=row.evaluate('(e)=>getComputedStyle(e).backgroundColor')
+  a,b=sorted(map(luminance,colors));assert (b+.05)/(a+.05)>=4.5,colors
 with socket.socket() as sock:
  sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
 origin=f'http://127.0.0.1:{port}'
@@ -110,6 +120,24 @@ try:
     if key=='utilidades':
      assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
      page.locator('#ptM2').fill('24');assert '4.0 L' in page.locator('#ptRes').inner_text()
+   if width>=1100:
+    page.evaluate('window.originalCalculator=document.querySelector("#ptM2")')
+    page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+    assert page.locator('#desktop-navigation').is_hidden()
+    assert page.locator('.desktop-row').bounding_box()['width']<100
+    assert page.locator('.desktop-brand').is_visible()
+    assert page.locator('.desktop-profile>summary').is_visible()
+    page.locator('.desktop-profile>summary').click();assert page.get_by_role('button',name='Automatizaciones',exact=True).is_visible()
+    page.locator('.desktop-profile>summary').press('Escape')
+    if len(sys.argv)>1:
+     page.mouse.move(0,0)
+     page.screenshot(path=str(Path(sys.argv[1])/f'header-collapsed-{width}.png'),full_page=True)
+    page.get_by_role('button',name='Desplegar menú superior',exact=True).press('Enter')
+    assert page.locator('#desktop-navigation').is_visible()
+    assert page.evaluate('document.querySelector("#ptM2")===originalCalculator')
+    assert page.locator('#ptM2').input_value()=='24'
+    assert '4.0 L' in page.locator('#ptRes').inner_text()
+    assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
    page.locator('.project-options>summary').click()
    page.get_by_role('button',name='Portal del cliente',exact=True).click()
    assert page.locator('#project-tab-panel> .client-project-editor').is_visible()
@@ -154,6 +182,7 @@ try:
    page.get_by_role('button',name='Cerrar',exact=True).click()
    assert page.evaluate('fixtureRecords()===fixtureBaseline')
    if width>=1100:
+    contrast_navigation(page)
     contrast_total(page)
     cards=page.locator('.project-overview>div').all()
     bounds=[card.bounding_box() for card in cards]
@@ -167,6 +196,7 @@ try:
     page.evaluate("document.body.classList.add('dark')")
     page.wait_for_function('getComputedStyle(document.querySelector("#project-tab-tareas svg")).stroke===getComputedStyle(document.body).color')
     if width>=1100:contrast_total(page)
+    if width>=1100:contrast_navigation(page)
     page.screenshot(path=str(Path(sys.argv[1])/f'project-overview-dark-{width}.png'),full_page=True)
     page.evaluate("document.body.classList.remove('dark')")
    if width>=1100:

@@ -93,6 +93,8 @@ with sync_playwright() as p:
   bell=page.locator('#desktop-header .desktop-actions>button').bounding_box()
   profile=page.locator('.desktop-profile>summary').bounding_box()
   row=page.locator('.desktop-row').bounding_box()
+  assert page.locator('.desktop-row').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(17, 17, 17)'
+  assert page.locator('#desktop-header .logo-mini svg').evaluate('(e)=>getComputedStyle(e).filter')=='invert(1)'
   assert bell['width']==bell['height']==44
   assert profile['x']>=bell['x']+bell['width']
   assert row['x']+row['width']<bell['x']
@@ -129,12 +131,31 @@ with sync_playwright() as p:
   # Changing only the navigation group must keep the same editor and unsaved input.
   page.get_by_role('textbox',name='Borrador ficticio').fill('Cambios sin guardar')
   page.evaluate('window.originalDraft=document.querySelector("#view input");dirty=true')
+  page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+  assert page.locator('#desktop-navigation').is_hidden()
+  assert page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
+  assert page.locator('.desktop-row [data-desktop-view]:visible').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['home']
+  assert page.locator('.desktop-row').bounding_box()['width']<100
+  assert page.locator('.desktop-row').bounding_box()['width']<row['width']/3
+  assert page.get_by_role('button',name='Desplegar menú superior',exact=True).get_attribute('aria-expanded')=='false'
+  assert page.get_by_role('button',name='Desplegar menú superior',exact=True).evaluate('(e)=>document.activeElement===e')
+  assert page.evaluate('document.querySelector("#view input")===originalDraft')
+  assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
+  page.locator('.desktop-profile>summary').click()
+  assert page.get_by_role('button',name='Ajustes',exact=True).is_visible()
+  page.locator('.desktop-profile>summary').press('Escape')
+  page.get_by_role('button',name='Desplegar menú superior',exact=True).press('Enter')
+  assert page.locator('#desktop-navigation').is_visible()
+  assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
   page.get_by_role('button',name='Finanzas',exact=True).click()
   assert page.locator('#desktop-primary').is_hidden() and page.locator('#desktop-finance-nav').is_visible()
   assert page.locator('#desktop-finance-nav [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==finance
   assert page.evaluate('state.view')=='proyecto'
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   assert page.evaluate('document.querySelector("#view input")===originalDraft')
+  page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+  page.get_by_role('button',name='Desplegar menú superior',exact=True).click()
+  assert page.locator('#desktop-finance-nav').is_visible(),'Expanding must retain the Finance group'
   page.locator('#desktop-header [data-desktop-view=facturas]').click()
   assert page.evaluate('calls.pop()')==['draft','facturas',None]
   assert page.evaluate('state.view')=='proyecto'
@@ -143,10 +164,14 @@ with sync_playwright() as p:
   assert page.get_by_role('button',name='Finanzas',exact=True).evaluate('(e)=>document.activeElement===e')
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.evaluate('dirty=false')
-  # Open/close/resizing never rerender or discard the active editor input.
+  # Compact state and the original unsaved editor survive removal/rebuild at tablet width.
+  page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
   page.set_viewport_size({'width':1024,'height':1000});page.wait_for_function("!document.querySelector('#desktop-header')")
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.set_viewport_size({'width':width,'height':1000});page.wait_for_function("!!document.querySelector('#desktop-header')")
+  assert page.locator('#desktop-navigation').is_hidden()
+  page.get_by_role('button',name='Desplegar menú superior',exact=True).press('Space')
+  assert page.locator('#desktop-navigation').is_visible()
   page.evaluate('dirty=true')
   page.locator('#desktop-header [data-desktop-view=workspace]').click()
   assert page.evaluate('state.view')=='proyecto'
