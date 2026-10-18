@@ -6,8 +6,8 @@
  html body.desktop-shell:not(.portalmode) .main{border-radius:0;padding:96px 24px 120px 112px!important;scroll-padding-top:96px}
  body.desktop-shell .main>.topbar{display:none!important}
  #desktop-header{--desktop-button:clamp(28px,calc((100dvh - 160px)/9),44px);position:fixed;top:16px;left:16px;right:24px;z-index:75;display:flex;align-items:flex-start;gap:18px;background:transparent;color:var(--ink);box-sizing:border-box;pointer-events:none}
- #desktop-header .desktop-row{--desktop-rail-bg:#111;--desktop-rail-ink:#f6f4eb;--desktop-rail-hover:#383832;--desktop-rail-line:#44443d;position:relative;width:68px;min-height:64px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 8px 24px;flex-shrink:0;box-sizing:border-box;border:1px solid var(--desktop-rail-bg);border-radius:28px;background:var(--desktop-rail-bg);color:var(--desktop-rail-ink);box-shadow:var(--shadow);pointer-events:auto}
- #desktop-header .desktop-row{transition:padding 240ms cubic-bezier(.22,.61,.36,1),gap 240ms cubic-bezier(.22,.61,.36,1)}
+ #desktop-header .desktop-row{--desktop-rail-bg:#111;--desktop-rail-ink:#f6f4eb;--desktop-rail-hover:#383832;--desktop-rail-line:#44443d;position:relative;width:68px;height:calc(100dvh - 48px);min-height:64px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 8px 24px;flex-shrink:0;box-sizing:border-box;border:1px solid var(--desktop-rail-bg);border-radius:28px;background:var(--desktop-rail-bg);color:var(--desktop-rail-ink);box-shadow:var(--shadow);pointer-events:auto}
+ #desktop-header .desktop-row{transition:height 240ms cubic-bezier(.22,.61,.36,1),padding 240ms cubic-bezier(.22,.61,.36,1),gap 240ms cubic-bezier(.22,.61,.36,1)}
  #desktop-header .desktop-brand{display:flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;min-height:44px;padding:0 0 10px;box-sizing:border-box;border:0;border-bottom:1px solid var(--desktop-rail-line);border-radius:0;background:transparent;color:inherit;cursor:default;transition:padding 240ms cubic-bezier(.22,.61,.36,1)}
  #desktop-header .desktop-brand:is(:hover,:focus,:active),#desktop-header .desktop-brand[aria-current=page]{background:transparent!important;color:inherit;box-shadow:none}
  #desktop-header .sb-head{margin:0!important;min-height:0!important;align-items:center!important}
@@ -56,7 +56,7 @@
  #desktop-header .desktop-arrow-expand{opacity:0;transform:translateY(-4px) rotate(90deg)}
  #desktop-header .is-collapsed .desktop-arrow-collapse{opacity:0;transform:translateY(4px) rotate(90deg)}
  #desktop-header .is-collapsed .desktop-arrow-expand{opacity:1;transform:rotate(90deg)}
- #desktop-header .desktop-row.is-collapsed{padding:10px 8px;gap:0}
+ #desktop-header .desktop-row.is-collapsed{height:66px;padding:10px 8px;gap:0}
  #desktop-header .desktop-row.is-collapsed .desktop-brand{padding:0;border-bottom:0}
  #desktop-header summary{list-style:none}
  #desktop-header summary::-webkit-details-marker{display:none}

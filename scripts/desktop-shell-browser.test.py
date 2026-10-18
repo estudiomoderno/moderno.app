@@ -118,7 +118,7 @@ with sync_playwright() as p:
   assert profile['x']>=bell['x']+bell['width']
   assert row['x']+row['width']<bell['x']
   assert max(row['y'],bell['y'])-min(row['y'],bell['y'])<12
-  assert row['width']==68 and row['height']>350,'Navigation must be a narrow vertical rail'
+  assert row['width']==68 and row['height']==1000-48,'Expanded rail must use the available screen height'
   for rect in page.locator('.desktop-nav .desktop-icon-only:visible').evaluate_all('(els)=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width,height:r.height}})'):
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
    assert rect['width']==rect['height']==44,rect
@@ -263,11 +263,13 @@ with sync_playwright() as p:
   # Short windows keep every icon reachable and open the product menu inside the viewport.
   for height in [500,400]:
    page.set_viewport_size({'width':width,'height':height})
-   page.wait_for_function('Math.abs(document.querySelector(".desktop-nav-clip").getBoundingClientRect().height-document.querySelector("#desktop-navigation").getBoundingClientRect().height)<0.5&&!document.querySelector(".desktop-nav-clip").getAnimations().some(a=>a.playState==="running")')
+   page.wait_for_function('Math.abs(document.querySelector(".desktop-nav-clip").getBoundingClientRect().height-document.querySelector("#desktop-navigation").getBoundingClientRect().height)<0.5&&Math.abs(document.querySelector(".desktop-row").getBoundingClientRect().height-(innerHeight-48))<0.5&&!document.querySelector(".desktop-nav-clip").getAnimations().some(a=>a.playState==="running")')
    last=page.locator('.desktop-group>summary').first
    last.click()
    menu=page.locator('.desktop-group[open]>.desktop-menu');menu.wait_for(state='visible')
+   page.wait_for_function('(()=>{const r=document.querySelector(".desktop-group[open]>.desktop-menu").getBoundingClientRect();return r.top>=11&&r.bottom<=innerHeight-11})()')
    box=menu.bounding_box();rail=page.locator('.desktop-row').bounding_box();toggle=page.locator('.desktop-toggle').bounding_box()
+   assert abs(rail['height']-(height-48))<0.5,(rail,height)
    assert box['x']>rail['x']+rail['width'] and box['y']>=11 and box['y']+box['height']<=height-11,(box,rail,height)
    assert toggle['y']+toggle['height']<=height,(toggle,height)
    for control in page.locator('.desktop-nav .desktop-icon-only:visible').all():
