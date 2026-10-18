@@ -24,6 +24,22 @@ window.V=document.getElementById('view');window.render=()=>{
 };
 """
 finance=['facturas','presupuestos','contabilidad','informes','prevision']
+def settle_header(page):
+ page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
+def sample_fold(page):
+ result=page.evaluate("""()=>{
+  const clip=document.querySelector('.desktop-nav-clip'),start=clip.getBoundingClientRect().width;
+  document.querySelector('.desktop-toggle').click();
+  return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
+   const animation=clip.getAnimations().find(a=>a.transitionProperty==='width');
+   if(!animation){resolve({start,missing:true});return;}
+   animation.pause();animation.currentTime=120;
+   const middle=clip.getBoundingClientRect().width;
+   animation.finish();resolve({start,middle});
+  })));
+ }""")
+ assert not result.get('missing'),result
+ return result
 def reveal_route(page,view):
  if view in finance:
   if page.locator('#desktop-finance-nav').is_hidden():page.get_by_role('button',name='Finanzas',exact=True).click()
@@ -77,11 +93,14 @@ with sync_playwright() as p:
   assert page.locator('#brandSwitch').is_hidden()
   assert page.locator('#desktop-header').evaluate('(e)=>getComputedStyle(e).position')=='fixed'
   assert page.locator('#desktop-header .desktop-context').count()==0
-  assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Proyectos','Tareas','Calendario','Agenda','Finanzas','Mail']
+  assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Proyectos','Tareas','Calendario','Agenda','Finanzas','Mail']
   assert page.locator('#desktop-primary .desktop-icon-only>.desktop-label').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).clip!=="auto")')
   brand=page.locator('.desktop-brand');background=brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')
   brand.hover();assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background
-  page.evaluate("go('home')")
+  assert brand.evaluate('(e)=>e.tagName')=='DIV'
+  assert brand.get_attribute('tabindex') is None and brand.get_attribute('data-desktop-view') is None
+  brand.click();assert page.evaluate('state.view')=='proyecto'
+  page.get_by_role('button',name='Inicio',exact=True).click();assert page.evaluate('state.view')=='home'
   assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background,'Home selection must not tint the logo'
   page.evaluate("go('proyecto',1)")
   page.locator('#desktop-primary [data-desktop-view=proyectos]').hover()
@@ -131,10 +150,21 @@ with sync_playwright() as p:
   # Changing only the navigation group must keep the same editor and unsaved input.
   page.get_by_role('textbox',name='Borrador ficticio').fill('Cambios sin guardar')
   page.evaluate('window.originalDraft=document.querySelector("#view input");dirty=true')
+  brand.click();assert page.evaluate('state.view')=='proyecto'
+  page.get_by_role('button',name='Inicio',exact=True).click()
+  assert page.evaluate('calls.pop()')==['draft','home',None]
+  assert page.evaluate('state.view')=='proyecto'
+  if width==1440:
+   result=sample_fold(page);assert 0<result['middle']<result['start'],result
+   page.locator('#desktop-navigation').wait_for(state='hidden');settle_header(page)
+   result=sample_fold(page);assert result['start']==0 and 0<result['middle'],result
+   settle_header(page)
   page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+  settle_header(page)
   assert page.locator('#desktop-navigation').is_hidden()
   assert page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
-  assert page.locator('.desktop-row [data-desktop-view]:visible').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['home']
+  assert page.locator('.desktop-row [data-desktop-view]:visible').count()==0
+  assert page.locator('.desktop-brand .logo-mini').is_visible()
   assert page.locator('.desktop-row').bounding_box()['width']<100
   assert page.locator('.desktop-row').bounding_box()['width']<row['width']/3
   assert page.get_by_role('button',name='Desplegar menú superior',exact=True).get_attribute('aria-expanded')=='false'
@@ -145,6 +175,7 @@ with sync_playwright() as p:
   assert page.get_by_role('button',name='Ajustes',exact=True).is_visible()
   page.locator('.desktop-profile>summary').press('Escape')
   page.get_by_role('button',name='Desplegar menú superior',exact=True).press('Enter')
+  settle_header(page)
   assert page.locator('#desktop-navigation').is_visible()
   assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
   page.get_by_role('button',name='Finanzas',exact=True).click()
@@ -155,6 +186,7 @@ with sync_playwright() as p:
   assert page.evaluate('document.querySelector("#view input")===originalDraft')
   page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
   page.get_by_role('button',name='Desplegar menú superior',exact=True).click()
+  settle_header(page)
   assert page.locator('#desktop-finance-nav').is_visible(),'Expanding must retain the Finance group'
   page.locator('#desktop-header [data-desktop-view=facturas]').click()
   assert page.evaluate('calls.pop()')==['draft','facturas',None]
@@ -171,7 +203,19 @@ with sync_playwright() as p:
   page.set_viewport_size({'width':width,'height':1000});page.wait_for_function("!!document.querySelector('#desktop-header')")
   assert page.locator('#desktop-navigation').is_hidden()
   page.get_by_role('button',name='Desplegar menú superior',exact=True).press('Space')
+  settle_header(page)
   assert page.locator('#desktop-navigation').is_visible()
+  # Reversing during the actual transition must not leave the navigation clipped or hidden.
+  page.evaluate("() => {document.querySelector('.desktop-toggle').click();return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{document.querySelector('.desktop-toggle').click();resolve();})));}")
+  settle_header(page)
+  assert page.locator('#desktop-navigation').is_visible() and not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
+  page.emulate_media(reduced_motion='reduce')
+  page.get_by_role('button',name='Comprimir menú superior',exact=True).click()
+  assert page.locator('#desktop-navigation').is_hidden()
+  assert page.locator('.desktop-nav-clip').evaluate('(e)=>e.getAnimations().length')==0
+  page.get_by_role('button',name='Desplegar menú superior',exact=True).click()
+  assert page.locator('#desktop-navigation').is_visible()
+  page.emulate_media(reduced_motion='no-preference')
   page.evaluate('dirty=true')
   page.locator('#desktop-header [data-desktop-view=workspace]').click()
   assert page.evaluate('state.view')=='proyecto'

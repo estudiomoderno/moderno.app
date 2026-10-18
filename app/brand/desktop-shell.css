@@ -7,7 +7,8 @@
  body.desktop-shell .main>.topbar{display:none!important}
  #desktop-header{position:fixed;top:20px;left:24px;right:24px;z-index:75;display:flex;align-items:flex-start;gap:18px;background:transparent;color:var(--ink);box-sizing:border-box;pointer-events:none}
  #desktop-header .desktop-row{--desktop-rail-bg:#111;--desktop-rail-ink:#f6f4eb;--desktop-rail-hover:#383832;--desktop-rail-line:#44443d;position:relative;min-height:58px;display:flex;align-items:center;gap:8px;padding:6px 28px 6px 10px;max-width:calc(100% - 120px);box-sizing:border-box;border:1px solid var(--desktop-rail-bg);border-radius:28px;background:var(--desktop-rail-bg);color:var(--desktop-rail-ink);box-shadow:var(--shadow);pointer-events:auto}
- #desktop-header .desktop-brand{display:flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px;min-height:40px;padding:0 12px 0 0;border:0;border-right:1px solid var(--desktop-rail-line);border-radius:0;background:transparent;color:inherit}
+ #desktop-header .desktop-row{transition:padding 240ms cubic-bezier(.22,.61,.36,1),gap 240ms cubic-bezier(.22,.61,.36,1)}
+ #desktop-header .desktop-brand{display:flex;align-items:center;justify-content:center;flex:0 0 48px;width:48px;height:40px;min-height:40px;padding:0 12px 0 0;box-sizing:border-box;border:0;border-right:1px solid var(--desktop-rail-line);border-radius:0;background:transparent;color:inherit;cursor:default;transition:padding 240ms cubic-bezier(.22,.61,.36,1)}
  #desktop-header .desktop-brand:is(:hover,:focus,:active),#desktop-header .desktop-brand[aria-current=page]{background:transparent!important;color:inherit;box-shadow:none}
  #desktop-header .sb-head{margin:0!important;min-height:0!important;align-items:center!important}
  /* The exact existing logo nodes move here; their SVGs, proportions and dimensions stay intact. */
@@ -16,6 +17,11 @@
  #desktop-header .logo-mini.new-brand{display:block!important;width:30px;margin:0}
  #desktop-header .new-brand svg{display:block;width:100%;height:auto;font-synthesis:none;filter:invert(1)}
  #desktop-header .desktop-nav,#desktop-header .desktop-primary,#desktop-header .desktop-subnav{display:flex;align-items:center;gap:4px;min-width:0}
+ #desktop-header .desktop-nav-clip{width:var(--desktop-nav-width);flex:0 0 auto;transition:width 240ms cubic-bezier(.22,.61,.36,1)}
+ #desktop-header .desktop-nav{width:max-content;opacity:1;visibility:visible;transform:translateX(0);transition:opacity 180ms ease,transform 240ms cubic-bezier(.22,.61,.36,1),visibility 0s}
+ #desktop-header .is-toggling .desktop-nav-clip,#desktop-header .is-collapsed .desktop-nav-clip{overflow:hidden}
+ #desktop-header .is-collapsed .desktop-nav-clip{width:0}
+ #desktop-header .is-collapsed .desktop-nav{opacity:0;visibility:hidden;transform:translateX(-10px);transition:opacity 140ms ease,transform 240ms cubic-bezier(.22,.61,.36,1),visibility 0s 240ms}
  #desktop-header :is(.desktop-primary,.desktop-subnav){animation:desktopNavIn 160ms ease-out}
  #desktop-header :is(button,summary){font:inherit;font-size:12px;cursor:pointer}
  #desktop-header .desktop-link,#desktop-header .desktop-group>summary{display:flex;align-items:center;gap:7px;min-height:40px;border:0;padding:8px 10px;border-radius:12px;white-space:nowrap;background:transparent;color:var(--ink-soft);text-decoration:none}
@@ -49,7 +55,7 @@
  #desktop-header .desktop-arrow-expand{opacity:0;transform:translateX(-4px)}
  #desktop-header .is-collapsed .desktop-arrow-collapse{opacity:0;transform:translateX(4px)}
  #desktop-header .is-collapsed .desktop-arrow-expand{opacity:1;transform:none}
- #desktop-header .desktop-row.is-collapsed{padding-inline:10px}
+ #desktop-header .desktop-row.is-collapsed{padding-inline:10px;gap:0}
  #desktop-header .desktop-row.is-collapsed .desktop-brand{padding:0;border-right:0}
  #desktop-header summary{list-style:none}
  #desktop-header summary::-webkit-details-marker{display:none}

@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-18 — Transición de la cabecera e Inicio separado del logotipo
+
+El propietario solicita movimiento al plegar/desplegar y que el símbolo oficial deje de navegar. La cápsula interpola su anchura y los iconos se desplazan/desvanecen, respetando movimiento reducido. El logotipo pasa a ser una marca no interactiva; Inicio es ahora el primer icono del menú superior y utiliza su handler original. Se conservan el fondo oscuro, flecha, Finanzas, herramientas del perfil y dock. Detalles y retorno en [TRANSICION-CABECERA-INICIO](TRANSICION-CABECERA-INICIO.md).
+
 ## 2026-10-18 — Cabecera horizontal oscura y plegado hasta el símbolo
 
 El propietario recupera la identidad del menú lateral anterior: fondo negro, formas redondeadas y flecha circular clara con borde oscuro, ahora aplicados a la cabecera horizontal. La flecha comprime todos los accesos de la cápsula, dejando únicamente el símbolo compacto oficial y el control para desplegar. Al abrir reaparecen los iconos y se conserva el grupo de navegación. Esta petición sustituye la retirada del control de plegado de v3.65.37. El perfil y las notificaciones permanecen independientes. Alcance y reversión: [CABECERA-OSCURA-PLEGABLE](CABECERA-OSCURA-PLEGABLE.md).
