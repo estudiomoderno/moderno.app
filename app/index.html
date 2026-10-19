@@ -1180,7 +1180,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36567"></script>
+<script src="/project-ui.js?v=36568"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36536"></script>
@@ -7166,12 +7166,13 @@ function vRoom(){
   const q = _capNorm(state.roomSearch||"");
   const rf = state.rf || (state.rf={status:"",supplier:"",color:"",min:"",max:""});
   const isPav = r.kind==="pav";
-  const match = it => (!q || _capNorm(it.name+" "+it.sku+" "+it.supplier).includes(q))
+  const match = (it,label) => (!q || _capNorm(it.name+" "+it.sku+" "+it.supplier).includes(q))
+    && shoppingRoomLabelMatches(label,rf.label)
     && (!rf.status || it.status===rf.status)
     && (!rf.supplier || it.supplier===rf.supplier)
     && (!rf.color || (it.color||"")===rf.color)
     && (!rf.min || it.price>=+rf.min) && (!rf.max || it.price<=+rf.max);
-  const filtering = rf.status||rf.supplier||rf.color||rf.min||rf.max;
+  const filtering = rf.label||rf.status||rf.supplier||rf.color||rf.min||rf.max;
   state.rowOpen = state.rowOpen||{};
   const esc = v => String(v==null?"":v).replace(/"/g,"&quot;");
   const shortUrl = u => { try{ const h=new URL(u).hostname.replace(/^www\./,""); return h.length>26?h.slice(0,24)+"…":h; }catch(e){ return (u||"").slice(0,24)+"…"; } };
@@ -7192,32 +7193,17 @@ function vRoom(){
     <b class="dl-num">${fmt(tot)}</b>
   </div>
   ${shoppingRoomTools(r)}
-  ${r.sections.map((sec,si)=>{
-    const sub = sec.items.reduce((a,i)=>a+i.price*i.qty,0);
-    const visible = sec.items.map((it,ii)=>({it,ii})).filter(({it})=>match(it));
-    return `
-    <div class="dl-sec" id="sec-${si}" data-shopping-section="${si}"><button class="shopping-grip" aria-label="Mover sección ${ModernoDaily.escape(sec.name)}" title="Arrastra para mover · flechas arriba y abajo" onpointerdown="shoppingMoveStart(event,${si})" onkeydown="shoppingMoveKey(event,${si})">⠿</button>
-      <button class="arr ${sec._c?"closed":""}" title="${sec._c?"Desplegar":"Encoger"} la sección" onclick="event.stopPropagation();toggleShoppingSection(${si},this)">${ico("sec_fold")}</button>
-      <b title="Pulsa para renombrar la sección" style="cursor:text" onclick="renameSection(${si})">${sec.name}</b><span class="dl-cnt">${sec.items.length}</span>
-      <details class="shopping-section-menu"><summary aria-label="Opciones de la sección">···</summary><div><button onclick="renameSection(${si})">Renombrar</button><button onclick="moveSection(${si},-1)" ${si===0?'disabled':''}>Mover arriba</button><button onclick="moveSection(${si},1)" ${si===r.sections.length-1?'disabled':''}>Mover abajo</button><button onclick="delSection(${si})">Eliminar sección</button></div></details>
-      <span class="line"></span><span class="dl-sum">${fmt(sub)}</span>
-    </div>
-    ${sec._c?"":`<div id="shopping-section-${si}">
-    <div class="shopping-product-grid" ondragover="event.preventDefault()" ondrop="dropItemSection(event,${si})">
-      <div class="shopping-add-wrap"><button type="button" class="shopping-add-card" aria-label="Añadir producto" onclick="itemModal(${si},-1)"><img class="shopping-add-illustration" src="/brand/illustrations/nuevo-producto.webp" width="640" height="427" alt="" aria-hidden="true" decoding="async" onerror="this.hidden=true"><strong><span aria-hidden="true">+</span> Añadir producto</strong></button></div>
-      ${visible.map(({it,ii})=>`<article data-shopping-section="${si}" data-shopping-item="${ii}" class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
-        <button class="shopping-grip shopping-product-grip" aria-label="Mover ${ModernoDaily.escape(it.name)}" title="Arrastra para ordenar · usa las flechas con el teclado" onpointerdown="shoppingMoveStart(event,${si},${ii})" onkeydown="shoppingMoveKey(event,${si},${ii})">⠿</button><button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
+  <div class="shopping-product-grid shopping-flat-products" ondragover="event.preventDefault()" ondrop="shoppingRoomDropEnd(event)">
+      <div class="shopping-add-wrap"><button type="button" class="shopping-add-card" aria-label="Añadir producto" onclick="shoppingRoomAddProduct()"><img class="shopping-add-illustration" src="/brand/illustrations/nuevo-producto.webp" width="640" height="427" alt="" aria-hidden="true" decoding="async" onerror="this.hidden=true"><strong><span aria-hidden="true">+</span> Añadir producto</strong></button></div>
+      ${shoppingRoomRows(r).filter(({it,label})=>match(it,label)).map(({it,si,ii,label})=>`<article data-shopping-section="${si}" data-shopping-item="${ii}" class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
+        <button class="shopping-grip shopping-product-grip" aria-label="Mover ${ModernoDaily.escape(it.name)}" title="Ordenar dentro de la etiqueta · usa las flechas con el teclado" onpointerdown="shoppingMoveStart(event,${si},${ii})" onkeydown="shoppingMoveKey(event,${si},${ii})">⠿</button><button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
         <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button><strong>${fmt(it.price)}</strong></div>
-        <p class="shopping-product-meta">${ModernoDaily.escape([it.supplier,it.color,it.dims].filter(Boolean).join(' · '))}</p>
+        <p class="shopping-product-meta">${ModernoDaily.escape([it.supplier,it.color,it.dims].filter(Boolean).join(' · '))}${shoppingRoomLabelChip(label)}</p>
         <p class="shopping-product-meta">${it.qty} ${ModernoDaily.escape(({m2:'m²',m3:'m³'})[it.unit]||it.unit||'ud')} · Total ${fmt(it.price*it.qty)}${it.plazo?' · '+ModernoDaily.escape(it.plazo):''}</p>
         <div class="shopping-product-controls"><select aria-label="Estado de ${ModernoDaily.escape(it.name)}" class="dl-pill ${ACC.includes(it.status)?'acc':''}" onchange="setItem(${si},${ii},'status',this.value)">${Object.keys(ISTATES).map(st=>`<option ${it.status===st?'selected':''}>${st}</option>`).join('')}</select><button class="dl-btn" aria-label="Editar ${ModernoDaily.escape(it.name)}" onclick="itemModal(${si},${ii})">${ico('editar')}</button><button class="dl-btn" aria-label="Más opciones de ${ModernoDaily.escape(it.name)}" onclick="itemMenu(${si},${ii})">···</button></div>
         <p class="shopping-product-meta shopping-product-footer">${[it.hidden?'Oculto al cliente':'',it.alt?'Alternativa':'',it.rejected?'Rechazado':'',it.files?.length?it.files.length+' adjuntos':''].filter(Boolean).join(' · ')}</p>
       </article>`).join('')}
-      ${(q||filtering)&&!visible.length?'<p>Sin resultados en esta sección</p>':''}
-    </div>
-</div>`}`}).join("")}
-  <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap;align-items:center">
-    <button class="dl-btn" onclick="newSection()">${ico("mas")} Añadir sección</button>
+      ${(q||filtering)&&!shoppingRoomRows(r).some(({it,label})=>match(it,label))?'<p class="shopping-empty-results">No hay productos que coincidan con los filtros.</p>':''}
   </div>
   </section></div>`;
 }
@@ -8779,8 +8765,9 @@ function marginModal(){
 }
 function shoppingReorder(si,ii,toSi,toIi){
  const {p,r}=getRoom();if(!r.sections[si]||!r.sections[toSi])return;
- if(ii==null){if(si===toSi)return;specPrepare(p);const section=r.sections.splice(si,1)[0];r.sections.splice(toSi,0,section);}
- else{if(!r.sections[si].items[ii]||(si===toSi&&ii===toIi))return;specPrepare(p);const item=r.sections[si].items.splice(ii,1)[0];r.sections[toSi].items.splice(toIi==null?r.sections[toSi].items.length:toIi,0,item);}
+ if(ii!=null&&!shoppingRoomReorderAllowed(si,toSi)){render();return;}
+ if(ii==null){if(si===toSi||!specPrepare(p))return;const section=r.sections.splice(si,1)[0];r.sections.splice(toSi,0,section);}
+ else{if(!r.sections[si].items[ii]||(si===toSi&&ii===toIi)||!specPrepare(p))return;const item=r.sections[si].items.splice(ii,1)[0];r.sections[toSi].items.splice(toIi==null?r.sections[toSi].items.length:toIi,0,item);}
  render();
 }
 function shoppingMoveKey(ev,si,ii){if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(ev.key))return;ev.preventDefault();const delta=['ArrowUp','ArrowLeft'].includes(ev.key)?-1:1;const {r}=getRoom();if(ii==null){const next=si+delta;if(next>=0&&next<r.sections.length)shoppingReorder(si,null,next);}else{const next=ii+delta;if(next>=0&&next<r.sections[si].items.length)shoppingReorder(si,ii,si,next);}}
@@ -8795,7 +8782,7 @@ function shoppingMoveStart(ev,si,ii){
   ghost.style.left=(e.clientX-offsetX)+'px';ghost.style.top=(e.clientY-offsetY)+'px';
   const hit=document.elementFromPoint(e.clientX,e.clientY);if(hit===gap)return;
   if(ii==null){const target=hit?.closest('[data-shopping-section]');if(target){const header=document.getElementById('sec-'+target.dataset.shoppingSection);if(header&&header!==source){const after=e.clientY>header.getBoundingClientRect().top+header.offsetHeight/2;const anchor=after?(document.getElementById('shopping-section-'+target.dataset.shoppingSection)||header):header;anchor[after?'after':'before'](gap);destination={si:Number(target.dataset.shoppingSection)+(after?1:0)};}}}
-  else{const card=hit?.closest('.shopping-product-card'),grid=hit?.closest('.shopping-product-grid');if(card&&card!==source){const box=card.getBoundingClientRect(),after=e.clientX>box.left+box.width/2;card[after?'after':'before'](gap);destination={si:Number(card.dataset.shoppingSection),ii:Number(card.dataset.shoppingItem)+(after?1:0)};}else if(grid&&!card){grid.appendChild(gap);const section=grid.closest('[id^="shopping-section-"]');if(section){const targetSi=Number(section.id.replace('shopping-section-',''));destination={si:targetSi,ii:owner.sections[targetSi].items.length};}}}
+  else{const card=hit?.closest('.shopping-product-card'),grid=hit?.closest('.shopping-product-grid');if(card&&card!==source){const box=card.getBoundingClientRect(),after=e.clientX>box.left+box.width/2;card[after?'after':'before'](gap);destination={si:Number(card.dataset.shoppingSection),ii:Number(card.dataset.shoppingItem)+(after?1:0)};}else if(grid&&!card){grid.appendChild(gap);if(grid.classList.contains('shopping-flat-products'))destination={si,ii:owner.sections[si].items.length};const section=grid.closest('[id^="shopping-section-"]');if(section){const targetSi=Number(section.id.replace('shopping-section-',''));destination={si:targetSi,ii:owner.sections[targetSi].items.length};}}}
   if(e.clientY<70)window.scrollBy(0,-18);else if(e.clientY>innerHeight-70)window.scrollBy(0,18);
  };
  const stop=e=>{button.removeEventListener('pointermove',move);button.removeEventListener('pointerup',stop);button.removeEventListener('pointercancel',stop);document.removeEventListener('keydown',cancel);ghost.remove();gap.remove();source.classList.remove('shopping-drag-source');if(e.type==='pointercancel'||e.key==='Escape'||getRoom().r!==owner||!destination)return;
@@ -8815,7 +8802,8 @@ function dragItem(ev,si,ii){ dragIt={si,ii}; ev.dataTransfer.effectAllowed="move
 function dropItemRow(ev,si,ii){
   ev.preventDefault(); ev.stopPropagation(); ev.currentTarget.classList.remove("dropbefore");
   if(!dragIt) return;
-  const {r,p}=getRoom(); specPrepare(p);
+  if(!shoppingRoomReorderAllowed(dragIt.si,si)){dragIt=null;render();return;}
+  const {r,p}=getRoom(); if(!specPrepare(p)){dragIt=null;return;}
   const it = r.sections[dragIt.si].items.splice(dragIt.ii,1)[0];
   if(dragIt.si===si && dragIt.ii<ii) ii--;
   r.sections[si].items.splice(ii,0,it);
@@ -8896,6 +8884,7 @@ function itemModal(si,ii,fromUrl){
     </div>
   </div>
   <label for="itName">Nombre</label><input id="itName" value="${ModernoDaily.escape(it.name||"")}">
+  ${shoppingRoomLabelEditor(si,ii)}
   <div class="row2">
     <div><label for="itSup">Proveedor</label><input id="itSup" list="dlProvs" value="${ModernoDaily.escape(it.supplier||"")}" placeholder="De tu agenda o libre">${dlProvs()}</div>
     <div><label for="itSku">Referencia / variante</label><input id="itSku" value="${ModernoDaily.escape(it.sku||"")}"></div>
@@ -8983,7 +8972,13 @@ function saveItem(si,ii){
   if(!productAmountsValid("itPrice","itCost","itQty"))return;
   if(itemUploadDraft?.pending){toast("Espera a que terminen de prepararse los archivos");return;}
   if(document.getElementById("itPrice").value.trim()===""){toast("Indica el precio comprobado; puedes escribir 0 si es gratuito");return;}
-  const {r} = getRoom();
+  const {p,r} = getRoom();
+  const label=String(document.getElementById('itLabel')?.value||'').trim();
+  let target=shoppingRoomLabelTarget(r,label);
+  if(ii>=0&&shoppingLabelKey(shoppingRoomLabel(r.sections[si]))===shoppingLabelKey(label))target=si;
+  if(ii>=0&&target!==si){
+    if(!specPrepare(p)){toast('Un administrador debe cambiar la etiqueta de este producto');return;}
+  }
   const it = { ...(ii>=0?r.sections[si].items[ii]:{}), libId:itLibId, name:document.getElementById("itName").value||"Producto",
     url:document.getElementById("itUrl").value, sku:document.getElementById("itSku").value,
     supplier:document.getElementById("itSup").value, price:+document.getElementById("itPrice").value||0,
@@ -8993,7 +8988,11 @@ function saveItem(si,ii){
     dims:document.getElementById("itDims").value, material:document.getElementById("itMat").value,
     color:document.getElementById("itCol").value, plazo:document.getElementById("itPlz").value,
     note:document.getElementById("itNote").value, img:itImg, files:[...itFiles] };
-  if(ii>=0) r.sections[si].items[ii]=it; else {it.id=crypto.randomUUID();r.sections[si].items.push(it);}
+  if(target<0){r.sections.push({id:crypto.randomUUID(),name:label||'General',items:[]});target=r.sections.length-1;}
+  if(ii>=0){
+    if(target===si)r.sections[si].items[ii]=it;
+    else{r.sections[si].items.splice(ii,1);r.sections[target].items.push(it);ModernoSpec.reindex(p);}
+  }else{it.id=crypto.randomUUID();r.sections[target].items.push(it);}
 
   closeModal(); render();
 }
@@ -11446,7 +11445,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.67";
+const MODERNO_VER="v3.65.68";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13268,7 +13267,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36567">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36568">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

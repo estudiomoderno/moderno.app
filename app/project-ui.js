@@ -26,6 +26,26 @@ function shoppingRoomActions(pid,rid){
 }
 /* Adapt the supplied filter example to existing shopping fields, not demo task data. */
 var shoppingRoomSearchState={scope:'',open:false};
+function shoppingLabelKey(value){return String(value||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+function shoppingRoomLabel(section){const name=String(section?.name||'').trim();return shoppingLabelKey(name)==='general'?'':name;}
+function shoppingRoomRows(room){return (room.sections||[]).flatMap((section,si)=>(section.items||[]).map((it,ii)=>({it,si,ii,label:shoppingRoomLabel(section)})));}
+function shoppingRoomLabels(room){const seen=new Set();return (room.sections||[]).map(shoppingRoomLabel).filter(label=>{const key=shoppingLabelKey(label);if(!key||seen.has(key))return false;seen.add(key);return true;});}
+function shoppingRoomLabelMatches(label,filter){return !filter||(filter==='none'?!label:shoppingLabelKey(label)===shoppingLabelKey(filter.slice(6)));}
+function shoppingRoomLabelFilter(label){state.rf={...(state.rf||{}),label:'label:'+label};render();document.querySelector('.shopping-filter-control summary')?.focus();}
+function shoppingRoomLabelChip(label){const E=ModernoDaily.escape;return label?`<button type="button" class="shopping-product-label" data-label="${E(label)}" aria-label="Filtrar etiqueta ${E(label)}" onclick="shoppingRoomLabelFilter(this.dataset.label)">${E(label)}</button>`:'';}
+function shoppingRoomAddProduct(){const {r}=getRoom(),label=state.rf?.label?.startsWith('label:')?state.rf.label.slice(6):'';const index=shoppingRoomLabelTarget(r,label);itemModal(index<0?0:index,-1);}
+function shoppingRoomLabelEditor(si,ii){
+ const {r}=getRoom(),E=ModernoDaily.escape,label=ii>=0?shoppingRoomLabel(r.sections[si]):state.rf?.label?.startsWith('label:')?state.rf.label.slice(6):'';
+ return `<label for="itLabel">Etiqueta (opcional)</label><input id="itLabel" list="shopping-label-options" placeholder="Sin etiqueta" value="${E(label)}" ${_accessRole==='colaborador'?'readonly':''}><datalist id="shopping-label-options">${shoppingRoomLabels(r).map(name=>`<option value="${E(name)}"></option>`).join('')}</datalist>`;
+}
+function shoppingRoomLabelTarget(room,label){const key=shoppingLabelKey(label)||'general';return (room.sections||[]).findIndex(section=>(shoppingLabelKey(shoppingRoomLabel(section))||'general')===key);}
+function shoppingRoomReorderAllowed(si,toSi){
+ const {r}=getRoom();if(shoppingLabelKey(shoppingRoomLabel(r.sections[si]))===shoppingLabelKey(shoppingRoomLabel(r.sections[toSi])))return true;
+ toast('Para cambiar la etiqueta, abre la ficha del producto.');return false;
+}
+function shoppingRoomDropEnd(event){
+ event.preventDefault();if(!dragIt)return;const {r}=getRoom(),source=dragIt.si;dropItemRow(event,source,r.sections[source].items.length);
+}
 function shoppingRoomToolIcon(name){
  const paths={back:'<path d="m12 5-7 7 7 7M5 12h14"/>',filter:'<path d="M4 4h16l-6 7v8l-4 2V11Z"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>'};
  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||''}</svg>`;
@@ -35,13 +55,14 @@ function shoppingRoomTools(room){
  const scope=String(state.currentProject)+':'+String(room.id);
  if(shoppingRoomSearchState.scope!==scope)shoppingRoomSearchState={scope,open:Boolean(state.roomSearch)};
  const options=(values,current)=>'<option value="">Todos</option>'+values.map(v=>`<option value="${E(v)}" ${v===current?'selected':''}>${E(v)}</option>`).join('');
- const fields=[['status','Estado',rf.status],['supplier','Proveedor',rf.supplier],['color','Color',rf.color],['min','Desde',rf.min],['max','Hasta',rf.max]].filter(([, ,value])=>value!==''&&value!=null);
+ const fields=[['label','Etiqueta',rf.label],['status','Estado',rf.status],['supplier','Proveedor',rf.supplier],['color','Color',rf.color],['min','Desde',rf.min],['max','Hasta',rf.max]].filter(([, ,value])=>value!==''&&value!=null);
  const open=shoppingRoomSearchState.open;
  return `<div class="dl-bar shopping-room-tools">
   <details class="shopping-filter-control" ontoggle="this.querySelector('summary').setAttribute('aria-expanded',String(this.open))">
    <summary role="button" class="shopping-tool-button ${fields.length?'has-filters':''}" title="Filtrar productos" aria-label="Filtrar productos" aria-controls="shopping-filter-panel" aria-expanded="false">${shoppingRoomToolIcon('filter')}${fields.length?'<span class="shopping-filter-dot" aria-hidden="true"></span>':''}</summary>
    <form id="shopping-filter-panel" class="shopping-filter-panel" aria-label="Filtros de productos" onsubmit="event.preventDefault();shoppingRoomFilterApply(this)">
     <strong>Filtrar productos</strong>
+    <label>Etiqueta<select name="label" aria-label="Etiqueta"><option value="">Todas</option><option value="none" ${rf.label==='none'?'selected':''}>Sin etiqueta</option>${shoppingRoomLabels(room).map(name=>`<option value="label:${E(name)}" ${shoppingLabelKey(rf.label)===shoppingLabelKey('label:'+name)?'selected':''}>${E(name)}</option>`).join('')}</select></label>
     <label>Estado<select name="status" aria-label="Estado">${options(Object.keys(ISTATES),rf.status)}</select></label>
     <label>Proveedor<select name="supplier" aria-label="Proveedor">${options([...new Set(items.map(i=>i.supplier).filter(Boolean))],rf.supplier)}</select></label>
     <label>Color<select name="color" aria-label="Color">${options([...new Set(items.map(i=>i.color).filter(Boolean))],rf.color)}</select></label>
@@ -53,8 +74,7 @@ function shoppingRoomTools(room){
    <button type="button" id="shopping-search-toggle" class="shopping-tool-button" title="Buscar producto" aria-label="Buscar producto" aria-expanded="${open}" aria-controls="shopping-product-search" onclick="shoppingRoomSearchToggle()">${shoppingRoomToolIcon('search')}</button>
    <div id="shopping-product-search" class="shopping-search-collapse" data-open="${open}" ${open?'':'inert'}><div class="shopping-search-inner"><input id="rsearch" type="search" aria-label="Buscar producto por nombre, SKU o proveedor" placeholder="Buscar producto" value="${E(state.roomSearch||'')}" oninput="shoppingRoomSearchInput(this)" onkeydown="if(event.key==='Escape'){event.preventDefault();shoppingRoomSearchToggle(false)}"></div></div>
   </div>
-  <select class="dl-sel shopping-section-jump" aria-label="Ir a la sección" onchange="if(this.value!==''){document.getElementById('sec-'+this.value)?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});this.value=''}"><option value="">Ir a la sección</option>${room.sections.map((s,i)=>`<option value="${i}">${E(s.name)}</option>`).join('')}</select>
- </div>${fields.length?`<div class="shopping-filter-chips" aria-label="Filtros activos">${fields.map(([key,label,value])=>`<button type="button" aria-label="Quitar filtro ${label}" onclick="shoppingRoomFilterRemove('${key}')">${label}: ${E(value)} <span aria-hidden="true">×</span></button>`).join('')}</div>`:''}`;
+ </div>${fields.length?`<div class="shopping-filter-chips" aria-label="Filtros activos">${fields.map(([key,label,value])=>`<button type="button" aria-label="Quitar filtro ${label}" onclick="shoppingRoomFilterRemove('${key}')">${label}: ${E(key==='label'?(value==='none'?'Sin etiqueta':value.slice(6)):value)} <span aria-hidden="true">×</span></button>`).join('')}</div>`:''}`;
 }
 function shoppingRoomSearchToggle(force){
  const open=force??!shoppingRoomSearchState.open;shoppingRoomSearchState.open=open;
@@ -67,10 +87,10 @@ function shoppingRoomSearchInput(input){
 }
 function shoppingRoomFilterClose(focus){const control=document.querySelector('.shopping-filter-control');if(control){control.open=false;control.querySelector('form')?.reset();if(focus)control.querySelector('summary')?.focus();}}
 function shoppingRoomFilterApply(form){
- state.rf=Object.fromEntries(['status','supplier','color','min','max'].map(key=>[key,form.elements.namedItem(key).value]));render();document.querySelector('.shopping-filter-control summary')?.focus();
+ state.rf=Object.fromEntries(['label','status','supplier','color','min','max'].map(key=>[key,form.elements.namedItem(key).value]));render();document.querySelector('.shopping-filter-control summary')?.focus();
 }
 function shoppingRoomFilterClear(){state.rf=null;render();document.querySelector('.shopping-filter-control summary')?.focus();}
-function shoppingRoomFilterRemove(key){if(!['status','supplier','color','min','max'].includes(key))return;if(state.rf)state.rf[key]='';render();document.querySelector('.shopping-filter-control summary')?.focus();}
+function shoppingRoomFilterRemove(key){if(!['label','status','supplier','color','min','max'].includes(key))return;if(state.rf)state.rf[key]='';render();document.querySelector('.shopping-filter-control summary')?.focus();}
 function shoppingRoomDelete(pid,rid){
  const project=state.projects.find(p=>p.id===pid),room=project?.rooms?.find(r=>r.id===rid);if(!room)return;
  askConfirm(`¿Eliminar «${ModernoDaily.escape(room.name)}» y todos sus productos?`,'Eliminar lista',()=>{

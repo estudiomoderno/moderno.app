@@ -106,7 +106,9 @@ try:
    assert room.get_by_role('button',name='Compartir con el cliente',exact=True).count()==0
    assert room.get_by_role('button',name='Exportar PDF / hoja',exact=True).count()==0
    assert 'Pulsa el nombre o el botón de editar' not in room.inner_text()
-   assert room.get_by_role('button',name='Añadir sección',exact=True).count()==1
+   assert room.get_by_role('button',name='Añadir sección',exact=True).count()==0
+   assert room.locator('.shopping-product-grid').count()==1
+   assert room.locator('.dl-sec,.shopping-section-jump').count()==0
    filter_button=room.get_by_role('button',name='Filtrar productos',exact=True)
    search_button=room.get_by_role('button',name='Buscar producto',exact=True)
    assert filter_button.inner_text()=='' and search_button.inner_text()==''
@@ -144,7 +146,6 @@ try:
    room.locator('.shopping-search-collapse').evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
    expect(search).to_be_visible();expect(search).to_be_focused()
    assert search.bounding_box()['height']==32
-   assert room.locator('.shopping-section-jump').bounding_box()['height']==32
    assert room.locator('.shopping-search-collapse').bounding_box()['x']>=search_button.bounding_box()['x']+32
    search.fill('inexistente');assert room.locator('.shopping-product-card').count()==0
    search.fill('ficticio');assert room.locator('.shopping-product-card').count()==1
