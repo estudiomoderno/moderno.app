@@ -5813,7 +5813,7 @@ function vProject(){
         <div class="dl-mosaic">${tiles}<span class="dl-st">${r.rstatus||"Borrador"}</span></div>
         <div class="dl-cfoot"><span class="dl-date">${r.created?r.created.split("-").reverse().join("/"):fmt(tot)}</span><b class="dl-name">${rico(r.icon)} ${r.name}</b><button class="dl-grip" title="Opciones de la lista" onclick="event.stopPropagation();roomMenu(${p.id},${r.id})">⠿</button></div>
       </div>`}).join("")}
-    <div class="dl-add" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</div>
+    ${kind==="estancia"?`<button type="button" class="dl-add room-create-card" aria-label="Nueva estancia" onclick="newRoom(${p.id},'estancia')"><img class="room-create-illustration" src="/brand/illustrations/nueva-estancia.webp?v=36563" width="640" height="427" alt="" aria-hidden="true" draggable="false" decoding="async" onerror="this.hidden=true"><span class="room-create-caption"><span class="room-create-plus" aria-hidden="true">+</span><span>Nueva estancia</span></span></button>`:`<div class="dl-add" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</div>`}
   </div>`}).join("")}
   ${(p.rooms||[]).length?`<div class="dl-budget" style="margin-top:24px">
     <div><span class="dl-lab">Presupuesto del Proyecto</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px">${(p.rooms||[]).length} lista${(p.rooms||[]).length===1?"":"s"} · ${(p.rooms||[]).reduce((s,r)=>s+r.sections.reduce((a,x)=>a+x.items.length,0),0)} productos</div></div>
@@ -11458,7 +11458,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.62";
+const MODERNO_VER="v3.65.63";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13280,7 +13280,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36562">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36563">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

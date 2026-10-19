@@ -51,6 +51,24 @@ try:
     window.baseline=records();window.printCount=0;window.print=()=>{printCount++;window.printHTML=document.getElementById('printZone').innerHTML;};
    }""")
    overview=page.locator('.shopping-list-overview');overview.wait_for(state='visible')
+   tile=overview.get_by_role('button',name='Nueva estancia',exact=True)
+   illustration=tile.locator('img')
+   expect(tile).to_be_visible()
+   illustration.evaluate('(img)=>img.decode()')
+   assert illustration.evaluate('(img)=>img.naturalWidth')==640
+   assert illustration.get_attribute('alt')=='' and illustration.get_attribute('aria-hidden')=='true'
+   assert illustration.evaluate('(img)=>getComputedStyle(img).filter')=='grayscale(1)'
+   assert tile.locator('.room-create-plus').inner_text()=='+'
+   assert overview.locator('.room-create-illustration').count()==1,'Only the room creator receives the illustration'
+   if output:tile.screenshot(path=str(output/f'new-room-card-{width}.png'))
+   tile.press('Enter');expect(page.locator('#modalBox h3')).to_have_text('Nueva estancia')
+   page.get_by_role('button',name='Cancelar',exact=True).click()
+   assert page.evaluate('records()===baseline')
+   # Losing the decorative image must leave the label and existing creator usable.
+   illustration.dispatch_event('error');assert illustration.is_hidden()
+   tile.click();expect(page.locator('#modalBox h3')).to_have_text('Nueva estancia')
+   page.get_by_role('button',name='Cancelar',exact=True).click()
+   illustration.evaluate('(img)=>{img.hidden=false;}')
    assert 'Estancias, pavimentos' not in overview.inner_text()
    assert overview.get_by_role('button',name='Importar desde hoja',exact=True).count()==0
    assert overview.locator('.dl-ghead .collbtn,.dl-ghead [aria-expanded]').count()==0
