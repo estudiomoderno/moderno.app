@@ -53,11 +53,25 @@ try:
    page.evaluate("openRoom(9001,8001);window.initialRecords=records();window.productsBefore=JSON.stringify(state.projects.map(p=>p.rooms.map(r=>r.sections)))")
    room=page.locator('.shopping-room-view');status=room.get_by_role('combobox',name='Estado general de la estancia')
    expect(status).to_have_value('Borrador');assert page.evaluate('records()===initialRecords')
-   assert status.bounding_box()['height']==24
+   assert status.bounding_box()['height']==28
    assert status.locator('option').all_text_contents()==['Borrador','Especificación','En curso','Revisión','Terminado']
    # The compact trigger and every popup label stay centered, including the selected row.
+   status.evaluate('''select=>{
+    window.statusMotion=[];select.addEventListener('pointerdown',()=>{
+     const sample=()=>{const s=getComputedStyle(select,'::picker(select)');statusMotion.push({opacity:s.opacity,transform:s.transform});if(statusMotion.length<20)requestAnimationFrame(sample);};requestAnimationFrame(sample);
+    },{once:true});
+   }''')
    status.click()
    assert status.evaluate("e=>e.matches(':open')")
+   page.wait_for_function('statusMotion.length===20')
+   motion=page.evaluate('statusMotion')
+   assert float(motion[0]['opacity'])<.5 and float(motion[-1]['opacity'])==1,motion
+   assert any(0<float(frame['opacity'])<1 for frame in motion),motion
+   assert float(motion[0]['transform'].split(',')[-1].rstrip(')'))<0,motion
+   assert float(motion[-1]['transform'].split(',')[-1].rstrip(')'))==0,motion
+   background=status.evaluate('e=>getComputedStyle(e).backgroundColor')
+   assert background=='rgb(238, 238, 238)',background
+   assert status.evaluate('e=>getComputedStyle(e).borderTopColor')=='rgba(0, 0, 0, 0)'
    geometry=status.evaluate('''(select)=>{
     const center=e=>{const b=e.getBoundingClientRect();return {x:b.x+b.width/2,y:b.y+b.height/2,h:b.height};};
     return {trigger:center(select),title:center(document.querySelector('.shopping-room-trigger')),
@@ -72,6 +86,9 @@ try:
     assert abs(row['box']['y']-row['text']['y'])<2,row
    if output:page.screenshot(path=str(output/f'room-status-picker-{width}.png'),full_page=True)
    status.press('Escape');assert page.evaluate('records()===initialRecords')
+   page.emulate_media(reduced_motion='reduce');status.click()
+   assert status.evaluate("e=>getComputedStyle(e,'::picker(select)').transitionDuration")=='0s'
+   status.press('Escape');page.emulate_media(reduced_motion='no-preference')
    status.select_option('En curso');expect(status).to_have_value('En curso')
    assert page.evaluate("state.projects[0].rooms[0].rstatus==='En curso'&&state.projects[0].rooms[1].rstatus===undefined")
    assert page.evaluate('JSON.stringify(state.projects.map(p=>p.rooms.map(r=>r.sections)))===productsBefore')
