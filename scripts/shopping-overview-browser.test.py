@@ -97,9 +97,68 @@ try:
    box=dock.bounding_box();assert 0<=box['y']<1000 and box['y']+box['height']<=1000,box
    assert dock.get_by_role('tab',name='Compras',exact=True).get_attribute('aria-selected')=='true'
    actions=room.locator('.shopping-actions button')
-   assert actions.evaluate_all('(es)=>es.map(e=>e.title)')==['Ajustes de la lista','Eliminar lista']
+   assert actions.evaluate_all('(es)=>es.map(e=>e.title)')==['Ajustes de la lista','Exportar lista','Eliminar lista']
    boxes=[b.bounding_box() for b in actions.all()]
-   assert all(b['width']==40 and b['height']==40 for b in boxes) and boxes[0]['y']==boxes[1]['y'],boxes
+   assert all(b['width']==40 and b['height']==40 for b in boxes) and boxes[0]['y']==boxes[1]['y']==boxes[2]['y'],boxes
+   back=room.get_by_role('button',name='Volver a listas de compra',exact=True)
+   assert back.bounding_box()['width']==32 and back.bounding_box()['height']==32
+   assert room.get_by_role('button',name='Margen general',exact=True).count()==0
+   assert room.get_by_role('button',name='Compartir con el cliente',exact=True).count()==0
+   assert room.get_by_role('button',name='Exportar PDF / hoja',exact=True).count()==0
+   assert 'Pulsa el nombre o el botón de editar' not in room.inner_text()
+   assert room.get_by_role('button',name='Añadir sección',exact=True).count()==1
+   filter_button=room.get_by_role('button',name='Filtrar productos',exact=True)
+   search_button=room.get_by_role('button',name='Buscar producto',exact=True)
+   assert filter_button.inner_text()=='' and search_button.inner_text()==''
+   for button in [filter_button,search_button]:
+    assert button.bounding_box()['width']==32 and button.bounding_box()['height']==32
+   panel=room.locator('#shopping-filter-panel')
+   expect(panel).not_to_be_visible()
+   assert filter_button.evaluate('(e)=>getComputedStyle(e,"::after").display')=='none'
+   filter_button.click();expect(panel).to_be_visible()
+   panel_box=panel.bounding_box();assert panel_box['x']>=0 and panel_box['x']+panel_box['width']<=width,panel_box
+   assert panel.locator('input,select').evaluate_all('(es)=>es.every(e=>e.getBoundingClientRect().height===32)')
+   if output:page.screenshot(path=str(output/f'shopping-room-filters-{width}.png'),full_page=True)
+   panel.get_by_label('Desde',exact=True).fill('26')
+   panel.get_by_role('button',name='Cancelar',exact=True).click()
+   assert page.evaluate("!state.rf.min") and room.locator('.shopping-product-card').count()==1
+   filter_button.click();panel.get_by_label('Desde',exact=True).fill('26')
+   panel.get_by_role('button',name='Aplicar',exact=True).click()
+   assert room.locator('.shopping-product-card').count()==0
+   expect(room.get_by_role('button',name='Quitar filtro Desde',exact=True)).to_be_visible()
+   room.get_by_role('button',name='Quitar filtro Desde',exact=True).click()
+   assert room.locator('.shopping-product-card').count()==1
+   filter_button.click();panel.get_by_label('Hasta',exact=True).fill('24')
+   panel.get_by_role('button',name='Aplicar',exact=True).click()
+   assert room.locator('.shopping-product-card').count()==0
+   filter_button.click();panel.get_by_role('button',name='Restablecer',exact=True).click()
+   assert room.locator('.shopping-product-card').count()==1
+   filter_button.click();panel.get_by_label('Proveedor',exact=True).select_option('Proveedor ficticio')
+   panel.get_by_role('button',name='Aplicar',exact=True).click()
+   assert room.locator('.shopping-product-card').count()==1
+   filter_button.click();filter_button.press('Escape');expect(panel).not_to_be_visible()
+   filter_button.click();panel.get_by_role('button',name='Restablecer',exact=True).click()
+   search=room.get_by_role('searchbox',name='Buscar producto por nombre, SKU o proveedor')
+   expect(search).not_to_be_visible()
+   search_button.click()
+   room.locator('.shopping-search-collapse').evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
+   expect(search).to_be_visible();expect(search).to_be_focused()
+   assert search.bounding_box()['height']==32
+   assert room.locator('.shopping-section-jump').bounding_box()['height']==32
+   assert room.locator('.shopping-search-collapse').bounding_box()['x']>=search_button.bounding_box()['x']+32
+   search.fill('inexistente');assert room.locator('.shopping-product-card').count()==0
+   search.fill('ficticio');assert room.locator('.shopping-product-card').count()==1
+   search.fill('Proveedor ficticio');assert room.locator('.shopping-product-card').count()==1
+   if output:page.screenshot(path=str(output/f'shopping-room-search-{width}.png'),full_page=True)
+   search.press('Escape');expect(search).not_to_be_visible();expect(search_button).to_be_focused()
+   assert page.evaluate("state.roomSearch===''")
+   page.emulate_media(reduced_motion='reduce');search_button.click()
+   assert room.locator('.shopping-search-collapse').evaluate('(e)=>getComputedStyle(e).transitionDuration')=='0s'
+   search.press('Escape');page.emulate_media(reduced_motion='no-preference')
+   room.get_by_role('button',name='Exportar lista',exact=True).click()
+   expect(page.locator('#modalBox')).to_contain_text('Exportar')
+   page.get_by_role('button',name='Cancelar',exact=True).click()
+   assert page.evaluate('records()===baseline')
    settings=room.get_by_role('button',name='Ajustes de la lista',exact=True)
    settings.click();expect(page.locator('#rmName')).to_have_value('Salón ficticio')
    page.get_by_role('button',name='Hecho',exact=True).click();assert page.evaluate('records()===baseline')
@@ -120,6 +179,9 @@ try:
    if output:page.screenshot(path=str(output/f'shopping-room-{width}.png'),full_page=True)
    # A dock selection must leave the room, even when Compras was already selected.
    dock.get_by_role('tab',name='Compras',exact=True).click()
+   assert page.evaluate("state.view==='proyecto'&&state.projTab==='listas'")
+   overview.locator('.dl-card').first.click()
+   page.locator('.shopping-room-view').get_by_role('button',name='Volver a listas de compra',exact=True).click()
    assert page.evaluate("state.view==='proyecto'&&state.projTab==='listas'")
    overview.locator('.dl-card').first.click()
    page.locator('.shopping-room-view').get_by_role('tab',name='Tareas',exact=True).click()

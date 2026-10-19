@@ -21,8 +21,56 @@ function projectsArchivedToggle(){state.showArchived=!state.showArchived;render(
 function projectFinanceIcon(){return '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svgi" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M17.1 8.648a.568 .568 0 0 1 -.761 .011a5.682 5.682 0 0 0 -3.659 -1.34c-1.102 0 -2.205 .363 -2.205 1.374c0 1.023 1.182 1.364 2.546 1.875c2.386 .796 4.363 1.796 4.363 4.137c0 2.545 -1.977 4.295 -5.204 4.488l-.295 1.364a.557 .557 0 0 1 -.546 .443h-2.034l-.102 -.011a.568 .568 0 0 1 -.432 -.67l.318 -1.444a7.432 7.432 0 0 1 -3.273 -1.784v-.011a.545 .545 0 0 1 0 -.773l1.137 -1.102c.214 -.2 .547 -.2 .761 0a5.495 5.495 0 0 0 3.852 1.5c1.478 0 2.466 -.625 2.466 -1.614c0 -.989 -1 -1.25 -2.886 -1.954c-2 -.716 -3.898 -1.728 -3.898 -4.091c0 -2.75 2.284 -4.091 4.989 -4.216l.284 -1.398a.545 .545 0 0 1 .545 -.432h2.023l.114 .012a.544 .544 0 0 1 .42 .647l-.307 1.557a8.528 8.528 0 0 1 2.818 1.58l.023 .022c.216 .228 .216 .569 0 .773l-1.057 1.057" /></svg>';}
 function shoppingRoomActions(pid,rid){
  const actions=[['settings','Ajustes de la lista',`roomMenu(${pid},${rid})`,'<path d="m9 3-.6 2.4-2.1 1.2L4 6l-2 3.5 1.7 1.8v2.4L2 15.5 4 19l2.3-.6 2.1 1.2L9 22h4l.6-2.4 2.1-1.2 2.3.6 2-3.5-1.7-1.8v-2.4L20 9.5 18 6l-2.3.6-2.1-1.2L13 3Z"/><circle cx="11" cy="12.5" r="3"/>'],['delete','Eliminar lista',`shoppingRoomDelete(${pid},${rid})`,'<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>']];
+ actions.splice(1,0,['export','Exportar lista','exportRoomModal()','<path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/>']);
  return `<div class="shopping-actions" role="group" aria-label="Acciones de la lista">${actions.map(([key,label,action,svg])=>`<button type="button" class="shopping-action shopping-room-${key}" title="${label}" aria-label="${label}" onclick="${action}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join('')}</div>`;
 }
+/* Adapt the supplied filter example to existing shopping fields, not demo task data. */
+var shoppingRoomSearchState={scope:'',open:false};
+function shoppingRoomToolIcon(name){
+ const paths={back:'<path d="m12 5-7 7 7 7M5 12h14"/>',filter:'<path d="M4 4h16l-6 7v8l-4 2V11Z"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>'};
+ return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||''}</svg>`;
+}
+function shoppingRoomTools(room){
+ const E=ModernoDaily.escape,rf=state.rf||{},items=room.sections.flatMap(s=>s.items);
+ const scope=String(state.currentProject)+':'+String(room.id);
+ if(shoppingRoomSearchState.scope!==scope)shoppingRoomSearchState={scope,open:Boolean(state.roomSearch)};
+ const options=(values,current)=>'<option value="">Todos</option>'+values.map(v=>`<option value="${E(v)}" ${v===current?'selected':''}>${E(v)}</option>`).join('');
+ const fields=[['status','Estado',rf.status],['supplier','Proveedor',rf.supplier],['color','Color',rf.color],['min','Desde',rf.min],['max','Hasta',rf.max]].filter(([, ,value])=>value!==''&&value!=null);
+ const open=shoppingRoomSearchState.open;
+ return `<div class="dl-bar shopping-room-tools">
+  <details class="shopping-filter-control" ontoggle="this.querySelector('summary').setAttribute('aria-expanded',String(this.open))">
+   <summary role="button" class="shopping-tool-button ${fields.length?'has-filters':''}" title="Filtrar productos" aria-label="Filtrar productos" aria-controls="shopping-filter-panel" aria-expanded="false">${shoppingRoomToolIcon('filter')}${fields.length?'<span class="shopping-filter-dot" aria-hidden="true"></span>':''}</summary>
+   <form id="shopping-filter-panel" class="shopping-filter-panel" aria-label="Filtros de productos" onsubmit="event.preventDefault();shoppingRoomFilterApply(this)">
+    <strong>Filtrar productos</strong>
+    <label>Estado<select name="status" aria-label="Estado">${options(Object.keys(ISTATES),rf.status)}</select></label>
+    <label>Proveedor<select name="supplier" aria-label="Proveedor">${options([...new Set(items.map(i=>i.supplier).filter(Boolean))],rf.supplier)}</select></label>
+    <label>Color<select name="color" aria-label="Color">${options([...new Set(items.map(i=>i.color).filter(Boolean))],rf.color)}</select></label>
+    <fieldset><legend>Precio (${E(projectCurrencySymbol())})</legend><div class="shopping-filter-range"><label>Desde<input name="min" type="number" step="any" value="${E(rf.min||'')}" placeholder="Desde"></label><label>Hasta<input name="max" type="number" step="any" value="${E(rf.max||'')}" placeholder="Hasta"></label></div></fieldset>
+    <div class="shopping-filter-actions"><button type="button" onclick="shoppingRoomFilterClear()">Restablecer</button><button type="button" onclick="shoppingRoomFilterClose(true)">Cancelar</button><button type="submit">Aplicar</button></div>
+   </form>
+  </details>
+  <div class="shopping-search-group">
+   <button type="button" id="shopping-search-toggle" class="shopping-tool-button" title="Buscar producto" aria-label="Buscar producto" aria-expanded="${open}" aria-controls="shopping-product-search" onclick="shoppingRoomSearchToggle()">${shoppingRoomToolIcon('search')}</button>
+   <div id="shopping-product-search" class="shopping-search-collapse" data-open="${open}" ${open?'':'inert'}><div class="shopping-search-inner"><input id="rsearch" type="search" aria-label="Buscar producto por nombre, SKU o proveedor" placeholder="Buscar producto" value="${E(state.roomSearch||'')}" oninput="shoppingRoomSearchInput(this)" onkeydown="if(event.key==='Escape'){event.preventDefault();shoppingRoomSearchToggle(false)}"></div></div>
+  </div>
+  <select class="dl-sel shopping-section-jump" aria-label="Ir a la sección" onchange="if(this.value!==''){document.getElementById('sec-'+this.value)?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});this.value=''}"><option value="">Ir a la sección</option>${room.sections.map((s,i)=>`<option value="${i}">${E(s.name)}</option>`).join('')}</select>
+ </div>${fields.length?`<div class="shopping-filter-chips" aria-label="Filtros activos">${fields.map(([key,label,value])=>`<button type="button" aria-label="Quitar filtro ${label}" onclick="shoppingRoomFilterRemove('${key}')">${label}: ${E(value)} <span aria-hidden="true">×</span></button>`).join('')}</div>`:''}`;
+}
+function shoppingRoomSearchToggle(force){
+ const open=force??!shoppingRoomSearchState.open;shoppingRoomSearchState.open=open;
+ if(!open){state.roomSearch='';render();document.getElementById('shopping-search-toggle')?.focus();return;}
+ const field=document.getElementById('shopping-product-search');if(!field)return;
+ field.inert=false;field.dataset.open='true';document.getElementById('shopping-search-toggle')?.setAttribute('aria-expanded','true');document.getElementById('rsearch')?.focus();
+}
+function shoppingRoomSearchInput(input){
+ const start=input.selectionStart,end=input.selectionEnd;state.roomSearch=input.value;render();const next=document.getElementById('rsearch');if(next){next.focus();if(start!==null)next.setSelectionRange(start,end);}
+}
+function shoppingRoomFilterClose(focus){const control=document.querySelector('.shopping-filter-control');if(control){control.open=false;control.querySelector('form')?.reset();if(focus)control.querySelector('summary')?.focus();}}
+function shoppingRoomFilterApply(form){
+ state.rf=Object.fromEntries(['status','supplier','color','min','max'].map(key=>[key,form.elements.namedItem(key).value]));render();document.querySelector('.shopping-filter-control summary')?.focus();
+}
+function shoppingRoomFilterClear(){state.rf=null;render();document.querySelector('.shopping-filter-control summary')?.focus();}
+function shoppingRoomFilterRemove(key){if(!['status','supplier','color','min','max'].includes(key))return;if(state.rf)state.rf[key]='';render();document.querySelector('.shopping-filter-control summary')?.focus();}
 function shoppingRoomDelete(pid,rid){
  const project=state.projects.find(p=>p.id===pid),room=project?.rooms?.find(r=>r.id===rid);if(!room)return;
  askConfirm(`¿Eliminar «${ModernoDaily.escape(room.name)}» y todos sus productos?`,'Eliminar lista',()=>{
@@ -89,6 +137,8 @@ function projectClientCreateReturn(name){
  customizeModal(saved.id,saved.draft.mode,saved.draft);
 }
 if(typeof document!=='undefined'){
+ document.addEventListener('click',event=>{const control=document.querySelector('.shopping-filter-control[open]');if(control&&!control.contains(event.target))shoppingRoomFilterClose(false);});
+ document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('.shopping-filter-control[open]')){event.preventDefault();shoppingRoomFilterClose(true);}});
  document.addEventListener('keydown',event=>{
   const tab=event.target.closest?.('.project-tabs [role="tab"]');if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
   event.preventDefault();const buttons=[...tab.parentElement.querySelectorAll('[role="tab"]')],index=buttons.indexOf(tab);

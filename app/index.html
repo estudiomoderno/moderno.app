@@ -1180,7 +1180,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36566"></script>
+<script src="/project-ui.js?v=36567"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36536"></script>
@@ -7183,6 +7183,7 @@ function vRoom(){
   ${projectTabsHtml('listas')}
   <section class="dl" id="project-tab-panel" role="tabpanel" aria-labelledby="project-tab-listas" tabindex="0">
   <div class="dl-top shopping-room-header">
+    <button type="button" class="shopping-tool-button shopping-room-back" title="Volver" aria-label="Volver a listas de compra" onclick="projTab('listas')">${shoppingRoomToolIcon('back')}</button>
     <h2 class="sec" style="display:flex;align-items:center;gap:10px"><span style="background:var(--gold-soft);border-radius:10px;width:34px;height:34px;display:grid;place-items:center">${rico(r.icon)}</span>${r.name}${r.rstatus?`<span class="dl-cnt" style="font-weight:700;padding:0 9px">${r.rstatus}</span>`:""}</h2>
     ${shoppingRoomActions(p.id,r.id)}
   </div>
@@ -7190,14 +7191,7 @@ function vRoom(){
     <div><span class="dl-lab">Presupuesto de la estancia</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px" title="Interno — el cliente no lo ve">🔒 coste ${cost===null?"por confirmar":fmt(cost)} · beneficio ${ben===null?"por confirmar":fmt(ben)}${r.margin?" · margen general "+r.margin+"%":""}</div></div>
     <b class="dl-num">${fmt(tot)}</b>
   </div>
-  <div class="dl-bar">
-    <button class="dl-btn ${filtering?'pri':''}" onclick="filterModal()">⚙ Filtrar${filtering?" ·":""}</button>
-    <select class="dl-sel" onchange="if(this.value!==''){document.getElementById('sec-'+this.value)?.scrollIntoView({behavior:'smooth',block:'start'});this.value=''}">
-      <option value="">Ir a la sección</option>
-      ${r.sections.map((s,i)=>`<option value="${i}">${s.name}</option>`).join("")}
-    </select>
-    <input id="rsearch" class="dl-search" placeholder="Buscar producto por nombre, SKU o proveedor…" value="${esc(state.roomSearch||"")}" oninput="state.roomSearch=this.value;render();const e=document.getElementById('rsearch');e.focus();e.setSelectionRange(e.value.length,e.value.length)">
-  </div>
+  ${shoppingRoomTools(r)}
   ${r.sections.map((sec,si)=>{
     const sub = sec.items.reduce((a,i)=>a+i.price*i.qty,0);
     const visible = sec.items.map((it,ii)=>({it,ii})).filter(({it})=>match(it));
@@ -7224,12 +7218,7 @@ function vRoom(){
 </div>`}`}).join("")}
   <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap;align-items:center">
     <button class="dl-btn" onclick="newSection()">${ico("mas")} Añadir sección</button>
-    <span style="flex:1"></span>
-    <button class="dl-btn" title="Interno — el cliente no lo ve" onclick="marginModal()">％ Margen general${r.margin?": "+r.margin+"%":""}</button>
-    <button class="dl-btn" onclick="shareModal()">↗ Compartir con el cliente</button>
-    <button class="dl-btn pri" onclick="exportRoomModal()">${ico('pdf')} Exportar PDF / hoja</button>
   </div>
-  <p style="margin-top:10px;font-size:11.5px;color:var(--dl-soft)">Pulsa el nombre o el botón de editar para ver todos los datos. Arrastra un producto sobre otro para reordenar o suéltalo en otra sección.</p>
   </section></div>`;
 }
 function imgZoom(si,ii){
@@ -11457,7 +11446,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.66";
+const MODERNO_VER="v3.65.67";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13279,7 +13268,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36566">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36567">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
