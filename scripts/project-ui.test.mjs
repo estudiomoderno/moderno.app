@@ -14,6 +14,18 @@ test('avatar safely labels historical client names without downloading portraits
  assert.match(avatar,/&lt;Cliente&gt;/);assert.doesNotMatch(avatar,/<Cliente>|<img|https?:/);assert.match(avatar,/aria-label="Cliente:/);
  assert.equal(c.projectClientAvatar({client:null}),'');
 });
+test('shopping picker uses only the supplied project, escapes list names and marks its current room',()=>{
+ const p={rooms:[{id:1,name:'Salón',icon:'sofa'},{id:2,name:'<img src=x> "Prueba"',icon:'bed'}]},before=JSON.stringify(p),c=fixture({rico:()=>'<svg></svg>'});
+ const out=c.shoppingRoomPickerHtml(p,p.rooms[0]);assert.equal(JSON.stringify(p),before);assert.match(out,/role="menu"/);assert.match(out,/role="menuitemradio" aria-checked="true"/);assert.match(out,/&lt;img src=x&gt;/);assert.doesNotMatch(out,/<img/);assert.equal((out.match(/data-room-index=/g)||[]).length,2);
+});
+test('shopping picker rejects invalid, forbidden or modal selections and only clears transient filters on a real switch',()=>{
+ const p={id:90,rooms:[{id:1,name:'Sala'},{id:2,name:'Dormitorio'}]},calls=[],elements={};let modal=false,allowed=true;
+ const c=fixture({state:{view:'estancia',currentProject:90,currentRoom:1,roomSearch:'texto',rf:{label:'label:Iluminación'}},getRoom:()=>({p,r:p.rooms[0]}),canView:()=>allowed,document:{getElementById:id=>elements[id],querySelector:()=>modal?{}:null,addEventListener(){}},toast(){},openRoom:(...args)=>calls.push(args)}),before=JSON.stringify(p);
+ for(const index of [-1,2,9002,'1',1.5])assert.equal(c.shoppingRoomChoose(index),false);
+ allowed=false;assert.equal(c.shoppingRoomChoose(1),false);allowed=true;modal=true;assert.equal(c.shoppingRoomChoose(1),false);modal=false;
+ assert.equal(c.state.roomSearch,'texto');assert.equal(c.shoppingRoomChoose(0),true);assert.equal(c.state.roomSearch,'texto');assert.equal(calls.length,0);
+ assert.equal(c.shoppingRoomChoose(1),true);assert.deepEqual(calls,[[90,2]]);assert.equal(c.state.roomSearch,'');assert.equal(c.state.rf,null);assert.equal(JSON.stringify(p),before);
+});
 test('archive is a reversible view filter and leaves projects intact',()=>{
  const projects=[{id:1,status:'En progreso'},{id:2,status:'Archivado'}],before=JSON.stringify(projects),calls=[];
  const c=fixture({state:{projects},render:()=>calls.push('render'),projectsFadeRows:()=>calls.push('fade')});

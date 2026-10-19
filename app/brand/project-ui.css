@@ -41,6 +41,26 @@
 @media screen{
  .shopping-room-view .shopping-room-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:0;min-height:40px}
  .shopping-room-header>.sec{margin:0;min-width:0;flex:1}
+ .shopping-room-picker{position:relative;min-width:0;flex:1}
+ .shopping-room-picker>.sec{display:flex;align-items:center;gap:10px;margin:0;min-width:0;flex-wrap:wrap}
+ .shopping-room-trigger{display:inline-flex;align-items:center;gap:10px;max-width:100%;min-width:0;padding:0;border:0;border-radius:8px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+ .shopping-room-trigger:hover{background:var(--app-control,#eee)}
+ .shopping-room-trigger:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+ .shopping-room-current-icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:var(--app-control,#eee)}
+ .shopping-room-current-name{min-width:0;overflow-wrap:anywhere}
+ .shopping-room-chevron{flex:none;transition:transform 160ms ease}
+ .shopping-room-trigger[aria-expanded=true] .shopping-room-chevron{transform:rotate(180deg)}
+ .shopping-room-current-status{font-weight:700;padding:0 9px}
+ .shopping-room-menu{position:absolute;left:0;top:calc(100% + 8px);z-index:30;display:flex;flex-direction:column;box-sizing:border-box;width:max-content;min-width:200px;max-width:min(360px,calc(100vw - 40px));max-height:360px;overflow-y:auto;padding:5px;border:1px solid var(--ui-line);border-radius:10px;background:var(--app-surface,#fff);box-shadow:0 8px 24px #00000018}
+ .shopping-room-menu[hidden]{display:none!important}
+ .shopping-room-menu>button{display:flex;align-items:center;gap:10px;width:100%;min-height:36px;box-sizing:border-box;padding:8px 10px;border:0;border-radius:6px;background:transparent;color:var(--ink);font:inherit;font-size:13px;text-align:left;cursor:pointer}
+ .shopping-room-menu>button:is(:hover,:focus-visible,[aria-checked=true]){background:var(--app-control,#eee)}
+ .shopping-room-menu>button:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+ .shopping-room-choice-icon{display:flex;align-items:center;flex:0 0 20px}
+ .shopping-room-choice-icon svg{width:18px;height:18px}
+ .shopping-room-choice-name{flex:1;min-width:0;overflow-wrap:anywhere}
+ .shopping-room-choice-check{flex:0 0 14px}
+ @media(prefers-reduced-motion:reduce){.shopping-room-chevron{transition:none}}
  .shopping-room-view .shopping-action{color:rgb(70,70,70);transition:background-color .2s,border-color .2s,color .2s}
  .shopping-room-view .shopping-room-delete:is(:hover,:focus-visible){background:#fff1f2;border-color:#dc2626;color:#dc2626}
  .shopping-room-view .shopping-add-card{padding:16px;gap:16px;align-content:center;font-family:inherit}

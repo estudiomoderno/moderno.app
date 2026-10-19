@@ -24,6 +24,46 @@ function shoppingRoomActions(pid,rid){
  actions.splice(1,0,['export','Exportar lista','exportRoomModal()','<path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/>']);
  return `<div class="shopping-actions" role="group" aria-label="Acciones de la lista">${actions.map(([key,label,action,svg])=>`<button type="button" class="shopping-action shopping-room-${key}" title="${label}" aria-label="${label}" onclick="${action}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join('')}</div>`;
 }
+function shoppingRoomPickerHtml(project,current){
+ const E=ModernoDaily.escape;
+ return `<div class="shopping-room-picker">
+  <h2 class="sec"><button type="button" id="shopping-room-trigger" class="shopping-room-trigger" aria-label="Cambiar lista: ${E(current.name)}" aria-haspopup="menu" aria-expanded="false" aria-controls="shopping-room-menu" onclick="shoppingRoomPickerToggle()">
+   <span class="shopping-room-current-icon" aria-hidden="true">${rico(current.icon)}</span><span class="shopping-room-current-name">${E(current.name)}</span><svg class="shopping-room-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </button>${current.rstatus?`<span class="dl-cnt shopping-room-current-status">${E(current.rstatus)}</span>`:''}</h2>
+  <div id="shopping-room-menu" class="shopping-room-menu" role="menu" aria-label="Listas de compra del proyecto" hidden>${(project.rooms||[]).map((room,index)=>`<button type="button" role="menuitemradio" aria-checked="${room.id===current.id}" tabindex="-1" data-room-index="${index}" onclick="shoppingRoomChoose(Number(this.dataset.roomIndex))" title="${E(room.name)}"><span class="shopping-room-choice-icon" aria-hidden="true">${rico(room.icon)}</span><span class="shopping-room-choice-name">${E(room.name)}</span><span class="shopping-room-choice-check" aria-hidden="true">${room.id===current.id?'✓':''}</span></button>`).join('')}</div>
+ </div>`;
+}
+function shoppingRoomPickerClose(focus=false){
+ const menu=document.getElementById('shopping-room-menu'),trigger=document.getElementById('shopping-room-trigger');if(menu)menu.hidden=true;
+ trigger?.setAttribute('aria-expanded','false');if(focus)trigger?.focus();
+}
+function shoppingRoomPickerToggle(force){
+ const menu=document.getElementById('shopping-room-menu'),trigger=document.getElementById('shopping-room-trigger');if(!menu||!trigger)return;
+ const open=force??menu.hidden;if(!open){shoppingRoomPickerClose(true);return;}
+ menu.hidden=false;trigger.setAttribute('aria-expanded','true');
+ const box=trigger.getBoundingClientRect(),below=innerHeight-box.bottom-16,above=box.top-16,up=below<180&&above>below;
+ const available=Math.max(120,innerWidth-box.left-12);menu.style.maxWidth=Math.min(360,available)+'px';menu.style.minWidth=Math.min(200,available)+'px';
+ menu.style.top=up?'auto':'calc(100% + 8px)';menu.style.bottom=up?'calc(100% + 8px)':'auto';menu.style.maxHeight=Math.max(80,Math.min(360,up?above:below))+'px';
+ (menu.querySelector('[aria-checked="true"]')||menu.querySelector('button'))?.focus();
+}
+function shoppingRoomChoose(index){
+ if(state.view!=='estancia'||!canView('proyecto')||!Number.isInteger(index))return false;
+ const {p,r}=getRoom(),target=p?.rooms?.[index];if(!target)return false;
+ if(document.querySelector('.overlay.open,dialog[open]')){toast('Guarda o cancela la edición antes de cambiar de lista.');return false;}
+ shoppingRoomPickerClose();
+ if(target.id!==r?.id){state.roomSearch='';state.rf=null;shoppingRoomSearchState={scope:'',open:false};openRoom(p.id,target.id);}
+ document.getElementById('shopping-room-trigger')?.focus();return true;
+}
+function shoppingRoomPickerKey(event){
+ const picker=event.target.closest?.('.shopping-room-picker');if(!picker)return;
+ const menu=picker.querySelector('[role=menu]');if(!menu)return;
+ if(event.key==='Escape'&&!menu.hidden){event.preventDefault();shoppingRoomPickerClose(true);return;}
+ if(event.key==='Tab'&&!menu.hidden){shoppingRoomPickerClose(true);return;}
+ if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+ event.preventDefault();if(menu.hidden){shoppingRoomPickerToggle(true);if(['ArrowDown','ArrowUp'].includes(event.key))return;}
+ const items=[...menu.querySelectorAll('[role=menuitemradio]')],index=items.indexOf(document.activeElement);
+ const next=event.key==='Home'?0:event.key==='End'?items.length-1:(index+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[next]?.focus();
+}
 /* Adapt the supplied filter example to existing shopping fields, not demo task data. */
 var shoppingRoomSearchState={scope:'',open:false};
 function shoppingLabelKey(value){return String(value||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
@@ -157,6 +197,8 @@ function projectClientCreateReturn(name){
  customizeModal(saved.id,saved.draft.mode,saved.draft);
 }
 if(typeof document!=='undefined'){
+ document.addEventListener('click',event=>{const picker=document.querySelector('.shopping-room-picker');if(picker&&!picker.contains(event.target))shoppingRoomPickerClose();});
+ document.addEventListener('keydown',shoppingRoomPickerKey);
  document.addEventListener('click',event=>{const control=document.querySelector('.shopping-filter-control[open]');if(control&&!control.contains(event.target))shoppingRoomFilterClose(false);});
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('.shopping-filter-control[open]')){event.preventDefault();shoppingRoomFilterClose(true);}});
  document.addEventListener('keydown',event=>{
