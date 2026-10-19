@@ -80,6 +80,16 @@ try:
    assert 'Estancias' not in overview.locator('.dl-ghead>b').all_inner_texts()
    assert overview.locator('.shopping-list-header .line').count()==0
    assert overview.locator('.shopping-list-header .shopping-action').count()==3
+   footers=overview.locator('.dl-card .dl-cfoot')
+   expect(footers).to_have_text(['Salón ficticio','Dormitorio ficticio','Pavimentos ficticios','Otras compras ficticias'])
+   assert footers.locator('.dl-date,.dl-grip,button').count()==0
+   assert footers.locator('.dl-name svg').count()==4
+   overview.locator('.dl-card').first.hover()
+   assert overview.locator('[title="Opciones de la lista"]').count()==0
+   overview.locator('.dl-card').first.click()
+   assert page.evaluate('state.view==="estancia"&&state.currentRoom===8001')
+   page.evaluate("go('proyecto',9001);projTab('listas')")
+   assert page.evaluate('records()===baseline')
    buttons=overview.locator('.shopping-action')
    assert buttons.evaluate_all('(es)=>es.map(e=>e.getAttribute("aria-label"))')==['Crear','Exportar','Imprimir']
    assert buttons.locator('.shopping-action-tray').count()==0
