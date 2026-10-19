@@ -11,7 +11,7 @@
  }
  .shopping-action-icon{fill:rgb(70,70,70);width:18px;height:18px;flex:none}
  .shopping-list-overview .shopping-action:hover{background-color:rgb(241,241,241);transition-duration:.3s}
- .shopping-action:hover .shopping-action-icon{animation:shopping-slide-in-top 1s linear infinite}
+ .shopping-action:hover .shopping-action-icon{animation:shopping-slide-in-top 1s linear 1 both}
  .shopping-list-overview .shopping-quote{
   width:200px;height:40px;min-height:40px;box-sizing:border-box;flex:0 0 200px;
   display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:0 15px;
