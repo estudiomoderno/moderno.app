@@ -222,3 +222,7 @@ El propietario solicita mantener la casa de Todos los proyectos incluso sin pest
 ## 2026-10-18 — Calendario original ReUI
 
 El propietario proporciona la composición EventCalendar y solicita retirar el saludo «Tu calendario». Se utiliza el motor original, con español y medidas Nova, sobre tareas/citas/fases ya cargadas y formularios existentes, sin eventos ni personas de demostración. Se conservan permisos, ámbitos, registros, guardado y servicios; el arrastre de fases mantiene fechas locales. Detalles, pruebas y recuperación: [CALENDARIO-REUI](CALENDARIO-REUI.md).
+
+## 2026-10-19 — Finanzas sin submenú lateral
+
+El propietario solicita un único acceso Finanzas y, a la altura de la ruta, Resumen / Facturas / Presupuestos / Contabilidad / Previsión. Se conservan las cinco pantallas, cálculos y contratos actuales; Informes se presenta como Resumen. Enlaces y visibilidad sujetos al enrutador, permisos y protección de borradores existentes. Móvil mantiene los cinco accesos en una barra desplazable. Alcance y recuperación: [FINANZAS-NAVEGACION](FINANZAS-NAVEGACION.md).
