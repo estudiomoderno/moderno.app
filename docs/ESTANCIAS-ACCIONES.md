@@ -21,3 +21,7 @@ Publicación por el workflow habitual después de CI correcta; verificar los 31 
 El propietario pide reducir los tres botones y suavizar el contraste. Crear, Exportar e Imprimir pasan a 40 × 40 px, con iconos centrados de 18 px y radio de 12 px. Se elimina del HTML el símbolo de bandeja que aparecía debajo de cada icono y sus reglas CSS. Al pasar el ratón, el fondo usa gris claro (rgb 241,241,241) y el icono conserva su gris oscuro; no pasa a blanco. Se mantienen alineación, etiquetas accesibles, teclado, animación y movimiento reducido. Generar presupuesto conserva su presentación y todos los manejadores continúan intactos.
 
 Pruebas: suite Node y recorrido específico de creación, exportación e impresión con datos ficticios a 1440/1100/390 px; medidas, ausencia de símbolos inferiores y colores efectivos actualizados. Misma publicación y reversión, sin cambios de datos o permisos.
+
+## Animación sin bucle — v3.65.62
+
+A petición del propietario, los iconos de Crear, Exportar e Imprimir animan una sola vez por entrada del ratón. Tras completar el efecto quedan visibles y quietos, y se repite únicamente al salir y volver a entrar. Se conserva la duración de un segundo, el gris claro, los tamaños y todas las acciones. Comprobados los tres iconos en Chromium aislado, junto con la suite Node y los recorridos existentes. Misma reversión mediante commit y despliegue; sin cambios de datos.

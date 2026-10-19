@@ -82,6 +82,14 @@ try:
    buttons.first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
    assert buttons.first.evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(241, 241, 241)'
    assert buttons.first.locator('svg').evaluate('(e)=>getComputedStyle(e).fill')=='rgb(70, 70, 70)'
+   for button in buttons.all():
+    page.mouse.move(0,0);button.hover()
+    icon=button.locator('svg')
+    assert icon.evaluate('(e)=>getComputedStyle(e).animationIterationCount')=='1'
+    icon.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
+    assert icon.evaluate('(e)=>e.getAnimations().every(a=>a.playState==="finished")')
+    assert icon.evaluate('(e)=>getComputedStyle(e).opacity')=='1'
+   buttons.first.hover()
    page.emulate_media(reduced_motion='reduce')
    assert buttons.first.locator('svg').evaluate('(e)=>getComputedStyle(e).animationName')=='none'
    page.emulate_media(reduced_motion='no-preference');page.mouse.move(0,0)
