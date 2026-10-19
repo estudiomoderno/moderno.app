@@ -1180,7 +1180,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36569"></script>
+<script src="/project-ui.js?v=36570"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36536"></script>
@@ -7357,7 +7357,7 @@ function filterModal(){
     <button class="btn btn-dark" onclick="state.rf={status:document.getElementById('ffSt').value,supplier:document.getElementById('ffSup').value,color:document.getElementById('ffCol').value,min:document.getElementById('ffMin').value,max:document.getElementById('ffMax').value};closeModal();render()">⚙ Filtrar</button>
   </div>`);
 }
-const RSTATES=["Especificación","En curso","Revisión","Terminado"];
+const RSTATES=["Borrador","Especificación","En curso","Revisión","Terminado"];
 function roomIconModal(pid,rid){
   const p=state.projects.find(x=>x.id===pid), r=p.rooms.find(x=>x.id===rid);
   modal(`<h3>Icono de «${r.name}»</h3>
@@ -11392,10 +11392,10 @@ function askInputCancel(){ const cb=_inpCancel; _inpOk=_inpCancel=null; closeMod
 
 /* =================== UI HELPERS =================== */
 const ov=document.getElementById("overlay"), mb=document.getElementById("modalBox");
-function modal(html){ mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
-function closeModal(){ mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
+function modal(html){ shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
+function closeModal(){ shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
 ov.addEventListener("click",e=>{ /* clic fuera NO cierra: solo Cancelar/Guardar */ });
-document.addEventListener("keydown",e=>{if(ov.classList.contains("open"))ModernoDialog.trap(e,mb);});
+document.addEventListener("keydown",e=>{if(ov.classList.contains("open")&&!ov.classList.contains("shopping-delete-overlay"))ModernoDialog.trap(e,mb);});
 let toastTimer;
 function toast(msg){ const el=document.getElementById("toast"); el.textContent=msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("show"),2800); }
 function wire(){}
@@ -11445,7 +11445,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.69";
+const MODERNO_VER="v3.65.70";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13267,7 +13267,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36569">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36570">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
@@ -13286,13 +13286,13 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/project-workspace.js?v=36554"></script>
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36545">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36554">
-<link rel="stylesheet" href="/brand/reui/font.css?v=36556">
-<script src="/profile-component.js?v=36559"></script>
+<link rel="stylesheet" href="/brand/reui/font.css?v=36570">
+<script src="/profile-component.js?v=36570"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=36554"></script>
 <link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=36559">
 <script src="/page-breadcrumbs.js?v=36559"></script>
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=36558">
-<script src="/calendar-ui.js?v=36559"></script>
+<script src="/calendar-ui.js?v=36570"></script>
 </body>
 </html>

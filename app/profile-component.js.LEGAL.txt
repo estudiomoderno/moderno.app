@@ -104,6 +104,7 @@ lucide-react/dist/esm/icons/plus.mjs:
 lucide-react/dist/esm/icons/repeat.mjs:
 lucide-react/dist/esm/icons/settings.mjs:
 lucide-react/dist/esm/icons/share-2.mjs:
+lucide-react/dist/esm/icons/trash-2.mjs:
 lucide-react/dist/esm/icons/trash.mjs:
 lucide-react/dist/esm/icons/user.mjs:
 lucide-react/dist/esm/icons/users.mjs:

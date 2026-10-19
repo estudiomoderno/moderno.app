@@ -29,9 +29,31 @@ function shoppingRoomPickerHtml(project,current){
  return `<div class="shopping-room-picker">
   <h2 class="sec"><button type="button" id="shopping-room-trigger" class="shopping-room-trigger" aria-label="Cambiar lista: ${E(current.name)}" aria-haspopup="menu" aria-expanded="false" aria-controls="shopping-room-menu" onclick="shoppingRoomPickerToggle()">
    <span class="shopping-room-current-icon" aria-hidden="true">${rico(current.icon)}</span><span class="shopping-room-current-name">${E(current.name)}</span><svg class="shopping-room-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-  </button>${current.rstatus?`<span class="dl-cnt shopping-room-current-status">${E(current.rstatus)}</span>`:''}</h2>
+  </button>${shoppingRoomStatusHtml(current)}</h2>
   <div id="shopping-room-menu" class="shopping-room-menu" role="menu" aria-label="Listas de compra del proyecto" hidden>${(project.rooms||[]).map((room,index)=>`<button type="button" role="menuitemradio" aria-checked="${room.id===current.id}" tabindex="-1" data-room-index="${index}" onclick="shoppingRoomChoose(Number(this.dataset.roomIndex))" title="${E(room.name)}"><span class="shopping-room-choice-icon" aria-hidden="true">${rico(room.icon)}</span><span class="shopping-room-choice-name">${E(room.name)}</span><span class="shopping-room-choice-check" aria-hidden="true">${room.id===current.id?'✓':''}</span></button>`).join('')}</div>
  </div>`;
+}
+function shoppingRoomStatusHtml(room){
+ const E=ModernoDaily.escape,current=room.rstatus||'Borrador',options=[...new Set([current,...RSTATES])];
+ return `<select class="shopping-room-status" aria-label="Estado general de la estancia" title="Estado general de la estancia" onchange="shoppingRoomStatusChange(this.value)">${options.map(status=>`<option value="${E(status)}" ${status===current?'selected':''}>${E(status)}</option>`).join('')}</select>`;
+}
+function shoppingRoomStatusChange(status){
+ if(state.view!=='estancia'||!canView('proyecto')||!RSTATES.includes(status))return false;
+ const {r}=getRoom();if(!r)return false;if(r.rstatus===status)return true;r.rstatus=status;render();toast('Estado: '+status);return true;
+}
+var shoppingDeleteUi=null;
+function shoppingRoomDeleteCleanup(){
+ const entry=shoppingDeleteUi;shoppingDeleteUi=null;if(entry){entry.component?.unmount();entry.host.remove();}
+ document.getElementById('overlay')?.classList.remove('shopping-delete-overlay');document.getElementById('modalBox')?.classList.remove('shopping-reui-confirm');
+}
+function shoppingRoomEnhanceDelete(name){
+ if(!window.ModernoProfileComponent?.mountShoppingDelete)return;
+ const host=document.createElement('span');host.className='shopping-delete-host';document.body.append(host);const entry={host,component:null};shoppingDeleteUi=entry;
+ const recover=()=>queueMicrotask(()=>{if(shoppingDeleteUi===entry){shoppingRoomDeleteCleanup();document.getElementById('modalBox')?.focus();}});
+ const confirm=_askOk,cancel=_askCancel,current=()=>shoppingDeleteUi===entry&&_askOk===confirm&&_askCancel===cancel;
+ const props={name,onCancel:()=>{if(current())askCancelGo();},onConfirm:()=>{if(current())askConfirmGo();}};
+ const ready=()=>{if(shoppingDeleteUi!==entry)return;document.getElementById('overlay')?.classList.add('shopping-delete-overlay');document.getElementById('modalBox')?.classList.add('shopping-reui-confirm');entry.component.update(props);};
+ try{entry.component=ModernoProfileComponent.mountShoppingDelete(host,recover,ready);}catch(error){recover();}
 }
 function shoppingRoomPickerClose(focus=false){
  const menu=document.getElementById('shopping-room-menu'),trigger=document.getElementById('shopping-room-trigger');if(menu)menu.hidden=true;
@@ -134,10 +156,12 @@ function shoppingRoomFilterRemove(key){if(!['label','status','supplier','color',
 function shoppingRoomDelete(pid,rid){
  const project=state.projects.find(p=>p.id===pid),room=project?.rooms?.find(r=>r.id===rid);if(!room)return;
  askConfirm(`¿Eliminar «${ModernoDaily.escape(room.name)}» y todos sus productos?`,'Eliminar lista',()=>{
-  project.rooms=project.rooms.filter(r=>r.id!==rid);
+  const current=state.projects.find(p=>p.id===pid);if(!current?.rooms?.some(r=>r.id===rid))return;
+  current.rooms=current.rooms.filter(r=>r.id!==rid);
   if(state.view==='estancia'&&state.currentProject===pid&&state.currentRoom===rid){state.projTab='listas';state.roomSearch='';state.rf=null;go('proyecto',pid);}else render();
   toast('Lista eliminada');
  });
+ shoppingRoomEnhanceDelete(room.name);
 }
 function projectTabsHtml(current){
  const groups=[

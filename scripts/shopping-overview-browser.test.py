@@ -266,7 +266,7 @@ try:
    assert page.evaluate("state.projects[0].rooms.length===5&&state.projects[0].rooms[4].name==='Estancia nueva ficticia'&&state.view==='estancia'")
    # Confirm deletion only on the newly created fictitious list, through the native prompt.
    page.locator('.shopping-room-view').get_by_role('button',name='Eliminar lista',exact=True).click()
-   page.locator('#modalBox').get_by_role('button',name='Eliminar lista',exact=True).click()
+   page.get_by_role('alertdialog').get_by_role('button',name='Eliminar',exact=True).click()
    assert page.evaluate("state.projects[0].rooms.length===4&&state.view==='proyecto'&&state.projTab==='listas'")
    assert not writes,writes;assert not errors,errors
    print(width,'PASS: 40px aligned actions without trays, soft gray hover, supplied styles, expanded groups, CSV/PDF/print selection, guarded quote, native room creation; no remote writes')
