@@ -29,17 +29,9 @@ function shoppingRoomPickerHtml(project,current){
  return `<div class="shopping-room-picker">
   <h2 class="sec"><button type="button" id="shopping-room-trigger" class="shopping-room-trigger" aria-label="Cambiar lista: ${E(current.name)}" aria-haspopup="menu" aria-expanded="false" aria-controls="shopping-room-menu" onclick="shoppingRoomPickerToggle()">
    <span class="shopping-room-current-icon" aria-hidden="true">${rico(current.icon)}</span><span class="shopping-room-current-name">${E(current.name)}</span><svg class="shopping-room-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-  </button>${shoppingRoomStatusHtml(current)}</h2>
+  </button></h2>
   <div id="shopping-room-menu" class="shopping-room-menu" role="menu" aria-label="Listas de compra del proyecto" hidden>${(project.rooms||[]).map((room,index)=>`<button type="button" role="menuitemradio" aria-checked="${room.id===current.id}" tabindex="-1" data-room-index="${index}" onclick="shoppingRoomChoose(Number(this.dataset.roomIndex))" title="${E(room.name)}"><span class="shopping-room-choice-icon" aria-hidden="true">${rico(room.icon)}</span><span class="shopping-room-choice-name">${E(room.name)}</span><span class="shopping-room-choice-check" aria-hidden="true">${room.id===current.id?'✓':''}</span></button>`).join('')}</div>
  </div>`;
-}
-function shoppingRoomStatusHtml(room){
- const E=ModernoDaily.escape,current=room.rstatus||'Borrador',options=[...new Set([current,...RSTATES])];
- return `<select class="shopping-room-status" aria-label="Estado general de la estancia" title="Estado general de la estancia" onchange="shoppingRoomStatusChange(this.value)">${options.map(status=>`<option value="${E(status)}" ${status===current?'selected':''}>${E(status)}</option>`).join('')}</select>`;
-}
-function shoppingRoomStatusChange(status){
- if(state.view!=='estancia'||!canView('proyecto')||!RSTATES.includes(status))return false;
- const {r}=getRoom();if(!r)return false;if(r.rstatus===status)return true;r.rstatus=status;render();toast('Estado: '+status);return true;
 }
 var shoppingDeleteUi=null;
 function shoppingRoomDeleteCleanup(){
