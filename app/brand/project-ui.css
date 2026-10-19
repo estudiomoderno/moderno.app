@@ -50,20 +50,6 @@
  .shopping-room-current-name{min-width:0;overflow-wrap:anywhere}
  .shopping-room-chevron{flex:none;transition:transform 160ms ease}
  .shopping-room-trigger[aria-expanded=true] .shopping-room-chevron{transform:rotate(180deg)}
- .shopping-room-current-status{font-weight:700;padding:0 9px}
- /* The project panel scope wins over legacy form defaults, including their focus background. */
- html body:not(.portalmode) #view #project-tab-panel .shopping-room-status{box-sizing:border-box;position:relative;flex:none;width:auto;max-width:180px;height:28px!important;min-height:28px!important;padding:4px 23px!important;border:1px solid transparent!important;border-radius:8px!important;background-color:var(--card,#f5f5f5)!important;color:var(--ink);font-family:inherit;font-size:12px;font-weight:500;line-height:1.2;text-align:center;text-align-last:center;justify-content:center;gap:0;cursor:pointer;transition:background-color 160ms ease}
- html body:not(.portalmode) #view #project-tab-panel .shopping-room-status:is(:hover,:open){background-color:var(--app-control,#eee)!important}
- html body:not(.portalmode) #view .shopping-room-status::picker-icon{position:absolute;right:8px;width:12px;height:12px;flex-basis:12px;margin:0;mask-image:url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"%3E%3Cpath d="m4 6 4 4 4-4" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/%3E%3C/svg%3E');transition:rotate 160ms ease}
- html body:not(.portalmode) #view .shopping-room-status:open::picker-icon{rotate:180deg}
- html body:not(.portalmode) #view .shopping-room-status::picker(select){box-sizing:border-box;position-area:block-end;inset:auto;margin:6px 0 0;min-width:140px;max-width:calc(100vw - 32px);padding:4px;border:1px solid var(--ui-line);border-radius:10px;background:var(--app-surface,#fff);color:var(--ink);box-shadow:0 6px 18px #00000014;opacity:0;transform:translateY(-6px);transition:opacity 180ms ease-out,transform 180ms ease-out,display 180ms allow-discrete,overlay 180ms allow-discrete}
- html body:not(.portalmode) #view .shopping-room-status:open::picker(select){opacity:1;transform:translateY(0)}
- @starting-style{html body:not(.portalmode) #view .shopping-room-status:open::picker(select){opacity:0;transform:translateY(-6px)}}
- html body:not(.portalmode) #view .shopping-room-status option{box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:0;min-height:30px;padding:6px 10px;border-radius:6px;font:inherit;line-height:1.4;text-align:center;text-align-last:center}
- html body:not(.portalmode) #view .shopping-room-status option::checkmark{display:none}
- html body:not(.portalmode) #view .shopping-room-status option:checked{background:var(--app-control,#eee)}
- html body:not(.portalmode) #view .shopping-room-status option:focus-visible{outline:1px solid var(--ink);outline-offset:-1px}
- @media(prefers-reduced-motion:reduce){html body:not(.portalmode) #view .shopping-room-status,html body:not(.portalmode) #view .shopping-room-status::picker-icon,html body:not(.portalmode) #view .shopping-room-status::picker(select){transition:none}}
  .shopping-delete-host{position:relative;z-index:10000;display:block;width:0;height:0}
  #overlay.shopping-delete-overlay{background:transparent;backdrop-filter:none}
  #modalBox.shopping-reui-confirm{visibility:hidden;pointer-events:none}

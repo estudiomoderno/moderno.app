@@ -1,4 +1,4 @@
-"""Shopping overview actions on the official isolated server, with fictitious records only."""
+"""No list status + delete confirmation on the official isolated server, fictitious records only."""
 from pathlib import Path
 import os,socket,subprocess,time,urllib.request,sys
 from playwright.sync_api import sync_playwright,expect
@@ -50,51 +50,41 @@ try:
     window.records=()=>JSON.stringify({projects:state.projects,clients:state.clients,invoices:state.invoices,quotes:state.quotes,entries:state.entries,collapsed:state.collapsed});
     window.baseline=records();window.printCount=0;window.print=()=>{printCount++;window.printHTML=document.getElementById('printZone').innerHTML;};
    }""")
+   assert page.locator('.shopping-list-overview .dl-st').count()==0
+   # Decorative plan illustration: full app, original upload handlers, no backend writes.
+   page.evaluate("state.projects[0].files=[{name:'Plano ficticio.pdf',type:'application/pdf',data:'contenido-ficticio',cli:false}];window.beforeDocuments=records();projTab('planos')")
+   upload=page.get_by_role('button',name='Subir o arrastrar archivos',exact=True)
+   illustration=upload.locator('.project-upload-illustration');illustration.evaluate('(img)=>img.decode()')
+   assert illustration.evaluate('(img)=>img.naturalWidth')==640
+   assert illustration.get_attribute('alt')=='' and illustration.get_attribute('aria-hidden')=='true'
+   assert illustration.evaluate('(img)=>getComputedStyle(img).filter')=='grayscale(1)'
+   card=page.locator('.project-file-card:not(.project-file-add)').first
+   assert abs(upload.bounding_box()['width']-card.bounding_box()['width'])<1
+   if output:page.screenshot(path=str(output/f'plan-upload-{width}.png'),full_page=True)
+   page.evaluate("()=>{window.originalAddFiles=addFiles;window.uploadCalls=[];addFiles=(pid,files)=>uploadCalls.push([pid,Array.from(files).map(f=>f.name)]);}")
+   with page.expect_file_chooser() as chooser:upload.press('Enter')
+   chooser.value.set_files({'name':'Elegido ficticio.pdf','mimeType':'application/pdf','buffer':b'fictional'})
+   assert page.evaluate('uploadCalls.pop()')==[9001,['Elegido ficticio.pdf']]
+   upload.evaluate("e=>{const dt=new DataTransfer();dt.items.add(new File(['fictional'],'Arrastrado ficticio.dwg',{type:'application/octet-stream'}));e.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:dt}));if(!e.classList.contains('is-dragover'))throw Error('Missing drop feedback');e.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:dt}));}")
+   assert page.evaluate('uploadCalls.pop()')==[9001,['Arrastrado ficticio.dwg']]
+   assert not upload.evaluate("e=>e.classList.contains('is-dragover')")
+   illustration.dispatch_event('error');assert illustration.is_hidden()
+   expect(upload).to_contain_text('Subir o arrastrar archivos')
+   assert page.evaluate('records()===beforeDocuments')
+   page.evaluate('addFiles=originalAddFiles;state.projects[0].files=[];render()')
+   empty=upload.bounding_box();assert abs(empty['width']-empty['height'])<1,empty
    page.evaluate("openRoom(9001,8001);window.initialRecords=records();window.productsBefore=JSON.stringify(state.projects.map(p=>p.rooms.map(r=>r.sections)))")
-   room=page.locator('.shopping-room-view');status=room.get_by_role('combobox',name='Estado general de la estancia')
-   expect(status).to_have_value('Borrador');assert page.evaluate('records()===initialRecords')
-   assert status.bounding_box()['height']==28
-   assert status.locator('option').all_text_contents()==['Borrador','Especificación','En curso','Revisión','Terminado']
-   # The compact trigger and every popup label stay centered, including the selected row.
-   status.evaluate('''select=>{
-    window.statusMotion=[];select.addEventListener('pointerdown',()=>{
-     const sample=()=>{const s=getComputedStyle(select,'::picker(select)');statusMotion.push({opacity:s.opacity,transform:s.transform});if(statusMotion.length<20)requestAnimationFrame(sample);};requestAnimationFrame(sample);
-    },{once:true});
-   }''')
-   status.click()
-   assert status.evaluate("e=>e.matches(':open')")
-   page.wait_for_function('statusMotion.length===20')
-   motion=page.evaluate('statusMotion')
-   assert float(motion[0]['opacity'])<.5 and float(motion[-1]['opacity'])==1,motion
-   assert any(0<float(frame['opacity'])<1 for frame in motion),motion
-   assert float(motion[0]['transform'].split(',')[-1].rstrip(')'))<0,motion
-   assert float(motion[-1]['transform'].split(',')[-1].rstrip(')'))==0,motion
-   background=status.evaluate('e=>getComputedStyle(e).backgroundColor')
-   assert background=='rgb(238, 238, 238)',background
-   assert status.evaluate('e=>getComputedStyle(e).borderTopColor')=='rgba(0, 0, 0, 0)'
-   geometry=status.evaluate('''(select)=>{
-    const center=e=>{const b=e.getBoundingClientRect();return {x:b.x+b.width/2,y:b.y+b.height/2,h:b.height};};
-    return {trigger:center(select),title:center(document.querySelector('.shopping-room-trigger')),
-     options:[...select.options].map(option=>{const range=document.createRange();range.selectNodeContents(option);const text=range.getBoundingClientRect();return {box:center(option),text:{x:text.x+text.width/2,y:text.y+text.height/2}};})};
-   }''')
-   # Long room names may wrap the badge onto the next line on small screens.
-   if width>=1100:assert abs(geometry['trigger']['y']-geometry['title']['y'])<1,geometry
-   for row in geometry['options']:
-    assert row['box']['h']==30,row
-    assert abs(row['box']['x']-geometry['trigger']['x'])<1,row
-    assert abs(row['box']['x']-row['text']['x'])<1,row
-    assert abs(row['box']['y']-row['text']['y'])<2,row
-   if output:page.screenshot(path=str(output/f'room-status-picker-{width}.png'),full_page=True)
-   status.press('Escape');assert page.evaluate('records()===initialRecords')
-   page.emulate_media(reduced_motion='reduce');status.click()
-   assert status.evaluate("e=>getComputedStyle(e,'::picker(select)').transitionDuration")=='0s'
-   status.press('Escape');page.emulate_media(reduced_motion='no-preference')
-   status.select_option('En curso');expect(status).to_have_value('En curso')
-   assert page.evaluate("state.projects[0].rooms[0].rstatus==='En curso'&&state.projects[0].rooms[1].rstatus===undefined")
-   assert page.evaluate('JSON.stringify(state.projects.map(p=>p.rooms.map(r=>r.sections)))===productsBefore')
+   room=page.locator('.shopping-room-view')
+   assert room.get_by_role('combobox',name='Estado general de la estancia').count()==0
+   assert room.locator('.shopping-room-status,.shopping-room-current-status').count()==0
+   assert page.evaluate('records()===initialRecords')
    page.evaluate("state.projects[0].rooms[0].rstatus='Estado antiguo ficticio';render();window.legacyRecords=records()")
-   expect(status).to_have_value('Estado antiguo ficticio');assert page.evaluate('records()===legacyRecords')
-   status.select_option('Terminado');expect(status).to_have_value('Terminado')
+   assert room.get_by_role('combobox',name='Estado general de la estancia').count()==0
+   assert page.evaluate('records()===legacyRecords')
+   room.get_by_role('button',name='Ajustes de la lista',exact=True).click()
+   assert page.locator('#modalBox').get_by_text('Estado de la estancia',exact=True).count()==0
+   page.locator('#modalBox').get_by_role('button',name='Hecho',exact=True).click()
+   assert page.evaluate('records()===legacyRecords')
    page.evaluate('window.beforeDelete=records()')
    delete=room.get_by_role('button',name='Eliminar lista',exact=True);delete.click()
    dialog=page.get_by_role('alertdialog');expect(dialog).to_be_visible()
@@ -133,7 +123,7 @@ try:
    assert page.evaluate('state.projects[0].rooms.length===3&&state.projects[0].rooms.every(r=>r.id!==8001)')
    assert page.locator('.shopping-delete-host').count()==0
    assert not writes,writes;assert not errors,errors
-   print(width,'PASS: explicit room status, historical/default values preserved; original ReUI small delete dialog, focus/keyboard/Escape/cancel, native fallback, guarded explicit fictitious delete; no remote writes')
+   print(width,'PASS: no list status in header/settings, historical records preserved; original ReUI small delete dialog, focus/keyboard/Escape/cancel, native fallback, guarded explicit fictitious delete; no remote writes')
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)

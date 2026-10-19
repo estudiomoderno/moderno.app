@@ -52,3 +52,8 @@
 
 .project-file-add{width:100%;align-self:stretch;aspect-ratio:1/1;justify-content:center;align-items:center;gap:14px;background:transparent;border-style:dashed;text-align:center;color:var(--ink,#242424);cursor:pointer;text-transform:none;letter-spacing:normal;box-sizing:border-box;transition:background .18s ease,border-color .18s ease}.project-file-plus{font-size:42px;font-weight:300;line-height:1}.project-file-add strong{font-size:13px;font-weight:500;max-width:150px}.project-file-add:hover,.project-file-add.is-dragover{background:var(--card,#e7e2d2);border-color:var(--ink,#242424)}.project-file-add:focus-visible{outline:2px solid var(--ink,#242424);outline-offset:4px}.project-file-add input{display:none}
 @media(prefers-reduced-motion:reduce){.project-file-add{transition:none}}
+.project-file-add .project-upload-illustration{display:block;width:min(100%,240px);height:auto;max-height:200px;object-fit:contain;filter:grayscale(1);pointer-events:none;user-select:none}
+.project-file-add .project-upload-illustration[hidden]{display:none}
+.project-file-add .project-file-plus{font-size:18px;font-weight:400;vertical-align:middle}
+.project-file-add strong{max-width:100%;line-height:1.4}
+@media(max-width:600px){.project-file-add{gap:8px}.project-file-add .project-upload-illustration{width:85%}}

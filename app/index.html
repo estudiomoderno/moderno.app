@@ -939,7 +939,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/shopping-cards.css?v=3625">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
-<script src="/client-portal-site.js?v=36527"></script>
+<script src="/client-portal-site.js?v=36573"></script>
 <link rel="stylesheet" href="/client-portal-site.css?v=36526">
 <link rel="stylesheet" href="/home-dashboard.css?v=3640">
 <link rel="stylesheet" href="/menu-polish.css?v=3650">
@@ -1180,11 +1180,11 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36570"></script>
+<script src="/project-ui.js?v=36573"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
-<script src="/project-documents.js?v=36536"></script>
-<link rel="stylesheet" href="/plan-editor.css?v=36527">
+<script src="/project-documents.js?v=36573"></script>
+<link rel="stylesheet" href="/plan-editor.css?v=36573">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3617"></script>
@@ -5812,7 +5812,7 @@ function vProject(){
       const tiles=[0,1,2].map(k=>`<div class="t s">${imgs[k]?`<img ${fileImageAttrs(imgs[k])} alt="" loading="lazy">`:""}</div>`).join("")+[3,4].map(k=>`<div class="t w">${imgs[k]?`<img ${fileImageAttrs(imgs[k])} alt="" loading="lazy">`:""}</div>`).join("");
       return `
       <div class="dl-card" onclick="openRoom(${p.id},${r.id})" title="${n} producto${n===1?"":"s"} · ${r.sections.length} sección${r.sections.length===1?"":"es"} · ${fmt(tot)}${r.visible===false?" · oculta al cliente":""}">
-        <div class="dl-mosaic">${tiles}<span class="dl-st">${r.rstatus||"Borrador"}</span></div>
+        <div class="dl-mosaic">${tiles}</div>
         <div class="dl-cfoot"><b class="dl-name">${rico(r.icon)} ${r.name}</b></div>
       </div>`}).join("")}
     ${kind==="estancia"?`<button type="button" class="dl-add room-create-card" aria-label="Nueva estancia" onclick="newRoom(${p.id},'estancia')"><img class="room-create-illustration" src="/brand/illustrations/nueva-estancia.webp?v=36563" width="640" height="427" alt="" aria-hidden="true" draggable="false" decoding="async" onerror="this.hidden=true"><span class="room-create-caption"><span class="room-create-plus" aria-hidden="true">+</span><span>Nueva estancia</span></span></button>`:`<div class="dl-add" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</div>`}
@@ -7357,7 +7357,6 @@ function filterModal(){
     <button class="btn btn-dark" onclick="state.rf={status:document.getElementById('ffSt').value,supplier:document.getElementById('ffSup').value,color:document.getElementById('ffCol').value,min:document.getElementById('ffMin').value,max:document.getElementById('ffMax').value};closeModal();render()">⚙ Filtrar</button>
   </div>`);
 }
-const RSTATES=["Borrador","Especificación","En curso","Revisión","Terminado"];
 function roomIconModal(pid,rid){
   const p=state.projects.find(x=>x.id===pid), r=p.rooms.find(x=>x.id===rid);
   modal(`<h3>Icono de «${r.name}»</h3>
@@ -7368,8 +7367,6 @@ function roomMenu(pid,rid){
   const p=state.projects.find(x=>x.id===pid), r=p.rooms.find(x=>x.id===rid);
   modal(`<h3>${rico(r.icon)} ${r.name}</h3>
   <label>Nombre</label><input id="rmName" value="${r.name.replace(/"/g,"&quot;")}" onchange="(function(v){const r=state.projects.find(x=>x.id===${pid}).rooms.find(x=>x.id===${rid});r.name=v;toast('Renombrada ✓')})(this.value)">
-  <label>Estado de la estancia</label>
-  <div class="opt-pills">${RSTATES.map(st=>`<button class="${r.rstatus===st?'on':''}" onclick="const r=state.projects.find(x=>x.id===${pid}).rooms.find(x=>x.id===${rid});r.rstatus='${st}';closeModal();render();toast('Estado: ${st}')">${st}</button>`).join("")}</div>
   <label>Acciones</label>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     <button class="btn btn-ghost" onclick="closeModal();openRoom(${pid},${rid});setTimeout(marginModal,120)">％ Margen general</button>
@@ -11445,7 +11442,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.72";
+const MODERNO_VER="v3.65.73";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13267,7 +13264,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36572">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36573">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
