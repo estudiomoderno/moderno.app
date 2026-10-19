@@ -1180,7 +1180,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36542"></script>
+<script src="/project-ui.js?v=36560"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36536"></script>
@@ -5794,21 +5794,17 @@ function vProject(){
       </div>`).join("")}
   </div>`}
   ${tb!=="listas"?"":`
-  <div class="dl">
-  <h2 class="sec" style="margin-top:0">Listas de compra <span class="sec-note">Estancias, pavimentos y todo lo que se compra.</span></h2>
+  <div class="dl shopping-list-overview">
+  <h2 class="sec" style="margin-top:0">Listas de compra</h2>
   ${[["estancia","Estancias","Nueva estancia"],["pav","Pavimentos y Revestimientos","Nueva lista de pavimentos"],["otra","Otras listas","Nueva lista"]].map(([kind,label,addLabel])=>{
-    const ck = "g-"+p.id+"-"+kind, closed = !!(state.collapsed&&state.collapsed[ck]===false);   // abiertos por defecto
     const groupRooms = (p.rooms||[]).filter(r=>(r.kind||"estancia")===kind);
-    if(kind!=="estancia" && !groupRooms.length && closed===false) return "";
+    if(kind!=="estancia" && !groupRooms.length) return "";
     return `
   <div class="dl-ghead">
-    <button class="collbtn arr ${closed?'closed':''}" style="width:26px;height:26px;background:transparent" onclick="state.collapsed=state.collapsed||{};state.collapsed['${ck}']=(state.collapsed['${ck}']===false);render()">${ico('flecha')}</button>
     <b>${label}</b><span class="dl-cnt">${groupRooms.length}</span><span class="line"></span>
-    ${closed?`<span class="dl-sum">${fmt(groupRooms.reduce((s,r)=>s+roomTotal(r),0))}</span>`:""}
-    ${kind==="estancia"?`<button class="dl-btn" title="Trae una lista con sus productos desde un CSV (Excel, Numbers, Google Sheets, Densy…)" onclick="listImportModal(${p.id})">${ico("m_import")} Importar desde hoja</button>`:""}
-    <button class="dl-btn pri" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</button>
+    ${kind==="estancia"?shoppingListActions(p.id):`<button class="dl-btn pri" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</button>`}
   </div>
-  ${closed?"":`<div class="dl-grid">
+  <div class="dl-grid">
     ${groupRooms.map(r=>{ const tot=roomTotal(r), n=r.sections.reduce((s,x)=>s+x.items.length,0);
       const imgs=r.sections.flatMap(x=>x.items).filter(it=>it.img).map(it=>it.img).slice(0,5);
       const tiles=[0,1,2].map(k=>`<div class="t s">${imgs[k]?`<img ${fileImageAttrs(imgs[k])} alt="" loading="lazy">`:""}</div>`).join("")+[3,4].map(k=>`<div class="t w">${imgs[k]?`<img ${fileImageAttrs(imgs[k])} alt="" loading="lazy">`:""}</div>`).join("");
@@ -5818,16 +5814,12 @@ function vProject(){
         <div class="dl-cfoot"><span class="dl-date">${r.created?r.created.split("-").reverse().join("/"):fmt(tot)}</span><b class="dl-name">${rico(r.icon)} ${r.name}</b><button class="dl-grip" title="Opciones de la lista" onclick="event.stopPropagation();roomMenu(${p.id},${r.id})">⠿</button></div>
       </div>`}).join("")}
     <div class="dl-add" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</div>
-  </div>`}`}).join("")}
+  </div>`}).join("")}
   ${(p.rooms||[]).length?`<div class="dl-budget" style="margin-top:24px">
     <div><span class="dl-lab">Presupuesto del Proyecto</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px">${(p.rooms||[]).length} lista${(p.rooms||[]).length===1?"":"s"} · ${(p.rooms||[]).reduce((s,r)=>s+r.sections.reduce((a,x)=>a+x.items.length,0),0)} productos</div></div>
-    <button class="dl-btn" title="Crea un presupuesto con las fichas del proyecto, agrupadas por estancia" onclick="listToQuote(${p.id})">${ico("presupuestos")} Generar presupuesto</button>
+    <button type="button" class="shopping-quote" title="Crea un presupuesto con las fichas del proyecto, agrupadas por estancia" onclick="listToQuote(${p.id})"><span class="shopping-quote-paper" aria-hidden="true">${ico("presupuestos")}</span><span>Generar presupuesto</span><span class="shopping-quote-arrow" aria-hidden="true">→</span></button>
     <b class="dl-num">${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</b>
   </div>`:""}
-  <div style="display:flex;gap:8px;margin-top:22px;flex-wrap:wrap">
-    <button class="dl-btn" onclick="exportListsModal(${p.id},'pdf')">${ico('pdf')} Exportar PDF</button>
-    <button class="dl-btn" onclick="exportListsModal(${p.id},'xlsx')">${ico('xlsx')} Hoja de cálculo</button>
-  </div>
   </div>
   `}
   
@@ -9089,14 +9081,14 @@ function projXLSX(pid, ids){
   const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv); a.download=p.num+"-listas-de-compra.csv"; a.click();
   toast("Hoja de cálculo del proyecto descargada");
 }
-function exportListsModal(pid, kind){
+function exportListsModal(pid, kind, printing=false){
   const p = state.projects.find(x=>x.id===pid);
   const groups = [["estancia","Estancias"],["pav","Pavimentos y Revestimientos"],["otra","Otras listas"]];
   const box = (r)=>`<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;background:var(--card);cursor:pointer;font-size:12.5px">
     <input type="checkbox" class="expR" value="${r.id}" checked style="width:auto" onchange="expCount()"> ${rico(r.icon)} ${r.name}
     <small style="margin-left:auto;color:var(--ink-faint)">${fmt(roomTotal(r))}</small></label>`;
-  modal(`<h3>${kind==="pdf"?ico("pdf")+" Exportar PDF":ico("xlsx")+" Exportar hoja de cálculo"}</h3>
-  <p style="font-size:12px;color:var(--ink-soft);margin-top:2px">Elige qué listas quieres llevarte.</p>
+  modal(`<h3>${printing?"Imprimir listas":kind==="pdf"?ico("pdf")+" Exportar PDF":ico("xlsx")+" Exportar hoja de cálculo"}</h3>
+  <p style="font-size:12px;color:var(--ink-soft);margin-top:2px">${printing?"Elige qué listas quieres imprimir.":"Elige qué listas quieres llevarte."}</p>
   <div class="opt-pills" style="margin:10px 0 4px;justify-content:flex-start">
     <button class="on" onclick="expSet('all');this.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===this))">Todo</button>
     ${groups.map(([k,lab])=>((p.rooms||[]).some(r=>(r.kind||"estancia")===k)?`<button onclick="expSet('${k}');this.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===this))">Solo ${lab.split(" ")[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}</button>`:"")).join("")}
@@ -9107,7 +9099,7 @@ function exportListsModal(pid, kind){
     <div style="display:grid;gap:5px" data-g="${k}">${rs.map(box).join("")}</div>`:"";}).join("")}
   <div class="btn-row" style="margin-top:16px">
     <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-gold" id="expGo" onclick="expRun(${pid},'${kind}')">${kind==="pdf"?"Exportar PDF":"Descargar hoja"}</button>
+    <button class="btn btn-gold" id="expGo" onclick="expRun(${pid},'${kind}')">${printing?"Imprimir":kind==="pdf"?"Exportar PDF":"Descargar hoja"}</button>
   </div>`);
   expCount();
 }
@@ -11466,7 +11458,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.59";
+const MODERNO_VER="v3.65.60";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13288,7 +13280,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36538">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36560">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

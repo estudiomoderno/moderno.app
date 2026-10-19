@@ -1,5 +1,9 @@
 # Decisiones de TALLER
 
+## 2026-10-19 — Cabecera de Estancias y acciones con el código proporcionado
+
+El propietario solicita retirar la descripción, Importar desde hoja y la compresión de grupos de listas, y sustituir los accesos de cabecera por Crear / Exportar / Imprimir con su diseño Uiverse.io de 50 × 50 px. Exportar reúne PDF y hoja de cálculo; desaparecen sus botones inferiores. Generar presupuesto adopta el segundo diseño con el icono de papel actual. Se conservan manejadores, guardas y datos. Detalles, pruebas y recuperación: [ESTANCIAS-ACCIONES](ESTANCIAS-ACCIONES.md).
+
 ## 2026-10-18 — Franja uniforme y Autocomplete después del «+»
 
 El propietario solicita alinear la franja de proyectos y abrir un buscador con transición de izquierda a derecha después del «+», usando su Autocomplete original. Se unifica la altura a 32 px, manteniendo las fuentes y tamaños de texto. Se buscan proyectos existentes con los permisos y guardas actuales; no se crean registros ni se cambia el modelo de datos. Detalles y reversión en [PESTANAS-PROYECTOS.md](PESTANAS-PROYECTOS.md).
