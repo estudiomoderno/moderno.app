@@ -58,7 +58,7 @@ var ModernoPageBreadcrumbs=(()=>{
    component=ModernoProfileComponent.mountBreadcrumbs(host,()=>{original=false;queueMicrotask(safeRefresh);},focus);component.update({items,finance:sections,current:state.view,onNavigate:navigate});
   }else{fallback(items,sections);if(restoreFocus&&sections)bar.querySelector('[data-finance-view="'+state.view+'"]').focus();}
  }
- function safeRefresh(){try{refresh();}catch(error){clear();syncNative(false);enabled=false;console.warn('Ruta superior desactivada; se conserva la navegación original.',error);}}
+ function safeRefresh(){try{refresh();}catch(error){clear();syncNative(false);enabled=false;if(document.body.classList.contains('desktop-shell'))ModernoDesktopShell.setEnabled(false);console.warn('Ruta superior desactivada; se conserva la navegación original.',error);}}
  const originalRender=render;render=function(){const result=originalRender.apply(this,arguments);safeRefresh();return result;};
  const originalEnable=ModernoDesktopShell.setEnabled;ModernoDesktopShell.setEnabled=function(){const result=originalEnable.apply(this,arguments);safeRefresh();return result;};
  media.addEventListener('change',safeRefresh);safeRefresh();

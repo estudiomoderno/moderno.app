@@ -160,6 +160,16 @@ def check_finances(page,width):
   r=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
   assert abs(r['height']-32)<1 and abs(r['y']+r['height']/2-profile['y']-profile['height']/2)<1,(r,profile)
   assert r['x']+r['width']<profile['x'],(r,profile)
+ page.locator('.route-component-host[data-reui-ready=true]').wait_for(state='attached')
+ sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
+ if width<1100:
+  # The navigation row must not change the widths of the existing finance content.
+  original_widths=page.locator('#view .fin-card').evaluate_all('(els)=>els.map(e=>e.getBoundingClientRect().width)')
+  page.evaluate('ModernoPageBreadcrumbs.setEnabled(false)')
+  assert page.locator('#view .fin-card').evaluate_all('(els)=>els.map(e=>e.getBoundingClientRect().width)')==original_widths
+  page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
+  page.locator('.route-component-host[data-reui-ready=true]').wait_for(state='attached')
+  sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
  if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'finance-original-{width}.png'),full_page=True)
  for view in ['facturas','presupuestos','contabilidad','prevision','informes']:
   button=page.locator('#page-route-bar [data-finance-view="'+view+'"]')
