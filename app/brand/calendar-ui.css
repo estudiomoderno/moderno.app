@@ -2,4 +2,8 @@
 .calendar-layout{width:100%;min-width:0}
 .calendar-component-host{display:block;width:100%;min-width:0}
 .calendar-native[hidden]{display:none!important}
+/* Keep calendar filters close to the fixed desktop route row. */
+@media screen and (min-width:1100px){
+ html body.desktop-shell:not(.portalmode) .main:has(#calendar-reui){padding-top:64px!important;scroll-padding-top:64px}
+}
 @media print{#calendar-reui{display:none!important}.calendar-native[hidden]{display:block!important}}
