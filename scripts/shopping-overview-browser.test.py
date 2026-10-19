@@ -75,6 +75,11 @@ try:
    assert overview.locator('.dl-grid').count()==3 and overview.locator('.dl-card').count()==4
    assert overview.get_by_role('button',name='Exportar PDF',exact=True).count()==0
    assert overview.get_by_role('button',name='Hoja de cálculo',exact=True).count()==0
+   expect(overview.locator('.shopping-list-header .shopping-room-count')).to_have_text('2')
+   assert overview.locator('.shopping-list-header h2').inner_text().strip().startswith('Listas de compra')
+   assert 'Estancias' not in overview.locator('.dl-ghead>b').all_inner_texts()
+   assert overview.locator('.shopping-list-header .line').count()==0
+   assert overview.locator('.shopping-list-header .shopping-action').count()==3
    buttons=overview.locator('.shopping-action')
    assert buttons.evaluate_all('(es)=>es.map(e=>e.getAttribute("aria-label"))')==['Crear','Exportar','Imprimir']
    assert buttons.locator('.shopping-action-tray').count()==0
@@ -103,9 +108,9 @@ try:
    for button in buttons.all():
     page.mouse.move(0,0);button.hover()
     icon=button.locator('svg')
-    assert icon.evaluate('(e)=>getComputedStyle(e).animationIterationCount')=='1'
-    icon.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
-    assert icon.evaluate('(e)=>e.getAnimations().every(a=>a.playState==="finished")')
+    assert icon.evaluate('(e)=>getComputedStyle(e).animationName')=='none'
+    assert icon.evaluate('(e)=>getComputedStyle(e).transform')=='none'
+    assert icon.evaluate('(e)=>e.getAnimations().length')==0
     assert icon.evaluate('(e)=>getComputedStyle(e).opacity')=='1'
    buttons.first.hover()
    page.emulate_media(reduced_motion='reduce')

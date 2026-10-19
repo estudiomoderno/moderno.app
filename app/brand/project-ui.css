@@ -1,5 +1,7 @@
 /* From Uiverse.io by vinodjangid07 — user-supplied designs, scoped class names. */
 @media screen {
+ .shopping-list-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+ .shopping-list-header>.sec{gap:8px;justify-content:flex-start;min-width:0}
  .shopping-list-overview .room-create-card{width:100%;min-width:0;box-sizing:border-box;padding:20px;gap:12px;align-content:center;font-family:inherit;text-align:center}
  .room-create-card .room-create-illustration{display:block;width:min(100%,280px);height:auto;max-height:200px;object-fit:contain;filter:grayscale(1);pointer-events:none;user-select:none}
  .room-create-card .room-create-illustration[hidden]{display:none}
@@ -17,7 +19,6 @@
  }
  .shopping-action-icon{fill:rgb(70,70,70);width:18px;height:18px;flex:none}
  .shopping-list-overview .shopping-action:hover{background-color:rgb(241,241,241);transition-duration:.3s}
- .shopping-action:hover .shopping-action-icon{animation:shopping-slide-in-top 1s linear 1 both}
  .shopping-list-overview .shopping-quote{
   width:200px;height:40px;min-height:40px;box-sizing:border-box;flex:0 0 200px;
   display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:0 15px;
@@ -32,7 +33,6 @@
  .shopping-quote:active{transform:translate(1px,1px);transition-duration:.2s}
  .shopping-action:focus-visible,.shopping-quote:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
  .shopping-export-formats{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
- @keyframes shopping-slide-in-top{0%{transform:translateY(-10px);opacity:0}100%{transform:translateY(0);opacity:1}}
  @keyframes shopping-slide-right{0%{transform:translateX(-10px);opacity:0}100%{transform:translateX(0);opacity:1}}
  @media(max-width:480px){.shopping-list-overview .dl-ghead>.line{display:none}.shopping-list-overview .dl-ghead{column-gap:6px;row-gap:12px}}
  @media(prefers-reduced-motion:reduce){.shopping-action,.shopping-quote,.shopping-action-icon,.shopping-quote-arrow{animation:none!important;transition:none!important}}
