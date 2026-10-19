@@ -25,3 +25,11 @@ Pruebas: suite Node y recorrido específico de creación, exportación e impresi
 ## Animación sin bucle — v3.65.62
 
 A petición del propietario, los iconos de Crear, Exportar e Imprimir animan una sola vez por entrada del ratón. Tras completar el efecto quedan visibles y quietos, y se repite únicamente al salir y volver a entrar. Se conserva la duración de un segundo, el gris claro, los tamaños y todas las acciones. Comprobados los tres iconos en Chromium aislado, junto con la suite Node y los recorridos existentes. Misma reversión mediante commit y despliegue; sin cambios de datos.
+
+## Tarjeta ilustrada de nueva estancia — v3.65.63
+
+El propietario solicita dar sentido visual al cuadro de añadir estancia, con una imagen en grises inspirada en una referencia arquitectónica. La tarjeta incluye una ilustración isométrica original de un salón con sofá, mesa y lámpara; conserva el signo más y «Nueva estancia». No se copia la referencia ni se usan fotografías del proyecto. El recurso generado se sirve localmente como WebP transparente de 640 × 427 px y unos 15 KB, con presentación en escala de grises y proporciones conservadas.
+
+La tarjeta de Estancias pasa a ser un botón nativo accesible con teclado, con el mismo manejador newRoom. La ilustración es decorativa y no duplica el nombre para lectores de pantalla. Si falla su carga, permanecen el texto y la acción de crear. Las tarjetas de pavimentos y otras listas mantienen su presentación. No cambia ningún dato, permiso o proceso de guardado.
+
+La prueba de navegador valida decodificación del recurso local, escala de grises, nombre accesible, activación por teclado, cancelación sin cambios y recuperación ante fallo de imagen, además de los recorridos existentes a 1440/1100/390 px. El verificador de publicación comprueba ahora 32 recursos, incluida la ilustración. Misma reversión por commit y despliegue, sin restaurar datos.
