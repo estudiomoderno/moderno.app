@@ -48,6 +48,10 @@
  .shopping-add-card .shopping-add-illustration[hidden]{display:none}
  .shopping-room-view .shopping-add-card strong{font-weight:600}
  .shopping-room-view .shopping-add-card:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+ .shopping-room-view .shopping-product-label{display:table;max-width:100%;margin-top:6px;padding:2px 7px;border:1px solid var(--ui-line);border-radius:6px;background:var(--app-surface,#fff);color:var(--ink-soft);font:inherit;font-size:11px;line-height:1.5;text-align:left;overflow-wrap:anywhere;cursor:pointer}
+ .shopping-room-view .shopping-product-label:hover{background:var(--app-control,#eee)}
+ .shopping-room-view .shopping-product-label:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+ .shopping-flat-products .shopping-empty-results{font-size:13px;color:var(--ink-soft);align-self:center}
  html body .shopping-room-view .shopping-tool-button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;position:relative;flex:0 0 32px;width:32px;height:32px;min-height:32px;padding:0;border:1px solid var(--ui-line);border-radius:8px;background:var(--app-surface,#fff);color:var(--ink);cursor:pointer;list-style:none}
  .shopping-room-view .shopping-tool-button::-webkit-details-marker{display:none}
  .shopping-filter-control>summary::after{display:none!important;content:none!important}
