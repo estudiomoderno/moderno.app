@@ -1,4 +1,13 @@
 function projectCurrencySymbol(){return (CURR[state.account?.currency]||CURR.EUR).s;}
+/* Uiverse.io by vinodjangid07: supplied button design, scoped to the shopping overview. */
+function shoppingListActions(pid){
+ const paths={create:'M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z',export:'M11 3h2v11l4-4 1.4 1.4-6.4 6.4-6.4-6.4L7 10l4 4z',print:'M6 3h12v5H6zM5 9h14a3 3 0 0 1 3 3v6h-4v4H6v-4H2v-6a3 3 0 0 1 3-3zm3 7v4h8v-4zm10-4v2h2v-2z'};
+ const actions=[['create','Crear',`newRoom(${pid},'estancia')`],['export','Exportar',`shoppingListExport(${pid})`],['print','Imprimir',`exportListsModal(${pid},'pdf',true)`]];
+ return `<div class="shopping-actions" role="group" aria-label="Acciones de listas de compra">${actions.map(([key,label,action])=>`<button type="button" class="shopping-action" data-shopping-action="${key}" aria-label="${label}" title="${label}" onclick="${action}"><svg class="shopping-action-icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="${paths[key]}"/></svg><span class="shopping-action-tray" aria-hidden="true"></span></button>`).join('')}</div>`;
+}
+function shoppingListExport(pid){
+ modal(`<h3>Exportar listas</h3><div class="shopping-export-formats"><button type="button" class="btn btn-ghost" onclick="exportListsModal(${pid},'pdf')">${ico('pdf')} PDF</button><button type="button" class="btn btn-ghost" onclick="exportListsModal(${pid},'xlsx')">${ico('xlsx')} Hoja de cálculo (CSV)</button></div><div class="modal-foot"><button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button></div>`);
+}
 /* Project presentation. Existing editors and persistence remain the source of truth. */
 function projectTabKey(key){return key==='resumen'?'proyecto':key==='chat'?'cliente':key;}
 function projectMoreIcon(){return '<svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>';}
