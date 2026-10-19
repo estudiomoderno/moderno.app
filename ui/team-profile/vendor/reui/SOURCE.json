@@ -159,6 +159,11 @@
       "path": "registry/bases/base/ui/tooltip.tsx",
       "git_blob": "8fbd22dacb65913e7e31cde7ad800dce6f889116",
       "adaptation": "Add optional portal container for CSS isolation."
+    },
+    "alert-dialog.tsx": {
+      "path": "registry/bases/base/ui/alert-dialog.tsx",
+      "git_blob": "ab1dc757812bf207ee16691f265470b78ce56d40",
+      "adaptation": "Add optional portal container for CSS isolation."
     }
   },
   "css": "Original Avatar, Button, Button Group Dropdown Menu Scroll Area, Breadcrumb and Card sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css. Original Calendar, Popover, Tooltip, Select, Switch, Tabs and Label sections from the same Nova source.",

@@ -15,8 +15,18 @@ test('avatar safely labels historical client names without downloading portraits
  assert.equal(c.projectClientAvatar({client:null}),'');
 });
 test('shopping picker uses only the supplied project, escapes list names and marks its current room',()=>{
- const p={rooms:[{id:1,name:'Salón',icon:'sofa'},{id:2,name:'<img src=x> "Prueba"',icon:'bed'}]},before=JSON.stringify(p),c=fixture({rico:()=>'<svg></svg>'});
+ const p={rooms:[{id:1,name:'Salón',icon:'sofa'},{id:2,name:'<img src=x> "Prueba"',icon:'bed'}]},before=JSON.stringify(p),c=fixture({rico:()=>'<svg></svg>',RSTATES:['Borrador','En curso']});
  const out=c.shoppingRoomPickerHtml(p,p.rooms[0]);assert.equal(JSON.stringify(p),before);assert.match(out,/role="menu"/);assert.match(out,/role="menuitemradio" aria-checked="true"/);assert.match(out,/&lt;img src=x&gt;/);assert.doesNotMatch(out,/<img/);assert.equal((out.match(/data-room-index=/g)||[]).length,2);
+});
+test('room status rendering preserves missing and historical values without changing records',()=>{
+ const c=fixture({RSTATES:['Borrador','En curso','Terminado']}),room={name:'Ficticio'},legacy={rstatus:'<Estado antiguo>'};
+ assert.match(c.shoppingRoomStatusHtml(room),/value="Borrador" selected/);assert.equal(room.rstatus,undefined);
+ assert.match(c.shoppingRoomStatusHtml(legacy),/value="&lt;Estado antiguo&gt;" selected/);assert.equal(legacy.rstatus,'<Estado antiguo>');
+});
+test('explicit room status changes only the current room, and rejects unknown or forbidden choices',()=>{
+ const room={rstatus:'En curso',sections:[{name:'General',items:[{id:2,price:50,qty:2}]}]},before=JSON.stringify(room.sections),calls=[],c=fixture({state:{view:'estancia'},RSTATES:['Borrador','En curso','Terminado'],getRoom:()=>({r:room}),render:()=>calls.push('render'),toast(){}});
+ assert.equal(c.shoppingRoomStatusChange('otro'),false);assert.equal(room.rstatus,'En curso');assert.equal(c.shoppingRoomStatusChange('Terminado'),true);assert.equal(room.rstatus,'Terminado');assert.equal(JSON.stringify(room.sections),before);assert.equal(calls.length,1);
+ c.canView=()=>false;assert.equal(c.shoppingRoomStatusChange('Borrador'),false);assert.equal(room.rstatus,'Terminado');
 });
 test('shopping picker rejects invalid, forbidden or modal selections and only clears transient filters on a real switch',()=>{
  const p={id:90,rooms:[{id:1,name:'Sala'},{id:2,name:'Dormitorio'}]},calls=[],elements={};let modal=false,allowed=true;

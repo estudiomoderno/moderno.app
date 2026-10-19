@@ -67,3 +67,12 @@
 @property --tw-duration{syntax:"*";inherits:false}
 @property --tw-content{syntax:"*";inherits:false;initial-value:""}
 @property --tw-tracking{syntax:"*";inherits:false}
+@property --tw-backdrop-blur{syntax:"*";inherits:false}
+@property --tw-backdrop-brightness{syntax:"*";inherits:false}
+@property --tw-backdrop-contrast{syntax:"*";inherits:false}
+@property --tw-backdrop-grayscale{syntax:"*";inherits:false}
+@property --tw-backdrop-hue-rotate{syntax:"*";inherits:false}
+@property --tw-backdrop-invert{syntax:"*";inherits:false}
+@property --tw-backdrop-opacity{syntax:"*";inherits:false}
+@property --tw-backdrop-saturate{syntax:"*";inherits:false}
+@property --tw-backdrop-sepia{syntax:"*";inherits:false}

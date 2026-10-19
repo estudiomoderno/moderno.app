@@ -51,6 +51,10 @@
  .shopping-room-chevron{flex:none;transition:transform 160ms ease}
  .shopping-room-trigger[aria-expanded=true] .shopping-room-chevron{transform:rotate(180deg)}
  .shopping-room-current-status{font-weight:700;padding:0 9px}
+ html body:not(.portalmode) #view .shopping-room-status{box-sizing:border-box;flex:none;width:auto;max-width:160px;height:24px!important;min-height:24px!important;padding:3px 23px 3px 8px!important;border:1px solid var(--ui-line);border-radius:6px!important;background-color:var(--app-control,#eee)!important;color:var(--ink);font-family:inherit;font-size:11px;font-weight:600;line-height:1.2}
+ .shopping-delete-host{position:relative;z-index:10000;display:block;width:0;height:0}
+ #overlay.shopping-delete-overlay{background:transparent;backdrop-filter:none}
+ #modalBox.shopping-reui-confirm{visibility:hidden;pointer-events:none}
  .shopping-room-menu{position:absolute;left:0;top:calc(100% + 8px);z-index:30;display:flex;flex-direction:column;box-sizing:border-box;width:max-content;min-width:200px;max-width:min(360px,calc(100vw - 40px));max-height:360px;overflow-y:auto;padding:5px;border:1px solid var(--ui-line);border-radius:10px;background:var(--app-surface,#fff);box-shadow:0 8px 24px #00000018}
  .shopping-room-menu[hidden]{display:none!important}
  .shopping-room-menu>button{display:flex;align-items:center;gap:10px;width:100%;min-height:36px;box-sizing:border-box;padding:8px 10px;border:0;border-radius:6px;background:transparent;color:var(--ink);font:inherit;font-size:13px;text-align:left;cursor:pointer}
