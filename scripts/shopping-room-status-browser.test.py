@@ -55,6 +55,23 @@ try:
    expect(status).to_have_value('Borrador');assert page.evaluate('records()===initialRecords')
    assert status.bounding_box()['height']==24
    assert status.locator('option').all_text_contents()==['Borrador','Especificación','En curso','Revisión','Terminado']
+   # The compact trigger and every popup label stay centered, including the selected row.
+   status.click()
+   assert status.evaluate("e=>e.matches(':open')")
+   geometry=status.evaluate('''(select)=>{
+    const center=e=>{const b=e.getBoundingClientRect();return {x:b.x+b.width/2,y:b.y+b.height/2,h:b.height};};
+    return {trigger:center(select),title:center(document.querySelector('.shopping-room-trigger')),
+     options:[...select.options].map(option=>{const range=document.createRange();range.selectNodeContents(option);const text=range.getBoundingClientRect();return {box:center(option),text:{x:text.x+text.width/2,y:text.y+text.height/2}};})};
+   }''')
+   # Long room names may wrap the badge onto the next line on small screens.
+   if width>=1100:assert abs(geometry['trigger']['y']-geometry['title']['y'])<1,geometry
+   for row in geometry['options']:
+    assert row['box']['h']==30,row
+    assert abs(row['box']['x']-geometry['trigger']['x'])<1,row
+    assert abs(row['box']['x']-row['text']['x'])<1,row
+    assert abs(row['box']['y']-row['text']['y'])<2,row
+   if output:page.screenshot(path=str(output/f'room-status-picker-{width}.png'),full_page=True)
+   status.press('Escape');assert page.evaluate('records()===initialRecords')
    status.select_option('En curso');expect(status).to_have_value('En curso')
    assert page.evaluate("state.projects[0].rooms[0].rstatus==='En curso'&&state.projects[0].rooms[1].rstatus===undefined")
    assert page.evaluate('JSON.stringify(state.projects.map(p=>p.rooms.map(r=>r.sections)))===productsBefore')
