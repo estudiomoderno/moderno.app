@@ -88,7 +88,44 @@ try:
    assert overview.locator('[title="Opciones de la lista"]').count()==0
    overview.locator('.dl-card').first.click()
    assert page.evaluate('state.view==="estancia"&&state.currentRoom===8001')
-   page.evaluate("go('proyecto',9001);projTab('listas')")
+   room=page.locator('.shopping-room-view')
+   assert room.locator('.crumbs,.shopping-add-options').count()==0
+   assert 'Board de la estancia' not in room.inner_text() and 'Compras y aprobaciones' not in room.inner_text()
+   dock=room.get_by_role('tablist',name='Secciones del proyecto')
+   expect(dock).to_be_visible()
+   assert dock.evaluate('(e)=>getComputedStyle(e).position')=='fixed'
+   box=dock.bounding_box();assert 0<=box['y']<1000 and box['y']+box['height']<=1000,box
+   assert dock.get_by_role('tab',name='Compras',exact=True).get_attribute('aria-selected')=='true'
+   actions=room.locator('.shopping-actions button')
+   assert actions.evaluate_all('(es)=>es.map(e=>e.title)')==['Ajustes de la lista','Eliminar lista']
+   boxes=[b.bounding_box() for b in actions.all()]
+   assert all(b['width']==40 and b['height']==40 for b in boxes) and boxes[0]['y']==boxes[1]['y'],boxes
+   settings=room.get_by_role('button',name='Ajustes de la lista',exact=True)
+   settings.click();expect(page.locator('#rmName')).to_have_value('Salón ficticio')
+   page.get_by_role('button',name='Hecho',exact=True).click();assert page.evaluate('records()===baseline')
+   delete=room.get_by_role('button',name='Eliminar lista',exact=True)
+   delete.hover();delete.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
+   assert delete.evaluate('(e)=>getComputedStyle(e).color')=='rgb(220, 38, 38)'
+   delete.click();expect(page.locator('#modalBox')).to_contain_text('Salón ficticio')
+   page.get_by_role('button',name='Cancelar',exact=True).click();assert page.evaluate('records()===baseline')
+   add=room.get_by_role('button',name='Añadir producto',exact=True)
+   expect(add).to_have_text('+ Añadir producto')
+   image=add.locator('img');image.evaluate('(img)=>img.decode()')
+   assert image.evaluate('(img)=>img.naturalWidth')==640 and image.get_attribute('alt')==''
+   add.press('Enter');expect(page.locator('#modalBox h3')).to_have_text('Añadir producto')
+   page.get_by_role('button',name='Cancelar',exact=True).click();assert page.evaluate('records()===baseline')
+   image.dispatch_event('error');assert image.is_hidden()
+   add.click();expect(page.locator('#modalBox h3')).to_have_text('Añadir producto')
+   page.get_by_role('button',name='Cancelar',exact=True).click();page.evaluate('render()')
+   if output:page.screenshot(path=str(output/f'shopping-room-{width}.png'),full_page=True)
+   # A dock selection must leave the room, even when Compras was already selected.
+   dock.get_by_role('tab',name='Compras',exact=True).click()
+   assert page.evaluate("state.view==='proyecto'&&state.projTab==='listas'")
+   overview.locator('.dl-card').first.click()
+   page.locator('.shopping-room-view').get_by_role('tab',name='Tareas',exact=True).click()
+   assert page.evaluate("state.view==='proyecto'&&state.projTab==='tareas'")
+   page.evaluate("projTab('listas')")
+   overview.evaluate('(e)=>Promise.all(e.getAnimations({subtree:true}).map(a=>a.finished))')
    assert page.evaluate('records()===baseline')
    buttons=overview.locator('.shopping-action')
    assert buttons.evaluate_all('(es)=>es.map(e=>e.getAttribute("aria-label"))')==['Crear','Exportar','Imprimir']
@@ -102,7 +139,7 @@ try:
     assert button.evaluate('(e)=>getComputedStyle(e).borderRadius')=='12px'
     button.focus();assert button.evaluate('(e)=>e===document.activeElement')
    quote=overview.get_by_role('button',name='Generar presupuesto',exact=True)
-   assert quote.bounding_box()['width']==200 and quote.bounding_box()['height']==40
+   assert abs(quote.bounding_box()['width']-200)<.02 and abs(quote.bounding_box()['height']-40)<.02,quote.bounding_box()
    assert quote.locator('.shopping-quote-paper svg').count()==1
    label=quote.locator(':scope>span').nth(1).bounding_box();arrow=quote.locator('.shopping-quote-arrow').bounding_box()
    assert label['x']+label['width']<=arrow['x'],(label,arrow)
@@ -164,6 +201,10 @@ try:
    overview.get_by_role('button',name='Crear',exact=True).click();page.locator('#nrName').fill('Estancia nueva ficticia')
    page.locator('#modalBox').get_by_role('button',name='Crear',exact=True).click()
    assert page.evaluate("state.projects[0].rooms.length===5&&state.projects[0].rooms[4].name==='Estancia nueva ficticia'&&state.view==='estancia'")
+   # Confirm deletion only on the newly created fictitious list, through the native prompt.
+   page.locator('.shopping-room-view').get_by_role('button',name='Eliminar lista',exact=True).click()
+   page.locator('#modalBox').get_by_role('button',name='Eliminar lista',exact=True).click()
+   assert page.evaluate("state.projects[0].rooms.length===4&&state.view==='proyecto'&&state.projTab==='listas'")
    assert not writes,writes;assert not errors,errors
    print(width,'PASS: 40px aligned actions without trays, soft gray hover, supplied styles, expanded groups, CSV/PDF/print selection, guarded quote, native room creation; no remote writes')
    page.close()

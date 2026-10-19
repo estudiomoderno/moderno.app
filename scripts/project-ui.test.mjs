@@ -40,6 +40,11 @@ test('restricted project tools are rejected without changing the active project 
  vm.runInContext(html.slice(html.indexOf('function projTab(t)'),html.indexOf('var _accessRole=')),c);
  for(const section of ['utilidades','conversaciones']){c.projTab(section);assert.equal(c.state.projTab,'tareas');}assert.equal(calls.length,2);
 });
+test('a room dock returns to purchases even when that section was already selected',()=>{
+ const calls=[],c=fixture({state:{view:'estancia',currentProject:9001,projTab:'listas',roomSearch:'filtro',rf:{status:'Comprado'}},go:(...args)=>calls.push(args),window:{scrollTo(){},matchMedia:()=>({matches:true})},document:{querySelector:()=>null,addEventListener(){}}});
+ vm.runInContext(html.slice(html.indexOf('function projTab(t)'),html.indexOf('var _accessRole=')),c);
+ c.projTab('listas');assert.deepEqual(calls,[['proyecto',9001]]);assert.equal(c.state.projTab,'listas');assert.equal(c.state.roomSearch,'');assert.equal(c.state.rf,null);
+});
 test('client search alone cannot save an unknown client or change the selected contact',()=>{
  const input={value:'Inexistente',focus(){}},draft={client:'Histórico'},c=fixture({cz:draft,document:{getElementById:()=>input,addEventListener(){}},toast(){}});
  assert.equal(c.projectClientValidate(),false);assert.equal(draft.client,'Histórico');input.value='Histórico';assert.equal(c.projectClientValidate(),true);

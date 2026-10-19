@@ -1180,7 +1180,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36561"></script>
+<script src="/project-ui.js?v=36566"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36536"></script>
@@ -4337,8 +4337,10 @@ function projTab(t){
  if(t==='resumen')t='proyecto';if(t==='chat')t='cliente';
  if(['utilidades','conversaciones'].includes(t)&&!canView(t)){toast('No tienes acceso a esta sección');return;}
  if(myAccessLevel()==="colab" && (t==="fin"||t==="resumen")){toast("No tienes acceso a los datos económicos");t="tareas";}
- const previous=state.projTab||'tareas';if(t===previous)return;
- state.projTab=t;render();window.scrollTo(0,0);const m=document.querySelector('.main');if(m)m.scrollTop=0;
+ const previous=state.view==='estancia'?'listas':state.projTab||'tareas';if(t===previous&&state.view!=='estancia')return;
+ state.projTab=t;
+ if(state.view==='estancia'){state.roomSearch='';state.rf=null;go('proyecto',state.currentProject);}else render();
+ window.scrollTo(0,0);const m=document.querySelector('.main');if(m)m.scrollTop=0;
  const order=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','utilidades','cliente'];
  const direction=order.indexOf(t)>order.indexOf(previous)?1:-1;
  const tabs=document.querySelector('.project-tabs');
@@ -7177,15 +7179,12 @@ function vRoom(){
   const F=(k,inner,cls)=>`<div class="dl-f ${cls||""}"><span class="k">${k}</span>${inner}</div>`;
   const inp=(si,ii,key,val,ph)=>`<input value="${esc(val)}" placeholder="${ph||"-"}" onchange="setItem(${si},${ii},'${key}',this.value)">`;
   return `
-  <div class="dl">
-  <div class="crumbs">
-    <b>${b.name}</b> / <span data-go onclick="state.roomSearch='';state.rf=null;go('proyectos')">Proyectos</span> / <span data-go onclick="state.roomSearch='';state.rf=null;go('proyecto',${p.id})">${p.num} ${p.name}</span> / <b>${r.name}</b>
-  </div>
-  <div class="dl-top" style="margin-top:8px">
+  <div class="shopping-room-view">
+  ${projectTabsHtml('listas')}
+  <section class="dl" id="project-tab-panel" role="tabpanel" aria-labelledby="project-tab-listas" tabindex="0">
+  <div class="dl-top shopping-room-header">
     <h2 class="sec" style="display:flex;align-items:center;gap:10px"><span style="background:var(--gold-soft);border-radius:10px;width:34px;height:34px;display:grid;place-items:center">${rico(r.icon)}</span>${r.name}${r.rstatus?`<span class="dl-cnt" style="font-weight:700;padding:0 9px">${r.rstatus}</span>`:""}</h2>
-    <button class="dl-btn" onclick="roomBoard()">▦ Board de la estancia</button>
-    ${_accessRole==='admin'?`<button class="dl-btn" onclick="ProductOps.open(${p.id})">Compras y aprobaciones</button>`:""}
-    <button class="dl-btn" title="Compartir, margen general, exportar, icono, mover a otro proyecto…" onclick="roomMenu(${p.id},${r.id})">…</button>
+    ${shoppingRoomActions(p.id,r.id)}
   </div>
   <div class="dl-budget" style="margin:14px 0 4px">
     <div><span class="dl-lab">Presupuesto de la estancia</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px" title="Interno — el cliente no lo ve">🔒 coste ${cost===null?"por confirmar":fmt(cost)} · beneficio ${ben===null?"por confirmar":fmt(ben)}${r.margin?" · margen general "+r.margin+"%":""}</div></div>
@@ -7211,7 +7210,7 @@ function vRoom(){
     </div>
     ${sec._c?"":`<div id="shopping-section-${si}">
     <div class="shopping-product-grid" ondragover="event.preventDefault()" ondrop="dropItemSection(event,${si})">
-      <div class="shopping-add-wrap"><button class="shopping-add-card" onclick="itemModal(${si},-1)"><span aria-hidden="true">+</span><strong>Añadir producto</strong></button><div class="shopping-add-options"><button class="dl-addlink sec" onclick="itemModal(${si},-1,true)"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-text-scan-ai"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M8 12h4.5" /><path d="M8 8h6" /><path d="M8 16h2" /><path d="M3 7v-2a2 2 0 0 1 2 -2h2" /><path d="M3 17v2a2 2 0 0 0 2 2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M14 21v-4a2 2 0 1 1 4 0v4" /><path d="M14 19h4" /><path d="M21 15v6" /></svg>Desde URL</button><button class="dl-addlink sec" onclick="libPick(${si})"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-book"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6l0 13" /><path d="M12 6l0 13" /><path d="M21 6l0 13" /></svg>Biblioteca</button></div></div>
+      <div class="shopping-add-wrap"><button type="button" class="shopping-add-card" aria-label="Añadir producto" onclick="itemModal(${si},-1)"><img class="shopping-add-illustration" src="/brand/illustrations/nuevo-producto.webp" width="640" height="427" alt="" aria-hidden="true" decoding="async" onerror="this.hidden=true"><strong><span aria-hidden="true">+</span> Añadir producto</strong></button></div>
       ${visible.map(({it,ii})=>`<article data-shopping-section="${si}" data-shopping-item="${ii}" class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
         <button class="shopping-grip shopping-product-grip" aria-label="Mover ${ModernoDaily.escape(it.name)}" title="Arrastra para ordenar · usa las flechas con el teclado" onpointerdown="shoppingMoveStart(event,${si},${ii})" onkeydown="shoppingMoveKey(event,${si},${ii})">⠿</button><button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
         <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button><strong>${fmt(it.price)}</strong></div>
@@ -7231,7 +7230,7 @@ function vRoom(){
     <button class="dl-btn pri" onclick="exportRoomModal()">${ico('pdf')} Exportar PDF / hoja</button>
   </div>
   <p style="margin-top:10px;font-size:11.5px;color:var(--dl-soft)">Pulsa el nombre o el botón de editar para ver todos los datos. Arrastra un producto sobre otro para reordenar o suéltalo en otra sección.</p>
-  </div>`;
+  </section></div>`;
 }
 function imgZoom(si,ii){
   const it = getRoom().r.sections[si].items[ii];
@@ -7405,7 +7404,7 @@ function roomMenu(pid,rid){
     <button class="btn btn-ghost" onclick="closeModal();roomToProjectModal(${pid},${rid})">${ico("rm_exportar")} Exportar a otro proyecto</button>
     <button class="btn btn-ghost" onclick="closeModal();roomFromProjectModal(${pid},${rid})">${ico("rm_importar")} Importar de otro proyecto</button>
     <button class="btn btn-ghost" onclick="const p=state.projects.find(x=>x.id===${pid});const r=p.rooms.find(x=>x.id===${rid});const c={...JSON.parse(JSON.stringify(r)),id:Date.now(),name:r.name+' (copia)'};p.rooms.push(c);closeModal();render();toast('⧉ Lista duplicada')">${ico("copiar")} Duplicar lista</button>
-    <button class="danger" onclick="askConfirm('¿Eliminar «${r.name.replace(/'/g,"")}» y todos sus productos?','Eliminar lista',()=>{const p=state.projects.find(x=>x.id===${pid});p.rooms=p.rooms.filter(x=>x.id!==${rid});render();toast('Lista eliminada')})">🗑 Eliminar</button>
+    <button class="danger" onclick="shoppingRoomDelete(${pid},${rid})">🗑 Eliminar</button>
   </div>
   <div class="modal-foot"><button class="btn btn-dark" onclick="closeModal();render()">Hecho</button></div>`);
 }
@@ -11458,7 +11457,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.65";
+const MODERNO_VER="v3.65.66";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13280,7 +13279,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36564">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36566">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
