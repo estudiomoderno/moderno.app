@@ -1,19 +1,17 @@
 /* From Uiverse.io by vinodjangid07 — user-supplied designs, scoped class names. */
 @media screen {
- .shopping-list-overview .dl-ghead{flex-wrap:wrap;min-height:50px}
+ .shopping-list-overview .dl-ghead{flex-wrap:wrap;min-height:40px}
  .shopping-list-overview .dl-ghead>b{flex:none}
- .shopping-actions{display:flex;align-items:center;gap:10px;margin-left:auto;flex:none}
+ .shopping-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex:none}
  .shopping-list-overview .shopping-action{
-  width:50px;height:50px;min-height:50px;flex:0 0 50px;box-sizing:border-box;padding:0;
-  border:2px solid rgb(214,214,214);border-radius:15px;background-color:rgb(255,255,255);
+  width:40px;height:40px;min-height:40px;flex:0 0 40px;box-sizing:border-box;padding:0;
+  border:2px solid rgb(214,214,214);border-radius:12px;background-color:rgb(255,255,255);
   display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;
   transition-duration:.3s;box-shadow:2px 2px 10px rgba(0,0,0,.11);
  }
- .shopping-action-icon{fill:rgb(70,70,70);width:20px;height:20px;flex:none}
- .shopping-action-tray{width:18px;height:5px;border-bottom:2px solid rgb(70,70,70);border-left:2px solid rgb(70,70,70);border-right:2px solid rgb(70,70,70);box-sizing:content-box}
- .shopping-list-overview .shopping-action:hover{background-color:rgb(51,51,51);transition-duration:.3s}
- .shopping-action:hover .shopping-action-tray{border-bottom:2px solid rgb(235,235,235);border-left:2px solid rgb(235,235,235);border-right:2px solid rgb(235,235,235)}
- .shopping-action:hover .shopping-action-icon{fill:rgb(255,255,255);animation:shopping-slide-in-top 1s linear infinite}
+ .shopping-action-icon{fill:rgb(70,70,70);width:18px;height:18px;flex:none}
+ .shopping-list-overview .shopping-action:hover{background-color:rgb(241,241,241);transition-duration:.3s}
+ .shopping-action:hover .shopping-action-icon{animation:shopping-slide-in-top 1s linear infinite}
  .shopping-list-overview .shopping-quote{
   width:200px;height:40px;min-height:40px;box-sizing:border-box;flex:0 0 200px;
   display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:0 15px;

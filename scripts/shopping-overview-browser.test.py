@@ -59,12 +59,14 @@ try:
    assert overview.get_by_role('button',name='Hoja de cálculo',exact=True).count()==0
    buttons=overview.locator('.shopping-action')
    assert buttons.evaluate_all('(es)=>es.map(e=>e.getAttribute("aria-label"))')==['Crear','Exportar','Imprimir']
+   assert buttons.locator('.shopping-action-tray').count()==0
+   assert buttons.evaluate_all('(es)=>es.every(e=>e.children.length===1&&e.firstElementChild.tagName.toLowerCase()==="svg")')
    boxes=[b.bounding_box() for b in buttons.all()]
-   assert all(abs(b['width']-50)<.02 and abs(b['height']-50)<.02 for b in boxes),boxes
+   assert all(abs(b['width']-40)<.02 and abs(b['height']-40)<.02 for b in boxes),boxes
    assert len(set(b['y'] for b in boxes))==1,boxes
    for button in buttons.all():
     assert button.get_attribute('title')==button.get_attribute('aria-label')
-    assert button.evaluate('(e)=>getComputedStyle(e).borderRadius')=='15px'
+    assert button.evaluate('(e)=>getComputedStyle(e).borderRadius')=='12px'
     button.focus();assert button.evaluate('(e)=>e===document.activeElement')
    quote=overview.get_by_role('button',name='Generar presupuesto',exact=True)
    assert quote.bounding_box()['width']==200 and quote.bounding_box()['height']==40
@@ -78,8 +80,8 @@ try:
     page.screenshot(path=str(output/f'shopping-budget-{width}.png'),full_page=True)
    buttons.first.hover()
    buttons.first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
-   assert buttons.first.evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(51, 51, 51)'
-   assert buttons.first.locator('svg').evaluate('(e)=>getComputedStyle(e).fill')=='rgb(255, 255, 255)'
+   assert buttons.first.evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(241, 241, 241)'
+   assert buttons.first.locator('svg').evaluate('(e)=>getComputedStyle(e).fill')=='rgb(70, 70, 70)'
    page.emulate_media(reduced_motion='reduce')
    assert buttons.first.locator('svg').evaluate('(e)=>getComputedStyle(e).animationName')=='none'
    page.emulate_media(reduced_motion='no-preference');page.mouse.move(0,0)
@@ -122,7 +124,7 @@ try:
    page.locator('#modalBox').get_by_role('button',name='Crear',exact=True).click()
    assert page.evaluate("state.projects[0].rooms.length===5&&state.projects[0].rooms[4].name==='Estancia nueva ficticia'&&state.view==='estancia'")
    assert not writes,writes;assert not errors,errors
-   print(width,'PASS: 50px aligned actions, supplied styles, expanded groups, CSV/PDF/print selection, guarded quote, native room creation; no remote writes')
+   print(width,'PASS: 40px aligned actions without trays, soft gray hover, supplied styles, expanded groups, CSV/PDF/print selection, guarded quote, native room creation; no remote writes')
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)

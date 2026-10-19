@@ -15,3 +15,9 @@ No se modifican proyectos, estancias, fichas, precios, presupuestos, archivos, p
 Suite Node y revisión en Chromium con servidor oficial aislado, SDK nulo, credenciales ficticias y red externa/escrituras HTTP bloqueadas. Recorrido general de la aplicación a 1440/1100/390 px. Prueba específica con datos ficticios: medidas/alineación, teclado, hover y movimiento reducido, grupos previamente comprimidos, creación/cancelación nativas, selección y descarga real CSV, preparación PDF/impresión con diálogo simulado, guardas de presupuesto y conservación de colecciones. No se envía nada a una impresora física ni se prueba con datos productivos. PHP/autorización del correo se comprueba en Actions sin envío de correo.
 
 Publicación por el workflow habitual después de CI correcta; verificar los 31 recursos públicos por SHA-256. Reversión: revertir este commit y desplegar, sin restaurar datos ni borrar almacenamiento. Versión y caché de los recursos modificados actualizadas; sin forzar recarga de sesiones.
+
+## Ajuste posterior — v3.65.61
+
+El propietario pide reducir los tres botones y suavizar el contraste. Crear, Exportar e Imprimir pasan a 40 × 40 px, con iconos centrados de 18 px y radio de 12 px. Se elimina del HTML el símbolo de bandeja que aparecía debajo de cada icono y sus reglas CSS. Al pasar el ratón, el fondo usa gris claro (rgb 241,241,241) y el icono conserva su gris oscuro; no pasa a blanco. Se mantienen alineación, etiquetas accesibles, teclado, animación y movimiento reducido. Generar presupuesto conserva su presentación y todos los manejadores continúan intactos.
+
+Pruebas: suite Node y recorrido específico de creación, exportación e impresión con datos ficticios a 1440/1100/390 px; medidas, ausencia de símbolos inferiores y colores efectivos actualizados. Misma publicación y reversión, sin cambios de datos o permisos.
