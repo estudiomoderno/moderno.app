@@ -5811,7 +5811,7 @@ function vProject(){
       return `
       <div class="dl-card" onclick="openRoom(${p.id},${r.id})" title="${n} producto${n===1?"":"s"} · ${r.sections.length} sección${r.sections.length===1?"":"es"} · ${fmt(tot)}${r.visible===false?" · oculta al cliente":""}">
         <div class="dl-mosaic">${tiles}<span class="dl-st">${r.rstatus||"Borrador"}</span></div>
-        <div class="dl-cfoot"><span class="dl-date">${r.created?r.created.split("-").reverse().join("/"):fmt(tot)}</span><b class="dl-name">${rico(r.icon)} ${r.name}</b><button class="dl-grip" title="Opciones de la lista" onclick="event.stopPropagation();roomMenu(${p.id},${r.id})">⠿</button></div>
+        <div class="dl-cfoot"><b class="dl-name">${rico(r.icon)} ${r.name}</b></div>
       </div>`}).join("")}
     ${kind==="estancia"?`<button type="button" class="dl-add room-create-card" aria-label="Nueva estancia" onclick="newRoom(${p.id},'estancia')"><img class="room-create-illustration" src="/brand/illustrations/nueva-estancia.webp?v=36563" width="640" height="427" alt="" aria-hidden="true" draggable="false" decoding="async" onerror="this.hidden=true"><span class="room-create-caption"><span class="room-create-plus" aria-hidden="true">+</span><span>Nueva estancia</span></span></button>`:`<div class="dl-add" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</div>`}
   </div>`}).join("")}
@@ -11458,7 +11458,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.64";
+const MODERNO_VER="v3.65.65";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

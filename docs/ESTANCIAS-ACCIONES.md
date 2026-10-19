@@ -39,3 +39,9 @@ La prueba de navegador valida decodificación del recurso local, escala de grise
 El propietario pide retirar el movimiento de Crear, Exportar e Imprimir y simplificar la cabecera. Se elimina su animación y su keyframe; se mantiene el gris claro al pasar el ratón. El título «Listas de compra» incorpora el contador de estancias y comparte la fila con las tres acciones. Desaparecen el rótulo «Estancias» y su línea separadora, sin añadir una fila vacía. El contador utiliza la misma agrupación de antes, incluidos los registros históricos sin kind; no incluye pavimentos ni otras listas. La cabecera se adapta al ancho móvil.
 
 Comprobados contador, ausencia del rótulo/separador y movimiento, creación, ilustración, exportaciones y guardas en Chromium aislado a 1440/1100/390 px y suite Node. Se conservan las demás categorías, datos y manejadores, con la misma publicación/reversión.
+
+## Tarjetas con nombre e icono — v3.65.65
+
+A petición del propietario, las tarjetas de listas de compra muestran únicamente su icono y nombre en el pie. Se retiran la fecha visible y el botón «Opciones de la lista» que aparecía al pasar el ratón. Las fechas almacenadas no se borran ni se modifican, y la tarjeta sigue abriendo la misma lista. Se conservan las opciones internas y el manejador roomMenu para los accesos existentes; no se implementa todavía un nuevo menú. Mosaicos, estados y demás pantallas permanecen intactos.
+
+Verificado con la suite Node y Chromium aislado a 1440/1100/390 px: pies sin fechas ni opciones, iconos/nombres conservados, apertura de la lista correcta y colecciones ficticias intactas, además de los recorridos de creación/exportación/impresión. Misma publicación y reversión por commit, sin restaurar datos.
