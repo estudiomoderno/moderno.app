@@ -5,7 +5,7 @@ It does not validate Supabase authentication, RPC or cloud persistence.
 """
 from pathlib import Path
 import json,os,socket,subprocess,time,urllib.request,sys,re
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright,expect
 
 repo=Path(__file__).resolve().parents[1]
 def settle_header(page):
@@ -16,8 +16,8 @@ def reveal_route(page,view):
   page.locator('[data-profile-trigger]').click()
   return page.get_by_role('menuitem',name={'automatizaciones':'Automatizaciones','plugins':'Plugins','integraciones':'Integraciones'}[view],exact=True)
  if view in finance:
-  if page.locator('#desktop-finance-nav').is_hidden():page.get_by_role('button',name='Finanzas',exact=True).click()
- elif page.locator('#desktop-primary').is_hidden():page.get_by_role('button',name='Volver al menú principal',exact=True).click()
+  if page.locator('#page-route-bar.is-finance').count()==0:page.get_by_role('button',name='Finanzas',exact=True).click()
+  return page.locator('#page-route-bar [data-finance-view="'+view+'"]')
  button=page.locator('#desktop-header [data-desktop-view="'+view+'"]')
  button.evaluate('(b)=>{const d=b.closest("details");if(d)d.open=true;}')
  return button
@@ -139,6 +139,78 @@ def check_header_actions(page,width):
  page.keyboard.press('Escape')
  page.get_by_role('menuitem',name='Mi perfil',exact=True).wait_for(state='hidden')
  page.wait_for_function("(()=>{const s=document.querySelector('.ha-component-host').shadowRoot;return s.activeElement===s.querySelector('[data-profile-trigger]');})()")
+def check_finances(page,width):
+ # Exercise both original ReUI and native recovery without touching stored records.
+ page.evaluate("go('home')")
+ if width>=1100:
+  page.get_by_role('button',name='Finanzas',exact=True).click()
+ else:
+  page.evaluate("document.body.classList.add('sbopen')")
+  page.locator('#ngFin>.nav-head').click()
+  assert not page.evaluate("document.body.classList.contains('sbopen')")
+ assert page.evaluate('state.view')=='informes'
+ assert page.locator('#ngFin>.nav-head>.nav-group-label').inner_text().strip()=='Finanzas'
+ assert page.locator('#ngFin>.nav-head').get_attribute('aria-expanded') is None
+ assert page.locator('#ngFin>.nav-sub').is_hidden()
+ expected=['Resumen','Facturas','Presupuestos','Contabilidad','Previsión']
+ sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
+ sections.wait_for(state='visible')
+ expect(sections.get_by_role('button')).to_have_text(expected)
+ if width>=1100:
+  r=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
+  assert abs(r['height']-32)<1 and abs(r['y']+r['height']/2-profile['y']-profile['height']/2)<1,(r,profile)
+  assert r['x']+r['width']<profile['x'],(r,profile)
+ page.locator('.route-component-host[data-reui-ready=true]').wait_for(state='attached')
+ sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
+ if width<1100:
+  # The navigation row must not change the widths of the existing finance content.
+  original_widths=page.locator('#view .fin-card').evaluate_all('(els)=>els.map(e=>e.getBoundingClientRect().width)')
+  page.evaluate('ModernoPageBreadcrumbs.setEnabled(false)')
+  assert page.locator('#view .fin-card').evaluate_all('(els)=>els.map(e=>e.getBoundingClientRect().width)')==original_widths
+  page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
+  page.locator('.route-component-host[data-reui-ready=true]').wait_for(state='attached')
+  sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
+ if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'finance-original-{width}.png'),full_page=True)
+ for view in ['facturas','presupuestos','contabilidad','prevision','informes']:
+  button=page.locator('#page-route-bar [data-finance-view="'+view+'"]')
+  button.press('Enter')
+  assert page.evaluate('state.view')==view
+  active=page.locator('#page-route-bar [data-finance-view="'+view+'"][aria-current=page]')
+  active.wait_for(state='visible')
+  page.wait_for_function("""(view)=>{const host=document.querySelector('#page-route-bar .route-component-host');const root=host?.shadowRoot||document.querySelector('#page-route-bar');return root.activeElement?.dataset.financeView===view||document.activeElement?.dataset.financeView===view;}""",arg=view)
+ # Both invoice/quote drafts retain the native warning; cancel keeps the same data and selected tab.
+ for view,kind in [('facturas','factura'),('presupuestos','presupuesto')]:
+  page.evaluate('(view)=>go(view)',view)
+  page.get_by_role('button',name='Nueva factura' if kind=='factura' else 'Nuevo presupuesto',exact=True).click()
+  page.evaluate("state.draft.legend='Borrador financiero ficticio conservado';window.financeDraft=state.draft")
+  page.locator('#page-route-bar [data-finance-view=contabilidad]').click()
+  assert page.evaluate('state.view')==view
+  assert page.locator('#modalBox').inner_text().find('a medias')>=0
+  page.get_by_role('button',name='Seguir editando',exact=True).click()
+  assert page.evaluate("state.draft===financeDraft && state.draft.legend==='Borrador financiero ficticio conservado'")
+  assert page.locator('#page-route-bar [data-finance-view="'+view+'"]').get_attribute('aria-current')=='page'
+  page.evaluate("state.draft=null;state.qView=null;state.fView=null;go('home')")
+ # Access changes must not expose restricted sections; use the actual native canView().
+ page.evaluate("window.financeOriginalAccess=myAccessLevel;myAccessLevel=()=>_accessRole==='miembro'?'miembro':financeOriginalAccess();_accessRole='miembro';state.myRole='miembro';render()")
+ if width>=1100:page.get_by_role('button',name='Finanzas',exact=True).click()
+ else:
+  page.evaluate("document.body.classList.add('sbopen')")
+  page.locator('#ngFin>.nav-head').click()
+ assert page.evaluate('state.view')=='presupuestos'
+ expect(sections.get_by_role('button')).to_have_text(['Presupuestos','Previsión'])
+ page.evaluate("_accessRole='colaborador';render()")
+ assert page.locator('#page-route-bar.is-finance').count()==0
+ assert page.locator('#ngFin').is_hidden()
+ page.evaluate("myAccessLevel=financeOriginalAccess;_accessRole='admin';state.myRole='admin';go('home')")
+ # Explicit rollback restores the original native Finance group and leaves its handlers usable.
+ page.evaluate('ModernoPageBreadcrumbs.setEnabled(false)')
+ assert page.locator('#ngFin>.nav-head').inner_text().strip().startswith('Empresa')
+ assert page.locator('#ngFin>.nav-head').get_attribute('aria-expanded') is not None
+ expanded=page.locator('#ngFin>.nav-head').get_attribute('aria-expanded')
+ page.locator('#ngFin>.nav-head').evaluate('(e)=>e.click()')
+ assert page.locator('#ngFin>.nav-head').get_attribute('aria-expanded')!=expanded
+ page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
+
 with socket.socket() as sock:
  sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
 origin=f'http://127.0.0.1:{port}'
@@ -225,18 +297,26 @@ try:
      else:
       crumb=page.locator('#page-route-bar [aria-current=page]').last
       crumb.wait_for(state='visible')
+      if view in finance:crumb.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
       expected='Inicio' if view=='home' else 'Agenda' if view=='agenda' else page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip()
+      if view in finance:expected={'informes':'Resumen','prevision':'Previsión'}.get(view,expected)
       assert crumb.inner_text()==expected,(view,crumb.inner_text())
-      assert crumb.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}')==project_type
+      assert crumb.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}')==project_type,(view,crumb.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}'),project_type)
       assert 'Moderno ReUI Inter' in crumb.evaluate('(e)=>getComputedStyle(e).fontFamily')
-      card=page.locator('#page-route-bar [data-slot=card]').bounding_box()
+      card=page.locator('#page-route-bar [data-slot=card]').first.bounding_box()
       assert abs(card['height']-project_box['height'])<1,(view,card,project_box)
       assert abs(card['y']-project_box['y'])<1,(view,card,project_box)
       profile=page.locator('[data-profile-trigger]').bounding_box()
       assert abs(card['y']+card['height']/2-profile['y']-profile['height']/2)<1,(view,card,profile)
       assert card['x']+card['width']<profile['x'],(view,card,profile)
       if view in finance:assert 'Finanzas' in page.locator('#page-route-bar [data-slot=breadcrumb-list]').inner_text()
-    else:assert page.locator('#page-route-bar').count()==0
+    else:
+     assert page.locator('#page-route-bar').count()==(1 if view in finance else 0)
+     if view in finance:
+      sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
+      sections.wait_for(state='visible')
+      expect(sections.get_by_role('button')).to_have_text(['Resumen','Facturas','Presupuestos','Contabilidad','Previsión'])
+      assert sections.locator('[aria-current=page]').inner_text()=={'informes':'Resumen','prevision':'Previsión'}.get(view,page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip())
     if view=='workspace':
      page.get_by_role('button',name='Todas las tareas',exact=True).click()
      assert page.locator('.ws-full .kanban .task').count()>0
@@ -244,6 +324,7 @@ try:
     if len(sys.argv)>1 and view in ['home','proyectos','workspace','contabilidad']:
      page.wait_for_timeout(250)
      page.screenshot(path=str(Path(sys.argv[1])/f'neutral-{view}-{width}.png'),full_page=True)
+   check_finances(page,width)
    if width>=1100:
     page.evaluate("go('contabilidad')")
     page.locator('#page-route-bar').get_by_role('button',name='Inicio',exact=True).click()
@@ -338,12 +419,16 @@ try:
      page.get_by_role('menuitem',name=tool,exact=True).wait_for(state='visible')
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'profile-tools-{width}.png'),full_page=True)
     page.locator('[data-profile-trigger]').press('Escape')
-    if len(sys.argv)>1:
-     page.get_by_role('button',name='Finanzas',exact=True).click()
-     page.mouse.move(0,0)
-     page.locator('#desktop-finance-nav').evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
-     page.screenshot(path=str(Path(sys.argv[1])/f'finance-navigation-{width}.png'),full_page=True)
-     page.get_by_role('button',name='Volver al menú principal',exact=True).click()
+    page.get_by_role('button',name='Finanzas',exact=True).click()
+    assert page.evaluate('state.view')=='informes'
+    assert page.locator('#desktop-primary').is_visible() and page.locator('#desktop-finance-nav').count()==0
+    sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
+    expect(sections.get_by_role('button')).to_have_text(['Resumen','Facturas','Presupuestos','Contabilidad','Previsión'])
+    rect=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
+    assert abs(rect['y']+rect['height']/2-profile['y']-profile['height']/2)<1
+    assert rect['x']+rect['width']<profile['x']
+    if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'finance-navigation-{width}.png'),full_page=True)
+    page.evaluate("go('proyecto',9001)")
    page.evaluate("projTab('proyecto')")
    metrics=page.locator('.project-overview strong').all_inner_texts()
    assert metrics[:3]==['Sin fecha prevista','1','0%'],metrics

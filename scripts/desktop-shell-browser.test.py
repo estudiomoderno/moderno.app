@@ -41,9 +41,6 @@ def sample_fold(page):
  assert not result.get('missing'),result
  return result
 def reveal_route(page,view):
- if view in finance:
-  if page.locator('#desktop-finance-nav').is_hidden():page.get_by_role('button',name='Finanzas',exact=True).click()
- elif page.locator('#desktop-primary').is_hidden():page.get_by_role('button',name='Volver al menú principal',exact=True).click()
  button=page.locator('#desktop-header [data-desktop-view="'+view+'"]')
  button.evaluate('(b)=>{const d=b.closest("details");if(d)d.open=true;}')
  return button
@@ -123,7 +120,7 @@ with sync_playwright() as p:
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
    assert rect['width']==rect['height']==44,rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
-  assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades]):not([data-view=conversaciones]):not([data-view=plantillas])').count()
+  assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades]):not([data-view=conversaciones]):not([data-view=plantillas])').count()-len(finance)
   assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0
   assert page.locator('#desktop-header [data-desktop-view=plantillas],#desktop-header [data-desktop-view=conversaciones]').count()==0
   assert page.locator('.desktop-nav [data-desktop-view]:is([data-desktop-view=automatizaciones],[data-desktop-view=plugins],[data-desktop-view=integraciones])').count()==0
@@ -179,23 +176,21 @@ with sync_playwright() as p:
   assert page.locator('#desktop-navigation').is_visible()
   assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
   page.get_by_role('button',name='Finanzas',exact=True).click()
-  assert page.locator('#desktop-primary').is_hidden() and page.locator('#desktop-finance-nav').is_visible()
-  assert page.locator('#desktop-finance-nav [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==finance
+  assert page.locator('#desktop-primary').is_visible() and page.locator('#desktop-finance-nav').count()==0
+  assert page.evaluate('calls.pop()')==['draft','informes',None]
   assert page.evaluate('state.view')=='proyecto'
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   assert page.evaluate('document.querySelector("#view input")===originalDraft')
   page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
   page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
   settle_header(page)
-  assert page.locator('#desktop-finance-nav').is_visible(),'Expanding must retain the Finance group'
-  page.locator('#desktop-header [data-desktop-view=facturas]').click()
-  assert page.evaluate('calls.pop()')==['draft','facturas',None]
-  assert page.evaluate('state.view')=='proyecto'
-  page.get_by_role('button',name='Volver al menú principal',exact=True).press('Escape')
-  assert page.locator('#desktop-primary').is_visible()
-  assert page.get_by_role('button',name='Finanzas',exact=True).evaluate('(e)=>document.activeElement===e')
-  assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
+  assert page.locator('#desktop-primary').is_visible(),'Finance must keep the general navigation'
   page.evaluate('dirty=false')
+  page.get_by_role('button',name='Finanzas',exact=True).click()
+  assert page.evaluate('state.view')=='informes'
+  assert page.locator('.desktop-finance').evaluate('(e)=>e.classList.contains("is-current")')
+  page.evaluate("go('proyecto',1)")
+  page.get_by_role('textbox',name='Borrador ficticio').fill('Cambios sin guardar')
   # Compact state and the original unsaved editor survive removal/rebuild at tablet width.
   page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
   page.set_viewport_size({'width':1024,'height':1000});page.wait_for_function("!document.querySelector('#desktop-header')")
@@ -236,14 +231,15 @@ with sync_playwright() as p:
   page.locator('.desktop-group>summary').first.click();page.locator('.desktop-group>summary').first.press('Escape');assert page.locator('.desktop-group[open]').count()==0
   page.evaluate("_accessRole='colaborador';render()")
   assert page.locator('#desktop-header [data-desktop-view=contabilidad]').is_hidden()
-  assert page.locator('[data-desktop-section=finanzas]').is_hidden()
+  assert page.locator('.desktop-finance').is_hidden()
   assert page.locator('#project-tab-fin').count()==0
   assert page.locator('#project-tab-utilidades').count()==0
   assert page.locator('#project-tab-conversaciones').count()==0
   assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.every(b=>b.hidden)')
   page.evaluate("_accessRole='miembro';state.myRole='miembro';render()")
   page.get_by_role('button',name='Finanzas',exact=True).click()
-  assert page.locator('#desktop-finance-nav [data-desktop-view]:visible').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['presupuestos','prevision']
+  assert page.evaluate('state.view')=='presupuestos','Finance must open the first authorized section'
+  assert page.locator('#desktop-finance-nav').count()==0
   page.evaluate("_accessRole='colaborador';render()")
   assert page.locator('#desktop-primary').is_visible(),'Revoked section must return to the primary menu'
   for role in ['gestoria','cliente','contratista']:

@@ -6681,7 +6681,7 @@ function vInformes(){
   const cli = {};
   byBrand(state.invoices).forEach(v=>{ cli[v.client]=(cli[v.client]||0)+v.total; });
   return `${state.irpf?`<div class="entry-col" style="margin-bottom:12px;padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><b style="font-size:13px">${retLabel()} acumulada</b>${[...new Set(years.concat(outs.filter(e=>e.irpf>0).map(yOf),(state.invoices||[]).filter(f=>f.irpf&&f.irpf.on&&f.date).map(f=>+f.date.split("-")[0])))].filter(Boolean).sort().map(y=>`<span class="chip cm" style="background:var(--card)">${y}: ${fmt(retYear(y))}</span>`).join("")||`<small style="color:var(--ink-faint)">Sin datos todavía</small>`}</div>`:""}
-  <h1 class="big">Informes</h1>
+  <h1 class="big">Resumen</h1>
   <p class="sub">Los números de verdad de tus marcas, calculados con lo que ya hay en la app.</p>
   <h2 class="sec">Venta estimada <span class="sec-note">Por proyecto activo: lo ya facturado (base) más lo previsto en su plan de pagos.</span></h2>
   ${ventaEstimadaHtml(false)}
@@ -11466,7 +11466,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.58";
+const MODERNO_VER="v3.65.59";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13302,18 +13302,18 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=36544">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=36534">
 <script src="/header-presence.js?v=36546"></script>
-<script src="/desktop-shell.js?v=36543"></script>
+<script src="/desktop-shell.js?v=36559"></script>
 <link rel="stylesheet" href="/brand/project-workspace.css?v=36554">
 <script src="/project-workspace.js?v=36554"></script>
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36545">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36554">
 <link rel="stylesheet" href="/brand/reui/font.css?v=36556">
-<script src="/profile-component.js?v=36557"></script>
+<script src="/profile-component.js?v=36559"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=36554"></script>
-<link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=36555">
-<script src="/page-breadcrumbs.js?v=36554"></script>
+<link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=36559">
+<script src="/page-breadcrumbs.js?v=36559"></script>
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=36558">
-<script src="/calendar-ui.js?v=36557"></script>
+<script src="/calendar-ui.js?v=36559"></script>
 </body>
 </html>
