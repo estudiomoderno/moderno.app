@@ -66,7 +66,7 @@ try:
     for(const card of grid.querySelectorAll('.shopping-product-card')){
      const photo=card.querySelector('.shopping-product-photo'),key=Math.round(top(photo));
      const ps=card.querySelectorAll(':scope >p');
-     const row={photo:top(photo),title:top(card.querySelector('.shopping-product-title')),price:top(card.querySelector('.shopping-product-title>strong')),description:top(ps[0]),label:top(card.querySelector('.shopping-product-label')),quantity:top(card.querySelector('.shopping-product-quantity')||ps[1]),controls:top(card.querySelector('.shopping-product-controls')),footer:top(card.querySelector('.shopping-product-footer'))};
+     const row={photo:top(photo),title:top(card.querySelector('.shopping-product-title')),price:top(card.querySelector('.shopping-product-title>strong')),description:top(ps[0]),label:card.querySelector('.shopping-product-label')?.getBoundingClientRect().bottom??null,quantity:top(card.querySelector('.shopping-product-quantity')||ps[1]),controls:top(card.querySelector('.shopping-product-controls')),footer:top(card.querySelector('.shopping-product-footer'))};
      if(!result.has(key))result.set(key,[]);result.get(key).push(row);
     }return [...result.values()];
    }""")
@@ -78,6 +78,18 @@ try:
      if values:assert max(values)-min(values)<=1,(width,key,values)
    for name in grid.locator('.shopping-product-title>button').all():
     assert name.evaluate('(e)=>e.scrollHeight<=e.clientHeight+1&&getComputedStyle(e).webkitLineClamp==="none"')
+   assert page.evaluate('records()===alignmentBaseline')
+   assert grid.locator('.shopping-product-label-row').count()==0
+   for card in grid.locator('.shopping-product-card').all():
+    tag=card.locator('.shopping-product-media>.shopping-product-label')
+    if tag.count():
+     photo=card.locator('.shopping-product-photo').bounding_box();badge=tag.bounding_box()
+     assert badge['x']>=photo['x']+8 and badge['y']>=photo['y']+8,(width,photo,badge)
+     assert badge['x']+badge['width']<=photo['x']+photo['width']-8,(width,photo,badge)
+     assert abs(photo['y']+photo['height']-badge['y']-badge['height']-10)<1,(width,photo,badge)
+   grid.locator('.shopping-product-card').first.get_by_role('button',name='Filtrar etiqueta Dormitorio 1',exact=True).click()
+   expect(grid.locator('.shopping-product-card')).to_have_count(6);assert page.locator('#overlay.open').count()==0
+   page.get_by_role('button',name='Quitar filtro Etiqueta',exact=True).click();expect(grid.locator('.shopping-product-card')).to_have_count(10)
    assert page.evaluate('records()===alignmentBaseline')
    grid.locator('.shopping-product-card').nth(3).get_by_role('button',name='Editar Armario ficticio de una puerta y un cajón de pino y MDF crema de 80 cm',exact=True).click()
    expect(page.locator('#itName')).to_have_value('Armario ficticio de una puerta y un cajón de pino y MDF crema de 80 cm')

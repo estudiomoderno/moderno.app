@@ -243,3 +243,7 @@ Actualizar ahora espera el guardado en curso y muestra el motivo de cualquier bl
 ## 2026-10-20 — Tarjetas de productos alineadas
 
 Descripción, etiqueta y total ocupan filas independientes compartidas entre tarjetas. Se alinean precios y controles sin recortar nombres ni modificar datos. Detalles, reproducción y pruebas: [COMPRAS-ALINEACION-TARJETAS](COMPRAS-ALINEACION-TARJETAS.md).
+
+## 2026-10-20 — Etiqueta dentro de la imagen
+
+La etiqueta de tarjetas pasa a la esquina inferior de la imagen y conserva el filtro al pulsarla. Se elimina su fila independiente manteniendo la alineación; la vista en filas conserva su etiqueta junto al nombre. Pruebas y reversión: [COMPRAS-ETIQUETA-IMAGEN](COMPRAS-ETIQUETA-IMAGEN.md).
