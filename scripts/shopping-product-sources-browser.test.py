@@ -108,7 +108,7 @@ try:
    box.get_by_role('button',name='Cancelar',exact=True).click();page.evaluate('state.currentRoom=8001')
    # All URL calls are in-memory fakes; the page still blocks every remote request.
    page.evaluate("""(origin)=>{
-    window.urlCalls=[];window.coverRevisions=[];window.failCoverSave=true;window.fakeCapture=null;
+    window.urlCalls=[];window.captureIds=[];window.coverRevisions=[];window.failCoverSave=true;window.fakeCapture=null;
     window.savedClient=sb;window.savedFlush=cloudFlush;window.savedRead=cloudReadBlock;window.savedApply=cloudApplyRemote;window.savedPersist=persistNow;
     ESTUDIO_ID='estudio-ficticio';cloudFlush=async()=>{};persistNow=()=>{};
     _cloudBusy=false;_cloudHash.proyectos=canon(CLOUD_BLOCKS.proyectos.get());
@@ -117,6 +117,8 @@ try:
     window.mockClipperSb={functions:{invoke:async(name,{body})=>{
      urlCalls.push(body.action);
      if(body.action==='capture'){
+      captureIds.push(body.id);
+      if(captureIds.length===1)return {error:{context:{status:429,json:async()=>({code:'PT429',error:'Capturas ocupadas'})}}};
       const root='estudio-ficticio/clipper/'+body.id;
       fakeCapture={id:body.id,estado:'preparado',destino:body.destination,destino_snapshot:{kind:'lista',projectName:'Proyecto ficticio',roomName:'Salón ficticio',sectionName:'General'},
        captura:{fields:{name:{value:'Lámpara importada ficticia'},price:{value:'80'},currency:{value:'EUR'},unit:{value:'ud'}},tax:{status:'included'},variant:{verified:true},dimensions:[],domain:'tienda.example.invalid',capturedAt:'2026-10-20T12:00:00Z',suggestions:{category:'Iluminación'},
@@ -145,10 +147,13 @@ try:
    add.click();box.locator('[data-product-method=url]').click();expect(dialog).to_be_visible()
    dialog.get_by_label('Enlace del producto',exact=True).fill('https://tienda.example.invalid/lampara-ficticia')
    dialog.get_by_role('button',name='Obtener datos',exact=True).click()
+   expect(dialog.get_by_role('status').first).to_contain_text('se iniciará automáticamente')
+   expect(dialog.get_by_label('Enlace del producto',exact=True)).to_be_disabled()
+   if output:page.screenshot(path=str(output/f'product-url-waiting-{width}.png'),full_page=True)
    cover=dialog.get_by_role('radio',name='Usar imagen 2 como portada',exact=True)
    expect(cover).to_be_visible();cover.check()
    expect(cover).to_be_checked()
-   assert page.evaluate('urlCalls.join()===\'capture,read\'&&coverRevisions.length===0&&records()===beforeCapture')
+   assert page.evaluate('urlCalls.join()===\'capture,capture,read\'&&captureIds.length===2&&captureIds[0]===captureIds[1]&&coverRevisions.length===0&&records()===beforeCapture')
    assert dialog.locator('.clipper-gallery img').count()==2
    assert cover.locator('..').evaluate("e=>e.getBoundingClientRect().width")==112
    if output:page.screenshot(path=str(output/f'product-url-cover-{width}.png'),full_page=True)

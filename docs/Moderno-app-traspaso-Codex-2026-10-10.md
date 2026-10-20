@@ -227,3 +227,7 @@ Las listas alternan tarjetas/filas desde un icono entre filtro y búsqueda. Las 
 ## 2026-10-20 — Portal del cliente con la estética de la app
 
 El portal adopta base blanca, controles neutros y lateral integrado, conservando secciones, enlaces, datos y marca personalizada según los derechos del servidor. Se reutiliza el símbolo oficial del menú de la app. Detalles, comprobaciones y reversión: [PORTAL-CLIENTE-ESTILO-APP](PORTAL-CLIENTE-ESTILO-APP.md).
+
+## 2026-10-20 — Capturas sin cuotas horarias o diarias
+
+El propietario autoriza retirar las cuotas que bloqueaban las importaciones de productos. Se conserva la protección de concurrencia y se añade espera automática con UUID estable. Cambio acotado de función, pruebas ficticias y reversión sin restaurar datos: [CAPTURAS-SIN-CUOTAS](CAPTURAS-SIN-CUOTAS.md). SQL y publicación de interfaz requieren verificación separada.
