@@ -2,11 +2,14 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 const code=html.slice(html.indexOf('async function prepareAppReload('),html.indexOf('async function versionSentinel(){'));
 const changes=html.slice(html.indexOf('function syncHasChanges(){'),html.indexOf('function syncCopyKeys(){'));
-function context({quota=false,busy=false,conflict=false,finish=false,hang=false,role='admin',modal=false,sessionChange=false,failFinalCopy=false}={}){
- let now=0,persists=0;const reports=[],navigations=[],status={hidden:true,textContent:''};
+function context({quota=false,busy=false,conflict=false,finish=false,hang=false,role='admin',modal=false,sessionChange=false,failFinalCopy=false,recover=false,archiveFailure=false,staleCopy=false,archiveHang=false,editDuringArchive=false}={}){
+ let now=0,persists=0,archived=0;const disk=new Map();const reports=[],navigations=[],status={hidden:true,textContent:''};
  const ctx={URL,Date:{now:()=>now},_saveErr:false,_cloudBusy:busy,_accessRole:role,_accessLoading:false,state:{sessionUser:{id:'user',mail:'fixture@example.invalid'}},sb:{},ESTUDIO_ID:'ficticio',CLOUD_BLOCKS:{proyectos:{get:()=>['nuevo']}},_cloudHash:{proyectos:'[]'},canon:JSON.stringify,
   document:{querySelector:()=>modal?{}:null,getElementById:()=>status},location:{href:'https://app.example.invalid/es/?fixture=kept&v=old#/proyectos',replace:url=>navigations.push(url)},
-  toast:message=>reports.push(message),persistNow(){persists++;ctx._saveErr=quota||failFinalCopy&&persists>1;},
+  BRAND:{cm:{name:'Ficticio'}},wsOrder:['cm'],LS_KEY:'fixture',localStorage:{getItem:k=>disk.get(k)??null},
+  syncCopyKeys:()=>recover?['fixture_pendiente_1']:[],
+  async cloudArchivePendingCopies(){archived++;if(archiveFailure)throw Error('fixture archive failed');if(archiveHang)return new Promise(()=>{});if(editDuringArchive)ctx.document.querySelector=()=>({});},
+  toast:message=>reports.push(message),persistNow(){persists++;ctx._saveErr=quota||recover&&!archived||failFinalCopy&&persists>1;if(!ctx._saveErr)disk.set('fixture',JSON.stringify({v:1,state:staleCopy?{old:true}:ctx.state,BRAND:ctx.BRAND,wsOrder:ctx.wsOrder}));},
   setTimeout(fn,ms){return setTimeout(()=>{now+=ms;if(ms===100&&finish)ctx._cloudBusy=false;fn();},0);},clearTimeout,
   async cloudFlush(){if(hang)return new Promise(()=>{});if(sessionChange)ctx.state.sessionUser.id='other';if(!ctx._cloudBusy&&!conflict)ctx._cloudHash.proyectos='["nuevo"]';}};
  ctx.window=ctx;vm.createContext(ctx);vm.runInContext(changes+code,ctx);return {ctx,reports,navigations,status};
@@ -34,3 +37,13 @@ test('double click cannot start duplicate updates and unexpected errors remain v
  f.ctx.prepareAppReload=()=>{calls++;return new Promise(resolve=>release=resolve);};const pending=f.ctx.applyAppUpdate(button);await f.ctx.applyAppUpdate(button);assert.equal(calls,1);release(false);await pending;assert.equal(button.disabled,false);
  f.ctx.prepareAppReload=async()=>{throw Error('fixture');};await f.ctx.applyAppUpdate(button);assert.match(f.status.textContent,/No se ha podido actualizar/);assert.equal(button.disabled,false);assert.equal(f.navigations.length,0);
 });
+
+test('verified archiving frees space and then reload still requires cloud confirmation',async()=>{
+ const f=context({recover:true});assert.equal(await f.ctx.prepareAppReload(message=>f.reports.push(message)),true);assert.ok(f.reports.some(x=>x.includes('Conservando copias')));
+ const blocked=context({recover:true,conflict:true});assert.equal(await blocked.ctx.prepareAppReload(),false);assert.match(blocked.reports.at(-1),/cambios pendientes/);
+});
+test('failed or hung archive keeps the tab and offers current-state download',async()=>{
+ for(const options of [{recover:true,archiveFailure:true},{recover:true,archiveHang:true}]){const f=context(options);assert.equal(await f.ctx.prepareAppReload(),false);assert.match(f.reports.at(-1),/Descarga los cambios actuales/);assert.equal(f.navigations.length,0);}
+});
+test('silent stale local copy is rejected even without a quota exception',async()=>assert.equal(await context({staleCopy:true}).ctx.prepareAppReload(),false));
+test('a form opened while archiving blocks reload',async()=>assert.equal(await context({recover:true,editDuringArchive:true}).ctx.prepareAppReload(),false));
