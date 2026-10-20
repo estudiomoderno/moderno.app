@@ -51,6 +51,50 @@ try:
    page.wait_for_url(lambda url:'v=' in urlsplit(url).query,timeout=10000)
    assert parse_qs(urlsplit(page.url).query)['fixture']==['kept'];assert urlsplit(page.url).fragment==before_hash.removeprefix('#')
    page.wait_for_load_state('networkidle');page.evaluate(setup);page.evaluate('versionSentinel()')
+   # Fill real Chromium localStorage with fictional old copies until the current snapshot fails.
+   page.evaluate("""()=>{
+     window.expectedCopies=[];
+     for(let i=0;i<30;i++){
+       const key=LS_KEY+'_pendiente_'+(2000000000000+i),raw=JSON.stringify({v:1,fixture:i,padding:'x'.repeat(400000)});
+       try{localStorage.setItem(key,raw);expectedCopies.push([key,raw]);}catch(e){break;}
+     }
+     if(!expectedCopies.length)throw Error('No quota fixture');
+     state.account.quotaFixture='current-memory-'+ 'y'.repeat(800000);window.currentCopy=JSON.stringify([state,BRAND,wsOrder]);
+     persistNow();if(!_saveErr)throw Error('Real quota failure was not reproduced');
+     window.fixtureCopyCount=expectedCopies.length;
+   }""")
+   # Archive failure must preserve originals and the in-memory record, without navigating.
+   page.evaluate("""source=>{
+     prepareAppReload=new Function('sb',source+';return prepareAppReload;')({});
+     cloudFlush=async()=>{for(const b of Object.keys(CLOUD_BLOCKS))_cloudHash[b]=canon(CLOUD_BLOCKS[b].get());};
+     window.realArchive=cloudArchivePendingCopies;cloudArchivePendingCopies=async()=>{throw Error('fictional unavailable archive');};
+     window.beforeQuotaUpdate=location.href;
+   }""",native)
+   page.get_by_role('button',name='Actualizar ahora',exact=True).click()
+   expect(page.locator('#verBarStatus')).to_contain_text('Descarga los cambios actuales')
+   assert page.evaluate("location.href===beforeQuotaUpdate&&JSON.stringify([state,BRAND,wsOrder])===currentCopy&&expectedCopies.every(([k,v])=>localStorage.getItem(k)===v)")
+   if output:page.screenshot(path=str(output/f'update-local-failure-{width}.png'),full_page=True)
+   # Reuse native verified IndexedDB archiving, then confirm the copies survived the real reload.
+   count=page.evaluate("cloudArchivePendingCopies=realArchive;fixtureCopyCount")
+   before_quota_url=page.url
+   page.get_by_role('button',name='Actualizar ahora',exact=True).click()
+   try:page.wait_for_url(lambda url:url!=before_quota_url,timeout=10000)
+   except Exception:
+     print('Quota update diagnostic',page.evaluate("({status:document.getElementById('verBarStatus')?.textContent,error:_saveErr,busy:_cloudBusy,changed:syncHasChanges(),copies:syncCopyKeys().map(k=>({length:localStorage.getItem(k)?.length})),modal:!!document.querySelector('.overlay.open,dialog[open]'),draft:SettingsUI.dirty()})"),flush=True)
+     raise
+   page.wait_for_load_state('networkidle')
+   result=page.evaluate("""async count=>{
+     const snapshot=JSON.parse(localStorage.getItem(LS_KEY));
+     if(snapshot.state.account.quotaFixture!=='current-memory-'+ 'y'.repeat(800000))throw Error('Current snapshot was lost');
+     for(let i=0;i<count;i++){
+       const key=LS_KEY+'_pendiente_'+(2000000000000+i),expected=JSON.stringify({v:1,fixture:i,padding:'x'.repeat(400000)});
+       if(localStorage.getItem(key)!==ModernoPendingArchive.marker(key))throw Error('Missing archived pointer');
+       if(await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore())!==expected)throw Error('Old copy differs');
+     }
+     return {copies:count,current:true};
+   }""",count)
+   print(width,'PASS real quota, archive failure preserves all originals, native IndexedDB archive readback, actual reload and current snapshot retained:',result,flush=True)
+   page.evaluate(setup);page.evaluate('versionSentinel()')
    # The real settings wrapper must report the draft reason and preserve the entered value.
    page.evaluate("SettingsUI.open('estudio')")
    field=page.locator('[data-setting=type]');field.fill('Borrador ficticio conservado')

@@ -11453,7 +11453,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.83";
+const MODERNO_VER="v3.65.84";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13053,26 +13053,49 @@ document.addEventListener("change", e=>{
 /* Centinela de caché: compara la versión que corre con la que hay subida al servidor */
 async function prepareAppReload(report=()=>{}){
   const stop=message=>{report(message);toast(message);return false;};
-  if(document.querySelector('.overlay.open,dialog[open]'))return stop('Guarda o cancela la ventana abierta antes de actualizar.');
+  const editorOpen=()=>!!document.querySelector('.overlay.open,dialog[open]')||(typeof SettingsUI!=='undefined'&&SettingsUI.dirty());
+  if(editorOpen())return stop('Guarda o cancela la ventana abierta antes de actualizar.');
   if(typeof _accessLoading!=='undefined'&&_accessLoading)return stop('Estamos comprobando tu acceso. Espera un momento y vuelve a actualizar.');
   const identity=()=>JSON.stringify([ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,typeof _accessRole==='undefined'?'':_accessRole]),owner=identity();
-  persistNow();
-  if(_saveErr)return stop('No se puede actualizar: falta una copia local verificada. Conserva esta pestaña abierta.');
+  const sameSession=()=>identity()===owner&&!(typeof _accessLoading!=='undefined'&&_accessLoading);
+  let archived=false;
+  const verifiedCopy=()=>{
+    if(_saveErr)return false;
+    try{const copy=JSON.parse(localStorage.getItem(LS_KEY));return copy?.v===1&&JSON.stringify([copy.state,copy.BRAND,copy.wsOrder])===JSON.stringify([state,BRAND,wsOrder]);}catch(e){return false;}
+  };
+  const keepCopy=async()=>{
+    persistNow();
+    if(verifiedCopy())return true;
+    if(archived||!syncCopyKeys().length)return false;
+    archived=true;report('Conservando copias anteriores para liberar espacio…');
+    let timer;
+    try{
+      const ready=await Promise.race([cloudArchivePendingCopies().then(()=>true),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),15000);})]).finally(()=>clearTimeout(timer));
+      if(!ready||!sameSession()||editorOpen())return false;
+      persistNow();return verifiedCopy();
+    }catch(e){return false;}
+  };
+  const copyFailure='No se ha podido guardar la copia en este navegador. Descarga los cambios actuales desde el estado de guardado y conserva esta pestaña abierta.';
+  if(!await keepCopy())return stop(copyFailure);
+  if(!sameSession())return stop('La sesión ha cambiado. Comprueba tu acceso antes de actualizar.');
+  if(editorOpen())return stop('Guarda o cancela la ventana abierta antes de actualizar.');
   if(sb&&ESTUDIO_ID){
     const deadline=Date.now()+15000;
     report('Esperando a que termine el guardado…');
     while(_cloudBusy&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,100));
-    if(identity()!==owner)return stop('La sesión ha cambiado. Comprueba tu acceso antes de actualizar.');
+    if(!sameSession())return stop('La sesión ha cambiado. Comprueba tu acceso antes de actualizar.');
     if(_cloudBusy)return stop('El guardado sigue en curso. Conserva esta pestaña y vuelve a actualizar cuando termine.');
     report('Guardando los cambios pendientes…');
     let timer;
     const saved=await Promise.race([Promise.resolve().then(()=>cloudFlush()).then(()=>true),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),Math.max(0,deadline-Date.now()));})]).finally(()=>clearTimeout(timer));
-    if(identity()!==owner)return stop('La sesión ha cambiado. Comprueba tu acceso antes de actualizar.');
+    if(!sameSession())return stop('La sesión ha cambiado. Comprueba tu acceso antes de actualizar.');
     if(!saved||_cloudBusy)return stop('El guardado sigue en curso. Conserva esta pestaña y vuelve a actualizar cuando termine.');
     if(Object.keys(window._cloudConflicts||{}).length||syncHasChanges())return stop('Hay cambios pendientes. Abre el estado de guardado para revisarlos antes de actualizar.');
   }
-  persistNow();
-  if(_saveErr)return stop('No se puede actualizar: falta una copia local verificada. Conserva esta pestaña abierta.');
+  if(!await keepCopy())return stop(copyFailure);
+  if(!sameSession())return stop('La sesión ha cambiado. Comprueba tu acceso antes de actualizar.');
+  if(editorOpen())return stop('Guarda o cancela la ventana abierta antes de actualizar.');
+  if(sb&&ESTUDIO_ID&&(_cloudBusy||Object.keys(window._cloudConflicts||{}).length||syncHasChanges()))return stop('Hay cambios pendientes. Abre el estado de guardado para revisarlos antes de actualizar.');
   return true;
 }
 async function applyAppUpdate(button){

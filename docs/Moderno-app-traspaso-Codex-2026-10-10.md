@@ -247,3 +247,8 @@ Descripción, etiqueta y total ocupan filas independientes compartidas entre tar
 ## 2026-10-20 — Etiqueta dentro de la imagen
 
 La etiqueta de tarjetas pasa a la esquina inferior de la imagen y conserva el filtro al pulsarla. Se elimina su fila independiente manteniendo la alineación; la vista en filas conserva su etiqueta junto al nombre. Pruebas y reversión: [COMPRAS-ETIQUETA-IMAGEN](COMPRAS-ETIQUETA-IMAGEN.md).
+
+
+## 2026-10-20 — Actualización con recuperación local de espacio
+
+Actualizar ahora reutiliza el archivo local verificado de copias anteriores cuando falla la instantánea actual, y vuelve a leer la copia guardada antes de permitir la recarga. Mantiene las guardas de nube, identidad y borradores. Pruebas con cuota real de Chromium, fallos de archivo y recuperación de las copias tras navegar, sin datos ni servicios reales: [ACTUALIZAR-AHORA](ACTUALIZAR-AHORA.md). Una pestaña ya bloqueada necesita cargar el código nuevo; conservar la sesión anterior y descargar sus cambios actuales antes de la transición.
