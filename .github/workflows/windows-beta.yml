@@ -32,7 +32,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore WebView2 dependencies
-        run: dotnet restore desktop/windows/Moderno.Windows/Moderno.Windows.csproj
+        run: dotnet restore desktop/windows/Moderno.Windows/Moderno.Windows.csproj -r win-x64
 
       - name: Publish beta (x64, self-contained .NET)
         shell: pwsh
