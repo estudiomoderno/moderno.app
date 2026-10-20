@@ -1,5 +1,16 @@
 # Decisiones de TALLER
 
+## 2026-10-20 — Taller Windows independiente y programa espejo con WebView2
+
+El propietario **autoriza comenzar** la versión de escritorio para Windows y confirma que desea una **ventana que refleje exclusivamente `https://app.moderno.app/`**, con **acceso obligatorio a internet**, sin aplicación duplicada, sin mover datos de producción y con novedades visuales/funcionales del sitio disponibles al **abrir o recargar** sin reinstalar el programa. No forzar recarga de sesiones activas con borradores. Los cambios en la propia carcasa ejecutable sí requerirán actualizarla.
+
+Se aprueba un nuevo chat especializado de Codex Cloud con el nombre exacto **«Taller Windows Moderno.app»**, **subtaller del producto**. Esta decisión **actualiza la distribución previa que asignaba todas las plataformas al Taller principal**: la **web** sigue a cargo de «Taller Codex Moderno.app» y el **contenedor Windows** se trabaja en `experimento/windows-espejo`, limitado a `desktop/windows/**` y `.github/workflows/windows-beta.yml`. Todo comparte el mismo repositorio e issues, pero **las ramas no se fusionan ni despliegan** automáticamente. No modificar `app/`, Supabase, Auth, DNS, Stripe ni los datos reales desde el Taller Windows.
+
+La opción técnica inicial es **.NET 10 WinForms + Microsoft WebView2 Evergreen**, con compilación Windows por Actions, ZIP de prueba y posteriores verificaciones en Windows 10/11. Se requiere inspeccionar sesiones, navegación, persistencia, reconexión y actualización de la web. **Google OAuth puede rechazar WebView2 como navegador incrustado**; antes de distribuir el programa a usuarios hay que validar SSO o diseñar navegador externo/retorno seguro sin forzar cambios productivos. Un ZIP beta sin firmar **no equivale a instalador comercial**: firma, icono y empaquetado se decidirán tras pruebas. Ningún consumo API de pago ni migración está autorizado.
+
+**Trabajo y controles: [#109 — Taller Windows Moderno.app](https://github.com/estudiomoderno/moderno.app/issues/109)**. La creación del issue/rama o el workflow **no crea un chat en Codex Cloud**.
+
+
 ## 2026-10-19 — Cabecera de Estancias y acciones con el código proporcionado
 
 El propietario solicita retirar la descripción, Importar desde hoja y la compresión de grupos de listas, y sustituir los accesos de cabecera por Crear / Exportar / Imprimir con su diseño Uiverse.io de 50 × 50 px. Exportar reúne PDF y hoja de cálculo; desaparecen sus botones inferiores. Generar presupuesto adopta el segundo diseño con el icono de papel actual. Se conservan manejadores, guardas y datos. Detalles, pruebas y recuperación: [ESTANCIAS-ACCIONES](ESTANCIAS-ACCIONES.md).
