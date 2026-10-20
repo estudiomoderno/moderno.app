@@ -1,0 +1,53 @@
+# Beta de Windows. No despliega ni modifica app.moderno.app.
+name: Windows beta - Moderno.app (experimental)
+
+on:
+  push:
+    branches:
+      - experimento/windows-espejo
+    paths:
+      - desktop/windows/**
+      - .github/workflows/windows-beta.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-beta-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/experimento/windows-espejo'
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - name: Get Windows wrapper source
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore WebView2 dependencies
+        run: dotnet restore desktop/windows/Moderno.Windows/Moderno.Windows.csproj
+
+      - name: Publish beta (x64, self-contained .NET)
+        shell: pwsh
+        run: |
+          dotnet publish desktop/windows/Moderno.Windows/Moderno.Windows.csproj -c Release -r win-x64 --self-contained true --no-restore -p:PublishReadyToRun=false -o "${{ runner.temp }}\moderno-windows"
+
+      - name: Create distributable ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "${{ runner.temp }}\moderno-windows\*" -DestinationPath "${{ runner.temp }}\Moderno-Windows-Beta-win-x64.zip" -Force
+
+      - name: Upload ZIP for beta test
+        uses: actions/upload-artifact@v4
+        with:
+          name: Moderno-Windows-Beta-win-x64
+          path: ${{ runner.temp }}\Moderno-Windows-Beta-win-x64.zip
+          if-no-files-found: error
+          retention-days: 14
