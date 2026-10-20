@@ -50,8 +50,8 @@ const ProductClipper=(()=>{
   if(kind==='biblioteca'){destination={kind,brand:state.brandFilter&&state.brandFilter!=='all'?state.brandFilter:wsOrder[0]};url=document.getElementById('lbUrl')?.value||'';}
   else{const {p,r}=getRoom(),s=r?.sections?.[sectionIndex];if(!p?.id||!r?.id||!s?.id){toast('Guarda primero el proyecto, la estancia y la sección.');return;}destination={kind:'lista',projectId:String(p.id),roomId:String(r.id),sectionId:String(s.id)};url=document.getElementById('itUrl')?.value||'';}
   const dialog=document.createElement('dialog');dialog.className='clipper-panel';dialog.setAttribute('aria-label','Importar producto desde una tienda');
-  dialog.innerHTML=`<header><div><h2>Importar desde una tienda</h2><p>Pega la URL de una ficha de producto. Añadiremos automáticamente los datos, la imagen y el precio disponible.</p></div><button type="button" class="btn btn-ghost" data-close aria-label="Cerrar importador">×</button></header>
-   <label for="clip-url">Enlace del producto</label><div class="clipper-url"><input id="clip-url" type="url" value="${escape(url)}" placeholder="https://…"><button type="button" class="btn btn-dark" data-capture>Añadir desde URL</button></div>
+  dialog.innerHTML=`<header><div><h2>Añadir producto desde URL <span class="clipper-ai-badge">✦ IA</span></h2><p>${kind==='biblioteca'?'Pega el enlace de la ficha del producto para importar sus datos. Podrás ajustarlos en la ficha.':'Pega el enlace de la ficha del producto. Podrás revisar sus datos y elegir la imagen de portada antes de añadirlo.'}</p></div><button type="button" class="btn btn-ghost" data-close aria-label="Cerrar importador">×</button></header>
+   <label for="clip-url">Enlace del producto</label><div class="clipper-url"><input id="clip-url" type="url" value="${escape(url)}" placeholder="https://…"><button type="button" class="btn btn-dark" data-capture>Obtener datos</button></div>
    <p data-message role="status" aria-live="polite"></p><div data-result></div><footer><button type="button" class="btn btn-ghost" data-status>Consultar última captura</button><button type="button" class="btn btn-ghost" data-close>Volver</button></footer>`;
   document.body.appendChild(dialog);const ctx={dialog,destination,owner:identity(),study:ESTUDIO_ID,id:null,busy:false,row:null};active=ctx;
   dialog.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>dialog.close());dialog.addEventListener('close',()=>{clearTimeout(ctx.poll);dialog.remove();if(active===ctx)active=null;});
@@ -75,15 +75,15 @@ const ProductClipper=(()=>{
    if(row.estado==='procesando'){message(ctx,'Estamos leyendo el producto…');clearTimeout(ctx.poll);ctx.poll=setTimeout(()=>{if(valid(ctx))read(ctx)},2500);return;}
    if(row.estado==='error'){message(ctx,'La tienda no se pudo leer ('+(row.error_code||'error')+'). Puedes probar otra ficha o añadir el producto manualmente.');return;}
    if(row.estado==='absorbido'){ctx.savedId=row.item_id;message(ctx,'El producto ya está guardado. Comprobando su destino…');if(await confirmSaved(ctx,ctx.savedId))finishSaved(ctx);return;}
-   show(ctx,row);await save(ctx);
+   show(ctx,row);if(ctx.destination?.kind!=='lista')await save(ctx);
   }catch(e){message(ctx,e.message);}
  }
  function show(ctx,row){
   const c=row.captura,fields=c.fields,compatible=fields.currency?.value==='EUR'&&c.tax?.status==='included'&&c.variant?.verified&&fields.price?.value!=null;
   const destination=row.destino_snapshot,where=destination.kind==='biblioteca'?'Biblioteca':`${destination.projectName} · ${destination.roomName} · ${destination.sectionName}`;
-  message(ctx,'Captura preparada para revisar. La galería puede estar incompleta.');
+  message(ctx,'Revisa los datos y elige una imagen de portada. La galería puede estar incompleta.');
   const cat=c.suggestions?.category||'Otros',categories=[...new Set([...allCats(),cat].filter(Boolean))];
-  ctx.dialog.querySelector('[data-result]').innerHTML=`<p><strong>Destino:</strong> ${escape(where)}</p><div class="clipper-gallery">${(c.images||[]).map((im,i)=>`<label><img src="${escape(im.previewUrl)}" alt="Imagen ${i+1} del producto"><span><input type="radio" name="clip-primary" value="${escape(im.storagePath)}" ${i===0?'checked':''}> Principal</span></label>`).join('')||'<p>No se encontraron imágenes descargables. Podrás añadirlas después.</p>'}</div>
+  ctx.dialog.querySelector('[data-result]').innerHTML=`<p><strong>Destino:</strong> ${escape(where)}</p><fieldset class="clipper-images"><legend>Imágenes del producto <small>Selecciona la portada</small></legend><div class="clipper-gallery">${(c.images||[]).map((im,i)=>`<label><input type="radio" name="clip-primary" aria-label="Usar imagen ${i+1} como portada" value="${escape(im.storagePath)}" ${i===0?'checked':''}><img src="${escape(im.previewUrl)}" alt="" loading="lazy"><span class="clipper-image-caption"><span class="clipper-cover-selected">✓ Portada</span><span class="clipper-cover-choose">Elegir portada</span></span></label>`).join('')||'<p>No se encontraron imágenes descargables. Podrás añadirlas después.</p>'}</div></fieldset>
    <label for="clip-name">Nombre · obligatorio</label><input id="clip-name" value="${escape(fields.name?.value)}" maxlength="500" required>
    <div class="clipper-columns"><div><label for="clip-category">Categoría · obligatoria ${cat?'· sugerencia editable':''}</label><select id="clip-category" required><option value="">Elige categoría</option>${categories.map(v=>`<option ${v===cat?'selected':''}>${escape(v)}</option>`).join('')}</select></div><div><label for="clip-unit">Unidad de venta · obligatoria</label><input id="clip-unit" value="${escape(fields.unit?.value||'ud')}" placeholder="ud, lote, m²…" maxlength="40" required><small>Escribe «ud» si se vende por unidad; revisa si es un lote o se vende por metros.</small></div></div>
    ${c.suggestions?.room?`<p>Estancia sugerida: ${escape(c.suggestions.room)}. El destino elegido no cambia.</p>`:''}
@@ -93,8 +93,8 @@ const ProductClipper=(()=>{
    <p class="clipper-note">El precio de origen se conserva con su moneda y precisión. ${compatible?'Puedes usarlo como precio cliente en euros.':'No se incorporará a los importes en euros; podrás completarlo después de comprobar moneda e impuestos.'}</p>
    ${compatible?'<label class="clipper-check"><input id="clip-use-price" type="checkbox" checked> Usar el precio de origen como precio cliente (€), con IVA incluido</label>':''}
 
-   <p data-message role="status" aria-live="polite">Añadiendo el producto automáticamente…</p>
-   <button type="button" class="btn btn-dark" data-save>Reintentar guardado</button>`;
+   <p data-message role="status" aria-live="polite">${ctx.destination?.kind==='lista'?'Revisa la ficha y pulsa Añadir producto.':'Añadiendo el producto automáticamente…'}</p>
+   <button type="button" class="btn btn-dark" data-save>${ctx.destination?.kind==='lista'?'Añadir producto':'Reintentar guardado'}</button>`;
   ctx.dialog.querySelectorAll('#clip-name,#clip-category,#clip-unit').forEach(el=>el.addEventListener('input',()=>el.removeAttribute('aria-invalid')));
   ctx.dialog.querySelector('[data-save]').onclick=()=>save(ctx);
  }

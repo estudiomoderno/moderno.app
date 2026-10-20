@@ -91,7 +91,7 @@ try:
    choices.last.press('Home');expect(choices.first).to_be_focused()
    choices.first.press('Tab');expect(menu).not_to_be_visible();expect(room.get_by_role('button',name='Ajustes de la lista',exact=True)).to_be_focused()
    # An unsaved product modal must not be bypassed by a programmatic picker selection.
-   room.get_by_role('button',name='Añadir producto',exact=True).click();page.locator('#itName').fill('Borrador ficticio')
+   room.get_by_role('button',name='Añadir producto',exact=True).click();page.locator('[data-product-method=manual]').click();page.locator('#itName').fill('Borrador ficticio')
    assert page.evaluate('shoppingRoomChoose(0)') is False
    assert page.evaluate('state.currentRoom===8002');expect(page.locator('#itName')).to_have_value('Borrador ficticio')
    page.get_by_role('button',name='Cancelar',exact=True).click();assert page.evaluate('records()===pickerBaseline')
