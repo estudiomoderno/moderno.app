@@ -138,8 +138,22 @@ function shoppingRoomDropEnd(event){
  event.preventDefault();if(!dragIt)return;const {r}=getRoom(),source=dragIt.si;dropItemRow(event,source,r.sections[source].items.length);
 }
 function shoppingRoomToolIcon(name){
- const paths={back:'<path d="m12 5-7 7 7 7M5 12h14"/>',filter:'<path d="M4 4h16l-6 7v8l-4 2V11Z"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>'};
+ const paths={back:'<path d="m12 5-7 7 7 7M5 12h14"/>',filter:'<path d="M4 4h16l-6 7v8l-4 2V11Z"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',rows:'<rect x="3" y="4" width="4" height="6" rx="1"/><rect x="3" y="14" width="4" height="6" rx="1"/><path d="M11 5h10M11 9h7M11 15h10M11 19h7"/>',cards:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'};
  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||''}</svg>`;
+}
+/* Presentation preference only; no product or project record is changed. */
+var shoppingRoomViewMode='cards';
+function shoppingRoomViewToggle(){
+ if(state.view!=='estancia'||document.querySelector('#overlay.open,dialog[open]'))return;
+ shoppingRoomViewMode=shoppingRoomViewMode==='rows'?'cards':'rows';render();document.getElementById('shopping-view-toggle')?.focus();
+}
+function shoppingProductRowLink(item){
+ try{const url=new URL(item.url);if(!['https:','http:'].includes(url.protocol))return '';const E=ModernoDaily.escape;return `<a class="shopping-product-link" href="${E(url.href)}" target="_blank" rel="noopener noreferrer" title="${E(url.href)}"><span>${E(url.hostname.replace(/^www\./,'')+url.pathname)}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7m0-7L10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></svg></a>`;}catch{return '';}
+}
+function shoppingProductRowDetails(item){
+ const E=ModernoDaily.escape,amount=value=>value==null||value===''?'Por confirmar':fmt(value),unit=({ud:'ud',m2:'m²',m3:'m³'})[item.unit]||item.unit||'ud';
+ const fields=[['Dimensiones',item.dims],['Color',item.color],['Plazo de entrega',item.plazo],['Precio unitario',amount(item.price)],['Coste profesional',amount(item.cost)],['Material',item.material],['Proveedor',item.supplier],['Referencia / SKU',item.sku],['Cantidad',String(item.qty??1)+' '+unit],['Precio total',amount(item.price==null||item.price===''?null:item.price*(item.qty??1))]];
+ return `<dl class="shopping-product-details">${fields.map(([label,value])=>`<div><dt>${label}</dt><dd>${E(value||'—')}</dd></div>`).join('')}<div class="shopping-product-note"><dt>Nota interna</dt><dd>${E(item.note||'—')}</dd></div></dl>`;
 }
 function shoppingRoomTools(room){
  const E=ModernoDaily.escape,rf=state.rf||{},items=room.sections.flatMap(s=>s.items);
@@ -161,6 +175,7 @@ function shoppingRoomTools(room){
     <div class="shopping-filter-actions"><button type="button" onclick="shoppingRoomFilterClear()">Restablecer</button><button type="button" onclick="shoppingRoomFilterClose(true)">Cancelar</button><button type="submit">Aplicar</button></div>
    </form>
   </details>
+  <button type="button" id="shopping-view-toggle" class="shopping-tool-button" title="${shoppingRoomViewMode==='rows'?'Ver como tarjetas':'Ver como filas'}" aria-label="Vista en filas" aria-pressed="${shoppingRoomViewMode==='rows'}" onclick="shoppingRoomViewToggle()">${shoppingRoomToolIcon(shoppingRoomViewMode==='rows'?'cards':'rows')}</button>
   <div class="shopping-search-group">
    <button type="button" id="shopping-search-toggle" class="shopping-tool-button" title="Buscar producto" aria-label="Buscar producto" aria-expanded="${open}" aria-controls="shopping-product-search" onclick="shoppingRoomSearchToggle()">${shoppingRoomToolIcon('search')}</button>
    <div id="shopping-product-search" class="shopping-search-collapse" data-open="${open}" ${open?'':'inert'}><div class="shopping-search-inner"><input id="rsearch" type="search" aria-label="Buscar producto por nombre, SKU o proveedor" placeholder="Buscar producto" value="${E(state.roomSearch||'')}" oninput="shoppingRoomSearchInput(this)" onkeydown="if(event.key==='Escape'){event.preventDefault();shoppingRoomSearchToggle(false)}"></div></div>
@@ -199,6 +214,7 @@ function projectTabsHtml(current){
   [['tareas','Tareas','tab_tareas'],['listas','Compras','tab_listas']],
   [['fin','Economía','finanzas'],['archivos','Documentos','tab_archivos']],
   [['ai','AI','ai'],['conversaciones','Conversaciones','tab_chat']],
+  [['cliente','Portal del cliente','portal']],
   [['utilidades','Utilidades','tools']]
  ].map(group=>group.filter(([key])=>(key!=='fin'||myAccessLevel()!=='colab')&&(!['utilidades','conversaciones'].includes(key)||canView(key)))).filter(group=>group.length);
  const first=groups.flat()[0][0],selected=groups.flat().some(([key])=>key===current)?current:first;
