@@ -223,3 +223,7 @@ El editor de las listas de compra dispone de ventana amplia, bloques de datos y 
 ## 2026-10-20 — Vistas de compras y portal del cliente
 
 Las listas alternan tarjetas/filas desde un icono entre filtro y búsqueda. Las fotos llenan su marco y Añadir producto queda al final. Portal del cliente vuelve al menú inferior mediante la sección nativa existente. Se conservan datos, acciones y permisos. Alcance, comprobaciones y recuperación: [COMPRAS-VISTAS-Y-PORTAL](COMPRAS-VISTAS-Y-PORTAL.md).
+
+## 2026-10-20 — Portal del cliente con la estética de la app
+
+El portal adopta base blanca, controles neutros y lateral integrado, conservando secciones, enlaces, datos y marca personalizada según los derechos del servidor. Se reutiliza el símbolo oficial del menú de la app. Detalles, comprobaciones y reversión: [PORTAL-CLIENTE-ESTILO-APP](PORTAL-CLIENTE-ESTILO-APP.md).
