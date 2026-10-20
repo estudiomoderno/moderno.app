@@ -50,6 +50,23 @@ test('overdue notification uses the original task index after filtering',()=>{
 test('project navigation preserves legacy aliases and existing finance and utility restrictions',()=>{
  const c=fixture({myAccessLevel:()=> 'colab',canView:v=>!['utilidades','conversaciones'].includes(v)});assert.equal(c.projectTabKey('resumen'),'proyecto');assert.equal(c.projectTabKey('chat'),'cliente');
  const tabs=c.projectTabsHtml('proyecto');assert.doesNotMatch(tabs,/project-tab-fin|project-tab-utilidades|project-tab-conversaciones/);assert.match(tabs,/aria-label="Inicio"/);assert.match(tabs,/aria-selected="true"/);
+ const portal=c.projectTabsHtml('cliente');assert.match(portal,/id="project-tab-cliente"[^>]*aria-selected="true"/);assert.match(portal,/aria-label="Portal del cliente"/);
+});
+test('shopping row fields escape text and keep unknown prices distinct from zero',()=>{
+ const c=fixture({fmt:v=>Number(v).toFixed(2)}),item={name:'Ficticio',price:0,cost:null,qty:3,unit:'m2',dims:'<img src=x>',material:'"Material"',note:'<script>privado</script>'},before=JSON.stringify(item);
+ const out=c.shoppingProductRowDetails(item);assert.match(out,/Precio total<\/dt><dd>0.00/);assert.match(out,/Coste profesional<\/dt><dd>Por confirmar/);assert.match(out,/3 m²/);assert.match(out,/&lt;img src=x&gt;/);assert.doesNotMatch(out,/<img|<script/);assert.equal(JSON.stringify(item),before);
+ assert.match(c.shoppingProductRowDetails({...item,price:null}),/Precio total<\/dt><dd>Por confirmar/);
+});
+test('row product links allow only web addresses and escape attributes',()=>{
+ const c=fixture({URL});for(const url of ['javascript:alert(1)','data:text/html,hi','file:///tmp/file','not a URL',''])assert.equal(c.shoppingProductRowLink({url}),'');
+ const out=c.shoppingProductRowLink({url:'https://tienda.example.invalid/producto?variante="azul"&id=4'});assert.match(out,/rel="noopener noreferrer"/);assert.match(out,/&amp;id=4/);assert.doesNotMatch(out,/variante="azul"/);
+});
+test('switching product presentation preserves records and respects an open draft',()=>{
+ const state={view:'estancia',projects:[{id:1,rooms:[{id:2,sections:[]}]}],rf:{supplier:'Ficticio'},roomSearch:'texto'},before=JSON.stringify(state);let modal=false,renders=0,focused=0;
+ const c=fixture({state,document:{querySelector:()=>modal?{}:null,getElementById:()=>({focus(){focused++;}}),addEventListener(){}},render(){renders++;}});
+ c.shoppingRoomViewToggle();assert.equal(c.shoppingRoomViewMode,'rows');assert.equal(JSON.stringify(state),before);assert.equal(renders,1);assert.equal(focused,1);
+ modal=true;c.shoppingRoomViewToggle();assert.equal(c.shoppingRoomViewMode,'rows');assert.equal(renders,1);
+ modal=false;c.shoppingRoomViewToggle();assert.equal(c.shoppingRoomViewMode,'cards');assert.equal(JSON.stringify(state),before);
 });
 test('restricted project tools are rejected without changing the active project section',()=>{
  const calls=[],c=fixture({state:{projTab:'tareas'},canView:()=>false,toast:message=>calls.push(message),render(){throw Error('Must not render forbidden project tools');}});

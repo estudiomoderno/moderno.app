@@ -219,3 +219,7 @@ Continúa desde main de estudiomoderno/moderno.app. Lee este documento y comprue
 ## 2026-10-20 — Editor de producto
 
 El editor de las listas de compra dispone de ventana amplia, bloques de datos y precios en dos columnas y pie visible para guardar/cancelar. Móvil apila los bloques. Conserva campos, cálculos, adjuntos, revisión de biblioteca y contratos existentes. Alcance, pruebas y reversión: [EDITOR-PRODUCTO](EDITOR-PRODUCTO.md).
+
+## 2026-10-20 — Vistas de compras y portal del cliente
+
+Las listas alternan tarjetas/filas desde un icono entre filtro y búsqueda. Las fotos llenan su marco y Añadir producto queda al final. Portal del cliente vuelve al menú inferior mediante la sección nativa existente. Se conservan datos, acciones y permisos. Alcance, comprobaciones y recuperación: [COMPRAS-VISTAS-Y-PORTAL](COMPRAS-VISTAS-Y-PORTAL.md).

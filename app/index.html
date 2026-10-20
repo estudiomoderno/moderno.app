@@ -1180,7 +1180,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36575"></script>
+<script src="/project-ui.js?v=36577"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36573"></script>
@@ -4341,7 +4341,7 @@ function projTab(t){
  state.projTab=t;
  if(state.view==='estancia'){state.roomSearch='';state.rf=null;go('proyecto',state.currentProject);}else render();
  window.scrollTo(0,0);const m=document.querySelector('.main');if(m)m.scrollTop=0;
- const order=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','utilidades','cliente'];
+ const order=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','cliente','utilidades'];
  const direction=order.indexOf(t)>order.indexOf(previous)?1:-1;
  const tabs=document.querySelector('.project-tabs');
  const active=tabs?.querySelector('[aria-selected="true"]');
@@ -7193,17 +7193,18 @@ function vRoom(){
     <b class="dl-num">${fmt(tot)}</b>
   </div>
   ${shoppingRoomTools(r)}
-  <div class="shopping-product-grid shopping-flat-products" ondragover="event.preventDefault()" ondrop="shoppingRoomDropEnd(event)">
-      <div class="shopping-add-wrap"><button type="button" class="shopping-add-card" aria-label="Añadir producto" onclick="shoppingRoomAddProduct()"><img class="shopping-add-illustration" src="/brand/illustrations/nuevo-producto.webp" width="640" height="427" alt="" aria-hidden="true" decoding="async" onerror="this.hidden=true"><strong><span aria-hidden="true">+</span> Añadir producto</strong></button></div>
-      ${shoppingRoomRows(r).filter(({it,label})=>match(it,label)).map(({it,si,ii,label})=>`<article data-shopping-section="${si}" data-shopping-item="${ii}" class="shopping-product-card" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
+  <div class="shopping-product-grid shopping-flat-products ${shoppingRoomViewMode==='rows'?'shopping-products-rows':''}" ondragover="event.preventDefault()" ondrop="shoppingRoomDropEnd(event)">
+      ${shoppingRoomRows(r).filter(({it,label})=>match(it,label)).map(({it,si,ii,label})=>`<article data-shopping-section="${si}" data-shopping-item="${ii}" class="shopping-product-card ${shoppingRoomViewMode==='rows'?'shopping-product-row':''}" draggable="true" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
         <button class="shopping-grip shopping-product-grip" aria-label="Mover ${ModernoDaily.escape(it.name)}" title="Ordenar dentro de la etiqueta · usa las flechas con el teclado" onpointerdown="shoppingMoveStart(event,${si},${ii})" onkeydown="shoppingMoveKey(event,${si},${ii})">⠿</button><button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
-        <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button><strong>${fmt(it.price)}</strong></div>
-        <p class="shopping-product-meta">${ModernoDaily.escape([it.supplier,it.color,it.dims].filter(Boolean).join(' · '))}${shoppingRoomLabelChip(label)}</p>
+        <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button><strong>${fmt(it.price)}</strong>${shoppingProductRowLink(it)}${shoppingRoomViewMode==='rows'?shoppingRoomLabelChip(label):''}</div>
+        <p class="shopping-product-meta">${ModernoDaily.escape([it.supplier,it.color,it.dims].filter(Boolean).join(' · '))}${shoppingRoomViewMode==='rows'?'':shoppingRoomLabelChip(label)}</p>
         <p class="shopping-product-meta">${it.qty} ${ModernoDaily.escape(({m2:'m²',m3:'m³'})[it.unit]||it.unit||'ud')} · Total ${fmt(it.price*it.qty)}${it.plazo?' · '+ModernoDaily.escape(it.plazo):''}</p>
-        <div class="shopping-product-controls"><select aria-label="Estado de ${ModernoDaily.escape(it.name)}" class="dl-pill ${ACC.includes(it.status)?'acc':''}" onchange="setItem(${si},${ii},'status',this.value)">${Object.keys(ISTATES).map(st=>`<option ${it.status===st?'selected':''}>${st}</option>`).join('')}</select><button class="dl-btn" aria-label="Editar ${ModernoDaily.escape(it.name)}" onclick="itemModal(${si},${ii})">${ico('editar')}</button><button class="dl-btn" aria-label="Más opciones de ${ModernoDaily.escape(it.name)}" onclick="itemMenu(${si},${ii})">···</button></div>
+        <div class="shopping-product-controls"><select aria-label="Estado de ${ModernoDaily.escape(it.name)}" class="dl-pill ${ACC.includes(it.status)?'acc':''}" onchange="setItem(${si},${ii},'status',this.value)">${Object.keys(ISTATES).map(st=>`<option ${it.status===st?'selected':''}>${st}</option>`).join('')}</select><span class="shopping-product-actions"><button class="dl-btn" aria-label="Editar ${ModernoDaily.escape(it.name)}" onclick="itemModal(${si},${ii})">${ico('editar')}</button><button class="dl-btn" aria-label="Más opciones de ${ModernoDaily.escape(it.name)}" onclick="itemMenu(${si},${ii})">···</button></span></div>
         <p class="shopping-product-meta shopping-product-footer">${[it.hidden?'Oculto al cliente':'',it.alt?'Alternativa':'',it.rejected?'Rechazado':'',it.files?.length?it.files.length+' adjuntos':''].filter(Boolean).join(' · ')}</p>
+        ${shoppingRoomViewMode==='rows'?shoppingProductRowDetails(it):''}
       </article>`).join('')}
       ${(q||filtering)&&!shoppingRoomRows(r).some(({it,label})=>match(it,label))?'<p class="shopping-empty-results">No hay productos que coincidan con los filtros.</p>':''}
+      <div class="shopping-add-wrap"><button type="button" class="shopping-add-card" aria-label="Añadir producto" onclick="shoppingRoomAddProduct()"><img class="shopping-add-illustration" src="/brand/illustrations/nuevo-producto.webp" width="640" height="427" alt="" aria-hidden="true" decoding="async" onerror="this.hidden=true"><strong><span aria-hidden="true">+</span> Añadir producto</strong></button></div>
   </div>
   </section></div>`;
 }
@@ -8779,7 +8780,7 @@ function shoppingMoveStart(ev,si,ii){
   ghost.style.left=(e.clientX-offsetX)+'px';ghost.style.top=(e.clientY-offsetY)+'px';
   const hit=document.elementFromPoint(e.clientX,e.clientY);if(hit===gap)return;
   if(ii==null){const target=hit?.closest('[data-shopping-section]');if(target){const header=document.getElementById('sec-'+target.dataset.shoppingSection);if(header&&header!==source){const after=e.clientY>header.getBoundingClientRect().top+header.offsetHeight/2;const anchor=after?(document.getElementById('shopping-section-'+target.dataset.shoppingSection)||header):header;anchor[after?'after':'before'](gap);destination={si:Number(target.dataset.shoppingSection)+(after?1:0)};}}}
-  else{const card=hit?.closest('.shopping-product-card'),grid=hit?.closest('.shopping-product-grid');if(card&&card!==source){const box=card.getBoundingClientRect(),after=e.clientX>box.left+box.width/2;card[after?'after':'before'](gap);destination={si:Number(card.dataset.shoppingSection),ii:Number(card.dataset.shoppingItem)+(after?1:0)};}else if(grid&&!card){grid.appendChild(gap);if(grid.classList.contains('shopping-flat-products'))destination={si,ii:owner.sections[si].items.length};const section=grid.closest('[id^="shopping-section-"]');if(section){const targetSi=Number(section.id.replace('shopping-section-',''));destination={si:targetSi,ii:owner.sections[targetSi].items.length};}}}
+  else{const card=hit?.closest('.shopping-product-card'),grid=hit?.closest('.shopping-product-grid');if(card&&card!==source){const box=card.getBoundingClientRect(),after=card.classList.contains('shopping-product-row')?e.clientY>box.top+box.height/2:e.clientX>box.left+box.width/2;card[after?'after':'before'](gap);destination={si:Number(card.dataset.shoppingSection),ii:Number(card.dataset.shoppingItem)+(after?1:0)};}else if(grid&&!card){grid.insertBefore(gap,grid.querySelector('.shopping-add-wrap'));if(grid.classList.contains('shopping-flat-products'))destination={si,ii:owner.sections[si].items.length};const section=grid.closest('[id^="shopping-section-"]');if(section){const targetSi=Number(section.id.replace('shopping-section-',''));destination={si:targetSi,ii:owner.sections[targetSi].items.length};}}}
   if(e.clientY<70)window.scrollBy(0,-18);else if(e.clientY>innerHeight-70)window.scrollBy(0,18);
  };
  const stop=e=>{button.removeEventListener('pointermove',move);button.removeEventListener('pointerup',stop);button.removeEventListener('pointercancel',stop);document.removeEventListener('keydown',cancel);ghost.remove();gap.remove();source.classList.remove('shopping-drag-source');if(e.type==='pointercancel'||e.key==='Escape'||getRoom().r!==owner||!destination)return;
@@ -11452,7 +11453,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.76";
+const MODERNO_VER="v3.65.77";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13274,7 +13275,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36576">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36577">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
