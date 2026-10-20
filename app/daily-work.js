@@ -11,8 +11,8 @@
   function isMine(assignees,name,email){const names=[normalize(name),normalize(email)].filter(Boolean);return (assignees||[]).some(a=>names.includes(normalize(a)));}
   function compare(a,b,day=today()){const x=due(a.t.due,day),y=due(b.t.due,day);return x.rank-y.rank||x.date.localeCompare(y.date)||normalize(a.p.num+' '+a.p.name).localeCompare(normalize(b.p.num+' '+b.p.name),'es',{numeric:true})||normalize(a.t.title).localeCompare(normalize(b.t.title),'es')||a.i-b.i;}
   function projectMatches(p,q){return normalize(p.num+' '+p.name+' '+(p.client||'')).includes(normalize(q));}
-  function saveStatus({editing,localFailure,review,online=true,changed,confirmed,phase,detail}){
-    if(localFailure)return {mode:'err',label:'Necesita revisión',detail:'No se pudo conservar la copia local. Mantén esta pestaña abierta y descarga una copia.'};
+  function saveStatus({editing,localFailure,localDetail,review,online=true,changed,confirmed,phase,detail}){
+    if(localFailure)return {mode:'err',label:'Necesita revisión',detail:localDetail||'No se pudo conservar la copia local. Mantén esta pestaña abierta y descarga una copia.'};
     if(review)return {mode:'err',label:'Necesita revisión',detail:detail||'Hay cambios o copias pendientes que revisar. No cierres esta pestaña.'};
     if(editing)return {mode:'pending',label:'Formulario abierto',detail:'Usa Guardar en el formulario para aplicar sus cambios. La confirmación de la nube se muestra después.'};
     if(!online)return {mode:'pending',label:changed?'Pendiente en este dispositivo':'Sin conexión',detail:'No se puede confirmar el estado actual de la nube. Conserva esta pestaña abierta.'};

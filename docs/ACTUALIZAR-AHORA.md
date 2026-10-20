@@ -28,3 +28,18 @@ Validación local: 518 pruebas Node correctas, incluidas recuperación de espaci
 Publicación: rama propia, CI del mismo HEAD, integración y despliegue con comprobación de los 39 recursos públicos. La corrección no puede reemplazar el código ya ejecutado en la pestaña bloqueada. Para comprobar la nueva versión sin perder esa sesión, abrir la app con parámetro de versión nuevo en otra pestaña y conservar la anterior y la descarga hasta verificar los cambios.
 
 Reversión: revertir el commit de interfaz mediante PR y despliegue. Las referencias a copias archivadas siguen siendo compatibles con la versión anterior; no restaurar base de datos ni borrar almacenamiento del navegador.
+
+
+## v3.65.85 — Recuperación en guardado automático y reintento
+
+El propietario comunica «Necesita revisión · 53 copias por revisar» y el detalle genérico de fallo local. Después aclara que no descargó el archivo: no hay una descarga del propietario comprobada ni se presupone una copia actual fuera de su pestaña. No se ha accedido a su almacenamiento y no se atribuye una excepción concreta a su sesión.
+
+La recuperación anterior solo se iniciaba desde Actualizar o al conservar una copia en cloudLoad. persistNow reutiliza ahora el archivo verificado existente ante QuotaExceededError (también códigos históricos 22/1014), sin clic en Actualizar. Tras archivar guarda el estado más reciente y comprueba igualdad exacta por lectura. El formato de la instantánea y sus lectores no cambian.
+
+Se comparte un único intento en curso, con plazo de 15 segundos y 30 segundos entre intentos automáticos para evitar bucles. Reintentar guardado permite un intento inmediato, lo espera antes de la sincronización habitual y comprueba identidad. Actualizar espera la reparación activa. Se conservan guardas, permisos, RPC y formato de archivo; la reparación local no confirma el guardado remoto.
+
+El aviso distingue falta de espacio (incluye tamaño UTF-8 de la copia), bloqueo del navegador, preparación/escritura fallida y lectura distinta, sin exponer datos ni mensajes internos. Si archivar no basta para una copia grande o el navegador bloquea almacenamiento, mantiene la advertencia y la descarga desde memoria. Las copias siguen descargables; no se eliminan ni se aplican a la nube.
+
+Validación: 526 pruebas Node, incluidas edición durante archivo, fallo/reintento, identidad distinta, lectura obsoleta, bloqueo, cuota persistente y timeout. Chromium aislado a 1440/390 px, cuatro contextos independientes con 53 copias ficticias de 98 KB y cuota real: reparación automática, fallo y botón real de reintento; lectura exacta de las 53 copias y del estado reciente; descarga JSON real comparada incluso con fallo; ninguna falsa confirmación remota. Regresión de actualización y borrador de Ajustes en ambos tamaños. SDK real desactivado y peticiones externas/escrituras bloqueadas. PHP se verifica en CI.
+
+Publicación: CI del mismo HEAD, PR y despliegue con 40 recursos públicos (añadido daily-work.js). Reversión por PR del commit de aplicación; el archivo existente sigue siendo compatible. Sin SQL, migraciones, Storage ni datos reales. Para la sesión afectada, descargar cambios y conservar la pestaña al abrir una nueva con código actualizado. El éxito en su sesión requiere comprobar el estado; no se presume por publicar.

@@ -252,3 +252,8 @@ La etiqueta de tarjetas pasa a la esquina inferior de la imagen y conserva el fi
 ## 2026-10-20 — Actualización con recuperación local de espacio
 
 Actualizar ahora reutiliza el archivo local verificado de copias anteriores cuando falla la instantánea actual, y vuelve a leer la copia guardada antes de permitir la recarga. Mantiene las guardas de nube, identidad y borradores. Pruebas con cuota real de Chromium, fallos de archivo y recuperación de las copias tras navegar, sin datos ni servicios reales: [ACTUALIZAR-AHORA](ACTUALIZAR-AHORA.md). Una pestaña ya bloqueada necesita cargar el código nuevo; conservar la sesión anterior y descargar sus cambios actuales antes de la transición.
+
+
+## 2026-10-20 — Recuperación durante el guardado automático
+
+El guardado ordinario y Reintentar guardado reutilizan el archivo verificado de copias anteriores y comprueban por lectura el estado más reciente. Plazo, espera compartida y pausa entre intentos automáticos. El aviso concreta el fallo local; no oculta fallos remotos. Conserva las copias y su descarga. El propietario aclaró que no descargó el archivo: no asumir esa copia ni cerrar su pestaña. Pruebas con 53 copias ficticias y cuota real: [ACTUALIZAR-AHORA](ACTUALIZAR-AHORA.md).

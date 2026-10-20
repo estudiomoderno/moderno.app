@@ -60,7 +60,7 @@ try:
      }
      if(!expectedCopies.length)throw Error('No quota fixture');
      state.account.quotaFixture='current-memory-'+ 'y'.repeat(800000);window.currentCopy=JSON.stringify([state,BRAND,wsOrder]);
-     persistNow();if(!_saveErr)throw Error('Real quota failure was not reproduced');
+     _localRepairAfter=Date.now()+30000;persistNow();if(!_saveErr)throw Error('Real quota failure was not reproduced');
      window.fixtureCopyCount=expectedCopies.length;
    }""")
    # Archive failure must preserve originals and the in-memory record, without navigating.
