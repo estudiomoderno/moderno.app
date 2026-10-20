@@ -11,9 +11,13 @@
 .shopping-drag-ghost{position:fixed!important;z-index:100000!important;pointer-events:none!important;opacity:.92;transform:rotate(2deg) scale(1.02);box-shadow:0 18px 45px #0003;background:var(--app-surface,#f5f2e8);border-radius:16px;overflow:hidden;margin:0!important}.shopping-drag-ghost img{opacity:1!important}.shopping-drag-source{opacity:.22!important}.shopping-drop-gap{box-sizing:border-box;min-height:44px;border:2px dashed #aaa18a;border-radius:16px;background:#c9c0a826;display:grid;place-items:center;color:var(--ink-soft);font-size:12px;pointer-events:auto}.shopping-product-grid>*{transition:transform 180ms ease}@media(prefers-reduced-motion:reduce){.shopping-product-grid>*{transition:none}}
 .shopping-product-footer{min-height:1.5em}
 @supports(grid-template-rows:subgrid){
- .shopping-product-card{display:grid;grid-row:span 6;grid-template-rows:subgrid;row-gap:9px;align-items:start}
- .shopping-add-wrap,.shopping-product-grid>.shopping-drop-gap{grid-row:span 6}
+ .shopping-product-card{display:grid;grid-row:span 7;grid-template-rows:subgrid;row-gap:9px;align-items:start}
+ .shopping-add-wrap,.shopping-product-grid>.shopping-drop-gap{grid-row:span 7}
  .shopping-product-controls{margin-top:0;align-self:start}
  .shopping-drag-ghost.shopping-product-card{display:flex;grid-template-rows:none}
 }
 .shopping-product-title{align-self:stretch}@media(max-width:600px){.shopping-product-title strong{margin-top:auto}}
+
+/* Each visual row shares photo, title, details, label, total, actions and footer tracks. */
+.shopping-product-title strong{line-height:1.4}
+.shopping-room-view .shopping-product-label-row>.shopping-product-label{margin-top:0}
