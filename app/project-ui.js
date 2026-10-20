@@ -148,7 +148,7 @@ function shoppingRoomViewToggle(){
  shoppingRoomViewMode=shoppingRoomViewMode==='rows'?'cards':'rows';render();document.getElementById('shopping-view-toggle')?.focus();
 }
 function shoppingProductRowLink(item){
- try{const url=new URL(item.url);if(!['https:','http:'].includes(url.protocol))return '';const E=ModernoDaily.escape;return `<a class="shopping-product-link" href="${E(url.href)}" target="_blank" rel="noopener noreferrer" title="${E(url.href)}">${E(url.hostname.replace(/^www\./,'')+url.pathname)} <span aria-hidden="true">↗</span></a>`;}catch{return '';}
+ try{const url=new URL(item.url);if(!['https:','http:'].includes(url.protocol))return '';const E=ModernoDaily.escape;return `<a class="shopping-product-link" href="${E(url.href)}" target="_blank" rel="noopener noreferrer" title="${E(url.href)}"><span>${E(url.hostname.replace(/^www\./,'')+url.pathname)}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7m0-7L10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></svg></a>`;}catch{return '';}
 }
 function shoppingProductRowDetails(item){
  const E=ModernoDaily.escape,amount=value=>value==null||value===''?'Por confirmar':fmt(value),unit=({ud:'ud',m2:'m²',m3:'m³'})[item.unit]||item.unit||'ud';

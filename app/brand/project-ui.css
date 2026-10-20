@@ -317,7 +317,9 @@
  .shopping-product-row .shopping-product-grip{top:30px;left:100px;right:auto}
  .shopping-product-row .shopping-product-title{grid-area:title;display:flex;flex-direction:column;gap:7px;min-width:0}
  .shopping-product-row .shopping-product-title>strong{display:none}
- .shopping-product-row .shopping-product-title>.shopping-product-link{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-faint);font-size:12px;line-height:1.5;text-decoration:underline}
+ .shopping-product-row .shopping-product-title>.shopping-product-link{display:flex;align-items:center;gap:4px;max-width:100%;min-width:0;color:var(--ink-faint);font-size:12px;line-height:1.5;text-decoration:underline}
+ .shopping-product-link>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+ .shopping-product-link>svg{flex:none}
  .shopping-room-view .shopping-product-row .shopping-product-title>.shopping-product-label{margin:0;font-size:11px;font-weight:500;align-self:start}
  .shopping-product-row>.shopping-product-meta:not(.shopping-product-footer){display:none}
  .shopping-product-row .shopping-product-controls{grid-area:controls;display:block;min-width:0;margin:0}
