@@ -239,3 +239,7 @@ Nuevo icono entre Vista y Buscar: fecha de incorporación o precio en ambos sent
 ## 2026-10-20 — Botón de actualización con progreso visible
 
 Actualizar ahora espera el guardado en curso y muestra el motivo de cualquier bloqueo dentro de la franja. Conserva las protecciones de borradores, copia local, conflictos e identidad y mantiene la ruta al recargar. Una pestaña con código antiguo requiere una recarga manual inicial tras guardar. Pruebas y reversión: [ACTUALIZAR-AHORA](ACTUALIZAR-AHORA.md).
+
+## 2026-10-20 — Tarjetas de productos alineadas
+
+Descripción, etiqueta y total ocupan filas independientes compartidas entre tarjetas. Se alinean precios y controles sin recortar nombres ni modificar datos. Detalles, reproducción y pruebas: [COMPRAS-ALINEACION-TARJETAS](COMPRAS-ALINEACION-TARJETAS.md).
