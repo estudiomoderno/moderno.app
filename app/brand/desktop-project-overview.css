@@ -6,7 +6,7 @@
  html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .project-detail-head h1{font-size:clamp(28px,2.7vw,38px);line-height:1.2;margin-bottom:10px;letter-spacing:-.025em}
  html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .project-options{top:0;right:0}
  html body.desktop-shell:not(.portalmode) #view .project-detail:has(#project-tab-proyecto[aria-selected=true]) .project-tab-panel{padding:0;background:transparent;border:0;border-radius:0;margin-top:0}
- html body.desktop-shell:not(.portalmode) #view .project-overview{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:0 0 18px;align-items:stretch}
+ html body.desktop-shell:not(.portalmode) #view .project-overview{grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin:0 0 18px;align-items:stretch}
  html body.desktop-shell:not(.portalmode) #view .project-overview>div{gap:12px;min-height:170px;padding:22px;background:var(--app-surface);border:1px solid var(--ui-line);border-radius:20px;box-shadow:none}
  html body.desktop-shell:not(.portalmode) #view .project-overview strong{font-size:clamp(23px,2.1vw,30px);line-height:1.25;letter-spacing:-.02em;overflow-wrap:anywhere}
  html body.desktop-shell:not(.portalmode) #view .project-overview small{color:var(--ink-soft);font-size:12px;line-height:1.4}

@@ -98,7 +98,15 @@ try:
    page.evaluate('ModernoProjectWorkspace.setEnabled(true)')
    after=page.locator('#project-tab-panel').bounding_box()['y'];assert before-after>100,(before,after)
    rail=page.locator('.desktop-row').bounding_box();bar=page.locator('#project-window-bar').bounding_box();profile=page.locator('.desktop-actions').bounding_box()
-   assert rail['width']==68 and rail['height']>rail['width']*4,rail
+   assert rail['width']==224 and rail['height']>rail['width']*4,rail
+   page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
+   page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
+   compact_bar=page.locator('#project-window-bar').bounding_box()
+   assert compact_bar['x']==88 and page.locator('.desktop-row').bounding_box()['width']==64,compact_bar
+   assert page.locator('.main').evaluate('(e)=>getComputedStyle(e).paddingLeft')=='88px'
+   page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
+   page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
+   assert page.locator('#project-window-bar').bounding_box()['x']==248
    assert bar['y']<=24 and bar['x']>rail['x']+rail['width'],(bar,rail)
    assert bar['x']+bar['width']<profile['x'] and abs(bar['y']-profile['y'])<8,(bar,profile)
    assert after<100,after

@@ -3,7 +3,7 @@
 @media screen and (min-width:1100px){
  html body.desktop-shell.project-windows:not(.portalmode) .main{padding-top:80px!important;scroll-padding-top:80px}
  body.project-windows #view>.project-detail>.crumbs{display:none}
- #project-window-bar{position:fixed;top:20px;left:112px;right:148px;height:38px;z-index:71;display:flex;align-items:center;gap:6px;color:var(--ink);font:500 12px/1.3 Inter,Segoe UI,sans-serif;box-sizing:border-box}
+ #project-window-bar{position:fixed;top:20px;left:var(--desktop-content-left,112px);right:148px;height:38px;transition:left 240ms cubic-bezier(.22,.61,.36,1);z-index:71;display:flex;align-items:center;gap:6px;color:var(--ink);font:500 12px/1.3 Inter,Segoe UI,sans-serif;box-sizing:border-box}
  #project-window-bar :is(button,summary){font:inherit;box-sizing:border-box;cursor:pointer;color:inherit}
  #project-window-bar button{border:0}
  #project-window-bar .pw-tabs{display:flex;align-items:center;gap:5px;min-width:0;max-width:calc(100% - 160px);overflow-x:auto;scrollbar-width:none;height:38px;padding:0 2px}

@@ -3,68 +3,57 @@
 @media screen and (min-width:1100px){
  body.desktop-shell .app{height:100dvh;padding:0;gap:0}
  body.desktop-shell aside.sidebar{display:none!important}
- html body.desktop-shell:not(.portalmode) .main{border-radius:0;padding:96px 24px 120px 112px!important;scroll-padding-top:96px}
+ body.desktop-shell{--desktop-sidebar-width:224px;--desktop-content-left:calc(var(--desktop-sidebar-width) + 24px)}
+ body.desktop-shell.desktop-menu-collapsed{--desktop-sidebar-width:64px}
+ html body.desktop-shell:not(.portalmode) .main{border-radius:0;padding:96px 24px 120px var(--desktop-content-left)!important;scroll-padding-top:96px;transition:padding-left 240ms cubic-bezier(.22,.61,.36,1)}
  body.desktop-shell .main>.topbar{display:none!important}
- #desktop-header{--desktop-button:clamp(28px,calc((100dvh - 160px)/9),44px);position:fixed;top:16px;left:16px;right:24px;z-index:75;display:flex;align-items:flex-start;gap:18px;background:transparent;color:var(--ink);box-sizing:border-box;pointer-events:none}
- #desktop-header .desktop-row{--desktop-rail-bg:#111;--desktop-rail-ink:#f6f4eb;--desktop-rail-hover:#383832;--desktop-rail-line:#44443d;position:relative;width:68px;height:calc(100dvh - 48px);min-height:64px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 8px 24px;flex-shrink:0;box-sizing:border-box;border:1px solid var(--desktop-rail-bg);border-radius:28px;background:var(--desktop-rail-bg);color:var(--desktop-rail-ink);box-shadow:var(--shadow);pointer-events:auto}
- #desktop-header .desktop-row{transition:height 240ms cubic-bezier(.22,.61,.36,1),padding 240ms cubic-bezier(.22,.61,.36,1),gap 240ms cubic-bezier(.22,.61,.36,1)}
- #desktop-header .desktop-brand{display:flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;min-height:44px;padding:0 0 10px;box-sizing:border-box;border:0;border-bottom:1px solid var(--desktop-rail-line);border-radius:0;background:transparent;color:inherit;cursor:default;transition:padding 240ms cubic-bezier(.22,.61,.36,1)}
+ #desktop-header{--desktop-button:clamp(24px,calc((100dvh - 152px)/9),36px);position:fixed;top:0;left:0;right:24px;z-index:75;display:flex;align-items:flex-start;background:transparent;color:var(--ink);box-sizing:border-box;pointer-events:none}
+ #desktop-header .desktop-row{--desktop-rail-bg:var(--app-surface,#fff);--desktop-rail-ink:var(--ink,#202020);--desktop-rail-hover:var(--card,#f5f5f5);--desktop-rail-line:var(--ui-line,#dedede);position:relative;width:var(--desktop-sidebar-width);height:100dvh;display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:12px 10px;flex-shrink:0;box-sizing:border-box;border:0;border-right:1px solid var(--desktop-rail-line);border-radius:0;background:var(--desktop-rail-bg);color:var(--desktop-rail-ink);box-shadow:none;pointer-events:auto;transition:width 240ms cubic-bezier(.22,.61,.36,1)}
+ #desktop-header .desktop-brand{display:flex;align-items:center;justify-content:flex-start;flex:0 0 44px;min-height:44px;padding:0 8px 10px;box-sizing:border-box;border:0;border-bottom:1px solid var(--desktop-rail-line);border-radius:0;background:transparent;color:inherit;cursor:default}
  #desktop-header .desktop-brand:is(:hover,:focus,:active),#desktop-header .desktop-brand[aria-current=page]{background:transparent!important;color:inherit;box-shadow:none}
  #desktop-header .sb-head{margin:0!important;min-height:0!important;align-items:center!important}
- /* The exact existing logo nodes move here; their SVGs, proportions and dimensions stay intact. */
+ /* Keep the official symbol and original logo nodes, without a substitute wordmark. */
  #desktop-header .new-brand{margin:0;line-height:0;flex-shrink:0}
  #desktop-header .logo.new-brand{display:none!important}
- #desktop-header .logo-mini.new-brand{display:block!important;width:30px;margin:0}
- #desktop-header .new-brand svg{display:block;width:100%;height:auto;font-synthesis:none;filter:invert(1)}
- #desktop-header .desktop-nav,#desktop-header .desktop-primary,#desktop-header .desktop-subnav{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
- #desktop-header .desktop-nav-clip{width:44px;height:var(--desktop-nav-height);flex:0 0 auto;transition:height 240ms cubic-bezier(.22,.61,.36,1)}
- #desktop-header .desktop-nav{width:44px;opacity:1;visibility:visible;transform:translateY(0);transition:opacity 180ms ease,transform 240ms cubic-bezier(.22,.61,.36,1),visibility 0s}
- #desktop-header .is-toggling .desktop-nav-clip,#desktop-header .is-collapsed .desktop-nav-clip{overflow:hidden}
- #desktop-header .is-collapsed .desktop-nav-clip{height:0}
- #desktop-header .is-collapsed .desktop-nav{opacity:0;visibility:hidden;transform:translateY(-10px);transition:opacity 140ms ease,transform 240ms cubic-bezier(.22,.61,.36,1),visibility 0s 240ms}
- #desktop-header :is(.desktop-primary,.desktop-subnav){animation:desktopNavIn 160ms ease-out}
- #desktop-header :is(button,summary){font:inherit;font-size:12px;cursor:pointer}
- #desktop-header .desktop-link,#desktop-header .desktop-group>summary{display:flex;align-items:center;gap:7px;min-height:40px;border:0;padding:8px 10px;border-radius:12px;white-space:nowrap;background:transparent;color:var(--ink-soft);text-decoration:none}
- #desktop-header .desktop-nav .desktop-icon-only{position:relative;justify-content:center;width:var(--desktop-button);height:var(--desktop-button);min-height:var(--desktop-button);flex:0 0 var(--desktop-button);padding:0;box-sizing:border-box}
- #desktop-header .desktop-icon-only>.desktop-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
- #desktop-header .desktop-icon-only:is(:hover,:focus-visible)>.desktop-label{clip:auto;width:max-content;height:auto;max-width:240px;white-space:nowrap;overflow:visible;top:50%;left:calc(100% + 12px);transform:translateY(-50%);padding:7px 10px;border-radius:9px;background:var(--app-selected);color:var(--app-selected-text);font-size:12px;line-height:1.4;pointer-events:none;z-index:90}
- #desktop-header .desktop-group[open]>summary>.desktop-label{clip:rect(0,0,0,0);width:1px;height:1px;overflow:hidden}
+ #desktop-header .logo-mini.new-brand{display:block!important;width:28px;margin:0}
+ #desktop-header .new-brand svg{display:block;width:100%;height:auto;font-synthesis:none;filter:none}
+ body.dark #desktop-header .new-brand svg{filter:invert(1)}
+ #desktop-header .desktop-nav,#desktop-header .desktop-primary,#desktop-header .desktop-subnav{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0;width:100%}
+ #desktop-header .desktop-nav-clip{width:100%;flex:1;min-height:0;overflow:auto;scrollbar-width:thin}
+ #desktop-header .desktop-nav{opacity:1;visibility:visible;transform:none}
+ #desktop-header :is(button,summary){font:inherit;font-size:13px;cursor:pointer}
+ #desktop-header .desktop-link,#desktop-header .desktop-group>summary{display:flex;align-items:center;gap:10px;min-height:36px;border:0;padding:8px 10px;border-radius:6px;white-space:nowrap;background:transparent;color:var(--ink-soft);text-decoration:none}
+ #desktop-header .desktop-nav .desktop-icon-only{position:relative;justify-content:flex-start;width:100%;height:var(--desktop-button);min-height:var(--desktop-button);flex:none;padding:0 10px;box-sizing:border-box}
+ #desktop-header .desktop-icon-only>.desktop-label{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
+ #desktop-header .is-collapsed .desktop-icon-only>.desktop-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+ #desktop-header .is-collapsed .desktop-nav .desktop-icon-only{width:40px;padding:0;justify-content:center;align-self:center}
  #desktop-header .ico{width:18px;height:18px;display:grid;place-items:center;flex-shrink:0}
  #desktop-header .ico svg{width:18px;height:18px}
  #desktop-header .desktop-mask{background:currentColor;mask:var(--desktop-icon) center/contain no-repeat;-webkit-mask:var(--desktop-icon) center/contain no-repeat}
  #desktop-header .desktop-mask>*{display:none}
- #desktop-header .desktop-link:hover,#desktop-header summary:hover{background:var(--app-control);color:var(--ink)}
- #desktop-header [aria-current=page],#desktop-header .is-current>summary,#desktop-header .desktop-finance.is-current,#desktop-header .desktop-finance[aria-expanded=true]{background:var(--app-control);color:var(--ink)}
- #desktop-header :is(button,summary):focus-visible{outline:2px solid var(--app-outline,var(--ink));outline-offset:3px}
+ #desktop-header .desktop-link:hover,#desktop-header summary:hover{background:var(--desktop-rail-hover,var(--app-control));color:var(--ink)}
+ #desktop-header [aria-current=page],#desktop-header .is-current>summary,#desktop-header .desktop-finance.is-current,#desktop-header .desktop-finance[aria-expanded=true]{background:var(--app-control);color:var(--ink);font-weight:600}
+ #desktop-header :is(button,summary):focus-visible{outline:2px solid var(--app-outline,var(--ink));outline-offset:-2px}
  #desktop-header details{position:relative}
- #desktop-header .desktop-group,#desktop-header .desktop-finance{border-top:1px solid var(--ui-line);padding-top:6px;margin-top:3px}
- #desktop-header .desktop-finance{border-radius:0 0 12px 12px}
+ #desktop-header .desktop-group{border-top:1px solid var(--ui-line);padding-top:8px;margin-top:7px}
+ #desktop-header .desktop-finance{margin-top:8px}
  #desktop-header .desktop-back{border-bottom:1px solid var(--ui-line);border-radius:0;margin-bottom:4px}
  #desktop-header .desktop-back svg{width:22px;height:22px}
- /* Original dark sidebar palette; popup menus retain their own surface tokens. */
- #desktop-header .desktop-row .desktop-group,#desktop-header .desktop-row .desktop-finance,#desktop-header .desktop-row .desktop-back{border-color:var(--desktop-rail-line)}
  #desktop-header .desktop-row .desktop-icon-only{color:var(--desktop-rail-ink)}
- #desktop-header .desktop-row .desktop-icon-only:hover{background:var(--desktop-rail-hover);color:var(--desktop-rail-ink)}
- #desktop-header .desktop-row .desktop-icon-only[aria-current=page],#desktop-header .desktop-row .is-current>summary,#desktop-header .desktop-row .desktop-finance:is(.is-current,[aria-expanded=true]){background:var(--desktop-rail-ink);color:var(--desktop-rail-bg)}
- #desktop-header .desktop-row :is(button,summary):focus-visible{outline-color:var(--desktop-rail-ink)}
- #desktop-header .desktop-row .desktop-menu :is(button,summary):focus-visible{outline-color:var(--app-outline,var(--ink))}
- /* The original light circular arrow overlaps the rounded edge of the dark rail. */
- #desktop-header .desktop-toggle{position:absolute;left:50%;bottom:-22px;transform:translateX(-50%);display:grid;place-items:center;width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:50%;background:transparent!important;color:var(--desktop-rail-bg)!important;z-index:1}
- #desktop-header .desktop-toggle::before{content:'';position:absolute;inset:6px;border:3px solid var(--desktop-rail-bg);border-radius:50%;background:var(--desktop-rail-ink);pointer-events:none}
- #desktop-header .desktop-toggle svg{position:absolute;inset:11px;width:22px;height:22px;transition:opacity .18s ease,transform .24s ease}
- #desktop-header .desktop-arrow-collapse{transform:rotate(90deg)}
- #desktop-header .desktop-arrow-expand{opacity:0;transform:translateY(-4px) rotate(90deg)}
- #desktop-header .is-collapsed .desktop-arrow-collapse{opacity:0;transform:translateY(4px) rotate(90deg)}
- #desktop-header .is-collapsed .desktop-arrow-expand{opacity:1;transform:rotate(90deg)}
- #desktop-header .desktop-row.is-collapsed{height:66px;padding:10px 8px;gap:0}
- #desktop-header .desktop-row.is-collapsed .desktop-brand{padding:0;border-bottom:0}
+ #desktop-header .desktop-toggle{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:10px;flex:0 0 36px;width:100%;height:36px;min-height:36px;padding:0 10px;box-sizing:border-box;border:0;border-radius:6px;background:transparent!important;color:var(--desktop-rail-ink)!important;text-align:left}
+ #desktop-header .desktop-toggle:hover{background:var(--desktop-rail-hover)!important}
+ #desktop-header .desktop-toggle svg{width:18px;height:18px;flex:none;order:-1}
+ #desktop-header .desktop-arrow-expand{display:none}
+ #desktop-header .is-collapsed .desktop-arrow-collapse{display:none}
+ #desktop-header .is-collapsed .desktop-arrow-expand{display:block}
+ #desktop-header .is-collapsed .desktop-toggle{padding:0;justify-content:center}
  #desktop-header summary{list-style:none}
  #desktop-header summary::-webkit-details-marker{display:none}
  #desktop-header .desktop-group>summary::after{content:none!important;display:none!important}
- #desktop-header .desktop-menu{position:absolute;top:0;left:calc(100% + 26px);min-width:210px;max-width:280px;max-height:calc(100dvh - 24px);overflow-y:auto;padding:7px;background:var(--app-surface,var(--panel));color:var(--ink);border:1px solid var(--ui-line);border-radius:16px;box-shadow:var(--shadow);z-index:80}
+ #desktop-header .desktop-menu{position:fixed;top:64px;left:calc(var(--desktop-sidebar-width) + 8px);min-width:210px;max-width:280px;max-height:calc(100dvh - 24px);overflow-y:auto;padding:7px;background:var(--app-surface,var(--panel));color:var(--ink);border:1px solid var(--ui-line);border-radius:16px;box-shadow:var(--shadow);z-index:80}
  #desktop-header .desktop-menu button{width:100%;text-align:left;padding:11px 12px;min-height:40px;border-radius:10px}
  #desktop-header .desktop-menu button:hover{background:var(--app-control)}
- #desktop-header .desktop-actions{display:flex;align-items:center;gap:8px;margin-left:auto;min-height:44px;pointer-events:auto}
+ #desktop-header .desktop-actions{margin-top:16px;display:flex;align-items:center;gap:8px;margin-left:auto;min-height:44px;pointer-events:auto}
  #desktop-header .desktop-profile>summary,#desktop-header .desktop-actions>button{display:grid;place-items:center;width:44px;height:44px;min-height:44px!important;box-sizing:border-box;padding:0;border:1px solid var(--ui-line);border-radius:50%;background:var(--app-surface,var(--panel))!important;color:var(--ink);box-shadow:var(--shadow)}
  #desktop-header .desktop-actions>button{align-self:center!important;width:44px!important;height:44px!important}
  #desktop-header .desktop-actions>button:has(.desktop-bell-icon){font-size:0!important}
@@ -73,7 +62,7 @@
  #desktop-header .desktop-profile .avatar{display:grid;place-items:center;width:42px;height:42px;padding:0;background:transparent;white-space:nowrap;font-size:12px}
  #desktop-header #topUserName{display:none}
  #desktop-header #topUserDot{width:28px;height:28px}
- #desktop-header .desktop-profile .desktop-menu{top:calc(100% + 8px);left:auto;right:0;max-height:calc(100dvh - 84px)}
+ #desktop-header .desktop-profile .desktop-menu{position:absolute;top:calc(100% + 8px);left:auto;right:0;max-height:calc(100dvh - 84px)}
  #desktop-header .desktop-profile>summary::after{content:none!important;display:none!important}
  #desktop-header .sidebar-study{border:0;border-top:1px solid var(--ui-line);margin:7px 0 0;padding:7px 0 0;min-width:0}
  #desktop-header .settings-switch{margin:0}
@@ -83,7 +72,7 @@
  #desktop-header .study-settings-collapsed{display:none!important}
  #desktop-header .settings-popup{position:fixed;width:240px}
  /* Real project tabs keep IDs, roving keyboard focus, handlers and the panel relationship. */
- html body.desktop-shell:not(.portalmode) .project-tabs{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:4px;width:max-content;max-width:calc(100vw - 360px);overflow:visible;padding:7px 12px;margin:0;border:1px solid var(--ui-line);background:var(--app-surface,var(--panel));border-radius:30px;box-shadow:var(--shadow)}
+ html body.desktop-shell:not(.portalmode) .project-tabs{position:fixed;left:calc((100vw + var(--desktop-sidebar-width))/2);bottom:24px;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:4px;width:max-content;max-width:calc(100vw - var(--desktop-sidebar-width) - 48px);overflow:visible;padding:7px 12px;margin:0;border:1px solid var(--ui-line);background:var(--app-surface,var(--panel));border-radius:30px;box-shadow:var(--shadow)}
  html body.desktop-shell:not(.portalmode) .project-tab-separator{height:28px;margin:0 5px;background:var(--ui-line)}
  html body.desktop-shell:not(.portalmode) .project-tabs [role=tab]{width:44px;height:44px;flex:0 0 44px;padding:0;margin:0;border-radius:12px;border:0;background:transparent;transform:none}
  html body.desktop-shell:not(.portalmode) .project-tabs [role=tab].on{background:var(--app-selected);color:var(--app-selected-text)}
@@ -97,3 +86,5 @@
 @keyframes desktopNavIn{from{opacity:.4;translate:0 4px}to{opacity:1;translate:0 0}}
 @keyframes projectDockLabel{from{opacity:0;translate:0 3px}to{opacity:1;translate:0 0}}
 @media(prefers-reduced-motion:reduce){#desktop-header *,body.desktop-shell .project-tabs *{transition:none!important;animation:none!important}}
+
+@media(prefers-reduced-motion:reduce){body.desktop-shell .main,body.desktop-shell #project-window-bar,body.desktop-shell #page-route-bar{transition:none!important}}
