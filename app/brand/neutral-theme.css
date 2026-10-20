@@ -32,9 +32,6 @@
  }
  html body:not(.dark):not(.portalmode):has(.projects-identity) {background-color:var(--bg)!important}
  html body:not(.portalmode) .projects-header {background:var(--ui-canvas)}
- html body:not(.portalmode) #desktop-header .desktop-row {
-  --desktop-rail-ink:#fff;--desktop-rail-hover:#383838;--desktop-rail-line:#444;
- }
  html body:not(.portalmode) .sidebar {color:#fff}
  html body:not(.portalmode) .sidebar :is(.nav-item,.nav-head,.settings-nav,.settings-nav button) {color:#fff}
  html body:not(.portalmode) .sidebar :is(.nav-item,.settings-nav button):is(:hover,.active,[aria-current=page]) {background:#383838;color:#fff}

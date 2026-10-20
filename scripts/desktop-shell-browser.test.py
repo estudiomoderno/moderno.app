@@ -28,13 +28,13 @@ def settle_header(page):
  page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
 def sample_fold(page):
  result=page.evaluate("""()=>{
-  const clip=document.querySelector('.desktop-nav-clip'),start=clip.getBoundingClientRect().height;
+  const clip=document.querySelector('.desktop-row'),start=clip.getBoundingClientRect().width;
   document.querySelector('.desktop-toggle').click();
   return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>{
-   const animation=clip.getAnimations().find(a=>a.transitionProperty==='height');
+   const animation=clip.getAnimations().find(a=>a.transitionProperty==='width');
    if(!animation){resolve({start,missing:true});return;}
    animation.pause();animation.currentTime=120;
-   const middle=clip.getBoundingClientRect().height;
+   const middle=clip.getBoundingClientRect().width;
    animation.finish();resolve({start,middle});
   })));
  }""")
@@ -91,7 +91,7 @@ with sync_playwright() as p:
   assert page.locator('#desktop-header').evaluate('(e)=>getComputedStyle(e).position')=='fixed'
   assert page.locator('#desktop-header .desktop-context').count()==0
   assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Proyectos','Tareas','Calendario','Agenda','Finanzas','Mail']
-  assert page.locator('#desktop-primary .desktop-icon-only>.desktop-label').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).clip!=="auto")')
+  assert page.locator('#desktop-primary .desktop-icon-only>.desktop-label').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).clip==="auto")')
   brand=page.locator('.desktop-brand');background=brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')
   brand.hover();assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background
   assert brand.evaluate('(e)=>e.tagName')=='DIV'
@@ -109,16 +109,16 @@ with sync_playwright() as p:
   bell=page.locator('#desktop-header .desktop-actions>button').bounding_box()
   profile=page.locator('.desktop-profile>summary').bounding_box()
   row=page.locator('.desktop-row').bounding_box()
-  assert page.locator('.desktop-row').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(17, 17, 17)'
-  assert page.locator('#desktop-header .logo-mini svg').evaluate('(e)=>getComputedStyle(e).filter')=='invert(1)'
+  assert page.locator('.desktop-row').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(255, 255, 255)'
+  assert page.locator('#desktop-header .logo-mini svg').evaluate('(e)=>getComputedStyle(e).filter')=='none'
   assert bell['width']==bell['height']==44
   assert profile['x']>=bell['x']+bell['width']
   assert row['x']+row['width']<bell['x']
-  assert max(row['y'],bell['y'])-min(row['y'],bell['y'])<12
-  assert row['width']==68 and row['height']==1000-48,'Expanded rail must use the available screen height'
+  assert row['x']==0 and row['y']==0 and bell['y']==16
+  assert row['width']==224 and row['height']==1000,'Expanded rail must use the available screen height'
   for rect in page.locator('.desktop-nav .desktop-icon-only:visible').evaluate_all('(els)=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width,height:r.height}})'):
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
-   assert rect['width']==rect['height']==44,rect
+   assert rect['width']>=180 and rect['height']==36,rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
   assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades]):not([data-view=conversaciones]):not([data-view=plantillas])').count()-len(finance)
   assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0
@@ -152,20 +152,29 @@ with sync_playwright() as p:
   assert page.evaluate('calls.pop()')==['draft','home',None]
   assert page.evaluate('state.view')=='proyecto'
   if width==1440:
-   result=sample_fold(page);assert 0<result['middle']<result['start'],result
-   page.locator('#desktop-navigation').wait_for(state='hidden');settle_header(page)
-   result=sample_fold(page);assert result['start']==0 and 0<result['middle'],result
+   result=sample_fold(page);assert 64<result['middle']<result['start'],result
+   settle_header(page)
+   result=sample_fold(page);assert result['start']==64 and 64<result['middle']<224,result
    settle_header(page)
   page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
   settle_header(page)
-  assert page.locator('#desktop-navigation').is_hidden()
-  assert page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
-  assert page.locator('.desktop-row [data-desktop-view]:visible').count()==0
+  assert page.locator('#desktop-navigation').is_visible()
+  assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
+  assert page.locator('.desktop-row [data-desktop-view]:visible').count()>0
+  assert page.locator('#desktop-primary [data-desktop-view=proyectos]').get_attribute('title')=='Proyectos'
   assert page.locator('.desktop-brand .logo-mini').is_visible()
   assert page.locator('.desktop-row').bounding_box()['width']<100
-  assert page.locator('.desktop-row').bounding_box()['height']<row['height']/3
+  assert page.locator('.desktop-row').bounding_box()['height']==row['height']
   assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).get_attribute('aria-expanded')=='false'
   assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).evaluate('(e)=>document.activeElement===e')
+  compact_menu=page.locator('.desktop-group>summary').first
+  compact_menu.click()
+  compact_popup=page.locator('.desktop-group[open]>.desktop-menu')
+  compact_popup.wait_for(state='visible')
+  popup_bounds=compact_popup.bounding_box()
+  assert popup_bounds['x']>=64 and popup_bounds['x']+popup_bounds['width']<width,popup_bounds
+  compact_menu.press('Escape')
+  assert compact_menu.evaluate('(e)=>document.activeElement===e')
   assert page.evaluate('document.querySelector("#view input")===originalDraft')
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.locator('.desktop-profile>summary').click()
@@ -196,7 +205,7 @@ with sync_playwright() as p:
   page.set_viewport_size({'width':1024,'height':1000});page.wait_for_function("!document.querySelector('#desktop-header')")
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.set_viewport_size({'width':width,'height':1000});page.wait_for_function("!!document.querySelector('#desktop-header')")
-  assert page.locator('#desktop-navigation').is_hidden()
+  assert page.locator('#desktop-navigation').is_visible()
   page.get_by_role('button',name='Desplegar menú lateral',exact=True).press('Space')
   settle_header(page)
   assert page.locator('#desktop-navigation').is_visible()
@@ -206,7 +215,7 @@ with sync_playwright() as p:
   assert page.locator('#desktop-navigation').is_visible() and not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
   page.emulate_media(reduced_motion='reduce')
   page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
-  assert page.locator('#desktop-navigation').is_hidden()
+  assert page.locator('#desktop-navigation').is_visible()
   assert page.locator('.desktop-nav-clip').evaluate('(e)=>e.getAnimations().length')==0
   page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
   assert page.locator('#desktop-navigation').is_visible()
@@ -259,17 +268,17 @@ with sync_playwright() as p:
   # Short windows keep every icon reachable and open the product menu inside the viewport.
   for height in [500,400]:
    page.set_viewport_size({'width':width,'height':height})
-   page.wait_for_function('Math.abs(document.querySelector(".desktop-nav-clip").getBoundingClientRect().height-document.querySelector("#desktop-navigation").getBoundingClientRect().height)<0.5&&Math.abs(document.querySelector(".desktop-row").getBoundingClientRect().height-(innerHeight-48))<0.5&&!document.querySelector(".desktop-nav-clip").getAnimations().some(a=>a.playState==="running")')
+   page.wait_for_function('Math.abs(document.querySelector(".desktop-row").getBoundingClientRect().height-innerHeight)<0.5&&!document.querySelector(".desktop-row").getAnimations().some(a=>a.playState==="running")')
    last=page.locator('.desktop-group>summary').first
    last.click()
    menu=page.locator('.desktop-group[open]>.desktop-menu');menu.wait_for(state='visible')
    page.wait_for_function('(()=>{const r=document.querySelector(".desktop-group[open]>.desktop-menu").getBoundingClientRect();return r.top>=11&&r.bottom<=innerHeight-11})()')
    box=menu.bounding_box();rail=page.locator('.desktop-row').bounding_box();toggle=page.locator('.desktop-toggle').bounding_box()
-   assert abs(rail['height']-(height-48))<0.5,(rail,height)
+   assert abs(rail['height']-height)<0.5,(rail,height)
    assert box['x']>rail['x']+rail['width'] and box['y']>=11 and box['y']+box['height']<=height-11,(box,rail,height)
    assert toggle['y']+toggle['height']<=height,(toggle,height)
    for control in page.locator('.desktop-nav .desktop-icon-only:visible').all():
-    rect=control.bounding_box();assert rect['y']>=0 and rect['y']+rect['height']<=height and rect['height']>=28,(rect,height)
+    rect=control.bounding_box();assert rect['y']>=0 and rect['y']+rect['height']<=height and rect['height']>=24,(rect,height)
    if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-short-{width}-{height}.png'),full_page=True)
    last.press('Escape')
    page.locator('.desktop-profile>summary').click()

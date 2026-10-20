@@ -20,13 +20,13 @@ var ModernoDesktopShell=(()=>{
   }
   return null;
  }
- function label(node,text){const span=document.createElement('span');span.className='desktop-label';span.textContent=text;node.append(span);node.setAttribute('aria-label',text);}
+ function label(node,text){const span=document.createElement('span');span.className='desktop-label';span.textContent=text;node.append(span);node.setAttribute('aria-label',text);node.title=text;}
  function button(view,compact=false){
   const source=original(view);if(!source)return null;
   const b=document.createElement('button');b.type='button';b.className='desktop-link'+(compact?' desktop-icon-only':'');b.dataset.desktopView=view;
   const copy=icon(view);if(copy)b.append(copy);
   const label=document.createElement('span');label.className='desktop-label';label.textContent=view==='agenda'?'Agenda':source.textContent.trim();b.append(label);
-  b.setAttribute('aria-label',label.textContent);return b;
+  b.setAttribute('aria-label',label.textContent);b.title=label.textContent;return b;
  }
  function move(node,target){
   if(!node)return;
@@ -40,16 +40,16 @@ var ModernoDesktopShell=(()=>{
   trigger.classList.toggle('is-current',finance.includes(state.view));
   $('.desktop-nav').setAttribute('aria-label','Navegación general');
   const nav=$('#desktop-navigation'),toggle=$('#desktop-header .desktop-toggle');
-  $('.desktop-nav-clip').style.setProperty('--desktop-nav-height',nav.getBoundingClientRect().height+'px');
-  nav.inert=collapsed;nav.setAttribute('aria-hidden',String(collapsed));$('.desktop-row').classList.toggle('is-collapsed',collapsed);
+  nav.inert=false;nav.setAttribute('aria-hidden','false');$('.desktop-row').classList.toggle('is-collapsed',collapsed);
+  document.body.classList.toggle('desktop-menu-collapsed',collapsed);
   positionMenus();
   toggle.setAttribute('aria-expanded',String(!collapsed));
-  const caption=collapsed?'Desplegar menú lateral':'Comprimir menú lateral';toggle.setAttribute('aria-label',caption);toggle.querySelector('.desktop-label').textContent=caption;
+  const caption=collapsed?'Desplegar menú lateral':'Comprimir menú lateral';toggle.setAttribute('aria-label',caption);toggle.title=caption;toggle.querySelector('.desktop-label').textContent=caption;
  }
  function positionMenus(){
   header?.querySelectorAll('.desktop-group[open]>.desktop-menu').forEach(menu=>{
-   menu.style.top='0px';const bounds=menu.getBoundingClientRect();
-   menu.style.top=Math.max(12-bounds.top,Math.min(0,window.innerHeight-12-bounds.bottom))+'px';
+   const anchor=menu.parentElement.querySelector('summary').getBoundingClientRect();
+   menu.style.top=Math.max(12,Math.min(anchor.top,window.innerHeight-12-menu.getBoundingClientRect().height))+'px';
   });
  }
  function finishFold(){
@@ -59,7 +59,7 @@ var ModernoDesktopShell=(()=>{
  function toggleFold(){
   finishFold();
   const animate=!window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  $('.desktop-row').classList.toggle('is-toggling',animate);collapsed=!collapsed;syncNavigation();
+  closeMenus();$('.desktop-row').classList.toggle('is-toggling',animate);collapsed=!collapsed;syncNavigation();
   if(animate)foldTimer=setTimeout(finishFold,300);
  }
  function build(){
@@ -68,7 +68,8 @@ var ModernoDesktopShell=(()=>{
   const brand=document.createElement('div');brand.className='desktop-brand';row.append(brand);move($('aside.sidebar .sb-head'),brand);
   const clip=document.createElement('div');clip.className='desktop-nav-clip';row.append(clip);
   const nav=document.createElement('nav');nav.id='desktop-navigation';nav.className='desktop-nav';nav.setAttribute('aria-label','Navegación general');clip.append(nav);
-  clip.addEventListener('transitionend',event=>{if(event.target===clip&&event.propertyName==='height')finishFold();});
+  clip.addEventListener('scroll',positionMenus);
+  row.addEventListener('transitionend',event=>{if(event.target===row&&event.propertyName==='width')finishFold();});
   const primary=document.createElement('div');primary.id='desktop-primary';primary.className='desktop-primary';nav.append(primary);
   for(const item of navigation){
    if(typeof item==='string'){const b=button(item,true);if(b)primary.append(b);continue;}
@@ -105,7 +106,7 @@ var ModernoDesktopShell=(()=>{
   if(foldTimer!==null){clearTimeout(foldTimer);foldTimer=null;}
   for(const cleanup of decorations.splice(0).reverse())cleanup();
   for(const {node,marker} of moved.splice(0).reverse()){marker.replaceWith(node);}
-  header?.remove();header=null;document.body.classList.remove('desktop-shell');
+  header?.remove();header=null;document.body.classList.remove('desktop-shell','desktop-menu-collapsed');
  }
  function refresh(){
   const excluded=['ajustes','admin','presedit','portalcli','portalobra'];

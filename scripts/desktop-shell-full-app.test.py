@@ -380,8 +380,9 @@ try:
     page.evaluate('window.originalCalculator=document.querySelector("#ptM2")')
     page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
     settle_header(page)
-    page.locator('#desktop-navigation').wait_for(state='hidden')
-    assert page.locator('#desktop-navigation').is_hidden()
+    page.locator('#desktop-navigation').wait_for(state='visible')
+    assert page.locator('#desktop-navigation').is_visible()
+    assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
     assert page.locator('.desktop-row').bounding_box()['width']<100
     assert page.locator('.desktop-brand').is_visible()
     assert page.locator('[data-profile-trigger]').is_visible()
@@ -446,7 +447,7 @@ try:
     cards=page.locator('.project-overview>div').all()
     bounds=[card.bounding_box() for card in cards]
     assert len(set(round(b['y']) for b in bounds))==1,bounds
-    assert all(b['width']>=220 for b in bounds),bounds
+    assert all(b['width']>=180 for b in bounds),bounds
     for button in ['Ver tareas','Ver finanzas']:
      size=page.get_by_role('button',name=button,exact=True).bounding_box()
      assert size['height']<=40 and size['width']<180,size
