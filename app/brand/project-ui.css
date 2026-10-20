@@ -111,6 +111,18 @@
  .shopping-tool-button:focus-visible,.shopping-filter-chips button:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
  .shopping-room-view .shopping-room-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 12px;min-width:0}
  .shopping-filter-control{position:relative;flex:0 0 32px;z-index:20}
+ .shopping-sort-control{position:relative;flex:0 0 32px;z-index:21}
+ .shopping-sort-control>summary::after{display:none!important;content:none!important}
+ html body .shopping-room-view .shopping-tool-button.has-sort{background:var(--app-control,#eee)}
+ .shopping-sort-menu{position:absolute;left:0;top:calc(100% + 8px);box-sizing:border-box;width:248px;max-width:calc(100vw - 150px);padding:6px;border:1px solid var(--ui-line);border-radius:12px;background:var(--app-surface,#fff);box-shadow:0 8px 24px #00000018;color:var(--ink);font-family:inherit;font-size:13px;animation:shopping-sort-in 160ms ease-out}
+ .shopping-sort-menu>strong{display:block;padding:8px;font-size:12px;font-weight:500;color:var(--ink-soft)}
+ html body .shopping-room-view .shopping-sort-menu>button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:34px;padding:7px 8px;border:0;border-radius:6px;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+ html body .shopping-room-view .shopping-sort-menu>button:is(:hover,:focus-visible,[aria-checked=true]){background:var(--app-control,#eee)}
+ .shopping-sort-menu>button:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+ .shopping-sort-check{flex:0 0 14px}
+ .shopping-product-grip:disabled{opacity:.3;cursor:default}
+ @keyframes shopping-sort-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+ @media(prefers-reduced-motion:reduce){.shopping-sort-menu{animation:none}}
  .shopping-filter-dot{position:absolute;width:5px;height:5px;right:3px;top:3px;border-radius:50%;background:currentColor}
  .shopping-filter-panel{position:absolute;top:calc(100% + 8px);left:0;box-sizing:border-box;width:300px;max-width:calc(100vw - 44px);max-height:calc(100dvh - 140px);overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--ui-line);border-radius:12px;background:var(--app-surface,#fff);color:var(--ink);box-shadow:0 8px 24px #00000018;font-family:inherit;font-size:13px}
  .shopping-filter-panel>strong{font-size:14px}

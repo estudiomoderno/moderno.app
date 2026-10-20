@@ -55,8 +55,8 @@ try:
     const p=state.projects[0],r=p.rooms[0];p.cliShare={token:'portal-ficticio',active:true,money:false};
     const image=(w,h)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="#e3e6e9"/><circle cx="${w/2}" cy="${h/2}" r="${Math.min(w,h)/2}" fill="#b4bbc3"/></svg>`);
     r.sections=[{id:'section-0',name:'General',items:[
-     {id:'chair',name:'Sillón ficticio',url:'https://tienda.example.invalid/sillon',img:'/brand/illustrations/nuevo-producto.webp',price:100,cost:80,qty:2,unit:'ud',supplier:'Proveedor A',dims:'76 × 79 × 80 cm',material:'Poliéster',color:'Azul índigo',plazo:'2-3 semanas',sku:'S-001',status:'Revisión Cliente',note:'Nota ficticia',files:[{name:'Ficha ficticia.pdf',data:'contenido-ficticio'}],custom:'Conservar'},
-     {id:'table',name:'Mesa ficticia',img:image(800,200),price:0,cost:0,qty:3,unit:'ud',supplier:'Proveedor B',status:'Revisión Cliente'},
+     {id:'chair',addedAt:'2026-10-18T12:00:00Z',name:'Sillón ficticio',url:'https://tienda.example.invalid/sillon',img:'/brand/illustrations/nuevo-producto.webp',price:100,cost:80,qty:2,unit:'ud',supplier:'Proveedor A',dims:'76 × 79 × 80 cm',material:'Poliéster',color:'Azul índigo',plazo:'2-3 semanas',sku:'S-001',status:'Revisión Cliente',note:'Nota ficticia',files:[{name:'Ficha ficticia.pdf',data:'contenido-ficticio'}],custom:'Conservar'},
+     {id:'table',createdAt:'2026-10-20T12:00:00Z',name:'Mesa ficticia',img:image(800,200),price:0,cost:0,qty:3,unit:'ud',supplier:'Proveedor B',status:'Revisión Cliente'},
      {id:'lamp',name:'Lámpara ficticia',img:image(180,800),price:null,cost:null,qty:1,unit:'ud',supplier:'Proveedor A',status:'Revisión Cliente'}
     ]}];
     p.rooms[1].sections[0].items=[];
@@ -75,8 +75,8 @@ try:
    if output:page.screenshot(path=str(output/f'shopping-cards-{width}.png'),full_page=True)
    tools=room.locator('.shopping-room-tools')
    toggle=tools.get_by_role('button',name='Vista en filas',exact=True)
-   assert tools.locator(':scope > *').evaluate_all('(es)=>es.map(e=>e.className)')==['shopping-filter-control','shopping-tool-button','shopping-search-group']
-   sizes=[tools.get_by_role('button',name=name,exact=True).bounding_box() for name in ['Filtrar productos','Vista en filas','Buscar producto']]
+   assert tools.locator(':scope > *').evaluate_all('(es)=>es.map(e=>e.className)')==['shopping-filter-control','shopping-tool-button','shopping-sort-control','shopping-search-group']
+   sizes=[tools.get_by_role('button',name=name,exact=True).bounding_box() for name in ['Filtrar productos','Vista en filas','Ordenar productos','Buscar producto']]
    assert all(x['width']==32 and x['height']==32 for x in sizes),sizes
    toggle.click();expect(toggle).to_have_attribute('aria-pressed','true')
    assert page.evaluate('records()===viewBaseline')
@@ -92,11 +92,41 @@ try:
    expect(grid.locator('.shopping-product-card').nth(1).locator('dd').nth(9)).to_contain_text('0,00')
    expect(grid.locator('.shopping-product-card').nth(2).locator('dd').nth(9)).to_have_text('Por confirmar')
    if output:page.screenshot(path=str(output/f'shopping-rows-{width}.png'),full_page=True)
+   # Sort all labels without mutating records; every action retains its source indices.
+   sorter=tools.get_by_role('button',name='Ordenar productos',exact=True)
+   expected=[('Más recientes primero',['Mesa ficticia','Sillón ficticio','Lámpara ficticia']),('Más antiguos primero',['Sillón ficticio','Mesa ficticia','Lámpara ficticia']),('Precio: menor a mayor',['Mesa ficticia','Sillón ficticio','Lámpara ficticia']),('Precio: mayor a menor',['Sillón ficticio','Mesa ficticia','Lámpara ficticia'])]
+   for option,names in expected:
+    sorter.click();menu=page.get_by_role('menu',name='Orden de productos',exact=True)
+    expect(menu).to_be_visible();menu.get_by_role('menuitemradio',name=option,exact=True).click()
+    expect(grid.locator('.shopping-product-title>button')).to_have_text(names);last_add()
+    assert page.evaluate('records()===viewBaseline')
+    assert grid.locator('[draggable=true]').count()==0
+    assert all(b.is_disabled() for b in grid.locator('.shopping-product-grip').all())
+    assert page.evaluate('document.activeElement.id')=='shopping-sort-toggle'
+   sorter.click();menu.get_by_role('menuitemradio',name='Precio: menor a mayor',exact=True).click()
+   grid.locator('.shopping-product-card').first.get_by_role('button',name='Editar Mesa ficticia',exact=True).click()
+   expect(page.locator('#itName')).to_have_value('Mesa ficticia');page.locator('#itName').fill('Borrador conservado')
+   page.evaluate("shoppingRoomSortSet('manual')");expect(page.locator('#itName')).to_have_value('Borrador conservado')
+   assert page.evaluate("shoppingRoomSort==='price-asc'")
+   page.locator('#modalBox').get_by_role('button',name='Cancelar',exact=True).click()
+   toggle.click();expect(grid.locator('.shopping-product-title>button')).to_have_text(['Mesa ficticia','Sillón ficticio','Lámpara ficticia'])
+   toggle.click();sorter.click()
+   menu.evaluate('(e)=>Promise.all(e.getAnimations({subtree:true}).map(a=>a.finished))')
+   if output:page.screenshot(path=str(output/f'shopping-sort-{width}.png'),full_page=True)
+   bounds=menu.bounding_box();assert bounds['x']>=0 and bounds['x']+bounds['width']<=width,bounds
+   sorter.press('ArrowDown');page.keyboard.press('End');page.keyboard.press('Escape')
+   expect(menu).not_to_be_visible();assert page.evaluate('document.activeElement.id')=='shopping-sort-toggle'
+   sorter.click();menu.get_by_role('menuitemradio',name='Orden manual',exact=True).click()
+   assert page.evaluate('records()===viewBaseline');expect(grid.locator('.shopping-product-title>button')).to_have_text(['Sillón ficticio','Mesa ficticia','Lámpara ficticia'])
+   assert all(b.is_enabled() for b in grid.locator('.shopping-product-grip').all())
    # Filters and search remain active across both presentations.
    tools.get_by_role('button',name='Filtrar productos',exact=True).click()
    page.locator('#shopping-filter-panel').get_by_role('combobox',name='Proveedor',exact=True).select_option('Proveedor A')
    page.locator('#shopping-filter-panel').get_by_role('button',name='Aplicar',exact=True).click()
    expect(grid.locator('.shopping-product-card')).to_have_count(2)
+   sorter.click();menu.get_by_role('menuitemradio',name='Precio: menor a mayor',exact=True).click()
+   expect(grid.locator('.shopping-product-card')).to_have_count(2)
+   assert page.evaluate("shoppingRoomSort==='price-asc'")
    toggle.click();expect(grid.locator('.shopping-product-row')).to_have_count(0)
    expect(grid.locator('.shopping-product-card')).to_have_count(2);last_add()
    assert page.evaluate('records()===viewBaseline')
@@ -108,6 +138,7 @@ try:
    expect(grid.get_by_text('No hay productos que coincidan con los filtros.',exact=True)).to_be_visible();last_add()
    page.locator('#rsearch').press('Escape');expect(grid.locator('.shopping-product-card')).to_have_count(3)
    assert page.evaluate('records()===viewBaseline')
+   sorter.click();menu.get_by_role('menuitemradio',name='Orden manual',exact=True).click()
    # Existing editor/actions work from a row, and cancellation preserves the original.
    first.get_by_role('button',name='Editar Sillón ficticio',exact=True).click()
    page.locator('#itName').fill('Descartado')
@@ -142,7 +173,7 @@ try:
    assert page.evaluate("state.projects[0].cliShare.token==='portal-ficticio'")
    assert page.evaluate('sb===null')
    assert not writes,writes;assert not errors,errors
-   print(width,'PASS: cover images, add last/empty/filter/create/reorder, rows toggle, tools alignment, detail prices, filters/search, edit cancel and restored native portal; no remote writes')
+   print(width,'PASS: cover images, add last/empty/filter/create/reorder, rows toggle, four aligned tools, date/price/manual sorting, stable action indices, keyboard, detail prices, filters/search, edit cancel and restored native portal; no remote writes')
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)

@@ -1,4 +1,4 @@
-/* Specifications domain. Existing fields only: id, libId, src.
+/* Specifications domain. Identity fields: id, libId, src. New copies record their own addedAt.
    No side effects on read, no bulk conversion and no external requests. */
 var ModernoSpec=(()=>{
  const clone=v=>JSON.parse(JSON.stringify(v));
@@ -53,11 +53,11 @@ var ModernoSpec=(()=>{
  }
  function reindex(p){references(p).forEach(ref=>{if(!String(ref.src||'').startsWith('spec:'))return;const x=resolve(p,ref);if(x){ref.rid=x.room.id;ref.rsi=x.si;ref.rii=x.ii;}else{ref.rsi=-1;ref.rii=-1;}});}
  function fromProduct(product,newId=uuid){
-  const it=clone(product);it.id=newId();if(product.id!=null)it.libId=product.id;else delete it.libId;
+  const it=clone(product);it.id=newId();it.addedAt=new Date().toISOString();if(product.id!=null)it.libId=product.id;else delete it.libId;
   delete it.cli;delete it.cliNote;delete it.rejected;delete it.hidden;delete it.alt;
   it.qty=product.qty==null?1:product.qty;it.status='Revisión Cliente';it.note='';return it;
  }
- function duplicate(item,newId=uuid){const it=clone(item);it.id=newId();delete it.cli;delete it.cliNote;delete it.rejected;it.status='Revisión Cliente';return it;}
+ function duplicate(item,newId=uuid){const it=clone(item);it.id=newId();it.addedAt=new Date().toISOString();delete it.cli;delete it.cliNote;delete it.rejected;it.status='Revisión Cliente';return it;}
  function economics(item){
   const number=v=>v===null||v===undefined||v===''?null:(Number.isFinite(Number(v))?Number(v):null);
   const price=number(item.price),cost=number(item.cost),qty=number(item.qty);
