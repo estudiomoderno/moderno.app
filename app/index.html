@@ -1171,7 +1171,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/sync-merge.js?v=3590"></script>
 <script src="/private-files.js?v=20260909"></script>
-<script src="/daily-work.js?v=20260909"></script>
+<script src="/daily-work.js?v=36585"></script>
 <script src="/gestoria.js?v=20260909"></script>
 <script src="/pending-archive.js?v=20260909"></script>
 <script src="/flow-recovery.js?v=331"></script>
@@ -11453,7 +11453,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.84";
+const MODERNO_VER="v3.65.85";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11601,7 +11601,7 @@ let _syncPhase='connecting', _syncDetail='', _syncConfirmed=false, _syncReview=f
 function syncHasChanges(){return Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()));}
 function syncCopyKeys(){const keys=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(LS_KEY+'_pendiente_'))keys.push(k);}}catch(e){}return keys;}
 function syncView(){
-  return ModernoDaily.saveStatus({editing:typeof document!=='undefined'&&!!document.querySelector('.overlay.open input:not([type="hidden"]), .overlay.open textarea, .overlay.open select, .overlay.open [contenteditable="true"]'),localFailure:typeof _saveErr!=='undefined'&&_saveErr,review:_syncReview,online:navigator.onLine,changed:syncHasChanges(),confirmed:_syncConfirmed,phase:_syncPhase,detail:_syncDetail});
+  return ModernoDaily.saveStatus({editing:typeof document!=='undefined'&&!!document.querySelector('.overlay.open input:not([type="hidden"]), .overlay.open textarea, .overlay.open select, .overlay.open [contenteditable="true"]'),localFailure:typeof _saveErr!=='undefined'&&_saveErr,localDetail:typeof _saveErrDetail==='undefined'?'':_saveErrDetail,review:_syncReview,online:navigator.onLine,changed:syncHasChanges(),confirmed:_syncConfirmed,phase:_syncPhase,detail:_syncDetail});
 }
 function syncRefresh(){
   if(!state.sessionUser||state.view==='portalcli'||state.view==='portalobra')return;
@@ -11623,7 +11623,7 @@ function syncDownloadCurrent(){
 function syncDetails(){
   if(_modalAbierto()){toast('Guarda o cancela el formulario antes de abrir el estado de sincronización.');return;}
   const v=syncView(),copies=syncCopyKeys().length;
-  modal('<h3>'+v.label+'</h3><p>'+ModernoDaily.escape(v.detail)+'</p><p>Descargar una copia conserva lo que tienes en esta pestaña. No sustituye automáticamente los datos de la nube.</p>'+(copies?'<p>'+copies+' copia(s) anterior(es) pendiente(s) de revisar.</p>':'')+'<div class="modal-foot">'+(Object.keys(window._cloudConflicts||{}).length?'<button class="btn btn-gold" onclick="flowReviewOpen()">Resolver cambios</button>':'')+'<button class="btn btn-ghost" onclick="syncDownloadCurrent()">Descargar cambios actuales</button>'+(copies?'<button class="btn btn-ghost" onclick="closeModal();cloudPendingNotice()">Ver copias anteriores</button>':'')+'<button class="btn btn-ghost" onclick="closeModal();persistNow();cloudFlush()">Reintentar guardado</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>');
+  modal('<h3>'+v.label+'</h3><p>'+ModernoDaily.escape(v.detail)+'</p><p>Descargar una copia conserva lo que tienes en esta pestaña. No sustituye automáticamente los datos de la nube.</p>'+(copies?'<p>'+copies+' copia(s) anterior(es) pendiente(s) de revisar.</p>':'')+'<div class="modal-foot">'+(Object.keys(window._cloudConflicts||{}).length?'<button class="btn btn-gold" onclick="flowReviewOpen()">Resolver cambios</button>':'')+'<button class="btn btn-ghost" onclick="syncDownloadCurrent()">Descargar cambios actuales</button>'+(copies?'<button class="btn btn-ghost" onclick="closeModal();cloudPendingNotice()">Ver copias anteriores</button>':'')+'<button class="btn btn-ghost" onclick="syncRetrySave()">Reintentar guardado</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>');
 }
 window.addEventListener('offline',()=>{syncRefresh();});
 window.addEventListener('online',()=>{syncRefresh();cloudDirty();});
@@ -12158,16 +12158,55 @@ function cloudStartBlank(){
     ()=>{ localStorage.removeItem(LS_KEY); location.reload(); });
 }
 const LS_KEY="moderno_prod_v1";
-let _saveT=null, _lastSave=null, _saveErr=false;
+let _saveT=null, _lastSave=null, _saveErr=false, _saveErrDetail='', _localRepair=null, _localRepairAfter=0;
+function localCopyOwner(){return JSON.stringify([ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,typeof _accessRole==='undefined'?'':_accessRole]);}
+function localCopyFailure(error,raw){
+  const quota=error?.name==='QuotaExceededError'||error?.code===22||error?.code===1014;
+  const size=raw?((typeof Blob==='undefined'?raw.length*2:new Blob([raw]).size)/1048576).toFixed(1):'';
+  _saveErrDetail=quota?'No hay espacio para la copia local.'+(size?' La copia actual ocupa '+size+' MB.':''):
+    error?.name==='SecurityError'?'El navegador ha bloqueado el almacenamiento local.':
+    error?.name==='LocalCopyVerificationError'?'La copia local no coincide con los cambios actuales.':
+    raw?'No se pudo escribir la copia local.':'No se pudo preparar la copia local.';
+  _saveErrDetail+=' Mantén esta pestaña abierta y descarga los cambios actuales.';
+  return quota;
+}
+function repairLocalCopy(){
+  if(_localRepair)return _localRepair;
+  if(!syncCopyKeys().length||Date.now()<_localRepairAfter)return Promise.resolve(false);
+  const owner=localCopyOwner();_localRepairAfter=Date.now()+30000;
+  _localRepair=Promise.resolve().then(async()=>{
+    let timer;
+    try{
+      const ready=await Promise.race([cloudArchivePendingCopies().then(()=>true),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),15000);})]);
+      if(!ready||localCopyOwner()!==owner)return false;
+      // Read the latest state after the archive; never rewrite an earlier snapshot.
+      persistNow();return !_saveErr;
+    }catch(e){return false;}
+    finally{clearTimeout(timer);_localRepair=null;try{syncRefresh();}catch(e){}}
+  });
+  return _localRepair;
+}
 function persistNow(){
+  let raw;
   try{
-    localStorage.setItem(LS_KEY, JSON.stringify({v:1, when:Date.now(), state, BRAND, wsOrder}));
-    _lastSave=new Date(); _saveErr=false;
+    raw=JSON.stringify({v:1, when:Date.now(), state, BRAND, wsOrder});
+    localStorage.setItem(LS_KEY,raw);
+    if(localStorage.getItem(LS_KEY)!==raw){const error=new Error();error.name='LocalCopyVerificationError';throw error;}
+    _lastSave=new Date(); _saveErr=false;_saveErrDetail='';
   }catch(e){
-    if(!_saveErr) toast("⚠ No se pudo guardar la copia local. Conserva esta pestaña abierta y comprueba el guardado en la nube antes de salir.");
+    const quota=localCopyFailure(e,raw);
+    if(!_saveErr) toast(_saveErrDetail);
     _saveErr=true;
+    if(quota)repairLocalCopy();
   }
   cloudDirty();   // la nube manda: se sincroniza aunque el navegador esté lleno
+}
+async function syncRetrySave(){
+  const owner=localCopyOwner();closeModal();_localRepairAfter=0;persistNow();
+  if(_localRepair)await _localRepair;
+  if(localCopyOwner()!==owner)return;
+  await cloudFlush();
+  try{syncRefresh();}catch(e){}
 }
 /* v3.28: sombra en la barra fija de Contabilidad cuando queda pegada arriba */
 document.addEventListener("scroll", ev=>{ const el=document.getElementById("accSticky"); if(!el) return; const r=el.getBoundingClientRect(); const m=el.closest(".main"); const top=m?m.getBoundingClientRect().top:0; el.classList.toggle("stuck", r.top<=top+2); }, true);
@@ -13065,6 +13104,7 @@ async function prepareAppReload(report=()=>{}){
   };
   const keepCopy=async()=>{
     persistNow();
+    if(typeof _localRepair!=='undefined'&&_localRepair){report('Conservando copias anteriores para liberar espacio…');await _localRepair;}
     if(verifiedCopy())return true;
     if(archived||!syncCopyKeys().length)return false;
     archived=true;report('Conservando copias anteriores para liberar espacio…');
