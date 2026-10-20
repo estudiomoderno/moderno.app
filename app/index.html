@@ -11453,7 +11453,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.80";
+const MODERNO_VER="v3.65.81";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13051,21 +13051,47 @@ document.addEventListener("change", e=>{
   if(e.target.matches("input,select,textarea")) adminSavedPing();
 }, true);
 /* Centinela de caché: compara la versión que corre con la que hay subida al servidor */
-async function prepareAppReload(){
+async function prepareAppReload(report=()=>{}){
+  const stop=message=>{report(message);toast(message);return false;};
+  if(document.querySelector('.overlay.open,dialog[open]'))return stop('Guarda o cancela la ventana abierta antes de actualizar.');
+  if(typeof _accessLoading!=='undefined'&&_accessLoading)return stop('Estamos comprobando tu acceso. Espera un momento y vuelve a actualizar.');
+  const identity=()=>JSON.stringify([ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,typeof _accessRole==='undefined'?'':_accessRole]),owner=identity();
   persistNow();
-  if(_saveErr){toast('No se puede actualizar: falta una copia local verificada. Conserva esta pestaña abierta.');return false;}
+  if(_saveErr)return stop('No se puede actualizar: falta una copia local verificada. Conserva esta pestaña abierta.');
   if(sb&&ESTUDIO_ID){
-    await cloudFlush();
-    if(_cloudBusy || Object.keys(CLOUD_BLOCKS).some(b=>_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))){
-      toast('Hay cambios pendientes. Guarda o descarga una copia antes de actualizar.');return false;
-    }
+    const deadline=Date.now()+15000;
+    report('Esperando a que termine el guardado…');
+    while(_cloudBusy&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,100));
+    if(identity()!==owner)return stop('La sesión ha cambiado. Comprueba tu acceso antes de actualizar.');
+    if(_cloudBusy)return stop('El guardado sigue en curso. Conserva esta pestaña y vuelve a actualizar cuando termine.');
+    report('Guardando los cambios pendientes…');
+    let timer;
+    const saved=await Promise.race([Promise.resolve().then(()=>cloudFlush()).then(()=>true),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),Math.max(0,deadline-Date.now()));})]).finally(()=>clearTimeout(timer));
+    if(identity()!==owner)return stop('La sesión ha cambiado. Comprueba tu acceso antes de actualizar.');
+    if(!saved||_cloudBusy)return stop('El guardado sigue en curso. Conserva esta pestaña y vuelve a actualizar cuando termine.');
+    if(Object.keys(window._cloudConflicts||{}).length||syncHasChanges())return stop('Hay cambios pendientes. Abre el estado de guardado para revisarlos antes de actualizar.');
   }
+  persistNow();
+  if(_saveErr)return stop('No se puede actualizar: falta una copia local verificada. Conserva esta pestaña abierta.');
   return true;
+}
+async function applyAppUpdate(button){
+  if(!button||button.disabled)return;
+  const status=document.getElementById('verBarStatus'),label=button.textContent;
+  const report=message=>{if(status){status.hidden=false;status.textContent=message;}};
+  button.disabled=true;button.textContent='Preparando actualización…';report('Comprobando el guardado…');
+  try{
+    let explained=false;
+    if(!await prepareAppReload(message=>{explained=true;report(message);})){if(!explained)report('Guarda los cambios pendientes antes de actualizar.');return;}
+    report('Actualizando…');const target=new URL(location.href);target.searchParams.delete('vchk');target.searchParams.set('v',String(Date.now()));location.replace(target.href);
+  }catch(e){report('No se ha podido actualizar. Conserva esta pestaña y vuelve a intentarlo.');}
+  finally{button.disabled=false;button.textContent=label;}
 }
 async function versionSentinel(){
   try{
     if(location.protocol==="file:") return;
     const r=await fetch(location.pathname+"?vchk="+Date.now(), {cache:"no-store"});
+    if(!r.ok)return;
     const t=await r.text();
     const m=/MODERNO_VER="([^"]+)"/.exec(t);
     if(m && m[1] && m[1]!==MODERNO_VER){
@@ -13073,10 +13099,11 @@ async function versionSentinel(){
       if(!bar){
         bar=document.createElement("div");
         bar.id="verBar";
-        bar.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:9999;background:var(--gold,#ffe94d);color:#111;padding:10px 16px;font-size:13px;font-weight:700;display:flex;gap:12px;align-items:center;justify-content:center;box-shadow:0 -4px 18px rgba(0,0,0,.18)";
-        bar.innerHTML='⚠ Estás viendo una versión antigua por la caché del navegador ('+MODERNO_VER+'). En el servidor está la <b>'+m[1]+'</b>.&nbsp;<button id="verBarBtn" style="border:none;border-radius:99px;padding:8px 14px;font-weight:800;cursor:pointer;background:#111;color:#fff">Actualizar ahora</button>';
+        bar.style.cssText="position:fixed;left:0;right:0;bottom:0;z-index:9999;background:var(--gold,#ffe94d);color:#111;padding:10px 16px;font-size:13px;font-weight:700;display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;justify-content:center;box-shadow:0 -4px 18px rgba(0,0,0,.18)";
+        bar.innerHTML='<span id="verBarVersion"></span><button type="button" id="verBarBtn" aria-describedby="verBarStatus" style="border:none;border-radius:99px;padding:8px 14px;font-weight:800;cursor:pointer;background:#111;color:#fff">Actualizar ahora</button><span id="verBarStatus" role="status" aria-live="polite" hidden style="flex:1 0 100%;text-align:center;font-weight:400"></span>';
+        bar.querySelector('#verBarVersion').textContent='Hay una nueva versión disponible: '+m[1]+'.';
         document.body.appendChild(bar);
-        document.getElementById("verBarBtn").onclick=async()=>{ if(await prepareAppReload())location.replace(location.pathname+"?v="+Date.now()+location.hash); };
+        document.getElementById("verBarBtn").onclick=event=>applyAppUpdate(event.currentTarget);
       }
     }
   }catch(e){}
@@ -13266,7 +13293,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/team-presence.js?v=3562"></script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>
-<script src="/settings-ui.js?v=3566"></script>
+<script src="/settings-ui.js?v=36581"></script>
 <link rel="stylesheet" href="/brand/hook-sidebar.css?v=3588">
 <script src="/hook-sidebar.js?v=3587"></script>
 <link rel="stylesheet" href="/brand/project-options.css?v=36550">

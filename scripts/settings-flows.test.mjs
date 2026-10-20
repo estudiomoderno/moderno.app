@@ -90,3 +90,8 @@ test('document annotation action does not trigger the global settings navigation
  const settingsTarget={dataset:{section:'estudio'},closest:selector=>selector.includes('[data-section]')?settingsTarget:null};h.click(settingsTarget);
  assert.equal(h.state.view,'ajustes','settings controls still navigate to Settings');
 });
+
+test('update banner receives the reason when a settings draft prevents reload',async()=>{
+ const h=harness();await h.open('estudio');h.field('type','Borrador conservado');let message;
+ assert.equal(await h.ctx.prepareAppReload(value=>message=value),false);assert.match(message,/cambios de Ajustes/);assert.equal(h.ctx.SettingsUI.dirty(),true);
+});

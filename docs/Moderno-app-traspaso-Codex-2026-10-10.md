@@ -235,3 +235,7 @@ El propietario autoriza retirar las cuotas que bloqueaban las importaciones de p
 ## 2026-10-20 — Orden de productos en listas de compra
 
 Nuevo icono entre Vista y Buscar: fecha de incorporación o precio en ambos sentidos, con retorno a Orden manual. Ordena solo la presentación, conserva referencias y registra fecha en productos nuevos sin rellenar históricos. Pruebas y reversión: [COMPRAS-ORDEN-PRODUCTOS](COMPRAS-ORDEN-PRODUCTOS.md).
+
+## 2026-10-20 — Botón de actualización con progreso visible
+
+Actualizar ahora espera el guardado en curso y muestra el motivo de cualquier bloqueo dentro de la franja. Conserva las protecciones de borradores, copia local, conflictos e identidad y mantiene la ruta al recargar. Una pestaña con código antiguo requiere una recarga manual inicial tras guardar. Pruebas y reversión: [ACTUALIZAR-AHORA](ACTUALIZAR-AHORA.md).

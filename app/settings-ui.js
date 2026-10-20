@@ -195,7 +195,7 @@ window.SettingsUI=(()=>{
   window.addEventListener('beforeunload',e=>{if(dirty()||busy){e.preventDefault();e.returnValue='';}});
   const oldRender=render;render=function(){const result=oldRender.apply(this,arguments);chrome();if(active()&&personal.has(section)&&!metadata&&!_accessLoading&&profileAttempt!==sessionKey()+'|'+section)loadPersonal();return result;};
   const oldGo=go;go=function(v,arg){if(active()&&v!==state.view&&(dirty()||busy)){discardThen(()=>{draft=null;oldGo(v,arg);});return;}const out=oldGo(v,arg);if(active()&&!metadata)loadPersonal();return out;};
-  const oldPrepare=prepareAppReload;prepareAppReload=async function(){if(dirty()||busy){toast('Guarda o descarta los cambios de Ajustes antes de actualizar.');return false;}return oldPrepare();};
+  const oldPrepare=prepareAppReload;prepareAppReload=async function(report){if(dirty()||busy){const message='Guarda o descarta los cambios de Ajustes antes de actualizar.';if(typeof report==='function')report(message);toast(message);return false;}return oldPrepare(report);};
   vAjustes=view;vAdmin=view;
   try{const t=localStorage.getItem('moderno.settings.theme');if(t)theme(t==='dark');}catch{}
   chrome();if(active()){render();loadPersonal();}
