@@ -87,7 +87,44 @@ function shoppingRoomLabels(room){const seen=new Set();return (room.sections||[]
 function shoppingRoomLabelMatches(label,filter){return !filter||(filter==='none'?!label:shoppingLabelKey(label)===shoppingLabelKey(filter.slice(6)));}
 function shoppingRoomLabelFilter(label){state.rf={...(state.rf||{}),label:'label:'+label};render();document.querySelector('.shopping-filter-control summary')?.focus();}
 function shoppingRoomLabelChip(label){const E=ModernoDaily.escape;return label?`<button type="button" class="shopping-product-label" data-label="${E(label)}" aria-label="Filtrar etiqueta ${E(label)}" onclick="shoppingRoomLabelFilter(this.dataset.label)">${E(label)}</button>`:'';}
-function shoppingRoomAddProduct(){const {r}=getRoom(),label=state.rf?.label?.startsWith('label:')?state.rf.label.slice(6):'';const index=shoppingRoomLabelTarget(r,label);itemModal(index<0?0:index,-1);}
+var shoppingProductContext=null;
+function shoppingProductIdentity(){return [typeof ESTUDIO_ID==='undefined'?'':ESTUDIO_ID,state.sessionUser?.id||state.sessionUser?.mail||'',typeof _accessRole==='undefined'?'':_accessRole].join('|');}
+function shoppingProductCurrent(){
+ const ctx=shoppingProductContext;if(!ctx||state.view!=='estancia'||(typeof _accessLoading!=='undefined'&&_accessLoading)||!canView('proyecto')||ctx.owner!==shoppingProductIdentity())return null;
+ const {p,r}=getRoom();return p&&r&&String(p.id)===ctx.project&&String(r.id)===ctx.room?{ctx,p,r}:null;
+}
+function shoppingRoomAddProduct(){
+ if(state.view!=='estancia'||(typeof _accessLoading!=='undefined'&&_accessLoading)||!canView('proyecto')||document.querySelector('#overlay.open'))return;
+ const {p,r}=getRoom();shoppingProductContext={project:String(p.id),room:String(r.id),owner:shoppingProductIdentity(),label:state.rf?.label?.startsWith('label:')?state.rf.label.slice(6):''};shoppingProductSources();
+}
+function shoppingProductSources(){
+ if(!shoppingProductCurrent())return;
+ const icons={manual:'<path d="m15 5 4 4M4 20l4-1 12-12a3 3 0 0 0-4-4L4 15Z"/>',url:'<path d="m10 14 4-4M8 16l-2 2a4 4 0 0 1-6-6l4-4m12 0 2-2a4 4 0 0 1 6 6l-4 4"/>',library:'<path d="M5 3h14v18l-7-4-7 4Z"/>'};
+ const entries=[['manual','Manualmente','Completa la ficha del producto.'],['url','Desde URL','Importa los datos desde la web de la tienda.'],['library','Desde la biblioteca','Utiliza un producto que ya tienes guardado.']];
+ modal(`<div class="shopping-product-source"><h3>Añadir producto</h3><p>¿Cómo quieres añadirlo?</p><div class="shopping-product-methods">${entries.map(([mode,title,description])=>`<button type="button" class="shopping-product-method ${mode==='url'?'is-ai':''}" data-product-method="${mode}" onclick="shoppingProductMode(this.dataset.productMethod)"><span class="shopping-method-icon" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${icons[mode]}</svg></span><span><strong>${title}${mode==='url'?'<span class="shopping-ai-badge">✦ IA</span>':''}</strong><small>${description}</small></span><span class="shopping-method-arrow" aria-hidden="true">›</span></button>`).join('')}</div><div class="modal-foot"><button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button></div></div>`);
+}
+function shoppingProductMode(mode){
+ const current=shoppingProductCurrent();if(!current||!document.querySelector('#modalBox .shopping-product-source'))return;const {ctx,r}=current,index=shoppingRoomLabelTarget(r,ctx.label),si=index<0?0:index;
+ if(mode==='manual'){shoppingProductContext=null;itemModal(si,-1);return;}
+ if(mode==='url'){shoppingProductContext=null;closeModal();ProductClipper.open('lista',si);return;}
+ if(mode==='library')shoppingProductLibrary();
+}
+function shoppingProductLibrary(){
+ if(!shoppingProductCurrent())return;
+ modal(`<div class="shopping-product-source shopping-product-library"><h3>Biblioteca de productos</h3><label for="shopping-library-search" class="shopping-library-search-label">Buscar en la biblioteca</label><input id="shopping-library-search" type="search" placeholder="Buscar por nombre, proveedor o referencia" oninput="shoppingProductLibrarySearch(this)"><div id="shopping-library-results"></div><div class="modal-foot"><button type="button" class="btn btn-ghost" onclick="shoppingProductSources()">Volver</button><button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button></div></div>`);shoppingProductLibrarySearch(document.getElementById('shopping-library-search'));
+}
+function shoppingProductLibrarySearch(input){
+ if(!input?.isConnected||!shoppingProductCurrent())return;const E=ModernoDaily.escape,q=shoppingLabelKey(input.value),box=document.getElementById('shopping-library-results');
+ const items=(state.library||[]).map((item,index)=>({item,index})).filter(({item})=>!q||shoppingLabelKey([item.name,item.supplier,item.sku,item.cat].join(' ')).includes(q));
+ shoppingProductContext.libraryOptions=new Map(items.map(({item,index})=>[index,item]));
+ box.innerHTML=items.length?`<div class="shopping-library-grid">${items.map(({item,index})=>`<button type="button" class="shopping-library-product" data-library-index="${index}" onclick="shoppingProductLibraryAdd(Number(this.dataset.libraryIndex))" aria-label="Añadir ${E(item.name||'Producto')}">${item.img?`<img ${fileImageAttrs(item.img)} alt="" loading="lazy">`:'<span class="shopping-library-placeholder" aria-hidden="true">＋</span>'}<strong>${E(item.name||'Producto')}</strong><small>${E(item.supplier||'')}</small><span>${item.price==null?'Sin precio':fmt(item.price)}</span></button>`).join('')}</div>`:`<div class="shopping-library-empty"><span aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 3h14v18l-7-4-7 4Z"/></svg></span><strong>${q?'No hay productos que coincidan':'Aún no tienes productos en la biblioteca'}</strong><p>${q?'Prueba con otro nombre, proveedor o referencia.':'Empieza añadiendo tu primer producto a la biblioteca.'}</p></div>`;
+}
+function shoppingProductLibraryAdd(index){
+ const current=shoppingProductCurrent();if(!current||!Number.isInteger(index)||!document.getElementById('shopping-library-results'))return false;
+ const source=state.library?.[index];if(!source||current.ctx.libraryOptions?.get(index)!==source)return false;const {ctx,r}=current,item=ModernoSpec.fromProduct(source);let target=shoppingRoomLabelTarget(r,ctx.label);
+ if(target<0){r.sections.push({id:crypto.randomUUID(),name:ctx.label||'General',items:[]});target=r.sections.length-1;}
+ r.sections[target].items.push(item);shoppingProductContext=null;closeModal();render();toast('Producto añadido desde la biblioteca');return true;
+}
 function shoppingRoomLabelEditor(si,ii){
  const {r}=getRoom(),E=ModernoDaily.escape,label=ii>=0?shoppingRoomLabel(r.sections[si]):state.rf?.label?.startsWith('label:')?state.rf.label.slice(6):'';
  return `<label for="itLabel">Etiqueta (opcional)</label><input id="itLabel" list="shopping-label-options" placeholder="Sin etiqueta" value="${E(label)}" ${_accessRole==='colaborador'?'readonly':''}><datalist id="shopping-label-options">${shoppingRoomLabels(r).map(name=>`<option value="${E(name)}"></option>`).join('')}</datalist>`;

@@ -12,4 +12,19 @@
 .clipper-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px}.clipper-panel dl{margin:20px 0}.clipper-panel dl>div{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:10px 0;border-bottom:1px solid var(--card)}.clipper-panel dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}.clipper-panel dt{font-weight:600;font-size:12px}
 .clipper-check{display:flex;align-items:flex-start;gap:10px;margin:18px 0;line-height:1.5}.clipper-check input{margin-top:4px}.clipper-panel footer{display:flex;justify-content:space-between;gap:12px;margin-top:22px}
 @media(max-width:560px){.clipper-panel{padding:18px}.clipper-url{flex-direction:column}.clipper-columns{grid-template-columns:1fr}.clipper-panel dl>div{grid-template-columns:105px 1fr;gap:10px}}
+.clipper-panel header h2{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:19px}
+.clipper-ai-badge{display:inline-flex;align-items:center;padding:4px 7px;border:1px solid #ded7f1;border-radius:5px;background:#eee8fa;color:#7052ad;font:600 11px/1.1 sans-serif}
+.clipper-images{border:0;padding:0;margin:20px 0}
+.clipper-images legend{padding:0;margin-bottom:12px;font-size:14px;font-weight:600}
+.clipper-images legend small{display:inline;margin-left:8px;font-size:12px;font-weight:400}
+.clipper-gallery{display:flex;flex-wrap:wrap;gap:10px}
+.clipper-panel .clipper-gallery label{position:relative;display:flex;flex-direction:column;align-items:center;flex:0 0 112px;box-sizing:border-box;width:112px;margin:0;padding:8px;border:1px solid var(--ui-line,#dedede);border-radius:10px;cursor:pointer}
+.clipper-gallery input{position:absolute;top:9px;left:9px;width:16px;height:16px;opacity:0}
+.clipper-gallery label:has(input:checked){border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.clipper-gallery label:has(input:focus-visible){outline:2px solid var(--ink);outline-offset:3px}
+.clipper-gallery img{width:94px;height:94px;object-fit:contain;border-radius:6px}
+.clipper-gallery .clipper-image-caption{display:block;margin-top:7px;font-size:11px;line-height:1.3;text-align:center}
+.clipper-gallery .clipper-image-caption span{display:inline;margin:0;font-size:inherit}
+.clipper-gallery label .clipper-cover-selected,.clipper-gallery label:has(input:checked) .clipper-cover-choose{display:none}
+.clipper-gallery label:has(input:checked) .clipper-cover-selected{display:inline;font-weight:600}
 

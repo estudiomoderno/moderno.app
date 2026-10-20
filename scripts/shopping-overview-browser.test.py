@@ -167,7 +167,7 @@ try:
    delete.hover();delete.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
    assert delete.evaluate('(e)=>getComputedStyle(e).color')=='rgb(220, 38, 38)'
    delete.click();expect(page.locator('#modalBox')).to_contain_text('Salón ficticio')
-   page.get_by_role('button',name='Cancelar',exact=True).click();assert page.evaluate('records()===baseline')
+   page.get_by_role('alertdialog').get_by_role('button',name='Cancelar',exact=True).click();assert page.evaluate('records()===baseline')
    add=room.get_by_role('button',name='Añadir producto',exact=True)
    expect(add).to_have_text('+ Añadir producto')
    image=add.locator('img');image.evaluate('(img)=>img.decode()')

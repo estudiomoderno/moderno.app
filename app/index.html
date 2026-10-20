@@ -1180,7 +1180,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36573"></script>
+<script src="/project-ui.js?v=36575"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36573"></script>
@@ -1206,8 +1206,8 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/contact-controls.css?v=353">
 <script src="/phone-vendor.js?v=1.13.13"></script>
 <script src="/phone-controls.js?v=3491"></script>
-<link rel="stylesheet" href="/product-clipper.css?v=3614">
-<script src="/product-clipper.js?v=3614"></script>
+<link rel="stylesheet" href="/product-clipper.css?v=36575">
+<script src="/product-clipper.js?v=36575"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -8870,9 +8870,8 @@ function itemModal(si,ii,fromUrl){
   <label>URL de la tienda</label>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <input id="itUrl" value="${ModernoDaily.escape(it.url||"")}" placeholder="https://www.sklum.com/es/…" style="flex:1 1 200px;min-width:0;max-width:100%">
-    ${ii<0?`<button class="btn btn-gold" style="flex:0 0 auto" onclick="ProductClipper.open('lista',${si})">Importar producto</button>`:''}
   </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">Añade los datos desde la URL de la tienda o completa esta ficha manualmente.</p>
+  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">Completa los datos del producto y añade su imagen.</p>
   <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
     <div class="thumb" id="itThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('itImgFile').click()">${itImg?`<img ${fileImageAttrs(itImg)}>`:"🛋"}</div>
     <div><label style="margin-top:0">Foto</label>
@@ -11442,7 +11441,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.74";
+const MODERNO_VER="v3.65.75";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13264,7 +13263,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36573">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36575">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
