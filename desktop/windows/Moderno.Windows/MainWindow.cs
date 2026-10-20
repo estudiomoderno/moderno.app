@@ -56,20 +56,23 @@ internal sealed class MainWindow : Form
             BackColor = notice.BackColor
         };
         center.RowStyles.Add(new RowStyle(SizeType.Percent, 45));
-        center.RowStyles.Add(new RowStyle(SizeType.Absolute, 95));
+        center.RowStyles.Add(new RowStyle(SizeType.Absolute, 180));
         center.RowStyles.Add(new RowStyle(SizeType.Percent, 55));
 
-        var actions = new FlowLayoutPanel
+        var actions = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            FlowDirection = FlowDirection.TopDown,
-            WrapContents = false
+            ColumnCount = 1,
+            RowCount = 2
         };
+        actions.RowStyles.Add(new RowStyle(SizeType.Percent, 65));
+        actions.RowStyles.Add(new RowStyle(SizeType.Percent, 35));
         message.AutoSize = false;
-        message.Dock = DockStyle.Top;
-        retry.Margin = new Padding(0, 12, 0, 0);
-        actions.Controls.Add(message);
-        actions.Controls.Add(retry);
+        message.Dock = DockStyle.Fill;
+        message.TextAlign = ContentAlignment.MiddleCenter;
+        retry.Anchor = AnchorStyles.None;
+        actions.Controls.Add(message, 0, 0);
+        actions.Controls.Add(retry, 0, 1);
 
         center.Controls.Add(new Panel(), 0, 0);
         center.Controls.Add(actions, 0, 1);
@@ -196,7 +199,7 @@ internal sealed class MainWindow : Form
         if (IsDisposed) return;
         if (InvokeRequired)
         {
-            BeginInvoke(() => ShowNotice(text, canRetry));
+            BeginInvoke(new Action(() => ShowNotice(text, canRetry)));
             return;
         }
 
