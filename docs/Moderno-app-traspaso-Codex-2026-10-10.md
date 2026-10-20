@@ -215,3 +215,7 @@ Esos documentos mezclan historia, candidatos y entregas. Contrastar fechas, cód
 ## 13 Primer encargo para el nuevo Codex
 
 Continúa desde main de estudiomoderno/moderno.app. Lee este documento y comprueba versión y estado antes de editar. Conserva datos, decisiones visuales y supervisión de copias. Configura pruebas contra clon. No reintroduzcas presencia, subtítulo de tareas ni cabecera antigua. No anuncies automatizaciones de carpetas o cobros live como operativos sin comprobarlos. Verifica publicación antes de confirmarla. Espera el siguiente encargo de Javier para desarrollar nuevas funciones.
+
+## 2026-10-20 — Editor de producto
+
+El editor de las listas de compra dispone de ventana amplia, bloques de datos y precios en dos columnas y pie visible para guardar/cancelar. Móvil apila los bloques. Conserva campos, cálculos, adjuntos, revisión de biblioteca y contratos existentes. Alcance, pruebas y reversión: [EDITOR-PRODUCTO](EDITOR-PRODUCTO.md).

@@ -8865,26 +8865,27 @@ function itemModal(si,ii,fromUrl){
   const {r} = getRoom();
   const it = ii>=0 ? r.sections[si].items[ii] : {name:"",url:"",sku:"",supplier:"",price:null,cost:null,qty:1,unit:r.kind==="pav"?"m2":"ud",status:"Revisión Cliente",img:"",files:[]};
   itFiles=[...(it.files||[])]; itImg=it.img||""; itLibId=it.libId;
-  modal(`<h3>${ii>=0?"Editar":"Añadir"} producto</h3>
-  <div id="itOrigin"></div>
-  <label>URL de la tienda</label>
-  <div style="display:flex;gap:6px;flex-wrap:wrap">
-    <input id="itUrl" value="${ModernoDaily.escape(it.url||"")}" placeholder="https://www.sklum.com/es/…" style="flex:1 1 200px;min-width:0;max-width:100%">
-  </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:4px">Completa los datos del producto y añade su imagen.</p>
-  <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-    <div class="thumb" id="itThumb" title="Haz clic para cambiar la foto" style="width:64px;height:64px;cursor:pointer" onclick="document.getElementById('itImgFile').click()">${itImg?`<img ${fileImageAttrs(itImg)}>`:"🛋"}</div>
-    <div><label style="margin-top:0">Foto</label>
-      <button type="button" class="btn btn-ghost" style="font-size:11px;padding:6px 11px" onclick="document.getElementById('itImgFile').click()">${ico("subir")} Subir imagen</button><input type="file" id="itImgFile" accept="image/*" style="display:none" onchange="itLoadImg(this.files[0])">
-      <p style="font-size:10.5px;color:var(--ink-faint);margin-top:2px">También puedes pulsar la miniatura para añadir una imagen.</p>
+  modal(`<div class="shopping-product-editor">
+  <header class="product-editor-header"><h3>${ii>=0?"Editar":"Añadir"} producto</h3><p>Datos del producto y condiciones de compra.</p></header>
+  <div class="product-editor-body">
+  <div class="product-editor-column">
+  <section class="product-editor-section" aria-labelledby="product-editor-info"><h4 id="product-editor-info">Producto</h4>
+  <div class="product-editor-photo">
+    <button type="button" class="thumb" id="itThumb" aria-label="Cambiar imagen del producto" title="Cambiar imagen del producto" onclick="document.getElementById('itImgFile').click()"></button>
+    <div><span class="product-editor-photo-label">Imagen del producto</span>
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('itImgFile').click()">${ico("subir")} Subir imagen</button><input type="file" id="itImgFile" accept="image/*" style="display:none" onchange="itLoadImg(this.files[0])">
+      <p class="product-editor-help">También puedes pulsar la imagen para cambiarla.</p>
     </div>
   </div>
   <label for="itName">Nombre</label><input id="itName" value="${ModernoDaily.escape(it.name||"")}">
-  ${shoppingRoomLabelEditor(si,ii)}
+  <label for="itUrl">URL de la tienda</label><input id="itUrl" value="${ModernoDaily.escape(it.url||"")}" placeholder="https://www.sklum.com/es/…">
   <div class="row2">
     <div><label for="itSup">Proveedor</label><input id="itSup" list="dlProvs" value="${ModernoDaily.escape(it.supplier||"")}" placeholder="De tu agenda o libre">${dlProvs()}</div>
     <div><label for="itSku">Referencia / variante</label><input id="itSku" value="${ModernoDaily.escape(it.sku||"")}"></div>
   </div>
+  ${shoppingRoomLabelEditor(si,ii)}
+  </section>
+  <section class="product-editor-section" aria-labelledby="product-editor-specs"><h4 id="product-editor-specs">Características</h4>
   <div class="row2">
     <div><label for="itDims">Dimensiones estándar o a medida</label><input id="itDims" value="${ModernoDaily.escape(it.dims||"")}" placeholder="Ej: 120×35×80 cm"></div>
     <div><label for="itMat">Material / acabado</label><input id="itMat" value="${ModernoDaily.escape(it.material||"")}" placeholder="Ej: Roble, cerámica…"></div>
@@ -8894,6 +8895,9 @@ function itemModal(si,ii,fromUrl){
     <div><label for="itPlz">Plazo de entrega</label><input id="itPlz" value="${ModernoDaily.escape(it.plazo||"")}" placeholder="Ej: 2-3 semanas"></div>
   </div>
   <label for="itNote">Nota interna</label><input id="itNote" value="${ModernoDaily.escape(it.note||"")}" placeholder="Solo la ve el equipo">
+  </section>
+  </div><div class="product-editor-column">
+  <section class="product-editor-section" aria-labelledby="product-editor-prices"><h4 id="product-editor-prices">Precios y cantidades</h4>
   <div class="row2">
     <div><label for="itPrice">Precio cliente (€)</label><input id="itPrice" type="number" step="0.01" value="${it.price??""}" oninput="mgSync('it','price')"></div>
     <div><label for="itCost">Coste profesional (€)</label><input id="itCost" type="number" step="0.01" value="${it.cost??""}" placeholder="Con tu descuento pro" oninput="mgSync('it','cost')"></div>
@@ -8902,15 +8906,22 @@ function itemModal(si,ii,fromUrl){
     <div><label for="itQty">Unidades</label><input id="itQty" type="number" step="0.01" value="${it.qty}" oninput="unitSum('itQty','itPrice','itUnit','itSum','itCost')"></div>
     <div><label for="itUnit">Unidad</label><select id="itUnit" onchange="unitSum('itQty','itPrice','itUnit','itSum','itCost')">${[...new Set(["ud","m2","m","m3","l","kg","h",it.unit||"ud"])].map(u=>`<option value="${ModernoDaily.escape(u)}" ${(it.unit||"ud")===u?"selected":""}>${ModernoDaily.escape(({ud:"Unidades",m2:"m²",m:"Metros lineales",m3:"m³",l:"Litros",kg:"Kilogramos",h:"Horas"})[u]||u)}</option>`).join("")}</select></div>
   </div>
-  <div id="itSum" class="entry" style="display:block;background:var(--gold-soft);margin-top:8px;font-size:12.5px"></div>
+  <div id="itSum" class="entry product-editor-total"></div>
   ${mgUI("it", mgAuto(it))}
-  <label for="itSt">Estado de selección / seguimiento</label><p>La aprobación de una revisión y el estado real del pedido se consultan en Compras y aprobaciones. Esta etiqueta no confirma compras ni registra cobros.</p><select id="itSt">${Object.keys(ISTATES).map(s=>`<option ${it.status===s?"selected":""}>${s}</option>`).join("")}</select>
-  <label>Adjuntos del producto — instrucciones, ficha técnica…</label>
+  </section>
+  <section class="product-editor-section" aria-labelledby="product-editor-files"><h4 id="product-editor-files">Seguimiento y archivos</h4>
+  <label for="itSt">Estado de selección / seguimiento</label><select id="itSt" aria-describedby="product-editor-status-help">${Object.keys(ISTATES).map(s=>`<option ${it.status===s?"selected":""}>${s}</option>`).join("")}</select>
+  <p id="product-editor-status-help" class="product-editor-help">La aprobación de una revisión y el estado real del pedido se consultan en Compras y aprobaciones. Esta etiqueta no confirma compras ni registra cobros.</p>
+  <div class="product-editor-attachments"><span class="product-editor-photo-label">Adjuntos del producto</span><p class="product-editor-help">Instrucciones, ficha técnica y otros documentos.</p>
   <div id="itFilesBox"></div>
-  <button type="button" class="btn btn-ghost" style="width:100%;justify-content:center;background:var(--card)" onclick="document.getElementById('itAttachFiles').click()">${ico("adj_archivo")} Añadir archivo</button><input id="itAttachFiles" type="file" multiple style="display:none" onchange="itAddFiles([...this.files])">
-  <div class="modal-foot"><button class="btn btn-ghost" title="Guardar este producto en tu biblioteca transversal" onclick="itemToLibrary()">${ico("guardar")} Añadir a mi biblioteca</button>
+  <button type="button" class="btn btn-ghost" onclick="document.getElementById('itAttachFiles').click()">${ico("adj_archivo")} Añadir archivo</button><input id="itAttachFiles" type="file" multiple style="display:none" onchange="itAddFiles([...this.files])"></div>
+  </section>
+  </div>
+  <div id="itOrigin" class="product-editor-origin"></div>
+  </div>
+  <footer class="modal-foot product-editor-footer"><button type="button" class="btn btn-ghost product-editor-library" title="Guardar este producto en tu biblioteca transversal" onclick="itemToLibrary()">${ico("guardar")} Añadir a mi biblioteca</button>
   <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-  <button class="btn btn-dark" onclick="saveItem(${si},${ii})">Guardar</button></div>`);
+  <button class="btn btn-dark" onclick="saveItem(${si},${ii})">Guardar</button></footer></div>`);
   SpecMaster.mount(it);
   itDrawThumb(); delete _mgLast.it; unitSum("itQty","itPrice","itUnit","itSum","itCost");
   itemUploadDraft={form:document.getElementById("itName"),files:itFiles,pending:0};
@@ -11441,7 +11452,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.75";
+const MODERNO_VER="v3.65.76";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13263,7 +13274,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36575">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36576">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
