@@ -46,3 +46,8 @@ test('label text is escaped and drag cannot silently change a product label',()=
  const f=fixture(),before=JSON.stringify(f.p),chip=f.c.shoppingRoomLabelChip('\"><img src=x onerror=alert(1)>');
  assert.doesNotMatch(chip,/<img/);assert.match(chip,/&lt;img/);assert.equal(f.c.shoppingRoomReorderAllowed(0,1),false);assert.equal(JSON.stringify(f.p),before);
 });
+
+test('new manual products record addition time while editing preserves an existing date',()=>{
+ const f=fixture(),date='2026-10-18T12:00:00Z';f.item.addedAt=date;f.c.saveItem(0,0);assert.equal(f.room.sections[0].items[0].addedAt,date);
+ const start=Date.now();f.c.saveItem(0,-1);assert.ok(Date.parse(f.room.sections[0].items.at(-1).addedAt)>=start);
+});

@@ -231,3 +231,7 @@ El portal adopta base blanca, controles neutros y lateral integrado, conservando
 ## 2026-10-20 — Capturas sin cuotas horarias o diarias
 
 El propietario autoriza retirar las cuotas que bloqueaban las importaciones de productos. Se conserva la protección de concurrencia y se añade espera automática con UUID estable. Cambio acotado de función, pruebas ficticias y reversión sin restaurar datos: [CAPTURAS-SIN-CUOTAS](CAPTURAS-SIN-CUOTAS.md). SQL y publicación de interfaz requieren verificación separada.
+
+## 2026-10-20 — Orden de productos en listas de compra
+
+Nuevo icono entre Vista y Buscar: fecha de incorporación o precio en ambos sentidos, con retorno a Orden manual. Ordena solo la presentación, conserva referencias y registra fecha en productos nuevos sin rellenar históricos. Pruebas y reversión: [COMPRAS-ORDEN-PRODUCTOS](COMPRAS-ORDEN-PRODUCTOS.md).
