@@ -50,5 +50,33 @@ try{
  const expired=(await rpc('select clipper_caducadas($1) result',[study])).result;
  check(expired.length===1&&expired[0].id===third,'cleanup excludes absorbed captures');
  await assert.rejects(rpc('select clipper_absorber($1,$2)',[third,revision]));checks++;
+ // Exercise more than both former rolling quotas, including failed captures.
+ const unchanged=JSON.stringify((await db.query('select bloque,contenido from datos_estudio order by bloque')).rows);
+ const {randomUUID}=await import('node:crypto');
+ for(let i=0;i<110;i++){
+  const next=randomUUID();check((await begin(next)).result.start,'unlimited sequential capture '+i);
+  await db.query("select clipper_finalizar($1,$2,null,'fixture_error')",[next,user]);
+ }
+ check(JSON.stringify((await db.query('select bloque,contenido from datos_estudio order by bloque')).rows)===unchanged,'quota checks never modify study data');
+ const concurrent=[randomUUID(),randomUUID(),randomUUID(),randomUUID()];
+ for(const next of concurrent.slice(0,3))check((await begin(next)).result.start,'concurrent slot accepted');
+ await assert.rejects(begin(concurrent[3]),e=>e.code==='PT429');checks++;
+ check(!(await begin(concurrent[0])).result.start,'idempotent retry bypasses concurrency gate');
+ await db.query("select clipper_finalizar($1,$2,null,'fixture_error')",[concurrent[0],user]);
+ check((await begin(concurrent[3])).result.start,'waiting capture accepted after a slot is released');
+ await db.query("update productos_entrantes set creado=now()-interval '3 minutes' where estado='procesando'");
+ check((await begin(randomUUID())).result.start,'stale captures cannot block new work');
+ const denied=randomUUID();await db.exec(`set "test.uid"='${stranger}';`);
+ await assert.rejects(begin(denied));checks++;
+ check(!(await rpc('select exists(select 1 from productos_entrantes where id=$1) present',[denied])).present,'unauthorized capture never staged');
+ // Rollback changes only the definition and keeps every staged capture.
+ const rowsBeforeRollback=(await rpc('select count(*)::int total from productos_entrantes')).total;
+ await db.exec(await fs.readFile(new URL('../SQL/rollback-clipper-cuotas.sql',import.meta.url),'utf8'));
+ await db.exec(`set "test.uid"='${user}';`);
+ await assert.rejects(begin(randomUUID()),e=>e.code==='PT429');checks++;
+ const canonical=await fs.readFile(new URL('../SQL/productos-entrantes.sql',import.meta.url),'utf8'),start=canonical.indexOf('create or replace function public.clipper_iniciar');
+ await db.exec(canonical.slice(start,canonical.indexOf('end $$;',start)+8));
+ check((await rpc('select count(*)::int total from productos_entrantes')).total===rowsBeforeRollback,'rollback and reactivation preserve all staged captures');
+ check((await begin(randomUUID())).result.start,'reactivation restores unlimited captures');
  console.log(`${checks} SQL checks passed: isolation, permissions, idempotence, snapshots, drafts, retention, document preservation.`);
 }finally{await db.close();}

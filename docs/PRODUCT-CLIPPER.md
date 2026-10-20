@@ -20,7 +20,7 @@ Las imágenes se descargan en el backend y se guardan en el bucket **privado** `
 - Conecta a la IP comprobada. En Supabase no sirve `node:https` con `lookup` personalizado: el shim lanza `ERR_NOT_IMPLEMENTED`. `deno-transport.mjs` usa `Deno.connect` a la IP seguida de `Deno.startTls` con el nombre original y validación normal del certificado. No desactiva TLS ni vuelve a resolver el host para conectar.
 - HTTP/1.1 limitado, cabeceras 32 KiB, longitud/fragmentos comprobados, sin respuestas comprimidas, encuadres ambiguos ni SVG remotos. JPEG, PNG, WebP y AVIF deben coincidir con MIME y cabecera binaria.
 - HTML 3 MiB; imagen 4 MiB; 12 imágenes como máximo, hasta 3 resoluciones por imagen; presupuesto de imágenes 20 MiB; dimensión mínima 120 px, máxima 12.000 px y 40 megapíxeles. Una descarga iniciada puede exceder el presupuesto agregado hasta el límite individual antes de rechazarse; no se almacena esa imagen.
-- Captura 65 s, página 15 s, imagen 10 s, hasta 5 saltos. Por estudio: 100 intentos/día y 3 capturas simultáneas recientes; por usuario: 15/hora. Los errores también consumen cuota.
+- Captura 65 s, página 15 s, imagen 10 s, hasta 5 saltos. Sin cuotas por hora ni por día (autorización del propietario del 20/10/2026). Se conservan 3 capturas simultáneas recientes por estudio; la interfaz espera y reintenta automáticamente con el mismo ID cuando están ocupadas. Cerrar la ventana cancela esa espera. Los fallos de red no se reintentan automáticamente.
 - Limpieza oportunista solo de capturas propias caducadas a los 7 días, nunca absorbidas ni referenciadas por bloques. Si falla, no borra otras rutas ni bloquea nuevas capturas.
 
 No se usan cookies de usuario, proxies para sortear bloqueos, CAPTCHA ni sesiones de tiendas.

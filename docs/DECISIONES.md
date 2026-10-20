@@ -234,3 +234,7 @@ El propietario solicita un único acceso Finanzas y, a la altura de la ruta, Res
 ## 2026-10-20 — Menú lateral integrado
 
 El propietario solicita una estética de programa, tomando Rayon como referencia. El lateral de escritorio pasa de cápsula oscura flotante a columna blanca integrada: iconos y nombres en abierto, iconos navegables al plegar y selección gris discreta. Se conservan símbolo oficial, navegación, roles, datos y borradores. Pestañas y rutas ajustan su margen al ancho del menú; móvil conserva su presentación. Alcance, comprobaciones y recuperación: [MENU-LATERAL-INTEGRADO](MENU-LATERAL-INTEGRADO.md).
+
+## 2026-10-20 — Importación de productos sin cuotas por ahora
+
+Por petición expresa del propietario se eliminan los límites de 15 intentos/hora y 100 intentos/día. La captura queda sin cuotas horarias o diarias por ahora; se mantienen permisos, privacidad y protecciones técnicas. Cuando se ocupan las tres capturas simultáneas recientes del estudio, la interfaz espera y continúa automáticamente sin duplicar solicitudes. Detalles y reversión: [CAPTURAS-SIN-CUOTAS](CAPTURAS-SIN-CUOTAS.md).

@@ -42,7 +42,7 @@ const ProductClipper=(()=>{
   }else if(typeof libEdit==='function'){const index=state.library.findIndex(it=>String(it.id)===String(ctx.savedId));if(index>=0)libEdit(index);}
   toast('Producto añadido. Puedes ajustar sus datos en la ficha.');
  }
- async function invoke(body){const {data,error}=await sb.functions.invoke('product-clipper',{body});if(error){let detail;try{detail=await error.context?.json();}catch{}throw Error(detail?.error||'No se pudo consultar el importador. Conserva esta ventana y comprueba el estado.');}return data;}
+ async function invoke(body){const {data,error}=await sb.functions.invoke('product-clipper',{body});if(error){let detail;try{detail=await error.context?.json();}catch{}throw Object.assign(Error(detail?.error||'No se pudo consultar el importador. Conserva esta ventana y comprueba el estado.'),{code:detail?.code,status:error.context?.status});}return data;}
  function open(kind,sectionIndex){
   if(!sb||!ESTUDIO_ID||!['admin','colaborador'].includes(_accessRole)){toast('Necesitas acceso al estudio para importar productos.');return;}
   if(active?.dialog.isConnected){active.dialog.focus();return;}
@@ -54,20 +54,36 @@ const ProductClipper=(()=>{
    <label for="clip-url">Enlace del producto</label><div class="clipper-url"><input id="clip-url" type="url" value="${escape(url)}" placeholder="https://…"><button type="button" class="btn btn-dark" data-capture>Obtener datos</button></div>
    <p data-message role="status" aria-live="polite"></p><div data-result></div><footer><button type="button" class="btn btn-ghost" data-status>Consultar última captura</button><button type="button" class="btn btn-ghost" data-close>Volver</button></footer>`;
   document.body.appendChild(dialog);const ctx={dialog,destination,owner:identity(),study:ESTUDIO_ID,id:null,busy:false,row:null};active=ctx;
-  dialog.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>dialog.close());dialog.addEventListener('close',()=>{clearTimeout(ctx.poll);dialog.remove();if(active===ctx)active=null;});
+  dialog.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>dialog.close());dialog.addEventListener('close',()=>{clearTimeout(ctx.poll);clearTimeout(ctx.retry);dialog.remove();if(active===ctx)active=null;});
   dialog.querySelector('[data-capture]').onclick=()=>capture(ctx);dialog.querySelector('[data-status]').onclick=()=>{if(!ctx.busy)read(ctx);};
   dialog.showModal();dialog.querySelector('input').focus();
  }
- async function capture(ctx){
-  if(!valid(ctx)||ctx.busy)return;const raw=ctx.dialog.querySelector('#clip-url').value.trim();
+ async function capture(ctx,pending){
+  if(!valid(ctx)||ctx.busy)return;const raw=pending?.url||ctx.dialog.querySelector('#clip-url').value.trim();
   try{const u=new URL(raw);if(!['http:','https:'].includes(u.protocol))throw Error();}catch{message(ctx,'Pega una URL completa de producto.');return;}
-  ctx.busy=true;ctx.dialog.querySelector('[data-capture]').disabled=true;const analysis=ctx.dialog.querySelector('[data-analysis]');if(analysis)analysis.hidden=false;
+  const request=pending||{id:crypto.randomUUID(),url:raw},previousId=ctx.id,previousCache=localStorage.getItem(cacheKey());
+  let queued=false;
+  ctx.busy=true;clearTimeout(ctx.poll);
+  const controls=['[data-capture]','#clip-url','[data-status]','[data-save]'].map(s=>ctx.dialog.querySelector(s)).filter(Boolean);
+  controls.forEach(el=>el.disabled=true);
+  const analysis=ctx.dialog.querySelector('[data-analysis]');if(analysis)analysis.hidden=false;
   try{
    await cloudFlush();if(!valid(ctx))return;const block=ctx.destination.kind==='biblioteca'?'compras':'proyectos';
    if(_cloudBusy||_cloudHash[block]!==canon(CLOUD_BLOCKS[block].get()))throw Error('Hay cambios pendientes en el destino. Espera a que estén guardados antes de importar.');
-   ctx.id=crypto.randomUUID();localStorage.setItem(cacheKey(),ctx.id);message(ctx,'Buscando la información del producto…');
-   await invoke({action:'capture',id:ctx.id,studyId:ctx.study,url:raw,destination:ctx.destination});if(valid(ctx)){ctx.busy=false;await read(ctx);}
-  }catch(e){message(ctx,e.message);}finally{ctx.busy=false;if(valid(ctx)){ctx.dialog.querySelector('[data-capture]').disabled=false;if(ctx.row?.estado!=='procesando'&&analysis)analysis.hidden=true;}}
+   ctx.id=request.id;localStorage.setItem(cacheKey(),ctx.id);message(ctx,'Buscando la información del producto…');
+   await invoke({action:'capture',id:ctx.id,studyId:ctx.study,url:request.url,destination:ctx.destination});if(valid(ctx)){ctx.busy=false;await read(ctx);}
+  }catch(e){
+   // PT429 is returned before staging when the three active slots are occupied.
+   // Unknown/network failures may have staged the request: never auto-repeat those.
+   if(e.code==='PT429'&&e.status===429&&valid(ctx)){
+    ctx.id=previousId;if(previousCache)localStorage.setItem(cacheKey(),previousCache);else localStorage.removeItem(cacheKey());
+    queued=true;message(ctx,'Hay otras capturas en curso. Tu producto está esperando y se iniciará automáticamente.');
+    ctx.retry=setTimeout(()=>{if(valid(ctx)){ctx.busy=false;capture(ctx,request);}},3000);
+   }else message(ctx,e.message);
+  }finally{
+   if(!queued)ctx.busy=false;
+   if(valid(ctx)&&!queued){controls.forEach(el=>el.disabled=false);if(ctx.row?.estado!=='procesando'&&analysis)analysis.hidden=true;}
+  }
  }
  async function read(ctx){
   if(!valid(ctx))return;const id=ctx.id||localStorage.getItem(cacheKey());if(!id){message(ctx,'Todavía no hay una captura pendiente en este navegador.');return;}
