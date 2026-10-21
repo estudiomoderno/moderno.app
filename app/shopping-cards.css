@@ -18,8 +18,35 @@
 }
 .shopping-product-title{align-self:stretch}@media(max-width:600px){.shopping-product-title strong{margin-top:auto}}
 
-/* Each visual row shares photo, title, details, total, actions and footer tracks. */
+/* Image overlays retain a stable position across card sizes. */
 .shopping-product-title strong{line-height:1.4}
 .shopping-product-media{position:relative;min-width:0}
 .shopping-room-view .shopping-product-media>.shopping-product-label{position:absolute;left:10px;bottom:10px;z-index:2;box-sizing:border-box;max-width:calc(100% - 20px);margin:0;background:var(--app-surface,#fff);box-shadow:0 1px 4px #00000012}
 .shopping-product-row .shopping-product-media{grid-area:photo;align-self:start}
+
+/* Compact cards: image badges, name, shop and total. */
+.shopping-product-card:not(.shopping-product-row){display:grid;grid-template-rows:subgrid;grid-row:span 4;row-gap:9px;align-items:start}
+.shopping-add-wrap,.shopping-product-grid>.shopping-drop-gap{grid-row:span 4}
+.shopping-product-title{display:block;min-width:0}
+.shopping-product-total{margin:0!important;line-height:1.4;font-size:14px;color:var(--ink)}
+.shopping-product-total strong{font-weight:700}
+.shopping-product-media .shopping-product-edit{position:absolute;top:8px;left:8px;z-index:3;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:var(--app-surface,#fff);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.shopping-product-edit svg{width:16px;height:16px}
+.shopping-product-edit:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.shopping-product-media .shopping-product-unit-price{position:absolute;top:12px;left:48px;right:48px;z-index:2;width:max-content;max-width:calc(100% - 96px);margin:auto;padding:3px 7px;border:1px solid var(--ui-line,#ddd);border-radius:6px;background:var(--app-surface,#fff);font-size:12px;line-height:1.4;color:var(--ink);text-align:center;overflow-wrap:anywhere;pointer-events:none}
+.shopping-editor-actions{display:grid;gap:8px}
+.shopping-editor-actions h4{margin-bottom:6px}
+.shopping-editor-actions .btn{justify-content:flex-start;white-space:normal}
+.shopping-editor-actions .shopping-editor-delete{color:#b42318}
+.shopping-editor-actions .shopping-editor-delete:hover{background:#fef3f2}
+.shopping-product-delete-dialog{width:min(380px,calc(100vw - 32px));box-sizing:border-box;border:1px solid var(--ui-line,#ddd);padding:24px;border-radius:20px;background:var(--app-surface,#fff);color:var(--ink);box-shadow:0 20px 60px #0003}
+.shopping-product-delete-dialog::backdrop{background:#0005;backdrop-filter:blur(3px)}
+.shopping-product-delete-dialog h3{margin:14px 0 8px;font-size:18px}
+.shopping-product-delete-dialog p{font-size:13px;line-height:1.6;margin:0}
+.shopping-product-delete-symbol{width:44px;height:44px;border-radius:12px;background:#fef3f2;color:#b42318;display:grid;place-items:center}
+.shopping-product-delete-symbol svg{width:21px;height:21px}
+.shopping-product-delete-dialog [data-confirm]{background:#b42318;color:white}
+.shopping-product-delete-dialog .modal-foot{margin-top:22px}
+.shopping-drag-ghost.shopping-product-card{display:flex;grid-row:auto;grid-template-rows:none}
+html body dialog.shopping-product-delete-dialog{position:fixed;inset:0;margin:auto!important;max-height:calc(100dvh - 32px);overflow:auto}
+html body dialog.shopping-product-delete-dialog button[data-confirm]{background:#b42318!important;border-color:#b42318!important;color:#fff!important}
