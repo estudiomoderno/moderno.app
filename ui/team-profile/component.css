@@ -6,6 +6,7 @@
 @source "./notifications.tsx";
 @source "./project-settings.tsx";
 @source "./shopping-delete.tsx";
+@source "./shopping-add.tsx";
 @source "./project-windows.tsx";
 @source "./page-breadcrumbs.tsx";
 @source "./vendor/reui/**/*.tsx";

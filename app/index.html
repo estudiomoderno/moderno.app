@@ -1240,7 +1240,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36592"></script>
+<script src="/project-ui.js?v=36594"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36573"></script>
@@ -7229,9 +7229,8 @@ function vRoom(){
   const match = (it,label) => (!q || _capNorm(it.name+" "+it.sku+" "+it.supplier).includes(q))
     && shoppingRoomLabelMatches(label,rf.label)
     && (!rf.supplier || it.supplier===rf.supplier)
-    && (!rf.color || (it.color||"")===rf.color)
     && (!rf.min || it.price>=+rf.min) && (!rf.max || it.price<=+rf.max);
-  const filtering = rf.label||rf.supplier||rf.color||rf.min||rf.max;
+  const filtering = rf.label||rf.supplier||rf.min||rf.max;
   state.rowOpen = state.rowOpen||{};
   const esc = v => String(v==null?"":v).replace(/"/g,"&quot;");
   const shortUrl = u => { try{ const h=new URL(u).hostname.replace(/^www\./,""); return h.length>26?h.slice(0,24)+"…":h; }catch(e){ return (u||"").slice(0,24)+"…"; } };
@@ -7249,7 +7248,7 @@ function vRoom(){
   </div>
   <div class="dl-budget" style="margin:14px 0 4px">
     <div><span class="dl-lab">Presupuesto de la estancia</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px" title="Interno — el cliente no lo ve">🔒 coste ${cost===null?"por confirmar":fmt(cost)} · beneficio ${ben===null?"por confirmar":fmt(ben)}${r.margin?" · margen general "+r.margin+"%":""}</div></div>
-    <div class="shopping-room-budget-total"><b class="dl-num">${fmt(tot)}</b><button type="button" class="btn btn-ghost shopping-add-top" aria-label="Añadir producto a esta lista" onclick="shoppingRoomAddProduct()"><span aria-hidden="true">+</span> Añadir producto</button></div>
+    <b class="dl-num">${fmt(tot)}</b>
   </div>
   ${shoppingRoomTools(r)}
   <div class="shopping-product-grid shopping-flat-products ${shoppingRoomViewMode==='rows'?'shopping-products-rows':''}" ondragover="event.preventDefault()" ondrop="shoppingRoomDropEnd(event)">
@@ -7385,21 +7384,7 @@ function ciDo(si,ii){
   closeModal(); toast("→ Copiado a "+r.name+" ("+p.num+")");
 }
 function filterModal(){
-  const {r} = getRoom();
-  const rf = state.rf || (state.rf={status:"",supplier:"",color:"",min:"",max:""});
-  const items = r.sections.flatMap(s=>s.items);
-  const sups = [...new Set(items.map(i=>i.supplier).filter(Boolean))];
-  const cols = [...new Set(items.map(i=>i.color).filter(Boolean))];
-  modal(`<h3>Filtrar productos</h3>
-  <label>Proveedor</label><select id="ffSup"><option value="">Todos</option>${sups.map(s=>`<option ${rf.supplier===s?"selected":""}>${s}</option>`).join("")}</select>
-  <label>Color</label><select id="ffCol"><option value="">Todos</option>${cols.map(s=>`<option ${rf.color===s?"selected":""}>${s}</option>`).join("")}</select>
-  <label>Rango de precios (€)</label>
-  <div class="row2"><input id="ffMin" type="number" placeholder="Desde" value="${rf.min}"><input id="ffMax" type="number" placeholder="Hasta" value="${rf.max}"></div>
-  <div class="modal-foot">
-    <button class="danger" onclick="state.rf=null;closeModal();render()">Borrar filtros</button>
-    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-dark" onclick="state.rf={supplier:document.getElementById('ffSup').value,color:document.getElementById('ffCol').value,min:document.getElementById('ffMin').value,max:document.getElementById('ffMax').value};closeModal();render()">⚙ Filtrar</button>
-  </div>`);
+ const control=document.querySelector('.shopping-filter-control');if(control){control.open=true;control.querySelector('select')?.focus();}
 }
 function roomIconModal(pid,rid){
   const p=state.projects.find(x=>x.id===pid), r=p.rooms.find(x=>x.id===rid);
@@ -11500,7 +11485,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.93";
+const MODERNO_VER="v3.65.94";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13424,7 +13409,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36593">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36594">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
@@ -13444,7 +13429,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36554">
 <link rel="stylesheet" href="/brand/reui/font.css?v=36570">
-<script src="/profile-component.js?v=36570"></script>
+<script src="/profile-component.js?v=36594"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=36554"></script>
 <link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=36574">
@@ -13454,6 +13439,11 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script>
 ModernoAppLoading.setProbe(()=>!document.documentElement.classList.contains('portalboot')&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
 if(!sb)ModernoAppLoading.sessionReady();
+</script>
+<script>
+const renderBeforeShoppingAdd=render;
+render=function(...args){const result=renderBeforeShoppingAdd.apply(this,args);shoppingRoomAddEnhance();return result;};
+shoppingRoomAddEnhance();
 </script>
 </body>
 </html>

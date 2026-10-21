@@ -384,8 +384,10 @@
 .shopping-list-overview .shopping-room-grip:focus-visible{outline:2px solid #555;outline-offset:3px}
 .shopping-room-gap{box-sizing:border-box;border:2px dashed #aaa;border-radius:12px;display:grid;place-items:center;background:#f7f7f7;color:#666;font-size:12px;pointer-events:auto}
 
-/* Add a product from the room budget without scrolling to the last card. */
-.shopping-room-view .shopping-room-budget-total{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;margin-left:auto}
-.shopping-room-view .shopping-add-top{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:6px 12px;margin:0;white-space:nowrap}
-@media(max-width:480px){.shopping-room-view .dl-budget{flex-wrap:wrap;gap:12px}.shopping-room-view .shopping-room-budget-total{margin-left:auto;max-width:100%}}
-@media print{.shopping-room-view .shopping-add-top{display:none!important}}
+/* Product actions share the filter toolbar; the primary control is the original ReUI Button. */
+.shopping-room-view .shopping-add-toolbar{display:inline-flex;align-items:center;margin-left:auto;flex:none}
+.shopping-room-view .shopping-add-top{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:32px;padding:0 10px;margin:0;border:1px solid var(--ui-line);border-radius:8px;background:#fff;color:var(--ink);font:inherit;font-size:14px;white-space:nowrap;cursor:pointer}
+.shopping-room-view .shopping-add-top[hidden]{display:none!important}
+.shopping-room-view .shopping-add-top:hover{background:#f5f5f5}
+.shopping-room-view .shopping-add-top:focus-visible{outline:2px solid #999;outline-offset:2px}
+@media print{.shopping-room-view .shopping-add-toolbar{display:none!important}}

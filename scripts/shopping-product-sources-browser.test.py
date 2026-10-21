@@ -55,15 +55,33 @@ try:
    box=page.locator('#modalBox')
    # The top button stays reachable in a long list; the original add-card remains last.
    page.evaluate("window.originalItems=getRoom().r.sections[0].items;getRoom().r.sections[0].items=Array.from({length:45},(_,i)=>({...structuredClone(originalItems[0]),id:'long-'+i}));render();document.querySelector('.main').scrollTop=0;window.longBefore=records()")
-   top=room.get_by_role('button',name='Añadir producto a esta lista',exact=True)
-   expect(top).to_be_visible();tb=top.bounding_box();price=room.locator('.shopping-room-budget-total .dl-num').bounding_box()
-   assert tb['y']>=price['y']+price['height'] and abs(tb['x']+tb['width']-price['x']-price['width'])<2,(tb,price)
+   top=room.locator('.shopping-add-toolbar [data-reui-ready=true]').get_by_role('button',name='Añadir producto a esta lista',exact=True)
+   page.wait_for_function("!!document.querySelector('.shopping-add-toolbar [data-reui-ready=true]')")
+   expect(top).to_be_visible();tb=top.bounding_box();price=room.locator('.dl-budget .dl-num').bounding_box();tools=room.locator('.shopping-room-tools').bounding_box();fil=room.get_by_role('button',name='Filtrar productos',exact=True).bounding_box()
+   assert tb['y']>=price['y']+price['height'] and abs(tb['y']+tb['height']/2-fil['y']-fil['height']/2)<2,(tb,fil)
+   assert room.locator('.dl-budget').get_by_role('button').count()==0
+   assert top.evaluate("el=>el.classList.contains('cn-button-variant-outline')&&!!el.querySelector('svg')")
+   assert abs(tb['height']-fil['height'])<2
    assert tb['y']+tb['height']<1000 and add.bounding_box()['y']>1000
    assert page.evaluate("document.documentElement.scrollWidth<=innerWidth&&document.querySelector('.shopping-product-grid').lastElementChild.classList.contains('shopping-add-wrap')")
    if output:page.screenshot(path=str(output/f'product-add-top-{width}.png'))
    top.click();expect(box.get_by_role('heading',name='Añadir producto',exact=True)).to_be_visible()
    expect(box.locator('[data-product-method] strong')).to_have_text(['Manualmente','Desde URL✦ IA','Desde la biblioteca'])
    box.get_by_role('button',name='Cancelar',exact=True).click();assert page.evaluate('records()===longBefore')
+   room.get_by_role('button',name='Filtrar productos',exact=True).click()
+   panel=room.locator('.shopping-filter-panel')
+   assert panel.locator('select').evaluate_all('(els)=>els.map(e=>e.name)')==['label','supplier']
+   assert panel.locator('[name=color],[name=status]').count()==0
+   panel.locator('[name=label]').select_option('none');panel.locator('[name=supplier]').select_option('Proveedor ficticio')
+   panel.locator('[name=min]').fill('20');panel.locator('[name=max]').fill('30');panel.get_by_role('button',name='Aplicar',exact=True).click()
+   expect(room.locator('.shopping-product-card')).to_have_count(45)
+   room.get_by_role('button',name='Filtrar productos',exact=True).click();panel.locator('[name=max]').fill('10');panel.get_by_role('button',name='Aplicar',exact=True).click()
+   expect(room.locator('.shopping-product-card')).to_have_count(0)
+   room.get_by_role('button',name='Filtrar productos',exact=True).click();panel.get_by_role('button',name='Restablecer',exact=True).click()
+   expect(room.locator('.shopping-product-card')).to_have_count(45)
+   page.evaluate("state.rf={color:'Valor antiguo que no coincide'};render()")
+   expect(room.locator('.shopping-product-card')).to_have_count(45);assert room.locator('.shopping-filter-chips').count()==0
+   page.evaluate('state.rf=null')
    page.evaluate('getRoom().r.sections[0].items=originalItems;render()');assert page.evaluate('records()===sourceBaseline')
    add.click()
    expect(box.get_by_role('heading',name='Añadir producto',exact=True)).to_be_visible()
