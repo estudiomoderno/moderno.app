@@ -11440,7 +11440,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.88";
+const MODERNO_VER="v3.65.89";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11758,7 +11758,10 @@ async function cloudFlush(){
         const current=JSON.parse(canon(CLOUD_BLOCKS[p.b].get()));
         try{
           const combined=ModernoSync.mergeSavedData(p.value,current,p.merged);
-          _cloudApplying=true;try{CLOUD_BLOCKS[p.b].set(combined);}finally{_cloudApplying=false;}
+          // An acknowledgement with no new data must not invalidate open editors.
+          if(canon(combined)!==canon(current)){
+            _cloudApplying=true;try{CLOUD_BLOCKS[p.b].set(combined);}finally{_cloudApplying=false;}
+          }
           _cloudHash[p.b]=canon(p.merged);
         }catch(e){conflicts[p.b]={base:p.value,local:current,remote:p.merged,version:saved.find(s=>s.bloque===p.b).updated_at};_cloudHash[p.b]=canon(p.value);}
         _cloudSeen[p.b]=saved.find(s=>s.bloque===p.b).updated_at;_cloudCount[p.b]=blockCount(p.merged);delete _cloudForce[p.b];
@@ -11768,7 +11771,7 @@ async function cloudFlush(){
       persistSoon();
     }
     if(Object.keys(conflicts).length){syncTag('err','Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.');return;}
-    if(Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))){syncTag('err','Hay cambios pendientes de guardar; conserva esta pestaña abierta');clearTimeout(_cloudRetryT);_cloudRetryT=setTimeout(cloudFlush,15000);}
+    if(Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))){syncTag('pending','Guardando los siguientes cambios…');clearTimeout(_cloudRetryT);_cloudRetryT=setTimeout(cloudFlush,900);}
     else{localStorage.removeItem(LS_KEY+'_dirty');syncTag('ok','Guardado ✓');}
   }catch(e){
     const conflict=Object.keys(conflicts).length>0;

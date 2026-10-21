@@ -272,3 +272,7 @@ Imagen con etiqueta, precio unitario y acciones Editar/mover; debajo nombre, tie
 ## 2026-10-21 — Precio alineado sobre la etiqueta
 
 El precio unitario queda justo encima de la etiqueta dentro de la imagen, con borde izquierdo compartido y separación de 6 px. Se adapta al alto de la etiqueta. Cambio visual y comprobaciones: [TARJETAS-COMPRAS-SENCILLAS](TARJETAS-COMPRAS-SENCILLAS.md).
+
+## 2026-10-21 — Eliminaciones seguidas, corrección preparada
+
+El acuse de guardado idéntico conserva los objetos usados por el editor. Los cambios hechos durante un envío correcto se reprograman a 900 ms, conservando conflictos, permisos y reintento de errores a 15 s. Pruebas con subidas retenidas y tres eliminaciones seguidas, sin servicios reales. Publicación pendiente de las guardas del repositorio: [COMPRAS-ELIMINACIONES-SEGUIDAS](COMPRAS-ELIMINACIONES-SEGUIDAS.md).
