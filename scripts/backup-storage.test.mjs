@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { backup, incompleteSnapshot, failureCategory, createCheckReport } from './backup-storage.mjs';
+import { backup, incompleteSnapshot, failureCategory, createCheckReport, rcloneArguments } from './backup-storage.mjs';
 const listing = JSON.stringify([{ Path: 'project/file.pdf', Size: 4, ModTime: '2026-01-01T00:00:00Z' }]);
 
 test('complete marker requires byte verification and stable source; writes only to destination', async () => {
@@ -67,4 +67,14 @@ test('streaming byte report distinguishes sides and read errors without retainin
   report.feed('x'.repeat(9000));report.feed('\n= another.pdf\n');assert.equal(report.summary().identical,2);
   assert.match(failureCategory('S3: GetObject NoSuchKey status code: 404'),/s3-object-missing/);
   assert.match(failureCategory('googleapi: Error 503: private-content'),/drive-read-error/);
+});
+
+test('flat listing reduces traversal without weakening byte checks or immutable recovery',()=>{
+  for(const command of ['lsjson','copy','check'])assert.ok(rcloneArguments([command,'source:fixture']).includes('--fast-list'));
+  const check=rcloneArguments(['check','source:fixture','destination:fixture','--download']);
+  assert.ok(check.includes('--download'));assert.ok(check.includes('--combined'));
+  assert.ok(!check.includes('--size-only'));assert.ok(!check.includes('--one-way'));
+  const copy=rcloneArguments(['copy','source:fixture','destination:fixture','--immutable','--ignore-existing','--no-traverse']);
+  for(const flag of ['--immutable','--ignore-existing','--no-traverse'])assert.ok(copy.includes(flag));
+  assert.ok(!rcloneArguments(['rcat','destination:marker']).includes('--fast-list'));
 });

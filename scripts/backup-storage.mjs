@@ -77,10 +77,16 @@ export function createCheckReport() {
   };
 }
 
+export function rcloneArguments(args) {
+  // ListR avoids one S3 query per virtual directory. This changes traversal,
+  // never byte verification, source permissions or destination immutability.
+  return [...args, ...(['lsjson','copy','check'].includes(args[0]) ? ['--fast-list'] : []), ...(args[0]==='check'?['--combined','-']:[]), '--log-level','ERROR','--stats','0'];
+}
+
 export function rclone(args, input) {
   return new Promise((resolve, reject) => {
     const isCheck=args[0]==='check',report=createCheckReport();
-    const child = spawn('rclone', [...args, ...(isCheck?['--combined','-']:[]), '--log-level', 'ERROR', '--stats', '0'], { stdio: ['pipe', 'pipe', 'pipe'] });
+    const child = spawn('rclone', rcloneArguments(args), { stdio: ['pipe', 'pipe', 'pipe'] });
     let output = '';
     child.stdout.on('data', data => { if(isCheck)report.feed(data);else output += data; });
     // Publish only known error categories, never object names or provider payloads.
