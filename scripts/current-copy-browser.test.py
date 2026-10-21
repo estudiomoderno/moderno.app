@@ -48,7 +48,7 @@ try:
      persistNow();
    }""")
    page.wait_for_function('startedWrite')
-   assert page.evaluate("_saveErr&&!!_localWrite&&syncView().mode==='saving'")
+   assert page.evaluate("!_saveErr&&!!_localWrite&&syncView().mode==='saving'")
    assert page.evaluate("(()=>{const e=new Event('beforeunload',{cancelable:true});window.dispatchEvent(e);return e.defaultPrevented;})()")
    page.evaluate("state.account.latestNote='newest during write';persistNow();_pendingArchiveStore=nativeStore;releaseWrite();")
    page.wait_for_function('!_localWrite&&!_saveErr',timeout=15000)

@@ -37,7 +37,9 @@ try:
     page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.evaluate(setup)
     page.evaluate("""async failure=>{
       clearTimeout(_saveT);_localRepairAfter=Date.now()+60000;
-      state.account.quotaFixture='pending-'+ 'z'.repeat(3100000);persistNow();clearTimeout(_saveT);
+      state.account.quotaFixture='pending-'+ 'z'.repeat(3100000);persistNow();if(_localWrite)await _localWrite;clearTimeout(_saveT);
+      // Exercise migration of a legacy large localStorage snapshot explicitly.
+      localStorage.setItem(LS_KEY,JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder}));
       if(_saveErr)throw Error('Current original must fit');
       _resumed=true;localStorage.setItem(LS_KEY+'_dirty','1');
       window.originalRaw=localStorage.getItem(LS_KEY);window.originalMemory=records();
