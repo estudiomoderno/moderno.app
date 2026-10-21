@@ -288,3 +288,7 @@ El usuario confirma recuperado el acceso normal y pide ocultar el diseño antigu
 ## 2026-10-21 — Orden manual de estancias
 
 El propietario pide mover las estancias como los productos. Tirador de 32 px, ratón/dedo/teclado, hueco visible y Escape. Orden en el array existente, conservación de objetos y vínculos, grupos separados y guardas de sesión/rol/gesto obsoleto. Pruebas y reversión: [ORDEN-ESTANCIAS](ORDEN-ESTANCIAS.md).
+
+## 2026-10-21 — Añadir producto debajo del total
+
+Segundo acceso al selector existente de productos justo debajo del presupuesto de la estancia, sin retirar la tarjeta al final. Botón nativo y ajuste móvil; sin cambios de datos ni servicios. Pruebas y reversión: [ANADIR-PRODUCTO-ARRIBA](ANADIR-PRODUCTO-ARRIBA.md).
