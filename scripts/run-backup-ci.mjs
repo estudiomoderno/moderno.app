@@ -7,7 +7,7 @@ export function runBackup({ environment = process.env, run = spawnSync, report =
     const validId = value => typeof value === 'string' && /^[a-zA-Z0-9_-]+$/.test(value);
     if (!validId(google.folder_id) || !validId(google.team_drive) || !environment.GOOGLE_ACCESS_TOKEN) throw Error('Invalid configuration');
     const test = environment.BACKUP_MODE === 'test-drive';
-    if (!test && environment.BACKUP_MODE !== 'backup') throw Error('Invalid mode');
+    if (!test && !['backup','verify-copy'].includes(environment.BACKUP_MODE)) throw Error('Invalid mode');
     const folder = environment.BACKUP_STORAGE_FOLDER_ID || '';
     const drive = environment.BACKUP_STORAGE_TEAM_DRIVE || '';
     const overridden = Boolean(folder || drive);
@@ -16,6 +16,7 @@ export function runBackup({ environment = process.env, run = spawnSync, report =
       RCLONE_CONFIG_DESTINATION_TOKEN: JSON.stringify({ access_token: environment.GOOGLE_ACCESS_TOKEN, token_type: 'Bearer', expiry: new Date(Date.now() + 3500_000).toISOString() }),
       RCLONE_CONFIG_DESTINATION_ROOT_FOLDER_ID: google.folder_id,
       RCLONE_CONFIG_DESTINATION_TEAM_DRIVE: google.team_drive,
+      BACKUP_VERIFY_ONLY: environment.BACKUP_MODE === 'verify-copy' ? '1' : environment.BACKUP_VERIFY_ONLY || '0',
     };
     // The synthetic destination check never receives Storage credentials.
     for (const key of Object.keys(env)) {

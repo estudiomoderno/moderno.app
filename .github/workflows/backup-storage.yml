@@ -17,7 +17,7 @@ on:
         required: true
         default: test-drive
         type: choice
-        options: [test-drive, backup, backup-service]
+        options: [test-drive, backup, verify-copy, backup-service]
 
 permissions:
   contents: read
