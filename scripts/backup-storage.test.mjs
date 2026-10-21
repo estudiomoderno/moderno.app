@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { backup, incompleteSnapshot, failureCategory } from './backup-storage.mjs';
+import { backup, incompleteSnapshot, failureCategory, createCheckReport } from './backup-storage.mjs';
 const listing = JSON.stringify([{ Path: 'project/file.pdf', Size: 4, ModTime: '2026-01-01T00:00:00Z' }]);
 
 test('complete marker requires byte verification and stable source; writes only to destination', async () => {
@@ -54,4 +54,15 @@ test('verification diagnostics expose bounded categories and never provider cont
   for(const [message,category] of [['private/customer.pdf: sizes differ','content-mismatch'],['private/file: file not in destination','missing-file'],['private-token: error downloading: 429 Too Many Requests','download-error,rate-limit'],['private: context deadline exceeded','timeout'],['private: no common hash','hash-unavailable'],['private-token: unknown private failure','unclassified']]){
     const result=failureCategory(message);assert.equal(result,category);assert.ok(!result.includes('private'));
   }
+});
+
+test('streaming byte report distinguishes sides and read errors without retaining private paths',()=>{
+  const report=createCheckReport();
+  report.feed('= private/customer-');report.feed('name.pdf\n- deleted-source.pdf\n+ absent-destination.pdf\n* different.bin\n! download-error.jpg\n');
+  assert.deepEqual(report.summary(),{identical:1,missingSource:1,missingDestination:1,different:1,readErrors:1});
+  const summary=report.summary();summary.identical=999;assert.equal(report.summary().identical,1);
+  assert.ok(!JSON.stringify(report.summary()).includes('private'));
+  report.feed('x'.repeat(9000));report.feed('\n= another.pdf\n');assert.equal(report.summary().identical,2);
+  assert.match(failureCategory('S3: GetObject NoSuchKey status code: 404'),/s3-object-missing/);
+  assert.match(failureCategory('googleapi: Error 503: private-content'),/drive-read-error/);
 });
