@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { privateDestination } from './prepare-backup-destination.mjs';
+import { privateDestination, diagnoseDestinations } from './prepare-backup-destination.mjs';
 
 const route = { version: 1, folder_id: 'selected-folder', team_drive: 'selected-drive' };
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -68,4 +68,39 @@ test('invalid original identity or missing Google token prevents all network acc
     const { result, calls } = exercise([], env);
     await assert.rejects(result); assert.equal(calls.length, 0);
   }
+});
+
+test('diagnostics compare actual folder capabilities without leaking identities or changing routing', async () => {
+  const env = { GOOGLE_CONFIG: JSON.stringify({folder_id: route.folder_id, team_drive: route.team_drive, service_account: 'private-account'}), GOOGLE_ACCESS_TOKEN: 'secret-token' };
+  const original = JSON.stringify(env), lines = [], calls = [];
+  await diagnoseDestinations({environment: env, expected, report: line => lines.push(line), fetcher: async (url, options) => {
+    calls.push({url: new URL(url), options});return {ok:true,json:async()=>metadata};
+  }});
+  assert.equal(JSON.stringify(env), original);
+  assert.equal(calls.length,1);assert.equal(calls[0].options.method,undefined);
+  assert.equal(calls[0].url.origin,'https://www.googleapis.com');
+  assert.equal(calls[0].options.redirect,'error');
+  assert.ok(lines.some(l=>l.includes('folder/drive: true/true')));
+  assert.ok(lines.some(l=>l.includes('canAddChildren=true')));
+  for(const secret of ['private-account','secret-token',route.folder_id,route.team_drive])assert.ok(!lines.join('\n').includes(secret));
+});
+test('diagnostics distinguish inaccessible override and mismatched original without echoing provider body', async () => {
+  const env = { GOOGLE_CONFIG: JSON.stringify({folder_id:'old-root',team_drive:'wrong-drive'}), GOOGLE_ACCESS_TOKEN:'secret', BACKUP_STORAGE_FOLDER_ID:route.folder_id,BACKUP_STORAGE_TEAM_DRIVE:route.team_drive };
+  const lines=[];let calls=0;
+  await diagnoseDestinations({environment:env,expected,report:l=>lines.push(l),fetcher:async()=>++calls===1?{ok:true,json:async()=>({...metadata,driveId:'actual-drive'})}:{ok:false,status:404,json:async()=>{throw Error('must not read private provider payload');}}});
+  assert.equal(calls,2);
+  assert.ok(lines.some(l=>l.includes('original matches authorized folder/drive: false/false')));
+  assert.ok(lines.some(l=>l.includes('drive=false')));
+  assert.ok(lines.some(l=>l.includes('override metadata HTTP 404')));
+  assert.ok(!lines.join('\n').includes('actual-drive'));
+});
+test('diagnostic errors and malformed IDs cannot cause writes, arbitrary requests or interrupt backup routing', async () => {
+  for(const env of [{GOOGLE_CONFIG:'invalid'}, {GOOGLE_CONFIG:'{}'}, {GOOGLE_CONFIG:JSON.stringify({folder_id:'../escape',team_drive:'drive'}),GOOGLE_ACCESS_TOKEN:'secret'}]){
+    let requests=0;
+    await diagnoseDestinations({environment:env,report:()=>{},fetcher:async()=>{requests++;throw Error('private');}});
+    assert.equal(requests,0);
+  }
+  const lines=[];
+  await diagnoseDestinations({environment:{GOOGLE_CONFIG:JSON.stringify({folder_id:'root',team_drive:'drive'}),GOOGLE_ACCESS_TOKEN:'secret'},report:l=>lines.push(l),fetcher:async()=>{throw Error('private-token-and-path');}});
+  assert.ok(lines.some(l=>l.includes('metadata unavailable')));assert.ok(!lines.join('\n').includes('private-token-and-path'));
 });
