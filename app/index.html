@@ -1,9 +1,68 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<meta charset="UTF-8">
+<style id="app-loading-critical">
+/* From Uiverse.io by abrahamcalsin — user supplied dot spinner. */
+#appLoading{display:none}
+html.app-boot,html.app-boot body{background:#fff!important}
+html.app-boot body{overflow:hidden!important}
+html.app-boot body>*:not(#appLoading){visibility:hidden!important}
+html.app-boot body::before,html.app-boot body::after{display:none!important}
+html.app-boot #appLoading{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#fff;color:#183153;visibility:visible!important}
+#appLoading .dot-spinner{--uib-size:2.8rem;--uib-speed:.9s;--uib-color:#183153;position:relative;display:flex;align-items:center;justify-content:flex-start;height:var(--uib-size);width:var(--uib-size)}
+#appLoading .dot-spinner__dot{position:absolute;top:0;left:0;display:flex;align-items:center;justify-content:flex-start;height:100%;width:100%}
+#appLoading .dot-spinner__dot::before{content:'';height:20%;width:20%;border-radius:50%;background-color:var(--uib-color);transform:scale(0);opacity:.5;animation:pulse0112 calc(var(--uib-speed) * 1.111) ease-in-out infinite;box-shadow:0 0 20px rgba(18,31,53,.3)}
+#appLoading .dot-spinner__dot:nth-child(2){transform:rotate(45deg)}
+#appLoading .dot-spinner__dot:nth-child(2)::before{animation-delay:calc(var(--uib-speed) * -0.875)}
+#appLoading .dot-spinner__dot:nth-child(3){transform:rotate(90deg)}
+#appLoading .dot-spinner__dot:nth-child(3)::before{animation-delay:calc(var(--uib-speed) * -0.75)}
+#appLoading .dot-spinner__dot:nth-child(4){transform:rotate(135deg)}
+#appLoading .dot-spinner__dot:nth-child(4)::before{animation-delay:calc(var(--uib-speed) * -0.625)}
+#appLoading .dot-spinner__dot:nth-child(5){transform:rotate(180deg)}
+#appLoading .dot-spinner__dot:nth-child(5)::before{animation-delay:calc(var(--uib-speed) * -0.5)}
+#appLoading .dot-spinner__dot:nth-child(6){transform:rotate(225deg)}
+#appLoading .dot-spinner__dot:nth-child(6)::before{animation-delay:calc(var(--uib-speed) * -0.375)}
+#appLoading .dot-spinner__dot:nth-child(7){transform:rotate(270deg)}
+#appLoading .dot-spinner__dot:nth-child(7)::before{animation-delay:calc(var(--uib-speed) * -0.25)}
+#appLoading .dot-spinner__dot:nth-child(8){transform:rotate(315deg)}
+#appLoading .dot-spinner__dot:nth-child(8)::before{animation-delay:calc(var(--uib-speed) * -0.125)}
+@keyframes pulse0112{0%,100%{transform:scale(0);opacity:.5}50%{transform:scale(1);opacity:1}}
+#appLoading p{margin:0;font-size:14px;text-align:center;padding:0 20px}
+#appLoading button{border:1px solid #ddd;border-radius:10px;background:#fff;padding:10px 16px;color:#141414;font:inherit;cursor:pointer}
+#appLoading button[hidden]{display:none!important}
+#appLoading button:focus-visible{outline:2px solid #183153;outline-offset:4px}
+@media(prefers-reduced-motion:reduce){#appLoading .dot-spinner__dot::before{animation:none;transform:scale(1);opacity:.7}}
+@media print{#appLoading{display:none!important}}
+</style>
+<script id="app-loading-controller">
+window.ModernoAppLoading=(()=>{
+ document.documentElement.classList.add('app-boot');
+ let styles=false,session=false,closed=false,slow=false,probe=()=>false;
+ function finish(){
+  if(closed)return;closed=true;clearTimeout(timeout);
+  document.documentElement.classList.remove('app-boot');
+  document.getElementById('appLoading')?.remove();
+ }
+ function refresh(){if(!closed&&styles&&session){try{if(probe())finish();}catch(e){}}}
+ function showSlow(){
+  if(closed)return;slow=true;
+  const text=document.getElementById('appLoadingText'),button=document.getElementById('appLoadingState');
+  if(text)text.textContent='La carga está tardando más de lo habitual.';
+  if(button){button.hidden=false;button.onclick=finish;}
+ }
+ const timeout=setTimeout(showSlow,20000);
+ document.addEventListener('DOMContentLoaded',()=>{
+  if(slow)showSlow();
+  const fonts=document.fonts?document.fonts.ready:Promise.resolve();
+  fonts.then(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>{styles=true;refresh();})));
+ },{once:true});
+ return {refresh,sessionReady(){session=true;refresh();},setProbe(fn){probe=fn;refresh();}};
+})();
+</script>
+
 <script src="/settings-core.js?v=353"></script>
 <script>try{ if(/#\/?(cliente|obra)\/[a-z0-9]+/i.test(location.hash)) document.documentElement.classList.add("portalboot"); }catch(e){}</script>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="/brand/favicon.svg?v=35810">
 <link rel="icon" type="image/png" sizes="32x32" href="/brand/icon-32.png?v=35810">
@@ -945,6 +1004,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/menu-polish.css?v=3650">
 <link rel="stylesheet" href="/folder-automations.css?v=3652"></head>
 <body>
+<div id="appLoading" role="status" aria-live="polite" aria-label="Cargando Moderno"><div class="dot-spinner" aria-hidden="true"><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div><div class="dot-spinner__dot"></div></div><p id="appLoadingText">Cargando Moderno…</p><button id="appLoadingState" type="button" hidden>Ver estado de la aplicación</button></div>
 <div class="app">
   <!-- ============ SIDEBAR ============ -->
   <header id="mHeader">
@@ -3559,7 +3619,7 @@ function applyAccent(c){
   document.documentElement.style.setProperty("--gold", c);
   document.documentElement.style.setProperty("--gold-soft", soft);
 }
-function portalBootDone(){ try{ document.documentElement.classList.remove("portalboot"); }catch(e){} }
+function portalBootDone(){ try{ document.documentElement.classList.remove("portalboot");globalThis.ModernoAppLoading?.refresh(); }catch(e){} }
 function portalAnonBoot(token){
   showLogin(false);
   state.portalAnon = token;
@@ -11440,7 +11500,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.90";
+const MODERNO_VER="v3.65.91";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13067,6 +13127,7 @@ render = function(){
     if(_lastVisualRoute&&(typeof WorkflowPolish==='undefined'||!WorkflowPolish.localMotion)&&!matchMedia('(prefers-reduced-motion: reduce)').matches&&V.animate)_viewFade=V.animate([{opacity:0},{opacity:1}],{duration:260,easing:'cubic-bezier(.22,.61,.36,1)'});
     _lastVisualRoute=key;
   }
+  globalThis.ModernoAppLoading?.refresh();
 };
 window.addEventListener("beforeunload", persistNow);
 /* Vigía de Administración: cualquier ajuste tocado confirma y persiste */
@@ -13229,6 +13290,7 @@ if(sb){
     if(data && data.session && data.session.user) sbEnter(data.session.user, false);
     else if(_ptk) portalAnonBoot(_ptk);
     else showLogin(true);
+    globalThis.ModernoAppLoading?.sessionReady();
   });
   sb.auth.onAuthStateChange((ev, session)=>{
     if(ev==="SIGNED_IN" && session && session.user){ sbEnter(session.user, true); gcalAfterOAuth(session); }
@@ -13389,5 +13451,9 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/page-breadcrumbs.js?v=36559"></script>
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=36558">
 <script src="/calendar-ui.js?v=36570"></script>
+<script>
+ModernoAppLoading.setProbe(()=>!document.documentElement.classList.contains('portalboot')&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
+if(!sb)ModernoAppLoading.sessionReady();
+</script>
 </body>
 </html>
