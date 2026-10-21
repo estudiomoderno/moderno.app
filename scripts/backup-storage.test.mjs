@@ -31,16 +31,18 @@ for (const failure of ['copy', 'check', 'changed', 'empty']) {
   });
 }
 
-test('verification of an incomplete copy never rewrites its objects and requires bytes and stable source', async()=>{
+test('recovery fills only absent objects and still requires bytes and stable source', async()=>{
   const calls=[];
   await backup(async args=>{calls.push(args);return args[0]==='lsjson'?listing:'';},'files','test',{verifyOnly:true});
-  assert.ok(!calls.some(args=>args[0]==='copy'));
+  const copy=calls.filter(args=>args[0]==='copy');assert.equal(copy.length,1);
+  assert.deepEqual(copy[0],['copy','source:files','destination:test/objects','--immutable','--ignore-existing','--no-traverse']);
   assert.ok(calls.some(args=>args[0]==='check'&&args.includes('--download')));
   assert.equal(calls.at(-1)[1],'destination:test/COMPLETE.json');
   for(const failure of ['check','changed']){
     const calls=[];let reads=0;
     await assert.rejects(backup(async args=>{calls.push(args);if(args[0]==='check'&&failure==='check')throw Error('difference');if(args[0]==='lsjson')return ++reads===2&&failure==='changed'?listing.replace('"Size":4','"Size":5'):listing;return '';},'files','test',{verifyOnly:true}));
-    assert.ok(!calls.some(args=>args[0]==='copy'||args[0]==='rcat'));
+    assert.ok(!calls.some(args=>args[0]==='rcat'));
+    assert.ok(calls.filter(args=>args[0]==='copy').every(args=>args.includes('--immutable')&&args.includes('--ignore-existing')));
   }
 });
 test('recovery selects only incomplete same-day snapshots within the configured root',async()=>{

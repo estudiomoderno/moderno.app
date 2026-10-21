@@ -18,7 +18,9 @@ export async function backup(run, bucket, id, { verifyOnly = false } = {}) {
   const source = `source:${bucket}`;
   const root = `destination:${id}`;
   const before = inventory(await run(['lsjson', source, '--recursive', '--files-only']));
-  if (!verifyOnly) await run(['copy', source, `${root}/objects`, '--immutable']);
+  // Recovery targets only an incomplete same-day snapshot selected below.
+  // Existing objects stay untouched; only absent files may be added.
+  await run(['copy', source, `${root}/objects`, '--immutable', ...(verifyOnly ? ['--ignore-existing', '--no-traverse'] : [])]);
   // Read back and compare bytes, rather than relying on filenames or timestamps.
   await run(['check', source, `${root}/objects`, '--download']);
   const after = inventory(await run(['lsjson', source, '--recursive', '--files-only']));
