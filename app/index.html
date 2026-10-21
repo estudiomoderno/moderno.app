@@ -1230,10 +1230,11 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/sync-merge.js?v=3590"></script>
-<script src="/private-files.js?v=20260909"></script>
+<script src="/private-files.js?v=36598"></script>
 <script src="/daily-work.js?v=36585"></script>
 <script src="/gestoria.js?v=20260909"></script>
 <script src="/pending-archive.js?v=36596"></script>
+<script src="/pending-recovery.js?v=36598"></script>
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=3653"></script>
 <script src="/specifications.js?v=36587"></script>
@@ -11127,15 +11128,17 @@ function subeAdjunto(f, obj){
     });
 }
 function fileSrc(fo){ return (fo && (fo.url || fo.data)) || null; }
-async function fileResolveForView(fo){
+let _fileRequestCache=null;
+async function fileResolveForView(fo,{refresh=false}={}){
   const source=fileSrc(fo); if(!source)return null;
   try{
     const origins=[new URL(SUPABASE_URL).origin,'https://auth.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co'];
-    const resolve=ModernoFiles.createResolver({origins,
+    if(!_fileRequestCache){const resolve=ModernoFiles.createResolver({origins,
       signMember:async path=>{const {data,error}=await sb.storage.from('archivos').createSignedUrl(path,60);if(error)throw error;return data.signedUrl;},
       signPortal:async ({path,token,type})=>{const {data,error}=await sb.functions.invoke('portal-archivo',{body:{path,token,type}});if(error)throw error;return data.url;}
     });
-    return await resolve(source,{study:ESTUDIO_ID,portalToken:state.portalAnon,portalType:_wantObra?'obra':'cliente'});
+    _fileRequestCache=ModernoFiles.createRequestCache(resolve);}
+    return await _fileRequestCache.get(source,{study:ESTUDIO_ID,user:state.sessionUser?.id,role:typeof _accessRole==='undefined'?null:_accessRole,attempt:typeof _accessAttempt==='undefined'?0:_accessAttempt,portalToken:state.portalAnon,portalType:_wantObra?'obra':'cliente'},refresh);
   }catch(e){toast('No se pudo abrir el archivo. Comprueba tu acceso y vuelve a intentarlo.');return false;}
 }
 function fileImageAttrs(source){
@@ -11146,26 +11149,32 @@ function fileImageAttrs(source){
     return 'src="'+escape(source)+'"';
   }catch{return 'alt="Imagen no disponible"';}
 }
-function fileViewIdentity(){return [ESTUDIO_ID,state.portalAnon,state.sessionUser&&state.sessionUser.id].join('|');}
+function fileViewIdentity(){return [ESTUDIO_ID,state.portalAnon,state.sessionUser&&state.sessionUser.id,typeof _accessRole==='undefined'?'':_accessRole,typeof _accessAttempt==='undefined'?'':_accessAttempt].join('|');}
 const _imageLoads=new WeakMap();
 function fileLoadImage(img,refresh=false){
   if(!refresh&&_imageLoads.has(img))return _imageLoads.get(img);
   const owner=fileViewIdentity();
   const promise=(async()=>{
     if(img.dataset.privateFile){
-      const src=await fileResolveForView({data:img.dataset.privateFile});
+      const src=await fileResolveForView({data:img.dataset.privateFile},{refresh});
       if(!src||!img.isConnected||owner!==fileViewIdentity())throw Error('Imagen no disponible');
       img.src=src;
     }
     if(!img.getAttribute('src'))throw Error('Imagen sin origen');
     await img.decode();
     if(!img.isConnected||owner!==fileViewIdentity()||!img.naturalWidth)throw Error('Imagen no disponible');
+    img.classList.remove('image-failed');img.classList.add('image-ready');
   })();
   _imageLoads.set(img,promise);return promise;
 }
 document.addEventListener('DOMContentLoaded',()=>{
+  const observed=new WeakSet();
+  const start=img=>{if(!_imageLoads.has(img))fileLoadImage(img).catch(()=>{if(img.hasAttribute('data-client-brand')){ClientPortalSite.brandFallback(img);return;}img.alt='Imagen no disponible';img.classList.add('image-failed');});};
+  const lazy=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){lazy.unobserve(entry.target);start(entry.target);}},{rootMargin:'300px'}):null;
   const scan=()=>document.querySelectorAll('img[data-private-file],.shopping-product-photo img').forEach(img=>{
-    if(!_imageLoads.has(img))fileLoadImage(img).then(()=>{img.classList.add('image-ready');}).catch(()=>{if(img.hasAttribute('data-client-brand')){ClientPortalSite.brandFallback(img);return;}img.alt='Imagen no disponible';img.classList.add('image-failed');});
+    if(_imageLoads.has(img)||observed.has(img))return;
+    observed.add(img);
+    if(lazy&&img.loading==='lazy')lazy.observe(img);else start(img);
   });
   new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
 });
@@ -11504,7 +11513,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.97";
+const MODERNO_VER="v3.65.98";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11586,7 +11595,7 @@ async function sbLogout(){
   clearTimeout(_cloudT);clearTimeout(_cloudRetryT);clearInterval(_rtPoll);_rtPoll=null;
   if(_rtChan){try{await sb.removeChannel(_rtChan);}catch(e){} _rtChan=null;}
   try{ if(sb) await sb.auth.signOut(); }catch(e){}
-  state.sessionUser = null; _sbEntered=false; _afterDone=false; ESTUDIO_ID=null;
+  state.sessionUser = null; _sbEntered=false; _afterDone=false; ESTUDIO_ID=null;_cloudLoadedStudy=null;_cloudUserId=null;
   Object.keys(_cloudHash).forEach(k=>delete _cloudHash[k]);
   Object.keys(_cloudSeen).forEach(k=>delete _cloudSeen[k]);
   persistNow(); applySessionUI(); showLogin(true);
@@ -11599,6 +11608,7 @@ async function sbLogout(){
    presupuestos={quotes,n} · facturas={invoices,n,entries(contabilidad)} · contactos=clients ·
    contratistas/fases=reservados (viven dentro de cada proyecto) · agenda=state.cal ·
    config=cuenta, emisor, equipo, marcas, logos, contadores, plantillas de documentos. */
+let _cloudLoadedStudy=null,_cloudUserId=null;
 let ESTUDIO_ID=null, _cloudApplying=false, _cloudT=null, _cloudBusy=false, _cloudRetryT=null;
 const _cloudSeen={}, _cloudHash={};
 
@@ -11674,7 +11684,7 @@ function syncTag(mode,msg){
   _syncDetail=msg||'';syncRefresh();
 }
 function syncDownloadCurrent(){
-  try{const raw=JSON.stringify({v:1,appVersion:MODERNO_VER,when:Date.now(),state,BRAND,wsOrder});const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='moderno-cambios-actuales-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast('No se pudo descargar la copia. Conserva esta pestaña abierta.');}
+  try{const raw=JSON.stringify({v:1,appVersion:MODERNO_VER,when:Date.now(),state,BRAND,wsOrder,sync:localSnapshotSync()});const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='moderno-cambios-actuales-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast('No se pudo descargar la copia. Conserva esta pestaña abierta.');}
 }
 function syncDetails(){
   if(_modalAbierto()){toast('Guarda o cancela el formulario antes de abrir el estado de sincronización.');return;}
@@ -11766,7 +11776,7 @@ async function cloudReadBlock(b,signal=null){
   return {data:result.data[0]||null};
 }
 function cloudPrepareFilteredCache(rows){
-  if(_accessRole!=="colaborador")return;
+  if(_accessRole!=="colaborador"&&!(_accessRole==='admin'&&rows.length))return;
   // Los cambios pendientes se conservan antes de llegar aquí. No mezclar la
   // antigua copia completa con la nueva proyección autorizada del servidor.
   const cfg=rows.find(r=>r.bloque==='config')?.contenido||{};
@@ -11893,12 +11903,48 @@ function cloudApplyRemote(b, contenido, updated_at){
   return true;
 }
 function _rtFlushRerender(){ if(_rtRerender && !_modalAbierto()){ const ae=document.activeElement; if(ae && (ae.tagName==="INPUT"||ae.tagName==="TEXTAREA")) return; _rtRerender=false; try{ persistNow(); }catch(e){} render(); } }
-async function cloudPoll(){
-  if(!sb || !ESTUDIO_ID || document.hidden) return;
-  try{
-    const {data:rows,error}=await cloudReadRows();if(error)throw error;
-    rows.filter(r=>r.updated_at && _cloudSeen[r.bloque]!==r.updated_at).forEach(r=>cloudApplyRemote(r.bloque,r.contenido,r.updated_at));
-  }catch(e){syncTag("err",e.message||"No se pudo actualizar la consulta");}
+async function cloudPoll(bloques=null){
+  if(!sb||!ESTUDIO_ID||document.hidden)return;
+  const identity=()=>JSON.stringify([ESTUDIO_ID,_accessRole,typeof _cloudUserId==='undefined'?null:_cloudUserId]);
+  const owner=identity();
+  const known=['proyectos','compras','presupuestos','facturas','contactos','contratistas','fases','agenda','config'];
+  const wanted=Array.isArray(bloques)?[...new Set(bloques.filter(b=>known.includes(b)))]:null;
+  if(wanted&&wanted.length===0)return;
+  const context=cloudPoll.context?.owner===owner?cloudPoll.context:(cloudPoll.context={owner,queued:undefined,running:null});
+  context.queued=context.queued===null||wanted===null?null:[...new Set([...(context.queued||[]),...wanted])];
+  if(context.running)return context.running;
+  context.running=Promise.resolve().then(async()=>{
+    while(context.queued!==undefined){
+      const selected=context.queued;context.queued=undefined;
+      if(identity()!==owner||document.hidden)return;
+      const controller=typeof AbortController==='function'?new AbortController():null;let timer;
+      try{
+        const {data:rows,error}=await Promise.race([
+          cloudReadRows(selected,controller?.signal),
+          new Promise((_,reject)=>{timer=setTimeout(()=>{reject(new Error('La actualización tarda demasiado. Se conservan tus cambios.'));controller?.abort();},30000);})
+        ]);
+        if(identity()!==owner)return;if(error)throw error;
+        rows.filter(r=>r.updated_at&&_cloudSeen[r.bloque]!==r.updated_at).forEach(r=>cloudApplyRemote(r.bloque,r.contenido,r.updated_at));
+      }catch(e){if(identity()===owner)syncTag('err',e.message||'No se pudo actualizar la consulta');}
+      finally{clearTimeout(timer);}
+    }
+  }).finally(()=>{context.running=null;});
+  return context.running;
+}
+function cloudRealtimeChange(payload){
+  const row=payload?.new||payload?.old||{},owner=JSON.stringify([ESTUDIO_ID,_accessRole]);
+  let pending=cloudRealtimeChange.pending;
+  if(!pending||pending.owner!==owner)pending=cloudRealtimeChange.pending={owner,blocks:new Map(),full:false};
+  if(typeof row.bloque==='string')pending.blocks.set(row.bloque,row.updated_at);else pending.full=true;
+  clearTimeout(cloudRealtimeChange.timer);
+  const flush=()=>{
+    if(JSON.stringify([ESTUDIO_ID,_accessRole])!==pending.owner)return;
+    if(_cloudBusy){cloudRealtimeChange.timer=setTimeout(flush,500);return;}
+    const selected=pending.full?null:[...pending.blocks].filter(([b,version])=>!version||_cloudSeen[b]!==version).map(([b])=>b);
+    pending.blocks.clear();pending.full=false;
+    if(selected===null||selected.length)cloudPoll(selected);
+  };
+  cloudRealtimeChange.timer=setTimeout(flush,150);
 }
 /* Presencia: privada independiente de la sincronización de datos. */
 let teamPresence=null;
@@ -11916,7 +11962,7 @@ function cloudRealtimeStart(){
   if(!_rtChan){
     try{
       _rtChan = sb.channel("datos_"+ESTUDIO_ID);
-      if(_accessRole==='admin')_rtChan.on("postgres_changes",{event:"*",schema:"public",table:"datos_estudio",filter:"estudio_id=eq."+ESTUDIO_ID},()=>{ cloudPoll(); });
+      if(_accessRole==='admin')_rtChan.on("postgres_changes",{event:"*",schema:"public",table:"datos_estudio",filter:"estudio_id=eq."+ESTUDIO_ID},cloudRealtimeChange);
       _rtChan.subscribe((st)=>{if(st==="SUBSCRIBED")presenceTrack();});
     }catch(e){ console.warn("[realtime]", e); }
   }
@@ -11963,7 +12009,7 @@ function cloudMarkLoadedBlocks(rows){
       const _recibidos = new Set(rows.map(r=>r.bloque));
       /* La nube manda: los bloques que no existen en la nube se vacían en local (nada de restos de caché o demo) */
       for(const b of Object.keys(CLOUD_BLOCKS)){
-        if(_recibidos.has(b)){ _cloudHash[b]=canon(CLOUD_BLOCKS[b].get()); _cloudCount[b]=blockCount(CLOUD_BLOCKS[b].get()); }
+        if(_recibidos.has(b)){ const remote=rows.find(r=>r.bloque===b).contenido;_cloudHash[b]=_accessRole==='colaborador'&&['config','facturas','presupuestos','contratistas'].includes(b)?canon(CLOUD_BLOCKS[b].get()):canon(remote); _cloudCount[b]=blockCount(remote); }
         else { const cur=CLOUD_BLOCKS[b].get(); if(Array.isArray(cur) && cur.length){ _cloudApplying=true; try{ CLOUD_BLOCKS[b].set([]); }finally{ _cloudApplying=false; } } if(_accessRole==='colaborador'&&['config','facturas','presupuestos','contratistas'].includes(b))_cloudHash[b]=canon(CLOUD_BLOCKS[b].get());else delete _cloudHash[b]; _cloudCount[b]=0; }
       }
 }
@@ -11981,6 +12027,13 @@ async function cloudLoad(){
     if(_saveErr)throw new Error("Conserva los cambios actuales antes de reconectar. Descárgalos desde el estado de guardado.");
     render();
     syncTag("saving","Conectando con tu estudio…");
+    let verifiedUserId=null;
+    if(sb.auth?.getUser){
+      const identity=await cloudConnectionStep(sb.auth.getUser(),attempt);
+      if(identity.error||!identity.data?.user?.id)throw new Error('No se pudo verificar tu identidad. Conserva tus cambios y reintenta.');
+      verifiedUserId=identity.data.user.id;
+      if(state.sessionUser?.id!==verifiedUserId)state.sessionUser=sbUserToSession(identity.data.user);
+    }
     const {data:mem, error:e1} = await cloudConnectionStep(sb.rpc("unirse_al_estudio"),attempt);
     if(e1||!mem||!mem.estudio_id){ throw new Error("No se pudo comprobar tu acceso al estudio. Revisa la conexión y reintenta."); }
     ESTUDIO_ID = mem.estudio_id;
@@ -12017,7 +12070,9 @@ async function cloudLoad(){
     const eid = ESTUDIO_ID;
     const {data:rows, error:e2} = await cloudConnectionStep(cloudReadRows(),attempt);
     if(e2){ throw new Error("No se pudieron cargar los datos del estudio. Revisa la conexión y reintenta."); }
+    const recovery=ModernoPendingRecovery.plan(_resumeRaw,rows,{study:ESTUDIO_ID,user:verifiedUserId,role:_accessRole},{canonical:canon,merge:ModernoSync.mergeSavedData});
     cloudPrepareFilteredCache(rows);
+    _cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=verifiedUserId;
     _accessLoading=false;
     if(rows && rows.length){
       _cloudApplying=true;
@@ -12025,8 +12080,14 @@ async function cloudLoad(){
       finally{ _cloudApplying=false; }
       ensureSelfInTeam();
       cloudMarkLoadedBlocks(rows);
+      for(const [block,value] of Object.entries(recovery.changes)){_cloudApplying=true;try{CLOUD_BLOCKS[block].set(value);}finally{_cloudApplying=false;}}
+      Object.assign(window._cloudConflicts||(window._cloudConflicts={}),recovery.conflicts);
+      _resumeRaw=null;
       persistNow(); drawBrandSwitch(); applySessionUI(); render();
-      syncTag("ok","Estudio cargado ✓"); cloudRealtimeStart();
+      if(recovery.status==='conflict')syncTag('err','Hay cambios conservados de la sesión anterior que necesitan revisión.');
+      else if(recovery.status==='pending'){syncTag('pending','Recuperados los cambios pendientes. Guardando en la nube…');cloudDirty();}
+      else syncTag("ok","Estudio cargado ✓");
+      cloudRealtimeStart();
       if(_wantProject!=null){
         if(state.projects.some(x=>x.id===_wantProject&&!x.tpl))routeParse();
         else{_wantProject=null;state.view='proyectos';toast('El proyecto no está disponible o no tienes acceso.');}
@@ -12039,6 +12100,14 @@ async function cloudLoad(){
       }
       afterLoginOnce();
       if(_accessRole==='admin'){setTimeout(migrateEmbeddedLogos, 800);if(typeof CatalogUI!=='undefined')setTimeout(()=>CatalogUI.trySeed(),0);}
+    } else if(Object.keys(recovery.changes).length){
+      cloudMarkLoadedBlocks([]);
+      for(const [block,value] of Object.entries(recovery.changes)){_cloudApplying=true;try{CLOUD_BLOCKS[block].set(value);}finally{_cloudApplying=false;}}
+      Object.assign(window._cloudConflicts||(window._cloudConflicts={}),recovery.conflicts);_resumeRaw=null;
+      persistNow();render();cloudRealtimeStart();
+      if(recovery.status==='conflict')syncTag('err','Hay cambios conservados de la sesión anterior que necesitan revisión.');
+      else{syncTag('pending','Recuperados los cambios pendientes. Guardando en la nube…');cloudDirty();}
+      afterLoginOnce();
     } else if(localHasData() && state.myRole==="admin" && !_anclaPrevia){
       /* Solo el creador del estudio (admin) y solo con la nube VACÍA puede subir su copia local */
       cloudSnapshotAll(); cloudOfferMigration();
@@ -12247,6 +12316,10 @@ const LS_KEY="moderno_prod_v1";
 let _saveT=null, _lastSave=null, _saveErr=false, _saveErrDetail='', _localRepair=null, _localRepairAfter=0;
 let _verifiedLocalContent=null,_verifiedLocalReference=null;
 let _localWrite=null,_localRevision=0,_localResumePending=false,_localResumeFailed=false;
+function localSnapshotSync(){
+  if(typeof _cloudLoadedStudy==='undefined'||_cloudLoadedStudy!==ESTUDIO_ID||_accessLoading||!_cloudUserId||state.sessionUser?.id!==_cloudUserId)return undefined;
+  return ModernoPendingRecovery.capture({study:ESTUDIO_ID,user:_cloudUserId,role:_accessRole,loaded:true,hashes:_cloudHash,versions:_cloudSeen,values:Object.fromEntries(Object.entries(CLOUD_BLOCKS).map(([b,io])=>[b,io.get()])),canonical:canon,conflicts:window._cloudConflicts||{}});
+}
 function localCopyOwner(){return JSON.stringify([ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,typeof _accessRole==='undefined'?'':_accessRole]);}
 function localCopyFailure(error,raw){
   const quota=error?.name==='QuotaExceededError'||error?.code===22||error?.code===1014;
@@ -12280,7 +12353,7 @@ function persistNow(){
   const revision=++_localRevision,owner=localCopyOwner();
   let raw,content;
   try{
-    content=JSON.stringify({state,BRAND,wsOrder});
+    content=JSON.stringify({state,BRAND,wsOrder,sync:localSnapshotSync()});
     if(content===_verifiedLocalContent&&localStorage.getItem(LS_KEY)===_verifiedLocalReference){_saveErr=false;_saveErrDetail='';cloudDirty();return;}
     raw='{"v":1,"when":'+Date.now()+','+content.slice(1);
     localStorage.setItem(LS_KEY,raw);
@@ -12341,13 +12414,14 @@ function persistSoon(){ clearTimeout(_saveT); _saveT=setTimeout(persistNow, 500)
   state.onboarded = false;
 })();
 
-let _resumed=false;
+let _resumed=false,_resumeRaw=null;
 function applyLocalSnapshot(raw){
   const d=JSON.parse(raw);if(!d||d.v!==1||!d.state)throw new Error('No se pudo leer la copia local');
   Object.keys(state).forEach(k=>delete state[k]);Object.assign(state,d.state);
   Object.keys(BRAND).forEach(k=>delete BRAND[k]);Object.assign(BRAND,d.BRAND||{});
   if(Array.isArray(d.wsOrder)&&d.wsOrder.length)wsOrder=d.wsOrder;
-  _verifiedLocalContent=JSON.stringify({state,BRAND,wsOrder});_verifiedLocalReference=localStorage.getItem(LS_KEY);
+  _resumeRaw=raw;
+  _verifiedLocalContent=JSON.stringify({state,BRAND,wsOrder,sync:d.sync});_verifiedLocalReference=localStorage.getItem(LS_KEY);
   _resumed=true;
 }
 let _localResumePointer=null;
@@ -13314,7 +13388,7 @@ setTimeout(versionSentinel, 2500);
 setInterval(versionSentinel, 120000);
 function backupExport(){
   persistNow();
-  const raw = JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder});
+  const raw = JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder,sync:localSnapshotSync()});
   const a=document.createElement("a");
   const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));a.href=url;
   setTimeout(()=>URL.revokeObjectURL(url),30000);

@@ -5,11 +5,11 @@ import fs from 'node:fs';
 const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const section=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
 function setup({sign,decode}={}){
-  const img={dataset:{privateFile:'storage://archivos/ficticio/plano.png'},isConnected:true,naturalWidth:50,src:'',getAttribute(){return this.src;},decode:decode||async function(){}};
+  const img={classList:{add(){},remove(){}},dataset:{privateFile:'storage://archivos/ficticio/plano.png'},isConnected:true,naturalWidth:50,src:'',getAttribute(){return this.src;},decode:decode||async function(){}};
   const zone={childNodes:[{}],style:{display:'none'},querySelectorAll(){return [img];}};
   let prints=0,notices=0,signs=0;
   const c={ESTUDIO_ID:'ficticio',state:{},WeakMap,Promise,Array,Error,String,setTimeout(){},fileResolveForView:async()=>{signs++;return sign?await sign():'https://example.invalid/signed';},document:{title:'Original',getElementById(){return zone;}},window:{print(){prints++;assert.equal(zone.style.display,'block');}},toast(){notices++;}};
-  vm.createContext(c);vm.runInContext(section('function fileViewIdentity(){',"document.addEventListener('DOMContentLoaded',()=>{\n  const scan=")+section('async function printAs(title){','function pdfBrandLogo('),c);
+  vm.createContext(c);vm.runInContext(section('function fileViewIdentity(){',"document.addEventListener('DOMContentLoaded',()=>{")+section('async function printAs(title){','function pdfBrandLogo('),c);
   return {c,img,zone,get prints(){return prints;},get notices(){return notices;},get signs(){return signs;}};
 }
 test('private print waits for signed image decoding and restores document',async()=>{

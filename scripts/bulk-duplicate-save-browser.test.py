@@ -67,7 +67,7 @@ try:
    if output:page.screenshot(path=str(output/f'bulk-stalled-{width}.png'),full_page=True)
    with page.expect_download() as event:page.get_by_role('button',name='Descargar cambios actuales',exact=True).click()
    import json
-   data=json.loads(Path(event.value.path()).read_text());assert len(data['state']['projects'][0]['rooms'])==12;assert data['appVersion']=='v3.65.97'
+   data=json.loads(Path(event.value.path()).read_text());assert len(data['state']['projects'][0]['rooms'])==12;assert data['appVersion']==page.evaluate('MODERNO_VER')
    page.evaluate("fixtureMode='ok'")
    page.get_by_role('button',name='Reintentar guardado',exact=True).click()
    page.wait_for_function("!_cloudBusy&&!_localWrite&&!syncHasChanges()&&syncView().label==='Guardado en nube'",timeout=30000)
