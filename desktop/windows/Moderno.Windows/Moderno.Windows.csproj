@@ -8,7 +8,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Moderno.Windows</AssemblyName>
     <RootNamespace>Moderno.Windows</RootNamespace>
-    <Version>0.1.0-beta</Version>
+    <Version>0.2.0-beta</Version>
+    <ApplicationIcon>Assets/Moderno.ico</ApplicationIcon>
     <ApplicationTitle>Moderno.app</ApplicationTitle>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>

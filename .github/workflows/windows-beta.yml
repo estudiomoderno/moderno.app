@@ -31,6 +31,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Test navigation policy (isolated, no network)
+        run: dotnet run --project desktop/windows/Moderno.Windows.Tests -c Release
+
       - name: Restore WebView2 dependencies
         run: dotnet restore desktop/windows/Moderno.Windows/Moderno.Windows.csproj -r win-x64
 
@@ -38,6 +41,38 @@ jobs:
         shell: pwsh
         run: |
           dotnet publish desktop/windows/Moderno.Windows/Moderno.Windows.csproj -c Release -r win-x64 --self-contained true --no-restore -p:PublishReadyToRun=false -o "${{ runner.temp }}\moderno-windows"
+
+      - name: Exercise WebView2 with synthetic intercepted responses only
+        shell: pwsh
+        run: dotnet run --project desktop/windows/Moderno.Windows.SmokeTests -c Release
+
+      - name: Build per-user beta installer
+        shell: pwsh
+        run: |
+          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (!(Test-Path $compiler)) { throw "Inno Setup 6 is missing from the runner" }
+          & $compiler "/DPublishDir=${{ runner.temp }}\moderno-windows" "/DOutputDir=${{ runner.temp }}\moderno-installer" desktop/windows/installer/Moderno.iss
+          if ($LASTEXITCODE -ne 0) { throw "Installer compilation failed" }
+
+      - name: Verify installation, upgrade and uninstall (no production access)
+        shell: pwsh
+        run: desktop/windows/installer/Test-Installer.ps1 -Installer "${{ runner.temp }}\moderno-installer\Moderno-Windows-Beta-0.2.0-Setup-x64.exe"
+
+      - name: Hash installer
+        shell: pwsh
+        run: |
+          $file = "${{ runner.temp }}\moderno-installer\Moderno-Windows-Beta-0.2.0-Setup-x64.exe"
+          $hash = (Get-FileHash $file -Algorithm SHA256).Hash
+          "$hash  $(Split-Path $file -Leaf)" | Set-Content "${{ runner.temp }}\moderno-installer\SHA256SUMS.txt"
+          Copy-Item desktop/windows/installer/beta-info.txt "${{ runner.temp }}\moderno-installer\LEEME.txt"
+
+      - name: Upload beta installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Moderno-Windows-Beta-Installer-x64
+          path: ${{ runner.temp }}\moderno-installer\*
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Create distributable ZIP
         shell: pwsh

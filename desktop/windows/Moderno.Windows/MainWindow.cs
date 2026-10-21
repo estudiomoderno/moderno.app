@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 using System.Drawing;
 using System.Windows.Forms;
 using Microsoft.Web.WebView2.Core;
@@ -11,9 +12,9 @@ namespace Moderno.Windows;
 /// </summary>
 internal sealed class MainWindow : Form
 {
-    private static readonly Uri AppAddress = new("https://app.moderno.app/");
+    private static readonly Uri AppAddress = NavigationPolicy.Home;
 
-    private readonly WebView2 browser = new() { Dock = DockStyle.Fill };
+    private WebView2 browser = new() { Dock = DockStyle.Fill };
     private readonly Panel notice = new()
     {
         Dock = DockStyle.Fill,
@@ -37,11 +38,24 @@ internal sealed class MainWindow : Form
         FlatStyle = FlatStyle.System
     };
 
+#if WINDOWS_SMOKE_TESTS
+    internal static string TestProfile = "";
+    internal static Action<CoreWebView2>? ConfigureTestBrowser;
+    internal bool NoticeVisible => notice.Visible;
+    internal Task RetryForTestAsync() => ReloadOrStartAsync();
+#endif
     private bool initialized;
+    private bool initializing;
+    private bool recreateBrowser;
+    private bool networkNotice;
+    private bool returnHome;
+    private readonly LinkLabel help = new() { Text = "Abrir Moderno.app en el navegador", AutoSize = true, Anchor = AnchorStyles.None };
+    private string helpAddress = "https://app.moderno.app/";
 
     public MainWindow()
     {
         Text = "Moderno.app";
+        Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         StartPosition = FormStartPosition.CenterScreen;
         WindowState = FormWindowState.Maximized;
         MinimumSize = new Size(800, 520);
@@ -63,16 +77,19 @@ internal sealed class MainWindow : Form
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
-            RowCount = 2
+            RowCount = 3
         };
-        actions.RowStyles.Add(new RowStyle(SizeType.Percent, 65));
-        actions.RowStyles.Add(new RowStyle(SizeType.Percent, 35));
+        actions.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        actions.RowStyles.Add(new RowStyle(SizeType.Percent, 30));
+        actions.RowStyles.Add(new RowStyle(SizeType.Percent, 20));
         message.AutoSize = false;
         message.Dock = DockStyle.Fill;
         message.TextAlign = ContentAlignment.MiddleCenter;
         retry.Anchor = AnchorStyles.None;
         actions.Controls.Add(message, 0, 0);
         actions.Controls.Add(retry, 0, 1);
+        actions.Controls.Add(help, 0, 2);
+        help.LinkClicked += (_, _) => OpenInSystemBrowser(helpAddress);
 
         center.Controls.Add(new Panel(), 0, 0);
         center.Controls.Add(actions, 0, 1);
@@ -90,14 +107,41 @@ internal sealed class MainWindow : Form
             {
                 e.Handled = true;
                 e.SuppressKeyPress = true;
-                if (initialized) browser.CoreWebView2.Reload();
+                if (initialized && !recreateBrowser) browser.CoreWebView2.Reload();
             }
         };
+        NetworkChange.NetworkAvailabilityChanged += NetworkAvailabilityChanged;
+        FormClosed += (_, _) => NetworkChange.NetworkAvailabilityChanged -= NetworkAvailabilityChanged;
+    }
+
+    private void NetworkAvailabilityChanged(object? sender, NetworkAvailabilityEventArgs e)
+    {
+        if (IsDisposed || !IsHandleCreated) return;
+        try
+        {
+            BeginInvoke(new Action(() =>
+            {
+                if (IsDisposed) return;
+                if (!e.IsAvailable && !notice.Visible)
+                {
+                    networkNotice = true;
+                    ShowNotice("Sin conexión. Conecta internet para continuar. Tu ventana se conserva.", true);
+                }
+                else if (networkNotice)
+                {
+                    // Nunca recargar al volver la red: podría haber un formulario pendiente.
+                    networkNotice = false;
+                    notice.Visible = false;
+                }
+            }));
+        }
+        catch (InvalidOperationException) { /* La ventana se está cerrando. */ }
     }
 
     private async Task InitializeAsync()
     {
-        if (initialized) return;
+        if (initialized || initializing) return;
+        initializing = true;
 
         message.Text = "Conectando con Moderno.app…";
         retry.Visible = false;
@@ -111,12 +155,17 @@ internal sealed class MainWindow : Form
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "Moderno.app", "Windows", "WebView2");
 
+#if WINDOWS_SMOKE_TESTS
+            profile = TestProfile;
+#endif
             Directory.CreateDirectory(profile);
             var environment = await CoreWebView2Environment.CreateAsync(userDataFolder: profile);
             await browser.EnsureCoreWebView2Async(environment);
 
             var core = browser.CoreWebView2;
             core.Settings.AreDevToolsEnabled = false;
+            core.Settings.IsGeneralAutofillEnabled = false;
+            core.Settings.IsPasswordAutosaveEnabled = false;
             core.Settings.AreHostObjectsAllowed = false;
             core.Settings.IsWebMessageEnabled = false;
             core.Settings.IsStatusBarEnabled = false;
@@ -124,16 +173,19 @@ internal sealed class MainWindow : Form
 
             core.NavigationStarting += (_, e) =>
             {
-                if (IsAppNavigation(e.Uri)) return;
+                if (NavigationPolicy.IsInternal(e.Uri)) return;
                 e.Cancel = true;
-                OpenInSystemBrowser(e.Uri);
+                HandleExternalNavigation(e.Uri);
             };
 
             core.NewWindowRequested += (_, e) =>
             {
                 // Nunca abrir ventanas no verificadas dentro del contenedor.
                 e.Handled = true;
-                OpenInSystemBrowser(e.Uri);
+                if (NavigationPolicy.IsInternal(e.Uri))
+                    core.Navigate(e.Uri);
+                else
+                    HandleExternalNavigation(e.Uri);
             };
 
             core.PermissionRequested += (_, e) =>
@@ -142,32 +194,70 @@ internal sealed class MainWindow : Form
                 e.State = CoreWebView2PermissionState.Deny;
             };
 
+            core.DownloadStarting += (_, e) =>
+            {
+                var deferral = e.GetDeferral();
+                // Salir del callback WebView2 antes de abrir un diálogo modal.
+                BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        if (IsDisposed) { e.Cancel = true; return; }
+                        using var save = new SaveFileDialog
+                        {
+                            FileName = Path.GetFileName(e.ResultFilePath),
+                            Filter = "Todos los archivos (*.*)|*.*",
+                            OverwritePrompt = true,
+                            RestoreDirectory = true
+                        };
+                        if (save.ShowDialog(this) == DialogResult.OK)
+                            e.ResultFilePath = save.FileName;
+                        else
+                            e.Cancel = true;
+                    }
+                    finally { deferral.Complete(); }
+                }));
+                // Conservar UI de WebView2 para progreso, cancelación y fallos.
+            };
+
             core.NavigationCompleted += (_, e) =>
             {
-                if (e.IsSuccess)
+                if (e.IsSuccess && e.HttpStatusCode < 400)
                 {
-                    notice.Visible = false;
+                    notice.Visible = networkNotice;
                     return;
                 }
 
-                // No confundir cancelaciones por enlaces externos con falta de red.
-                if (browser.Source is { } current && IsAppNavigation(current.AbsoluteUri))
+                // Cancelaciones y descargas no son fallos de internet.
+                if (e.WebErrorStatus == CoreWebView2WebErrorStatus.OperationCanceled) return;
+                if (browser.Source is { } current && NavigationPolicy.IsInternal(current.AbsoluteUri))
                 {
                     ShowNotice("No se pudo cargar Moderno.app. Comprueba tu conexión a internet.", canRetry: true);
                 }
             };
 
-            core.ProcessFailed += (_, _) =>
+            core.ProcessFailed += (_, e) =>
             {
-                // Un fallo del proceso web no afecta datos del servidor.
+                if (e.ProcessFailedKind != CoreWebView2ProcessFailedKind.BrowserProcessExited &&
+                    e.ProcessFailedKind != CoreWebView2ProcessFailedKind.RenderProcessExited &&
+                    e.ProcessFailedKind != CoreWebView2ProcessFailedKind.RenderProcessUnresponsive) return;
+                recreateBrowser = e.ProcessFailedKind == CoreWebView2ProcessFailedKind.BrowserProcessExited;
                 ShowNotice("La ventana web se ha detenido. Puedes volver a cargarla.", canRetry: true);
             };
 
+            // Desactivar caché HTTP no borra cookies ni almacenamiento de sesión.
+            await core.CallDevToolsProtocolMethodAsync("Network.enable", "{}");
+            await core.CallDevToolsProtocolMethodAsync("Network.setCacheDisabled", "{\"cacheDisabled\":true}");
+#if WINDOWS_SMOKE_TESTS
+            ConfigureTestBrowser!(core);
+#endif
             initialized = true;
             browser.Source = AppAddress;
         }
         catch (WebView2RuntimeNotFoundException)
         {
+            help.Text = "Instalar WebView2 desde Microsoft";
+            helpAddress = "https://developer.microsoft.com/en-us/microsoft-edge/webview2/";
             ShowNotice(
                 "Este equipo necesita Microsoft Edge WebView2 Runtime. " +
                 "Instálalo desde la web oficial de Microsoft y pulsa Reintentar.",
@@ -175,13 +265,36 @@ internal sealed class MainWindow : Form
         }
         catch (Exception)
         {
+            recreateBrowser = true;
             // No mostrar detalles internos ni rutas locales en mensajes al usuario.
             ShowNotice("No se ha podido iniciar la aplicación. Comprueba la conexión y vuelve a intentarlo.", canRetry: true);
+        }
+        finally
+        {
+            initializing = false;
         }
     }
 
     private async Task ReloadOrStartAsync()
     {
+        if (initializing) return;
+        if (networkNotice)
+        {
+            if (!NetworkInterface.GetIsNetworkAvailable()) return;
+            networkNotice = false;
+            notice.Visible = false;
+            return;
+        }
+        if (recreateBrowser)
+        {
+            Controls.Remove(browser);
+            browser.Dispose();
+            browser = new WebView2 { Dock = DockStyle.Fill };
+            Controls.Add(browser);
+            notice.BringToFront();
+            initialized = false;
+            recreateBrowser = false;
+        }
         if (!initialized)
         {
             await InitializeAsync();
@@ -191,7 +304,20 @@ internal sealed class MainWindow : Form
         message.Text = "Conectando con Moderno.app…";
         retry.Visible = false;
         notice.Visible = true;
-        browser.CoreWebView2.Navigate(AppAddress.AbsoluteUri);
+        try
+        {
+            if (returnHome)
+            {
+                returnHome = false;
+                browser.CoreWebView2.Navigate(AppAddress.AbsoluteUri);
+            }
+            else browser.CoreWebView2.Reload();
+        }
+        catch (InvalidOperationException)
+        {
+            recreateBrowser = true;
+            ShowNotice("La ventana necesita reiniciarse. Pulsa Reintentar.", true);
+        }
     }
 
     private void ShowNotice(string text, bool canRetry)
@@ -209,18 +335,22 @@ internal sealed class MainWindow : Form
         notice.BringToFront();
     }
 
-    private static bool IsAppNavigation(string? location)
+    private void HandleExternalNavigation(string? location)
     {
-        if (!Uri.TryCreate(location, UriKind.Absolute, out var uri)) return false;
-        return uri.Scheme == Uri.UriSchemeHttps &&
-               (uri.Host.Equals("app.moderno.app", StringComparison.OrdinalIgnoreCase) ||
-                uri.Host.Equals("auth.moderno.app", StringComparison.OrdinalIgnoreCase));
+        if (NavigationPolicy.IsGoogleSignIn(location))
+        {
+            returnHome = true;
+            ShowNotice("El inicio con Google aún no es compatible con esta beta. " +
+                "Puedes usar Moderno.app en tu navegador habitual; esa sesión no se transfiere a esta ventana.", true);
+            return;
+        }
+        OpenInSystemBrowser(location);
     }
 
     private static void OpenInSystemBrowser(string? location)
     {
-        if (!Uri.TryCreate(location, UriKind.Absolute, out var uri)) return;
-        if (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp) return;
+        if (!NavigationPolicy.IsExternal(location)) return;
+        var uri = new Uri(location!);
 
         try
         {

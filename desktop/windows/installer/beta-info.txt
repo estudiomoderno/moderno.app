@@ -1,0 +1,14 @@
+Moderno.app para Windows — beta experimental 0.2.0
+
+Requiere internet y Microsoft Edge WebView2 Evergreen Runtime.
+Si falta WebView2, la aplicación ofrece el enlace oficial de Microsoft.
+
+Google aún no tiene un retorno de sesión compatible con esta beta.
+El acceso desde el navegador no transfiere su sesión a la aplicación.
+No usar esta beta con datos reales para pruebas. Login y escrituras solo en un entorno aislado verificado.
+
+Instalación por usuario, sin privilegios de administrador. Incluye .NET.
+La desinstalación conserva el perfil local y sus sesiones/borradores.
+La guía explica cómo eliminarlo voluntariamente, con la aplicación cerrada.
+
+Beta sin firma: no desactivar SmartScreen ni antivirus. No es una versión comercial.

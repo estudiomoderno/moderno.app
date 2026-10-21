@@ -1,67 +1,111 @@
-# Moderno.app para Windows — beta experimental
+# Moderno.app para Windows — beta 0.2.0
 
-**Destino:** aplicación real `https://app.moderno.app/` (única fuente de pantallas y datos). **Este repositorio NO contiene una segunda copia de la web.**
+Contenedor WinForms/.NET 10 con WebView2 Evergreen. Abre siempre
+**https://app.moderno.app/**. No incluye una copia de la web, backend ni credenciales.
+**Beta de evaluación, sin firma; todavía no es una versión estable para clientes.**
 
-## Qué hace
+## Instalar sin compilar
 
-Una ventana Windows con **Microsoft WebView2 Evergreen** carga remotamente Moderno.app. No instala un servidor, no reimplementa el CRM y no se conecta por su cuenta a Supabase. Usa exactamente los servicios que utiliza la web cuando el usuario inicia sesión de manera normal. La sesión y caché del navegador incrustado se guardan en el perfil local de Windows y **no se comparten** con el navegador Edge instalado.
+1. Abrir [Actions de Windows](https://github.com/estudiomoderno/moderno.app/actions?query=branch%3Aexperimento%2Fwindows-espejo).
+2. Elegir una ejecución **verde** de `Windows beta - Moderno.app (experimental)`.
+3. En **Artifacts**, descargar `Moderno-Windows-Beta-Installer-x64` y descomprimir.
+4. Ejecutar `Moderno-Windows-Beta-0.2.0-Setup-x64.exe`. Instala para el usuario actual,
+   añade acceso a Inicio y permite elegir acceso al escritorio, sin permisos de administrador.
+5. Abrir **Moderno.app Beta** desde Inicio. Requiere internet y WebView2 Evergreen.
+   Si falta, la ventana ofrece el enlace oficial de Microsoft; no descarga ni instala nada en silencio.
 
-- **Internet obligatorio.** Se muestra un aviso y «Reintentar» si no carga.
-- **Cambios de la web:** se ven al **abrir o recargar** (F5 / Ctrl+R), sin reinstalar este programa. No recargar automáticamente una ventana con formularios abiertos: podrían existir borradores sin guardar.
-- **Cambios del contenedor Windows:** necesitan una nueva beta/versión del ejecutable.
-- Enlaces externos se abren fuera de la ventana. Solo el dominio `app.moderno.app` y el subdominio de autenticación `auth.moderno.app` pueden navegar dentro del contenedor.
-- Rechaza permisos automáticos a dispositivos (cámara/micrófono/geolocalización, etc.) hasta validarlos.
-- No incluye credenciales, keys, API ni contenido del proyecto.
+El artefacto incluye `SHA256SUMS.txt`. Puede comprobarse con `Get-FileHash` en PowerShell.
+Sin firma digital, Windows puede mostrar SmartScreen: **no desactivar protecciones**.
+Si la política del equipo bloquea el ejecutable, registrar el bloqueo y esperar distribución firmada.
+No requiere instalar .NET. La alternativa ZIP portátil sigue disponible y necesita **toda** su carpeta.
+Los artefactos caducan: instalador 30 días, ZIP 14; no son un canal comercial de distribución.
 
-## Estado de implementación
+## Qué probar primero en tu Windows
 
-Primer **código fuente beta 0.1**, todavía pendiente de **compilación y pruebas reales en Windows**. La existencia de estos archivos **NO implica que el programa esté instalado, probado o publicado**.
+Sin iniciar sesión ni acceder a datos reales:
 
-**Importante: autentificación Google/OAuth.** Google puede prohibir iniciar sesión en agentes de usuario incrustados (`disallowed_useragent`). La beta inicial **NO promete compatibilidad** con inicio de sesión Google ni con otras redirecciones federadas. Las pruebas deben incluir correo/contraseña si está habilitado, SSO, salida/entrada, expiración y retorno de OAuth; si falla, **no solucionar autorizaciones cambiando producción a ciegas**. Diseñar flujo con navegador del sistema y retorno seguro, o valorar una PWA instalable para el primer envío. El botón «Abrir en navegador» de otra plataforma puede ser alternativa temporal, pero no asumir que la sesión web se transfiere al WebView2.
+1. Instalación, icono oficial, apertura desde Inicio y pantalla de acceso.
+2. Cerrar/reabrir; F5/Ctrl+R; escalado de pantalla al 100/150/200 %.
+3. Desconectar Wi-Fi/Ethernet con la pantalla de acceso abierta. Debe mostrar **Sin conexión**.
+   Reconectar conserva la ventana sin recargar formularios. Si la navegación falló, pulsar Reintentar.
+4. Instalar la misma beta otra vez y desinstalar desde Configuración → Aplicaciones.
 
-## Compilación (Windows 10/11 x64)
+Comunicar en [#109](https://github.com/estudiomoderno/moderno.app/issues/109): versión de Windows,
+versión beta, paso, esperado y resultado. No adjuntar correos, cookies, URL de retorno OAuth,
+tokens ni capturas de clientes. Matriz completa: [PRUEBAS.md](PRUEBAS.md).
 
-Requisitos:
-- **.NET SDK 10** para compilar.
-- WebView2 **Evergreen Runtime** para ejecutar. En muchos Windows modernos está instalado; si falta, obtenerlo de Microsoft: https://developer.microsoft.com/en-us/microsoft-edge/webview2/
-- Acceso a internet para restaurar desde NuGet; no se introducen API de pago.
+**Login, módulos autenticados, descargas privadas y escrituras requieren un entorno aislado
+verificado y cuentas ficticias.** La beta distribuida apunta a producción: no introducir
+cuentas ficticias en producción pensando que eso la convierte en un entorno de pruebas.
 
-Desde la raíz del repositorio:
+## Google y sesiones
+
+**Google no es compatible todavía con el retorno de sesión a esta beta.** El flujo web actual
+redirige al proveedor; abrirlo en otro navegador no devuelve la sesión a WebView2. Además,
+Google puede rechazar navegadores incrustados. Se muestra una explicación y se ofrece abrir
+la portada de Moderno.app en el navegador habitual. Reintentar vuelve a la portada dentro
+ del programa. No se transportan cookies, no se altera el user-agent ni la configuración Auth.
+
+La alternativa temporal es utilizar la web en el navegador habitual. Un retorno nativo seguro
+necesita diseño específico y coordinación con el Taller principal; no se ha implementado ni
+se promete mediante un simple enlace externo. El acceso por contraseña tampoco se certifica
+hasta probarlo en aislamiento.
+
+El perfil propio está en `%LOCALAPPDATA%\Moderno.app\Windows\WebView2`.
+Contiene sesiones, caché y posibles borradores; no compartirlo ni subirlo a GitHub.
+Actualizar/desinstalar conserva ese perfil. Para restablecerlo voluntariamente: cerrar la app,
+asegurar que no hay trabajo local pendiente y eliminar **solo esa carpeta**. Se pierden las
+sesiones y borradores locales; no se borran datos del servidor ni se revocan otras sesiones.
+
+## Navegación, archivos y conexión
+
+- Solo HTTPS, puerto estándar y hosts exactos `app.moderno.app`/`auth.moderno.app` en la ventana.
+- Popups internos navegan en la misma ventana; enlaces HTTP(S) externos salen al navegador.
+- `file:`, `javascript:`, protocolos arbitrarios y URLs con credenciales se rechazan.
+- Descargas iniciadas por WebView2 muestran Guardar como, confirmación de sobrescritura y
+  controles de progreso/cancelación de WebView2. No se ejecutan archivos automáticamente.
+- Popups `blob:`/`about:blank`, PDF que dependa de ellos y `mailto:` siguen pendientes;
+  no se permite navegación arbitraria para ocultar esas limitaciones.
+- Permisos de dispositivo denegados; sin puente host-web, DevTools, autoguardado de contraseñas
+  ni telemetría añadida por el contenedor.
+- Errores HTTP/carga muestran Reintentar; fallo del proceso navegador permite recrear WebView2.
+- La detección inmediata de desconexión observa el adaptador de red. Un router sin salida,
+  portal cautivo o un fallo de API dentro de una SPA requieren pruebas adicionales; no existe
+  un modo offline ni una garantía de detección de todos los fallos de internet.
+
+## Actualizaciones
+
+Se desactiva la caché HTTP del contenedor sin borrar cookies/almacenamiento. Al abrir o recargar
+se solicita la web vigente; el comportamiento de service workers, si la web los incorpora,
+se debe verificar por separado. No hay recargas periódicas ni al recuperar la red.
+Guardar el trabajo antes de F5/Ctrl+R: las protecciones de borradores corresponden también a la web.
+
+Actualizar la web no requiere reinstalar el ejecutable. Actualizar **el contenedor** requiere
+un nuevo instalador, con el mismo identificador y perfil. No hay actualizador nativo automático.
+
+## Compilación y pruebas
+
+En Windows x64 con .NET SDK 10 y WebView2 Evergreen:
 
 ```powershell
-dotnet restore desktop/windows/Moderno.Windows/Moderno.Windows.csproj
-dotnet publish desktop/windows/Moderno.Windows/Moderno.Windows.csproj -c Release -r win-x64 --self-contained true -o .\desktop\windows\publish\
-.\desktop\windows\publish\Moderno.Windows.exe
+dotnet run --project desktop/windows/Moderno.Windows.Tests -c Release
+dotnet run --project desktop/windows/Moderno.Windows.SmokeTests -c Release
+dotnet restore desktop/windows/Moderno.Windows -r win-x64
+dotnet publish desktop/windows/Moderno.Windows -c Release -r win-x64 --self-contained true -o desktop/windows/publish
 ```
 
-`--self-contained true` incorpora el runtime de .NET, **no** el WebView2 Evergreen Runtime. **Distribuir la carpeta publicada completa**, no solo `.exe`. Las builds beta están sin firma y pueden despertar advertencias Windows SmartScreen; **no se debe desactivar antivirus/SmartScreen**. El instalador firmado vendrá después de probar login y navegación.
+El segundo ejecutable compila el mismo shell con un perfil temporal y **todas** las solicitudes
+interceptadas con HTML ficticio. No es la app distribuida, no llama a producción ni prueba OAuth real.
+Sus puntos de inyección están excluidos del ejecutable distribuido por compilación condicional.
+El workflow `.github/workflows/windows-beta.yml` ejecuta pruebas, publica, compila con Inno Setup 6,
+comprueba instalación/reinstalación/desinstalación con un perfil ficticio y adjunta instalador y ZIP.
 
-## Build beta por GitHub Actions
+Identidad: [procedencia del icono](Moderno.Windows/Assets/ORIGEN.md). No se distribuyen fuentes.
+Antes de entrega comercial: resolver Google, verificar sesiones y archivos, pruebas Windows 10/11,
+revisión de licencias de redistribución, firma y canal de actualización. No se ha contratado nada.
 
-Ver `.github/workflows/windows-beta.yml`: build separada de los workflows de despliegue web, limitada a la rama `experimento/windows-espejo`. Cuando el workflow termine correctamente, ofrece un ZIP descargable `Moderno-Windows-Beta-win-x64` con todos los archivos publicados. **No se publica automáticamente en el sitio web ni instala nada en los PCs.**
+## Alcance y reversión
 
-## Lista de pruebas iniciales (no utilizar datos reales para escritura)
-
-1. Abrir en Windows 10/11; comprobar título/ventana, tamaño, resolución y funcionamiento de WebView2.
-2. Abrir Inicio, Proyectos, Tareas, Compras y Documentos **solo en lectura**. Verificar que se usan componentes vigentes de la web.
-3. Inicio/cierre de sesión y **Google OAuth** con cuentas sintéticas autorizadas; registrar incompatibilidades.
-4. Cerrar y volver a abrir para comprobar persistencia local de sesión, sin copiar cookies.
-5. Desconectar red: mensaje de error, reconectar y Reintentar; sin prometer modo sin conexión.
-6. Modificar exclusivamente un texto o CSS inocuo en entorno de pruebas / simulación; abrir o recargar beta, comprobar que se ve cambio **sin reconstruir ZIP**. No publicar archivos de test en producción.
-7. Probar enlaces a sitios externos, descargas de ejemplo, enlaces `mailto:`, impresión, abrir PDFs, teclado, pegar/copiar, navegación atrás, F5/Ctrl+R y nuevos popups; anotar limitaciones.
-8. Probar que una nueva versión de la app **no fuerza una recarga** cuando hay borradores sin guardar; no ejecutar ensayos de escritura en un estudio real.
-9. Confirmar que el workflow no ha tocado `app/`, Supabase, FTPS ni DNS.
-
-### Pendientes antes de distribuir a clientes
-
-**P0:** confirmar login/SSO en WebView2; resolver enlaces de autenticación sin debilitarla; verificar almacenamiento seguro de sesión.
-
-**P1:** icono `.ico` corporativo en el ejecutable e instalador Windows firmado (MSIX/MSI/Setup), integración con Inicio, Windows Installer/Desinstalación, actualizador **solo del contenedor** y condiciones de licencias de distribución.
-
-**P2:** pruebas de integración con documentos/PDF, notificaciones y soporte en Win x64 / ARM64; telemetría diagnóstica sin datos privados solo si el usuario la autoriza.
-
-## Límites del Taller
-
-**Solo** `desktop/windows/**` y `.github/workflows/windows-beta.yml` en `experimento/windows-espejo`; nunca escribir `app/`, `supabase/`, `SQL/`, `mailer/` ni fusionar sin revisión. El desarrollo del sitio web pertenece al Taller principal.
-
-**Encargo:** [#109](https://github.com/estudiomoderno/moderno.app/issues/109). Creación del issue o rama no lanza el chat de Codex Cloud.
+Solo `desktop/windows/**` y su workflow en `experimento/windows-espejo`. No fusionar a main ni
+modificar producción. Para revertir el contenedor, desinstalar la beta y usar el ZIP anterior;
+no eliminar el perfil ni restaurar datos del servidor. Fuente: [#109](https://github.com/estudiomoderno/moderno.app/issues/109).
