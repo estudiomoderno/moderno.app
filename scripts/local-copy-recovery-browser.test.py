@@ -37,13 +37,14 @@ try:
     page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.evaluate(setup)
     page.evaluate("""failure=>{
       clearTimeout(_saveT);_localRepairAfter=0;
+      ModernoPendingArchive.writeCurrent=async()=>{throw new DOMException('Fictional unavailable live storage','QuotaExceededError');};
       window.savedArchive=cloudArchivePendingCopies;window.archiveAttempts=0;
       cloudArchivePendingCopies=async()=>{archiveAttempts++;if(failure)throw Error('fictional archive failure');const promise=savedArchive();state.account.latestNote='Changed while archiving';await promise;};
       for(let i=0;i<53;i++)localStorage.setItem(LS_KEY+'_pendiente_'+(2100000000000+i),JSON.stringify({v:1,fictional:i,padding:'x'.repeat(98000)}));
       state.account.quotaFixture='current-'+ 'y'.repeat(800000);window.memoryBefore=records();
       persistNow();if(!_saveErr)throw Error('Quota was not reproduced');
     }""",failure)
-    page.wait_for_function('_localRepair===null',timeout=10000)
+    page.wait_for_function('_localWrite===null&&_localRepair===null',timeout=10000)
     if failure:
      assert page.evaluate('_saveErr&&syncCopyKeys().length===53&&records()===memoryBefore&&archiveAttempts===1')
      page.evaluate('syncDetails()');expect(page.locator('#modalBox')).to_contain_text('No hay espacio');expect(page.locator('#modalBox')).to_contain_text('MB')
@@ -56,7 +57,7 @@ try:
      # Restore the native archive; the actual Retry button must wait for it before cloudFlush.
      page.evaluate("cloudArchivePendingCopies=async()=>{archiveAttempts++;const task=savedArchive();state.account.latestNote='Changed while archiving';await task;}")
      page.get_by_role('button',name='Reintentar guardado',exact=True).click()
-     page.wait_for_function('_localRepair===null&&!_saveErr',timeout=10000)
+     page.wait_for_function('_localWrite===null&&_localRepair===null&&!_saveErr',timeout=10000)
     assert page.evaluate("!_saveErr&&JSON.parse(localStorage.getItem(LS_KEY)).state.account.latestNote==='Changed while archiving'")
     # Read every original copy back from the real IndexedDB archive; no discards or auto-imports.
     assert page.evaluate("""async()=>{

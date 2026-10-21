@@ -4,7 +4,7 @@ const code=html.slice(html.indexOf('async function prepareAppReload('),html.inde
 const changes=html.slice(html.indexOf('function syncHasChanges(){'),html.indexOf('function syncCopyKeys(){'));
 function context({quota=false,busy=false,conflict=false,finish=false,hang=false,role='admin',modal=false,sessionChange=false,failFinalCopy=false,recover=false,archiveFailure=false,staleCopy=false,archiveHang=false,editDuringArchive=false}={}){
  let now=0,persists=0,archived=0;const disk=new Map();const reports=[],navigations=[],status={hidden:true,textContent:''};
- const ctx={URL,Date:{now:()=>now},_saveErr:false,_cloudBusy:busy,_accessRole:role,_accessLoading:false,state:{sessionUser:{id:'user',mail:'fixture@example.invalid'}},sb:{},ESTUDIO_ID:'ficticio',CLOUD_BLOCKS:{proyectos:{get:()=>['nuevo']}},_cloudHash:{proyectos:'[]'},canon:JSON.stringify,
+ const ctx={_localWrite:null,_localResumePending:false,pendingArchiveStore:()=>({}),ModernoPendingArchive:{resolve:async(storage,key)=>storage.getItem(key)},URL,Date:{now:()=>now},_saveErr:false,_cloudBusy:busy,_accessRole:role,_accessLoading:false,state:{sessionUser:{id:'user',mail:'fixture@example.invalid'}},sb:{},ESTUDIO_ID:'ficticio',CLOUD_BLOCKS:{proyectos:{get:()=>['nuevo']}},_cloudHash:{proyectos:'[]'},canon:JSON.stringify,
   document:{querySelector:()=>modal?{}:null,getElementById:()=>status},location:{href:'https://app.example.invalid/es/?fixture=kept&v=old#/proyectos',replace:url=>navigations.push(url)},
   BRAND:{cm:{name:'Ficticio'}},wsOrder:['cm'],LS_KEY:'fixture',localStorage:{getItem:k=>disk.get(k)??null},
   syncCopyKeys:()=>recover?['fixture_pendiente_1']:[],
