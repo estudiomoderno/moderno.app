@@ -42,6 +42,7 @@ internal sealed class MainWindow : Form
     internal static string TestProfile = "";
     internal static Action<CoreWebView2>? ConfigureTestBrowser;
     internal bool NoticeVisible => notice.Visible;
+    internal void SetNetworkForTest(bool available) => UpdateNetworkAvailability(available);
     internal Task RetryForTestAsync() => ReloadOrStartAsync();
 #endif
     private bool initialized;
@@ -119,23 +120,25 @@ internal sealed class MainWindow : Form
         if (IsDisposed || !IsHandleCreated) return;
         try
         {
-            BeginInvoke(new Action(() =>
-            {
-                if (IsDisposed) return;
-                if (!e.IsAvailable && !notice.Visible)
-                {
-                    networkNotice = true;
-                    ShowNotice("Sin conexión. Conecta internet para continuar. Tu ventana se conserva.", true);
-                }
-                else if (networkNotice)
-                {
-                    // Nunca recargar al volver la red: podría haber un formulario pendiente.
-                    networkNotice = false;
-                    notice.Visible = false;
-                }
-            }));
+            BeginInvoke(new Action(() => UpdateNetworkAvailability(e.IsAvailable)));
         }
         catch (InvalidOperationException) { /* La ventana se está cerrando. */ }
+    }
+
+    private void UpdateNetworkAvailability(bool available)
+    {
+        if (IsDisposed) return;
+        if (!available && !notice.Visible)
+        {
+            ShowNotice("Sin conexión. Conecta internet para continuar. Tu ventana se conserva.", true);
+            networkNotice = true;
+        }
+        else if (available && networkNotice)
+        {
+            // Nunca recargar al volver la red: podría haber un formulario pendiente.
+            networkNotice = false;
+            notice.Visible = false;
+        }
     }
 
     private async Task InitializeAsync()
@@ -144,6 +147,8 @@ internal sealed class MainWindow : Form
         initializing = true;
 
         message.Text = "Conectando con Moderno.app…";
+        help.Text = "Abrir Moderno.app en el navegador";
+        helpAddress = AppAddress.AbsoluteUri;
         retry.Visible = false;
         notice.Visible = true;
 
@@ -329,6 +334,7 @@ internal sealed class MainWindow : Form
             return;
         }
 
+        networkNotice = false;
         message.Text = text;
         retry.Visible = canRetry;
         notice.Visible = true;

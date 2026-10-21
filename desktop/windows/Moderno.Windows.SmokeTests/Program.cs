@@ -18,6 +18,7 @@ internal static class Program
         MainWindow.ConfigureTestBrowser = browser =>
         {
             core = browser;
+            Console.WriteLine("WebView2 runtime: " + core.Environment.BrowserVersionString);
             // TODAS las solicitudes reciben respuestas ficticias. Nunca acceder a producción.
             core.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All,
                 CoreWebView2WebResourceRequestSourceKinds.All);
@@ -55,9 +56,19 @@ internal static class Program
         await core.ExecuteScriptAsync("localStorage.setItem('synthetic', 'saved'); document.cookie='synthetic=saved; Secure; SameSite=Lax; path=/'");
         await NavigateAsync(() => core.ExecuteScriptAsync("document.getElementById('popup').click()"));
         Assert(core.Source == "https://app.moderno.app/synthetic-module", "Internal popup remains inside shell");
+        await core.ExecuteScriptAsync("document.body.dataset.draft='synthetic-unsaved'");
+        window.SetNetworkForTest(false);
+        Assert(window.NoticeVisible, "Disconnected adapter notice");
+        window.SetNetworkForTest(false);
+        Assert(window.NoticeVisible, "Repeated disconnect must not hide notice");
+        window.SetNetworkForTest(true);
+        Assert(!window.NoticeVisible, "Adapter recovery restores existing page");
+        Assert(await core.ExecuteScriptAsync("document.body.dataset.draft") == "\"synthetic-unsaved\"", "Reconnect preserves unsaved DOM");
+        Assert(await core.ExecuteScriptAsync("document.title") == "\"Synthetic v1\"", "Internal popup document finished");
         version = 2;
         await Task.Delay(200);
-        Assert(await core.ExecuteScriptAsync("document.title") == "\"Synthetic v1\"", "No automatic reload");
+        var unchangedTitle = await core.ExecuteScriptAsync("document.title");
+        Assert(unchangedTitle == "\"Synthetic v1\"", "No automatic reload: " + unchangedTitle);
         await NavigateAsync(() => { core.Reload(); return Task.CompletedTask; });
         Assert(await core.ExecuteScriptAsync("document.title") == "\"Synthetic v2\"", "Web update without native rebuild");
         Assert(await core.ExecuteScriptAsync("localStorage.getItem('synthetic')") == "\"saved\"", "Local storage retained");
@@ -68,16 +79,21 @@ internal static class Program
         unavailable = false;
         await NavigateAsync(window.RetryForTestAsync);
         Assert(!window.NoticeVisible, "Retry recovers");
-        await NavigateAsync(() => { core.Navigate("https://accounts.google.com/o/oauth2/auth"); return Task.CompletedTask; });
+        await NavigateAsync(() => { core.Navigate("https://accounts.google.com/o/oauth2/auth"); return Task.CompletedTask; }, includeCancellation: true);
         Assert(window.NoticeVisible, "Google must explain unsupported return");
         await NavigateAsync(window.RetryForTestAsync);
         Assert(core.Source == "https://app.moderno.app/", "Google retry returns home");
     }
 
-    private static async Task NavigateAsync(Func<Task> action)
+    private static async Task NavigateAsync(Func<Task> action, bool includeCancellation = false)
     {
         var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        EventHandler<CoreWebView2NavigationCompletedEventArgs> handler = (_, _) => completed.TrySetResult();
+        EventHandler<CoreWebView2NavigationCompletedEventArgs> handler = (_, e) =>
+        {
+            Console.WriteLine($"Synthetic navigation complete: status={e.HttpStatusCode}, error={e.WebErrorStatus}");
+            if (includeCancellation || e.WebErrorStatus != CoreWebView2WebErrorStatus.OperationCanceled)
+                completed.TrySetResult();
+        };
         core!.NavigationCompleted += handler;
         try { await action(); await completed.Task.WaitAsync(TimeSpan.FromSeconds(15)); }
         finally { core.NavigationCompleted -= handler; }
