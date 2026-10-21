@@ -53,6 +53,18 @@ try:
    page.evaluate("openRoom(9001,8001);window.records=()=>JSON.stringify({projects:state.projects,library:state.library,quotes:state.quotes,invoices:state.invoices});window.sourceBaseline=records()")
    room=page.locator('.shopping-room-view');add=room.get_by_role('button',name='Añadir producto',exact=True)
    box=page.locator('#modalBox')
+   # The top button stays reachable in a long list; the original add-card remains last.
+   page.evaluate("window.originalItems=getRoom().r.sections[0].items;getRoom().r.sections[0].items=Array.from({length:45},(_,i)=>({...structuredClone(originalItems[0]),id:'long-'+i}));render();document.querySelector('.main').scrollTop=0;window.longBefore=records()")
+   top=room.get_by_role('button',name='Añadir producto a esta lista',exact=True)
+   expect(top).to_be_visible();tb=top.bounding_box();price=room.locator('.shopping-room-budget-total .dl-num').bounding_box()
+   assert tb['y']>=price['y']+price['height'] and abs(tb['x']+tb['width']-price['x']-price['width'])<2,(tb,price)
+   assert tb['y']+tb['height']<1000 and add.bounding_box()['y']>1000
+   assert page.evaluate("document.documentElement.scrollWidth<=innerWidth&&document.querySelector('.shopping-product-grid').lastElementChild.classList.contains('shopping-add-wrap')")
+   if output:page.screenshot(path=str(output/f'product-add-top-{width}.png'))
+   top.click();expect(box.get_by_role('heading',name='Añadir producto',exact=True)).to_be_visible()
+   expect(box.locator('[data-product-method] strong')).to_have_text(['Manualmente','Desde URL✦ IA','Desde la biblioteca'])
+   box.get_by_role('button',name='Cancelar',exact=True).click();assert page.evaluate('records()===longBefore')
+   page.evaluate('getRoom().r.sections[0].items=originalItems;render()');assert page.evaluate('records()===sourceBaseline')
    add.click()
    expect(box.get_by_role('heading',name='Añadir producto',exact=True)).to_be_visible()
    expect(box.locator('[data-product-method] strong')).to_have_text(['Manualmente','Desde URL✦ IA','Desde la biblioteca'])
