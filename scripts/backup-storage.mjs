@@ -15,6 +15,18 @@ export function inventory(text) {
   }).sort((a, b) => a.Path.localeCompare(b.Path));
 }
 
+export function validateDestinationTree(text) {
+  const entries=JSON.parse(text),seen=new Set();
+  if(!Array.isArray(entries))throw new Error('Invalid destination inventory');
+  for(const entry of entries){
+    if(typeof entry.Path!=='string'||!entry.Path)throw new Error('Invalid destination inventory');
+    // Drive permits duplicate folder names. A byte check could otherwise pick
+    // a different folder from the one used by a subsequent restoration.
+    if(seen.has(entry.Path))throw new Error('Ambiguous duplicate path in backup destination');
+    seen.add(entry.Path);
+  }
+}
+
 export async function backup(run, bucket, id, { verifyOnly = false } = {}) {
   if (!/^[a-z0-9][a-z0-9.-]*$/.test(bucket) || !/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error('Invalid backup parameters');
   const source = `source:${bucket}`;
@@ -25,6 +37,7 @@ export async function backup(run, bucket, id, { verifyOnly = false } = {}) {
   // Recovery targets only an incomplete same-day snapshot selected below.
   // Existing objects stay untouched; only absent files may be added.
   await run(['copy', source, `${root}/objects`, '--immutable', ...(verifyOnly ? ['--ignore-existing', '--no-traverse'] : []), '--files-from-raw','-'],selection);
+  validateDestinationTree(await run(['lsjson',`${root}/objects`,'--recursive']));
   // Read back and compare bytes, rather than relying on filenames or timestamps.
   const checked=await run(['check', source, `${root}/objects`, '--download','--files-from-raw','-'],selection);
   // --files-from does not itself fail when a file is absent on both sides.

@@ -82,9 +82,9 @@ jobs:
         if: github.event_name == 'schedule' || inputs.mode != 'backup-service'
         env:
           BACKUP_MODE: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && 'backup' || inputs.mode }}
-          # Recovery fills absent files without overwriting existing objects,
-          # then verifies all bytes. Daily/manual backups keep new snapshots.
-          BACKUP_VERIFY_ONLY: ${{ github.event_name == 'push' && '1' || '0' }}
+          # Normal runs create independent snapshots. The explicit verify-copy
+          # mode still repairs an incomplete snapshot without overwriting files.
+          BACKUP_VERIFY_ONLY: '0'
           GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
           SOURCE_CONFIG: ${{ secrets.BACKUP_SOURCE_CONFIG }}
