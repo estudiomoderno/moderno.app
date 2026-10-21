@@ -21,7 +21,7 @@ for (const failure of ['copy', 'check', 'changed', 'empty']) {
     await assert.rejects(backup(async args => {
       calls.push(args);
       if (args[0] === failure) throw new Error('simulated failure');
-      if (args[0] === 'lsjson') {
+      if (args[0] === 'lsjson' && args[1].startsWith('source:')) {
         reads++;
         if (failure === 'empty') return '[]';
         if (failure === 'changed' && reads === 2) return listing.replace('"Size":4', '"Size":5');
@@ -42,7 +42,7 @@ test('recovery fills only absent objects and still requires bytes and stable sou
   assert.equal(calls.at(-1)[1],'destination:test/COMPLETE.json');
   for(const failure of ['check','changed']){
     const calls=[];let reads=0;
-    await assert.rejects(backup(async args=>{calls.push(args);if(args[0]==='check'&&failure==='check')throw Error('difference');if(args[0]==='lsjson')return ++reads===2&&failure==='changed'?listing.replace('"Size":4','"Size":5'):listing;return reply(args);},'files','test',{verifyOnly:true}));
+    await assert.rejects(backup(async args=>{calls.push(args);if(args[0]==='check'&&failure==='check')throw Error('difference');if(args[0]==='lsjson'&&args[1].startsWith('source:'))return ++reads===2&&failure==='changed'?listing.replace('"Size":4','"Size":5'):listing;return reply(args);},'files','test',{verifyOnly:true}));
     assert.ok(!calls.some(args=>args[0]==='rcat'));
     assert.ok(calls.filter(args=>args[0]==='copy').every(args=>args.includes('--immutable')&&args.includes('--ignore-existing')));
   }
@@ -87,7 +87,7 @@ test('flat listing stays on source inventories without weakening byte checks or 
 test('concurrent additions remain outside the initial snapshot and the exact raw selection is checked',async()=>{
   const original=JSON.parse(listing),after=JSON.stringify([...original,{Path:'new/product.pdf',Size:9,ModTime:'2026-01-01T00:00:01Z'}]);
   const calls=[];let reads=0;
-  await backup(async(args,input)=>{calls.push({args,input});return args[0]==='lsjson'?(++reads===1?listing:after):reply(args);},'files','test');
+  await backup(async(args,input)=>{calls.push({args,input});return args[0]==='lsjson'&&args[1].startsWith('source:')?(++reads===1?listing:after):reply(args);},'files','test');
   for(const call of calls.filter(c=>['copy','check'].includes(c.args[0]))){assert.deepEqual(call.args.slice(-2),['--files-from-raw','-']);assert.equal(call.input,'project/file.pdf\n');}
   const manifest=JSON.parse(calls.find(c=>c.args[1]==='destination:test/manifest.json').input),complete=JSON.parse(calls.at(-1).input);
   assert.deepEqual(manifest.objects,original);assert.equal(manifest.scope,'initial-inventory');assert.equal(manifest.newObjectsAfterInventory,1);
@@ -99,7 +99,7 @@ test('selected deletion or timestamp change prevents the complete marker even al
     const original=JSON.parse(listing),extra={Path:'new.pdf',Size:1,ModTime:'2026-01-01T00:00:01Z'};
     const after=change==='deleted'?[extra]:[{...original[0],ModTime:'2026-01-02T00:00:00Z'},extra];
     const calls=[];let reads=0;
-    await assert.rejects(backup(async args=>{calls.push(args);return args[0]==='lsjson'?(++reads===1?listing:JSON.stringify(after)):reply(args);},'files','test'),/Selected source changed/);
+    await assert.rejects(backup(async args=>{calls.push(args);return args[0]==='lsjson'&&args[1].startsWith('source:')?(++reads===1?listing:JSON.stringify(after)):reply(args);},'files','test'),/Selected source changed/);
     assert.ok(!calls.some(args=>args[0]==='rcat'));
   }
 });
@@ -120,4 +120,16 @@ test('line injection, traversal and duplicate inventory names fail before copy',
   }
   assert.throws(()=>inventory(JSON.stringify([...JSON.parse(listing),...JSON.parse(listing)])),/Invalid object/);
   const named=inventory(JSON.stringify([{Path:'# literal ; lámpara.pdf',Size:0,ModTime:'date'}]));assert.equal(named[0].Path,'# literal ; lámpara.pdf');
+});
+
+test('duplicate destination folders or files prevent verification and the complete marker',async()=>{
+  for(const path of ['project','project/file.pdf']){
+    const calls=[];
+    await assert.rejects(backup(async args=>{
+      calls.push(args);
+      if(args[0]==='lsjson'&&args[1].startsWith('destination:'))return JSON.stringify([{Path:path},{Path:path}]);
+      return reply(args);
+    },'files','test'),/Ambiguous duplicate path/);
+    assert.ok(!calls.some(args=>['check','rcat'].includes(args[0])));
+  }
 });
