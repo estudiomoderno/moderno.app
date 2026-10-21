@@ -8,7 +8,7 @@ const code=html.slice(html.indexOf('async function cloudFlush(){'),html.indexOf(
 const base=[{id:1,name:'A'},{id:2,name:'B'}];
 function fixture(){return {row:{contenido:structuredClone(base),updated_at:'2026-01-01T00:00:00Z'},writes:0};}
 function session(store,items=structuredClone(base),hooks={}){
- const local={dirty:true};
+ const local={dirty:true,timers:[]};
  const c={Date,console:{warn(){},info(){}},window:{},localStorage:{removeItem(){local.dirty=false}},LS_KEY:'test',ESTUDIO_ID:'test',_accessRole:'admin',_cloudBusy:false,_cloudApplying:false,_cloudForce:{},_cloudCount:{contactos:base.length},_cloudHash:{contactos:sync.canonical(base)},_cloudSeen:{contactos:store.row?.updated_at},_cloudRetryT:null,CLOUD_BLOCKS:{contactos:{get:()=>items,set:v=>{items=v}}},canon:sync.canonical,ModernoSync:sync,persistSoon(){},blockCount:v=>v.length,syncTag(mode,msg){local.mode=mode;local.message=msg},clearTimeout(){},setTimeout(){},cloudGuardModal(){local.guarded=true},sb:{from(){let method='GET',payload,filters={};return {select(){return this},eq(k,v){filters[k]=v;return this},update(v){method='PATCH';payload=structuredClone(v);return this},insert(v){method='POST';payload=structuredClone(v);return this},async maybeSingle(){
  if(method==='GET'){if(hooks.failRead)return {error:new Error('offline')};const result=structuredClone(store.row);await hooks.afterRead?.();return {data:result};}
  await hooks.beforeWrite?.();
@@ -26,8 +26,33 @@ function session(store,items=structuredClone(base),hooks={}){
   const result=await (p.p_base===null?q.insert(row):q.update(row).eq('updated_at',p.p_base)).select().maybeSingle();
   return result.error?result:{data:result.data?[{bloque:change.bloque,updated_at:result.data.updated_at}]:null};
  };
+ c.setTimeout=(fn,ms)=>{const timer={fn,ms};local.timers.push(timer);return timer;};
+ c.clearTimeout=timer=>{if(timer)timer.cancelled=true;};
  vm.createContext(c);vm.runInContext(html.slice(html.indexOf('async function cloudReadRows('),html.indexOf('async function cloudRecoverBlock('))+'\n'+code,c);return {c,local,flush:()=>c.cloudFlush(),get:()=>items};
 }
+test('save acknowledgement preserves live objects held by an open product editor',async()=>{
+ const store=fixture(),items=structuredClone(base);items[0].name='A1';
+ const s=session(store,items);const opened=items[1];await s.flush();
+ assert.equal(s.get(),items);assert.equal(s.get()[1],opened);
+ assert.equal(s.local.mode,'ok');
+});
+test('successive deletions during a slow save stay local and drain promptly without overlapping writes',async()=>{
+ const store=fixture();let release,started;
+ const ready=new Promise(r=>started=r),gate=new Promise(r=>release=r);
+ const items=structuredClone(base);items.splice(0,1);
+ const s=session(store,items,{async beforeWrite(){started();await gate;}});
+ const uploading=s.flush();await ready;
+ items.splice(0,1);await s.flush();assert.equal(store.writes,0);
+ release();await uploading;
+ assert.equal(s.get(),items);assert.equal(s.get().length,0);assert.equal(s.local.dirty,true);
+ assert.equal(s.local.mode,'pending');
+ const next=s.local.timers.filter(t=>!t.cancelled).at(-1);assert.equal(next.ms,900);
+ await next.fn();assert.equal(store.writes,2);assert.equal(store.row.contenido.length,0);assert.equal(s.local.dirty,false);
+});
+test('acknowledgement still applies actual remote changes instead of preserving a stale local block',async()=>{
+ const store=fixture(),items=structuredClone(base);items[0].name='A1';store.row.contenido[1].name='B remote';
+ const s=session(store,items);await s.flush();assert.equal(s.get()[1].name,'B remote');assert.equal(s.local.mode,'ok');
+});
 test('two stale sessions preserve separate edits',async()=>{
  const store=fixture(),a=structuredClone(base),b=structuredClone(base);a[0].name='A1';b[1].name='B1';
  const one=session(store,a),two=session(store,b);await one.flush();await two.flush();
@@ -58,6 +83,7 @@ test('edits made during upload remain pending and are saved next',async()=>{
 for(const failure of ['failRead','failWrite'])test(`${failure} preserves pending edits`,async()=>{
  const store=fixture(),a=structuredClone(base);a[0].name='A1';const s=session(store,a,{[failure]:true});await s.flush();
  assert.equal(store.writes,0);assert.equal(s.get()[0].name,'A1');assert.equal(s.local.dirty,true);
+ assert.equal(s.local.timers.filter(t=>!t.cancelled).at(-1).ms,15000);
 });
 test('guarded reduction is not marked saved',async()=>{
  const store=fixture(),s=session(store,[]);s.c._cloudCount.contactos=10;await s.flush();assert.equal(store.writes,0);assert.equal(s.local.dirty,true);assert.equal(s.local.guarded,true);

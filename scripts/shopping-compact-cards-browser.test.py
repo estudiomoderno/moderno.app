@@ -129,6 +129,38 @@ try:
    page.locator('#shopping-product-delete').get_by_role('button',name='Eliminar producto',exact=True).click()
    assert page.evaluate('records()===afterExternalChange')
    box.get_by_role('button',name='Cancelar',exact=True).click()
+   # A delayed acknowledgement must not invalidate the next open editor.
+   page.evaluate("""()=>{
+    const r=getRoom().r;r.sections=[{id:'sequential',name:'General',items:[1,2,3,4].map(i=>({id:'sequential-'+i,name:'Secuencial '+i,price:i,qty:1,files:[]}))}];render();
+    ESTUDIO_ID='fixture-only';cloudSnapshotAll();window.fixtureRows={};
+    for(const b of Object.keys(CLOUD_BLOCKS))fixtureRows[b]={contenido:JSON.parse(canon(CLOUD_BLOCKS[b].get())),updated_at:'fixture-v0'};
+    window.fixtureWrites=0;window.fixtureGate=new Promise(r=>window.fixtureRelease=r);
+    window.fixtureRead=async b=>({data:structuredClone(fixtureRows[b])});
+    window.fixtureClient={rpc:async(name,params)=>{
+      if(name!=='app_guardar_lote'||params.p_estudio!=='fixture-only')throw Error('Unexpected fixture write');
+      fixtureWrites++;if(fixtureWrites===1)await fixtureGate;
+      return {data:params.p_cambios.map(c=>{fixtureRows[c.bloque]={contenido:structuredClone(c.contenido),updated_at:'fixture-v'+fixtureWrites};return {bloque:c.bloque,updated_at:fixtureRows[c.bloque].updated_at};})};
+    }};
+   }""")
+   flush_source=(repo/'app/index.html').read_text().split('async function cloudFlush(){',1)[1].split('function cloudSnapshotAll(){',1)[0]
+   page.evaluate("source=>{window.fixtureFlush=new Function('sb','cloudReadBlock','return async function cloudFlush(){'+source)(fixtureClient,fixtureRead);}",flush_source)
+   def remove_first():
+    grid.locator('.shopping-product-card').get_by_role('button',name='Editar Secuencial',exact=False).first.click()
+    box.get_by_role('button',name='Eliminar producto',exact=True).click()
+    page.locator('#shopping-product-delete').get_by_role('button',name='Eliminar producto',exact=True).click()
+   remove_first();expect(grid.locator('.shopping-product-card')).to_have_count(3)
+   page.evaluate('window.fixtureSaving=fixtureFlush();void 0')
+   page.wait_for_function('fixtureWrites===1&&_cloudBusy')
+   remove_first();expect(grid.locator('.shopping-product-card')).to_have_count(2)
+   grid.locator('.shopping-product-card').get_by_role('button',name='Editar Secuencial',exact=False).first.click()
+   page.evaluate('async()=>{fixtureRelease();await fixtureSaving;clearTimeout(_cloudRetryT);}')
+   expect(box.locator('#itName')).to_have_value('Secuencial 3')
+   box.get_by_role('button',name='Eliminar producto',exact=True).click()
+   expect(page.locator('#shopping-product-delete')).to_be_visible()
+   page.locator('#shopping-product-delete').get_by_role('button',name='Eliminar producto',exact=True).click()
+   expect(grid.locator('.shopping-product-card')).to_have_count(1)
+   page.evaluate('async()=>{await fixtureFlush();clearTimeout(_cloudRetryT);}')
+   assert page.evaluate("canon(fixtureRows.proyectos.contenido)===canon(state.projects)&&fixtureWrites===2&&!syncHasChanges()&&state.projects[0].rooms[0].sections[0].items[0].name==='Secuencial 4'")
    assert not writes,writes;assert not errors,errors
    print(width,'PASS compact cards, 32px image actions, no states, unknown price, filters, dirty draft/cancel, duplicate and delete exact instance with references preserved; no remote writes',flush=True)
    page.close()
