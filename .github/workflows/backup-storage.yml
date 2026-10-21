@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/backup-storage.yml'
       - 'scripts/prepare-backup-destination.mjs'
+      - 'scripts/backup-storage.mjs'
   schedule:
     - cron: '23 4 * * *'
       timezone: Europe/Madrid
@@ -77,6 +78,9 @@ jobs:
         if: github.event_name == 'schedule' || inputs.mode != 'backup-service'
         env:
           BACKUP_MODE: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && 'backup' || inputs.mode }}
+          # Code pushes diagnose/finalize an incomplete same-day copy without
+          # retransferring its objects. Daily/manual backups keep new snapshots.
+          BACKUP_VERIFY_ONLY: ${{ github.event_name == 'push' && '1' || '0' }}
           GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
           SOURCE_CONFIG: ${{ secrets.BACKUP_SOURCE_CONFIG }}
