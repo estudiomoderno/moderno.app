@@ -21,7 +21,8 @@
 /* Image overlays retain a stable position across card sizes. */
 .shopping-product-title strong{line-height:1.4}
 .shopping-product-media{position:relative;min-width:0}
-.shopping-room-view .shopping-product-media>.shopping-product-label{position:absolute;left:10px;bottom:10px;z-index:2;box-sizing:border-box;max-width:calc(100% - 20px);margin:0;background:var(--app-surface,#fff);box-shadow:0 1px 4px #00000012}
+.shopping-product-badges{position:absolute;left:10px;bottom:10px;z-index:2;max-width:calc(100% - 20px);display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.shopping-room-view .shopping-product-badges>.shopping-product-label{box-sizing:border-box;max-width:100%;margin:0;background:var(--app-surface,#fff);box-shadow:0 1px 4px #00000012}
 .shopping-product-row .shopping-product-media{grid-area:photo;align-self:start}
 
 /* Compact cards: image badges, name, shop and total. */
@@ -33,7 +34,7 @@
 .shopping-product-media .shopping-product-edit{position:absolute;top:8px;left:8px;z-index:3;width:32px;height:32px;padding:0;border:0;border-radius:50%;background:var(--app-surface,#fff);color:var(--ink);display:grid;place-items:center;cursor:pointer}
 .shopping-product-edit svg{width:16px;height:16px}
 .shopping-product-edit:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
-.shopping-product-media .shopping-product-unit-price{position:absolute;top:12px;left:48px;right:48px;z-index:2;width:max-content;max-width:calc(100% - 96px);margin:auto;padding:3px 7px;border:1px solid var(--ui-line,#ddd);border-radius:6px;background:var(--app-surface,#fff);font-size:12px;line-height:1.4;color:var(--ink);text-align:center;overflow-wrap:anywhere;pointer-events:none}
+.shopping-product-media .shopping-product-unit-price{box-sizing:border-box;width:max-content;max-width:100%;margin:0;padding:3px 7px;border:1px solid var(--ui-line,#ddd);border-radius:6px;background:var(--app-surface,#fff);font-size:12px;line-height:1.4;color:var(--ink);text-align:left;overflow-wrap:anywhere;pointer-events:none}
 .shopping-editor-actions{display:grid;gap:8px}
 .shopping-editor-actions h4{margin-bottom:6px}
 .shopping-editor-actions .btn{justify-content:flex-start;white-space:normal}

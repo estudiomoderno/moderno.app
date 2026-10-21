@@ -936,7 +936,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3568">
-<link rel="stylesheet" href="/shopping-cards.css?v=36587">
+<link rel="stylesheet" href="/shopping-cards.css?v=36588">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
 <script src="/client-portal-site.js?v=36578"></script>
@@ -7198,8 +7198,8 @@ function vRoom(){
          <button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
          <button type="button" class="shopping-grip shopping-product-grip" aria-label="Mover ${ModernoDaily.escape(it.name)}" title="${shoppingRoomSort==='manual'?'Mover producto':'Elige Orden manual para mover productos'}" ${shoppingRoomSort==='manual'?'':'disabled'} onpointerdown="shoppingMoveStart(event,${si},${ii})" onkeydown="shoppingMoveKey(event,${si},${ii})">⠿</button>
          <button type="button" class="shopping-product-edit" aria-label="Editar ${ModernoDaily.escape(it.name)}" title="Editar producto" onclick="itemModal(${si},${ii})">${ico('editar')}</button>
-         <span class="shopping-product-unit-price" aria-label="Precio unitario: ${it.price==null||it.price===''?'Por confirmar':ModernoDaily.escape(fmt(it.price))}">${it.price==null||it.price===''?'Por confirmar':fmt(it.price)}</span>
-         ${shoppingRoomLabelChip(label)}
+         <div class="shopping-product-badges"><span class="shopping-product-unit-price" aria-label="Precio unitario: ${it.price==null||it.price===''?'Por confirmar':ModernoDaily.escape(fmt(it.price))}">${it.price==null||it.price===''?'Por confirmar':fmt(it.price)}</span>
+         ${shoppingRoomLabelChip(label)}</div>
         </div>
         <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button>${shoppingProductRowLink(it)}</div>
         <p class="shopping-product-meta shopping-product-description">${ModernoDaily.escape(it.supplier||'')}</p>
@@ -11440,7 +11440,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.87";
+const MODERNO_VER="v3.65.88";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13352,7 +13352,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36587">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36588">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
