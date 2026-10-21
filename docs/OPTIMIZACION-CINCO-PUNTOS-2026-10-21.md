@@ -36,3 +36,17 @@ Aplicar `SQL/guardado-delta.sql` solamente después de pasar las comprobaciones.
 Para revertir: desplegar el HTML y recursos de la entrega anterior y, si corresponde, aplicar `SQL/guardado-delta.rollback.sql`. Los clientes nuevos también reconocen la ausencia del RPC y conservan el contrato versionado anterior. No restaurar una copia de datos para revertir código. No forzar la recarga de pestañas con borradores.
 
 La evolución posterior para mayor escala debe medir tráfico real, coste por operación, CPU, I/O y latencia de guardado; separar entidades e historial exige una migración específica con compatibilidad y recuperación probadas.
+
+## Activación comprobada
+
+- [PR 138](https://github.com/estudiomoderno/moderno.app/pull/138), integrado en `444e46d139d23f042668af16227d4df59fb201da`.
+- [CI independiente](https://github.com/estudiomoderno/moderno.app/actions/runs/39656285191): 637 pruebas Node, 100 comprobaciones de los recorridos SQL anteriores, 123 del guardado delta y 24 de autorización PHP, correctas.
+- Migración productiva `20261021185128 guardado_delta_y_versiones`, aplicada a las 18:51:28 UTC. Verificación posterior: los nueve contratos de referencia siguen idénticos, los tres nuevos RPC tienen los permisos previstos, anónimo no tiene EXECUTE y el cálculo puro con datos ficticios devuelve el resultado esperado. No se ejecutó un guardado de prueba sobre datos reales.
+- [Despliegue v3.65.99](https://github.com/estudiomoderno/moderno.app/actions/runs/39656654192), correcto: recursos primero, HTML después y 44 hashes públicos coincidentes, incluido el nuevo módulo.
+- [Primer control real de disponibilidad](https://github.com/estudiomoderno/moderno.app/actions/runs/39656765169), 18:53 UTC: app HTTP 200 (711 ms), módulo HTTP 200 (100 ms), lectura anónima rechazada por Postgres HTTP 401 / código 42501 (786 ms). Es una muestra de disponibilidad desde Actions, no el p95 de guardado de usuarios. El control queda programado cada 15 minutos; la hora efectiva depende de GitHub Actions.
+- Las carreras finales sobre el candidato exacto volvieron a producir cinco confirmaciones y 45 conflictos en 50 solicitudes ficticias (1.839 ms de tiempo total del ensayo local).
+- Actualizador y recuperación de copia actual mayor de 6 MB: pruebas finales de escritorio y móvil correctas, con fallos de disco, lectura, descarga, reintento y recarga segura.
+
+Los asesores mantienen los avisos de seguridad previos documentados en [la incidencia](FIABILIDAD-GUARDADO-2026-10-21.md). El lector nuevo aparece en el [aviso de función SECURITY DEFINER ejecutable por autenticados](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable): se revisaron identidad, membresía, rol y salida limitada a metadatos, además de su rechazo entre estudios y sin identidad. Los otros dos RPC usan SECURITY INVOKER. No se abrieron permisos anónimos ni se cambiaron las políticas existentes para silenciar avisos.
+
+Las pestañas antiguas siguen siendo compatibles; no se ha forzado su recarga. Los cambios del cliente se cargan mediante la actualización segura existente o una apertura posterior.
