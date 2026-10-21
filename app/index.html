@@ -1233,7 +1233,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/private-files.js?v=20260909"></script>
 <script src="/daily-work.js?v=36585"></script>
 <script src="/gestoria.js?v=20260909"></script>
-<script src="/pending-archive.js?v=36590"></script>
+<script src="/pending-archive.js?v=36596"></script>
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=3653"></script>
 <script src="/specifications.js?v=36587"></script>
@@ -4458,6 +4458,7 @@ document.querySelectorAll(".nav-item").forEach(b=>b.onclick=()=>{_wantProject=nu
 drawBrandSwitch();
 
 function render(){
+  if(typeof _localResumePending!=='undefined'&&_localResumePending)return;
   (state.projects||[]).forEach(p=>ModernoSpec.reindex(p));
   if(_accessLoading&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>'+(_accessError?'No se ha podido abrir el estudio':'Conectando con tu estudio')+'</h1><p>'+ModernoDaily.escape(_accessError||'Comprobando el acceso y cargando tus datos.')+'</p>'+(_accessError?'<p>Tus copias se conservan. Puedes descargar los cambios desde el estado de sincronización.</p>':'')+'<button class="btn btn-ghost" '+(_accessConnecting?'disabled':'')+' onclick="cloudLoad()">'+(_accessConnecting?'Conectando…':'Reintentar conexión')+'</button>';return;}
   if((_accessRole==='contratista'||_accessRole==='cliente')&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>Acceso al proyecto</h1><p>Abre el enlace de proyecto que te ha compartido el estudio.</p><button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión</button>';return;}
@@ -11503,7 +11504,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.95";
+const MODERNO_VER="v3.65.96";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11651,6 +11652,7 @@ let _syncPhase='connecting', _syncDetail='', _syncConfirmed=false, _syncReview=f
 function syncHasChanges(){return Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()));}
 function syncCopyKeys(){const keys=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(LS_KEY+'_pendiente_'))keys.push(k);}}catch(e){}return keys;}
 function syncView(){
+  if(typeof _localWrite!=='undefined'&&_localWrite&&!_syncReview)return {mode:'saving',label:'Guardando',detail:'Conservando y verificando la copia local ampliada.'};
   return ModernoDaily.saveStatus({editing:typeof document!=='undefined'&&!!document.querySelector('.overlay.open input:not([type="hidden"]), .overlay.open textarea, .overlay.open select, .overlay.open [contenteditable="true"]'),localFailure:typeof _saveErr!=='undefined'&&_saveErr,localDetail:typeof _saveErrDetail==='undefined'?'':_saveErrDetail,review:_syncReview,online:navigator.onLine,changed:syncHasChanges(),confirmed:_syncConfirmed,phase:_syncPhase,detail:_syncDetail});
 }
 function syncRefresh(){
@@ -11909,6 +11911,7 @@ function cloudKeepPendingCopy(){
   if(!_resumed || localStorage.getItem(LS_KEY+"_dirty")!=="1") return;
   const raw=localStorage.getItem(LS_KEY);
   if(!raw) throw new Error("No se encuentra la copia local pendiente");
+  if(ModernoPendingArchive.pointer(raw))throw new Error("La copia actual usa almacenamiento ampliado");
   const key=LS_KEY+"_pendiente_"+Date.now();
   localStorage.setItem(key,raw);
   if(localStorage.getItem(key)!==raw) throw new Error("No se pudo verificar la copia pendiente");
@@ -11953,6 +11956,8 @@ async function cloudLoad(){
   const attempt=++_accessAttempt;_accessConnecting=true;_accessError="";
   _accessLoading=true;
   try{
+    if(_localWrite)await _localWrite;
+    if(_saveErr)throw new Error("Conserva los cambios actuales antes de reconectar. Descárgalos desde el estado de guardado.");
     render();
     syncTag("saving","Conectando con tu estudio…");
     const {data:mem, error:e1} = await cloudConnectionStep(sb.rpc("unirse_al_estudio"),attempt);
@@ -12219,6 +12224,8 @@ function cloudStartBlank(){
 }
 const LS_KEY="moderno_prod_v1";
 let _saveT=null, _lastSave=null, _saveErr=false, _saveErrDetail='', _localRepair=null, _localRepairAfter=0;
+let _verifiedLocalContent=null,_verifiedLocalReference=null;
+let _localWrite=null,_localRevision=0,_localResumePending=false,_localResumeFailed=false;
 function localCopyOwner(){return JSON.stringify([ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,typeof _accessRole==='undefined'?'':_accessRole]);}
 function localCopyFailure(error,raw){
   const quota=error?.name==='QuotaExceededError'||error?.code===22||error?.code===1014;
@@ -12247,23 +12254,40 @@ function repairLocalCopy(){
   return _localRepair;
 }
 function persistNow(){
-  let raw;
+  if(_localResumePending)return;
+  const revision=++_localRevision,owner=localCopyOwner();
+  let raw,content;
   try{
-    raw=JSON.stringify({v:1, when:Date.now(), state, BRAND, wsOrder});
+    content=JSON.stringify({state,BRAND,wsOrder});
+    if(content===_verifiedLocalContent&&localStorage.getItem(LS_KEY)===_verifiedLocalReference){_saveErr=false;_saveErrDetail='';cloudDirty();return;}
+    raw='{"v":1,"when":'+Date.now()+','+content.slice(1);
     localStorage.setItem(LS_KEY,raw);
     if(localStorage.getItem(LS_KEY)!==raw){const error=new Error();error.name='LocalCopyVerificationError';throw error;}
+    _verifiedLocalContent=content;_verifiedLocalReference=raw;
     _lastSave=new Date(); _saveErr=false;_saveErrDetail='';
   }catch(e){
-    const quota=localCopyFailure(e,raw);
-    if(!_saveErr) toast(_saveErrDetail);
-    _saveErr=true;
-    if(quota)repairLocalCopy();
+    const quota=localCopyFailure(e,raw);_saveErr=true;
+    if(quota&&raw){
+      // Serialize writes: an older snapshot must never finish after a newer save.
+      const valid=()=>revision===_localRevision&&owner===localCopyOwner();
+      const task=Promise.resolve(_localWrite).then(async()=>{
+        if(!valid())return;
+        try{
+          if(!await ModernoPendingArchive.writeCurrent(localStorage,LS_KEY,raw,pendingArchiveStore(),valid))return;
+          if(valid()){_verifiedLocalContent=content;_verifiedLocalReference=localStorage.getItem(LS_KEY);_lastSave=new Date();_saveErr=false;_saveErrDetail='';cloudDirty();}
+        }catch(error){if(valid()){localCopyFailure(error?.name==='QuotaExceededError'?error:e,raw);_saveErr=true;toast(_saveErrDetail);repairLocalCopy();}}
+        finally{try{syncRefresh();}catch(error){}}
+      });
+      _localWrite=task;task.finally(()=>{if(_localWrite===task){_localWrite=null;try{syncRefresh();}catch(error){}}});
+    }else toast(_saveErrDetail);
   }
   cloudDirty();   // la nube manda: se sincroniza aunque el navegador esté lleno
 }
 async function syncRetrySave(){
   const owner=localCopyOwner();closeModal();_localRepairAfter=0;persistNow();
+  if(_localWrite)await _localWrite;
   if(_localRepair)await _localRepair;
+  if(_localWrite)await _localWrite;
   if(localCopyOwner()!==owner)return;
   await cloudFlush();
   try{syncRefresh();}catch(e){}
@@ -12291,16 +12315,37 @@ function persistSoon(){ clearTimeout(_saveT); _saveT=setTimeout(persistNow, 500)
 })();
 
 let _resumed=false;
+function applyLocalSnapshot(raw){
+  const d=JSON.parse(raw);if(!d||d.v!==1||!d.state)throw new Error('No se pudo leer la copia local');
+  Object.keys(state).forEach(k=>delete state[k]);Object.assign(state,d.state);
+  Object.keys(BRAND).forEach(k=>delete BRAND[k]);Object.assign(BRAND,d.BRAND||{});
+  if(Array.isArray(d.wsOrder)&&d.wsOrder.length)wsOrder=d.wsOrder;
+  _verifiedLocalContent=JSON.stringify({state,BRAND,wsOrder});_verifiedLocalReference=localStorage.getItem(LS_KEY);
+  _resumed=true;
+}
+let _localResumePointer=null;
 (function(){
   try{
-    const raw=localStorage.getItem(LS_KEY); if(!raw) return;
-    const d=JSON.parse(raw); if(!d || d.v!==1 || !d.state) return;
-    Object.keys(state).forEach(k=>delete state[k]); Object.assign(state, d.state);
-    Object.keys(BRAND).forEach(k=>delete BRAND[k]); Object.assign(BRAND, d.BRAND||{});
-    if(Array.isArray(d.wsOrder) && d.wsOrder.length) wsOrder=d.wsOrder;
-    _resumed=true;
+    const raw=localStorage.getItem(LS_KEY);if(!raw)return;
+    if(ModernoPendingArchive.pointer(raw)){_localResumePointer=raw;_localResumePending=true;return;}
+    applyLocalSnapshot(raw);
   }catch(e){}
 })();
+async function resumeStoredApp(){
+  if(_localResumePending){
+    try{
+      const raw=await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore());
+      if(localStorage.getItem(LS_KEY)!==_localResumePointer)throw new Error('La copia local ha cambiado en otra pestaña');
+      applyLocalSnapshot(raw);_localResumePending=false;_localResumeFailed=false;
+    }catch(e){
+      _localResumeFailed=true;showLogin(false);
+      const main=document.getElementById('view');
+      if(main){main.replaceChildren();const title=document.createElement('h2');title.textContent='No se ha podido leer la copia local';const detail=document.createElement('p');detail.textContent='Tus copias se conservan. Reintenta sin borrar los datos de este navegador.';const retry=document.createElement('button');retry.className='btn btn-ghost';retry.textContent='Reintentar';retry.onclick=resumeStoredApp;main.append(title,detail,retry);}
+      globalThis.ModernoAppLoading?.sessionReady();return;
+    }
+  }
+  startRestoredApp();
+}
 let _roomsHinted=false;
 function roomsHint(){
   if(_roomsHinted || window.innerWidth>810) return;
@@ -13133,7 +13178,7 @@ render = function(){
   globalThis.ModernoAppLoading?.refresh();
 };
 window.addEventListener("beforeunload", persistNow);
-window.addEventListener('beforeunload',event=>{if(roomDuplicationPending()){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{if(_localResumePending||_localWrite||_saveErr||roomDuplicationPending()){event.preventDefault();event.returnValue='';}});
 /* Vigía de Administración: cualquier ajuste tocado confirma y persiste */
 let _admPingT=null;
 function adminSavedPing(){
@@ -13160,21 +13205,26 @@ async function prepareAppReload(report=()=>{}){
   const identity=()=>JSON.stringify([ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,typeof _accessRole==='undefined'?'':_accessRole]),owner=identity();
   const sameSession=()=>identity()===owner&&!(typeof _accessLoading!=='undefined'&&_accessLoading);
   let archived=false;
-  const verifiedCopy=()=>{
-    if(_saveErr)return false;
-    try{const copy=JSON.parse(localStorage.getItem(LS_KEY));return copy?.v===1&&JSON.stringify([copy.state,copy.BRAND,copy.wsOrder])===JSON.stringify([state,BRAND,wsOrder]);}catch(e){return false;}
+  const verifiedCopy=async()=>{
+    if(_saveErr||_localResumePending)return false;
+    try{const copy=JSON.parse(await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore()));return copy?.v===1&&JSON.stringify([copy.state,copy.BRAND,copy.wsOrder])===JSON.stringify([state,BRAND,wsOrder]);}catch(e){return false;}
+  };
+  const waitLocal=async()=>{
+    if(!_localWrite)return true;
+    let timer;try{return await Promise.race([_localWrite.then(()=>true),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),15000);})]);}finally{clearTimeout(timer);}
   };
   const keepCopy=async()=>{
     persistNow();
+    if(_localWrite){report('Conservando la copia local…');if(!await waitLocal())return false;}
     if(typeof _localRepair!=='undefined'&&_localRepair){report('Conservando copias anteriores para liberar espacio…');await _localRepair;}
-    if(verifiedCopy())return true;
+    if(await verifiedCopy())return true;
     if(archived||!syncCopyKeys().length)return false;
     archived=true;report('Conservando copias anteriores para liberar espacio…');
     let timer;
     try{
       const ready=await Promise.race([cloudArchivePendingCopies().then(()=>true),new Promise(resolve=>{timer=setTimeout(()=>resolve(false),15000);})]).finally(()=>clearTimeout(timer));
       if(!ready||!sameSession()||editorOpen())return false;
-      persistNow();return verifiedCopy();
+      persistNow();if(!await waitLocal())return false;return verifiedCopy();
     }catch(e){return false;}
   };
   const copyFailure='No se ha podido guardar la copia en este navegador. Descarga los cambios actuales desde el estado de guardado y conserva esta pestaña abierta.';
@@ -13237,9 +13287,10 @@ setTimeout(versionSentinel, 2500);
 setInterval(versionSentinel, 120000);
 function backupExport(){
   persistNow();
-  const raw = localStorage.getItem(LS_KEY) || JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder});
+  const raw = JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder});
   const a=document.createElement("a");
-  a.href="data:application/json;charset=utf-8,"+encodeURIComponent(raw);
+  const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));a.href=url;
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
   a.download="moderno-copia-"+new Date().toISOString().slice(0,10)+".json"; a.click();
   toast("↓ Copia de seguridad descargada — guárdala a buen recaudo");
 }
@@ -13274,6 +13325,7 @@ function dataReset(){
     ()=>{ localStorage.removeItem(LS_KEY); location.reload(); });
 }
 
+function startRestoredApp(){
 (function(){ const l=document.querySelector(".sidebar img.logo"), m=document.querySelector("#mHeader .mlogo"); if(l&&m) m.src=l.src;
   document.querySelectorAll(".verTag").forEach(e=>e.textContent=MODERNO_VER);
   console.log("Moderno.app beta "+MODERNO_VER); })();
@@ -13306,6 +13358,8 @@ if(sb){
   setTimeout(()=>toast("👋 Sesión recuperada — tus datos siguen aquí (guardado automático activo)"), 600);
 }
 if(!sb && _resumed && state.sessionUser) setTimeout(()=>afterLoginOnce(), 900);
+}
+resumeStoredApp();
 function afterLogin(){
   if(_accessLoading)return;
   if(!state.onboarded&&(!sb||_accessRole==='admin')){
@@ -13456,7 +13510,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=36558">
 <script src="/calendar-ui.js?v=36570"></script>
 <script>
-ModernoAppLoading.setProbe(()=>!document.documentElement.classList.contains('portalboot')&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
+ModernoAppLoading.setProbe(()=>(_localResumeFailed||!_localResumePending&&!document.documentElement.classList.contains('portalboot'))&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
 if(!sb)ModernoAppLoading.sessionReady();
 </script>
 <script>

@@ -300,3 +300,7 @@ El propietario aclara que el segundo acceso debe ir junto a las herramientas, fu
 ## 2026-10-21 — Duplicación desde ajustes y guardado
 
 El usuario indica que copias de listas desaparecieron al recargar. Se corrige el handler antiguo para usar la copia independiente existente e iniciar persistencia/envío inmediatamente; beforeunload avisa por copias aún no confirmadas. Reproducción y pruebas aisladas; recuperación de copias anteriores pendiente de revisar el JSON que el usuario confirma descargado. No se importa ni restaura automáticamente: [DUPLICAR-LISTA-GUARDADO](DUPLICAR-LISTA-GUARDADO.md).
+
+## 2026-10-21 — Copia actual supera 5 MB
+
+El usuario aporta el motivo exacto de la revisión: instantánea actual de 5.0 MB. Fallback verificado en IndexedDB, arranque que espera su lectura, conservación histórica independiente antes de cargar nube, espera en Actualizar/Reintentar y descarga del estado completo. No borra las 55 copias ni importa datos automáticamente. Transición de pestaña antigua y reversión requieren conservar el lector/JSON; detalle y pruebas: [COPIA-LOCAL-AMPLIADA](COPIA-LOCAL-AMPLIADA.md).

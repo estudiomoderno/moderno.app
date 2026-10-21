@@ -53,6 +53,7 @@ try:
    page.wait_for_load_state('networkidle');page.evaluate(setup);page.evaluate('versionSentinel()')
    # Fill real Chromium localStorage with fictional old copies until the current snapshot fails.
    page.evaluate("""()=>{
+     ModernoPendingArchive.writeCurrent=async()=>{throw new DOMException('Fictional unavailable live storage','QuotaExceededError');};
      window.expectedCopies=[];
      for(let i=0;i<30;i++){
        const key=LS_KEY+'_pendiente_'+(2000000000000+i),raw=JSON.stringify({v:1,fixture:i,padding:'x'.repeat(400000)});
