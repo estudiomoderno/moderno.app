@@ -7,7 +7,12 @@
   transitivo de WebView2; este programa usa WinForms. Verificar también el runner Windows.
 - Pruebas de política: 18 casos y clasificación Google correctos, sin red ni credenciales.
 - Icono convertido desde el favicon oficial y previsualizado; varios tamaños dentro del ICO.
-- CI del candidato: ver resultado definitivo y enlace de ejecución en #109.
+- CI Windows del commit `4d1ead9`: [39551407011](https://github.com/estudiomoderno/moderno.app/actions/runs/39551407011),
+  shell WebView2, instalación, reinstalación y desinstalación correctas. Prueba sobre runner
+  Windows, no equivale a aceptación en un PC personal Windows 11.
+- Dos ejecuciones anteriores detectaron el fallo de navegación de popup; corregido difiriendo
+  la navegación hasta salir de `NewWindowRequested`. La prueba queda como regresión.
+- Empaquetado final con avisos .NET/WebView2: enlace definitivo y SHA-256 en #109.
 
 | Prueba | Evidencia / estado |
 | --- | --- |
@@ -19,7 +24,7 @@
 | Error HTTP y Reintentar | Harness simula 503 y recuperación; no equivale a caída física de internet |
 | Google | Bloqueo explicado; no hay retorno seguro implementado; OAuth real NO probado |
 | Descargas | Guardar como implementado; diálogo, cancelación, sobrescritura y archivos reales pendientes en Windows |
-| Adaptador desconectado/reconexión | Manejo implementado; prueba física pendiente |
+| Adaptador desconectado/reconexión | Eventos simulados correctos en CI, incluido evento repetido y borrador DOM conservado; prueba física pendiente |
 | Windows 10/11 personal | Instalación, DPI, SmartScreen, runtime ausente y uso prolongado pendientes |
 | Login/sesiones reales | Bloqueado hasta entorno aislado confirmado; ninguna escritura en producción |
 | PDF, impresión, portapapeles, subida, 3+ módulos | Pendientes en aislamiento |

@@ -10,7 +10,7 @@ Set-Content $sentinel 'synthetic-data-only'
 foreach ($attempt in 1..2) {
     $process = Start-Process $Installer -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=`"$destination`"") -Wait -PassThru
     if ($process.ExitCode -ne 0) { throw "Install/upgrade failed: $($process.ExitCode)" }
-    foreach ($file in @('Moderno.Windows.exe', 'Moderno.Windows.dll', 'Microsoft.Web.WebView2.Core.dll', 'WebView2Loader.dll')) {
+    foreach ($file in @('Moderno.Windows.exe', 'Moderno.Windows.dll', 'Microsoft.Web.WebView2.Core.dll', 'WebView2Loader.dll', 'licenses\DotNet-LICENSE.txt', 'licenses\DotNet-ThirdPartyNotices.txt', 'licenses\WebView2-LICENSE.txt', 'licenses\WebView2-NOTICE.txt')) {
         if (!(Test-Path (Join-Path $destination $file))) { throw "Missing installed dependency: $file" }
     }
     if (!(Test-Path (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Moderno.app Beta.lnk'))) {

@@ -44,7 +44,7 @@ cuentas ficticias en producción pensando que eso la convierte en un entorno de 
 redirige al proveedor; abrirlo en otro navegador no devuelve la sesión a WebView2. Además,
 Google puede rechazar navegadores incrustados. Se muestra una explicación y se ofrece abrir
 la portada de Moderno.app en el navegador habitual. Reintentar vuelve a la portada dentro
- del programa. No se transportan cookies, no se altera el user-agent ni la configuración Auth.
+del programa. No se transportan cookies, no se altera el user-agent ni la configuración Auth.
 
 La alternativa temporal es utilizar la web en el navegador habitual. Un retorno nativo seguro
 necesita diseño específico y coordinación con el Taller principal; no se ha implementado ni
@@ -99,6 +99,8 @@ interceptadas con HTML ficticio. No es la app distribuida, no llama a producció
 Sus puntos de inyección están excluidos del ejecutable distribuido por compilación condicional.
 El workflow `.github/workflows/windows-beta.yml` ejecuta pruebas, publica, compila con Inno Setup 6,
 comprueba instalación/reinstalación/desinstalación con un perfil ficticio y adjunta instalador y ZIP.
+
+El instalador y el ZIP incluyen los avisos de redistribución .NET/WebView2 en `licenses/`.
 
 Identidad: [procedencia del icono](Moderno.Windows/Assets/ORIGEN.md). No se distribuyen fuentes.
 Antes de entrega comercial: resolver Google, verificar sesiones y archivos, pruebas Windows 10/11,

@@ -46,6 +46,19 @@ jobs:
         shell: pwsh
         run: dotnet run --project desktop/windows/Moderno.Windows.SmokeTests -c Release
 
+      - name: Include redistribution notices
+        shell: pwsh
+        run: |
+          $notices = "${{ runner.temp }}\moderno-windows\licenses"
+          New-Item $notices -ItemType Directory -Force | Out-Null
+          Copy-Item "$env:DOTNET_ROOT\LICENSE.txt" "$notices\DotNet-LICENSE.txt"
+          Copy-Item "$env:DOTNET_ROOT\ThirdPartyNotices.txt" "$notices\DotNet-ThirdPartyNotices.txt"
+          [xml]$project = Get-Content desktop/windows/Moderno.Windows/Moderno.Windows.csproj
+          $version = ($project.Project.ItemGroup.PackageReference | Where-Object Include -eq 'Microsoft.Web.WebView2').Version
+          $packages = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { "$env:USERPROFILE\.nuget\packages" }
+          Copy-Item "$packages\microsoft.web.webview2\$version\LICENSE.txt" "$notices\WebView2-LICENSE.txt"
+          Copy-Item "$packages\microsoft.web.webview2\$version\NOTICE.txt" "$notices\WebView2-NOTICE.txt"
+
       - name: Build per-user beta installer
         shell: pwsh
         run: |
