@@ -17,6 +17,16 @@ jobs:
     name: Pruebas aisladas (sin produccion)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+        env:
+          POSTGRES_PASSWORD: solo-prueba-ficticia
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Obtener codigo sin credenciales persistentes
         uses: actions/checkout@v4
@@ -29,6 +39,10 @@ jobs:
           node-version: '24'
       - name: Pruebas de JavaScript
         run: node --test scripts/*.test.mjs
+      - name: Equivalencia SQL y tiempos con datos ficticios
+        run: |
+          docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1 < scripts/sql/fiabilidad-bootstrap-local.sql
+          node scripts/build-fiabilidad-sql.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Preparar PHP (si falta)
         run: |
           if ! command -v php >/dev/null; then

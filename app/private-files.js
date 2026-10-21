@@ -35,6 +35,44 @@ var ModernoFiles = (() => {
       return url.href;
     };
   }
-  return {storagePath,createResolver};
+  function createRequestCache(resolve,{ttl=45000,timeout=20000,concurrency=4,now=Date.now,wait=ms=>new Promise(r=>setTimeout(r,ms))}={}){
+    const entries=new Map(),queue=[];let running=0,owner=null,generation=0;
+    const identity=c=>JSON.stringify([c?.study,c?.user,c?.role,c?.attempt,c?.portalToken,c?.portalType]);
+    function pump(){
+      while(running<concurrency&&queue.length){
+        const job=queue.shift();running++;
+        (async()=>{
+          let timer,active=true;const started=now();
+          try{
+            if(job.generation!==generation)throw new Error('La sesión ha cambiado');
+            const result=await Promise.race([
+              Promise.resolve().then(async()=>{
+                for(let attempt=0;;attempt++){
+                  if(!active||job.generation!==generation)throw new Error('La sesión ha cambiado');
+                  try{return await resolve(job.source,job.context);}
+                  catch(error){const status=Number(error?.status||error?.statusCode);if(attempt>=2||![429,500,502,503,504].includes(status))throw error;await wait(500*2**attempt);}
+                }
+              }),
+              new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('La imagen tarda demasiado en responder')),timeout);})
+            ]);
+            if(job.generation!==generation||entries.get(job.key)?.promise!==job.promise)throw new Error('La sesión o la imagen ha cambiado');
+            const entry=entries.get(job.key);entry.expires=started+ttl;job.accept(result);
+          }catch(error){if(entries.get(job.key)?.promise===job.promise)entries.delete(job.key);job.reject(error);}
+          finally{active=false;clearTimeout(timer);running--;pump();}
+        })();
+      }
+    }
+    function get(source,context,refresh=false){
+      const next=identity(context);if(next!==owner){owner=next;generation++;entries.clear();}
+      const key=JSON.stringify([next,source]),entry=entries.get(key);
+      if(entry&&(entry.expires===Infinity||!refresh&&entry.expires>now()))return entry.promise;
+      for(const [old,value] of entries)if(value.expires<=now())entries.delete(old);
+      let accept,reject;const promise=new Promise((yes,no)=>{accept=yes;reject=no;});
+      entries.set(key,{promise,expires:Infinity});queue.push({key,source,context:{...context},generation,promise,accept,reject});pump();return promise;
+    }
+    return {get,clear(){generation++;entries.clear();owner=null;}};
+  }
+  return {storagePath,createResolver,createRequestCache};
+
 })();
 if(typeof module!=='undefined')module.exports=ModernoFiles;

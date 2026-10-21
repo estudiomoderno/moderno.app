@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import sync from '../app/sync-merge.js';
 const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 const section=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
-const code=section('async function cloudReadRows(','async function cloudRecoverBlock(')+section('async function cloudPoll(){','/* Presencia:');
+const code=section('async function cloudReadRows(','async function cloudRecoverBlock(')+section('async function cloudPoll(','/* Presencia:');
 test('rendering payment summaries cannot add financial fields to collaborator projects',()=>{
  const c={_accessRole:'colaborador'};vm.createContext(c);vm.runInContext(html.match(/function planHitos\(p\)\{[^\n]+/)[0],c);const project={id:1};assert.equal(c.planHitos(project).length,0);assert.deepEqual(project,{id:1});
 });
@@ -19,7 +19,7 @@ test('unavailable workspace names never reappear as a fallback',()=>{
 });
 function fixture(){
  const calls=[],applied=[];
- const c={ESTUDIO_ID:'ficticio',_accessRole:'colaborador',_cloudSeen:{},document:{hidden:false},syncTag:(...args)=>calls.push(args),cloudApplyRemote:(...args)=>applied.push(args),sb:{from(){assert.fail('No se permite leer la tabla sin filtrar');},rpc:async(name,p)=>{calls.push([name,p]);return {data:[{bloque:'proyectos',contenido:[{id:1,name:'Ficticio'}],updated_at:'1',rol:'colaborador'}]};}}};
+ const c={setTimeout,clearTimeout,AbortController,ESTUDIO_ID:'ficticio',_accessRole:'colaborador',_cloudSeen:{},document:{hidden:false},syncTag:(...args)=>calls.push(args),cloudApplyRemote:(...args)=>applied.push(args),sb:{from(){assert.fail('No se permite leer la tabla sin filtrar');},rpc:async(name,p)=>{calls.push([name,p]);return {data:[{bloque:'proyectos',contenido:[{id:1,name:'Ficticio'}],updated_at:'1',rol:'colaborador'}]};}}};
  vm.createContext(c);vm.runInContext(code,c);return {c,calls,applied};
 }
 test('a block is read through the server permission filter',async()=>{const {c,calls}=fixture();const r=await c.cloudReadBlock('proyectos');assert.equal(r.data.contenido[0].name,'Ficticio');assert.equal(calls[0][0],'app_leer_bloques');assert.deepEqual(Array.from(calls[0][1].p_bloques),['proyectos']);});
@@ -29,7 +29,7 @@ test('duplicate or incorrect blocks are rejected',async()=>{for(const rows of [[
 test('polling applies only confirmed filtered rows',async()=>{const {c,applied}=fixture();await c.cloudPoll();assert.equal(applied.length,1);assert.equal(applied[0][0],'proyectos');c._cloudSeen.proyectos='1';await c.cloudPoll();assert.equal(applied.length,1);});
 test('a failed read never falls back to the raw table',async()=>{const {c}=fixture();c.sb.rpc=async()=>({error:{message:'denegado'}});assert.equal((await c.cloudReadRows()).error.message,'denegado');});
 test('filtered loading cannot merge old invoices, comments or configuration back in',()=>{const {c}=fixture();c.state={projects:[{id:1,comments:[{txt:'anterior'}]}],invoices:[{ref:'privada'}],quotes:[{ref:'privado'}],account:{iban:'anterior'},emitter:{iban:'anterior'},_hist:{rows:['anterior']}};c.cloudPrepareFilteredCache([{bloque:'config',contenido:{account:{name:'Estudio ficticio'}}}]);assert.equal(c.state.projects.length,0);assert.equal(c.state.invoices.length,0);assert.equal(c.state.quotes.length,0);assert.equal(c.state.account.iban,undefined);assert.equal(c.state.account.name,'Estudio ficticio');assert.equal(c.state._hist,null);});
-test('an administrator snapshot is not cleared by the collaborator cache preparation',()=>{const {c}=fixture();c._accessRole='admin';c.state={invoices:[{ref:'FICTICIA'}]};c.cloudPrepareFilteredCache([]);assert.equal(c.state.invoices[0].ref,'FICTICIA');});
+test('an empty administrator remote keeps legacy cache for explicit migration only',()=>{const {c}=fixture();c._accessRole='admin';c.state={invoices:[{ref:'FICTICIA'}]};c.cloudPrepareFilteredCache([]);assert.equal(c.state.invoices[0].ref,'FICTICIA');});
 test('a hidden finance update cannot generate a false pending write',()=>{
  const value={invoices:[],n:0,entries:[],del:{},ddel:{}};
  const c={_accessRole:'colaborador',canon:sync.canonical,CLOUD_BLOCKS:{facturas:{get:()=>value,set(){}}},_cloudHash:{facturas:sync.canonical(value)},_cloudSeen:{},_cloudCount:{},document:{activeElement:null},_modalAbierto:()=>false,persistNow(){},render(){},syncTag(){},blockCount:Object.keys,syncHasChanges:()=>c._cloudHash.facturas!==sync.canonical(value)};
@@ -43,7 +43,13 @@ test('cached content is not rendered while checking study permissions',()=>{
 test('collaborators never subscribe to raw database payloads',()=>{
  for(const role of ['admin','colaborador']){
   const events=[];const channel={on(event){events.push(event);return this;},subscribe(){return this;}};
-  const c={_accessRole:role,sb:{channel:()=>channel},ESTUDIO_ID:'ficticio',_rtChan:null,_rtPoll:null,meMail:()=> 'prueba@example.invalid',cloudPoll(){},setInterval:()=>1,invAutoLoad(){},document:{addEventListener(){}},console};
+  const c={_accessRole:role,sb:{channel:()=>channel},ESTUDIO_ID:'ficticio',_rtChan:null,_rtPoll:null,meMail:()=> 'prueba@example.invalid',cloudRealtimeChange(){},cloudPoll(){},setInterval:()=>1,invAutoLoad(){},document:{addEventListener(){}},console};
   vm.createContext(c);vm.runInContext(section('function cloudRealtimeStart(){','function cloudKeepPendingCopy('),c);c.cloudRealtimeStart();assert.equal(events.includes('postgres_changes'),role==='admin');assert.equal(events.includes('presence'),false); // Presence now uses its own private channel.
  }
 });
+
+test('a nonempty administrator remote cannot inherit records from a previous cached study',()=>{const {c}=fixture();c._accessRole='admin';c.state={invoices:[{ref:'anterior'}],quotes:[{ref:'antiguo'}],projects:[{id:'anterior'}],account:{iban:'old'},emitter:{},users:[],library:[],clients:[]};c.cloudPrepareFilteredCache([{bloque:'proyectos',contenido:[]}]);assert.equal(c.state.invoices.length,0);assert.equal(c.state.quotes.length,0);assert.equal(c.state.projects.length,0);assert.equal(c.state.account.iban,undefined);});
+
+test('simultaneous polls coalesce and target only the queued changed blocks',async()=>{const {c}=fixture();let release,started;const gate=new Promise(r=>release=r),ready=new Promise(r=>started=r);const reads=[];c.sb.rpc=async(name,p)=>{reads.push(p.p_bloques);if(reads.length===1){started();await gate;}return {data:[]};};const one=c.cloudPoll(['proyectos']);await ready;const two=c.cloudPoll(['agenda']);const three=c.cloudPoll(['agenda','contactos']);assert.equal(reads.length,1);release();await Promise.all([one,two,three]);assert.equal(reads.length,2);assert.deepEqual(Array.from(reads[1]).sort(),['agenda','contactos']);});
+test('a full poll queued during a targeted read remains a single full refresh',async()=>{const {c}=fixture();let release,started;const gate=new Promise(r=>release=r),ready=new Promise(r=>started=r),reads=[];c.sb.rpc=async(name,p)=>{reads.push(p.p_bloques);if(reads.length===1){started();await gate;}return {data:[]};};const one=c.cloudPoll(['proyectos']);await ready;const two=c.cloudPoll();const three=c.cloudPoll(['agenda']);release();await Promise.all([one,two,three]);assert.equal(reads.length,2);assert.equal(reads[1],null);});
+test('realtime acknowledgements do not reread an already confirmed version and independent changes are batched',()=>{const {c}=fixture();let timer,reads=[];c.setTimeout=fn=>{timer=fn;return 1};c.clearTimeout=()=>{};c._cloudBusy=true;c.cloudPoll=v=>reads.push(v);c._cloudSeen.proyectos='v2';c.cloudRealtimeChange({new:{bloque:'proyectos',updated_at:'v2'}});c.cloudRealtimeChange({new:{bloque:'agenda',updated_at:'v3'}});timer();assert.equal(reads.length,0);c._cloudBusy=false;timer();assert.deepEqual(Array.from(reads[0]),['agenda']);});
