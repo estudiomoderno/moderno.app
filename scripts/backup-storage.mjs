@@ -7,8 +7,10 @@ import { fileURLToPath } from 'node:url';
 export function inventory(text) {
   const items = JSON.parse(text);
   if (!Array.isArray(items) || items.length === 0) throw new Error('Empty or invalid source inventory');
+  const seen=new Set();
   return items.map(({ Path, Size, ModTime }) => {
-    if (typeof Path !== 'string' || !Number.isFinite(Size) || typeof ModTime !== 'string') throw new Error('Invalid object metadata');
+    if (typeof Path !== 'string' || !Path || /[\r\n\0]/.test(Path) || Path.split('/').some(part=>!part||part==='.'||part==='..') || seen.has(Path) || !Number.isSafeInteger(Size) || Size<0 || typeof ModTime !== 'string') throw new Error('Invalid object metadata');
+    seen.add(Path);
     return { Path, Size, ModTime };
   }).sort((a, b) => a.Path.localeCompare(b.Path));
 }
@@ -17,17 +19,25 @@ export async function backup(run, bucket, id, { verifyOnly = false } = {}) {
   if (!/^[a-z0-9][a-z0-9.-]*$/.test(bucket) || !/^[a-zA-Z0-9_-]+$/.test(id)) throw new Error('Invalid backup parameters');
   const source = `source:${bucket}`;
   const root = `destination:${id}`;
+  const startedAt=new Date().toISOString();
   const before = inventory(await run(['lsjson', source, '--recursive', '--files-only']));
+  const selection=before.map(object=>object.Path).join('\n')+'\n';
   // Recovery targets only an incomplete same-day snapshot selected below.
   // Existing objects stay untouched; only absent files may be added.
-  await run(['copy', source, `${root}/objects`, '--immutable', ...(verifyOnly ? ['--ignore-existing', '--no-traverse'] : [])]);
+  await run(['copy', source, `${root}/objects`, '--immutable', ...(verifyOnly ? ['--ignore-existing', '--no-traverse'] : []), '--files-from-raw','-'],selection);
   // Read back and compare bytes, rather than relying on filenames or timestamps.
-  await run(['check', source, `${root}/objects`, '--download']);
+  const checked=await run(['check', source, `${root}/objects`, '--download','--files-from-raw','-'],selection);
+  // --files-from does not itself fail when a file is absent on both sides.
+  // Require positive byte-comparison coverage for every inventoried object.
+  if(!checked||checked.identical!==before.length||['missingSource','missingDestination','different','readErrors'].some(key=>checked[key]!==0))throw new Error('Byte comparison did not cover snapshot inventory');
   const after = inventory(await run(['lsjson', source, '--recursive', '--files-only']));
-  if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error('Source changed during backup; retry in a new snapshot');
-  await run(['rcat', `${root}/manifest.json`], JSON.stringify({ version: 1, objects: after }));
+  const current=new Map(after.map(object=>[object.Path,object]));
+  if(before.some(object=>JSON.stringify(object)!==JSON.stringify(current.get(object.Path))))throw new Error('Selected source changed during backup; retry in a new snapshot');
+  const snapshot={scope:'initial-inventory',startedAt,newObjectsAfterInventory:after.length-before.length};
+  await run(['rcat', `${root}/manifest.json`], JSON.stringify({ version: 1,...snapshot, objects: before }));
   // A partial run is never labelled complete. No delete, sync or source writes.
-  await run(['rcat', `${root}/COMPLETE.json`], JSON.stringify({ version: 1, verifiedAt: new Date().toISOString(), count: after.length }));
+  await run(['rcat', `${root}/COMPLETE.json`], JSON.stringify({ version: 1,...snapshot, verifiedAt: new Date().toISOString(), count: before.length }));
+  console.log('Backup snapshot verified: '+JSON.stringify({count:before.length,...snapshot}));
 }
 
 export async function incompleteSnapshot(run, now = new Date()) {
@@ -98,7 +108,7 @@ export function rclone(args, input) {
     child.on('close', code => {
       const category = failureCategory(diagnostic);
       if(isCheck){report.feed('\n');console.log('Backup byte comparison: '+JSON.stringify(report.summary()));}
-      code === 0 ? resolve(output) : reject(new Error(`Backup step ${args[0]} failed (${category})`));
+      code === 0 ? resolve(isCheck?report.summary():output) : reject(new Error(`Backup step ${args[0]} failed (${category})`));
     });
     child.stdin.on('error', () => {});
     child.stdin.end(input);

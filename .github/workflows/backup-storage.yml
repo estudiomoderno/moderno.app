@@ -50,6 +50,8 @@ jobs:
           sudo apt-get install -y -qq rclone
       - name: Registrar version de la herramienta de copia
         run: rclone version
+      - name: Ensayar instantánea y recuperación con archivos locales ficticios
+        run: node scripts/verify-backup-snapshot-local.mjs
       - name: Preparar identidad y ocultar configuración
         env:
           GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
