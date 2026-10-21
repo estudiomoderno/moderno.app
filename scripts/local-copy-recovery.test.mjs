@@ -45,3 +45,15 @@ test('a hung archive times out while preserving original copies and the current 
  const f=fixture();f.c.cloudArchivePendingCopies=()=>new Promise(()=>{});f.c.setTimeout=fn=>setTimeout(fn,0);
  f.c.persistNow();await f.read('_localWrite');await f.read('_localRepair');assert.equal(f.read('_localRepair'),null);assert.equal(f.read('_saveErr'),true);assert.equal(f.disk.get('app'),'old');assert.equal(f.disk.get('app_pendiente_1'),'old copy');assert.equal(f.c.state.note,'latest');
 });
+
+test('hung expanded storage expires and Retry can save without waiting for the old write',async()=>{
+ const f=fixture();let release,timeout,oldValid;
+ f.c.setTimeout=(fn,ms)=>{if(ms===20000)timeout=fn;return {ms};};f.c.clearTimeout=()=>{};
+ f.c.ModernoPendingArchive.writeCurrent=async(_storage,_key,_raw,_store,valid)=>{oldValid=valid;await new Promise(r=>release=r);return valid();};
+ f.c.persistNow();await new Promise(r=>setImmediate(r));
+ assert.equal(typeof timeout,'function');assert.equal(oldValid(),true);timeout();await f.read('_localWrite');
+ assert.equal(oldValid(),false);assert.equal(f.read('_localWrite'),null);assert.equal(f.read('_saveErr'),true);assert.match(f.read('_saveErrDetail'),/tarda demasiado/);
+ f.c.ModernoPendingArchive.writeCurrent=async(_storage,key,raw)=>{f.disk.set(key,raw);return true;};
+ f.c.state.note='new edit after timeout';await f.c.syncRetrySave();assert.equal(f.read('_saveErr'),false);assert.equal(JSON.parse(f.disk.get('app')).state.note,'new edit after timeout');
+ release();await new Promise(r=>setImmediate(r));assert.equal(JSON.parse(f.disk.get('app')).state.note,'new edit after timeout');
+});

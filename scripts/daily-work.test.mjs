@@ -22,3 +22,9 @@ test('older preserved copies stay available after a successful current save',()=
 test('upload completion is not global cloud-save acknowledgement',()=>{const s=session();s.c.syncTag('pending','Archivo preparado');assert.notEqual(s.c.syncView().label,'Guardado en nube');});
 test('open form cannot be mistaken for a confirmed cloud save',()=>assert.equal(daily.saveStatus({editing:true,confirmed:true}).label,'Formulario abierto'));
 test('opening sync details cannot overwrite an existing form',()=>{const s=session();s.c._modalAbierto=()=>true;let warned=false;s.c.toast=()=>warned=true;s.c.modal=()=>assert.fail('existing form overwritten');s.c.syncDetails();assert.equal(warned,true);});
+
+test('retry progress cannot replace the actual unresolved error detail',()=>{
+ const s=session();s.c.syncTag('err','Motivo del fallo ficticio');s.c.syncTag('saving','Guardando…');
+ assert.equal(s.c.syncView().label,'Necesita revisión');assert.equal(s.c.syncView().detail,'Motivo del fallo ficticio');
+ s.c.syncTag('ok');assert.notEqual(s.c.syncView().label,'Necesita revisión');
+});
