@@ -304,3 +304,7 @@ El usuario indica que copias de listas desaparecieron al recargar. Se corrige el
 ## 2026-10-21 — Copia actual supera 5 MB
 
 El usuario aporta el motivo exacto de la revisión: instantánea actual de 5.0 MB. Fallback verificado en IndexedDB, arranque que espera su lectura, conservación histórica independiente antes de cargar nube, espera en Actualizar/Reintentar y descarga del estado completo. No borra las 55 copias ni importa datos automáticamente. Transición de pestaña antigua y reversión requieren conservar el lector/JSON; detalle y pruebas: [COPIA-LOCAL-AMPLIADA](COPIA-LOCAL-AMPLIADA.md).
+
+## 2026-10-21 — Guardado que permanece esperando
+
+El usuario duplica más listas y vuelve a informar de Guardando/Reintentar sin efecto. Plazos de espera para lectura/envío de nube y escritura local, respuesta tardía invalidada, errores legibles en un modal actualizado en vivo y versión visible. 12 listas x44 productos y >6 MB en pruebas ficticias; no se atribuye el incidente real a espacio sin evidencia ni se dan por conservadas las listas nuevas con el JSON anterior. Detalle y recuperación: [GUARDADO-SIN-ESPERA-INFINITA](GUARDADO-SIN-ESPERA-INFINITA.md).

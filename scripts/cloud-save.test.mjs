@@ -106,3 +106,21 @@ test('a conflict in the second block prevents saving the first block',async()=>{
  s.c.cloudReadBlock=async b=>({data:b==='contactos'?structuredClone(store.row):{contenido:[{id:1,name:'Cita compañero'}],updated_at:'otro'}});
  await s.flush();assert.equal(store.writes,0);assert.equal(store.row.contenido[0].name,'A');assert.equal(s.get()[0].name,'Cambio local');assert.ok(s.c.window._cloudConflicts.agenda);
 });
+
+for(const phase of ['read','write'])test('hung '+phase+' expires, preserves pending edits, ignores late acknowledgement and permits retry',async()=>{
+ const store=fixture(),items=structuredClone(base);items[0].name='Newest';
+ let release,started;const ready=new Promise(r=>started=r),gate=new Promise(r=>release=r);
+ const hooks=phase==='read'?{afterRead:async()=>{started();await gate;}}:{beforeWrite:async()=>{started();await gate;}};
+ const s=session(store,items,hooks);s.c.AbortController=AbortController;
+ const signals=[],rpc=s.c.sb.rpc;s.c.sb.rpc=(...args)=>{const result=rpc(...args);return {abortSignal(signal){signals.push(signal);return result;}};};
+ const pending=s.flush();await ready;
+ try{
+  const timeout=s.local.timers.find(t=>!t.cancelled&&t.ms===(phase==='read'?30000:90000));
+  assert.ok(timeout,'A stalled save must have an explicit deadline');timeout.fn();await pending;
+  assert.equal(s.c._cloudBusy,false);assert.equal(s.local.dirty,true);assert.equal(s.local.mode,'err');assert.match(s.local.message,/tarda demasiado/);assert.equal(signals.at(-1).aborted,true);
+  const hash=s.c._cloudHash.contactos;release();await new Promise(r=>setImmediate(r));
+  assert.equal(s.c._cloudHash.contactos,hash);assert.equal(s.local.dirty,true);
+  if(phase==='read')delete hooks.afterRead;else delete hooks.beforeWrite;
+  await s.flush();assert.equal(s.local.dirty,false);assert.equal(store.row.contenido[0].name,'Newest');assert.equal(s.local.mode,'ok');
+ }finally{release();await pending;}
+});
