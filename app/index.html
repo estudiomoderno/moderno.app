@@ -1176,7 +1176,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/pending-archive.js?v=20260909"></script>
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=3653"></script>
-<script src="/specifications.js?v=36580"></script>
+<script src="/specifications.js?v=36586"></script>
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
@@ -8984,9 +8984,7 @@ function saveItem(si,ii){
   const label=String(document.getElementById('itLabel')?.value||'').trim();
   let target=shoppingRoomLabelTarget(r,label);
   if(ii>=0&&shoppingLabelKey(shoppingRoomLabel(r.sections[si]))===shoppingLabelKey(label))target=si;
-  if(ii>=0&&target!==si){
-    if(!specPrepare(p)){toast('Un administrador debe cambiar la etiqueta de este producto');return;}
-  }
+  if(ii>=0&&target!==si&&_accessRole==='colaborador'){toast('Un administrador debe cambiar la etiqueta de este producto');return;}
   const it = { ...(ii>=0?r.sections[si].items[ii]:{}), libId:itLibId, name:document.getElementById("itName").value||"Producto",
     url:document.getElementById("itUrl").value, sku:document.getElementById("itSku").value,
     supplier:document.getElementById("itSup").value, price:+document.getElementById("itPrice").value||0,
@@ -8996,11 +8994,12 @@ function saveItem(si,ii){
     dims:document.getElementById("itDims").value, material:document.getElementById("itMat").value,
     color:document.getElementById("itCol").value, plazo:document.getElementById("itPlz").value,
     note:document.getElementById("itNote").value, img:itImg, files:[...itFiles] };
-  if(target<0){r.sections.push({id:crypto.randomUUID(),name:label||'General',items:[]});target=r.sections.length-1;}
   if(ii>=0){
-    if(target===si)r.sections[si].items[ii]=it;
-    else{r.sections[si].items.splice(ii,1);r.sections[target].items.push(it);ModernoSpec.reindex(p);}
-  }else{it.id=crypto.randomUUID();it.addedAt=new Date().toISOString();r.sections[target].items.push(it);}
+    try{ModernoSpec.reclassifyItem(p,r,si,ii,target,it,label);}catch(e){toast(e.message);return;}
+  }else{
+    if(target<0){r.sections.push({id:crypto.randomUUID(),name:label||'General',items:[]});target=r.sections.length-1;}
+    it.id=crypto.randomUUID();it.addedAt=new Date().toISOString();r.sections[target].items.push(it);
+  }
 
   closeModal(); render();
 }
@@ -11453,7 +11452,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.85";
+const MODERNO_VER="v3.65.86";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
