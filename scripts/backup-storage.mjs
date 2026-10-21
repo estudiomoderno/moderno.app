@@ -45,6 +45,9 @@ export function failureCategory(diagnostic) {
   const known = diagnostic.match(/accessNotConfigured|insufficientFilePermissions|teamDriveMembershipRequired|notFound|invalid_grant|unauthorized_client|insufficientPermissions|rateLimitExceeded|storageQuotaExceeded|directory not found|couldn't find root directory|empty token|failed to get token|didn't find section in config file/i)?.[0];
   if (known) return known;
   const patterns = [
+    ['s3-object-missing', /NoSuchKey/i],
+    ['s3-read-error', /(?:S3: )?(?:GetObject|HeadObject)/i],
+    ['drive-read-error', /googleapi: Error/i],
     ['content-mismatch', /corrupted on transfer|hashes differ|contents differ|sizes differ|files differ|\b[1-9]\d* differences found/i],
     ['missing-file', /file not in|not found in|missing on (source|destination)|\b404\b/i],
     ['download-error', /failed to (open|read|download)|error (reading|downloading)|failed to check/i],
@@ -56,17 +59,35 @@ export function failureCategory(diagnostic) {
   return patterns.filter(([,pattern])=>pattern.test(diagnostic)).map(([category])=>category).join(',') || 'unclassified';
 }
 
+// Stream the documented --combined report. Keep counts only; paths never leave
+// this process, enter logs or become a reason to accept a failed byte check.
+export function createCheckReport() {
+  let pending='';
+  const counts={identical:0,missingSource:0,missingDestination:0,different:0,readErrors:0};
+  const keys={'=':'identical','-':'missingSource','+':'missingDestination','*':'different','!':'readErrors'};
+  return {
+    feed(chunk){
+      pending+=String(chunk);let end;
+      while((end=pending.indexOf('\n'))>=0){const line=pending.slice(0,end);pending=pending.slice(end+1);if(line[1]===' '&&keys[line[0]])counts[keys[line[0]]]++;}
+      if(pending.length>8192)pending='';
+    },
+    summary(){return {...counts};}
+  };
+}
+
 export function rclone(args, input) {
   return new Promise((resolve, reject) => {
-    const child = spawn('rclone', [...args, '--log-level', 'ERROR', '--stats', '0'], { stdio: ['pipe', 'pipe', 'pipe'] });
+    const isCheck=args[0]==='check',report=createCheckReport();
+    const child = spawn('rclone', [...args, ...(isCheck?['--combined','-']:[]), '--log-level', 'ERROR', '--stats', '0'], { stdio: ['pipe', 'pipe', 'pipe'] });
     let output = '';
-    child.stdout.on('data', data => { output += data; });
+    child.stdout.on('data', data => { if(isCheck)report.feed(data);else output += data; });
     // Publish only known error categories, never object names or provider payloads.
     let diagnostic = '';
     child.stderr.on('data', data => { diagnostic = (diagnostic + data).slice(-8192); });
     child.on('error', () => reject(new Error('Cannot start rclone')));
     child.on('close', code => {
       const category = failureCategory(diagnostic);
+      if(isCheck){report.feed('\n');console.log('Backup byte comparison: '+JSON.stringify(report.summary()));}
       code === 0 ? resolve(output) : reject(new Error(`Backup step ${args[0]} failed (${category})`));
     });
     child.stdin.on('error', () => {});
