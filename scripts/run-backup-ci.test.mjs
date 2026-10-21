@@ -12,6 +12,15 @@ function check(extra = {}, statuses = []) {
 }
 const override = { BACKUP_STORAGE_FOLDER_ID: 'new-folder', BACKUP_STORAGE_TEAM_DRIVE: 'new-drive' };
 
+test('manual verify-copy selects verification only after destination recovery check',()=>{
+  const result=check({...override,BACKUP_MODE:'verify-copy',BACKUP_VERIFY_ONLY:'0'});
+  assert.equal(result.status,0);
+  assert.deepEqual(result.calls.map(c=>c.script),['scripts/verify-backup-drive.mjs','scripts/backup-storage.mjs']);
+  assert.equal(result.calls[1].env.BACKUP_VERIFY_ONLY,'1');
+  assert.equal(result.calls[0].env.RCLONE_CONFIG_SOURCE_SECRET_ACCESS_KEY,undefined);
+  assert.equal(check({BACKUP_MODE:'backup',BACKUP_VERIFY_ONLY:'0'}).calls[0].env.BACKUP_VERIFY_ONLY,'0');
+});
+
 test('unconfigured route preserves existing destination and backup operation', () => {
   const result = check();
   assert.equal(result.status, 0); assert.equal(result.calls.length, 1);
