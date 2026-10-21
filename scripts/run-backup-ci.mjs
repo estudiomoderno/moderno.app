@@ -34,10 +34,10 @@ export function runBackup({ environment = process.env, run = spawnSync, report =
       return destinationFailed ? 1 : 0;
     }
     if (destinationFailed) {
-      // Keep making backups in the established destination if a proposed route fails.
-      env.RCLONE_CONFIG_DESTINATION_ROOT_FOLDER_ID = google.folder_id;
-      env.RCLONE_CONFIG_DESTINATION_TEAM_DRIVE = google.team_drive;
-      report('New destination not verified. Keeping this backup in the original destination.');
+      // An inaccessible override never authorizes a copy to an unverified
+      // historical destination. Existing backups remain untouched.
+      report('Destination not verified. No Storage copy started. Existing backups remain unchanged.');
+      return 1;
     }
     const source = JSON.parse(environment.SOURCE_CONFIG);
     Object.assign(env, {

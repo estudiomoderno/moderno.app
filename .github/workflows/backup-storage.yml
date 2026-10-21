@@ -79,15 +79,17 @@ jobs:
           BACKUP_STORAGE_TEAM_DRIVE: ${{ secrets.BACKUP_STORAGE_TEAM_DRIVE }}
         run: node scripts/prepare-backup-destination.mjs
       - name: Copiar y verificar
-        if: github.event_name == 'schedule' || inputs.mode != 'backup-service'
+        if: steps.destination.outcome == 'success' && (github.event_name == 'schedule' || inputs.mode != 'backup-service')
         env:
-          BACKUP_MODE: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && 'backup' || inputs.mode }}
-          # Normal runs create independent snapshots. The explicit verify-copy
-          # mode still repairs an incomplete snapshot without overwriting files.
+          # Routine pushes smoke-test private Drive only. A reviewed main commit
+          # tagged [verify-storage] explicitly requests a full Storage snapshot.
+          BACKUP_MODE: ${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[verify-storage]') && 'backup' || 'test-drive') || github.event_name == 'schedule' && 'backup' || inputs.mode }}
+          # Daily/manual backups and tagged full checks create new snapshots;
+          # verify-copy explicitly repairs an incomplete one without overwrites.
           BACKUP_VERIFY_ONLY: '0'
           GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
           GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
-          SOURCE_CONFIG: ${{ secrets.BACKUP_SOURCE_CONFIG }}
+          SOURCE_CONFIG: ${{ (github.event_name != 'push' || contains(github.event.head_commit.message, '[verify-storage]')) && secrets.BACKUP_SOURCE_CONFIG || '' }}
           BACKUP_STORAGE_FOLDER_ID: ${{ env.BACKUP_VERIFIED_FOLDER_ID || secrets.BACKUP_STORAGE_FOLDER_ID }}
           BACKUP_STORAGE_TEAM_DRIVE: ${{ env.BACKUP_VERIFIED_TEAM_DRIVE || secrets.BACKUP_STORAGE_TEAM_DRIVE }}
         run: node scripts/run-backup-ci.mjs

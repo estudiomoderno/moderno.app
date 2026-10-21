@@ -45,19 +45,18 @@ test('synthetic checks receive no source secrets, including inherited rclone var
   assert.ok(!Object.keys(env).some(key => key.startsWith('RCLONE_CONFIG_SOURCE_')));
   assert.equal(JSON.parse(env.RCLONE_CONFIG_DESTINATION_TOKEN).access_token, 'synthetic-token');
 });
-test('failed route validation preserves the copy in the old destination and reports failure', () => {
+test('failed route validation stops without exposing Storage credentials or using the old destination', () => {
   const result = check(override, [1, 0]);
-  assert.equal(result.status, 1); assert.equal(result.calls.length, 2);
+  assert.equal(result.status, 1); assert.equal(result.calls.length, 1);
   assert.equal(result.calls[0].env.RCLONE_CONFIG_DESTINATION_ROOT_FOLDER_ID, 'new-folder');
-  assert.equal(result.calls[1].env.RCLONE_CONFIG_DESTINATION_ROOT_FOLDER_ID, google.folder_id);
-  assert.equal(result.calls[1].env.RCLONE_CONFIG_DESTINATION_TEAM_DRIVE, google.team_drive);
-  assert.ok(result.messages[0].includes('original destination'));
+  assert.ok(!result.calls.some(call=>call.script==='scripts/backup-storage.mjs'));
+  assert.equal(result.calls[0].env.RCLONE_CONFIG_SOURCE_SECRET_ACCESS_KEY,undefined);
+  assert.ok(result.messages[0].includes('No Storage copy started'));
 });
 test('partial or malformed overrides never select an accidental folder', () => {
   for (const extra of [{ BACKUP_STORAGE_FOLDER_ID: 'new-folder' }, { BACKUP_STORAGE_TEAM_DRIVE: 'new-drive' }, { ...override, BACKUP_STORAGE_FOLDER_ID: '../bad' }, { ...override, BACKUP_STORAGE_TEAM_DRIVE: ' ' }]) {
     const result = check(extra);
-    assert.equal(result.status, 1); assert.equal(result.calls.length, 1);
-    assert.equal(result.calls[0].env.RCLONE_CONFIG_DESTINATION_ROOT_FOLDER_ID, google.folder_id);
+    assert.equal(result.status, 1); assert.equal(result.calls.length, 0);
   }
 });
 test('test-drive only checks destination and does not parse or copy Storage', () => {
