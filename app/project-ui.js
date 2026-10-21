@@ -47,6 +47,58 @@ function shoppingRoomEnhanceDelete(name){
  const ready=()=>{if(shoppingDeleteUi!==entry)return;document.getElementById('overlay')?.classList.add('shopping-delete-overlay');document.getElementById('modalBox')?.classList.add('shopping-reui-confirm');entry.component.update(props);};
  try{entry.component=ModernoProfileComponent.mountShoppingDelete(host,recover,ready);}catch(error){recover();}
 }
+function shoppingRoomsMoveAllowed(){return !_accessLoading&&myAccessLevel()==='owner'&&canView('proyecto');}
+function shoppingRoomsMoveContext(index){
+ if(!shoppingRoomsMoveAllowed()||state.view!=='proyecto'||projectTabKey(state.projTab)!=='listas'||document.querySelector('.overlay.open,dialog[open]'))return null;
+ const p=state.projects.find(p=>p.id===state.currentProject),room=p?.rooms?.[index];
+ return room?{p,room,owner:shoppingProductIdentity(),snapshot:p.rooms.slice(),kind:room.kind||'estancia'}:null;
+}
+function shoppingRoomsMoveCommit(ctx,target,after){
+ if(!ctx||!shoppingRoomsMoveAllowed()||shoppingProductIdentity()!==ctx.owner||state.view!=='proyecto'||state.currentProject!==ctx.p.id||projectTabKey(state.projTab)!=='listas'||state.projects.find(p=>p.id===ctx.p.id)!==ctx.p||document.querySelector('.overlay.open,dialog[open]'))return false;
+ const rooms=ctx.p.rooms;
+ if(rooms.length!==ctx.snapshot.length||rooms.some((r,i)=>r!==ctx.snapshot[i]))return false;
+ const group=rooms.filter(r=>(r.kind||'estancia')===ctx.kind),from=group.indexOf(ctx.room),to=group.indexOf(target);
+ if(from<0||to<0||from===to)return false;
+ const at=to+(after?1:0)-(from<to?1:0);if(at===from)return false;
+ group.splice(from,1);group.splice(at,0,ctx.room);
+ let i=0;rooms.forEach((r,index)=>{if((r.kind||'estancia')===ctx.kind)rooms[index]=group[i++];});
+ render();document.querySelector(`[data-shopping-room-index="${rooms.indexOf(ctx.room)}"] .shopping-room-grip`)?.focus();return true;
+}
+function shoppingRoomsMoveKey(event,index){
+ if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))return;
+ event.preventDefault();event.stopPropagation();const ctx=shoppingRoomsMoveContext(index);if(!ctx)return;
+ const group=ctx.snapshot.filter(r=>(r.kind||'estancia')===ctx.kind),delta=['ArrowLeft','ArrowUp'].includes(event.key)?-1:1,target=group[group.indexOf(ctx.room)+delta];
+ if(target)shoppingRoomsMoveCommit(ctx,target,delta>0);
+}
+function shoppingRoomsMoveStart(event,index){
+ if(event.button!==0)return;event.preventDefault();event.stopPropagation();
+ const ctx=shoppingRoomsMoveContext(index),button=event.currentTarget,source=button.closest('.dl-card');if(!ctx||!source)return;
+ const grid=source.parentElement,box=source.getBoundingClientRect(),ghost=source.cloneNode(true),gap=document.createElement('div');
+ ghost.classList.add('shopping-drag-ghost');ghost.setAttribute('aria-hidden','true');ghost.inert=true;ghost.style.width=box.width+'px';ghost.style.height=box.height+'px';
+ gap.className='shopping-room-gap';gap.style.height=box.height+'px';gap.textContent='Colocar estancia aquí';
+ let destination=null,active=false;const x=event.clientX,y=event.clientY,offsetX=x-box.left,offsetY=y-box.top;
+ const move=e=>{
+  if(!active&&Math.hypot(e.clientX-x,e.clientY-y)<6)return;
+  if(!active){active=true;document.body.append(ghost);source.classList.add('shopping-drag-source');}
+  ghost.style.left=e.clientX-offsetX+'px';ghost.style.top=e.clientY-offsetY+'px';
+  const hit=document.elementFromPoint(e.clientX,e.clientY);if(hit===gap)return;
+  const card=hit?.closest('[data-shopping-room-index]');
+  if(card&&card!==source&&card.parentElement===grid){
+   const rect=card.getBoundingClientRect(),sameRow=Math.abs(rect.top-box.top)<box.height/2,after=sameRow?e.clientX>rect.left+rect.width/2:e.clientY>rect.top+rect.height/2;
+   destination={room:ctx.snapshot[Number(card.dataset.shoppingRoomIndex)],after};card[after?'after':'before'](gap);
+  }else if(hit?.closest('.dl-add')?.parentElement===grid){
+   destination={room:ctx.snapshot.filter(r=>(r.kind||'estancia')===ctx.kind).at(-1),after:true};grid.insertBefore(gap,grid.querySelector('.dl-add'));
+  }else if(hit?.closest('.dl-grid')!==grid){destination=null;gap.remove();}
+  const scroll=document.querySelector('.main');if(scroll){if(e.clientY<70)scroll.scrollBy(0,-18);else if(e.clientY>innerHeight-70)scroll.scrollBy(0,18);}
+ };
+ const stop=e=>{
+  button.removeEventListener('pointermove',move);button.removeEventListener('pointerup',stop);button.removeEventListener('pointercancel',stop);button.removeEventListener('lostpointercapture',stop);document.removeEventListener('keydown',cancel);
+  ghost.remove();gap.remove();source.classList.remove('shopping-drag-source');
+  if(e.type==='pointerup'&&active&&destination)shoppingRoomsMoveCommit(ctx,destination.room,destination.after);
+ };
+ const cancel=e=>{if(e.key==='Escape'){e.preventDefault();stop(e);}};
+ button.setPointerCapture(event.pointerId);button.addEventListener('pointermove',move);button.addEventListener('pointerup',stop);button.addEventListener('pointercancel',stop);button.addEventListener('lostpointercapture',stop);document.addEventListener('keydown',cancel);
+}
 function shoppingRoomPickerClose(focus=false){
  const menu=document.getElementById('shopping-room-menu'),trigger=document.getElementById('shopping-room-trigger');if(menu)menu.hidden=true;
  trigger?.setAttribute('aria-expanded','false');if(focus)trigger?.focus();

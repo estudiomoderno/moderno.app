@@ -377,3 +377,9 @@
  .shopping-product-row .shopping-product-badges>.shopping-product-label{font-size:10px}
  @media(max-width:760px){.shopping-product-card.shopping-product-row{grid-template-rows:auto auto auto auto;grid-template-areas:"photo title" "photo store" "photo total" "details details"}}
 }
+
+/* Room order: same compact grip as product cards; no other record changes. */
+.shopping-list-overview .shopping-room-grip{position:absolute;right:8px;top:8px;z-index:2;width:32px;height:32px;border:0;border-radius:50%;background:#fff;color:#555;display:grid;place-items:center;font-size:23px;line-height:1;padding:0;cursor:grab;touch-action:none}
+.shopping-list-overview .shopping-room-grip:active{cursor:grabbing}
+.shopping-list-overview .shopping-room-grip:focus-visible{outline:2px solid #555;outline-offset:3px}
+.shopping-room-gap{box-sizing:border-box;border:2px dashed #aaa;border-radius:12px;display:grid;place-items:center;background:#f7f7f7;color:#666;font-size:12px;pointer-events:auto}

@@ -284,3 +284,7 @@ El usuario confirma descarga JSON y acceso en incógnito, con bloqueo del navega
 ## 2026-10-21 — Indicador de carga inicial
 
 El usuario confirma recuperado el acceso normal y pide ocultar el diseño antiguo durante el arranque con su spinner de ocho puntos. Capa blanca crítica hasta disponer de estilos y estado de acceso; login/errores visibles y salida para cargas bloqueadas. Cambio de presentación sin datos ni servicios. Pruebas y reversión: [CARGA-INICIAL-PUNTOS](CARGA-INICIAL-PUNTOS.md).
+
+## 2026-10-21 — Orden manual de estancias
+
+El propietario pide mover las estancias como los productos. Tirador de 32 px, ratón/dedo/teclado, hueco visible y Escape. Orden en el array existente, conservación de objetos y vínculos, grupos separados y guardas de sesión/rol/gesto obsoleto. Pruebas y reversión: [ORDEN-ESTANCIAS](ORDEN-ESTANCIAS.md).

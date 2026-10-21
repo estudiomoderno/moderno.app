@@ -1240,7 +1240,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36587"></script>
+<script src="/project-ui.js?v=36592"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36573"></script>
@@ -5871,8 +5871,8 @@ function vProject(){
       const imgs=r.sections.flatMap(x=>x.items).filter(it=>it.img).map(it=>it.img).slice(0,5);
       const tiles=[0,1,2].map(k=>`<div class="t s">${imgs[k]?`<img ${fileImageAttrs(imgs[k])} alt="" loading="lazy">`:""}</div>`).join("")+[3,4].map(k=>`<div class="t w">${imgs[k]?`<img ${fileImageAttrs(imgs[k])} alt="" loading="lazy">`:""}</div>`).join("");
       return `
-      <div class="dl-card" onclick="openRoom(${p.id},${r.id})" title="${n} producto${n===1?"":"s"} · ${r.sections.length} sección${r.sections.length===1?"":"es"} · ${fmt(tot)}${r.visible===false?" · oculta al cliente":""}">
-        <div class="dl-mosaic">${tiles}</div>
+      <div class="dl-card" data-shopping-room-index="${p.rooms.indexOf(r)}" onclick="openRoom(${p.id},${r.id})" title="${n} producto${n===1?"":"s"} · ${r.sections.length} sección${r.sections.length===1?"":"es"} · ${fmt(tot)}${r.visible===false?" · oculta al cliente":""}">
+        <div class="dl-mosaic">${tiles}${shoppingRoomsMoveAllowed()?`<button type="button" class="shopping-grip shopping-room-grip" aria-label="Mover ${E(r.name)}" title="Arrastra para ordenar; también puedes usar las flechas del teclado" onclick="event.stopPropagation()" onpointerdown="shoppingRoomsMoveStart(event,${p.rooms.indexOf(r)})" onkeydown="shoppingRoomsMoveKey(event,${p.rooms.indexOf(r)})">⠿</button>`:''}</div>
         <div class="dl-cfoot"><b class="dl-name">${rico(r.icon)} ${r.name}</b></div>
       </div>`}).join("")}
     ${kind==="estancia"?`<button type="button" class="dl-add room-create-card" aria-label="Nueva estancia" onclick="newRoom(${p.id},'estancia')"><img class="room-create-illustration" src="/brand/illustrations/nueva-estancia.webp?v=36563" width="640" height="427" alt="" aria-hidden="true" draggable="false" decoding="async" onerror="this.hidden=true"><span class="room-create-caption"><span class="room-create-plus" aria-hidden="true">+</span><span>Nueva estancia</span></span></button>`:`<div class="dl-add" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</div>`}
@@ -11500,7 +11500,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.91";
+const MODERNO_VER="v3.65.92";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13424,7 +13424,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36588">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36592">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
