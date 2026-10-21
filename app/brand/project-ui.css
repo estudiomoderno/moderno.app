@@ -365,3 +365,15 @@
   .shopping-products-rows .shopping-add-card .shopping-add-illustration{width:80px}
  }
 }
+
+/* Product actions live on the image in either presentation. */
+@media screen{
+ .shopping-product-card.shopping-product-row{grid-template-rows:auto auto 1fr;grid-template-areas:"photo title details" "photo store details" "photo total details"}
+ .shopping-product-row .shopping-product-media .shopping-product-grip{top:8px;right:8px;left:auto}
+ .shopping-product-row>.shopping-product-description{grid-area:store;display:block!important}
+ .shopping-product-row>.shopping-product-total{grid-area:total}
+ .shopping-product-row .shopping-product-details{padding-right:0}
+ .shopping-product-row .shopping-product-media>.shopping-product-unit-price{top:48px;left:8px;right:8px;max-width:calc(100% - 16px)}
+ .shopping-product-row .shopping-product-media>.shopping-product-label{left:8px;bottom:8px;max-width:calc(100% - 16px);font-size:10px}
+ @media(max-width:760px){.shopping-product-card.shopping-product-row{grid-template-rows:auto auto auto auto;grid-template-areas:"photo title" "photo store" "photo total" "details details"}}
+}

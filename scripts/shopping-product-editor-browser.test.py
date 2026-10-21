@@ -111,7 +111,7 @@ try:
    expect(box.locator('#itSum')).to_contain_text('300,00')
    box.locator('#itName').fill('Sillón actualizado ficticio')
    # Tab onto the action remains possible even when the last body control was scrolled to.
-   box.locator('#itSt').focus();expect(save).to_be_in_viewport()
+   box.get_by_role('button',name='Eliminar producto',exact=True).focus();expect(save).to_be_in_viewport()
    save.click()
    assert page.evaluate("""()=>{
     const it=state.projects[0].rooms[0].sections[0].items[0];

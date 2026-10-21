@@ -936,7 +936,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3568">
-<link rel="stylesheet" href="/shopping-cards.css?v=36583">
+<link rel="stylesheet" href="/shopping-cards.css?v=36587">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
 <script src="/client-portal-site.js?v=36578"></script>
@@ -1176,11 +1176,11 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/pending-archive.js?v=20260909"></script>
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=3653"></script>
-<script src="/specifications.js?v=36586"></script>
+<script src="/specifications.js?v=36587"></script>
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36580"></script>
+<script src="/project-ui.js?v=36587"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=36522"></script>
 <script src="/project-documents.js?v=36573"></script>
@@ -7168,11 +7168,10 @@ function vRoom(){
   const isPav = r.kind==="pav";
   const match = (it,label) => (!q || _capNorm(it.name+" "+it.sku+" "+it.supplier).includes(q))
     && shoppingRoomLabelMatches(label,rf.label)
-    && (!rf.status || it.status===rf.status)
     && (!rf.supplier || it.supplier===rf.supplier)
     && (!rf.color || (it.color||"")===rf.color)
     && (!rf.min || it.price>=+rf.min) && (!rf.max || it.price<=+rf.max);
-  const filtering = rf.label||rf.status||rf.supplier||rf.color||rf.min||rf.max;
+  const filtering = rf.label||rf.supplier||rf.color||rf.min||rf.max;
   state.rowOpen = state.rowOpen||{};
   const esc = v => String(v==null?"":v).replace(/"/g,"&quot;");
   const shortUrl = u => { try{ const h=new URL(u).hostname.replace(/^www\./,""); return h.length>26?h.slice(0,24)+"…":h; }catch(e){ return (u||"").slice(0,24)+"…"; } };
@@ -7195,12 +7194,16 @@ function vRoom(){
   ${shoppingRoomTools(r)}
   <div class="shopping-product-grid shopping-flat-products ${shoppingRoomViewMode==='rows'?'shopping-products-rows':''}" ondragover="event.preventDefault()" ondrop="shoppingRoomDropEnd(event)">
       ${shoppingRoomSortedRows(r).filter(({it,label})=>match(it,label)).map(({it,si,ii,label})=>`<article data-shopping-section="${si}" data-shopping-item="${ii}" class="shopping-product-card ${shoppingRoomViewMode==='rows'?'shopping-product-row':''}" draggable="${shoppingRoomSort==='manual'}" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
-        <button class="shopping-grip shopping-product-grip" aria-label="Mover ${ModernoDaily.escape(it.name)}" title="${shoppingRoomSort==='manual'?'Ordenar dentro de la etiqueta · usa las flechas con el teclado':'Elige Orden manual para mover productos'}" ${shoppingRoomSort==='manual'?'':'disabled'} onpointerdown="shoppingMoveStart(event,${si},${ii})" onkeydown="shoppingMoveKey(event,${si},${ii})">⠿</button><div class="shopping-product-media"><button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>${shoppingRoomViewMode==='rows'?'':shoppingRoomLabelChip(label)}</div>
-        <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button><strong>${fmt(it.price)}</strong>${shoppingProductRowLink(it)}${shoppingRoomViewMode==='rows'?shoppingRoomLabelChip(label):''}</div>
-        <p class="shopping-product-meta shopping-product-description">${ModernoDaily.escape([it.supplier,it.color,it.dims].filter(Boolean).join(' · '))}</p>
-        <p class="shopping-product-meta shopping-product-quantity">${it.qty} ${ModernoDaily.escape(({m2:'m²',m3:'m³'})[it.unit]||it.unit||'ud')} · Total ${fmt(it.price*it.qty)}${it.plazo?' · '+ModernoDaily.escape(it.plazo):''}</p>
-        <div class="shopping-product-controls"><select aria-label="Estado de ${ModernoDaily.escape(it.name)}" class="dl-pill ${ACC.includes(it.status)?'acc':''}" onchange="setItem(${si},${ii},'status',this.value)">${Object.keys(ISTATES).map(st=>`<option ${it.status===st?'selected':''}>${st}</option>`).join('')}</select><span class="shopping-product-actions"><button class="dl-btn" aria-label="Editar ${ModernoDaily.escape(it.name)}" onclick="itemModal(${si},${ii})">${ico('editar')}</button><button class="dl-btn" aria-label="Más opciones de ${ModernoDaily.escape(it.name)}" onclick="itemMenu(${si},${ii})">···</button></span></div>
-        <p class="shopping-product-meta shopping-product-footer">${[it.hidden?'Oculto al cliente':'',it.alt?'Alternativa':'',it.rejected?'Rechazado':'',it.files?.length?it.files.length+' adjuntos':''].filter(Boolean).join(' · ')}</p>
+        <div class="shopping-product-media">
+         <button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
+         <button type="button" class="shopping-grip shopping-product-grip" aria-label="Mover ${ModernoDaily.escape(it.name)}" title="${shoppingRoomSort==='manual'?'Mover producto':'Elige Orden manual para mover productos'}" ${shoppingRoomSort==='manual'?'':'disabled'} onpointerdown="shoppingMoveStart(event,${si},${ii})" onkeydown="shoppingMoveKey(event,${si},${ii})">⠿</button>
+         <button type="button" class="shopping-product-edit" aria-label="Editar ${ModernoDaily.escape(it.name)}" title="Editar producto" onclick="itemModal(${si},${ii})">${ico('editar')}</button>
+         <span class="shopping-product-unit-price" aria-label="Precio unitario: ${it.price==null||it.price===''?'Por confirmar':ModernoDaily.escape(fmt(it.price))}">${it.price==null||it.price===''?'Por confirmar':fmt(it.price)}</span>
+         ${shoppingRoomLabelChip(label)}
+        </div>
+        <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button>${shoppingProductRowLink(it)}</div>
+        <p class="shopping-product-meta shopping-product-description">${ModernoDaily.escape(it.supplier||'')}</p>
+        <p class="shopping-product-total"><strong>${it.price==null||it.price===''||it.qty==null||it.qty===''?'Total por confirmar':fmt(it.price*it.qty)}</strong></p>
         ${shoppingRoomViewMode==='rows'?shoppingProductRowDetails(it):''}
       </article>`).join('')}
       ${(q||filtering)&&!shoppingRoomRows(r).some(({it,label})=>match(it,label))?'<p class="shopping-empty-results">No hay productos que coincidan con los filtros.</p>':''}
@@ -7224,26 +7227,7 @@ function imgZoom(si,ii){
   </div>`;
   ov.classList.add("open");
 }
-function itemMenu(si,ii){
-  const {p,r} = getRoom();
-  const it = r.sections[si].items[ii];
-  modal(`<h3>${it.name}</h3>
-  <label>Producto</label>
-  <div style="display:grid;gap:6px">
-    <button class="btn btn-ghost" style="justify-content:flex-start" onclick="const it=getRoom().r.sections[${si}].items[${ii}];it.hidden=!it.hidden;closeModal();render();toast(it.hidden?'🚫 Oculto para los clientes':'👁 Visible para los clientes')">${it.hidden?"👁 Mostrar a los clientes":"🚫 Ocultar a los clientes"}</button>
-    <button class="btn btn-ghost" style="justify-content:flex-start" onclick="specPrepare(getRoom().p);const s=getRoom().r.sections[${si}];s.items.splice(${ii}+1,0,ModernoSpec.duplicate(s.items[${ii}]));closeModal();render();toast('⧉ Producto duplicado')">⧉ Duplicar</button>
-    <button class="btn btn-ghost" style="justify-content:flex-start" onclick="closeModal();copyItemModal(${si},${ii})">→ Copiar a…</button>
-    <button class="btn btn-ghost" style="justify-content:flex-start" onclick="closeModal();toast('⟳ Producto actualizado desde la tienda (simulado — en la app real refresca precio, foto y stock)')">⟳ Actualizar producto desde URL</button>
-  </div>
-  <label>Opciones alternativas</label>
-  <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="specPrepare(getRoom().p);const s=getRoom().r.sections[${si}];const c=ModernoSpec.duplicate(s.items[${ii}]);c.name=c.name+' — alternativa';c.alt=true;c.status='Revisión Cliente';s.items.splice(${ii}+1,0,c);closeModal();render();toast('⇄ Opción alternativa creada — edítala y el cliente elegirá')">⇄ Añadir opción alternativa</button>
-  <label>Biblioteca</label>
-  <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="const it=getRoom().r.sections[${si}].items[${ii}];state.library.push({id:newLibraryId(),name:it.name,url:it.url,sku:it.sku,supplier:it.supplier,price:it.price,cost:it.cost,unit:it.unit||'ud',img:it.img,dims:it.dims||'',material:it.material||'',color:it.color||''});closeModal();toast('🗃 Guardado en la biblioteca de productos')">🗃 Guardar en la biblioteca de productos</button>
-  <div class="modal-foot">
-    <button class="danger" onclick="askConfirm('¿Eliminar este producto de la lista?','Eliminar',()=>{delItem(${si},${ii});toast('Producto eliminado')})">🗑 Eliminar</button>
-    <button class="btn btn-dark" onclick="closeModal()">Cerrar</button>
-  </div>`);
-}
+function itemMenu(si,ii){itemModal(si,ii);}
 /* ---- Estancia / sección ↔ otro proyecto ---- */
 function roomCloneData(r, secIdx){
   const src = secIdx>=0 ? {...r, sections:[r.sections[secIdx]]} : r;
@@ -7347,7 +7331,6 @@ function filterModal(){
   const sups = [...new Set(items.map(i=>i.supplier).filter(Boolean))];
   const cols = [...new Set(items.map(i=>i.color).filter(Boolean))];
   modal(`<h3>Filtrar productos</h3>
-  <label>Estado</label><select id="ffSt"><option value="">Todos</option>${Object.keys(ISTATES).map(s=>`<option ${rf.status===s?"selected":""}>${s}</option>`).join("")}</select>
   <label>Proveedor</label><select id="ffSup"><option value="">Todos</option>${sups.map(s=>`<option ${rf.supplier===s?"selected":""}>${s}</option>`).join("")}</select>
   <label>Color</label><select id="ffCol"><option value="">Todos</option>${cols.map(s=>`<option ${rf.color===s?"selected":""}>${s}</option>`).join("")}</select>
   <label>Rango de precios (€)</label>
@@ -7355,7 +7338,7 @@ function filterModal(){
   <div class="modal-foot">
     <button class="danger" onclick="state.rf=null;closeModal();render()">Borrar filtros</button>
     <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-dark" onclick="state.rf={status:document.getElementById('ffSt').value,supplier:document.getElementById('ffSup').value,color:document.getElementById('ffCol').value,min:document.getElementById('ffMin').value,max:document.getElementById('ffMax').value};closeModal();render()">⚙ Filtrar</button>
+    <button class="btn btn-dark" onclick="state.rf={supplier:document.getElementById('ffSup').value,color:document.getElementById('ffCol').value,min:document.getElementById('ffMin').value,max:document.getElementById('ffMax').value};closeModal();render()">⚙ Filtrar</button>
   </div>`);
 }
 function roomIconModal(pid,rid){
@@ -8859,7 +8842,10 @@ function newSection(){
   <button class="btn btn-dark" onclick="(function(){const n=document.getElementById('nsName').value||'Sección';getRoom().r.sections.push({id:crypto.randomUUID(),name:n,items:[]});closeModal();render()})()">Añadir</button></div>`);
 }
 function setItem(si,ii,k,v){ getRoom().r.sections[si].items[ii][k]=v; render(); }
-function delItem(si,ii){ specPrepare(getRoom().p);getRoom().r.sections[si].items.splice(ii,1);render(); }
+function delItem(si,ii){
+ const {p,r}=getRoom();if(_accessRole==='colaborador'){toast('Un administrador debe eliminar este producto');return false;}
+ try{ModernoSpec.editItems(p,r,si,ii,'remove');render();return true;}catch(e){toast(e.message);return false;}
+}
 
 let itFiles=[], itImg="", itemUploadDraft=null;
 function itemModal(si,ii,fromUrl){
@@ -8910,14 +8896,13 @@ function itemModal(si,ii,fromUrl){
   <div id="itSum" class="entry product-editor-total"></div>
   ${mgUI("it", mgAuto(it))}
   </section>
-  <section class="product-editor-section" aria-labelledby="product-editor-files"><h4 id="product-editor-files">Seguimiento y archivos</h4>
-  <label for="itSt">Estado de selección / seguimiento</label><select id="itSt" aria-describedby="product-editor-status-help">${Object.keys(ISTATES).map(s=>`<option ${it.status===s?"selected":""}>${s}</option>`).join("")}</select>
-  <p id="product-editor-status-help" class="product-editor-help">La aprobación de una revisión y el estado real del pedido se consultan en Compras y aprobaciones. Esta etiqueta no confirma compras ni registra cobros.</p>
+  <section class="product-editor-section" aria-labelledby="product-editor-files"><h4 id="product-editor-files">Archivos</h4>
   <div class="product-editor-attachments"><span class="product-editor-photo-label">Adjuntos del producto</span><p class="product-editor-help">Instrucciones, ficha técnica y otros documentos.</p>
   <div id="itFilesBox"></div>
   <button type="button" class="btn btn-ghost" onclick="document.getElementById('itAttachFiles').click()">${ico("adj_archivo")} Añadir archivo</button><input id="itAttachFiles" type="file" multiple style="display:none" onchange="itAddFiles([...this.files])"></div>
   </section>
   </div>
+  ${ii>=0?shoppingProductEditorActions(si,ii):''}
   <div id="itOrigin" class="product-editor-origin"></div>
   </div>
   <footer class="modal-foot product-editor-footer"><button type="button" class="btn btn-ghost product-editor-library" title="Guardar este producto en tu biblioteca transversal" onclick="itemToLibrary()">${ico("guardar")} Añadir a mi biblioteca</button>
@@ -8927,6 +8912,8 @@ function itemModal(si,ii,fromUrl){
   itDrawThumb(); delete _mgLast.it; unitSum("itQty","itPrice","itUnit","itSum","itCost");
   itemUploadDraft={form:document.getElementById("itName"),files:itFiles,pending:0};
   itDrawFiles();
+  itemUploadDraft.source={p:getRoom().p,r,section:r.sections[si],item:ii>=0?it:null,owner:shoppingProductIdentity()};
+  itemUploadDraft.signature=shoppingProductDraftSignature();
   if(fromUrl&&ii<0){ ProductClipper.open('lista',si); }
 }
 function itemToLibrary(){
@@ -8981,6 +8968,7 @@ function saveItem(si,ii){
   if(itemUploadDraft?.pending){toast("Espera a que terminen de prepararse los archivos");return;}
   if(document.getElementById("itPrice").value.trim()===""){toast("Indica el precio comprobado; puedes escribir 0 si es gratuito");return;}
   const {p,r} = getRoom();
+  if(ii>=0&&itemUploadDraft?.source&&!shoppingProductEditorTarget(si,ii,true))return;
   const label=String(document.getElementById('itLabel')?.value||'').trim();
   let target=shoppingRoomLabelTarget(r,label);
   if(ii>=0&&shoppingLabelKey(shoppingRoomLabel(r.sections[si]))===shoppingLabelKey(label))target=si;
@@ -8990,7 +8978,7 @@ function saveItem(si,ii){
     supplier:document.getElementById("itSup").value, price:+document.getElementById("itPrice").value||0,
     cost:document.getElementById("itCost").value===""?null:+document.getElementById("itCost").value, qty:+document.getElementById("itQty").value,
     margin:(document.getElementById("itMgV").value===""?null:(+document.getElementById("itMgV").value||0)),
-    unit:document.getElementById("itUnit").value, status:document.getElementById("itSt").value,
+    unit:document.getElementById("itUnit").value, status:ii>=0?r.sections[si].items[ii].status:"Revisión Cliente",
     dims:document.getElementById("itDims").value, material:document.getElementById("itMat").value,
     color:document.getElementById("itCol").value, plazo:document.getElementById("itPlz").value,
     note:document.getElementById("itNote").value, img:itImg, files:[...itFiles] };
@@ -11452,7 +11440,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.86";
+const MODERNO_VER="v3.65.87";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13364,7 +13352,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36580">
+<link rel="stylesheet" href="/brand/project-ui.css?v=36587">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

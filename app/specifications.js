@@ -81,6 +81,30 @@ var ModernoSpec=(()=>{
   source.items.splice(ii,1);destination.items.push(item);
   updates.forEach(([ref,rsi,rii])=>{ref.rsi=rsi;ref.rii=rii;});
  }
+ function editItems(p,room,si,ii,operation){
+  if(!['remove','duplicate','alternative'].includes(operation))throw Error('Acción de producto no válida.');
+  const section=room.sections?.[si],item=section?.items?.[ii];
+  if(!(p.rooms||[]).includes(room)||!item)throw Error('El producto ha cambiado. Vuelve a abrir su ficha.');
+  const inserting=operation!=='remove',copy=inserting?duplicate(item):null,updates=[];
+  if(copy&&rows(p).some(row=>row.item.id===copy.id))throw Error('No se pudo generar una copia independiente.');
+  const missing=ref=>'spec:missing:'+JSON.stringify([ref.src??null,ref.rid,ref.rsi,ref.rii]);
+  for(const ref of references(p)){
+   const target=resolve(p,ref),stable=String(ref.src||'').startsWith('spec:');
+   if(!target){
+    const ambiguousRemoved=!inserting&&stable&&ref.src===refFor(item.id)&&rows(p).filter(row=>row.item.id===item.id).length===2;
+    const newlyOccupied=inserting&&!stable&&ref.rid===room.id&&Number(ref.rsi)===si&&Number(ref.rii)===section.items.length;
+    if(ambiguousRemoved||newlyOccupied)updates.push([ref,missing(ref),-1,-1]);
+    continue;
+   }
+   if(target.room!==room||target.section!==section)continue;
+   if(!inserting&&Number(target.ii)===ii)updates.push([ref,missing(ref),-1,-1]);
+   else if(Number(target.ii)>ii)updates.push([ref,ref.src,si,Number(target.ii)+(inserting?1:-1)]);
+  }
+  if(inserting){if(operation==='alternative'){copy.alt=true;copy.name+=' — alternativa';}section.items.splice(ii+1,0,copy);}
+  else section.items.splice(ii,1);
+  updates.forEach(([ref,src,rsi,rii])=>{if(src!==undefined)ref.src=src;ref.rsi=rsi;ref.rii=rii;});
+  return copy||item;
+ }
  function fromProduct(product,newId=uuid){
   const it=clone(product);it.id=newId();it.addedAt=new Date().toISOString();if(product.id!=null)it.libId=product.id;else delete it.libId;
   delete it.cli;delete it.cliNote;delete it.rejected;delete it.hidden;delete it.alt;
@@ -95,6 +119,6 @@ var ModernoSpec=(()=>{
  }
  // Explicit output allowlist: never include internal costs, margins or notes.
  function board(room){return (room.sections||[]).map(s=>({name:s.name,items:(s.items||[]).filter(i=>!i.hidden&&!i.alt).map(i=>({id:i.id,name:i.name,sku:i.sku,color:i.color,material:i.material,dims:i.dims,img:i.img,qty:i.qty,unit:i.unit,price:i.price}))})).filter(s=>s.items.length);}
- return {rows,refFor,resolve,prepare,reindex,reclassifyItem,fromProduct,duplicate,economics,board,diagnose,origin};
+ return {rows,refFor,resolve,prepare,reindex,reclassifyItem,editItems,fromProduct,duplicate,economics,board,diagnose,origin};
 })();
 if(typeof module!=='undefined')module.exports=ModernoSpec;

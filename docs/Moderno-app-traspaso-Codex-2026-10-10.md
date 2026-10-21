@@ -262,3 +262,8 @@ El guardado ordinario y Reintentar guardado reutilizan el archivo verificado de 
 ## 2026-10-21 — Etiquetas y duplicados históricos
 
 Guardar una etiqueta deja de invocar la preparación global de identificadores. Una operación acotada conserva IDs/src y actualiza solo las posiciones de vínculos afectadas, sin tocar duplicados ajenos. Los destinos realmente ambiguos siguen bloqueados sin cambios parciales. Pruebas, reproducción y reversión: [ETIQUETAS-IDENTIFICADORES](ETIQUETAS-IDENTIFICADORES.md).
+
+
+## 2026-10-21 — Tarjetas de compras simplificadas y eliminación
+
+Imagen con etiqueta, precio unitario y acciones Editar/mover; debajo nombre, tienda y total. Las acciones se reúnen en el editor y los estados se retiran de tarjetas/editor/filtros conservando sus valores anteriores. Eliminar y Duplicar operan sobre la instancia elegida y protegen vínculos vecinos con duplicados históricos. Confirmación independiente conserva borradores al cancelar y rechaza posiciones cambiadas. Pruebas y reversión: [TARJETAS-COMPRAS-SENCILLAS](TARJETAS-COMPRAS-SENCILLAS.md).

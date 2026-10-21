@@ -191,7 +191,7 @@ function shoppingRoomTools(room){
  const scope=String(state.currentProject)+':'+String(room.id);
  if(shoppingRoomSearchState.scope!==scope)shoppingRoomSearchState={scope,open:Boolean(state.roomSearch)};
  const options=(values,current)=>'<option value="">Todos</option>'+values.map(v=>`<option value="${E(v)}" ${v===current?'selected':''}>${E(v)}</option>`).join('');
- const fields=[['label','Etiqueta',rf.label],['status','Estado',rf.status],['supplier','Proveedor',rf.supplier],['color','Color',rf.color],['min','Desde',rf.min],['max','Hasta',rf.max]].filter(([, ,value])=>value!==''&&value!=null);
+ const fields=[['label','Etiqueta',rf.label],['supplier','Proveedor',rf.supplier],['color','Color',rf.color],['min','Desde',rf.min],['max','Hasta',rf.max]].filter(([, ,value])=>value!==''&&value!=null);
  const open=shoppingRoomSearchState.open;
  return `<div class="dl-bar shopping-room-tools">
   <details class="shopping-filter-control" ontoggle="this.querySelector('summary').setAttribute('aria-expanded',String(this.open))">
@@ -199,7 +199,6 @@ function shoppingRoomTools(room){
    <form id="shopping-filter-panel" class="shopping-filter-panel" aria-label="Filtros de productos" onsubmit="event.preventDefault();shoppingRoomFilterApply(this)">
     <strong>Filtrar productos</strong>
     <label>Etiqueta<select name="label" aria-label="Etiqueta"><option value="">Todas</option><option value="none" ${rf.label==='none'?'selected':''}>Sin etiqueta</option>${shoppingRoomLabels(room).map(name=>`<option value="label:${E(name)}" ${shoppingLabelKey(rf.label)===shoppingLabelKey('label:'+name)?'selected':''}>${E(name)}</option>`).join('')}</select></label>
-    <label>Estado<select name="status" aria-label="Estado">${options(Object.keys(ISTATES),rf.status)}</select></label>
     <label>Proveedor<select name="supplier" aria-label="Proveedor">${options([...new Set(items.map(i=>i.supplier).filter(Boolean))],rf.supplier)}</select></label>
     <label>Color<select name="color" aria-label="Color">${options([...new Set(items.map(i=>i.color).filter(Boolean))],rf.color)}</select></label>
     <fieldset><legend>Precio (${E(projectCurrencySymbol())})</legend><div class="shopping-filter-range"><label>Desde<input name="min" type="number" step="any" value="${E(rf.min||'')}" placeholder="Desde"></label><label>Hasta<input name="max" type="number" step="any" value="${E(rf.max||'')}" placeholder="Hasta"></label></div></fieldset>
@@ -225,10 +224,10 @@ function shoppingRoomSearchInput(input){
 }
 function shoppingRoomFilterClose(focus){const control=document.querySelector('.shopping-filter-control');if(control){control.open=false;control.querySelector('form')?.reset();if(focus)control.querySelector('summary')?.focus();}}
 function shoppingRoomFilterApply(form){
- state.rf=Object.fromEntries(['label','status','supplier','color','min','max'].map(key=>[key,form.elements.namedItem(key).value]));render();document.querySelector('.shopping-filter-control summary')?.focus();
+ state.rf=Object.fromEntries(['label','supplier','color','min','max'].map(key=>[key,form.elements.namedItem(key).value]));render();document.querySelector('.shopping-filter-control summary')?.focus();
 }
 function shoppingRoomFilterClear(){state.rf=null;render();document.querySelector('.shopping-filter-control summary')?.focus();}
-function shoppingRoomFilterRemove(key){if(!['label','status','supplier','color','min','max'].includes(key))return;if(state.rf)state.rf[key]='';render();document.querySelector('.shopping-filter-control summary')?.focus();}
+function shoppingRoomFilterRemove(key){if(!['label','supplier','color','min','max'].includes(key))return;if(state.rf)state.rf[key]='';render();document.querySelector('.shopping-filter-control summary')?.focus();}
 function shoppingRoomDelete(pid,rid){
  const project=state.projects.find(p=>p.id===pid),room=project?.rooms?.find(r=>r.id===rid);if(!room)return;
  askConfirm(`¿Eliminar «${ModernoDaily.escape(room.name)}» y todos sus productos?`,'Eliminar lista',()=>{
@@ -309,4 +308,54 @@ if(typeof document!=='undefined'){
   const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(index+(event.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;
   const id=buttons[next].id;buttons[next].click();document.getElementById(id)?.focus();
  });
+}
+
+function shoppingProductDraftSignature(){
+ return JSON.stringify([[...document.querySelectorAll('.shopping-product-editor input:not([type=file]),.shopping-product-editor select,.shopping-product-editor textarea')].map(el=>[el.id,el.value]),itImg,itFiles,itLibId]);
+}
+function shoppingProductEditorTarget(si,ii,allowDirty=false){
+ const {p,r}=getRoom(),source=itemUploadDraft?.source,it=r?.sections?.[si]?.items?.[ii];
+ if(!source||source.owner!==shoppingProductIdentity()||source.p!==p||source.r!==r||source.section!==r.sections[si]||source.item!==it){toast('La lista ha cambiado. Conserva tus cambios y vuelve a abrir la ficha.');return null;}
+ if(!allowDirty&&itemUploadDraft.signature!==shoppingProductDraftSignature()){toast('Guarda los cambios de la ficha antes de usar esta acción.');return null;}
+ if(itemUploadDraft.pending){toast('Espera a que terminen los archivos');return null;}
+ return {p,r,it};
+}
+function shoppingProductEditorActions(si,ii){
+ return `<section class="product-editor-section shopping-editor-actions" aria-labelledby="shopping-editor-actions-title"><h4 id="shopping-editor-actions-title">Acciones del producto</h4>
+  <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('visibility',${si},${ii})">${getRoom().r.sections[si].items[ii].hidden?'Mostrar al cliente':'Ocultar al cliente'}</button>
+  <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('duplicate',${si},${ii})">Duplicar producto</button>
+  <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('copy',${si},${ii})">Copiar a otra lista</button>
+  <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('alternative',${si},${ii})">Añadir opción alternativa</button>
+  <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('url',${si},${ii})">Actualizar desde URL</button>
+  <button type="button" class="btn btn-ghost shopping-editor-delete" onclick="shoppingProductDelete(${si},${ii})">Eliminar producto</button>
+ </section>`;
+}
+function shoppingProductEditorAction(action,si,ii){
+ const current=shoppingProductEditorTarget(si,ii);if(!current)return;
+ if(_accessRole==='colaborador'){toast('Un administrador debe realizar esta acción');return;}
+ const {p,r,it}=current;
+ if(action==='url'){toast('La actualización desde URL aún no está disponible. Puedes editar los datos de la ficha.');return;}
+ if(action==='copy'){copyItemModal(si,ii);return;}
+ try{
+  if(action==='visibility')it.hidden=!it.hidden;
+  else if(action==='duplicate'||action==='alternative')ModernoSpec.editItems(p,r,si,ii,action);
+  else return;
+  closeModal();render();toast(action==='visibility'?(it.hidden?'Producto oculto al cliente':'Producto visible al cliente'):action==='duplicate'?'Producto duplicado':'Opción alternativa creada');
+ }catch(e){toast(e.message);}
+}
+function shoppingProductDelete(si,ii){
+ const current=shoppingProductEditorTarget(si,ii,true);if(!current)return;
+ if(_accessRole==='colaborador'){toast('Un administrador debe eliminar este producto');return;}
+ if(document.getElementById('shopping-product-delete'))return;
+ const dialog=document.createElement('dialog');dialog.id='shopping-product-delete';dialog.className='shopping-product-delete-dialog';
+ dialog.setAttribute('aria-labelledby','shopping-product-delete-title');dialog.setAttribute('aria-describedby','shopping-product-delete-description');
+ dialog.innerHTML=`<div class="shopping-product-delete-symbol" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></div><h3 id="shopping-product-delete-title">¿Eliminar producto?</h3><p id="shopping-product-delete-description">Se eliminará «${ModernoDaily.escape(current.it.name)}» de esta lista. Los archivos de la biblioteca se conservan.</p><div class="modal-foot"><button type="button" class="btn btn-ghost" data-cancel>Cancelar</button><button type="button" class="btn btn-dark" data-confirm>Eliminar producto</button></div>`;
+ const trigger=document.activeElement;dialog.addEventListener('close',()=>{dialog.remove();if(trigger?.isConnected)trigger.focus();},{once:true});
+ dialog.querySelector('[data-cancel]').onclick=()=>dialog.close();
+ dialog.querySelector('[data-confirm]').onclick=()=>{
+  const latest=shoppingProductEditorTarget(si,ii,true);
+  if(!latest||latest.it!==current.it||latest.r!==current.r){dialog.close();return;}
+  if(delItem(si,ii)){dialog.close();closeModal();toast('Producto eliminado');}
+ };
+ document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-cancel]').focus();
 }

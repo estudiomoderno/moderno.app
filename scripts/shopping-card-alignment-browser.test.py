@@ -66,20 +66,22 @@ try:
     for(const card of grid.querySelectorAll('.shopping-product-card')){
      const photo=card.querySelector('.shopping-product-photo'),key=Math.round(top(photo));
      const ps=card.querySelectorAll(':scope >p');
-     const row={photo:top(photo),title:top(card.querySelector('.shopping-product-title')),price:top(card.querySelector('.shopping-product-title>strong')),description:top(ps[0]),label:card.querySelector('.shopping-product-label')?.getBoundingClientRect().bottom??null,quantity:top(card.querySelector('.shopping-product-quantity')||ps[1]),controls:top(card.querySelector('.shopping-product-controls')),footer:top(card.querySelector('.shopping-product-footer'))};
+     const row={photo:top(photo),title:top(card.querySelector('.shopping-product-title')),price:top(card.querySelector('.shopping-product-unit-price')),description:top(ps[0]),label:card.querySelector('.shopping-product-label')?.getBoundingClientRect().bottom??null,total:top(card.querySelector('.shopping-product-total')),controls:top(card.querySelector('.shopping-product-controls')),footer:top(card.querySelector('.shopping-product-footer'))};
      if(!result.has(key))result.set(key,[]);result.get(key).push(row);
     }return [...result.values()];
    }""")
    assert len(rows)>1,(width,rows)
    for row in rows:
     if len(row)<2:continue
-    for key in ['photo','title','price','description','label','quantity','controls','footer']:
+    for key in ['photo','title','price','description','label','total']:
      values=[entry[key] for entry in row if entry[key] is not None]
      if values:assert max(values)-min(values)<=1,(width,key,values)
    for name in grid.locator('.shopping-product-title>button').all():
     assert name.evaluate('(e)=>e.scrollHeight<=e.clientHeight+1&&getComputedStyle(e).webkitLineClamp==="none"')
    assert page.evaluate('records()===alignmentBaseline')
-   assert grid.locator('.shopping-product-label-row').count()==0
+   assert grid.locator('.shopping-product-controls,.shopping-product-footer,.shopping-product-quantity').count()==0
+   assert grid.locator('select').count()==0
+   assert grid.locator('.shopping-product-unit-price').count()==10
    for card in grid.locator('.shopping-product-card').all():
     tag=card.locator('.shopping-product-media>.shopping-product-label')
     if tag.count():
@@ -98,7 +100,7 @@ try:
    assert page.evaluate('records()===alignmentBaseline')
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
    assert not errors,errors;assert not writes,writes
-   print(width,'PASS: shared card rows align photos, full titles, prices, metadata, labels, quantities, controls and footers; edit and rows view preserve records',flush=True)
+   print(width,'PASS: shared card rows align photos, image prices/labels, full titles, shops and bold totals; edit and rows view preserve records',flush=True)
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)
