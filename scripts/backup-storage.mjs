@@ -105,7 +105,9 @@ export function rcloneArguments(args) {
   // also changes Drive traversal; shared-folder access must not require a
   // drive-wide recursive listing. Byte checks and immutable recovery stay intact.
   const sourceInventory=args[0]==='lsjson'&&typeof args[1]==='string'&&args[1].startsWith('source:');
-  return [...args, ...(sourceInventory ? ['--fast-list'] : []), ...(args[0]==='check'?['--combined','-']:[]), '--log-level','ERROR','--stats','0'];
+  // The authorized drive is checked by metadata. Operate through its pinned
+  // root folder: drive-wide corpora require membership beyond folder access.
+  return [...args, '--drive-team-drive','', ...(sourceInventory ? ['--fast-list'] : []), ...(args[0]==='check'?['--combined','-']:[]), '--log-level','ERROR','--stats','0'];
 }
 
 export function rclone(args, input) {

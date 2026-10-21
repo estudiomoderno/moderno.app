@@ -75,6 +75,7 @@ test('flat listing stays on source inventories without weakening byte checks or 
   assert.ok(rcloneArguments(['lsjson','source:fixture','--recursive','--files-only']).includes('--fast-list'));
   assert.ok(!rcloneArguments(['lsjson','destination:fixture','--recursive']).includes('--fast-list'));
   const check=rcloneArguments(['check','source:fixture','destination:fixture','--download']);
+  const driveFlag=check.indexOf('--drive-team-drive');assert.ok(driveFlag>=0);assert.equal(check[driveFlag+1],'');
   assert.ok(check.includes('--download'));assert.ok(check.includes('--combined'));
   assert.ok(!check.includes('--fast-list'));
   assert.ok(!check.includes('--size-only'));assert.ok(!check.includes('--one-way'));

@@ -31,9 +31,24 @@ test('authorized private route is read narrowly and checked against actual Googl
     assert.equal(call.options.method, undefined); // GET only, never changes permissions or files.
   }
 });
-test('missing private route preserves legacy configuration without listing other folders', async () => {
+test('missing private route cannot authorize an unverified legacy destination', async () => {
   const { result, calls } = exercise([{ files: [] }]);
-  assert.equal(await result, null); assert.equal(calls.length, 1);
+  await assert.rejects(result); assert.equal(calls.length, 1);
+});
+test('explicit destination is pinned and verified without probing the historical root',async()=>{
+  const env={...environment,BACKUP_STORAGE_FOLDER_ID:route.folder_id,BACKUP_STORAGE_TEAM_DRIVE:route.team_drive};
+  const {result,calls}=exercise([metadata],env);
+  assert.deepEqual(await result,{folder_id:route.folder_id,team_drive:route.team_drive});
+  assert.equal(calls.length,1);assert.equal(calls[0].url.pathname,'/drive/v3/files/'+route.folder_id);
+});
+test('partial or unapproved explicit destinations fail before any Google request',async()=>{
+  for(const fields of [{BACKUP_STORAGE_FOLDER_ID:route.folder_id},{BACKUP_STORAGE_TEAM_DRIVE:route.team_drive},{BACKUP_STORAGE_FOLDER_ID:'unapproved',BACKUP_STORAGE_TEAM_DRIVE:route.team_drive}]){
+    const {result,calls}=exercise([],{...environment,...fields});await assert.rejects(result);assert.equal(calls.length,0);
+  }
+});
+test('a legacy destination without a routing file still needs the same pin and metadata checks',async()=>{
+  const env={...environment,GOOGLE_CONFIG:JSON.stringify({folder_id:route.folder_id,team_drive:route.team_drive})};
+  const {result,calls}=exercise([{files:[]},metadata],env);assert.deepEqual(await result,{folder_id:route.folder_id,team_drive:route.team_drive});assert.equal(calls.length,2);
 });
 test('duplicate or paginated configuration is rejected without reading arbitrary files', async () => {
   for (const value of [{ files: [...listing.files, ...listing.files] }, { files: listing.files, nextPageToken: 'more' }, {}]) {

@@ -1,6 +1,6 @@
 # Preparación de copias de archivos
 
-Estado (2026-09-09): prueba sintética de copia y recuperación y primera copia real de Storage completadas y verificadas. Programación diaria a las 04:23 en Europe/Madrid mediante GitHub Actions. El primer disparo programado aún está pendiente; las ejecuciones manuales ya funcionan.
+Antecedente (2026-09-09): prueba sintética de copia y recuperación y primera copia real de Storage completadas y verificadas. Programación diaria a las 04:23 en Europe/Madrid mediante GitHub Actions. El primer disparo programado aún está pendiente; las ejecuciones manuales ya funcionan.
 
 Requiere Node.js 22+, rclone y dos conexiones mediante variables de entorno: origen S3 compatible y destino Google Drive privado. La cuenta de servicio de Google necesita acceso al destino autorizado y Drive API habilitada. Los secretos no pertenecen al repositorio.
 
@@ -8,6 +8,16 @@ El programa crea una carpeta nueva por ejecución diaria/manual y fija un invent
 
 Ejecutar comprobaciones de lógica: `node --test scripts/backup-storage.test.mjs`.
 Ejecutar copia con credenciales configuradas: `node scripts/backup-storage.mjs`.
+
+## Política vigente — 21/10/2026
+
+La ruta efectiva debe coincidir con las huellas de carpeta/unidad autorizadas y con los metadatos reales de Google. Los dos secretos explícitos de destino tienen prioridad y se verifican directamente; si faltan, el fichero privado o la configuración original deben superar las mismas comprobaciones. Una ruta ausente, parcial, no autorizada o inaccesible detiene el flujo antes de entregar credenciales de Storage a un subproceso. No se intenta automáticamente otro destino histórico. Las copias existentes permanecen intactas.
+
+La cuenta opera sobre `root_folder_id`. La unidad se verifica por metadatos, pero rclone recibe `--drive-team-drive ''` para evitar consultas de corpus de toda la unidad que requieren pertenencia adicional; no se amplían permisos. La prueba sintética incluye varias subcarpetas y recuperación exacta.
+
+Las publicaciones ordinarias de código ejecutan solo la prueba ficticia de Drive, sin credenciales de Storage. Una integración revisada cuyo mensaje de commit contenga `[verify-storage]` solicita expresamente una copia real completa. Las ejecuciones diarias y el modo manual `backup` siguen creando instantáneas reales nuevas; `verify-copy` permite reparar una incompleta. Un éxito de una prueba ficticia no acredita una copia de datos reales ni sustituye la vigilancia del disparo diario.
+
+Las secciones de configuración del 17/10 documentan el mecanismo histórico. Sus alternativas automáticas quedan sustituidas por esta política: retirar secretos no autoriza por sí solo el destino original; este debe verificarse de nuevo. No eliminar ni mover copias antiguas para cambiar configuración.
 
 Variables requeridas:
 
@@ -23,11 +33,11 @@ Configurar región del origen si el proveedor la requiere mediante RCLONE_CONFIG
 
 ## Cambiar el destino de las copias de Storage
 
-El propietario puede elegir una carpeta nueva sin sustituir el JSON de identidad existente. Configurar **ambos** secretos de Actions: `BACKUP_STORAGE_FOLDER_ID` (ID de la carpeta) y `BACKUP_STORAGE_TEAM_DRIVE` (ID de su unidad compartida). Se usan secretos para no publicar las ubicaciones privadas en código o logs. No modificar `BACKUP_GOOGLE_CONFIG`, las claves del origen ni permisos de Supabase. Si ambos secretos están ausentes, se conserva exactamente el destino anterior.
+El propietario puede elegir una carpeta nueva sin sustituir el JSON de identidad existente. Configurar **ambos** secretos de Actions: `BACKUP_STORAGE_FOLDER_ID` (ID de la carpeta) y `BACKUP_STORAGE_TEAM_DRIVE` (ID de su unidad compartida). Se usan secretos para no publicar las ubicaciones privadas en código o logs. No modificar `BACKUP_GOOGLE_CONFIG`, las claves del origen ni permisos de Supabase. Si ambos secretos están ausentes, el destino anterior solo se admite tras superar la validación de ruta y metadatos.
 
 Antes de activar, comprobar que la cuenta de servicio actual puede escribir y recuperar en la carpeta nueva, sin habilitar acceso público. Ejecutar el workflow de copias en main con modo `test-drive`; solo crea y recupera dos archivos ficticios, sin credenciales de Storage. Después ejecutar `backup` y verificar éxito, manifiesto, objetos y COMPLETE.json en la carpeta elegida. El cambio no está completado por añadir secretos o aprobar CI: requiere esa copia real verificada, que solo lee el origen.
 
-Cuando hay un destino alternativo configurado, cada copia comprueba primero la recuperación sintética en esa carpeta. Solo si pasa, copia Storage allí con las comprobaciones actuales de contenido e inventario. Las carpetas `prueba-*` contienen únicamente la evidencia ficticia y se conservan. Si el destino nuevo es incompleto, no válido o no supera la prueba, el modo `backup` mantiene la copia en el destino original y termina con error para que la vigilancia no dé por correcta la nueva ruta. El modo `test-drive` falla sin copiar Storage. No se elimina, mueve ni sobrescribe ninguna copia anterior.
+Cuando hay un destino alternativo configurado, cada copia comprueba primero la recuperación sintética en esa carpeta. Solo si pasa, copia Storage allí con las comprobaciones actuales de contenido e inventario. Las carpetas `prueba-*` contienen únicamente la evidencia ficticia y se conservan. Si el destino nuevo es incompleto, no válido o no supera la prueba, el modo `backup` se detiene sin copiar Storage a otro destino y termina con error. El modo `test-drive` falla sin copiar Storage. No se elimina, mueve ni sobrescribe ninguna copia anterior.
 
 Retorno con configuración por secretos: retirar los dos secretos alternativos devuelve las próximas copias al destino anterior. La programación diaria, la identidad, la copia física de base de datos en Supabase y la copia manual `backup-service` conservan su configuración previa. Si la cuenta de servicio no tiene acceso, solicitar únicamente el permiso necesario para esa cuenta y carpeta antes de activar; no ampliar acceso a otras unidades por conveniencia.
 

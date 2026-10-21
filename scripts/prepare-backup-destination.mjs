@@ -45,6 +45,20 @@ export async function privateDestination({ environment = process.env, fetcher = 
     if (!response.ok) throw new DestinationError(`Private destination lookup denied (HTTP ${Number(response.status)}).`);
     return text ? response.text() : response.json();
   }
+  async function verifyRoute(route) {
+    if (route.version !== 1 || !validId(route.folder_id) || !validId(route.team_drive)) throw new DestinationError('Private destination fields are invalid.');
+    if (hash(route.folder_id) !== expected.folder || hash(route.team_drive) !== expected.drive) throw new DestinationError('Private destination does not match the authorized route.');
+    const target = new URL(`https://www.googleapis.com/drive/v3/files/${route.folder_id}`);
+    target.searchParams.set('supportsAllDrives', 'true');
+    target.searchParams.set('fields', 'id,mimeType,driveId,trashed,capabilities(canAddChildren)');
+    const metadata = await request(target);
+    if (metadata.id !== route.folder_id || metadata.mimeType !== 'application/vnd.google-apps.folder' || metadata.trashed || metadata.driveId !== route.team_drive) throw new DestinationError('Google reports a different destination folder or shared drive.');
+    if (metadata.capabilities?.canAddChildren !== true) throw new DestinationError('The backup account cannot add files to the destination folder.');
+    return { folder_id: route.folder_id, team_drive: route.team_drive };
+  }
+  if(environment.BACKUP_STORAGE_FOLDER_ID||environment.BACKUP_STORAGE_TEAM_DRIVE){
+    return verifyRoute({version:1,folder_id:environment.BACKUP_STORAGE_FOLDER_ID,team_drive:environment.BACKUP_STORAGE_TEAM_DRIVE});
+  }
   const list = new URL('https://www.googleapis.com/drive/v3/files');
   list.searchParams.set('q', `'${original.folder_id}' in parents and name = 'backup-destination.json' and trashed = false`);
   list.searchParams.set('fields', 'nextPageToken,files(id,mimeType,size)');
@@ -53,29 +67,21 @@ export async function privateDestination({ environment = process.env, fetcher = 
   list.searchParams.set('includeItemsFromAllDrives', 'true');
   const listing = await request(list);
   if (!Array.isArray(listing.files) || listing.nextPageToken || listing.files.length > 1) throw new DestinationError('Private destination file is ambiguous.');
-  if (!listing.files.length) return null; // Existing setups retain their configured route.
+  if (!listing.files.length) return verifyRoute({version:1,folder_id:original.folder_id,team_drive:original.team_drive});
   const file = listing.files[0];
   if (!validId(file.id) || file.mimeType !== 'application/json' || !Number.isFinite(Number(file.size)) || Number(file.size) < 1 || Number(file.size) > 4096) throw new DestinationError('Private destination file is invalid.');
   const raw = await request(new URL(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&supportsAllDrives=true`), true);
   if (Buffer.byteLength(raw) > 4096) throw new DestinationError('Private destination file exceeds its limit.');
   let route;
   try { route = JSON.parse(raw); } catch { throw new DestinationError('Private destination file is not valid JSON.'); }
-  if (route.version !== 1 || !validId(route.folder_id) || !validId(route.team_drive)) throw new DestinationError('Private destination fields are invalid.');
-  if (hash(route.folder_id) !== expected.folder || hash(route.team_drive) !== expected.drive) throw new DestinationError('Private destination does not match the authorized route.');
-  const target = new URL(`https://www.googleapis.com/drive/v3/files/${route.folder_id}`);
-  target.searchParams.set('supportsAllDrives', 'true');
-  target.searchParams.set('fields', 'id,mimeType,driveId,trashed,capabilities(canAddChildren)');
-  const metadata = await request(target);
-  if (metadata.id !== route.folder_id || metadata.mimeType !== 'application/vnd.google-apps.folder' || metadata.trashed || metadata.driveId !== route.team_drive) throw new DestinationError('Google reports a different destination folder or shared drive.');
-  if (metadata.capabilities?.canAddChildren !== true) throw new DestinationError('The backup account cannot add files to the destination folder.');
-  return { folder_id: route.folder_id, team_drive: route.team_drive };
+  return verifyRoute(route);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   await diagnoseDestinations();
   try {
     const route = await privateDestination();
-    if (!route) console.log('No private routing file; existing destination settings retained.');
+    if (!route) throw new DestinationError('No verified destination available. No Storage copy authorized.');
     else {
       if (!process.env.GITHUB_ENV) throw new DestinationError('Masked workflow environment unavailable.');
       console.log(`::add-mask::${route.folder_id}`);
