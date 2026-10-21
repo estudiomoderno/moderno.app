@@ -78,9 +78,11 @@ export function createCheckReport() {
 }
 
 export function rcloneArguments(args) {
-  // ListR avoids one S3 query per virtual directory. This changes traversal,
-  // never byte verification, source permissions or destination immutability.
-  return [...args, ...(['lsjson','copy','check'].includes(args[0]) ? ['--fast-list'] : []), ...(args[0]==='check'?['--combined','-']:[]), '--log-level','ERROR','--stats','0'];
+  // Keep ListR on source inventories only. A global --fast-list on copy/check
+  // also changes Drive traversal; shared-folder access must not require a
+  // drive-wide recursive listing. Byte checks and immutable recovery stay intact.
+  const sourceInventory=args[0]==='lsjson'&&typeof args[1]==='string'&&args[1].startsWith('source:');
+  return [...args, ...(sourceInventory ? ['--fast-list'] : []), ...(args[0]==='check'?['--combined','-']:[]), '--log-level','ERROR','--stats','0'];
 }
 
 export function rclone(args, input) {

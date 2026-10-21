@@ -69,12 +69,15 @@ test('streaming byte report distinguishes sides and read errors without retainin
   assert.match(failureCategory('googleapi: Error 503: private-content'),/drive-read-error/);
 });
 
-test('flat listing reduces traversal without weakening byte checks or immutable recovery',()=>{
-  for(const command of ['lsjson','copy','check'])assert.ok(rcloneArguments([command,'source:fixture']).includes('--fast-list'));
+test('flat listing stays on source inventories without weakening byte checks or immutable recovery',()=>{
+  assert.ok(rcloneArguments(['lsjson','source:fixture','--recursive','--files-only']).includes('--fast-list'));
+  assert.ok(!rcloneArguments(['lsjson','destination:fixture','--recursive']).includes('--fast-list'));
   const check=rcloneArguments(['check','source:fixture','destination:fixture','--download']);
   assert.ok(check.includes('--download'));assert.ok(check.includes('--combined'));
+  assert.ok(!check.includes('--fast-list'));
   assert.ok(!check.includes('--size-only'));assert.ok(!check.includes('--one-way'));
   const copy=rcloneArguments(['copy','source:fixture','destination:fixture','--immutable','--ignore-existing','--no-traverse']);
   for(const flag of ['--immutable','--ignore-existing','--no-traverse'])assert.ok(copy.includes(flag));
+  assert.ok(!copy.includes('--fast-list'));
   assert.ok(!rcloneArguments(['rcat','destination:marker']).includes('--fast-list'));
 });
