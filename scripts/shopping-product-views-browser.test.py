@@ -75,7 +75,7 @@ try:
    if output:page.screenshot(path=str(output/f'shopping-cards-{width}.png'),full_page=True)
    tools=room.locator('.shopping-room-tools')
    toggle=tools.get_by_role('button',name='Vista en filas',exact=True)
-   assert tools.locator(':scope > *').evaluate_all('(es)=>es.map(e=>e.className)')==['shopping-filter-control','shopping-tool-button','shopping-sort-control','shopping-search-group']
+   assert tools.locator(':scope > *').evaluate_all('(es)=>es.map(e=>e.className)')==['shopping-filter-control','shopping-tool-button','shopping-sort-control','shopping-search-group','shopping-add-toolbar']
    sizes=[tools.get_by_role('button',name=name,exact=True).bounding_box() for name in ['Filtrar productos','Vista en filas','Ordenar productos','Buscar producto']]
    assert all(x['width']==32 and x['height']==32 for x in sizes),sizes
    toggle.click();expect(toggle).to_have_attribute('aria-pressed','true')

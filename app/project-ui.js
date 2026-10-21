@@ -243,7 +243,7 @@ function shoppingRoomTools(room){
  const scope=String(state.currentProject)+':'+String(room.id);
  if(shoppingRoomSearchState.scope!==scope)shoppingRoomSearchState={scope,open:Boolean(state.roomSearch)};
  const options=(values,current)=>'<option value="">Todos</option>'+values.map(v=>`<option value="${E(v)}" ${v===current?'selected':''}>${E(v)}</option>`).join('');
- const fields=[['label','Etiqueta',rf.label],['supplier','Proveedor',rf.supplier],['color','Color',rf.color],['min','Desde',rf.min],['max','Hasta',rf.max]].filter(([, ,value])=>value!==''&&value!=null);
+ const fields=[['label','Etiqueta',rf.label],['supplier','Proveedor',rf.supplier],['min','Desde',rf.min],['max','Hasta',rf.max]].filter(([, ,value])=>value!==''&&value!=null);
  const open=shoppingRoomSearchState.open;
  return `<div class="dl-bar shopping-room-tools">
   <details class="shopping-filter-control" ontoggle="this.querySelector('summary').setAttribute('aria-expanded',String(this.open))">
@@ -252,7 +252,6 @@ function shoppingRoomTools(room){
     <strong>Filtrar productos</strong>
     <label>Etiqueta<select name="label" aria-label="Etiqueta"><option value="">Todas</option><option value="none" ${rf.label==='none'?'selected':''}>Sin etiqueta</option>${shoppingRoomLabels(room).map(name=>`<option value="label:${E(name)}" ${shoppingLabelKey(rf.label)===shoppingLabelKey('label:'+name)?'selected':''}>${E(name)}</option>`).join('')}</select></label>
     <label>Proveedor<select name="supplier" aria-label="Proveedor">${options([...new Set(items.map(i=>i.supplier).filter(Boolean))],rf.supplier)}</select></label>
-    <label>Color<select name="color" aria-label="Color">${options([...new Set(items.map(i=>i.color).filter(Boolean))],rf.color)}</select></label>
     <fieldset><legend>Precio (${E(projectCurrencySymbol())})</legend><div class="shopping-filter-range"><label>Desde<input name="min" type="number" step="any" value="${E(rf.min||'')}" placeholder="Desde"></label><label>Hasta<input name="max" type="number" step="any" value="${E(rf.max||'')}" placeholder="Hasta"></label></div></fieldset>
     <div class="shopping-filter-actions"><button type="button" onclick="shoppingRoomFilterClear()">Restablecer</button><button type="button" onclick="shoppingRoomFilterClose(true)">Cancelar</button><button type="submit">Aplicar</button></div>
    </form>
@@ -263,6 +262,7 @@ function shoppingRoomTools(room){
    <button type="button" id="shopping-search-toggle" class="shopping-tool-button" title="Buscar producto" aria-label="Buscar producto" aria-expanded="${open}" aria-controls="shopping-product-search" onclick="shoppingRoomSearchToggle()">${shoppingRoomToolIcon('search')}</button>
    <div id="shopping-product-search" class="shopping-search-collapse" data-open="${open}" ${open?'':'inert'}><div class="shopping-search-inner"><input id="rsearch" type="search" aria-label="Buscar producto por nombre, SKU o proveedor" placeholder="Buscar producto" value="${E(state.roomSearch||'')}" oninput="shoppingRoomSearchInput(this)" onkeydown="if(event.key==='Escape'){event.preventDefault();shoppingRoomSearchToggle(false)}"></div></div>
   </div>
+  <span class="shopping-add-toolbar"><button type="button" class="shopping-add-top" aria-label="Añadir producto a esta lista" onclick="shoppingRoomAddProduct()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Añadir producto</button></span>
  </div>${fields.length?`<div class="shopping-filter-chips" aria-label="Filtros activos">${fields.map(([key,label,value])=>`<button type="button" aria-label="Quitar filtro ${label}" onclick="shoppingRoomFilterRemove('${key}')">${label}: ${E(key==='label'?(value==='none'?'Sin etiqueta':value.slice(6)):value)} <span aria-hidden="true">×</span></button>`).join('')}</div>`:''}`;
 }
 function shoppingRoomSearchToggle(force){
@@ -276,10 +276,10 @@ function shoppingRoomSearchInput(input){
 }
 function shoppingRoomFilterClose(focus){const control=document.querySelector('.shopping-filter-control');if(control){control.open=false;control.querySelector('form')?.reset();if(focus)control.querySelector('summary')?.focus();}}
 function shoppingRoomFilterApply(form){
- state.rf=Object.fromEntries(['label','supplier','color','min','max'].map(key=>[key,form.elements.namedItem(key).value]));render();document.querySelector('.shopping-filter-control summary')?.focus();
+ state.rf=Object.fromEntries(['label','supplier','min','max'].map(key=>[key,form.elements.namedItem(key).value]));render();document.querySelector('.shopping-filter-control summary')?.focus();
 }
 function shoppingRoomFilterClear(){state.rf=null;render();document.querySelector('.shopping-filter-control summary')?.focus();}
-function shoppingRoomFilterRemove(key){if(!['label','supplier','color','min','max'].includes(key))return;if(state.rf)state.rf[key]='';render();document.querySelector('.shopping-filter-control summary')?.focus();}
+function shoppingRoomFilterRemove(key){if(!['label','supplier','min','max'].includes(key))return;if(state.rf)state.rf[key]='';render();document.querySelector('.shopping-filter-control summary')?.focus();}
 function shoppingRoomDelete(pid,rid){
  const project=state.projects.find(p=>p.id===pid),room=project?.rooms?.find(r=>r.id===rid);if(!room)return;
  askConfirm(`¿Eliminar «${ModernoDaily.escape(room.name)}» y todos sus productos?`,'Eliminar lista',()=>{
@@ -410,4 +410,18 @@ function shoppingProductDelete(si,ii){
   if(delItem(si,ii)){dialog.close();closeModal();toast('Producto eliminado');}
  };
  document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-cancel]').focus();
+}
+
+var shoppingAddUi=null;
+function shoppingRoomAddEnhance(){
+ const wrapper=document.querySelector('.shopping-add-toolbar');
+ if(shoppingAddUi?.wrapper===wrapper&&wrapper?.isConnected)return;
+ if(shoppingAddUi){shoppingAddUi.component?.unmount();shoppingAddUi.host.remove();shoppingAddUi=null;}
+ if(!wrapper||!window.ModernoProfileComponent?.mountShoppingAdd)return;
+ const fallback=wrapper.querySelector('.shopping-add-top'),host=document.createElement('span');host.style.display='none';wrapper.append(host);
+ const entry={wrapper,host,component:null},owner=shoppingProductIdentity(),project=state.currentProject,room=state.currentRoom;shoppingAddUi=entry;
+ const recover=()=>queueMicrotask(()=>{if(shoppingAddUi===entry){entry.component?.unmount();host.remove();fallback.hidden=false;shoppingAddUi=null;}});
+ try{entry.component=ModernoProfileComponent.mountShoppingAdd(host,recover,()=>{if(shoppingAddUi!==entry||!wrapper.isConnected)return;fallback.hidden=true;host.style.display='';});
+  entry.component.update({onAdd:()=>{if(owner===shoppingProductIdentity()&&project===state.currentProject&&room===state.currentRoom)shoppingRoomAddProduct();}});
+ }catch(e){recover();}
 }

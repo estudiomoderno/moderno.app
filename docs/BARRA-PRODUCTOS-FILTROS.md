@@ -1,0 +1,11 @@
+# Barra de productos y filtros — v3.65.94
+
+Por aclaración del propietario, Añadir producto sale del presupuesto y pasa a la misma fila que filtro, vista, orden y búsqueda, alineado a la derecha. La tarjeta del final permanece. Se usa el código proporcionado: `Button variant="outline"` con `PlusIcon` de Lucide y texto «Añadir producto». Componente en `ui/team-profile/shopping-add.tsx`, importando el Button ReUI original ya versionado, sin alterar fuente, tamaño ni clases del original. Compilado en el bundle de componentes existente, con el CSS y las licencias locales actuales.
+
+El montaje aislado en Shadow DOM usa las mismas funciones de montaje que los controles superiores, conserva el callback al selector nativo Manual/URL IA/Biblioteca y comprueba el contexto de sesión/lista. Se desmonta al cambiar la vista. Si falla el componente o su estilo, queda disponible un botón HTML con borde que usa la misma acción.
+
+Filtros: solo Etiqueta, Proveedor y Precio desde/hasta. Color desaparece del formulario, chips, aplicación y coincidencias; un valor de filtro de color antiguo ya no oculta productos. Se conserva el dato color de cada ficha. El acceso legado al filtro abre el mismo formulario. No cambia datos de productos, orden, cálculos, permisos, guardado ni servicios.
+
+Validación: 552 pruebas Node, incluidos identidad del código original y hashes del manifiesto. Chromium aislado a 1440/1100/390 px comprueba el Button real dentro del Shadow DOM, variante outline/icono, misma altura y centro que filtro, ausencia de botón en el presupuesto y acceso con 45 productos. Etiqueta/proveedor/precio se aplican y restablecen; color legado se ignora; selector, fuentes y cancelación conservan los registros. Regresión de vistas, búsqueda, orden y arrastre en cuatro tamaños. Capturas revisadas, SDK real desactivado, red externa bloqueada y cero escrituras reales. PHP se comprueba en CI.
+
+Publicación pendiente de CI y despliegue con los 41 recursos públicos verificados, incluidos perfil compilado, index.html, project-ui.js y brand/project-ui.css. Reversión: revertir el commit de interfaz y publicar por el workflow normal, sin restaurar ni borrar datos. No se recompila ni publica un cambio del calendario en esta entrega.

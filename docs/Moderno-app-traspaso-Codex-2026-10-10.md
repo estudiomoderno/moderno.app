@@ -292,3 +292,7 @@ El propietario pide mover las estancias como los productos. Tirador de 32 px, ra
 ## 2026-10-21 — Añadir producto debajo del total
 
 Segundo acceso al selector existente de productos justo debajo del presupuesto de la estancia, sin retirar la tarjeta al final. Botón nativo y ajuste móvil; sin cambios de datos ni servicios. Pruebas y reversión: [ANADIR-PRODUCTO-ARRIBA](ANADIR-PRODUCTO-ARRIBA.md).
+
+## 2026-10-21 — Añadir en la fila de filtros y filtros simplificados
+
+El propietario aclara que el segundo acceso debe ir junto a las herramientas, fuera del presupuesto. Se usa su Button outline/PlusIcon original, traducido y con estilos originales. Solo Etiqueta, Proveedor y Precio filtran productos, ignorando el antiguo filtro de color sin tocar las fichas. Pruebas y reversión: [BARRA-PRODUCTOS-FILTROS](BARRA-PRODUCTOS-FILTROS.md).

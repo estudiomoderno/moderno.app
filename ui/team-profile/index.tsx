@@ -7,6 +7,7 @@ import {ProjectSettings} from './project-settings';
 import {ProjectWindows} from './project-windows';
 import {PageBreadcrumbs} from './page-breadcrumbs';
 import {ShoppingDelete} from './shopping-delete';
+import {ShoppingAdd} from './shopping-add';
 
 export function mountComponent(host:HTMLElement,Component:React.ComponentType<any>,onError?:()=>void,onReady?:()=>void){
  const shadow=host.attachShadow({mode:'open'});
@@ -27,3 +28,4 @@ export function mountProjectWindows(host:HTMLElement,onError?:()=>void,onReady?:
 
 export function mountBreadcrumbs(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,PageBreadcrumbs,onError,onReady);}
 export function mountShoppingDelete(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,ShoppingDelete,onError,onReady);}
+export function mountShoppingAdd(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,ShoppingAdd,onError,onReady);}
