@@ -12,6 +12,31 @@ export class DestinationError extends Error {}
 const validId = value => typeof value === 'string' && /^[a-zA-Z0-9_-]+$/.test(value);
 const hash = value => createHash('sha256').update(value).digest('hex');
 
+// Diagnostic only: never changes routing, permissions or credentials. Report
+// booleans/status codes instead of private IDs, account names or provider errors.
+export async function diagnoseDestinations({ environment = process.env, fetcher = fetch, report = console.log, expected = authorized } = {}) {
+  try {
+    const config = JSON.parse(environment.GOOGLE_CONFIG);
+    if (!environment.GOOGLE_ACCESS_TOKEN) throw Error('missing');
+    report('Backup identity matches reviewed account: ' + (typeof config.service_account === 'string' && hash(config.service_account) === '9cd459c00cc7a10e52295ed0e6d87893f0ef8154690770213750629c68ec8689'));
+    const roots = [['original', config.folder_id, config.team_drive], ['override', environment.BACKUP_STORAGE_FOLDER_ID, environment.BACKUP_STORAGE_TEAM_DRIVE]];
+    for (const [label, folder, drive] of roots) {
+      if (!folder && !drive) { report(`Backup ${label}: absent`); continue; }
+      if (!validId(folder) || !validId(drive)) { report(`Backup ${label}: invalid configuration`); continue; }
+      report(`Backup ${label} matches authorized folder/drive: ${hash(folder) === expected.folder}/${hash(drive) === expected.drive}`);
+      try {
+        const url = new URL(`https://www.googleapis.com/drive/v3/files/${folder}`);
+        url.searchParams.set('supportsAllDrives', 'true');
+        url.searchParams.set('fields', 'id,mimeType,driveId,trashed,capabilities(canAddChildren)');
+        const response = await fetcher(url, { headers: { Authorization: `Bearer ${environment.GOOGLE_ACCESS_TOKEN}` }, credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(20000) });
+        if (!response.ok) { report(`Backup ${label} metadata HTTP ${Number(response.status)}`); continue; }
+        const metadata = await response.json();
+        report(`Backup ${label} metadata: folder=${metadata.id === folder && metadata.mimeType === 'application/vnd.google-apps.folder'}, drive=${metadata.driveId === drive}, trashed=${metadata.trashed === true}, canAddChildren=${metadata.capabilities?.canAddChildren === true}`);
+      } catch { report(`Backup ${label} metadata unavailable`); }
+    }
+  } catch { report('Backup destination diagnostics unavailable'); }
+}
+
 export async function privateDestination({ environment = process.env, fetcher = fetch, expected = authorized } = {}) {
   const original = JSON.parse(environment.GOOGLE_CONFIG);
   if (!validId(original.folder_id) || !environment.GOOGLE_ACCESS_TOKEN) throw new DestinationError('Private destination identity unavailable.');
@@ -47,6 +72,7 @@ export async function privateDestination({ environment = process.env, fetcher = 
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await diagnoseDestinations();
   try {
     const route = await privateDestination();
     if (!route) console.log('No private routing file; existing destination settings retained.');
