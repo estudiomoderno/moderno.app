@@ -296,3 +296,7 @@ Segundo acceso al selector existente de productos justo debajo del presupuesto d
 ## 2026-10-21 — Añadir en la fila de filtros y filtros simplificados
 
 El propietario aclara que el segundo acceso debe ir junto a las herramientas, fuera del presupuesto. Se usa su Button outline/PlusIcon original, traducido y con estilos originales. Solo Etiqueta, Proveedor y Precio filtran productos, ignorando el antiguo filtro de color sin tocar las fichas. Pruebas y reversión: [BARRA-PRODUCTOS-FILTROS](BARRA-PRODUCTOS-FILTROS.md).
+
+## 2026-10-21 — Duplicación desde ajustes y guardado
+
+El usuario indica que copias de listas desaparecieron al recargar. Se corrige el handler antiguo para usar la copia independiente existente e iniciar persistencia/envío inmediatamente; beforeunload avisa por copias aún no confirmadas. Reproducción y pruebas aisladas; recuperación de copias anteriores pendiente de revisar el JSON que el usuario confirma descargado. No se importa ni restaura automáticamente: [DUPLICAR-LISTA-GUARDADO](DUPLICAR-LISTA-GUARDADO.md).

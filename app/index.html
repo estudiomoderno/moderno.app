@@ -7392,6 +7392,24 @@ function roomIconModal(pid,rid){
   ${riconPicker(r.icon||"","(function(){state.projects.find(x=>x.id===${pid}).rooms.find(x=>x.id===${rid}).icon='KEY';closeModal();render();toast('Icono cambiado ✓')})()")}
   <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button></div>`);
 }
+var roomDuplicatePending=null;
+function roomDuplicationPending(){
+ if(!roomDuplicatePending||roomDuplicatePending.owner!==localCopyOwner())return false;
+ try{
+  const saved=JSON.parse(_cloudHash.proyectos||'[]');
+  return roomDuplicatePending.copies.some(copy=>state.projects.find(p=>p.id===copy.project)?.rooms?.some(r=>r.id===copy.room)&&!saved.find(p=>p.id===copy.project)?.rooms?.some(r=>r.id===copy.room));
+ }catch(e){return true;}
+}
+async function duplicateShoppingRoom(pid,rid){
+ if(_accessLoading||myAccessLevel()!=='owner'||!canView('proyecto')||state.currentProject!==pid){toast('Un administrador debe duplicar esta lista desde su proyecto.');return false;}
+ const projects=state.projects.filter(p=>p.id===pid),p=projects[0],rooms=p?.rooms?.filter(r=>r.id===rid)||[];
+ if(projects.length!==1||rooms.length!==1){toast('La lista ha cambiado o su identificador está repetido. Conserva tus cambios y vuelve a abrirla.');return false;}
+ const copy=roomCloneData(rooms[0],-1);copy.name=rooms[0].name+' (copia)';p.rooms.push(copy);
+ const owner=localCopyOwner();if(roomDuplicatePending?.owner!==owner)roomDuplicatePending={owner,copies:[]};
+ roomDuplicatePending.copies.push({project:pid,room:copy.id});
+ persistNow();closeModal();render();toast('Lista duplicada. Guardando cambios…');
+ await cloudFlush();return copy;
+}
 function roomMenu(pid,rid){
   const p=state.projects.find(x=>x.id===pid), r=p.rooms.find(x=>x.id===rid);
   modal(`<h3>${rico(r.icon)} ${r.name}</h3>
@@ -7404,7 +7422,7 @@ function roomMenu(pid,rid){
     <button class="btn btn-ghost" onclick="closeModal();openRoom(${pid},${rid});setTimeout(exportRoomModal,120)">${ico("pdf")} Exportar PDF / hoja</button>
     <button class="btn btn-ghost" onclick="closeModal();roomToProjectModal(${pid},${rid})">${ico("rm_exportar")} Exportar a otro proyecto</button>
     <button class="btn btn-ghost" onclick="closeModal();roomFromProjectModal(${pid},${rid})">${ico("rm_importar")} Importar de otro proyecto</button>
-    <button class="btn btn-ghost" onclick="const p=state.projects.find(x=>x.id===${pid});const r=p.rooms.find(x=>x.id===${rid});const c={...JSON.parse(JSON.stringify(r)),id:Date.now(),name:r.name+' (copia)'};p.rooms.push(c);closeModal();render();toast('⧉ Lista duplicada')">${ico("copiar")} Duplicar lista</button>
+    <button class="btn btn-ghost" onclick="duplicateShoppingRoom(${pid},${rid})">${ico("copiar")} Duplicar lista</button>
     <button class="danger" onclick="shoppingRoomDelete(${pid},${rid})">🗑 Eliminar</button>
   </div>
   <div class="modal-foot"><button class="btn btn-dark" onclick="closeModal();render()">Hecho</button></div>`);
@@ -11485,7 +11503,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.94";
+const MODERNO_VER="v3.65.95";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13115,6 +13133,7 @@ render = function(){
   globalThis.ModernoAppLoading?.refresh();
 };
 window.addEventListener("beforeunload", persistNow);
+window.addEventListener('beforeunload',event=>{if(roomDuplicationPending()){event.preventDefault();event.returnValue='';}});
 /* Vigía de Administración: cualquier ajuste tocado confirma y persiste */
 let _admPingT=null;
 function adminSavedPing(){
