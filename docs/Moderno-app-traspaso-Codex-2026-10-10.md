@@ -267,3 +267,8 @@ Guardar una etiqueta deja de invocar la preparación global de identificadores. 
 ## 2026-10-21 — Tarjetas de compras simplificadas y eliminación
 
 Imagen con etiqueta, precio unitario y acciones Editar/mover; debajo nombre, tienda y total. Las acciones se reúnen en el editor y los estados se retiran de tarjetas/editor/filtros conservando sus valores anteriores. Eliminar y Duplicar operan sobre la instancia elegida y protegen vínculos vecinos con duplicados históricos. Confirmación independiente conserva borradores al cancelar y rechaza posiciones cambiadas. Pruebas y reversión: [TARJETAS-COMPRAS-SENCILLAS](TARJETAS-COMPRAS-SENCILLAS.md).
+
+
+## 2026-10-21 — Precio alineado sobre la etiqueta
+
+El precio unitario queda justo encima de la etiqueta dentro de la imagen, con borde izquierdo compartido y separación de 6 px. Se adapta al alto de la etiqueta. Cambio visual y comprobaciones: [TARJETAS-COMPRAS-SENCILLAS](TARJETAS-COMPRAS-SENCILLAS.md).

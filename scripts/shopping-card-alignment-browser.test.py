@@ -73,7 +73,7 @@ try:
    assert len(rows)>1,(width,rows)
    for row in rows:
     if len(row)<2:continue
-    for key in ['photo','title','price','description','label','total']:
+    for key in ['photo','title','description','label','total']:
      values=[entry[key] for entry in row if entry[key] is not None]
      if values:assert max(values)-min(values)<=1,(width,key,values)
    for name in grid.locator('.shopping-product-title>button').all():
@@ -83,9 +83,13 @@ try:
    assert grid.locator('select').count()==0
    assert grid.locator('.shopping-product-unit-price').count()==10
    for card in grid.locator('.shopping-product-card').all():
-    tag=card.locator('.shopping-product-media>.shopping-product-label')
+    tag=card.locator('.shopping-product-badges>.shopping-product-label')
     if tag.count():
      photo=card.locator('.shopping-product-photo').bounding_box();badge=tag.bounding_box()
+     price=card.locator('.shopping-product-unit-price').bounding_box()
+     assert abs(price['x']-badge['x'])<1,(width,price,badge)
+     assert abs(badge['y']-price['y']-price['height']-6)<1,(width,price,badge)
+     assert price['y']>=photo['y'] and price['x']+price['width']<=photo['x']+photo['width'],(width,price,photo)
      assert badge['x']>=photo['x']+8 and badge['y']>=photo['y']+8,(width,photo,badge)
      assert badge['x']+badge['width']<=photo['x']+photo['width']-8,(width,photo,badge)
      assert abs(photo['y']+photo['height']-badge['y']-badge['height']-10)<1,(width,photo,badge)
