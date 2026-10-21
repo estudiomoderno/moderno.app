@@ -1,0 +1,52 @@
+name: Diagnosticar acceso a copias (solo lectura)
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/diagnostico-copias.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: diagnostico-copias-lectura
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Comprobar diagnostico aislado
+        run: node --test scripts/prepare-backup-destination.test.mjs
+      - name: Preparar identidad existente y ocultar configuracion
+        env:
+          GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
+        run: node scripts/prepare-backup-identity.mjs
+      - name: Acceso temporal existente a Google
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: ${{ fromJSON(secrets.BACKUP_GOOGLE_CONFIG).project_id }}
+          workload_identity_provider: ${{ fromJSON(secrets.BACKUP_GOOGLE_CONFIG).provider }}
+          service_account: ${{ fromJSON(secrets.BACKUP_GOOGLE_CONFIG).service_account }}
+          token_format: access_token
+          access_token_lifetime: 300s
+          access_token_scopes: https://www.googleapis.com/auth/drive.metadata.readonly
+          create_credentials_file: false
+          export_environment_variables: false
+      - name: Consultar metadatos sin copiar ni modificar archivos
+        env:
+          GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          GOOGLE_CONFIG: ${{ secrets.BACKUP_GOOGLE_CONFIG }}
+          BACKUP_STORAGE_FOLDER_ID: ${{ secrets.BACKUP_STORAGE_FOLDER_ID }}
+          BACKUP_STORAGE_TEAM_DRIVE: ${{ secrets.BACKUP_STORAGE_TEAM_DRIVE }}
+        run: node --input-type=module -e 'import {diagnoseDestinations} from "./scripts/prepare-backup-destination.mjs"; await diagnoseDestinations();'
