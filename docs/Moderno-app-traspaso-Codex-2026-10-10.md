@@ -280,3 +280,7 @@ El acuse de guardado idéntico conserva los objetos usados por el editor. Los ca
 ## 2026-10-21 — Apertura con copia pendiente grande, corrección preparada
 
 El usuario confirma descarga JSON y acceso en incógnito, con bloqueo del navegador normal. Se reproduce la cuota al duplicar una instantánea grande aunque las copias anteriores estén archivadas. Fallback conserva la instantánea directamente en el archivo local existente y verifica contenido/marcador/identidad antes de continuar la carga. No descarta copias ni escribe datos reales. Pruebas y recuperación: [APERTURA-COPIA-PENDIENTE-GRANDE](APERTURA-COPIA-PENDIENTE-GRANDE.md).
+
+## 2026-10-21 — Indicador de carga inicial
+
+El usuario confirma recuperado el acceso normal y pide ocultar el diseño antiguo durante el arranque con su spinner de ocho puntos. Capa blanca crítica hasta disponer de estilos y estado de acceso; login/errores visibles y salida para cargas bloqueadas. Cambio de presentación sin datos ni servicios. Pruebas y reversión: [CARGA-INICIAL-PUNTOS](CARGA-INICIAL-PUNTOS.md).
