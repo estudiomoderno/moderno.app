@@ -2,7 +2,7 @@
 
 ## Resultado y alcance
 
-La aplicación no está certificada para 100.000 usuarios. Se han identificado problemas reproducibles de persistencia, trabajo repetido y coste de las funciones de guardado. Esta entrega prepara v3.65.98 para mejorar recuperación y solicitudes del navegador, y versiona una optimización SQL independiente. **Publicar la aplicación no aplica el SQL**. No se han escrito datos de negocio ni cambiado permisos de producción durante la auditoría.
+La aplicación no está certificada para 100.000 usuarios. Se han identificado problemas reproducibles de persistencia, trabajo repetido y coste de las funciones de guardado. v3.65.98 está publicada y verificada: mejora recuperación y solicitudes del navegador. La optimización SQL independiente sigue sin aplicar mientras no se complete el respaldo de Storage. **Publicar la aplicación no aplica el SQL**. No se han escrito datos de negocio ni cambiado permisos de producción durante la auditoría.
 
 ## Evidencia de producción, consultas de solo lectura
 
@@ -30,9 +30,19 @@ Se ensayó inicialmente con datos ficticios en el proyecto remoto verificado vac
 
 Antes de activar: verificar respaldo recuperable reciente de BD y Storage por separado, obtener autorización concreta según AGENTS.md y volver a verificar hashes/identidad. Después de activar: observar cancelaciones y latencia de guardados reales normales mediante métricas, sin generar pruebas con datos de clientes. Revertir las dos funciones si aparece regresión. No aumentar el timeout global como sustituto de corregir el trabajo.
 
-## Copias de seguridad: bloqueo pendiente
+## Copias de seguridad y bloqueo de conexión
 
-El workflow manual 39564598195 (21/10) falló en copiar/verificar con `notFound`, también su alternativa. El monitor 39556227057 falló; el último éxito programado conocido es del 18/10. La carpeta autorizada de Drive existe y el usuario conectado puede verla, pero esto no demuestra acceso de la identidad de automatización. No se han cambiado credenciales, compartido carpetas ni modificado copias programadas. Falta comprobar esa identidad/configuración y ejecutar una copia con restauración verificada. No se ha acreditado en esta auditoría un respaldo reciente de BD y Storage listo para restaurar.
+La captura del panel acredita un respaldo físico de BD del 21/10 a las 00:33:40 UTC y copias diarias anteriores; no se ha ensayado su restauración. Las copias de BD no incluyen objetos de Storage.
+
+La identidad de automatización y el destino autorizado de la unidad compartida se verifican por separado. El propietario corrigió el identificador de carpeta del override; la comprobación devuelve HTTP 200, carpeta/unidad correctas y permiso para añadir hijos. La configuración primaria antigua sigue devolviendo 404; el override verificado es el destino efectivo. No se ampliaron permisos.
+
+La ejecución real 39612740479, job 119267315953, comparó bytes: **431 idénticos, 3 ausentes solo en destino, 0 ausentes en origen, 0 distintos y 0 errores de lectura**. No acredita una copia completa: el destino aún carece de manifiesto y marcador COMPLETE. Las pruebas con dos archivos ficticios sí completan copia y recuperación, pero no sustituyen la verificación de los archivos reales.
+
+La recuperación añade únicamente objetos ausentes de una copia incompleta del mismo día, sin sobrescribir existentes ni escribir en Supabase. Después exige comparación de todos los bytes e inventario de origen estable antes de publicar manifiesto/COMPLETE. La consulta S3 agota su conexión antes de alcanzar esta fase. Se ensayó listado plano `--fast-list` para reducir consultas por directorio, conservando comparación íntegra. La ejecución 39618535109 / job 119285527966 también falló en el inventario inicial; no solucionó el bloqueo. Rclone instalado: 1.60.1-DEV.
+
+En la ventana 14:38:20–14:39:05 UTC, Storage registró `storage.s3.object.list`, HTTP 544, código `DatabaseTimeout`, mensaje `The connection to the database timed out`, 5002 ms y contexto `PgPoolExecutor.beginTransaction`. PgBouncer registró `closing because: connect timeout`. Una consulta independiente de diagnóstico también falló por tiempo de conexión; otra posterior respondió y mostró 22 conexiones frente a máximo 60. Esto no acredita saturación, ni identifica por sí solo su causa. El estado del proyecto figura ACTIVE_HEALTHY y no invalida estos errores observados.
+
+**La activación de las dos funciones SQL sigue bloqueada.** La autorización del propietario está condicionada a verificar el respaldo reciente de BD y Storage. No se ejecutó ninguna migración, restauración, reinicio, cambio de límites ni escritura de negocio. No se reintenta el mismo fallo indefinidamente ni se marca la copia incompleta como válida. La siguiente intervención requiere aclarar la conexión Storage/PgBouncer con Supabase y repetir después la verificación completa.
 
 ## Puertas de salida antes de crecer
 
@@ -44,6 +54,6 @@ El workflow manual 39564598195 (21/10) falló en copiar/verificar con `notFound`
 
 ## Validación de esta entrega y reversión
 
-603 pruebas Node pasan. Chromium a 1440 y 390 px verifica cierre abrupto/reapertura con copia >6 MB, cuatro duplicados sin conexión, cambios remotos independientes, confirmación perdida y conflicto persistente; además caché por identidad, carga perezosa e impresión privada. Pruebas de cuota, duplicación y actualización se ejecutan por separado. PHP y SQL se verifican en CI. Ninguna de estas pruebas escribe en producción.
+La entrega del navegador pasó 603 pruebas Node; el circuito de respaldo actualizado pasa 612 pruebas Node, 100 casos SQL de equivalencia y 24 comprobaciones PHP en CI 39616907337 / job 119280280661. Chromium a 1440 y 390 px verifica cierre abrupto/reapertura con copia >6 MB, cuatro duplicados sin conexión, cambios remotos independientes, confirmación perdida y conflicto persistente; además caché por identidad, carga perezosa e impresión privada. Pruebas de cuota, duplicación y actualización se ejecutan por separado. PHP y SQL se verifican en CI. Ninguna de estas pruebas escribe en producción.
 
 Para revertir el navegador, revertir el commit de esta entrega y publicar mediante el workflow habitual; conservar las copias locales y el archivo de recuperación, sin purgar IndexedDB. La reversión SQL es separada y solo necesaria si se llegó a aplicar. No restaurar una base de datos completa para deshacer estas dos funciones.
