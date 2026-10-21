@@ -132,6 +132,30 @@ try:
    page.locator('#itName').fill('Nuevo sin etiqueta');page.locator('#itPrice').fill('0')
    page.locator('#modalBox').get_by_role('button',name='Guardar',exact=True).click()
    assert page.evaluate("state.projects[0].rooms[1].sections.length===2&&state.projects[0].rooms[1].sections[1].name==='General'&&state.projects[0].rooms[1].sections[1].items[0].price===0")
+   # The exact label editor also works with duplicated historical identifiers elsewhere.
+   page.evaluate("""()=>{
+     const p=state.projects[0],r=p.rooms[0],selected=r.sections.flatMap(s=>s.items).find(it=>it.id==='light-item');
+     r.sections[0].id='legacy-repeated-section';r.sections[1].id='legacy-repeated-section';
+     p.rooms[1].sections[0].items[0].id=selected.id;
+     p.rooms[2].id=p.rooms[3].id;
+     const source=r.sections.findIndex(s=>s.items.includes(selected)),index=r.sections[source].items.indexOf(selected);
+     p.pres=[{pages:[{els:[{t:'prod',rid:r.id,rsi:source,rii:index}]}]}];
+     p.moods=[{secs:[{items:[{prodRef:{rid:r.id,rsi:source,rii:index}}]}]}];
+     window.duplicateOther=JSON.stringify(p.rooms.slice(1));window.duplicateProduct=JSON.stringify(selected);
+     if(!ModernoSpec.diagnose(p).some(x=>x.blocking))throw Error('Missing duplicate fixture');
+     openRoom(9001,r.id);
+   }""")
+   room.get_by_role('button',name='Editar Lámpara ficticia',exact=True).click()
+   page.locator('#itLabel').fill('Etiqueta con duplicados')
+   page.locator('#modalBox').get_by_role('button',name='Guardar',exact=True).click()
+   expect(page.locator('#overlay')).not_to_have_class('overlay open')
+   expect(room.get_by_role('button',name='Filtrar etiqueta Etiqueta con duplicados',exact=True)).to_be_visible()
+   assert page.evaluate("""()=>{
+     const p=state.projects[0],it=p.rooms[0].sections.at(-1).items.at(-1);
+     return JSON.stringify(it)===duplicateProduct&&JSON.stringify(p.rooms.slice(1))===duplicateOther&&
+       ModernoSpec.resolve(p,p.pres[0].pages[0].els[0]).item===it&&ModernoSpec.resolve(p,p.moods[0].secs[0].items[0].prodRef).item===it;
+   }""")
+   if output:page.screenshot(path=str(output/f'shopping-labels-duplicate-ids-{width}.png'),full_page=True)
    assert not writes,writes;assert not errors,errors
    print(width,'PASS: one grid, labels from collapsed legacy groups, optional labels, filtering, cancel/create/edit, references/files preserved, export and guarded reorder; no remote writes')
    page.close()

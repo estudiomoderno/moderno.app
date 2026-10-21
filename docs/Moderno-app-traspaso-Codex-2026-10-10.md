@@ -257,3 +257,8 @@ Actualizar ahora reutiliza el archivo local verificado de copias anteriores cuan
 ## 2026-10-20 — Recuperación durante el guardado automático
 
 El guardado ordinario y Reintentar guardado reutilizan el archivo verificado de copias anteriores y comprueban por lectura el estado más reciente. Plazo, espera compartida y pausa entre intentos automáticos. El aviso concreta el fallo local; no oculta fallos remotos. Conserva las copias y su descarga. El propietario aclaró que no descargó el archivo: no asumir esa copia ni cerrar su pestaña. Pruebas con 53 copias ficticias y cuota real: [ACTUALIZAR-AHORA](ACTUALIZAR-AHORA.md).
+
+
+## 2026-10-21 — Etiquetas y duplicados históricos
+
+Guardar una etiqueta deja de invocar la preparación global de identificadores. Una operación acotada conserva IDs/src y actualiza solo las posiciones de vínculos afectadas, sin tocar duplicados ajenos. Los destinos realmente ambiguos siguen bloqueados sin cambios parciales. Pruebas, reproducción y reversión: [ETIQUETAS-IDENTIFICADORES](ETIQUETAS-IDENTIFICADORES.md).

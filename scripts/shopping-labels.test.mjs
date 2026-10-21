@@ -51,3 +51,11 @@ test('new manual products record addition time while editing preserves an existi
  const f=fixture(),date='2026-10-18T12:00:00Z';f.item.addedAt=date;f.c.saveItem(0,0);assert.equal(f.room.sections[0].items[0].addedAt,date);
  const start=Date.now();f.c.saveItem(0,-1);assert.ok(Date.parse(f.room.sections[0].items.at(-1).addedAt)>=start);
 });
+
+test('label edit is not blocked by repeated identifiers elsewhere in the project',()=>{
+ const f=fixture();f.room.sections[0].id='old-section';f.room.sections[1].id='old-section';
+ f.p.rooms.push({id:81,sections:[{id:'old-section',name:'Otro',items:[{id:123,name:'Otro producto',custom:'intacto'}]}]});
+ const other=JSON.stringify(f.p.rooms[1]);f.e.itLabel.value='Textiles';
+ assert.doesNotThrow(()=>f.c.saveItem(0,0));assert.equal(f.room.sections.at(-1).name,'Textiles');assert.equal(JSON.stringify(f.p.rooms[1]),other);
+ for(const ref of [f.p.pres[0].pages[0].els[0],f.p.moods[0].secs[0].items[0].prodRef])assert.equal(spec.resolve(f.p,ref).item.name,f.item.name);
+});
