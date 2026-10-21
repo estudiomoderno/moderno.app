@@ -24,6 +24,7 @@ internal static class Program
                 CoreWebView2WebResourceRequestSourceKinds.All);
             core.WebResourceRequested += (_, e) =>
             {
+                Console.WriteLine("Intercepted synthetic request: " + e.Request.Uri);
                 var body = $"<!doctype html><title>Synthetic v{version}</title><p id='version'>{version}</p>" +
                     "<a id='popup' href='/synthetic-module' target='_blank'>Módulo ficticio</a>";
                 e.Response = core.Environment.CreateWebResourceResponse(
@@ -64,7 +65,8 @@ internal static class Program
         window.SetNetworkForTest(true);
         Assert(!window.NoticeVisible, "Adapter recovery restores existing page");
         Assert(await core.ExecuteScriptAsync("document.body.dataset.draft") == "\"synthetic-unsaved\"", "Reconnect preserves unsaved DOM");
-        Assert(await core.ExecuteScriptAsync("document.title") == "\"Synthetic v1\"", "Internal popup document finished");
+        var popupTitle = await core.ExecuteScriptAsync("document.title");
+        Assert(popupTitle == "\"Synthetic v1\"", "Internal popup document finished: " + popupTitle);
         version = 2;
         await Task.Delay(200);
         var unchangedTitle = await core.ExecuteScriptAsync("document.title");
@@ -88,15 +90,23 @@ internal static class Program
     private static async Task NavigateAsync(Func<Task> action, bool includeCancellation = false)
     {
         var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        ulong? navigationId = null;
+        EventHandler<CoreWebView2NavigationStartingEventArgs> starting = (_, e) => navigationId = e.NavigationId;
         EventHandler<CoreWebView2NavigationCompletedEventArgs> handler = (_, e) =>
         {
             Console.WriteLine($"Synthetic navigation complete: status={e.HttpStatusCode}, error={e.WebErrorStatus}");
-            if (includeCancellation || e.WebErrorStatus != CoreWebView2WebErrorStatus.OperationCanceled)
+            if (e.NavigationId == navigationId &&
+                (includeCancellation || e.WebErrorStatus != CoreWebView2WebErrorStatus.OperationCanceled))
                 completed.TrySetResult();
         };
-        core!.NavigationCompleted += handler;
+        core!.NavigationStarting += starting;
+        core.NavigationCompleted += handler;
         try { await action(); await completed.Task.WaitAsync(TimeSpan.FromSeconds(15)); }
-        finally { core.NavigationCompleted -= handler; }
+        finally
+        {
+            core.NavigationStarting -= starting;
+            core.NavigationCompleted -= handler;
+        }
     }
 
     private static void Assert(bool value, string message)

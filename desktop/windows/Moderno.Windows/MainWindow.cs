@@ -188,7 +188,14 @@ internal sealed class MainWindow : Form
                 // Nunca abrir ventanas no verificadas dentro del contenedor.
                 e.Handled = true;
                 if (NavigationPolicy.IsInternal(e.Uri))
-                    core.Navigate(e.Uri);
+                {
+                    var destination = e.Uri;
+                    // Terminar NewWindowRequested antes de navegar el mismo controlador.
+                    BeginInvoke(new Action(() =>
+                    {
+                        if (!IsDisposed && !recreateBrowser) core.Navigate(destination);
+                    }));
+                }
                 else
                     HandleExternalNavigation(e.Uri);
             };
