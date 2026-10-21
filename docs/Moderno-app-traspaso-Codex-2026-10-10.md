@@ -276,3 +276,7 @@ El precio unitario queda justo encima de la etiqueta dentro de la imagen, con bo
 ## 2026-10-21 — Eliminaciones seguidas, corrección preparada
 
 El acuse de guardado idéntico conserva los objetos usados por el editor. Los cambios hechos durante un envío correcto se reprograman a 900 ms, conservando conflictos, permisos y reintento de errores a 15 s. Pruebas con subidas retenidas y tres eliminaciones seguidas, sin servicios reales. Publicación pendiente de las guardas del repositorio: [COMPRAS-ELIMINACIONES-SEGUIDAS](COMPRAS-ELIMINACIONES-SEGUIDAS.md).
+
+## 2026-10-21 — Apertura con copia pendiente grande, corrección preparada
+
+El usuario confirma descarga JSON y acceso en incógnito, con bloqueo del navegador normal. Se reproduce la cuota al duplicar una instantánea grande aunque las copias anteriores estén archivadas. Fallback conserva la instantánea directamente en el archivo local existente y verifica contenido/marcador/identidad antes de continuar la carga. No descarta copias ni escribe datos reales. Pruebas y recuperación: [APERTURA-COPIA-PENDIENTE-GRANDE](APERTURA-COPIA-PENDIENTE-GRANDE.md).

@@ -24,5 +24,22 @@
     }
   }
   async function resolve(storage,key,store){const raw=storage.getItem(key);if(raw!==marker(key))return raw;const copy=await store.read(key);if(typeof copy!=='string'||!copy)throw new Error('No se encuentra la copia archivada');return copy;}
-  root.ModernoPendingArchive={createStore,migrate,resolve,marker};
+  async function preserve(storage,currentKey,key,store,valid=()=>true){
+    const raw=storage.getItem(currentKey);
+    const unchanged=()=>valid()&&storage.getItem(currentKey)===raw&&storage.getItem(currentKey+'_dirty')==='1';
+    if(!raw||!unchanged())throw new Error('La copia pendiente ha cambiado');
+    if(storage.getItem(key)!==null||await store.read(key)!==undefined)throw new Error('La copia de destino ya existe');
+    if(!unchanged())throw new Error('La copia pendiente ha cambiado');
+    await store.write(key,raw);
+    if(await store.read(key)!==raw)throw new Error('No se pudo verificar la copia archivada');
+    if(!unchanged())throw new Error('La copia pendiente ha cambiado; se conserva el original');
+    if(storage.getItem(key)!==null)throw new Error('La copia de destino ha cambiado');
+    // Keep the original snapshot intact; only the small, resolvable pointer is new.
+    storage.setItem(key,marker(key));
+    if(storage.getItem(key)!==marker(key))throw new Error('No se pudo verificar el acceso a la copia');
+    if(!unchanged())throw new Error('La copia pendiente ha cambiado; se conserva el original');
+    storage.removeItem(currentKey+'_dirty');
+    return key;
+  }
+  root.ModernoPendingArchive={createStore,migrate,resolve,marker,preserve};
 })(typeof window!=='undefined'?window:globalThis);

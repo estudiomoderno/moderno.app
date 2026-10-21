@@ -1173,7 +1173,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/private-files.js?v=20260909"></script>
 <script src="/daily-work.js?v=36585"></script>
 <script src="/gestoria.js?v=20260909"></script>
-<script src="/pending-archive.js?v=20260909"></script>
+<script src="/pending-archive.js?v=36590"></script>
 <script src="/flow-recovery.js?v=331"></script>
 <script src="/router.js?v=3653"></script>
 <script src="/specifications.js?v=36587"></script>
@@ -11440,7 +11440,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.89";
+const MODERNO_VER="v3.65.90";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11851,6 +11851,11 @@ function cloudKeepPendingCopy(){
   if(localStorage.getItem(key)!==raw) throw new Error("No se pudo verificar la copia pendiente");
   localStorage.removeItem(LS_KEY+"_dirty");
 }
+async function cloudKeepPendingCopyArchived(attempt){
+  const owner=localCopyOwner();
+  const stamp=Date.now()+'.'+crypto.getRandomValues(new Uint32Array(2)).join('');
+  await ModernoPendingArchive.preserve(localStorage,LS_KEY,LS_KEY+'_pendiente_'+stamp,pendingArchiveStore(),()=>attempt===_accessAttempt&&owner===localCopyOwner());
+}
 function cloudPendingNotice(){
   try{
     const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(LS_KEY+"_pendiente_"))keys.push(k);}
@@ -11909,10 +11914,12 @@ async function cloudLoad(){
       try{cloudKeepPendingCopy();}catch(copyError){
         syncTag('saving','Conservando copias anteriores para liberar espacio…');
         await cloudArchivePendingCopies();
-        cloudKeepPendingCopy();
+        if(attempt!==_accessAttempt)throw new Error('La sesión ha cambiado');
+        try{cloudKeepPendingCopy();}catch(copyError){await cloudKeepPendingCopyArchived(attempt);}
       }
       // Las copias se consultan voluntariamente desde el estado de sincronización.
     }catch(e){throw new Error("No hay espacio para conservar la copia pendiente. Descarga los cambios desde el estado de sincronización y conserva esta pestaña abierta.");}
+    if(attempt!==_accessAttempt)return;
     const access=await cloudConnectionStep(sb.rpc("app_rol",{p_estudio:ESTUDIO_ID}),attempt);
     if(access.error||!['admin','colaborador','gestoria','contratista','cliente'].includes(access.data)){throw new Error("No se pudieron verificar tus permisos. Reintenta o consulta con el administrador del estudio.");}
     _accessRole=access.data;
