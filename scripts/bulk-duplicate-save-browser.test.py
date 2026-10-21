@@ -55,6 +55,9 @@ try:
    dirty_source=html.split('function cloudDirty(){',1)[1].split('const _cloudCount=',1)[0]
    page.evaluate("source=>{cloudFlush=new Function('sb','cloudReadBlock','return async function cloudFlush(){'+source)(fixtureClient,fixtureRead);}",flush_source)
    page.evaluate("source=>{cloudDirty=new Function('sb','return function cloudDirty(){'+source)(fixtureClient);}",dirty_source)
+   # This fixture deliberately exercises compatibility with the legacy batch RPC.
+   # The delta/metadata RPC path has its own isolated browser integration.
+   page.evaluate('cloudReadSaveVersions=undefined;cloudSaveBatch=undefined')
    # Trigger the actual native menu action repeatedly while the first upload is stalled.
    for i in range(4):
     page.evaluate('roomMenu(9001,8001)');page.get_by_role('button',name='Duplicar lista',exact=True).click()

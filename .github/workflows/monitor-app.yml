@@ -1,0 +1,30 @@
+name: Vigilar disponibilidad de la app
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ['Desplegar app.moderno.app']
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: monitor-app
+  cancel-in-progress: false
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Comprobar lógica sin peticiones reales
+        run: node --test scripts/check-app-health.test.mjs
+      - name: Comprobar app y lectura anónima rechazada
+        run: node scripts/check-app-health.mjs

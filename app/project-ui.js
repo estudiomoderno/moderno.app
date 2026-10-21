@@ -425,3 +425,15 @@ function shoppingRoomAddEnhance(){
   entry.component.update({onAdd:()=>{if(owner===shoppingProductIdentity()&&project===state.currentProject&&room===state.currentRoom)shoppingRoomAddProduct();}});
  }catch(e){recover();}
 }
+
+// Only DOM rendering is paged. State, totals, search, exports and cloud saving
+// always retain the complete room. Explicit button also works without observers.
+var shoppingRoomWindow={scope:'',count:60};
+function shoppingRoomVisibleRows(rows,scope){
+ if(shoppingRoomWindow.scope!==scope)shoppingRoomWindow={scope,count:60};
+ return rows.slice(0,shoppingRoomWindow.count);
+}
+function shoppingRoomLoadMore(){
+ if(state.view!=='estancia')return;
+ shoppingRoomWindow.count+=60;render();
+}
