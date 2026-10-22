@@ -1,4 +1,4 @@
-"""Finance tab press/scroll in the full app, with fictitious records and no external writes."""
+"""Work calendar presentation and actions in the full app, with fictitious records and no external writes."""
 from pathlib import Path
 import ast,os,socket,subprocess,time,urllib.request,sys
 from playwright.sync_api import sync_playwright,expect
@@ -37,6 +37,8 @@ try:
    root=page.locator('#work-calendar-reui .calendar-component-host');expect(root.locator('[data-slot=event-calendar]')).to_be_visible()
    expect(page.locator('.calendar-native')).to_be_hidden()
    panel=page.locator('#project-tab-panel')
+   frame=panel.evaluate("e=>{const s=getComputedStyle(e);return {border:s.borderTopWidth,padding:s.paddingTop,background:s.backgroundColor,shadow:s.boxShadow}}")
+   assert frame=={'border':'0px','padding':'0px','background':'rgba(0, 0, 0, 0)','shadow':'none'},frame
    assert 'Las fechas y el avance' not in panel.inner_text() and 'Exportar calendario' not in panel.inner_text() and 'Sin fechas todavía' not in panel.inner_text()
    expect(root.get_by_label('Filtrar por proyecto',exact=True)).to_have_count(0)
    expect(root.get_by_text('Fase de otro proyecto',exact=True)).to_have_count(0)

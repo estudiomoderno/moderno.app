@@ -415,3 +415,8 @@
 #project-diary-form textarea{resize:vertical;min-height:140px}
 #project-diary-form [role=alert]{font-size:13px;color:var(--ink-soft)}
 @media(max-width:600px){.project-diary-entry{padding:16px}.project-diary-photos{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* The work calendar already has its own frame; avoid nesting it in another card. */
+@media screen {
+ #project-tab-panel[aria-labelledby="project-tab-calobra"]{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;margin-top:0}
+}
