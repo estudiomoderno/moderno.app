@@ -397,7 +397,6 @@ function shoppingProductEditorAction(action,si,ii){
 }
 function shoppingProductDelete(si,ii){
  const current=shoppingProductEditorTarget(si,ii,true);if(!current)return;
- if(_accessRole==='colaborador'){toast('Un administrador debe eliminar este producto');return;}
  if(document.getElementById('shopping-product-delete'))return;
  const dialog=document.createElement('dialog');dialog.id='shopping-product-delete';dialog.className='shopping-product-delete-dialog';
  dialog.setAttribute('aria-labelledby','shopping-product-delete-title');dialog.setAttribute('aria-describedby','shopping-product-delete-description');
