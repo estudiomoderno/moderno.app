@@ -28,6 +28,12 @@ var ModernoDesktopShell=(()=>{
   const label=document.createElement('span');label.className='desktop-label';label.textContent=view==='agenda'?'Agenda':source.textContent.trim();b.append(label);
   b.setAttribute('aria-label',label.textContent);b.title=label.textContent;return b;
  }
+ function discoveryButton(){
+  const source=document.querySelector('aside.sidebar [data-discover="documentation"]');if(!source)return null;
+  const b=source.cloneNode(true);b.className='desktop-link desktop-icon-only';
+  for(const child of [...b.childNodes])if(child.nodeType===Node.TEXT_NODE)child.remove();
+  label(b,'Documentación');return b;
+ }
  function move(node,target){
   if(!node)return;
   const marker=document.createComment('desktop-shell: original position');node.before(marker);moved.push({node,marker});target.append(node);
@@ -82,9 +88,14 @@ var ModernoDesktopShell=(()=>{
    label(s,name);d.append(s);
    const menu=document.createElement('div');menu.className='desktop-menu';for(const view of views){const b=button(view);if(b)menu.append(b);}d.append(menu);primary.append(d);
   }
+  const discover=document.createElement('section');discover.className='desktop-discover';discover.setAttribute('aria-labelledby','desktop-discover-title');
+  const title=document.createElement('h2');title.id='desktop-discover-title';title.textContent='Discover';discover.append(title);
+  for(const view of ['plantillas','tutoriales']){const b=button(view,true);if(b)discover.append(b);}
+  const documentation=discoveryButton();if(documentation)discover.append(documentation);nav.append(discover);
   const toggle=action('',toggleFold);toggle.className='desktop-toggle desktop-icon-only';toggle.setAttribute('aria-controls','desktop-navigation');label(toggle,'Comprimir menú lateral');
   for(const name of ['collapse','expand']){const arrow=$('.sidebar .sb-arrow-'+name).cloneNode(true);arrow.setAttribute('class','desktop-arrow-'+name);toggle.append(arrow);}
   row.append(toggle);
+  const support=document.createElement('div');support.className='desktop-support';const supportButton=button('soporte',true);if(supportButton)support.append(supportButton);row.append(support);
   const actions=document.createElement('div');actions.className='desktop-actions';header.append(actions);
   const notifications=$('#nBadge')?.closest('button');move(notifications,actions);
   if(notifications){const label=notifications.getAttribute('aria-label');notifications.setAttribute('aria-label','Notificaciones');decorations.push(()=>{if(label===null)notifications.removeAttribute('aria-label');else notifications.setAttribute('aria-label',label);});}
