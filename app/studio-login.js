@@ -7,6 +7,7 @@
   it:{language:'Lingua di accesso',panel:'Accedi',email:'Indirizzo email',password:'Password',forgot:'Password dimenticata?',passwordHint:'La tua password',enter:'Accedi',newAccount:'Non hai ancora un account?',signup:'Crea account',or:'oppure continua con',google:'Continua con Google',apple:'Continua con Apple'},
   pt:{language:'Idioma de acesso',panel:'Iniciar sessão',email:'Endereço de email',password:'Palavra-passe',forgot:'Esqueceu-se da palavra-passe?',passwordHint:'A sua palavra-passe',enter:'Entrar',newAccount:'Ainda não tem conta?',signup:'Criar conta',or:'ou continuar com',google:'Continuar com Google',apple:'Continuar com Apple'}
  };
+ const accepts={es:'Aceptar invitación',en:'Accept invitation',fr:'Accepter l’invitation',it:'Accetta invito',pt:'Aceitar convite'};for(const key of Object.keys(copy))copy[key].accept=accepts[key];
  function boot(){
   const root=document.getElementById('loginScreen'),select=document.getElementById('login-language');if(!root||!select)return;
   const enterButton=document.getElementById('lg-mail'),arrow=enterButton.querySelector('svg')?.cloneNode(true);
@@ -18,8 +19,9 @@
    root.querySelectorAll('[data-login-copy]').forEach(el=>{const text=c[el.dataset.loginCopy];if(text&&el.textContent!==text)el.textContent=text;});
    const pass=document.getElementById('lgPass');if(pass.placeholder!==c.passwordHint)pass.placeholder=c.passwordHint;
    // Existing password handler replaces its button text after a failed attempt.
-   if(!enterButton.disabled&&!enterButton.querySelector('[data-login-copy=enter]')){const label=document.createElement('span');label.dataset.loginCopy='enter';label.textContent=c.enter;enterButton.replaceChildren(label);if(arrow)enterButton.append(arrow.cloneNode(true));}
+   if(!enterButton.disabled&&!enterButton.querySelector('[data-login-copy]')){const label=document.createElement('span');label.dataset.loginCopy='enter';label.textContent=c.enter;enterButton.replaceChildren(label);if(arrow)enterButton.append(arrow.cloneNode(true));}
   }
+  document.addEventListener('moderno:login-mode',paint);
   select.addEventListener('change',()=>{if(!Object.hasOwn(copy,select.value))return;language=select.value;try{localStorage.setItem(key,language);}catch(e){}paint();});
   new MutationObserver(paint).observe(document.getElementById('lg-mail'),{childList:true});paint();
  }
