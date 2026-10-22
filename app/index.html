@@ -1244,8 +1244,8 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/project-insights.js?v=36511"></script>
 <script src="/project-ui.js?v=36599"></script>
 <script src="/plan-annotations.js?v=36522"></script>
-<script src="/plan-editor.js?v=36522"></script>
-<script src="/project-documents.js?v=36573"></script>
+<script src="/plan-editor.js?v=365100"></script>
+<script src="/project-documents.js?v=365100"></script>
 <link rel="stylesheet" href="/plan-editor.css?v=36573">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
@@ -7257,7 +7257,7 @@ function vRoom(){
   </div>
   ${shoppingRoomTools(r)}
   <div class="shopping-product-grid shopping-flat-products ${shoppingRoomViewMode==='rows'?'shopping-products-rows':''}" ondragover="event.preventDefault()" ondrop="shoppingRoomDropEnd(event)">
-      ${visibleRows.map(({it,si,ii,label})=>`<article data-shopping-section="${si}" data-shopping-item="${ii}" class="shopping-product-card ${shoppingRoomViewMode==='rows'?'shopping-product-row':''}" draggable="${shoppingRoomSort==='manual'}" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
+      ${visibleRows.map(({it,si,ii,label})=>`<article data-cursor-product="${ModernoDaily.escape(window.ModernoProjectCursors?.productKey(it)||'')}" data-shopping-section="${si}" data-shopping-item="${ii}" class="shopping-product-card ${shoppingRoomViewMode==='rows'?'shopping-product-row':''}" draggable="${shoppingRoomSort==='manual'}" ondragstart="dragItem(event,${si},${ii});this.classList.add('dragging')" ondragend="this.classList.remove('dragging')" ondragover="event.preventDefault();this.classList.add('dropbefore')" ondragleave="this.classList.remove('dropbefore')" ondrop="dropItemRow(event,${si},${ii})">
         <div class="shopping-product-media">
          <button class="shopping-product-photo" aria-label="Ver imagen de ${ModernoDaily.escape(it.name)}" onclick="imgZoom(${si},${ii})">${it.img?`<img ${fileImageAttrs(it.img)} alt="${ModernoDaily.escape(it.name)}" loading="lazy">`:'<span>Sin imagen</span>'}</button>
          <button type="button" class="shopping-grip shopping-product-grip" aria-label="Mover ${ModernoDaily.escape(it.name)}" title="${shoppingRoomSort==='manual'?'Mover producto':'Elige Orden manual para mover productos'}" ${shoppingRoomSort==='manual'?'':'disabled'} onpointerdown="shoppingMoveStart(event,${si},${ii})" onkeydown="shoppingMoveKey(event,${si},${ii})">⠿</button>
@@ -11517,7 +11517,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.99";
+const MODERNO_VER="v3.65.100";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11997,15 +11997,32 @@ function cloudRealtimeChange(payload){
   cloudRealtimeChange.timer=setTimeout(flush,150);
 }
 /* Presencia: privada independiente de la sincronización de datos. */
-let teamPresence=null;
+let teamPresence=null,projectCursors=null;
+function projectCursorContext(){
+ if(document.querySelector('.overlay.open,dialog[open]:not(.project-plan-dialog)'))return null;
+ const project=state.projects.find(p=>p.id===state.currentProject&&!p.tpl);if(!project)return null;
+ const plan=document.querySelector('.project-plan-dialog[open]');
+ if(plan){
+  const editor=plan.querySelector('.plan-editor');
+  if(!plan.dataset.cursorFile||!editor?.dataset.cursorPage)return null;
+  return {root:plan,key:JSON.stringify([ESTUDIO_ID,project.id,'plan',plan.dataset.cursorFile,editor.dataset.cursorPage,editor.dataset.cursorRotation])};
+ }
+ if(!['proyecto','estancia'].includes(state.view))return null;
+ return {root:document.getElementById('view'),key:JSON.stringify([ESTUDIO_ID,project.id,state.view==='estancia'?'listas':state.projTab||'tareas',state.view==='estancia'?state.currentRoom:null,state.view==='estancia'?shoppingRoomViewMode:null,state.view==='proyecto'&&state.projTab==='obra'?state.obraPlanView||'lista':null])};
+}
 function presenceTrack(){
- // Presence is private and independent of document synchronization; no cursors.
+ // Presence and ephemeral cursors share one private channel, independent of document synchronization.
  if(!window.ModernoHeaderPresence||!sb)return;
+ if(!projectCursors&&window.ModernoProjectCursors)projectCursors=ModernoProjectCursors.create({
+  context:projectCursorContext,
+  allowed:()=>!_accessLoading&&!!state.sessionUser&&!!ESTUDIO_ID&&['admin','colaborador'].includes(_accessRole)&&canView('proyecto')&&!state.portalAnon&&!document.body.classList.contains('portalmode')&&teamPresence?.snapshot().status==='online',
+  send:payload=>teamPresence?.sendCursor(payload)===true});
  if(!teamPresence)teamPresence=ModernoHeaderPresence.create({client:sb,
   identity:()=>({study:ESTUDIO_ID,key:state.sessionUser?.mail||'',name:state.sessionUser?.name,avatar:state.sessionUser?.avatar}),
   allowed:()=>!_accessLoading&&!!state.sessionUser&&(!window.ModernoHeaderActions||ModernoHeaderActions.isEnabled())&&['admin','colaborador'].includes(_accessRole)&&!document.body.classList.contains('portalmode')&&!['portalcli','portalobra'].includes(state.view),
-  onChange:()=>document.dispatchEvent(new Event('moderno:team-presence'))});
- teamPresence.refresh().catch(()=>{});
+  onCursor:(payload,person)=>projectCursors?.receive(payload,person),
+  onChange:snapshot=>{projectCursors?.sync(snapshot);document.dispatchEvent(new Event('moderno:team-presence'));}});
+ teamPresence.refresh().catch(()=>{});projectCursors?.refresh();
 }
 function cloudRealtimeStart(){
   if(!sb || !ESTUDIO_ID) return;
@@ -13653,7 +13670,9 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=36574">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=36574">
-<script src="/header-presence.js?v=36546"></script>
+<script src="/header-presence.js?v=365100"></script>
+<link rel="stylesheet" href="/project-cursors.css?v=365100">
+<script src="/project-cursors.js?v=365100"></script>
 <script src="/desktop-shell.js?v=36574"></script>
 <link rel="stylesheet" href="/brand/project-workspace.css?v=36574">
 <script src="/project-workspace.js?v=36554"></script>

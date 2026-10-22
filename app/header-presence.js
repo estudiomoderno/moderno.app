@@ -1,4 +1,4 @@
-/* Ephemeral, private team presence. No documents, email, routes or pointer data. */
+/* Private ephemeral presence; optional project pointers share the same channel. */
 (function(root){
  'use strict';
  const photo=value=>typeof value==='string'&&value.length<=300000&&(/^https:\/\/[^\s]+$/i.test(value)||/^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(value))?value:'';
@@ -8,7 +8,7 @@
   for(const entries of Object.values(state||{}))if(Array.isArray(entries))for(const entry of entries){const m=person(entry);if(m&&!found.has(m.user))found.set(m.user,m);}
   return [...found.values()];
  }
- function create({client,identity,allowed,onChange,document:doc=root.document}){
+ function create({client,identity,allowed,onChange,onCursor=()=>{},document:doc=root.document}){
   let channel=null,generation=0,owner='',studyId='',identityKey='',user='',subscribed=false,tracked=false,synced=false,status='idle',members=[],lastPayload='',tracking=0;
   const session=root.crypto.randomUUID();
   const snapshot=()=>({status,study:studyId,key:identityKey,members:status==='online'?members.map(m=>({...m})):[]});
@@ -47,8 +47,14 @@
     if(gen!==generation)return;
     if(error||!data?.session?.user?.id||!allowed()){stop();return;}
     user=data.session.user.id;
-    channel=client.channel('equipo:'+next.study,{config:{private:true,presence:{key:session}}});
+    channel=client.channel('equipo:'+next.study,{config:{private:true,presence:{key:session},broadcast:{self:false}}});
     channel.on('presence',{event:'sync'},()=>{if(gen!==generation)return;synced=true;draw();});
+    channel.on('broadcast',{event:'project-cursor'},({payload})=>{
+     if(gen!==generation||!valid()||!subscribed||!tracked||!synced||!payload||payload.user===user||typeof payload.session!=='string'||payload.session.length>64)return;
+     for(const entries of Object.values(channel.presenceState()||{}))if(Array.isArray(entries))for(const entry of entries){
+      if(entry?.session===payload.session&&entry?.user===payload.user){const peer=person(entry);if(peer)onCursor(payload,peer);return;}
+     }
+    });
     channel.subscribe(value=>{
      if(gen!==generation)return;
      subscribed=value==='SUBSCRIBED';tracked=false;lastPayload='';members=[];
@@ -63,7 +69,16 @@
    else refresh();
   }
   doc.addEventListener('visibilitychange',visibility);root.addEventListener('pagehide',stop);root.addEventListener('pageshow',refresh);
-  return {refresh,stop,snapshot,destroy(){stop();doc.removeEventListener('visibilitychange',visibility);root.removeEventListener('pagehide',stop);root.removeEventListener('pageshow',refresh);}};
+  function sendCursor(payload){
+   if(!valid()||!channel||!subscribed||!tracked||!synced||status!=='online'||!payload||typeof payload.context!=='string'||!/^[a-f0-9]{64}$/.test(payload.context))return false;
+   const safe={context:payload.context};
+   for(const k of ['hidden','anchor','path','tag','signature','x','y'])if(Object.prototype.hasOwnProperty.call(payload,k))safe[k]=payload[k];
+   if(JSON.stringify(safe).length>1500)return false;
+   // Force websocket transport: a pointer must never fall back to HTTP writes.
+   if(channel.state!=='joined')return false;
+   try{Promise.resolve(channel.send({type:'broadcast',event:'project-cursor',payload:{...safe,user,session}})).catch(()=>{});return true;}catch{return false;}
+  }
+  return {refresh,stop,snapshot,sendCursor,destroy(){stop();doc.removeEventListener('visibilitychange',visibility);root.removeEventListener('pagehide',stop);root.removeEventListener('pageshow',refresh);}};
  }
  const api={create,people,photo};root.ModernoHeaderPresence=api;
  if(typeof module!=='undefined')module.exports=api;

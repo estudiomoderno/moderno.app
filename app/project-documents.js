@@ -72,6 +72,8 @@ async function projectPlanOpen(pid,index){
     }finally{closing=false;}
   }
   const timer=setInterval(()=>{if(!allowed())dismiss(true);},250);
+  // Opaque file scope: URLs, names and document bytes never enter a broadcast.
+  crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([pid,String(file.id??index),source]))).then(hash=>{if(!closed){dialog.dataset.cursorFile=Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');document.dispatchEvent(new Event('moderno:cursor-context'));}}).catch(()=>{});
   projectPlanDialog={dismiss};close.onclick=()=>dismiss();dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
   try{
     const resolved=await fileResolveForView(file);
