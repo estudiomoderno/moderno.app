@@ -3923,7 +3923,6 @@ function obraCalHtml(p){
   const cells=dates.map((k,i)=>{ const d=new Date(k+"T00:00:00"); const r=Math.floor(i/7), c=i%7;
     return `<div class="cd ${d.getMonth()!==base.getMonth()?"out":""}" data-d="${k}" style="grid-column:${c+1};grid-row:${r+1}" ondragover="if(_calDrag){event.preventDefault();this.classList.add('dragover')}" ondragleave="this.classList.remove('dragover')" ondrop="calSpanDrop(event,'${k}')"><span class="dn ${k===iso(today)?"today":""}">${d.getDate()}</span>${lanes[r]?`<div style="height:${lanes[r]*20-2}px;flex:none"></div>`:""}</div>`; });
   const monName=base.toLocaleDateString("es-ES",{month:"long",year:"numeric"});
-  const sinFecha=(p.obraF||[]).filter(f=>!(f.start&&f.end));
   return `<div style="display:flex;align-items:center;gap:6px;margin:8px 0 8px">
       <button class="btn btn-ghost" style="padding:4px 9px" onclick="event.stopPropagation();state.obraCalOff=(state.obraCalOff||0)-1;render()">‹</button>
       <b style="font-size:13px;text-transform:capitalize;min-width:140px;text-align:center">${monName}</b>
@@ -3932,7 +3931,7 @@ function obraCalHtml(p){
       <span style="margin-left:auto;font-size:11px;color:var(--ink-faint)">Arrastra una barra para moverla; tira de su borde derecho para alargarla o acortarla</span>
     </div>
     <div class="calfull obra-cal"><div class="wk">${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(x=>`<span>${x}</span>`).join("")}</div><div class="cg">${cells.join("")}${bars.join("")}</div></div>
-    ${sinFecha.length?`<p style="font-size:11.5px;color:var(--ink-faint);margin:8px 0 0">Sin fechas todavía: ${sinFecha.map(f=>`<a href="#" style="color:inherit" onclick="event.preventDefault();event.stopPropagation();obraPlanModal(${p.id},${p.obraF.indexOf(f)})">${f.name}</a>`).join(" · ")} — pulsa para ponérselas.</p>`:""}`;
+`;
 }
 /* Calendario mensual de solo lectura para el portal del cliente: fases del proyecto y de la obra como barras */
 function portalCalHtml(p){
@@ -6062,7 +6061,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
   </div>
   `}
   ${tb!=="diario"?"":projectDiaryHtml(p)}
-  ${tb!=="calobra"?"":`<section class="project-work-calendar"><h2 class="sec" style="margin-top:0">Calendario de obra</h2><p>Las fechas y el avance de las fases de obra.</p><button class="btn btn-ghost" onclick="obraIcs(${p.id})">${ico('bajar')} Exportar calendario (.ics)</button><div class="project-calendar-scroll">${obraCalHtml(p)}</div></section>`}
+  ${tb!=="calobra"?"":`<section class="project-work-calendar"><h2 class="sec" style="margin-top:0">Calendario de obra</h2><div class="calendar-layout"><div id="work-calendar-reui"></div><div class="calendar-native project-calendar-scroll">${obraCalHtml(p)}</div></div></section>`}
   ${!['archivos','planos'].includes(tb)?"":`
   <div style="max-width:820px">
       ${ModernoProjectDocuments.heading(tb)}
@@ -11546,7 +11545,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.111";
+const MODERNO_VER="v3.65.112";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13713,13 +13712,13 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36554">
 <link rel="stylesheet" href="/brand/reui/font.css?v=36570">
-<script src="/profile-component.js?v=365110"></script>
+<script src="/profile-component.js?v=365112"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=36554"></script>
 <link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=365110">
 <script src="/page-breadcrumbs.js?v=36559"></script>
-<link rel="stylesheet" href="/brand/calendar-ui.css?v=36558">
-<script src="/calendar-ui.js?v=36570"></script>
+<link rel="stylesheet" href="/brand/calendar-ui.css?v=365112">
+<script src="/calendar-ui.js?v=365112"></script>
 <script>
 ModernoAppLoading.setProbe(()=>(_localResumeFailed||!_localResumePending&&!document.documentElement.classList.contains('portalboot'))&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
 if(!sb)ModernoAppLoading.sessionReady();

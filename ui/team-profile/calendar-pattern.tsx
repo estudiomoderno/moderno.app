@@ -26,7 +26,7 @@ export function CalendarPattern(props:any){
  const patch=(key:string,value:any)=>setSettings(s=>({...s,[key]:value}));
  const toggle=(key:keyof typeof defaults,label:string)=><Toggle key={key} id={'ec-'+key} label={label} checked={settings[key]} onChange={(v:boolean)=>patch(key,v)}/>;
  return <CalendarPortal.Provider value={props.container}><div className="calendar-pattern" dir="ltr">
-  <div className="mb-3 flex flex-wrap items-center gap-2">
+  {!props.work&&<div className="mb-3 flex flex-wrap items-center gap-2">
    <Label htmlFor="calendar-project-filter" className="sr-only">Filtrar por proyecto</Label>
    <input id="calendar-project-filter" className="h-8 w-full max-w-xs rounded-lg border bg-background px-2.5 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50" list="calendar-project-options" placeholder="Filtrar por proyecto" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{if(e.key==='Enter')props.onFilter(query);if(e.key==='Escape'){setQuery('');props.onFilter('');}}}/>
    <datalist id="calendar-project-options">{props.projects.map((p:any)=><option key={p.id} value={p.label}/>)}</datalist>
@@ -35,9 +35,9 @@ export function CalendarPattern(props:any){
    {props.projectLabel&&<Button size="icon-sm" variant="ghost" aria-label="Quitar filtro de proyecto" onClick={()=>{setQuery('');props.onFilter('');}}><XIcon aria-hidden="true"/></Button>}
    <Button size="sm" variant={props.showTasks?'secondary':'outline'} aria-pressed={props.showTasks} onClick={()=>props.onToggle('showTasks')}>Tareas</Button>
    <Button size="sm" variant={props.showObra?'secondary':'outline'} aria-pressed={props.showObra} onClick={()=>props.onToggle('showObra')}>Obra</Button>
-  </div>
+  </div>}
   <Card className="w-full py-0"><CardContent className="p-0">
-   <EventCalendar events={props.events} view={props.view} date={props.date} views={['month','week','day','agenda']} onViewChange={props.onView} onDateChange={props.onDate} locale={es} i18n={i18n} weekStartsOn={1} weekendDays={props.weekendDays} timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone} viewSettings={{weekends,weekNumbers:settings.weekNumbers,nowIndicator:settings.nowIndicator,offDays:settings.offDays}} interactions={{drag:settings.drag,resize:settings.resize,selectSlot:settings.selectSlot}} dayStartHour={settings.dayStartHour} dayEndHour={settings.dayEndHour} interval={settings.interval} snapDuration={settings.snapDuration} eventTooltip={settings.eventTooltip} showDayAddButton={settings.showDayAddButton} offDays={{weekendDays:props.weekendDays}} onEventClick={props.onEventClick} onEventUpdate={props.onEventUpdate} canDropEvent={props.canDropEvent} onSlotClick={props.onSlotClick} onSelectSlot={props.onSelectSlot} className="w-full">
+   <EventCalendar events={props.events} view={props.view} date={props.date} views={props.work?['month','week','day','days','agenda']:['month','week','day','agenda']} onViewChange={props.onView} onDateChange={props.onDate} locale={es} i18n={i18n} weekStartsOn={1} weekendDays={props.weekendDays} timeZone={Intl.DateTimeFormat().resolvedOptions().timeZone} viewSettings={{weekends,weekNumbers:settings.weekNumbers,nowIndicator:settings.nowIndicator,offDays:settings.offDays}} interactions={{drag:settings.drag,resize:settings.resize,selectSlot:settings.selectSlot}} dayStartHour={settings.dayStartHour} dayEndHour={settings.dayEndHour} interval={settings.interval} snapDuration={settings.snapDuration} eventTooltip={settings.eventTooltip} showDayAddButton={settings.showDayAddButton} offDays={{weekendDays:props.weekendDays}} onEventClick={props.onEventClick} onEventUpdate={props.onEventUpdate} canDropEvent={props.canDropEvent} onSlotClick={props.onSlotClick} onSelectSlot={props.onSelectSlot} className="w-full">
     <div className="calendar-nav-row flex flex-wrap items-center gap-2 pe-2">
      <EventCalendarNav className="min-w-0 flex-1"/>
      <EventCalendarToolbar>
@@ -48,7 +48,7 @@ export function CalendarPattern(props:any){
         <TabsContent value="behavior" className="flex flex-col gap-3">{toggle('drag','Arrastrar fases para mover')}{toggle('resize','Arrastrar para cambiar duración')}{toggle('selectSlot','Seleccionar para añadir')}{toggle('eventTooltip','Información al pasar el ratón')}</TabsContent>
        </Tabs><Button variant="outline" size="sm" className="mt-4 w-full" onClick={()=>{setSettings(defaults);setWeekends(props.showWeekends);}}>Restablecer</Button>
       </PopoverContent></Popover>
-      <Button size="sm" onClick={props.onNew}><PlusIcon className="size-4" aria-hidden="true"/>Nuevo evento</Button>
+      <Button size="sm" onClick={props.onNew}><PlusIcon className="size-4" aria-hidden="true"/>{props.work?'Añadir fase':'Nuevo evento'}</Button>
      </EventCalendarToolbar>
     </div><EventCalendarContent/>
    </EventCalendar>
