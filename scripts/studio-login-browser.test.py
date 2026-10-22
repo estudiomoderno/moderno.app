@@ -39,7 +39,11 @@ try:
    page.route('**/*',route);page.goto(origin,wait_until='networkidle')
    screen=page.locator('#loginScreen');expect(screen).to_be_visible()
    page.wait_for_function("!document.getElementById('appLoading')||getComputedStyle(document.getElementById('appLoading')).display==='none'",timeout=15000)
-   expect(page.get_by_role('heading',name='Entra en tu estudio',exact=True)).to_be_visible()
+   expect(page.get_by_role('region',name='Inicio de sesión',exact=True)).to_be_visible()
+   expect(page.locator('.studio-login-scene-logo,.studio-login-story,.studio-login-heading')).to_have_count(0)
+   logo=page.locator('.studio-login-wordmark').bounding_box();field=page.locator('#lgEmail').bounding_box()
+   assert abs(logo['x']+logo['width']/2-field['x']-field['width']/2)<1,(logo,field)
+   assert logo['y']+logo['height']<field['y']
    assert page.locator('#lg-apple').is_hidden(), 'Unconfigured Apple must remain hidden'
    assert page.locator('#lgEmail').get_attribute('autocomplete')=='username'
    assert page.locator('#lgPass').get_attribute('autocomplete')=='current-password'

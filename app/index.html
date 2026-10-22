@@ -996,7 +996,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3568">
 <link rel="stylesheet" href="/shopping-cards.css?v=365102">
-<link rel="stylesheet" href="/studio-login.css?v=365103">
+<link rel="stylesheet" href="/studio-login.css?v=365104">
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
 <script src="/client-portal-site.js?v=36578"></script>
@@ -1209,14 +1209,10 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <div id="loginScreen" class="studio-login" style="display:grid">
   <aside class="studio-login-scene" aria-label="Inspiración de interiorismo">
     <img class="studio-login-photo" src="/brand/login-interior.webp?v=365103" alt="" width="1086" height="1448" decoding="async">
-    <div class="studio-login-scene-shade"></div>
-    <img class="studio-login-scene-logo" src="/brand/modernoapp-blanco.svg?v=351" alt="Moderno.app" width="184" height="31">
-    <div class="studio-login-story"><span>EL ESPACIO PARA TU ESTUDIO</span><p>Del primer plano<br>al último detalle.</p><small>Tus ideas, tus proyectos y tu equipo.<br>Todo empieza aquí.</small></div>
   </aside>
-  <section class="studio-login-panel" aria-labelledby="studio-login-title">
+  <section class="studio-login-panel" aria-label="Inicio de sesión">
     <div class="studio-login-content">
       <img class="studio-login-wordmark" src="/brand/modernoapp-grafito.svg?v=351" alt="Moderno.app" width="166" height="28">
-      <header class="studio-login-heading"><h1 id="studio-login-title">Entra en tu estudio</h1><p>Un lugar para dar forma a tus proyectos.</p></header>
       <form id="lgAlt" class="studio-login-form" onsubmit="event.preventDefault();sbMailLogin()">
         <div class="studio-login-field"><label for="lgEmail">Correo electrónico</label><input id="lgEmail" name="email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="tu@estudio.com" required></div>
         <div class="studio-login-field"><div class="studio-login-password-label"><label for="lgPass">Contraseña</label><button type="button" class="studio-login-text-button" onclick="sbMailReset()">¿La has olvidado?</button></div><input id="lgPass" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" required></div>
@@ -11527,7 +11523,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.103";
+const MODERNO_VER="v3.65.104";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
