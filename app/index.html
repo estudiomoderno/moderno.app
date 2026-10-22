@@ -1257,10 +1257,10 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=365107"></script>
+<script src="/project-ui.js?v=365111"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=365100"></script>
-<script src="/project-documents.js?v=365100"></script>
+<script src="/project-documents.js?v=365111"></script>
 <link rel="stylesheet" href="/plan-editor.css?v=36573">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
@@ -4418,7 +4418,7 @@ function projTab(t){
  state.projTab=t;
  if(state.view==='estancia'){state.roomSearch='';state.rf=null;go('proyecto',state.currentProject);}else render();
  window.scrollTo(0,0);const m=document.querySelector('.main');if(m)m.scrollTop=0;
- const order=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','cliente','utilidades'];
+ const order=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','cliente','utilidades'];
  const direction=order.indexOf(t)>order.indexOf(previous)?1:-1;
  const tabs=document.querySelector('.project-tabs');
  const active=tabs?.querySelector('[aria-selected="true"]');
@@ -5976,40 +5976,11 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
         <span style="display:inline-flex;gap:5px">${resumen}</span>
         ${open?`<span style="color:var(--ink-faint);font-size:12px">Cada fase con su inicio, su fin y su avance — los retrasos saltan a la vista para avisar a tiempo a cliente y empresas.</span>`:`<span style="color:var(--ink-faint);font-size:11px;margin-left:auto">Desplegar cronograma</span>`}
         ${open&&todayPct!==null?`<span style="margin-left:auto;font-size:11px;color:var(--ink-soft);display:inline-flex;align-items:center;gap:5px"><span style="width:2px;height:12px;background:var(--ink);opacity:.55;display:inline-block"></span> Hoy</span>`:""}
-        ${open?`<span class="opt-pills" style="margin:0" onclick="event.stopPropagation()"><button class="${(state.obraPlanView||"lista")==="lista"?"on":""}" onclick="state.obraPlanView='lista';render()">Lista</button><button class="${state.obraPlanView==="cal"?"on":""}" onclick="state.obraPlanView='cal';render()">Calendario</button></span>`:""}
         ${open?`<button class="btn btn-ghost" style="${todayPct!==null?"":"margin-left:auto"}" onclick="event.stopPropagation();obraPlanAuto(${p.id})">Repartir fechas automáticamente</button>`:""}
       </div>
-      ${open?`<div style="margin-top:6px">${p.obraF.length?(state.obraPlanView==="cal"?obraCalHtml(p):rows):`<div class="empty">Crea fases de obra abajo y aparecerán aquí para planificarlas.</div>`}</div>`:""}
+      ${open?`<div style="margin-top:6px">${p.obraF.length?rows:`<div class="empty">Crea fases de obra abajo y aparecerán aquí para planificarlas.</div>`}</div>`:""}
       </div>`;
     })()}
-    ${(function(){
-      state.planosOpen = state.planosOpen || {};
-      const open = !!state.planosOpen[p.id];
-      const pls = p.obraPlanos || [];
-      return `<div style="background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer" onclick="obraPlanosToggle(${p.id})" title="${open?"Contraer":"Desplegar"} los planos">
-        <button class="collbtn" style="flex:none">${open?"\u25be":"\u25b8"}</button>
-        ${ico("planodef")} <b style="font-size:15px">Planos definitivos</b>
-        ${pls.length?`<span class="chip cobr" style="font-size:10px">${pls.length} ${pls.length===1?"plano":"planos"}</span>`:`<span class="chip neutral" style="font-size:10px">Sin planos a\u00fan</span>`}
-        ${open?`<span style="color:var(--ink-faint);font-size:12px">Los planos cerrados y visados de la obra \u2014 la versi\u00f3n que va al tajo, siempre a mano.</span>
-        <button class="btn btn-gold" style="margin-left:auto" onclick="event.stopPropagation();obraPlanoPick(${p.id})">${ico("subir")} Subir plano</button>`
-        :`<span style="color:var(--ink-faint);font-size:11px;margin-left:auto">Desplegar planos</span>`}
-      </div>
-      ${open?`<div style="margin-top:10px">${pls.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px">
-        ${pls.map((fl,i)=>`<div style="background:var(--card);border-radius:12px;overflow:hidden">
-          <div style="height:110px;display:grid;place-items:center;background:var(--panel);cursor:pointer" onclick="obraPlanoView(${p.id},${i})">
-            ${fl.type&&fl.type.startsWith("image/")?`<img ${fileImageAttrs(fl.data)} style="width:100%;height:110px;object-fit:cover">`:`<span style="font-size:34px">\ud83d\udcd0</span>`}
-          </div>
-          <div style="padding:8px 10px;display:flex;align-items:center;gap:6px">
-            <b style="font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${fl.name}">${fl.name}</b>
-            <button class="collbtn" title="Ver plano" onclick="obraPlanoView(${p.id},${i})">\ud83d\udc41</button>
-            <button class="collbtn" title="Quitar plano" onclick="obraPlanoDel(${p.id},${i})">\u2715</button>
-          </div>
-        </div>`).join("")}
-      </div>`:`<div class="empty">A\u00fan no hay planos definitivos \u2014 sube los PDF o im\u00e1genes de la versi\u00f3n final para tenerlos a pie de obra.</div>`}</div>`:""}
-      </div>`;
-    })()}
-    <input type="file" id="obraPlanoInp" accept="application/pdf,image/*" multiple style="display:none" onchange="obraPlanoLoad(this)">
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;align-items:start">
     ${p.obraF.map((f,fi)=>{ const d=f.items.filter(x=>x.done).length, full=f.items.length&&d===f.items.length;
       return `<div class="widget" style="${full?"opacity:.72":""}" ondragover="event.preventDefault()" ondrop="obraCardDrop(event,${p.id},${fi})">
@@ -6090,13 +6061,45 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
     <div class="entry" style="background:var(--ink);color:#fff"><b>Total para el cliente</b><span class="amt" style="color:#fff">${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</span></div>
   </div>
   `}
+  ${tb!=="diario"?"":projectDiaryHtml(p)}
+  ${tb!=="calobra"?"":`<section class="project-work-calendar"><h2 class="sec" style="margin-top:0">Calendario de obra</h2><p>Las fechas y el avance de las fases de obra.</p><button class="btn btn-ghost" onclick="obraIcs(${p.id})">${ico('bajar')} Exportar calendario (.ics)</button><div class="project-calendar-scroll">${obraCalHtml(p)}</div></section>`}
   ${!['archivos','planos'].includes(tb)?"":`
   <div style="max-width:820px">
       ${ModernoProjectDocuments.heading(tb)}
+      <p class="project-files-help">${tb==='planos'?'Planos del proyecto. Los documentos generales tienen su propia sección.':'Contratos, informes y otros documentos. Puedes mover un archivo a Planos desde su tarjeta.'}</p>
       <div class="project-files-grid">
-        ${(p.files||[]).map((f,i)=>({f,i})).filter(({f})=>tb!=='planos'||ModernoProjectDocuments.type(f)).map(({f,i})=>ModernoProjectDocuments.card(p,i,{available:fileOk(f),clientVisible:fileCli(f)})).join("")}
-        ${ModernoProjectDocuments.uploadCard(p)}
+        ${(p.files||[]).map((f,i)=>({f,i})).filter(({f})=>ModernoProjectDocuments.category(f)===tb).map(({f,i})=>ModernoProjectDocuments.card(p,i,{available:fileOk(f),clientVisible:fileCli(f)})).join("")}
+        ${ModernoProjectDocuments.uploadCard(p,tb)}
       </div>
+      ${tb!=="planos"?"":`    ${(function(){
+      state.planosOpen = state.planosOpen || {};
+      const open = !!state.planosOpen[p.id];
+      const pls = p.obraPlanos || [];
+      return `<div style="background:var(--white);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;cursor:pointer" onclick="obraPlanosToggle(${p.id})" title="${open?"Contraer":"Desplegar"} los planos">
+        <button class="collbtn" style="flex:none">${open?"\u25be":"\u25b8"}</button>
+        ${ico("planodef")} <b style="font-size:15px">Planos definitivos</b>
+        ${pls.length?`<span class="chip cobr" style="font-size:10px">${pls.length} ${pls.length===1?"plano":"planos"}</span>`:`<span class="chip neutral" style="font-size:10px">Sin planos a\u00fan</span>`}
+        ${open?`<span style="color:var(--ink-faint);font-size:12px">Los planos cerrados y visados de la obra \u2014 la versi\u00f3n que va al tajo, siempre a mano.</span>
+        <button class="btn btn-gold" style="margin-left:auto" onclick="event.stopPropagation();obraPlanoPick(${p.id})">${ico("subir")} Subir plano</button>`
+        :`<span style="color:var(--ink-faint);font-size:11px;margin-left:auto">Desplegar planos</span>`}
+      </div>
+      ${open?`<div style="margin-top:10px">${pls.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px">
+        ${pls.map((fl,i)=>`<div style="background:var(--card);border-radius:12px;overflow:hidden">
+          <div style="height:110px;display:grid;place-items:center;background:var(--panel);cursor:pointer" onclick="obraPlanoView(${p.id},${i})">
+            ${fl.type&&fl.type.startsWith("image/")?`<img ${fileImageAttrs(fl.data)} style="width:100%;height:110px;object-fit:cover">`:`<span style="font-size:34px">\ud83d\udcd0</span>`}
+          </div>
+          <div style="padding:8px 10px;display:flex;align-items:center;gap:6px">
+            <b style="font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${fl.name}">${fl.name}</b>
+            <button class="collbtn" title="Ver plano" onclick="obraPlanoView(${p.id},${i})">\ud83d\udc41</button>
+            <button class="collbtn" title="Quitar plano" onclick="obraPlanoDel(${p.id},${i})">\u2715</button>
+          </div>
+        </div>`).join("")}
+      </div>`:`<div class="empty">A\u00fan no hay planos definitivos \u2014 sube los PDF o im\u00e1genes de la versi\u00f3n final para tenerlos a pie de obra.</div>`}</div>`:""}
+      </div>`;
+    })()}
+    <input type="file" id="obraPlanoInp" accept="application/pdf,image/*" multiple style="display:none" onchange="obraPlanoLoad(this)">
+`}
 
 
   </div>`}
@@ -9643,14 +9646,21 @@ function doSign(pid,i){
   closeModal(); render(); fileView(pid,i,true);
   toast("✓ Documento firmado (simulado — en la app real, firma electrónica con validez legal y copia sellada para ambos)");
 }
-function addFiles(pid,files){
-  const p = state.projects.find(x=>x.id===pid);
-  p.files = p.files || [];
-  const arr=[...files]; if(!arr.length) return;
-  let done=0;
-  arr.forEach(f=>{ fileUp(f).then(u=>{ if(u==null){ toast("⚠ No se pudo leer «"+f.name+"»"); return; } p.files.push({name:f.name, type:f.type||"", data:u, when:hoyEs()}); done++;
-    if(done===arr.length){ persistSoon(); render(); toast("✓ "+done+(done===1?" archivo subido":" archivos subidos")+" — visible"+(done===1?"":"s")+" en el portal del cliente"); } }); });
-  toast("Subiendo "+arr.length+" archivo"+(arr.length===1?"":"s")+"…");
+async function addFiles(pid,files,section='archivos'){
+  const project=state.projects.find(x=>x.id===pid),identity=fileViewIdentity();
+  if(!project||_accessLoading||!['admin','miembro','colaborador'].includes(_accessRole)||state.portalAnon)return;
+  const category=section==='planos'?'plano':'documento',arr=Array.from(files||[]);if(!arr.length)return;
+  toast('Subiendo archivos…');let done=0;
+  for(const f of arr){
+    try{
+      const data=await fileUp(f);
+      if(identity!==fileViewIdentity()||!state.projects.includes(project))return;
+      if(!data)continue;
+      project.files=project.files||[];
+      project.files.push({id:crypto.randomUUID(),name:f.name,type:f.type||'',data,when:hoyEs(),cat:category});done++;persistSoon();
+    }catch{toast('No se pudo subir «'+f.name+'»');}
+  }
+  if(identity===fileViewIdentity()){render();toast(done+' de '+arr.length+' archivos preparados; consulta el estado de guardado.');}
 }
 /* Visor de archivo de proyecto para los portales (sin borrar ni firmar): imagen, PDF o descarga */
 async function portalProjFileView(pid,i){
@@ -11536,7 +11546,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.110";
+const MODERNO_VER="v3.65.111";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -12027,7 +12037,7 @@ function projectCursorContext(){
   return {root:plan,key:JSON.stringify([ESTUDIO_ID,project.id,'plan',plan.dataset.cursorFile,editor.dataset.cursorPage,editor.dataset.cursorRotation])};
  }
  if(!['proyecto','estancia'].includes(state.view))return null;
- return {root:document.getElementById('view'),key:JSON.stringify([ESTUDIO_ID,project.id,state.view==='estancia'?'listas':state.projTab||'tareas',state.view==='estancia'?state.currentRoom:null,state.view==='estancia'?shoppingRoomViewMode:null,state.view==='proyecto'&&state.projTab==='obra'?state.obraPlanView||'lista':null])};
+ return {root:document.getElementById('view'),key:JSON.stringify([ESTUDIO_ID,project.id,state.view==='estancia'?'listas':state.projTab||'tareas',state.view==='estancia'?state.currentRoom:null,state.view==='estancia'?shoppingRoomViewMode:null,state.view==='proyecto'&&state.projTab==='calobra'?'cal':null])};
 }
 function presenceTrack(){
  // Presence and ephemeral cursors share one private channel, independent of document synchronization.
@@ -13681,7 +13691,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=36599">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365111">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

@@ -127,7 +127,7 @@ with sync_playwright() as p:
   assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['automatizaciones','plugins','integraciones']
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
   assert page.locator('.project-tabs').bounding_box()['y']>850
-  keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
+  keys=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.id.replace("project-tab-",""))')==keys
   assert page.locator('.project-tabs [role=separator]').count()==5
   dock=page.locator('.project-tabs').bounding_box()

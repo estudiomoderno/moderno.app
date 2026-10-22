@@ -7,8 +7,9 @@ var ModernoProjectDocuments = (() => {
     if(Object.values(types).includes(file.type)) return file.type;
     return types[String(file.name || '').split('.').pop().toLowerCase()] || '';
   }
+  function category(file){return file&&typeof file==='object'&&!file.docRef&&!file.docKind&&file.cat==='plano'?'planos':'archivos';}
   function plans(project) {
-    return (project.files || []).map((file,index)=>({file,index,type:type(file)})).filter(x=>x.type);
+    return (project.files || []).map((file,index)=>({file,index,type:type(file)})).filter(x=>category(x.file)==='planos');
   }
   function heading(section) {
     const title=section==='planos'?'Planos':section==='archivos'?'Documentos':'Planos y Archivos';
@@ -26,11 +27,11 @@ var ModernoProjectDocuments = (() => {
     const ext=name.includes('.')?name.split('.').pop().slice(0,5).toUpperCase():'DOC',id=E(project.id),label=E(name);
     const data=`data-project="${id}" data-index="${index}"`;
     const visibility=!available?'<span class="project-file-status is-missing" title="Solo se guardó el nombre. Vuelve a subirlo para abrir el archivo.">Solo nombre</span>':`<span class="project-file-status">${clientVisible?'Lo ve el cliente':'Oculto al cliente'}</span>`;
-    return `<article class="project-file-card">${selection?`<label class="project-file-selection"><input type="checkbox" aria-label="Compartir ${label}" ${data} ${clientVisible?'checked':''} ${available?'':'disabled'} onchange="fileCliToggle(Number(this.dataset.project),Number(this.dataset.index))"><span>Compartir</span></label>`:''}<button type="button" class="project-file-open" ${data} aria-label="Abrir ${label}" onclick="fileView(Number(this.dataset.project),Number(this.dataset.index))"><span class="project-file-sheet" aria-hidden="true"><span class="project-file-fold"></span><span class="project-file-extension">${E(ext)}</span><span class="project-file-lines"></span></span><strong class="project-document-name">${label}</strong></button><div class="project-file-meta">${file.signed?'<span class="project-file-status is-signed">Firmado</span>':''}${visibility}</div>${actions?`<div class="project-file-actions">${action(project,index)}<button type="button" class="project-file-delete" ${data} aria-label="Eliminar archivo ${label}" title="Eliminar archivo" onclick="trashFile(Number(this.dataset.project),Number(this.dataset.index))">×</button></div>`:''}</article>`;
+    return `<article class="project-file-card">${selection?`<label class="project-file-selection"><input type="checkbox" aria-label="Compartir ${label}" ${data} ${clientVisible?'checked':''} ${available?'':'disabled'} onchange="fileCliToggle(Number(this.dataset.project),Number(this.dataset.index))"><span>Compartir</span></label>`:''}<button type="button" class="project-file-open" ${data} aria-label="Abrir ${label}" onclick="fileView(Number(this.dataset.project),Number(this.dataset.index))"><span class="project-file-sheet" aria-hidden="true"><span class="project-file-fold"></span><span class="project-file-extension">${E(ext)}</span><span class="project-file-lines"></span></span><strong class="project-document-name">${label}</strong></button><div class="project-file-meta">${file.signed?'<span class="project-file-status is-signed">Firmado</span>':''}${visibility}</div>${actions?`<div class="project-file-actions">${action(project,index)}${!file.docRef&&!file.docKind?`<button type="button" class="btn btn-ghost project-file-category" ${data} onclick="projectFileMove(Number(this.dataset.project),Number(this.dataset.index))">Mover a ${category(file)==='planos'?'Documentos':'Planos'}</button>`:''}<button type="button" class="project-file-delete" ${data} aria-label="Eliminar archivo ${label}" title="Eliminar archivo" onclick="trashFile(Number(this.dataset.project),Number(this.dataset.index))">×</button></div>`:''}</article>`;
   }
-  function uploadCard(project){return `<label class="project-file-card project-file-add" role="button" tabindex="0" aria-label="Subir o arrastrar archivos" data-project="${E(project.id)}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input').click()}" ondragover="ModernoProjectDocuments.dragFiles(event)" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('is-dragover')" ondrop="ModernoProjectDocuments.dropFiles(event,Number(this.dataset.project))"><img class="project-upload-illustration" src="/brand/illustrations/subir-planos.webp?v=36573" width="640" height="427" alt="" aria-hidden="true" draggable="false" decoding="async" onerror="this.hidden=true"><strong><span class="project-file-plus" aria-hidden="true">+</span> Subir o arrastrar archivos</strong><input type="file" multiple hidden onchange="addFiles(Number(this.closest('[data-project]').dataset.project),this.files);this.value='' "></label>`;}
+  function uploadCard(project,section='archivos'){return `<label class="project-file-card project-file-add" role="button" tabindex="0" aria-label="Subir o arrastrar archivos" data-project="${E(project.id)}" data-section="${section==='planos'?'planos':'archivos'}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input').click()}" ondragover="ModernoProjectDocuments.dragFiles(event)" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('is-dragover')" ondrop="ModernoProjectDocuments.dropFiles(event,Number(this.dataset.project),this.dataset.section)"><img class="project-upload-illustration" src="/brand/illustrations/subir-planos.webp?v=36573" width="640" height="427" alt="" aria-hidden="true" draggable="false" decoding="async" onerror="this.hidden=true"><strong><span class="project-file-plus" aria-hidden="true">+</span> Subir o arrastrar archivos</strong><input type="file" multiple hidden onchange="addFiles(Number(this.closest('[data-project]').dataset.project),this.files,this.closest('[data-project]').dataset.section);this.value='' "></label>`;}
   function dragFiles(event){if(!Array.from(event.dataTransfer?.types||[]).includes('Files'))return;event.preventDefault();event.stopPropagation();event.dataTransfer.dropEffect='copy';event.currentTarget.classList.add('is-dragover');}
-  function dropFiles(event,pid){event.preventDefault();event.stopPropagation();event.currentTarget.classList.remove('is-dragover');const files=event.dataTransfer?.files;if(files?.length)addFiles(pid,files);}
+  function dropFiles(event,pid,section='archivos'){event.preventDefault();event.stopPropagation();event.currentTarget.classList.remove('is-dragover');const files=event.dataTransfer?.files;if(files?.length)addFiles(pid,files,section);}
   async function readBlob(source,type,signal) {
     const response=await fetch(source,{signal,credentials:'omit'});
     if(!response.ok) throw Error('No se pudo descargar el plano. Puedes abrir el original desde Documentos.');
@@ -44,7 +45,7 @@ var ModernoProjectDocuments = (() => {
     finally{reader.releaseLock();}
     return new Blob(chunks,{type});
   }
-  return {uploadCard,dragFiles,dropFiles,type,plans,heading,action,card,readBlob};
+  return {category,uploadCard,dragFiles,dropFiles,type,plans,heading,action,card,readBlob};
 })();
 
 let projectPlanDialog=null;
@@ -91,3 +92,11 @@ async function projectPlanOpen(pid,index){
   }catch(error){if(!closed){root.replaceChildren();const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.name==='AbortError'?'Lectura cancelada':error.message;root.append(message);}}
 }
 if(typeof module!=='undefined')module.exports=ModernoProjectDocuments;
+
+function projectFileMove(pid,index){
+ const project=state.projects.find(p=>p.id===pid),stored=project?.files?.[index];
+ if(stored==null||_accessLoading||state.portalAnon||!['admin','miembro','colaborador'].includes(_accessRole))return;
+ const file=typeof stored==='string'?{name:stored}:stored;if(file.docRef||file.docKind)return;
+ project.files[index]={...file,cat:ModernoProjectDocuments.category(file)==='planos'?'documento':'plano'};
+ persistSoon();render();toast('Archivo movido a '+(ModernoProjectDocuments.category(project.files[index])==='planos'?'Planos':'Documentos'));
+}

@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const require=createRequire(import.meta.url),docs=require('../app/project-documents.js');
 test('plan filtering preserves original indices and excludes generated documents',()=>{
- const p={files:['legacy.pdf',{name:'Notes',body:'text',type:'application/pdf'},{name:'invoice.pdf',docRef:'F-1'},{name:'plan.PDF'},{name:'render',type:'image/png'},{name:'sheet.xlsx'}]};const original=JSON.stringify(p);
+ const p={files:['legacy.pdf',{name:'Notes',body:'text',type:'application/pdf'},{name:'invoice.pdf',docRef:'F-1'},{name:'plan.PDF',cat:'plano'},{name:'render',type:'image/png',cat:'plano'},{name:'sheet.xlsx'}]};const original=JSON.stringify(p);
  assert.deepEqual(docs.plans(p).map(x=>x.index),[3,4]);assert.equal(JSON.stringify(p),original);
 });
 test('documents show one heading with annotation actions only for PDF and images',()=>{
@@ -29,7 +29,7 @@ test('bounded download rejects HTTP and size errors without returning partial co
 test('publication does not activate cloud annotation saving or replace existing file and note actions',()=>{
  const js=readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8'),html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
  assert.ok(!js.includes('sb.storage')&&!js.includes('sb.rpc')&&!js.includes('localStorage'));
- assert.match(js,/mount\(root,\{document:doc,model\}\)/);assert.match(html,/ModernoProjectDocuments.uploadCard\(p\)/);assert.match(js,/addFiles\(Number/);assert.doesNotMatch(html,/<h2 class="sec">Notas del proyecto/);
+ assert.match(js,/mount\(root,\{document:doc,model\}\)/);assert.match(html,/ModernoProjectDocuments.uploadCard\(p,tb\)/);assert.match(js,/addFiles\(Number/);assert.doesNotMatch(html,/<h2 class="sec">Notas del proyecto/);
 });
 test('viewer identity changes for real-format sessions without a user id',()=>{
  const code=readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8');
