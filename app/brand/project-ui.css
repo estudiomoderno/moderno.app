@@ -420,3 +420,18 @@
 @media screen {
  #project-tab-panel[aria-labelledby="project-tab-calobra"]{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;margin-top:0}
 }
+
+/* General Projects: static, neutral folders; stored project colors remain intact. */
+html body .projects-identity .projects-header{padding-top:0}
+html body .projects-identity .projects-header>h1.big{margin-top:0}
+html body .projects-identity .project-folio-neutral>summary{padding:12px 10px 16px!important;border-radius:18px;transition:background-color .15s ease}
+html body .projects-identity .project-folio-neutral>summary:hover{background:#f2f2f2!important}
+.project-folio-neutral .neutral-folder-art{display:block;position:relative;width:100%;max-width:260px;margin:0 auto}
+.project-folio-neutral .neutral-folder-art>svg{display:block;width:100%;height:auto}
+.project-folio-neutral .neutral-folder-art>.project-client-avatar{position:absolute;left:13%;bottom:15%;width:24px;height:24px;background:#eee;color:#555;border:2px solid #fff;box-shadow:none}
+.project-folio-neutral .neutral-folder-caption{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:8px 0 0;min-height:58px}
+.project-folio-neutral .neutral-folder-caption strong{font-size:15px;line-height:1.35;font-weight:600;overflow-wrap:anywhere}
+.project-folio-neutral .neutral-folder-caption>span{font-size:12px;color:#777;line-height:1.4}
+html body .projects-identity .proj-grid>.folder.add{width:calc(100% - 20px);height:180px;min-height:0;margin:28px 10px 0;background:#fafafa;border:1px dashed #ddd;box-shadow:none}
+@media(min-width:1100px){html body .main:has(.projects-identity){padding-top:72px!important;scroll-padding-top:72px}}
+@media(max-width:700px){html body .projects-identity .project-folio-neutral>summary{padding:8px 4px 12px!important}.project-folio-neutral .neutral-folder-caption strong{font-size:13px}html body .projects-identity .proj-grid>.folder.add{height:140px;margin:20px 6px 0;width:calc(100% - 12px)}}
