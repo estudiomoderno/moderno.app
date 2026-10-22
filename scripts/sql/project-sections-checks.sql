@@ -18,6 +18,10 @@ begin
  select * into r from public.app_leer_bloques(e,array['proyectos']);
  perform pg_temp.assert_true(r.contenido#>>'{0,events,1,txt}'='Visita actualizada' and r.contenido#>>'{0,files,0,cat}'='documento','diary edit and category move durable via delta');
  perform pg_temp.assert_true(r.contenido#>>'{0,events,1,files,0,id}'='photo-fixture','photo references retained when notes change');
+ v:=jsonb_set(r.contenido,'{0,obraF}','[{"id":"phase-calendar-fixture","name":"Fase nueva ficticia","start":"2026-10-24","end":"2026-10-28","color":"#64748b","items":[]}]');
+ perform public.app_guardar_lote(e,jsonb_build_array(jsonb_build_object('bloque','proyectos','base',r.updated_at,'contenido',v)));
+ select * into r from public.app_leer_bloques(e,array['proyectos']);
+ perform pg_temp.assert_true(r.contenido#>>'{0,obraF,0,id}'='phase-calendar-fixture' and r.contenido#>>'{0,obraF,0,start}'='2026-10-24' and r.contenido#>>'{0,obraF,0,end}'='2026-10-28','new calendar phase durable as collaborator with inclusive end');
  blocked:=false;begin perform public.app_guardar_lote(e,jsonb_build_array(jsonb_build_object('bloque','proyectos','base',r.updated_at,'contenido',jsonb_set(r.contenido,'{0,fee}','0'))));exception when insufficient_privilege then blocked:=true;end;
  perform pg_temp.assert_true(blocked,'new diary cannot bypass protected finances');
 end$$;

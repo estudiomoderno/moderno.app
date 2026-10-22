@@ -2,17 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
 const source=fs.readFileSync(new URL('../app/calendar-ui.js',import.meta.url),'utf8');
 const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 const nativeDrop=html.slice(html.indexOf('function calSpanDrop('),html.indexOf('/* Filtro de proyecto del calendario:'));
-function fixture(){
+function fixture({work=false}={}){
  let props,hidden=false;const calls=[];
  const target={append(){}},native={setAttribute(){hidden=true;},removeAttribute(){hidden=false;},set hidden(v){hidden=v;}};
  const host=()=>({className:'',dataset:{reuiReady:'true'},remove(){},isConnected:true});
  const mount=()=>({update(p){props=p;},unmount(){calls.push(['unmount']);}});
  const state={view:'calendario',sessionUser:{id:'fictional'},myRole:'admin',brandFilter:'a',account:{weekend:'vs',showWeekends:false},cal:{view:'mes',off:0,showTasks:true,showObra:true,events:[{title:'Cita ficticia 10:30',date:'2026-10-22'},{title:'Fecha inválida',date:'2026-02-31'}]},projects:[{id:1,brand:'a',num:'PR-1',name:'Ficticio',tasks:[{title:'Entrega',due:'2026-10-22'},{title:'Inválida',due:'2026-02-31'}],obraF:[{name:'Fase',start:'2026-10-20',end:'2026-10-24'}]},{id:2,brand:'b',name:'Otro ámbito',tasks:[{title:'No visible',due:'2026-10-22'}]},{id:3,brand:'a',tpl:true},{id:4,brand:'a',status:'Archivado'}]};
+ if(work){state.view='proyecto';state.projTab='calobra';state.currentProject=1;}
  const iso=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
- const ctx=vm.createContext({state,ESTUDIO_ID:'fictional',_accessRole:'admin',_accessLoading:false,_calDrag:null,Date,console,queueMicrotask,
+ const ctx=vm.createContext({crypto:webcrypto,ModernoDaily:{escape:s=>String(s)},modal:s=>calls.push(['modal',s]),closeModal:()=>calls.push(['close']),state,ESTUDIO_ID:'fictional',_accessRole:'admin',_accessLoading:false,_calDrag:null,Date,console,queueMicrotask,
   window:{ModernoCalendarComponent:{mount}},ModernoCalendarComponent:{mount},document:{getElementById:()=>target,querySelector:s=>s==='.calendar-native'?native:null,createElement:host,head:{append(){assert.fail('No network needed');}}},
   canView:()=>true,byBrand:items=>items.filter(p=>p.brand===state.brandFilter),WorkflowPolish:{iso,eventInfo:d=>calls.push(['event',d])},
   vCalendar:()=>'<calendar-original>',render(){calls.push(['render']);},calProjMatch:q=>state.projects.find(p=>p.id===1&&q==='PR-1'),
@@ -51,4 +53,34 @@ test('calendar callbacks cannot act through a loading session, external role, ch
  for(const mode of ['loading','role','identity','form']){const f=fixture(),p=f.props();if(mode==='loading')f.ctx._accessLoading=true;else if(mode==='role')f.ctx._accessRole='cliente';else if(mode==='identity')f.state.sessionUser.id='different';else{const original=f.ctx.document.querySelector;f.ctx.document.querySelector=s=>s==='.overlay.open,dialog[open]'?{}:original(s);}
   p.onNew();p.onEventClick({event:p.events[0]});assert.equal(f.calls.some(c=>['new','task','phase','persist'].includes(c[0])),false);
  }
+});
+
+
+test('work calendar only exposes current project phases and keeps global calendar settings unchanged',()=>{
+ const f=fixture({work:true}),before=JSON.stringify(f.state),p=f.props();
+ assert.equal(p.work,true);assert.deepEqual(Array.from(p.events,e=>e.title),['Fase']);assert.equal(p.projects.length,1);
+ p.onView('days');p.onDate(new Date('2027-01-03T00:00:00'));p.onFilter('');p.onToggle('showTasks');
+ assert.equal(f.props().view,'days');assert.equal(JSON.stringify(f.state),before);assert.equal(f.calls.length,0);
+ f.ctx.ModernoCalendarUI.setEnabled(false);assert.equal(f.hidden(),false);
+});
+test('old work calendar callbacks cannot edit another project, another section or another session',async()=>{
+ for(const mode of ['project','section','session','loading']){
+  const f=fixture({work:true}),p=f.props(),event=p.events[0],before=JSON.stringify(f.state.projects);
+  if(mode==='project')f.state.currentProject=2;else if(mode==='section')f.state.projTab='obra';else if(mode==='session')f.state.sessionUser.id='other';else f.ctx._accessLoading=true;
+  p.onNew();p.onEventClick({event});p.onEventUpdate({event,source:'drag',allDay:true,start:new Date('2026-10-24T00:00:00'),end:new Date('2026-10-29T00:00:00')});await Promise.resolve();
+  assert.equal(JSON.stringify(f.state.projects),before);assert.equal(f.calls.filter(c=>['modal','phase','persist'].includes(c[0])).length,0);
+ }
+});
+test('work phase creation validates inclusive dates and delegates persistence without changing other records',()=>{
+ const f=fixture({work:true}),other=JSON.stringify(f.state.projects.slice(1)),events=JSON.stringify(f.state.cal.events),alert={textContent:''};
+ f.props().onNew();assert.match(f.calls[0][1],/Nueva fase de obra/);
+ const form={elements:{title:{value:'Fase nueva'},start:{value:'2026-10-24'},end:{value:'2026-10-23'}},querySelector:()=>alert};
+ assert.equal(f.ctx.ModernoCalendarUI.savePhase(form),false);assert.equal(f.state.projects[0].obraF.length,1);
+ form.elements.end.value='2026-10-28';assert.equal(f.ctx.ModernoCalendarUI.savePhase(form),true);
+ const phase=f.state.projects[0].obraF[1];assert.equal(phase.start,'2026-10-24');assert.equal(phase.end,'2026-10-28');assert.ok(phase.id);assert.equal(f.calls.filter(c=>c[0]==='persist').length,1);
+ assert.equal(JSON.stringify(f.state.projects.slice(1)),other);assert.equal(JSON.stringify(f.state.cal.events),events);assert.equal(f.ctx.ModernoCalendarUI.savePhase(form),false);
+});
+test('leaving the work calendar between a drag callback and its deferred write prevents mutation',async()=>{
+ const f=fixture({work:true}),p=f.props(),event=p.events[0],before=JSON.stringify(f.state.projects);
+ p.onEventUpdate({event,source:'drag',allDay:true,start:new Date('2026-10-24T00:00:00'),end:new Date('2026-10-29T00:00:00')});f.state.projTab='listas';await Promise.resolve();assert.equal(JSON.stringify(f.state.projects),before);
 });
