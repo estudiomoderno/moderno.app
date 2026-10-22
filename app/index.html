@@ -34,6 +34,27 @@ html.app-boot #appLoading{position:fixed;inset:0;z-index:2147483647;display:flex
 #appLoading button:focus-visible{outline:2px solid #183153;outline-offset:4px}
 @media(prefers-reduced-motion:reduce){#appLoading .dot-spinner__dot::before{animation:none;transform:scale(1);opacity:.7}}
 @media print{#appLoading{display:none!important}}
+
+.ex-tax-options{border:1px solid var(--ink-faint);border-radius:14px;margin-top:20px;padding:16px;min-width:0}
+.ex-tax-options legend{font-size:13px;font-weight:700;padding:0 6px}
+.ex-tax-options>small{display:block;color:var(--ink-soft);font-size:12px;line-height:1.6}
+.ex-tax-rate{display:flex;align-items:center;gap:12px;margin:14px 0;font-size:13px}
+.ex-tax-rate input{width:95px}
+.ex-room-selection{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:240px;overflow:auto;margin:12px 0}
+.ex-room-selection .ex-chk{overflow-wrap:anywhere;min-width:0}
+.ex-export-actions{flex-wrap:wrap;justify-content:space-between}
+.ex-export-head{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:24px}
+.ex-export-head>div:last-child{text-align:right;min-width:0;overflow-wrap:anywhere}
+.ex-export-head h1{font-size:24px;line-height:1.3;margin:6px 0}.ex-export-head p{font-size:13px;margin:5px 0}.ex-export-head small{color:#666;font-size:11px}
+.ex-summary{width:100%;border-collapse:collapse;font-size:12px}.ex-summary th,.ex-summary td{padding:12px 8px;text-align:right;border-bottom:1px solid #ddd}.ex-summary th:first-child,.ex-summary td:first-child{text-align:left}.ex-summary tr{break-inside:avoid}
+.ex-tax-breakdown{margin:24px 0 0 auto;max-width:400px;font-size:13px;break-inside:avoid}.ex-tax-breakdown>div{display:flex;justify-content:space-between;gap:24px;padding:8px 0}.ex-tax-breakdown .ex-tax-grand{border-top:2px solid #141414;font-size:16px;margin-top:4px;padding-top:14px}
+@media(max-width:600px){.ex-room-selection{grid-template-columns:1fr}.ex-tax-options{padding:12px}.ex-export-actions>button{white-space:normal}}
+
+#modalBox .ex-chk{display:flex!important;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-weight:500;margin:0;padding:8px 0}
+#modalBox .ex-chk input[type=checkbox]{width:16px!important;height:16px!important;flex:0 0 16px;min-height:0;padding:0;margin:0}
+#modalBox .ex-room-selection .ex-chk{padding:8px 10px;min-height:38px;border-radius:10px;background:var(--card)}
+#modalBox .ex-tax-rate{display:flex!important;align-items:center;gap:12px}
+#modalBox .ex-tax-rate input{width:95px!important;flex:0 0 95px}
 </style>
 <script id="app-loading-controller">
 window.ModernoAppLoading=(()=>{
@@ -1257,7 +1278,8 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=365111"></script>
+<script src="/project-ui.js?v=365113"></script>
+<script src="/shopping-export.js?v=365113"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=365100"></script>
 <script src="/project-documents.js?v=365111"></script>
@@ -8765,55 +8787,12 @@ function cpComment(si,ii){
 const EXOPT_DEF={fmt:"pdf",lay:"lista",ori:"portrait",prices:true,alts:true,total:true,supplier:true,dims:true,color:true,material:true,cat:true,sku:true,plazo:true,code:true,links:true,notes:true,logo:true,date:true,sections:true};
 function exOpts(){ state.exOpts=Object.assign({},EXOPT_DEF,state.exOpts||{}); return state.exOpts; }
 function exportRoomModal(step){
-  const o=exOpts();
-  const card=(k,v,tit,sub,ico_)=>`<button class="ex-card ${o[k]===v?"on":""}" onclick="exOpts().${k}='${v}';exportRoomModal()">${ico_}<b>${tit}</b><small>${sub}</small></button>`;
-  const chk=(k,lab)=>`<label class="ex-chk"><input type="checkbox" ${o[k]?"checked":""} onchange="exOpts().${k}=this.checked"> ${lab}</label>`;
-  const svgList=`<div class="ex-ill"><div class="ex-row"><i></i><s></s><s style="width:40%"></s></div><div class="ex-row"><i></i><s></s><s style="width:55%"></s></div><div class="ex-row"><i></i><s></s><s style="width:30%"></s></div></div>`;
-  const svgGrid=`<div class="ex-ill grid">${Array.from({length:8},()=>"<i></i>").join("")}</div>`;
-  mb.classList.add("wide");
-  if(step==="ajustes"){
-    modal(`<h3 style="display:flex;align-items:center;gap:8px"><button class="btn btn-ghost" style="padding:4px 8px" onclick="exportRoomModal()">‹</button> Ajustes de exportación</h3>
-    <div class="ex-grp">Precios y contenido</div>
-    <div class="ex-cols">${chk("prices","Mostrar precios")}${chk("total","Mostrar el total de la estancia")}${chk("alts","Mostrar opciones alternativas")}${chk("sections","Mostrar totales por sección")}</div>
-    <div class="ex-grp">Detalles del producto</div>
-    <div class="ex-cols">${chk("supplier","Mostrar proveedor")}${chk("dims","Mostrar dimensiones")}${chk("color","Mostrar color")}${chk("material","Mostrar material")}${chk("cat","Mostrar categoría")}${chk("sku","Mostrar SKU")}${chk("plazo","Mostrar plazo de entrega")}${chk("code","Mostrar código de producto")}</div>
-    <div class="ex-grp">Enlaces y notas</div>
-    <div class="ex-cols">${chk("links","Mostrar enlaces de productos")}${chk("notes","Mostrar notas para el cliente")}</div>
-    <div class="ex-grp">Encabezado y metadatos</div>
-    <div class="ex-cols">${chk("logo","Mostrar el logo del estudio")}${chk("date","Mostrar la fecha de generación")}</div>
-    <p style="font-size:11px;color:var(--ink-faint);margin-top:10px">El coste profesional, el margen y las notas internas nunca se exportan.</p>
-    <div class="modal-foot" style="justify-content:space-between"><button class="btn btn-ghost" onclick="exportRoomModal()">Atrás</button><button class="btn btn-dark" onclick="doExportRoom()">Exportar estancia</button></div>`);
-    return;
-  }
-  modal(`<h3>Selecciona el diseño</h3>
-  <div class="ex-grid2">${card("lay","lista","Diseño de lista","Información detallada del producto",svgList)}${card("lay","grid","Diseño de cuadrícula","Vista de galería de imágenes",svgGrid)}</div>
-  <div class="ex-grp">Orientación</div>
-  <div class="ex-grid2 small">${card("ori","portrait","Vertical","Página A4 vertical","")}${card("ori","landscape","Horizontal","Página A4 horizontal","")}</div>
-  <div class="ex-grp">Formato</div>
-  <div class="ex-grid2 small">${card("fmt","pdf","PDF","Para enviar o imprimir","")}${card("fmt","xlsx","Hoja de cálculo","CSV para Excel / Sheets","")}</div>
-  <div class="modal-foot" style="justify-content:space-between;align-items:center"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><span style="display:flex;gap:8px;align-items:center"><button class="btn btn-ghost" onclick="exportRoomModal('ajustes')">Ajustes de exportación en lista</button><button class="btn btn-dark" onclick="doExportRoom()">Exportar estancia</button></span></div>`);
+ const {p,r}=getRoom();
+ if(step==='ajustes'){ModernoShoppingExport.draw('details');return;}
+ ModernoShoppingExport.open(p.id,[r.id],false);
 }
-function doExportRoom(){
-  const o=exOpts(); closeModal();
-  if(o.fmt==="xlsx"){ roomXLSX(); return; }
-  const st = document.createElement("style"); st.id="pageOrient"; st.textContent="@page{size:A4 "+o.ori+"}"; document.head.appendChild(st);
-  if(o.lay==="lista") roomPDF(); else roomGridPDF();
-  setTimeout(()=>st.remove(),800);
-}
-async function roomGridPDF(){
-  const {p,r} = getRoom(); const o=exOpts();
-  const z=document.getElementById("printZone");
-  const secs=r.sections.map(sec=>({sec,items:exItems(sec,o)})).filter(x=>x.items.length);
-  const cols=o.ori==="landscape"?4:3;
-  z.innerHTML = `<div class="pdf-page ex-doc"><div class="pdf-body">
-    ${exHead(p,r,o, o.prices&&o.total?`<div style="font-size:13px;font-weight:800;margin-top:2px">${fmt(roomTotal(r))}</div>`:"")}
-    ${secs.map(({sec,items})=>`
-      <div class="ex-sec"><b>${sec.name}</b><span class="line"></span>${o.prices&&o.sections?`<span class="ex-sum">${fmt(items.reduce((a,i)=>a+i.price*i.qty,0))}</span>`:""}</div>
-      <div class="ex-grid" style="grid-template-columns:repeat(${cols},1fr)">${items.map(it=>`<div class="ex-cell"><div class="ex-img">${it.img?`<img ${fileImageAttrs(it.img)} alt="">`:""}</div>${o.prices?`<div class="ex-cap"><span>${it.name}</span><b>${fmt(it.price*it.qty)}</b></div>`:`<div class="ex-cap"><span>${it.name}</span></div>`}</div>`).join("")}</div>`).join("")}
-    ${o.prices&&o.total?`<div class="ex-total">Total de la estancia <b>${fmt(roomTotal(r))}</b></div>`:""}
-  </div><div class="pdf-pn">${pdfFoot()}<span>${p.num} · ${r.name}</span></div></div>`;
-  z.style.display="block"; await printAs(r.name+" – "+p.num); z.style.display="none";
-}
+function doExportRoom(){return ModernoShoppingExport.run();}
+async function roomGridPDF(){const {p,r}=getRoom();ModernoShoppingExport.open(p.id,[r.id],false,'pdf');ModernoShoppingExport.set('lay','grid');return ModernoShoppingExport.run();}
 
 function marginModal(){
   const {r} = getRoom();
@@ -9091,106 +9070,14 @@ function exHead(p,r,o,extra){
   </div>`;
 }
 function exItems(sec,o){ return (sec.items||[]).filter(it=>!it.hidden && (o.alts||!it.alt)); }
-async function roomPDF(){
-  const {p,r} = getRoom(); const o=exOpts();
-  const z=document.getElementById("printZone");
-  const meta=it=>[o.supplier&&it.supplier?["Proveedor",it.supplier]:null, o.dims&&it.dims?["Dimensiones",it.dims]:null, o.color&&it.color?["Color",it.color]:null, o.material&&it.material?["Material",it.material]:null, o.cat&&it.cat?["Categoría",it.cat]:null, o.sku&&it.sku?["SKU",it.sku]:null, o.plazo&&it.plazo?["Plazo de entrega",it.plazo]:null, o.code&&it.code?["Código de producto",it.code]:null].filter(Boolean);
-  const secs=r.sections.map(sec=>({sec,items:exItems(sec,o)})).filter(x=>x.items.length);
-  z.innerHTML = `<div class="pdf-page ex-doc"><div class="pdf-body">
-    ${exHead(p,r,o, o.prices&&o.total?`<div style="font-size:13px;font-weight:800;margin-top:2px">${fmt(roomTotal(r))}</div>`:"")}
-    ${secs.map(({sec,items})=>`
-      <div class="ex-sec"><b>${sec.name}</b><span class="line"></span>${o.prices&&o.sections?`<span class="ex-sum">${fmt(items.reduce((a,i)=>a+i.price*i.qty,0))}</span>`:""}</div>
-      ${items.map(it=>`<div class="ex-item">
-        <div class="ex-th">${it.img?`<img ${fileImageAttrs(it.img)} alt="">`:""}</div>
-        <div class="ex-in">
-          <div class="ex-nm">${it.name}${it.alt?` <span class="ex-alt">alternativa</span>`:""}</div>
-          ${o.links&&it.url?`<a class="ex-url" href="${it.url}">${it.url}</a>`:""}
-          ${meta(it).length?`<div class="ex-meta">${meta(it).map(([k,v])=>`<span><i>${k}:</i> ${v}</span>`).join("")}</div>`:""}
-          ${o.notes&&it.cliNote?`<div class="ex-note">${it.cliNote}</div>`:""}
-          <div class="ex-qty">Cantidad: ${it.qty}${" "+ModernoDaily.escape(({m2:"m²",m3:"m³"})[it.unit]||it.unit||"ud")}</div>
-          ${o.prices?`<div class="ex-price">${fmt(it.price*it.qty)}${it.qty!==1?` <small>(${it.qty} × ${fmt(it.price)})</small>`:""}</div>`:""}
-        </div>
-      </div>`).join("")}`).join("")}
-    ${o.prices&&o.total?`<div class="ex-total">Total de la estancia <b>${fmt(roomTotal(r))}</b></div>`:""}
-  </div><div class="pdf-pn">${pdfFoot()}<span>${p.num} · ${r.name}</span></div></div>`;
-  z.style.display="block"; await printAs(r.name+" – "+p.num); z.style.display="none";
-}
-
-function roomXLSX(){
-  const {p,r} = getRoom();
-  const rows = [["Lista","Sección","Producto","Proveedor","SKU","URL","Precio","Cantidad","Unidad","Total","Estado","Adjuntos"]];
-  r.sections.forEach(sec=>sec.items.forEach(i=>rows.push([r.name,sec.name,i.name,i.supplier,i.sku,i.url,i.price,i.qty,ModernoDaily.escape(({m2:"m²",m3:"m³"})[i.unit]||i.unit||"ud"),i.price*i.qty,i.status,(i.files||[]).join(", ")])));
-  const csv = rows.map(x=>x.join(";")).join("\n");
-  const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv); a.download=p.num+"-"+r.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\s+/g,"-")+".csv"; a.click();
-  toast("Hoja de cálculo descargada");
-}
-async function projPDF(pid, ids){
-  const p = state.projects.find(x=>x.id===pid);
-  const _rooms = (p.rooms||[]).filter(r=>!ids || ids.includes(r.id));
-  const z=document.getElementById("printZone");
-  z.innerHTML = `<div style="font-family:Segoe UI,sans-serif;color:var(--ink);padding:30px">
-    ${legacyDocumentLogo()}
-    <h1 style="margin:16px 0 2px">Listas de compra</h1>
-    <p style="color:var(--ink-soft);font-size:13px">${p.num} ${p.name} · ${p.client||""} · ${hoyEs()}</p>
-    ${_rooms.map(r=>`
-      <h2 style="margin:20px 0 4px;border-bottom:2px solid #141414;padding-bottom:4px">${r.name} — ${fmt(roomTotal(r))}</h2>
-      ${r.sections.filter(s=>s.items.length).map(sec=>`
-        <h3 style="margin:12px 0 4px">${sec.name}</h3>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
-        ${sec.items.map(i=>`<tr style="border-bottom:1px solid #ddd"><td style="padding:4px">${i.name}</td><td>${i.supplier||"—"}</td><td>${i.sku||"—"}</td><td style="text-align:right">${fmt(i.price)}</td><td style="text-align:center">${i.qty} ${ModernoDaily.escape(({m2:"m²",m3:"m³"})[i.unit]||i.unit||"ud")}</td><td style="text-align:right">${fmt(i.price*i.qty)}</td><td>${i.status}</td></tr>`).join("")}
-        </table>`).join("")}`).join("")}
-    <h2 style="text-align:right;margin-top:20px">Total del proyecto: ${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</h2></div>`;
-  z.style.display="block"; await printAs(document.title); z.style.display="none";
-}
-function projXLSX(pid, ids){
-  const p = state.projects.find(x=>x.id===pid);
-  const rows = [["Lista","Sección","Producto","Proveedor","SKU","URL","Precio","Cantidad","Unidad","Total","Estado","Adjuntos"]];
-  (p.rooms||[]).filter(r=>!ids || ids.includes(r.id)).forEach(r=>r.sections.forEach(sec=>sec.items.forEach(i=>rows.push([r.name,sec.name,i.name,i.supplier,i.sku,i.url,i.price,i.qty,ModernoDaily.escape(({m2:"m²",m3:"m³"})[i.unit]||i.unit||"ud"),i.price*i.qty,i.status,(i.files||[]).join(", ")]))));
-  const csv = rows.map(x=>x.join(";")).join("\n");
-  const a=document.createElement("a"); a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv); a.download=p.num+"-listas-de-compra.csv"; a.click();
-  toast("Hoja de cálculo del proyecto descargada");
-}
-function exportListsModal(pid, kind, printing=false){
-  const p = state.projects.find(x=>x.id===pid);
-  const groups = [["estancia","Estancias"],["pav","Pavimentos y Revestimientos"],["otra","Otras listas"]];
-  const box = (r)=>`<label style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:10px;background:var(--card);cursor:pointer;font-size:12.5px">
-    <input type="checkbox" class="expR" value="${r.id}" checked style="width:auto" onchange="expCount()"> ${rico(r.icon)} ${r.name}
-    <small style="margin-left:auto;color:var(--ink-faint)">${fmt(roomTotal(r))}</small></label>`;
-  modal(`<h3>${printing?"Imprimir listas":kind==="pdf"?ico("pdf")+" Exportar PDF":ico("xlsx")+" Exportar hoja de cálculo"}</h3>
-  <p style="font-size:12px;color:var(--ink-soft);margin-top:2px">${printing?"Elige qué listas quieres imprimir.":"Elige qué listas quieres llevarte."}</p>
-  <div class="opt-pills" style="margin:10px 0 4px;justify-content:flex-start">
-    <button class="on" onclick="expSet('all');this.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===this))">Todo</button>
-    ${groups.map(([k,lab])=>((p.rooms||[]).some(r=>(r.kind||"estancia")===k)?`<button onclick="expSet('${k}');this.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===this))">Solo ${lab.split(" ")[0].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}</button>`:"")).join("")}
-  </div>
-  ${groups.map(([k,lab])=>{
-    const rs=(p.rooms||[]).filter(r=>(r.kind||"estancia")===k);
-    return rs.length?`<label style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);display:block;margin:12px 0 5px">${lab}</label>
-    <div style="display:grid;gap:5px" data-g="${k}">${rs.map(box).join("")}</div>`:"";}).join("")}
-  <div class="btn-row" style="margin-top:16px">
-    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-gold" id="expGo" onclick="expRun(${pid},'${kind}')">${printing?"Imprimir":kind==="pdf"?"Exportar PDF":"Descargar hoja"}</button>
-  </div>`);
-  expCount();
-}
-function expSet(which){
-  document.querySelectorAll(".expR").forEach(c=>{
-    if(which==="all") c.checked=true;
-    else if(which==="none") c.checked=false;
-    else c.checked = c.closest("[data-g]")?.dataset.g===which;
-  });
-  expCount();
-}
-function expCount(){
-  const n=[...document.querySelectorAll(".expR")].filter(c=>c.checked).length;
-  const b=document.getElementById("expGo"); if(!b) return;
-  b.disabled = !n; b.style.opacity = n?1:.45;
-}
-function expRun(pid, kind){
-  const ids=[...document.querySelectorAll(".expR")].filter(c=>c.checked).map(c=>+c.value);
-  if(!ids.length) return;
-  closeModal();
-  if(kind==="pdf") projPDF(pid, ids); else projXLSX(pid, ids);
-}
+async function roomPDF(){const {p,r}=getRoom();ModernoShoppingExport.open(p.id,[r.id],false,'pdf');return ModernoShoppingExport.run();}
+function roomXLSX(){const {p,r}=getRoom();ModernoShoppingExport.open(p.id,[r.id],false,'xlsx');return ModernoShoppingExport.run();}
+async function projPDF(pid,ids){ModernoShoppingExport.open(pid,ids,true,'pdf');return ModernoShoppingExport.run();}
+function projXLSX(pid,ids){ModernoShoppingExport.open(pid,ids,true,'xlsx');return ModernoShoppingExport.run();}
+function exportListsModal(pid,kind,printing=false){return ModernoShoppingExport.open(pid,null,true,kind,printing);}
+function expSet(which){ModernoShoppingExport.selectGroup(which==='all'?'all':which);}
+function expCount(){}
+function expRun(pid,kind){return ModernoShoppingExport.run();}
 function projLinks(pid){
   const p = state.projects.find(x=>x.id===pid);
   p.links = p.links || {drive:"",rayon:""};
@@ -11545,7 +11432,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.112";
+const MODERNO_VER="v3.65.113";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
