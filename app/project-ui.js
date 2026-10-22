@@ -437,3 +437,47 @@ function shoppingRoomLoadMore(){
  if(state.view!=='estancia')return;
  shoppingRoomWindow.count+=60;render();
 }
+
+/* Shopping images and scroll control; presentation only, no persisted state. */
+function shoppingImageHtml(source,alt=''){
+ const attrs=fileImageAttrs(source).replace(/(?:^|\s)alt="[^"]*"/g,'');
+ return `<span class="shopping-image-frame is-loading" data-shopping-image aria-busy="true"><span class="shopping-image-progress" aria-hidden="true"><span class="shopping-rolling-dots"></span></span><img ${attrs} alt="${ModernoDaily.escape(alt)}" loading="lazy" decoding="async"><span class="shopping-image-unavailable" role="img" aria-label="Imagen no disponible"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 3-3 6 6"/></svg></span></span>`;
+}
+var ModernoShoppingFeedback=(()=>{
+ function imageState(img,status){
+  const frame=img.closest('[data-shopping-image]');if(!frame?.isConnected)return;
+  frame.classList.toggle('is-loading',status==='loading');frame.classList.toggle('is-ready',status==='ready');frame.classList.toggle('is-unavailable',status==='failed');frame.setAttribute('aria-busy',String(status==='loading'));
+ }
+ function boot(){
+  if(document.getElementById('shopping-scroll-up'))return;
+  const button=document.createElement('button');button.id='shopping-scroll-up';button.type='button';button.className='shopping-scroll-up';button.hidden=true;button.setAttribute('aria-label','Volver arriba');button.title='Volver arriba';
+  button.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 12 6-6 6 6M12 6v13"/></svg>';document.body.append(button);
+  let queued=false,observedSync=null;
+  const resize=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>schedule()):null;
+  const main=()=>document.querySelector('.main');
+  function update(){
+   queued=false;
+   const active=typeof state!=='undefined'&&!!state.sessionUser&&typeof _accessLoading!=='undefined'&&!_accessLoading&&!document.body.classList.contains('portalmode')&&!!document.querySelector('#view .shopping-room-view,#view .shopping-list-header')&&!document.querySelector('.overlay.open,dialog[open]');
+   button.hidden=!active||Math.max(main()?.scrollTop||0,window.scrollY||0)<=320;
+   const sync=document.getElementById('syncTag');
+   if(resize&&sync!==observedSync){if(observedSync)resize.unobserve(observedSync);if(sync)resize.observe(sync);observedSync=sync;}
+   if(button.hidden)return;
+   const r=sync?.getBoundingClientRect();
+   const bottom=r&&r.height?Math.max(88,window.innerHeight-r.top+12):88;
+   button.style.setProperty('--shopping-scroll-bottom',bottom+'px');
+  }
+  const schedule=()=>{if(!queued){queued=true;requestAnimationFrame(update);}};
+  button.onclick=event=>{
+   const behavior=window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth';
+   if(event.detail===0){const target=document.querySelector('#shopping-room-trigger,#view .shopping-list-header h2');if(target){if(target.tagName!=='BUTTON')target.tabIndex=-1;target.focus({preventScroll:true});}}
+   main()?.scrollTo({top:0,behavior});if(window.scrollY)window.scrollTo({top:0,behavior});schedule();
+  };
+  document.addEventListener('scroll',event=>{if(event.target===main()||event.target===document||event.target===document.scrollingElement)schedule();},{capture:true,passive:true});
+  document.addEventListener('click',schedule,true);document.addEventListener('focusin',schedule);document.addEventListener('keydown',schedule,true);window.addEventListener('resize',schedule,{passive:true});
+  const view=document.getElementById('view');if(view)new MutationObserver(schedule).observe(view,{childList:true,subtree:true});
+  new MutationObserver(schedule).observe(document.body,{childList:true});
+  update();
+ }
+ if(typeof window!=='undefined'&&typeof document!=='undefined')document.addEventListener('DOMContentLoaded',boot);
+ return {imageState};
+})();
