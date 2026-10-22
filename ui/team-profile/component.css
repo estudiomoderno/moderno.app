@@ -60,6 +60,7 @@
 /* Finance pages share the existing route row; links retain router draft guards. */
 .finance-header {display:flex;align-items:center;gap:12px;min-width:0;max-width:100%}
 .finance-route {flex:none}
-.finance-sections {display:flex;align-items:center;gap:2px;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.finance-sections {display:flex;align-items:center;gap:2px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;padding-block:2px}
+.finance-sections::-webkit-scrollbar {display:none}
 .finance-sections button {flex:none}
 @media(max-width:1099px){.finance-route {display:none}.finance-header {width:100%}}
