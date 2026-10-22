@@ -8956,14 +8956,14 @@ function itemModal(si,ii,fromUrl){
   <section class="product-editor-section" aria-labelledby="product-editor-prices"><h4 id="product-editor-prices">Precios y cantidades</h4>
   <div class="row2">
     <div><label for="itPrice">Precio cliente (€)</label><input id="itPrice" type="number" step="0.01" value="${it.price??""}" oninput="mgSync('it','price')"></div>
-    <div><label for="itCost">Coste profesional (€)</label><input id="itCost" type="number" step="0.01" value="${it.cost??""}" placeholder="Con tu descuento pro" oninput="mgSync('it','cost')"></div>
+    <div ${_accessRole==='colaborador'?'hidden':''}><label for="itCost">Coste profesional (€)</label><input ${_accessRole==='colaborador'?'disabled':''} id="itCost" type="number" step="0.01" value="${it.cost??""}" placeholder="Con tu descuento pro" oninput="mgSync('it','cost')"></div>
   </div>
   <div class="row2">
     <div><label for="itQty">Unidades</label><input id="itQty" type="number" step="0.01" value="${it.qty}" oninput="unitSum('itQty','itPrice','itUnit','itSum','itCost')"></div>
     <div><label for="itUnit">Unidad</label><select id="itUnit" onchange="unitSum('itQty','itPrice','itUnit','itSum','itCost')">${[...new Set(["ud","m2","m","m3","l","kg","h",it.unit||"ud"])].map(u=>`<option value="${ModernoDaily.escape(u)}" ${(it.unit||"ud")===u?"selected":""}>${ModernoDaily.escape(({ud:"Unidades",m2:"m²",m:"Metros lineales",m3:"m³",l:"Litros",kg:"Kilogramos",h:"Horas"})[u]||u)}</option>`).join("")}</select></div>
   </div>
   <div id="itSum" class="entry product-editor-total"></div>
-  ${mgUI("it", mgAuto(it))}
+  ${_accessRole==='colaborador'?'<input type="hidden" id="itMgV" value="">':mgUI("it", mgAuto(it))}
   </section>
   <section class="product-editor-section" aria-labelledby="product-editor-files"><h4 id="product-editor-files">Archivos</h4>
   <div class="product-editor-attachments"><span class="product-editor-photo-label">Adjuntos del producto</span><p class="product-editor-help">Instrucciones, ficha técnica y otros documentos.</p>
@@ -9051,6 +9051,7 @@ function saveItem(si,ii){
     dims:document.getElementById("itDims").value, material:document.getElementById("itMat").value,
     color:document.getElementById("itCol").value, plazo:document.getElementById("itPlz").value,
     note:document.getElementById("itNote").value, img:itImg, files:[...itFiles] };
+  if(_accessRole==='colaborador'){delete it.cost;delete it.margin;}
   if(ii>=0){
     try{ModernoSpec.reclassifyItem(p,r,si,ii,target,it,label);}catch(e){toast(e.message);return;}
   }else{
@@ -11517,7 +11518,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.100";
+const MODERNO_VER="v3.65.101";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

@@ -45,6 +45,8 @@ jobs:
           node scripts/build-fiabilidad-sql.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Guardado delta, roles y conflictos con datos ficticios
         run: node scripts/build-delta-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+      - name: Guardado de listas como colaborador y permisos con datos ficticios
+        run: node scripts/build-collaborator-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Preparar PHP (si falta)
         run: |
           if ! command -v php >/dev/null; then
