@@ -2,17 +2,9 @@
 html body #loginScreen{position:fixed;inset:0;z-index:120;box-sizing:border-box;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:12px;padding:12px;background:#fff;color:#232323;overflow-y:auto;overscroll-behavior:contain;font-family:inherit}
 #loginScreen .studio-login-scene{position:sticky;top:0;isolation:isolate;height:calc(100dvh - 24px);min-height:560px;border-radius:22px;overflow:hidden;background:#c7b9a3}
 #loginScreen .studio-login-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
-#loginScreen .studio-login-scene-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,20,16,.18),transparent 32%,rgba(23,20,16,.12) 52%,rgba(23,20,16,.7))}
-#loginScreen .studio-login-scene-logo{position:absolute;top:36px;left:36px;width:184px;height:auto;filter:none}
-#loginScreen .studio-login-story{position:absolute;left:40px;right:32px;bottom:42px;color:#fff}
-#loginScreen .studio-login-story>span{font-size:10px;letter-spacing:.18em;font-weight:600}
-#loginScreen .studio-login-story>p{font-size:clamp(32px,3.4vw,54px);font-weight:500;line-height:1.1;letter-spacing:-.035em;margin:18px 0}
-#loginScreen .studio-login-story>small{font-size:14px;line-height:1.7;color:#ffffffe0}
 #loginScreen .studio-login-panel{box-sizing:border-box;min-height:calc(100dvh - 24px);padding:48px 36px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
 #loginScreen .studio-login-content{width:100%;max-width:370px;margin:auto 0;padding:24px 0 40px}
-#loginScreen .studio-login-wordmark{display:block;width:166px;height:auto;margin-bottom:44px;filter:none}
-#loginScreen .studio-login-heading h1{margin:0;letter-spacing:-.035em;font-family:inherit;font-size:clamp(25px,2.4vw,32px);font-weight:600;line-height:1.2}
-#loginScreen .studio-login-heading p{margin:12px 0 30px;color:#777;font-size:13px;line-height:1.6}
+#loginScreen .studio-login-wordmark{display:block;width:166px;height:auto;margin:0 auto 44px;filter:none}
 #loginScreen .studio-login-form{display:grid;gap:20px}
 #loginScreen .studio-login-field{display:grid;gap:9px}
 #loginScreen .studio-login-field label{display:block;color:#333;font-size:12px;font-weight:500}

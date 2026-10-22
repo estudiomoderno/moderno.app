@@ -21,3 +21,7 @@ No se envían correos, crean cuentas o prueban contraseñas reales. No se cambia
 Publicar mediante PR de `mejora/inicio-sesion-dividido`, exigir CI y comprobar despliegue y hashes públicos. Revertir ese PR devuelve el marcado anterior y retira los recursos; no hay migraciones ni datos que restaurar.
 
 Revisión: https://github.com/estudiomoderno/moderno.app/compare/f74f5507edf1df815e8ba8508efb881c8cb5c58a...mejora/inicio-sesion-dividido
+
+## Ajuste visual v3.65.104
+
+A petición del propietario, se retiran logotipo, textos y sombreado de la imagen; también el título y subtítulo del formulario. El único logotipo gráfico queda centrado sobre Correo electrónico. El panel conserva nombre accesible sin encabezado visible. Se actualiza la prueba de navegador existente para la composición final y se mantienen todos los manejadores de acceso. Reversión: revertir el PR de `mejora/acceso-sin-textos`.
