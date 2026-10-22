@@ -1251,7 +1251,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=365102"></script>
+<script src="/project-ui.js?v=365107"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=365100"></script>
 <script src="/project-documents.js?v=365100"></script>
@@ -8921,7 +8921,7 @@ function newSection(){
 }
 function setItem(si,ii,k,v){ getRoom().r.sections[si].items[ii][k]=v; render(); }
 function delItem(si,ii){
- const {p,r}=getRoom();if(_accessRole==='colaborador'){toast('Un administrador debe eliminar este producto');return false;}
+ const {p,r}=getRoom();
  try{ModernoSpec.editItems(p,r,si,ii,'remove');render();return true;}catch(e){toast(e.message);return false;}
 }
 
@@ -9392,6 +9392,7 @@ function saveCustomize(id){
   closeModal(); render(); toast("Cambios guardados ✓");
 }
 function deleteProject(id){
+  if(_accessRole==='colaborador'){toast('Solo un administrador puede eliminar proyectos');return;}
   const p = state.projects.find(x=>x.id===id);
   if(!p)return;
   askConfirm("¿Eliminar «"+ModernoDaily.escape(p.num+" "+p.name)+"»? Se moverá a la Papelera y podrás recuperarlo.","Eliminar proyecto",()=>deleteProjectGo(id));
@@ -9399,6 +9400,7 @@ function deleteProject(id){
   const title=mb.querySelector('h3');if(title)title.textContent='Eliminar proyecto';
 }
 function deleteProjectGo(id){
+  if(_accessRole==='colaborador'){toast('Solo un administrador puede eliminar proyectos');return;}
   const p = state.projects.find(x=>x.id===id);
   state.trash.unshift({kind:"Proyecto", name:p.num+" "+p.name, data:p, when:hoyEs()});
   state.projects = state.projects.filter(x=>x.id!==id);
@@ -11528,7 +11530,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.106";
+const MODERNO_VER="v3.65.107";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
