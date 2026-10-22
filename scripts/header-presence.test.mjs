@@ -5,19 +5,19 @@ import {readFile} from 'node:fs/promises';
 const code=await readFile(new URL('../app/header-presence.js',import.meta.url),'utf8');
 const flush=async()=>{for(let i=0;i<6;i++)await Promise.resolve();};
 function fixture(){
- const events={},changes=[],channels=[],removed=[];
+ const events={},changes=[],cursors=[],channels=[],removed=[];
  const doc={hidden:false,addEventListener:(k,fn)=>events[k]=fn,removeEventListener:k=>delete events[k]};
  const current={study:'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',key:'persona@example.invalid',name:'Persona ficticia',avatar:''};
  let permission=true,user='person-a',delay=null;
  const client={auth:{getSession:()=>delay||Promise.resolve({data:{session:{user:{id:user}}}})},removeChannel:async ch=>removed.push(ch),channel:(name,config)=>{
-  const ch={name,config,tracks:[],untracked:0,state:{},on(type,filter,callback){assert.equal(type,'presence');this.sync=callback;return this;},subscribe(callback){this.subscribed=callback;return this;},track:async function(payload){this.tracks.push(payload);return 'ok';},untrack:async function(){this.untracked++;},presenceState(){return this.state;}};
+  const ch={name,config,tracks:[],untracked:0,state:{},on(type,filter,callback){if(type==='presence')this.sync=callback;else{assert.equal(type,'broadcast');this.cursor=callback;}return this;},subscribe(callback){this.subscribed=callback;return this;},track:async function(payload){this.tracks.push(payload);return 'ok';},untrack:async function(){this.untracked++;},presenceState(){return this.state;}};
   channels.push(ch);return ch;
  }};
  const context=vm.createContext({crypto:{randomUUID:()=> 'session-fixture'},document:doc,addEventListener:(k,fn)=>events[k]=fn,removeEventListener:k=>delete events[k]});
  vm.runInContext(code,context);
  const api=context.ModernoHeaderPresence;
- const presence=api.create({client,identity:()=>current,allowed:()=>permission,onChange:value=>changes.push(JSON.parse(JSON.stringify(value))),document:doc});
- return {api,presence,channels,removed,events,changes,doc,current,setAllowed:v=>permission=v,setUser:v=>user=v,deferAuth:p=>delay=p};
+ const presence=api.create({client,identity:()=>current,allowed:()=>permission,onChange:value=>changes.push(JSON.parse(JSON.stringify(value))),onCursor:(payload,peer)=>cursors.push({payload,peer}),document:doc});
+ return {api,presence,cursors,channels,removed,events,changes,doc,current,setAllowed:v=>permission=v,setUser:v=>user=v,deferAuth:p=>delay=p};
 }
 test('private presence confirms subscription, tracking and sync before showing any live count',async()=>{
  const f=fixture();await f.presence.refresh();const ch=f.channels[0];
@@ -53,4 +53,22 @@ test('avatars and names are bounded, deduplicated and reject active content',()=
  assert.equal(list.length,2);assert.equal(list[0].avatar,'');assert.equal(list[1].name.length,60);
  for(const bad of ['data:image/svg+xml;base64,AA','http://example.invalid/a.png','https://example.invalid/'+'a'.repeat(300000)])assert.equal(f.api.photo(bad),'');
  assert.equal(f.api.photo('data:image/png;base64,AAAA'),'data:image/png;base64,AAAA');
+});
+
+test('cursors reuse private websocket, whitelist payloads and require online membership',async()=>{
+ const f=fixture();const p={context:'a'.repeat(64),hidden:true,text:'PRIVATE',user:'forged',session:'forged'};
+ assert.equal(f.presence.sendCursor(p),false);await f.presence.refresh();const ch=f.channels[0],sent=[];
+ ch.send=value=>{sent.push(value);return Promise.resolve('ok');};
+ ch.subscribed('SUBSCRIBED');await flush();ch.sync();
+ assert.equal(f.presence.sendCursor(p),false,'never fall back to HTTP before joined');
+ ch.state='joined';assert.equal(f.presence.sendCursor(p),true);
+ assert.deepEqual(JSON.parse(JSON.stringify(sent[0])),{type:'broadcast',event:'project-cursor',payload:{context:p.context,hidden:true,user:'person-a',session:'session-fixture'}});
+ assert.equal(ch.config.config.broadcast.self,false);assert.equal(f.channels.length,1);
+ const peer={user:'person-b',session:'session-b',name:'Peer',avatar:''};ch.presenceState=()=>({b:[peer]});ch.sync();
+ ch.cursor({payload:{...p,user:'person-b',session:'unknown'}});assert.equal(f.cursors.length,0);
+ ch.cursor({payload:{...p,user:'person-b',session:'session-b'}});assert.equal(f.cursors.length,1);assert.equal(f.cursors[0].peer.name,'Peer');
+ ch.cursor({payload:{...p,user:'person-a',session:'another-tab'}});assert.equal(f.cursors.length,1);
+ f.doc.hidden=true;assert.equal(f.presence.sendCursor(p),false);ch.cursor({payload:{...p,...peer}});assert.equal(f.cursors.length,1);
+ f.doc.hidden=false;ch.subscribed('CHANNEL_ERROR');assert.equal(f.presence.sendCursor(p),false);
+ f.presence.stop();ch.cursor({payload:{...p,...peer}});assert.equal(f.cursors.length,1);
 });
