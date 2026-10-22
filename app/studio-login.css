@@ -1,0 +1,39 @@
+/* Original Moderno login composition. Existing authentication handlers stay intact. */
+html body #loginScreen{position:fixed;inset:0;z-index:120;box-sizing:border-box;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:12px;padding:12px;background:#fff;color:#232323;overflow-y:auto;overscroll-behavior:contain;font-family:inherit}
+#loginScreen .studio-login-scene{position:sticky;top:0;isolation:isolate;height:calc(100dvh - 24px);min-height:560px;border-radius:22px;overflow:hidden;background:#c7b9a3}
+#loginScreen .studio-login-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
+#loginScreen .studio-login-scene-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(23,20,16,.18),transparent 32%,rgba(23,20,16,.12) 52%,rgba(23,20,16,.7))}
+#loginScreen .studio-login-scene-logo{position:absolute;top:36px;left:36px;width:184px;height:auto;filter:none}
+#loginScreen .studio-login-story{position:absolute;left:40px;right:32px;bottom:42px;color:#fff}
+#loginScreen .studio-login-story>span{font-size:10px;letter-spacing:.18em;font-weight:600}
+#loginScreen .studio-login-story>p{font-size:clamp(32px,3.4vw,54px);font-weight:500;line-height:1.1;letter-spacing:-.035em;margin:18px 0}
+#loginScreen .studio-login-story>small{font-size:14px;line-height:1.7;color:#ffffffe0}
+#loginScreen .studio-login-panel{box-sizing:border-box;min-height:calc(100dvh - 24px);padding:48px 36px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
+#loginScreen .studio-login-content{width:100%;max-width:370px;margin:auto 0;padding:24px 0 40px}
+#loginScreen .studio-login-wordmark{display:block;width:166px;height:auto;margin-bottom:44px;filter:none}
+#loginScreen .studio-login-heading h1{margin:0;letter-spacing:-.035em;font-family:inherit;font-size:clamp(25px,2.4vw,32px);font-weight:600;line-height:1.2}
+#loginScreen .studio-login-heading p{margin:12px 0 30px;color:#777;font-size:13px;line-height:1.6}
+#loginScreen .studio-login-form{display:grid;gap:20px}
+#loginScreen .studio-login-field{display:grid;gap:9px}
+#loginScreen .studio-login-field label{display:block;color:#333;font-size:12px;font-weight:500}
+#loginScreen .studio-login-password-label{display:flex;align-items:center;justify-content:space-between;gap:12px}
+html body #loginScreen input{box-sizing:border-box;width:100%;height:46px;margin:0;padding:0 14px;border:1px solid #dedede;border-radius:10px;background:#fff;color:#232323;box-shadow:0 1px 2px #00000005;font-family:inherit;font-size:14px;outline:none}
+#loginScreen input::placeholder{color:#969696}
+#loginScreen .studio-login-text-button{min-height:24px;padding:0;background:transparent;border:0;color:inherit;font-family:inherit;font-size:12px;line-height:1.4;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+#loginScreen .studio-login-password-label .studio-login-text-button{color:#777;font-size:11px}
+html body #loginScreen .studio-login-primary{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:46px;border:1px solid #202020;border-radius:10px;background:#202020;color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:12px 16px}
+#loginScreen .studio-login-signup{margin:0;text-align:center;color:#777;font-size:12px;line-height:1.8}
+#loginScreen .studio-login-signup button{margin-left:4px;color:#232323;font-weight:600}
+#loginScreen .studio-login-divider{display:flex;align-items:center;gap:14px;margin:28px 0 20px;color:#999;font-size:11px}
+#loginScreen .studio-login-divider>span:first-child,#loginScreen .studio-login-divider>span:last-child{height:1px;background:#e8e8e8;flex:1}
+#loginScreen .studio-login-social{display:grid;gap:10px}
+html body #loginScreen .studio-login-social button{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:46px;padding:12px 16px;border:1px solid #dedede;border-radius:10px;background:#fff;color:#333;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer}
+#loginScreen button:focus-visible,#loginScreen input:focus-visible{outline:2px solid #777;outline-offset:3px}
+#loginScreen button:disabled{opacity:.6;cursor:wait}
+#loginScreen .studio-login-footer{display:flex;gap:9px;justify-content:center;flex-wrap:wrap;color:#999;font-size:10px;line-height:1.5;text-align:center}
+@media(hover:hover){#loginScreen .studio-login-text-button:hover{color:#000}html body #loginScreen .studio-login-primary:hover{background:#383838}html body #loginScreen .studio-login-social button:hover{background:#f7f7f7}}
+@media(min-width:1600px){#loginScreen .studio-login-content{max-width:400px}#loginScreen .studio-login-panel{padding-inline:64px}}
+@media(max-width:800px){html body #loginScreen{grid-template-columns:minmax(0,1fr);padding:0;gap:0}#loginScreen .studio-login-scene{display:none}#loginScreen .studio-login-panel{min-height:100dvh;padding:32px 24px max(20px,env(safe-area-inset-bottom))}#loginScreen .studio-login-content{padding:20px 0 36px}#loginScreen .studio-login-wordmark{width:154px;margin-bottom:38px}html body #loginScreen input{font-size:16px}}
+@media(max-height:700px) and (min-width:801px){#loginScreen .studio-login-panel{padding-top:16px}#loginScreen .studio-login-content{padding-top:12px;padding-bottom:24px}#loginScreen .studio-login-wordmark{margin-bottom:28px}}
+body.dark #loginScreen .studio-login-wordmark{content:normal}
+@media print{html body #loginScreen{display:none!important}}
