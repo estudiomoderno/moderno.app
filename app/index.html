@@ -5281,14 +5281,15 @@ async function folioAnimate(el,opening){
   }
   if(!opening)el.open=false;
 }
-function projectFolio(p){
+function projectFolio(p,options={}){
+  const neutral=options?.neutral===true;
   const E=ModernoDaily.escape,id=Number(p.id),colors=folderColors(p);
   const editable=typeof _accessRole!=='undefined'&&['admin','col'].includes(_accessRole);
-  return `<div class="project-folio-shell"><details class="project-folio" style="--folio-front:${colors.front};--folio-back:${colors.back};--folio-ink:${colors.ink}" onkeydown="if(event.key==='Escape'){folioToggle(this,true);this.querySelector('summary').focus();event.stopPropagation()}">
+  return `<div class="project-folio-shell"><details class="project-folio${neutral?' project-folio-neutral':''}" style="--folio-front:${colors.front};--folio-back:${colors.back};--folio-ink:${colors.ink}" onkeydown="if(event.key==='Escape'){folioToggle(this,true);this.querySelector('summary').focus();event.stopPropagation()}">
     <summary onclick="event.preventDefault();projectOpen(${id})" aria-label="Abrir proyecto ${E(p.num+' '+p.name)}">
-      <span class="folio-scene"><span class="folio-back"></span>
+      ${neutral?`<span class="neutral-folder-art"><svg viewBox="0 0 260 200" aria-hidden="true" focusable="false"><defs><linearGradient id="folder-gray-${id}" x2="0" y2="1"><stop stop-color="#707070"/><stop offset="1" stop-color="#595959"/></linearGradient></defs><path d="M18 51Q18 30 39 30H94Q105 30 113 40L120 47H223Q242 47 242 67V166Q242 183 224 183H36Q18 183 18 165Z" fill="#505050"/><path d="M18 70Q18 49 39 49H91Q102 49 112 58L124 68H223Q242 68 242 88V166Q242 183 224 183H36Q18 183 18 165Z" fill="url(#folder-gray-${id})" stroke="#777" stroke-width="1"/></svg>${projectClientAvatar(p)}</span><span class="neutral-folder-caption"><strong>${E(p.name)}</strong><span>${E(p.num||'')}</span></span>`:`<span class="folio-scene"><span class="folio-back"></span>
       ${[0,1,2].map(i=>`<span class="folio-sheet folio-sheet-${i}"><span class="folio-sheet-lines" aria-hidden="true"></span></span>`).join('')}
-      <span class="folio-flap"><div class="folio-title-stack">${projectClientAvatar(p)}<strong class="folio-name">${E(p.num)} ${E(p.name)}</strong></div><span class="folio-plus" aria-hidden="true"></span></span></span>
+      <span class="folio-flap"><div class="folio-title-stack">${projectClientAvatar(p)}<strong class="folio-name">${E(p.num)} ${E(p.name)}</strong></div><span class="folio-plus" aria-hidden="true"></span></span></span>`}
     </summary>
     <div class="folio-controls"><button class="btn btn-dark" onclick="projectOpen(${id})">Abrir proyecto</button>
     ${editable?`<button class="btn btn-ghost" onclick="customizeModal(${id})">${ico('editar')} Editar</button><details class="folio-more"><summary aria-label="Más acciones de ${E(p.num)}">···</summary><div><button onclick="customizeModal(${id},'appearance')">${ico('personalizar')} Personalizar carpeta</button><button onclick="duplicateProject(${id})">${ico('dup_proyecto')} Duplicar</button><button onclick="toggleArchive(${id})">${ico('archivar')} ${p.status==='Archivado'?'Desarchivar':'Archivar'}</button><button onclick="deleteProject(${id})">${ico('eliminar')} Eliminar</button></div></details>`:''}</div>
@@ -5792,8 +5793,8 @@ function vProjects(){
   ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
   ${timeMode? vTimeline(projs.filter(x=>!x.tpl)) : listMode? `
   <table class="list projects-clean-list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
-    ${projs.length? projs.map(p=>{ const c=folderColors(p); return `<tr style="cursor:pointer" onclick="projectOpen(${p.id})">
-      <td><span style="display:inline-block;width:22px;height:18px;border-radius:5px;background:linear-gradient(180deg,${c.back} 35%,${c.front} 35%)"></span></td>
+    ${projs.length? projs.map(p=>{ return `<tr style="cursor:pointer" onclick="projectOpen(${p.id})">
+      <td><span style="display:inline-block;width:22px;height:18px;border-radius:5px;background:linear-gradient(180deg,#505050 35%,#666 35%)"></span></td>
       <td><b>${p.icon?p.icon+" ":""}${p.num} ${p.name}</b> ${p.tpl?'<span class="chip tpl">Plantilla</span>':""} ${(p.tags||[]).map(t=>`<span class="chip tag">${t}</span>`).join(" ")}</td>
       <td><span class="chip ${BRAND[p.brand].chip}">${BRAND[p.brand].name}</span></td>
       <td>${p.client||"—"}</td>
@@ -5808,10 +5809,10 @@ function vProjects(){
   </tbody></table>`
   : `
   <div class="proj-grid">
-    ${projs.map(projectFolio).join("")}
+    ${projs.map(p=>projectFolio(p,{neutral:true})).join("")}
     ${arch? (projs.length||PQ?"":`<div class="empty" style="grid-column:1/-1">Nada archivado todavía.</div>`) : PQ&&!projs.length?"":`<div class="folder add" onclick="newProject()">+</div>`}
   </div>
-  ${archHits.length?`<h2 class="sec" style="margin-top:22px">Archivados <span class="sec-note">${archHits.length} coincidencia${archHits.length===1?"":"s"}</span></h2><div class="proj-grid">${archHits.map(projectFolio).join("")}</div>`:""}`}
+  ${archHits.length?`<h2 class="sec" style="margin-top:22px">Archivados <span class="sec-note">${archHits.length} coincidencia${archHits.length===1?"":"s"}</span></h2><div class="proj-grid">${archHits.map(p=>projectFolio(p,{neutral:true})).join("")}</div>`:""}`}
   ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">${timeMode?"Consulta las fases y fechas de los proyectos en el cronograma.":listMode?"Pulsa un proyecto para abrirlo. Las acciones de su fila permiten editar, duplicar o archivar sin borrarlo.":"Pulsa una carpeta para abrir el proyecto."}</p>`}</div></section>`;
 }
 function toggleArchive(id){
@@ -11432,7 +11433,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.114";
+const MODERNO_VER="v3.65.115";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13577,7 +13578,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365114">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365115">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
