@@ -29,3 +29,11 @@ html body #loginScreen .studio-login-social button{display:flex;align-items:cent
 @media(max-height:700px) and (min-width:801px){#loginScreen .studio-login-panel{padding-top:16px}#loginScreen .studio-login-content{padding-top:12px;padding-bottom:24px}#loginScreen .studio-login-wordmark{margin-bottom:28px}}
 body.dark #loginScreen .studio-login-wordmark{content:normal}
 @media print{html body #loginScreen{display:none!important}}
+
+#loginScreen .studio-login-language{position:absolute;top:28px;right:36px;z-index:2;display:flex;align-items:center;color:#555}
+#loginScreen .studio-login-language>svg:first-child{position:absolute;left:12px;pointer-events:none}
+html body #loginScreen #login-language{box-sizing:border-box;appearance:none;-webkit-appearance:none;margin:0;width:150px;height:38px;padding:0 32px 0 38px;border:1px solid #e1e1e1;border-radius:10px;background:#fff;color:#444;font-family:inherit;font-size:12px;cursor:pointer;box-shadow:0 1px 2px #00000006}
+#loginScreen .studio-login-language-chevron{position:absolute;right:11px;pointer-events:none}
+#loginScreen #login-language:focus-visible{outline:2px solid #777;outline-offset:3px}
+@media(max-width:800px){#loginScreen .studio-login-language{top:20px;right:24px}#loginScreen .studio-login-panel{padding-top:88px}}
+@media(max-height:700px) and (min-width:801px){#loginScreen .studio-login-panel{padding-top:76px}}
