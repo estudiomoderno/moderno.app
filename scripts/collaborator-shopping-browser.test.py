@@ -8,7 +8,7 @@ repo=Path(__file__).resolve().parents[1];container='moderno-collab-fixture'
 e='00000000-0000-0000-0000-000000000001';user='00000000-0000-0000-0000-000000000012'
 def literal(v):return "'"+json.dumps(v,ensure_ascii=False).replace("'","''")+"'::jsonb"
 def sql(query,role=False):
- prefix=f'''begin;set local "request.jwt.claim.sub"='{user}';set local role authenticated;''' if role else 'begin;'
+ prefix=f'''begin;set local statement_timeout='8s';set local "request.jwt.claim.sub"='{user}';set local role authenticated;''' if role else 'begin;'
  result=subprocess.run(['docker','exec','-i',container,'psql','-U','postgres','-Atq','-v','ON_ERROR_STOP=1'],input=prefix+query+';commit;',text=True,capture_output=True)
  if result.returncode:raise AssertionError(result.stderr)
  return json.loads(result.stdout.strip()) if result.stdout.strip() else None
@@ -46,6 +46,9 @@ try:
     r.continue_()
    page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.evaluate(setup)
    raw=page.evaluate("()=>{const p=state.projects[0];p.rooms[0].sections[0].items[0].id='original';p.rooms[0].sections[0].items[0].cost=7;p.rooms[0].sections[0].items[0].margin=25;return [p]}")
+   if os.environ.get('COLLABORATOR_LARGE_FIXTURE')=='1':
+    first=raw[0]['rooms'][0]['sections'][0]['items'][0]
+    raw[0]['rooms'][0]['sections'][0]['items']=[dict(first,id=first['id'] if i==0 else 'large-'+str(i),name=first['name'] if i==0 else 'Producto ficticio '+str(i),desc='x'*4000) for i in range(1500)]
    sql(f"update public.datos_estudio set contenido={literal(raw)},updated_at=clock_timestamp() where estudio_id='{e}' and bloque='proyectos'")
    rows=rpc('app_leer_bloques',{'p_estudio':e,'p_bloques':['proyectos']})['data']
    page.expose_function('sqlRpc',rpc)
