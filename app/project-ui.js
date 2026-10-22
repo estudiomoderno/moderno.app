@@ -293,7 +293,7 @@ function shoppingRoomDelete(pid,rid){
 function projectTabsHtml(current){
  const groups=[
   [['proyecto','Inicio','home']],
-  [['planos','Planos','planos'],['obra','Obra','tab_obra']],
+  [['planos','Planos','planos'],['obra','Obra','tab_obra'],['diario','Diario de obra','tab_archivos'],['calobra','Calendario de obra','calendario']],
   [['tareas','Tareas','tab_tareas'],['listas','Compras','tab_listas']],
   [['fin','Economía','finanzas'],['archivos','Documentos','tab_archivos']],
   [['ai','AI','ai'],['conversaciones','Conversaciones','tab_chat']],
@@ -301,7 +301,7 @@ function projectTabsHtml(current){
   [['utilidades','Utilidades','tools']]
  ].map(group=>group.filter(([key])=>(key!=='fin'||myAccessLevel()!=='colab')&&(!['utilidades','conversaciones'].includes(key)||canView(key)))).filter(group=>group.length);
  const first=groups.flat()[0][0],selected=groups.flat().some(([key])=>key===current)?current:first;
- const special={planos:'<path d="M3 3h18v18H3zM3 10h8V3m0 7v5h10M8 21v-6H3"/>',ai:'<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6ZM20 3v4m-2-2h4"/>'};
+ const special={diario:'<path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h4M3 7h4M3 12h4M3 17h4"/>',planos:'<path d="M3 3h18v18H3zM3 10h8V3m0 7v5h10M8 21v-6H3"/>',ai:'<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6ZM20 3v4m-2-2h4"/>'};
  return `<div class="project-tabs" role="tablist" aria-label="Secciones del proyecto">${groups.map(group=>group.map(([key,label,icon])=>`<button type="button" role="tab" id="project-tab-${key}" aria-controls="project-tab-panel" aria-selected="${current===key}" tabindex="${selected===key?0:-1}" class="${current===key?'on':''}" aria-label="${label}" onclick="projTab('${key}')">${key==='fin'?projectFinanceIcon():special[key]?`<svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${special[key]}</svg>`:ico(icon)}<span class="project-tab-label" aria-hidden="true">${label}</span></button>`).join('')).join('<span class="project-tab-separator" role="separator" aria-orientation="vertical"></span>')}</div>`;
 }
 function projectDrawerOpen(){
@@ -480,3 +480,52 @@ var ModernoShoppingFeedback=(()=>{
  if(typeof window!=='undefined'&&typeof document!=='undefined')document.addEventListener('DOMContentLoaded',boot);
  return {imageState};
 })();
+
+/* Work diary uses the existing project events collection and private file resolver.
+   Entries are distinct from agenda events and are never added to client files. */
+let projectDiaryDraft=null;
+function projectDiaryEntries(p){return (Array.isArray(p.events)?p.events:[]).filter(e=>e?.cat==='diario-obra').slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt).localeCompare(String(a.createdAt)));}
+function projectDiaryAccess(){return !_accessLoading&&!state.portalAnon&&['admin','miembro','colaborador'].includes(_accessRole)&&Boolean(state.sessionUser?.mail||state.sessionUser?.id);}
+function projectDiaryHtml(p){
+ const E=ModernoDaily.escape,entries=projectDiaryEntries(p);
+ return `<section class="project-diary"><header class="project-diary-heading"><div><h2 class="sec" style="margin-top:0">Diario de obra</h2><p>Visitas, observaciones y fotos de la obra, por fecha.</p></div><button type="button" class="btn btn-dark" onclick="projectDiaryOpen(${Number(p.id)})">${ico('mas')} Nueva visita</button></header>${entries.length?entries.map(e=>`<article class="project-diary-entry"><header><time datetime="${E(e.date)}">${E(String(e.date||'').split('-').reverse().join('/'))}</time><button type="button" class="btn btn-ghost" data-entry="${E(e.id)}" onclick="projectDiaryOpen(${Number(p.id)},this.dataset.entry)">Editar visita</button></header><p class="project-diary-notes">${E(e.txt)}</p><small>${E(e.createdBy||'Equipo')}</small><div class="project-diary-photos">${(e.files||[]).map((f,index)=>`<button type="button" data-entry="${E(e.id)}" onclick="projectDiaryPhoto(${Number(p.id)},this.dataset.entry,${index})" aria-label="Abrir foto ${index+1}"><img ${fileImageAttrs(f.data)} alt="${E(f.name)}" loading="lazy"></button>`).join('')}</div></article>`).join(''):'<div class="empty">Todavía no hay visitas registradas. Añade la primera visita con sus notas y fotos.</div>'}</section>`;
+}
+function projectDiaryOpen(pid,id=null){
+ if(!projectDiaryAccess())return;
+ const p=state.projects.find(p=>p.id===pid),entry=id?(p?.events||[]).find(e=>e.id===id&&e.cat==='diario-obra'):null;if(!p||id&&!entry)return;
+ const E=ModernoDaily.escape,now=new Date(),date=entry?.date||[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+ projectDiaryDraft={pid,id,identity:fileViewIdentity(),base:entry?JSON.stringify(entry):null,files:structuredClone(entry?.files||[]),busy:false};
+ modal(`<h3>${id?'Editar visita':'Nueva visita'}</h3><form id="project-diary-form" onsubmit="event.preventDefault();projectDiarySave(this)"><label class="field">Fecha de la visita<input name="date" type="date" required value="${E(date)}"></label><label class="field">Notas<textarea name="notes" required maxlength="20000" rows="7" placeholder="Qué se ha revisado, incidencias y próximos pasos">${E(entry?.txt||'')}</textarea></label><label class="field">Fotos<input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple><small>Hasta 6 fotos por visita · 8 MB por foto.</small></label><p>${projectDiaryDraft.files.length} foto(s) guardada(s). Las nuevas se añadirán a esta visita.</p><p id="project-diary-error" role="alert"></p><div class="btn-row"><button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button type="submit" class="btn btn-dark">Guardar visita</button></div></form>`);
+}
+async function projectDiarySave(form){
+ const draft=projectDiaryDraft;if(!draft||draft.busy||!projectDiaryAccess())return false;
+ const p=state.projects.find(p=>p.id===draft.pid),files=Array.from(form.elements.photos.files||[]),date=form.elements.date.value,txt=form.elements.notes.value.trim();
+ const report=text=>{const el=form.querySelector('[role=alert]');if(el)el.textContent=text;};
+ if(!p||draft.identity!==fileViewIdentity())return false;
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!txt){report('Indica la fecha y las notas de la visita.');return false;}
+ if(draft.files.length+files.length>6||files.some(f=>!['image/jpeg','image/png','image/webp'].includes(f.type)||f.size>8*1024*1024)){report('Elige hasta 6 imágenes JPG, PNG o WebP, de un máximo de 8 MB cada una.');return false;}
+ const current=()=>state.projects.find(x=>x.id===draft.pid);
+ const valid=()=>projectDiaryDraft===draft&&draft.identity===fileViewIdentity()&&projectDiaryAccess()&&current()===p&&form.isConnected;
+ draft.busy=true;form.querySelectorAll('button,input,textarea').forEach(el=>el.disabled=true);report('Preparando visita…');
+ try{
+   for(const file of files){
+     const data=await fileUp(file);if(!valid())throw Error('La sesión o el proyecto han cambiado.');
+     if(!data||(sb&&/^data:/.test(data)))throw Error('No se pudo subir la foto a la nube. Conserva esta ventana y vuelve a intentarlo.');
+     draft.files.push({id:crypto.randomUUID(),name:file.name,type:file.type,data});
+   }
+   if(!valid())throw Error('La sesión o el proyecto han cambiado.');
+   const old=draft.id?(p.events||[]).find(e=>e.id===draft.id):null;
+   if(draft.id&&JSON.stringify(old)!==draft.base)throw Error('Otra persona ha cambiado esta visita. Copia tus notas y vuelve a abrirla antes de guardar.');
+   const entry={...(old||{}),id:draft.id||'diario-'+crypto.randomUUID(),cat:'diario-obra',date,txt,files:draft.files,createdBy:old?.createdBy||state.sessionUser.name||'Equipo',createdAt:old?.createdAt||new Date().toISOString()};
+   p.events=Array.isArray(p.events)?p.events:[];if(old)p.events[p.events.indexOf(old)]=entry;else p.events.push(entry);
+   persistSoon();projectDiaryDraft=null;closeModal();render();toast('Visita preparada; consulta el indicador de guardado.');return true;
+ }catch(error){report(error.message);return false;}
+ finally{draft.busy=false;if(form.isConnected){form.querySelectorAll('button,input,textarea').forEach(el=>el.disabled=false);if(draft.files.length)form.elements.photos.value='';}}
+}
+async function projectDiaryPhoto(pid,id,index){
+ if(!projectDiaryAccess())return;
+ const identity=fileViewIdentity(),p=state.projects.find(p=>p.id===pid),entry=(p?.events||[]).find(e=>e.id===id&&e.cat==='diario-obra'),file=entry?.files?.[index];if(!file)return;
+ const source=await fileResolveForView(file);if(!source||identity!==fileViewIdentity()||!projectDiaryAccess())return;
+ const current=state.projects.find(p=>p.id===pid)?.events?.find(e=>e.id===id&&e.cat==='diario-obra')?.files?.[index];if(current?.data!==file.data)return;
+ modal(`<h3>Foto de la visita</h3><img ${fileImageAttrs(file.data)} alt="${ModernoDaily.escape(file.name)}" style="display:block;width:100%;max-height:70vh;object-fit:contain"><div class="btn-row"><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
+}

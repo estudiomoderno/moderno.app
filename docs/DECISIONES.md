@@ -249,3 +249,6 @@ El propietario solicita una estética de programa, tomando Rayon como referencia
 ## 2026-10-20 — Importación de productos sin cuotas por ahora
 
 Por petición expresa del propietario se eliminan los límites de 15 intentos/hora y 100 intentos/día. La captura queda sin cuotas horarias o diarias por ahora; se mantienen permisos, privacidad y protecciones técnicas. Cuando se ocupan las tres capturas simultáneas recientes del estudio, la interfaz espera y continúa automáticamente sin duplicar solicitudes. Detalles y reversión: [CAPTURAS-SIN-CUOTAS](CAPTURAS-SIN-CUOTAS.md).
+
+## 2026-10-22 — Secciones independientes dentro del proyecto
+El propietario solicita separar Planos de Documentos y añadir junto a Obra un Diario de obra (fecha, notas y fotos, confirmado expresamente) y un acceso independiente al calendario que estaba dentro de Obra. Esta decisión actualiza la organización anterior de Planos como subsección de Documentos; no autoriza migrar o eliminar archivos existentes. Implementación y pruebas: [PROYECTO-SECCIONES-2026-10-22.md](PROYECTO-SECCIONES-2026-10-22.md).

@@ -51,6 +51,8 @@ jobs:
         run: node scripts/build-collaborator-performance-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Borrado de productos por colaboradores y protección de proyectos
         run: node scripts/build-product-delete-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+      - name: Categorías de archivos y diario como colaborador
+        run: node scripts/build-project-sections-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Aceptación de invitaciones y aislamiento sin crear estudios
         run: node scripts/build-invitation-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Preparar PHP (si falta)

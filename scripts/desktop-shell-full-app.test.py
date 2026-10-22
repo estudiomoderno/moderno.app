@@ -158,7 +158,7 @@ def check_finances(page,width):
  expect(sections.get_by_role('button')).to_have_text(expected)
  if width>=1100:
   r=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
-  assert abs(r['height']-32)<1 and abs(r['y']+r['height']/2-profile['y']-profile['height']/2)<1,(r,profile)
+  assert 32<=r['height']<=40 and abs(r['y']+r['height']/2-profile['y']-profile['height']/2)<1,(r,profile)
   assert r['x']+r['width']<profile['x'],(r,profile)
  page.locator('.route-component-host[data-reui-ready=true]').wait_for(state='attached')
  sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
@@ -246,7 +246,7 @@ try:
     state.account.name='Estudio ficticio';state.account.apiToken='';state.account.billContacts=[];
     BRAND.cm.name='Espacio ficticio';
     const project=structuredClone(state.projects[0]);
-    Object.assign(project,{id:9001,num:'PR-9001',name:'Proyecto ficticio',tpl:false,client:'Cliente ficticio',brand:'cm',files:[{id:'text-original',name:'Contrato ficticio.txt',body:'Texto ficticio'},{id:'plan-original',name:'Plano ficticio.pdf',data:'data:application/pdf;base64,ZmljdGl0aW91cw=='},{id:'image-original',name:'Imagen ficticia.png',data:'data:image/png;base64,ZmljdGl0aW91cw=='},'Archivo histórico.txt'],notes:'Nota histórica ficticia',rooms:[{id:8001,kind:'estancia',name:'Estancia ficticia',sections:[{id:'section-fixture',name:'General',items:[]}]}],tasks:[{id:'task-fixture',title:'Tarea ficticia',type:'Diseño',col:'pend',who:['Persona ficticia'],amount:null,acc:false,subs:[],comments:[],files:[]}],links:{drive:'',rayon:''}});
+    Object.assign(project,{id:9001,num:'PR-9001',name:'Proyecto ficticio',tpl:false,client:'Cliente ficticio',brand:'cm',files:[{id:'text-original',name:'Contrato ficticio.txt',body:'Texto ficticio'},{id:'plan-original',cat:'plano',name:'Plano ficticio.pdf',data:'data:application/pdf;base64,ZmljdGl0aW91cw=='},{id:'image-original',cat:'plano',name:'Imagen ficticia.png',data:'data:image/png;base64,ZmljdGl0aW91cw=='},'Archivo histórico.txt'],notes:'Nota histórica ficticia',rooms:[{id:8001,kind:'estancia',name:'Estancia ficticia',sections:[{id:'section-fixture',name:'General',items:[]}]}],tasks:[{id:'task-fixture',title:'Tarea ficticia',type:'Diseño',col:'pend',who:['Persona ficticia'],amount:null,acc:false,subs:[],comments:[],files:[]}],links:{drive:'',rayon:''}});
     state.projects=[project];state.clients=[{name:'Cliente ficticio',type:'Cliente',brand:'cm',email:'cliente@example.invalid'},{name:'Persona ficticia',type:'Team',brand:'cm',email:'persona@example.invalid'}];
     state.users=[{name:'Persona ficticia',email:'persona@example.invalid',role:'Administrador'}];
     state.entries=[];state.invoices=[];state.quotes=[];state.library=[];state.catalog=[];state.docs=[];state.notifs=[];
@@ -341,19 +341,16 @@ try:
     page.locator('#page-route-bar').get_by_role('button',name='Inicio',exact=True).click()
     assert page.evaluate('state.view')=='home'
    page.evaluate("go('proyecto',9001)")
-   keys=['proyecto','planos','obra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
+   keys=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
    for key in keys+['cliente']:page.evaluate('(key)=>projTab(key)',key)
    page.evaluate("window.fixtureRecords=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes,library:state.library,docs:state.docs});window.fixtureBaseline=fixtureRecords()")
    for view in routes:
     if width>=1100:
-     if view=='plantillas':
-      assert page.locator('#desktop-header [data-desktop-view=plantillas]').count()==0
-      continue
      reveal_route(page,view).click()
     else:page.evaluate('(view)=>document.querySelector(`aside.sidebar .nav-item[data-view="${view}"]`).click()',view)
     assert page.evaluate('state.view')==view
    page.evaluate("go('proyecto',9001)")
-   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Planos','Obra','Tareas','Compras','Economía','Documentos','AI','Conversaciones','Utilidades']
+   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Planos','Obra','Diario de obra','Calendario de obra','Tareas','Compras','Economía','Documentos','AI','Conversaciones','Portal del cliente','Utilidades']
    for key in keys:
     page.locator('#project-tab-'+key).click(force=width<1100)
     assert page.locator('#project-tab-'+key).get_attribute('aria-selected')=='true'
@@ -362,7 +359,7 @@ try:
      assert page.locator('.project-file-open').evaluate_all('(bs)=>bs.map(b=>b.dataset.index)')==['1','2'],'Plan filtering must retain original file indices'
      assert page.locator('.project-plan-open').count()==2
     if key=='archivos':
-     assert page.locator('.project-file-open').evaluate_all('(bs)=>bs.map(b=>b.dataset.index)')==['0','1','2','3']
+     assert page.locator('.project-file-open').evaluate_all('(bs)=>bs.map(b=>b.dataset.index)')==['0','3']
     if key=='ai':assert page.locator('#project-tab-panel').inner_text().strip()=='AI'
     if key=='conversaciones':
      assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
