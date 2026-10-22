@@ -143,7 +143,7 @@ try:
     }};
    }""")
    flush_source=(repo/'app/index.html').read_text().split('async function cloudFlush(){',1)[1].split('function cloudSnapshotAll(){',1)[0]
-   page.evaluate("source=>{window.fixtureFlush=new Function('sb','cloudReadBlock','return async function cloudFlush(){'+source)(fixtureClient,fixtureRead);}",flush_source)
+   page.evaluate("source=>{window.fixtureFlush=new Function('sb','cloudReadBlock','cloudReadSaveVersions','cloudSaveBatch','return async function cloudFlush(){'+source)(fixtureClient,fixtureRead,async()=>null,(study,plans)=>fixtureClient.rpc('app_guardar_lote',{p_estudio:study,p_cambios:plans.map(p=>({bloque:p.b,contenido:p.merged,base:p.version}))}));}",flush_source)
    def remove_first():
     grid.locator('.shopping-product-card').get_by_role('button',name='Editar Secuencial',exact=False).first.click()
     box.get_by_role('button',name='Eliminar producto',exact=True).click()
@@ -161,6 +161,8 @@ try:
    expect(grid.locator('.shopping-product-card')).to_have_count(1)
    page.evaluate('async()=>{await fixtureFlush();clearTimeout(_cloudRetryT);}')
    assert page.evaluate("canon(fixtureRows.proyectos.contenido)===canon(state.projects)&&fixtureWrites===2&&!syncHasChanges()&&state.projects[0].rooms[0].sections[0].items[0].name==='Secuencial 4'")
+   page.evaluate("_accessRole='colaborador';go('proyecto',9001)")
+   expect(page.locator('.project-delete-action')).to_have_count(0)
    assert not writes,writes;assert not errors,errors
    print(width,'PASS compact cards, 32px image actions, no states, unknown price, filters, dirty draft/cancel, duplicate and delete exact instance with references preserved; no remote writes',flush=True)
    page.close()

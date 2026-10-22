@@ -5825,7 +5825,7 @@ function vProject(){
       <button class="btn btn-ghost" onclick="customizeModal(${p.id},'appearance')">${ico('personalizar')} Personalizar proyecto</button>
       <button id="project-client-access" class="btn btn-ghost" onclick="projTab('cliente')">${ico('portal')} Portal del cliente</button>
       <button class="btn btn-ghost" onclick="duplicateProject(${p.id})">${ico('dup_proyecto')} Duplicar proyecto</button>
-      <button class="btn btn-ghost project-delete-action" onclick="deleteProject(${p.id})">${ico('eliminar')} Eliminar proyecto</button>
+      ${_accessRole==='colaborador'?'':`<button class="btn btn-ghost project-delete-action" onclick="deleteProject(${p.id})">${ico('eliminar')} Eliminar proyecto</button>`}
     </div></details></div>
   </div>
   ${projectTabsHtml(tb)}
@@ -11530,7 +11530,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.107";
+const MODERNO_VER="v3.65.108";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

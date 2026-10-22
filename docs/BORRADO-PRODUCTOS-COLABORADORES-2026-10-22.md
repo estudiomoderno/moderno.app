@@ -1,4 +1,4 @@
-# Borrado de productos por colaboradores — v3.65.107
+# Borrado de productos por colaboradores — v3.65.108
 
 ## Alcance y autorización
 
@@ -6,7 +6,7 @@ El propietario solicita que la colaboradora pueda eliminar productos de las list
 
 ## Corrección
 
-La UI bloqueaba el borrado en `shoppingProductDelete` y `delItem`; ambos pasan ahora por la confirmación y la operación existente que mantiene referencias locales. `deleteProject` y `deleteProjectGo` rechazan al colaborador antes de cualquier mutación.
+La UI bloqueaba el borrado en `shoppingProductDelete` y `delItem`; ambos pasan ahora por la confirmación y la operación existente que mantiene referencias locales. La cabecera oculta «Eliminar proyecto» al colaborador. `deleteProject` y `deleteProjectGo` rechazan al colaborador antes de cualquier mutación.
 
 El escritor versionado antes impedía eliminar una fila con costes ocultos. El nuevo auxiliar privado prepara exclusivamente las eliminaciones de productos en `proyectos → rooms → sections → items`, identificados de forma única por ID o por nombre en datos antiguos sin ID. Conserva el resto del árbol anterior y lo entrega al combinador existente, que mantiene sus reglas de protección de costes, documentos y campos no autorizados. Rechaza identidades ambiguas. Los proyectos previos deben conservar su ID exactamente una vez, incluso si carecen de campos privados. La biblioteca (`compras`) no recibe esta excepción.
 
@@ -27,3 +27,5 @@ CI debe pasar antes de aplicar `SQL/borrado-productos-colaborador.sql`; después
 La evidencia de respaldo disponible se mantiene: Storage programado del 22-10 y supervisor correcto; la última copia física de BD mostrada directamente en la sesión es del 21-10. No se afirma una nueva restauración ni una copia física adicional. Esta instalación no transforma datos existentes.
 
 Reversión: restaurar primero frontend anterior y después ejecutar `SQL/borrado-productos-colaborador-rollback.sql`. Reinstala el escritor anterior y elimina únicamente el auxiliar nuevo. No recupera productos que alguien haya eliminado legítimamente tras la publicación; para eso se revisa el historial del bloque sin sobrescribir otros cambios.
+
+La regresión de tarjetas se ejecuta en 1440/1100/390 px, incluido borrado secuencial con confirmaciones de guardado demoradas. Su cliente ficticio se adapta a los hooks de versiones y lotes actuales; no realiza escrituras de red. El primer intento de ese script antiguo falló por usar una simulación de guardado anterior a los hooks actuales, no por un fallo del borrado en la app. Se corrigió el cliente de prueba y se repitió.
