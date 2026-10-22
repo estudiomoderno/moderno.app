@@ -30,4 +30,7 @@ try{invitation_throttle($dir,'actor','study','x@example.invalid',10000);denied(f
 for($i=0;$i<18;$i++)invitation_throttle($dir,'actor','study','other'.$i.'@example.invalid',10062);
 denied(fn()=>invitation_throttle($dir,'actor','study','last@example.invalid',10063),429);invitation_throttle($dir,'actor','study','last@example.invalid',14000);check(true);
 }finally{foreach(glob($dir.'/*.json') as $file)unlink($file);rmdir($dir);}
+check(invitation_link('33700000-0000-4000-8000-000000000001','persona+equipo@example.invalid')==='https://app.moderno.app/?invitacion=33700000-0000-4000-8000-000000000001&correo=persona%2Bequipo%40example.invalid');
+denied(fn()=>invitation_link('bad','persona@example.invalid'),400);
+denied(fn()=>invitation_link('33700000-0000-4000-8000-000000000001',"bad\r\n@example.invalid"),400);
 echo $tests." comprobaciones de autorización correctas; ningún correo enviado\n";

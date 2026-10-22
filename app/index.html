@@ -996,8 +996,9 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3568">
 <link rel="stylesheet" href="/shopping-cards.css?v=365102">
-<link rel="stylesheet" href="/studio-login.css?v=365105">
-<script src="/studio-login.js?v=365105" defer></script>
+<link rel="stylesheet" href="/studio-login.css?v=365106">
+<script src="/team-invitation.js?v=365106"></script>
+<script src="/studio-login.js?v=365106" defer></script>
 <link rel="stylesheet" href="/orders-dashboard.css?v=3626">
 <script src="/workflow-polish.js?v=3611"></script><link rel="stylesheet" href="/workflow-polish.css?v=3611">
 <script src="/client-portal-site.js?v=36578"></script>
@@ -1215,11 +1216,13 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
   <section class="studio-login-panel" aria-label="Inicio de sesión">
     <div class="studio-login-content">
       <img class="studio-login-wordmark" src="/brand/modernoapp-grafito.svg?v=351" alt="Moderno.app" width="166" height="28">
+      <div id="login-invite-note" hidden><p>Te han invitado al equipo. Crea tu contraseña o entra con Google usando la cuenta invitada.</p><strong></strong><button id="login-invite-existing" type="button" class="studio-login-text-button">Ya tengo cuenta</button></div>
       <form id="lgAlt" class="studio-login-form" onsubmit="event.preventDefault();sbMailLogin()">
         <div class="studio-login-field"><label for="lgEmail" data-login-copy="email">Correo electrónico</label><input id="lgEmail" name="email" type="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="tu@estudio.com" required></div>
-        <div class="studio-login-field"><div class="studio-login-password-label"><label for="lgPass" data-login-copy="password">Contraseña</label><button type="button" class="studio-login-text-button" data-login-copy="forgot" onclick="sbMailReset()">¿La has olvidado?</button></div><input id="lgPass" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" required></div>
+        <div class="studio-login-field"><div class="studio-login-password-label"><label for="lgPass" data-login-copy="password">Contraseña</label><button type="button" id="login-forgot" class="studio-login-text-button" data-login-copy="forgot" onclick="sbMailReset()">¿La has olvidado?</button></div><input id="lgPass" name="password" type="password" autocomplete="current-password" placeholder="Tu contraseña" required></div>
+        <div id="login-invite-confirm" class="studio-login-field" hidden><label for="lgPassConfirm">Repite tu contraseña</label><input id="lgPassConfirm" name="password-confirm" type="password" autocomplete="new-password" minlength="8" placeholder="Repite tu contraseña"></div>
         <button id="lg-mail" type="submit" class="studio-login-primary"><span data-login-copy="enter">Entrar</span> <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
-        <p class="studio-login-signup"><span data-login-copy="newAccount">¿Todavía no tienes cuenta?</span> <button type="button" class="studio-login-text-button" data-login-copy="signup" onclick="sbMailSignup()">Crear cuenta</button></p>
+        <p id="login-signup" class="studio-login-signup"><span data-login-copy="newAccount">¿Todavía no tienes cuenta?</span> <button type="button" class="studio-login-text-button" data-login-copy="signup" onclick="sbMailSignup()">Crear cuenta</button></p>
       </form>
       <div class="studio-login-divider"><span></span><span data-login-copy="or">o continúa con</span><span></span></div>
       <div class="studio-login-social">
@@ -4468,7 +4471,7 @@ drawBrandSwitch();
 function render(){
   if(typeof _localResumePending!=='undefined'&&_localResumePending)return;
   (state.projects||[]).forEach(p=>ModernoSpec.reindex(p));
-  if(_accessLoading&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>'+(_accessError?'No se ha podido abrir el estudio':'Conectando con tu estudio')+'</h1><p>'+ModernoDaily.escape(_accessError||'Comprobando el acceso y cargando tus datos.')+'</p>'+(_accessError?'<p>Tus copias se conservan. Puedes descargar los cambios desde el estado de sincronización.</p>':'')+'<button class="btn btn-ghost" '+(_accessConnecting?'disabled':'')+' onclick="cloudLoad()">'+(_accessConnecting?'Conectando…':'Reintentar conexión')+'</button>';return;}
+  if(_accessLoading&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>'+(_accessError?'No se ha podido abrir el estudio':'Conectando con tu estudio')+'</h1><p>'+ModernoDaily.escape(_accessError||'Comprobando el acceso y cargando tus datos.')+'</p>'+(_accessError?'<p>Tus copias se conservan. Puedes descargar los cambios desde el estado de sincronización.</p>':'')+'<button class="btn btn-ghost" '+(_accessConnecting?'disabled':'')+' onclick="cloudLoad()">'+(_accessConnecting?'Conectando…':'Reintentar conexión')+'</button>'+((typeof ModernoInvitations!=='undefined'&&ModernoInvitations.context()&&_accessError)?'<button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión y usar la cuenta invitada</button>':'');return;}
   if((_accessRole==='contratista'||_accessRole==='cliente')&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>Acceso al proyecto</h1><p>Abre el enlace de proyecto que te ha compartido el estudio.</p><button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión</button>';return;}
   if(_accessRole==="gestoria"&&state.view!=="ajustes"){ V.innerHTML=vGestoria();applyRoleNav();return; }
   if(!canView(state.view))state.view='home';
@@ -4760,8 +4763,8 @@ function abreMailtoInv(d){
         "Hola "+(d.name||"")+",\n\n"+
         "Te he invitado a nuestro espacio de trabajo en Moderno.app con el rol de "+d.role+".\n\n"+
         "Para entrar:\n"+
-        "1) Abre https://app.moderno.app\n"+
-        "2) Entra con Google o crea tu cuenta con tu correo \u2014 usa este mismo email ("+d.email+")\n\n"+
+        "1) Abre "+ModernoInvitations.link(location.origin,{study:ESTUDIO_ID,email:d.email})+"\n"+
+        "2) Escribe dos veces tu contraseña o entra con Google usando la cuenta invitada.\n\n"+
         "Al entrar verás los proyectos y espacios del estudio según tu rol.\n\n"+
         "¡Nos vemos dentro!\n"+(state.userName||""));
       window.open("mailto:"+d.email+"?subject="+asunto+"&body="+cuerpo, "_blank");
@@ -11525,7 +11528,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.105";
+const MODERNO_VER="v3.65.106";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -12106,15 +12109,18 @@ async function cloudLoad(){
     if(_saveErr)throw new Error("Conserva los cambios actuales antes de reconectar. Descárgalos desde el estado de guardado.");
     render();
     syncTag("saving","Conectando con tu estudio…");
+    const invitation=typeof ModernoInvitations==='undefined'?null:ModernoInvitations.context();
     let verifiedUserId=null;
     if(sb.auth?.getUser){
       const identity=await cloudConnectionStep(sb.auth.getUser(),attempt);
       if(identity.error||!identity.data?.user?.id)throw new Error('No se pudo verificar tu identidad. Conserva tus cambios y reintenta.');
+      if(invitation)ModernoInvitations.assertUser(identity.data.user);
       verifiedUserId=identity.data.user.id;
       if(state.sessionUser?.id!==verifiedUserId)state.sessionUser=sbUserToSession(identity.data.user);
     }
-    const {data:mem, error:e1} = await cloudConnectionStep(sb.rpc("unirse_al_estudio"),attempt);
-    if(e1||!mem||!mem.estudio_id){ throw new Error("No se pudo comprobar tu acceso al estudio. Revisa la conexión y reintenta."); }
+    const {data:mem, error:e1} = await cloudConnectionStep(invitation?sb.rpc("app_aceptar_invitacion",{p_estudio:invitation.study}):sb.rpc("unirse_al_estudio"),attempt);
+    if(e1||!mem||!mem.estudio_id){ throw new Error(invitation?(e1?.code==='42501'?e1.message:"No se pudo aceptar la invitación. Reintenta o pide un nuevo enlace al administrador."):"No se pudo comprobar tu acceso al estudio. Revisa la conexión y reintenta."); }
+    if(invitation&&mem.estudio_id!==invitation.study)throw Error("No se pudo verificar el estudio de la invitación.");
     ESTUDIO_ID = mem.estudio_id;
     state.myRole = mem.rol || "miembro";
     /* Ancla de estudio: si este navegador ya trabajaba con un estudio y sigue teniendo
@@ -12123,7 +12129,7 @@ async function cloudLoad(){
     try{
       const anc = localStorage.getItem(LS_KEY+"_estudio");
       _anclaPrevia = !!(anc && anc!==ESTUDIO_ID);
-      if(anc && anc!==ESTUDIO_ID){
+      if(!invitation && anc && anc!==ESTUDIO_ID){
         const {data:probe, error:pe} = await cloudConnectionStep(sb.from("miembros")
           .select("estudio_id,rol").eq("estudio_id", anc).limit(1),attempt);
         if(!pe && Array.isArray(probe) && probe.length===1){ ESTUDIO_ID = anc; state.myRole=probe[0].rol||"miembro"; }
@@ -12144,6 +12150,7 @@ async function cloudLoad(){
     const access=await cloudConnectionStep(sb.rpc("app_rol",{p_estudio:ESTUDIO_ID}),attempt);
     if(access.error||!['admin','colaborador','gestoria','contratista','cliente'].includes(access.data)){throw new Error("No se pudieron verificar tus permisos. Reintenta o consulta con el administrador del estudio.");}
     _accessRole=access.data;
+    if(invitation)ModernoInvitations.finish(ESTUDIO_ID);
     if(_accessRole==="gestoria"){_accessLoading=false;await gestoriaLoad();return;}
     if(_accessRole==='contratista'||_accessRole==='cliente'){_accessLoading=false;render();return;}
     const eid = ESTUDIO_ID;
@@ -12328,7 +12335,7 @@ function invEnviar(){
 }
 function invCopy(email){
   const txt="Hola \u2014 te he invitado a "+(state.account.name||"nuestro estudio")+" en Moderno.app.\n\n"+
-    "Entra en https://app.moderno.app con este correo ("+email+"), con Google o creando una cuenta con contrase\u00f1a, y acceder\u00e1s directamente al estudio: sin configurar nada.\n\n\u00a1Te espero dentro!";
+    "Abre este enlace para aceptar la invitación con tu contraseña o Google: "+ModernoInvitations.link(location.origin,{study:ESTUDIO_ID,email})+"\n\n¡Te espero dentro!";
   const ver=()=>modal(`<h3>\u2709 Mensaje de invitaci\u00f3n</h3><textarea rows="7" style="width:100%">${txt}</textarea><div class="modal-foot"><button class="btn btn-gold" onclick="closeModal()">Cerrar</button></div>`);
   if(navigator.clipboard && navigator.clipboard.writeText)
     navigator.clipboard.writeText(txt).then(()=>toast("\u2709 Mensaje copiado \u2014 p\u00e9galo en tu correo o WhatsApp")).catch(ver);
@@ -12568,7 +12575,7 @@ function routeWrite(){
 }
 function routeAuthRedirect(){
   try{const route=ModernoRouter.parse(location);if(route)sessionStorage.setItem('moderno_auth_destination',ModernoRouter.path(route)+(ModernoRouter.authCallback(location)?'':location.search));}catch(e){}
-  return location.origin+'/';
+  return (typeof ModernoInvitations!=='undefined'&&ModernoInvitations.redirect(location.origin))||location.origin+'/';
 }
 function routeAuthReturn(){
   try{const dest=sessionStorage.getItem('moderno_auth_destination');if(!dest)return;
@@ -13569,6 +13576,7 @@ async function sbMailLogin(){
   }
 }
 async function sbMailSignup(){
+  if(window.ModernoInvitations?.context())return ModernoInvitations.submit();
   if(!sb){ loginGo("mail"); return; }
   const email=_lgVal("lgEmail").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""), pass=_lgVal("lgPass");
   if(!email || pass.length<8){ toast("Escribe tu correo y una contraseña de al menos 8 caracteres"); return; }
@@ -13627,7 +13635,7 @@ function loginGo(prov){
   if(sb && prov==="google"){
     const btn=document.getElementById("lg-google");
     if(btn){ btn.disabled=true; btn.style.opacity=".8"; btn.innerHTML='<span class="lg-spin"></span> Abriendo Google…'; }
-    sb.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: routeAuthRedirect() } });
+    sb.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: routeAuthRedirect(), ...(window.ModernoInvitations?.context()?.email?{queryParams:{login_hint:ModernoInvitations.context().email,prompt:"select_account"}}:{}) } });
     return;
   }
   const names={google:"Google",apple:"Apple",mail:"tu correo"};

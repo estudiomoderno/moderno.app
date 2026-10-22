@@ -48,3 +48,8 @@ function invitation_throttle(string $directory,string $actor,string $study,strin
         rewind($fp);if(!ftruncate($fp,0)||fwrite($fp,$encoded)!==strlen($encoded)||!fflush($fp)) throw new InvitationError('No se pudo registrar el intento de envío',503);
     } finally {flock($fp,LOCK_UN);fclose($fp);}
 }
+
+function invitation_link(string $study,string $email): string {
+    if(!preg_match('/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/iD',$study)||!filter_var($email,FILTER_VALIDATE_EMAIL))throw new InvitationError('Invitacion no valida',400);
+    return 'https://app.moderno.app/?'.http_build_query(['invitacion'=>strtolower($study),'correo'=>strtolower(trim($email))],'','&',PHP_QUERY_RFC3986);
+}

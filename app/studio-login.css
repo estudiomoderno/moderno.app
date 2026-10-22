@@ -37,3 +37,9 @@ html body #loginScreen #login-language{box-sizing:border-box;appearance:none;-we
 #loginScreen #login-language:focus-visible{outline:2px solid #777;outline-offset:3px}
 @media(max-width:800px){#loginScreen .studio-login-language{top:20px;right:24px}#loginScreen .studio-login-panel{padding-top:88px}}
 @media(max-height:700px) and (min-width:801px){#loginScreen .studio-login-panel{padding-top:76px}}
+
+#loginScreen [hidden]{display:none!important}
+#loginScreen #login-invite-note{margin-bottom:24px;color:#666;font-size:12px;line-height:1.6}
+#loginScreen #login-invite-note p{margin:0 0 8px}
+#loginScreen #login-invite-note strong{display:block;color:#333;overflow-wrap:anywhere}
+#loginScreen #login-invite-existing{margin-top:8px}
