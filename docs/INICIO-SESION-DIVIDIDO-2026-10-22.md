@@ -25,3 +25,9 @@ Revisión: https://github.com/estudiomoderno/moderno.app/compare/f74f5507edf1df8
 ## Ajuste visual v3.65.104
 
 A petición del propietario, se retiran logotipo, textos y sombreado de la imagen; también el título y subtítulo del formulario. El único logotipo gráfico queda centrado sobre Correo electrónico. El panel conserva nombre accesible sin encabezado visible. Se actualiza la prueba de navegador existente para la composición final y se mantienen todos los manejadores de acceso. Reversión: revertir el PR de `mejora/acceso-sin-textos`.
+
+## Idioma del acceso y pie — v3.65.105
+
+Selector nativo con icono de idioma en la esquina superior derecha. Textos del formulario en español, inglés, francés, italiano y portugués; recuerda la elección en una clave local separada por origen de pruebas/producción (`LS_KEY:login-language`). La preferencia queda limitada a la pantalla de acceso: no activa la traducción incompleta del estudio, cambia datos o configuración de autenticación. Los mensajes dinámicos de autenticación y recuperación conservan el comportamiento/idioma actual.
+
+El pie queda exactamente «© 2027 - Moderno App», sin versión. Nuevo `app/studio-login.js` de presentación, CSS y marcado actualizados, verificador ampliado a 49 recursos. Prueba Chromium existente ampliada para los cinco idiomas, persistencia al recargar, nombre accesible, posición sin solapamientos y cambio de idioma tras un intento de acceso. 645 pruebas Node y seis tamaños de navegador correctos; capturas de escritorio/móvil revisadas. Reversión: revertir el PR de `mejora/idioma-acceso`; sin migraciones.

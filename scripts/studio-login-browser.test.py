@@ -51,6 +51,18 @@ try:
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
    assert screen.evaluate('e=>e.scrollWidth<=e.clientWidth')
    page.wait_for_function("document.querySelector('.studio-login-photo').complete&&document.querySelector('.studio-login-photo').naturalWidth>0")
+   expect(page.locator('.studio-login-footer')).to_have_text('© 2027 - Moderno App')
+   assert page.locator('#loginScreen .verTag').count()==0
+   language=page.locator('#login-language');expect(language).to_be_visible()
+   language_box=language.bounding_box();logo_box=page.locator('.studio-login-wordmark').bounding_box()
+   assert language_box['x']+language_box['width']<=width and language_box['y']+language_box['height']<logo_box['y'],(language_box,logo_box)
+   for code,label in [('en','Email address'),('fr','Adresse e-mail'),('it','Indirizzo email'),('pt','Endereço de email'),('es','Correo electrónico')]:
+    language.select_option(code);expect(page.get_by_label(label,exact=True)).to_be_visible();expect(screen).to_have_attribute('lang',code)
+   assert page.evaluate("APP_LANG==='es'"), 'Login preference must not enable incomplete app translations'
+   if width in [1440,390]:
+    language.select_option('en');page.reload(wait_until='networkidle')
+    expect(page.get_by_label('Email address',exact=True)).to_be_visible();expect(language).to_have_value('en')
+    language.select_option('es')
    if output:page.screenshot(path=str(output/f'login-{width}-{height}.png'))
    page.get_by_label('Correo electrónico',exact=True).fill('persona@example.invalid')
    page.get_by_label('Contraseña',exact=True).fill('Fictional-password-123')
@@ -67,6 +79,8 @@ try:
    page.get_by_role('button',name='Continuar con Google',exact=True).click()
    page.wait_for_function("authCalls.some(x=>x.kind==='oauth'&&x.args.provider==='google')")
    assert page.evaluate("authCalls.every(x=>x.kind!=='oauth'||x.args.options.redirectTo.startsWith(location.origin))")
+   language.select_option('en');expect(page.locator('#lg-mail')).to_have_text('Sign in')
+   language.select_option('es');expect(page.locator('#lg-mail')).to_have_text('Entrar')
    page.evaluate("document.body.classList.add('dark')")
    assert page.locator('#lgEmail').evaluate("e=>getComputedStyle(e).backgroundColor==='rgb(255, 255, 255)'")
    page.evaluate("showLogin(false)");expect(screen).to_be_hidden()
