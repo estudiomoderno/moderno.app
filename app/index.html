@@ -5287,7 +5287,7 @@ function projectFolio(p,options={}){
   const editable=typeof _accessRole!=='undefined'&&['admin','col'].includes(_accessRole);
   return `<div class="project-folio-shell"><details class="project-folio${neutral?' project-folio-neutral':''}" style="--folio-front:${colors.front};--folio-back:${colors.back};--folio-ink:${colors.ink}" onkeydown="if(event.key==='Escape'){folioToggle(this,true);this.querySelector('summary').focus();event.stopPropagation()}">
     <summary onclick="event.preventDefault();projectOpen(${id})" aria-label="Abrir proyecto ${E(p.num+' '+p.name)}">
-      ${neutral?`<span class="neutral-folder-art"><svg viewBox="0 0 260 200" aria-hidden="true" focusable="false"><defs><linearGradient id="folder-gray-${id}" x2="0" y2="1"><stop stop-color="#707070"/><stop offset="1" stop-color="#595959"/></linearGradient></defs><path d="M18 51Q18 30 39 30H94Q105 30 113 40L120 47H223Q242 47 242 67V166Q242 183 224 183H36Q18 183 18 165Z" fill="#505050"/><path d="M18 70Q18 49 39 49H91Q102 49 112 58L124 68H223Q242 68 242 88V166Q242 183 224 183H36Q18 183 18 165Z" fill="url(#folder-gray-${id})" stroke="#777" stroke-width="1"/></svg>${projectClientAvatar(p)}</span><span class="neutral-folder-caption"><strong>${E(p.name)}</strong><span>${E(p.num||'')}</span></span>`:`<span class="folio-scene"><span class="folio-back"></span>
+      ${neutral?`<span class="neutral-folder-art"><svg viewBox="0 0 230 220" aria-hidden="true" focusable="false"><defs><linearGradient id="folder-gray-${id}" x2="0" y2="1"><stop stop-color="#707070"/><stop offset="1" stop-color="#595959"/></linearGradient></defs><path d="M16 52Q16 30 38 30H76Q87 30 94 38L101 45H192Q214 45 214 67V178Q214 200 192 200H38Q16 200 16 178Z" fill="#505050"/><path d="M16 77C16 63 25 55 38 55H79C91 55 96 59 106 66C112 70 117 72 126 72H192Q214 72 214 94V178Q214 200 192 200H38Q16 200 16 178Z" fill="url(#folder-gray-${id})" stroke="#777" stroke-width="1"/></svg>${projectClientAvatar(p)}</span><span class="neutral-folder-caption"><strong>${E(p.name)}</strong><span>${E(p.num||'')}</span></span>`:`<span class="folio-scene"><span class="folio-back"></span>
       ${[0,1,2].map(i=>`<span class="folio-sheet folio-sheet-${i}"><span class="folio-sheet-lines" aria-hidden="true"></span></span>`).join('')}
       <span class="folio-flap"><div class="folio-title-stack">${projectClientAvatar(p)}<strong class="folio-name">${E(p.num)} ${E(p.name)}</strong></div><span class="folio-plus" aria-hidden="true"></span></span></span>`}
     </summary>
@@ -11433,7 +11433,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.115";
+const MODERNO_VER="v3.65.116";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13578,7 +13578,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365115">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365116">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
