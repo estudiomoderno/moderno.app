@@ -426,7 +426,7 @@ html body .projects-identity .projects-header{padding-top:0}
 html body .projects-identity .projects-header>h1.big{margin-top:0}
 html body .projects-identity .project-folio-neutral>summary{padding:12px 10px 16px!important;border-radius:18px;transition:background-color .15s ease}
 html body .projects-identity .project-folio-neutral>summary:hover{background:#f2f2f2!important}
-.project-folio-neutral .neutral-folder-art{display:block;position:relative;width:100%;max-width:260px;margin:0 auto}
+.project-folio-neutral .neutral-folder-art{display:block;position:relative;width:100%;max-width:230px;margin:0 auto}
 .project-folio-neutral .neutral-folder-art>svg{display:block;width:100%;height:auto}
 .project-folio-neutral .neutral-folder-art>.project-client-avatar{position:absolute;left:13%;bottom:15%;width:24px;height:24px;background:#eee;color:#555;border:2px solid #fff;box-shadow:none}
 .project-folio-neutral .neutral-folder-caption{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:8px 0 0;min-height:58px}
