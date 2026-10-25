@@ -435,3 +435,7 @@ html body .projects-identity .project-folio-neutral>summary:hover{background:#f2
 html body .projects-identity .proj-grid>.folder.add{width:calc(100% - 20px);height:180px;min-height:0;margin:28px 10px 0;background:#fafafa;border:1px dashed #ddd;box-shadow:none}
 @media(min-width:1100px){html body .main:has(.projects-identity){padding-top:72px!important;scroll-padding-top:72px}}
 @media(max-width:700px){html body .projects-identity .project-folio-neutral>summary{padding:8px 4px 12px!important}.project-folio-neutral .neutral-folder-caption strong{font-size:13px}html body .projects-identity .proj-grid>.folder.add{height:140px;margin:20px 6px 0;width:calc(100% - 12px)}}
+
+/* The mounted desktop project bar already provides the + project search.
+   Keep the native field available on mobile and if the desktop bar is absent. */
+@media screen and (min-width:1100px){body.project-windows .projects-identity .projects-toolbar>.projects-search{display:none!important}}

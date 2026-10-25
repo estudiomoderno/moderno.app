@@ -5773,7 +5773,7 @@ function vProjects(){
   const listMode = state.projView==="list";
   const timeMode = false;
   const activeCount = byBrand(state.projects.filter(p=>!p.tpl && p.status!=="Archivado")).length;
-  const buscador = `<div class="flt" style="position:relative;display:inline-flex;align-items:center">
+  const buscador = `<div class="flt projects-search" style="position:relative;display:inline-flex;align-items:center">
     <span style="position:absolute;left:11px;display:inline-flex;color:var(--ink-faint)">${ico("buscar")}</span>
     <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Buscar por proyecto o cliente" aria-label="Buscar por proyecto o cliente" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
   </div>`;
@@ -11433,7 +11433,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.116";
+const MODERNO_VER="v3.65.117";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13578,7 +13578,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365116">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365117">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
