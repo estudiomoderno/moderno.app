@@ -5770,8 +5770,6 @@ function vProjects(){
   const arch = !!state.showArchived;
   const archHits = (PQ && !arch) ? sortProjects(byBrand(state.projects.filter(p=>!p.tpl && p.status==="Archivado")).filter(pMatch)) : [];
   const projs = sortProjects(byBrand(state.projects.filter(p=>!p.tpl)).filter(p => arch ? p.status==="Archivado" : p.status!=="Archivado").filter(pMatch));
-  const listMode = state.projView==="list";
-  const timeMode = false;
   const buscador = `<div class="flt projects-search" style="position:relative;display:inline-flex;align-items:center">
     <span style="position:absolute;left:11px;display:inline-flex;color:var(--ink-faint)">${ico("buscar")}</span>
     <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Buscar por proyecto o cliente" aria-label="Buscar por proyecto o cliente" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
@@ -5780,41 +5778,20 @@ function vProjects(){
   <section class="projects-identity"><header class="projects-header"><h1 class="projects-page-title">${arch?'Proyectos archivados':'Proyectos'}</h1>
   <div class="projects-toolbar">
     ${buscador}
-    <div class="brand-switch">
-      <button class="${!listMode&&!timeMode?'on':''}" title="Cuadrícula" onclick="projectsViewSet('grid')">${ico('grid')}</button>
-      <button class="${listMode?'on':''}" title="Lista" onclick="projectsViewSet('list')">${ico('list')}</button>
-    </div>
     <div class="projects-primary-actions">
     <button class="btn projects-archive ${arch?'is-active':'btn-ghost'}" title="${arch?'Volver a proyectos activos':'Proyectos archivados'}" aria-label="${arch?'Volver a proyectos activos':'Proyectos archivados'}" aria-pressed="${arch}" onclick="projectsArchivedToggle()">${ico('eliminar')}</button>
     <button class="btn projects-new" title="Nuevo proyecto" aria-label="Nuevo proyecto" onclick="newProject()">${ico("mas")}<span>Nuevo proyecto</span></button>
     </div>
   </div>
   ${PQ?`<div class="daily-filter-info">Para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button></div>`:''}
-  </header><div class="projects-view-content">
+  <hr class="projects-divider"></header><div class="projects-view-content">
   ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
-  ${timeMode? vTimeline(projs.filter(x=>!x.tpl)) : listMode? `
-  <table class="list projects-clean-list" style="margin-top:16px"><thead><tr><th></th><th>Proyecto</th><th>Marca</th><th>Cliente</th><th>Estado</th><th>Tareas</th><th style="text-align:right">Acciones</th></tr></thead><tbody>
-    ${projs.length? projs.map(p=>{ return `<tr style="cursor:pointer" onclick="projectOpen(${p.id})">
-      <td><span style="display:inline-block;width:22px;height:18px;border-radius:5px;background:linear-gradient(180deg,#505050 35%,#666 35%)"></span></td>
-      <td><b>${p.icon?p.icon+" ":""}${p.num} ${p.name}</b> ${p.tpl?'<span class="chip tpl">Plantilla</span>':""} ${(p.tags||[]).map(t=>`<span class="chip tag">${t}</span>`).join(" ")}</td>
-      <td><span class="chip ${BRAND[p.brand].chip}">${BRAND[p.brand].name}</span></td>
-      <td>${p.client||"—"}</td>
-      <td><span class="chip neutral">${p.status}</span></td>
-      <td><div class="project-task-cell"><span>${p.tasks.filter(t=>t.col==="listo").length}/${p.tasks.length}</span>${projectFolderNotifications(p)}</div></td>
-      <td style="text-align:right;white-space:nowrap">
-        <button class="btn btn-ghost" title="Duplicar" onclick="event.stopPropagation();duplicateProject(${p.id})">${ico('dup_proyecto')}</button>
-        <button class="btn btn-ghost" title="Editar" onclick="event.stopPropagation();customizeModal(${p.id})">${ico('editar')}</button>
-        <button class="btn btn-ghost" title="${arch?'Desarchivar':'Archivar'}" onclick="event.stopPropagation();toggleArchive(${p.id})">${arch?"↩":ico('archivar')}</button>
-      </td></tr>`}).join("") : `<tr><td colspan="7"><div class="empty">${PQ?"Sin resultados para esta búsqueda.":arch?"Nada archivado todavía.":"Sin proyectos."}</div></td></tr>`}
-    ${archHits.length?`<tr><td colspan="7" style="padding-top:14px"><b style="font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em">Archivados</b></td></tr>${archHits.map(p=>`<tr style="cursor:pointer;opacity:.7" onclick="projectOpen(${p.id})"><td></td><td><b>${p.num}</b> ${p.name}</td><td>${BRAND[p.brand]?.name||""}</td><td>${p.client||""}</td><td><span class="chip neutral">Archivado</span></td><td>${(p.tasks||[]).length}</td><td></td></tr>`).join("")}`:""}
-  </tbody></table>`
-  : `
   <div class="proj-grid">
     ${projs.map(p=>projectFolio(p,{neutral:true})).join("")}
     ${arch? (projs.length||PQ?"":`<div class="empty" style="grid-column:1/-1">Nada archivado todavía.</div>`) : PQ&&!projs.length?"":`<div class="folder add" onclick="newProject()">+</div>`}
   </div>
-  ${archHits.length?`<h2 class="sec" style="margin-top:22px">Archivados <span class="sec-note">${archHits.length} coincidencia${archHits.length===1?"":"s"}</span></h2><div class="proj-grid">${archHits.map(p=>projectFolio(p,{neutral:true})).join("")}</div>`:""}`}
-  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">${timeMode?"Consulta las fases y fechas de los proyectos en el cronograma.":listMode?"Pulsa un proyecto para abrirlo. Las acciones de su fila permiten editar, duplicar o archivar sin borrarlo.":"Pulsa una carpeta para abrir el proyecto."}</p>`}</div></section>`;
+  ${archHits.length?`<h2 class="sec" style="margin-top:22px">Archivados <span class="sec-note">${archHits.length} coincidencia${archHits.length===1?"":"s"}</span></h2><div class="proj-grid">${archHits.map(p=>projectFolio(p,{neutral:true})).join("")}</div>`:""}
+  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">Pulsa una carpeta para abrir el proyecto.</p>`}</div></section>`;
 }
 function toggleArchive(id){
   const p = state.projects.find(x=>x.id===id);
@@ -11435,7 +11412,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.120";
+const MODERNO_VER="v3.65.121";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13580,7 +13557,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365120">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365121">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

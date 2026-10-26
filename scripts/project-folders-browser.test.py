@@ -30,7 +30,7 @@ try:
    page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.evaluate(setup)
    page.evaluate("""()=>{
     const base=state.projects[0];state.projects=Array.from({length:27},(_,i)=>({...structuredClone(base),id:9001+i,num:'PR-'+(9001+i),name:i===0?'Proyecto con nombre largo para comprobar el ajuste':'Proyecto ficticio '+(i+1),color:i%2?'#F6CBDD':'#123456',status:'En proceso'}));
-    state.projView='grid';state.projQ='';state.showArchived=false;go('proyectos');window.before=JSON.stringify(state.projects);
+    state.projView='list';state.projQ='';state.showArchived=false;go('proyectos');window.before=JSON.stringify(state.projects);
    }""")
    cards=page.locator('.projects-identity .project-folio-neutral');expect(cards).to_have_count(27)
    title=page.locator('.projects-header h1');expect(title).to_have_text('Proyectos')
@@ -53,6 +53,7 @@ try:
    assert shape.evaluate("e=>getComputedStyle(e).transform==='none'")
    assert cards.first.locator('.folio-flap').count()==0
    assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
+   expect(page.locator('.projects-divider')).to_be_visible()
    if output:page.screenshot(path=str(output/f'projects-{width}.png'))
    cards.first.locator('summary').first.focus();page.keyboard.press('Enter');expect(page.locator('.projects-identity')).to_have_count(0)
    expect(page.locator('.ha-project-actions')).to_have_count(0)
@@ -73,14 +74,23 @@ try:
     expect(lower).to_be_visible()
     lower.fill('PR-9002');expect(cards).to_have_count(1)
     lower.fill('');expect(cards).to_have_count(27)
-   page.get_by_role('button',name='Lista',exact=True).click();expect(page.locator('.projects-clean-list tbody tr')).to_have_count(27)
-   page.get_by_role('button',name='Cuadrícula',exact=True).click();expect(cards).to_have_count(27)
+   expect(page.get_by_role('button',name='Lista',exact=True)).to_have_count(0)
+   expect(page.get_by_role('button',name='Cuadrícula',exact=True)).to_have_count(0)
+   expect(page.locator('.projects-clean-list')).to_have_count(0)
+   page.evaluate("state.projView='timeline';render()");expect(cards).to_have_count(27)
+   divider=page.locator('.projects-divider');expect(divider).to_be_visible()
+   assert divider.evaluate("e=>getComputedStyle(e).borderTopWidth==='1px'")
+   line=divider.bounding_box();first=cards.first.bounding_box()
+   assert line['y']+line['height']<first['y']
+   assert page.locator('.projects-view-content').bounding_box()['y']>=line['y']+line['height']
+   if width>=1100:
+    bar=page.locator('#project-window-bar').bounding_box();assert line['y']>bar['y']+bar['height']
    page.get_by_role('button',name='Proyectos archivados',exact=True).click();expect(cards).to_have_count(0)
    page.get_by_role('button',name='Volver a proyectos activos',exact=True).click();expect(cards).to_have_count(27)
    assert page.evaluate('JSON.stringify(state.projects)===before')
    assert page.evaluate("projectFolio(state.projects[0]).includes('folio-flap')&&!projectFolio(state.projects[0]).includes('project-folio-neutral')")
    assert not errors,errors;assert not writes,writes
-   print(width,'PASS: neutral static folders, removed greeting, header actions, keyboard navigation, search, list, archive, unchanged data and home presentation',flush=True)
+   print(width,'PASS: neutral static folders, removed greeting, header actions, keyboard navigation, search, grid-only, separator, archive, unchanged data and home presentation',flush=True)
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)
