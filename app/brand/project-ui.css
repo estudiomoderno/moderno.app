@@ -495,6 +495,14 @@ html body .projects-identity .project-card-add{display:flex;flex-direction:colum
 .project-card-add>span{font-size:26px;font-weight:300;line-height:1}
 .project-card-add>strong{font:500 13px/1.4 Inter,Segoe UI,sans-serif}
 .project-card-add:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
-@media(hover:hover){.project-overview-card:hover,html body .projects-identity .project-card-add:hover{background:var(--card,#f7f7f7)}}
+@media(hover:hover){html body .projects-identity .project-card-add:hover{background:var(--card,#f7f7f7)}}
 @media(max-width:600px){html body .main .projects-identity .proj-grid.project-cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}.project-overview-card{padding:14px;border-radius:20px}.project-card-top{gap:8px}.project-card-avatar,.project-card-avatar .project-client-avatar{width:32px;height:32px}.project-card-arrow{width:26px;height:26px}html body .projects-identity .project-card-identity h2{font-size:14px}.project-card-code,.project-card-client{font-size:11px}}
 @media(prefers-reduced-motion:reduce){.project-overview-card{transition:none}}
+
+/* Rounded body with a concave corner around the separate arrow circle. */
+@supports(mask-image:radial-gradient(circle,#000,#0000)){
+ .project-overview-card{isolation:isolate;border:0;background:transparent;transition:none}
+ .project-overview-card::before{content:"";position:absolute;inset:0;z-index:-1;box-sizing:border-box;border:1px solid var(--ui-line,#dedede);border-radius:inherit;background:radial-gradient(circle at calc(100% - 16px) 16px,transparent 26px,var(--ui-line,#dedede) 27px,var(--ui-line,#dedede) 28px,transparent 29px),var(--project-card-surface,var(--app-surface,#fff));mask-image:radial-gradient(circle at calc(100% - 17px) 17px,transparent 27px,#000 28px);pointer-events:none}
+ .project-overview-card .project-card-arrow{position:absolute;right:0;top:0;box-sizing:border-box;width:34px;height:34px;background:var(--app-surface,#fff);border:1px solid var(--ui-line,#dedede);border-radius:50%;box-shadow:0 1px 3px #00000005}
+ @media(hover:hover){.project-overview-card:hover{--project-card-surface:var(--card,#f7f7f7)}}
+}
