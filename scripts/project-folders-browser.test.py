@@ -63,6 +63,11 @@ try:
    assert page.evaluate("state.view==='proyectos'")
    notice.locator('summary').press('Escape');expect(notice).not_to_have_attribute('open','')
    before=cards.first.bounding_box();cards.first.hover();page.wait_for_timeout(250);assert cards.first.bounding_box()==before
+   arrow=cards.first.locator('.project-card-arrow').bounding_box()
+   assert abs(arrow['y']-before['y'])<1
+   assert abs(arrow['x']+arrow['width']-before['x']-before['width'])<1
+   assert arrow['width']==arrow['height']==34
+   assert cards.first.evaluate("e=>getComputedStyle(e,'::before').maskImage.includes('radial-gradient')")
    expect(page.locator('.projects-identity .neutral-folder-art')).to_have_count(0)
    assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
    expect(page.locator('.projects-divider')).to_be_visible()
@@ -73,6 +78,9 @@ try:
     assert abs(divider['y']-edge)<1,(divider,edge)
    page.locator('.project-card-open').first.evaluate('e=>document.activeElement?.blur()')
    if output:page.screenshot(path=str(output/f'projects-{width}.png'))
+   link=cards.first.locator('.project-card-open');size=link.bounding_box()
+   link.click(position={'x':size['width']-17,'y':17});expect(page.locator('.projects-identity')).to_have_count(0)
+   page.evaluate("go('proyectos')")
    cards.first.locator('.project-card-open').focus();page.keyboard.press('Enter');expect(page.locator('.projects-identity')).to_have_count(0)
    expect(page.locator('.ha-project-actions')).to_have_count(0)
    page.evaluate("go('proyectos')")
