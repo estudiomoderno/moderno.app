@@ -1016,7 +1016,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/brand/identity.css?v=351">
 <link rel="stylesheet" href="/settings-ui.css?v=353">
 <link rel="stylesheet" href="/brand/tasks-identity.css?v=3568">
-<link rel="stylesheet" href="/shopping-cards.css?v=365102">
+<link rel="stylesheet" href="/shopping-cards.css?v=365118">
 <link rel="stylesheet" href="/studio-login.css?v=365106">
 <script src="/team-invitation.js?v=365106"></script>
 <script src="/studio-login.js?v=365106" defer></script>
@@ -7307,7 +7307,7 @@ function vRoom(){
         </div>
         <div class="shopping-product-title"><button onclick="itemModal(${si},${ii})">${ModernoDaily.escape(it.name)}</button>${shoppingProductRowLink(it)}</div>
         <p class="shopping-product-meta shopping-product-description">${ModernoDaily.escape(it.supplier||'')}</p>
-        <p class="shopping-product-total"><strong>${it.price==null||it.price===''||it.qty==null||it.qty===''?'Total por confirmar':fmt(it.price*it.qty)}</strong></p>
+        <p class="shopping-product-total"><span class="shopping-product-quantity">${it.qty==null||it.qty===''?'Cantidad por confirmar':ModernoDaily.escape((Number.isFinite(Number(it.qty))?Number(it.qty).toLocaleString('es-ES',{maximumFractionDigits:20}):String(it.qty))+' '+((!it.unit||it.unit==='ud')&&Number(it.qty)!==1?'uds':unitLabel(it.unit)))}</span><strong>${it.price==null||it.price===''||it.qty==null||it.qty===''?'Total por confirmar':fmt(it.price*it.qty)}</strong></p>
         ${shoppingRoomViewMode==='rows'?shoppingProductRowDetails(it):''}
       </article>`).join('')}
       ${(q||filtering)&&!matchingRows.length?'<p class="shopping-empty-results">No hay productos que coincidan con los filtros.</p>':''}
@@ -11433,7 +11433,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.117";
+const MODERNO_VER="v3.65.118";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

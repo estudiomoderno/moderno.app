@@ -80,3 +80,8 @@ html body .shopping-scroll-up[hidden]{display:none!important}
 @media(max-width:1199px){html body .shopping-scroll-up{right:16px}}
 @media(prefers-reduced-motion:reduce){.shopping-rolling-dots{animation:none;box-shadow:100px 0 var(--ballcolor),110px 0 var(--ballcolor),120px 0 var(--ballcolor),130px 0 var(--ballcolor)}html body .shopping-scroll-up{transition:none}}
 @media print{html body .shopping-scroll-up{display:none!important}.shopping-image-progress{display:none}}
+
+/* Existing quantity and total share the last card row without adding height. */
+.shopping-room-view .shopping-product-total{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
+.shopping-product-quantity{min-width:0;font-size:12px;font-weight:500;color:var(--ink-soft);overflow-wrap:anywhere}
+.shopping-product-total>strong{margin-left:auto;overflow-wrap:anywhere}
