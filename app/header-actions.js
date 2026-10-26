@@ -1,7 +1,7 @@
 /* Existing app handlers bridge to the isolated original ReUI profile component. */
 var ModernoHeaderActions=(()=>{
  'use strict';
- let enabled=true,standalone=null,host=null,group=null,observer=null,component=null,nativeProfile=null,useOriginal=true,notificationHost=null,notificationComponent=null,nativeNotification=null;
+ let enabled=true,standalone=null,host=null,group=null,observer=null,component=null,nativeProfile=null,useOriginal=true,notificationHost=null,notificationComponent=null,nativeNotification=null,projectActions=null;
  const $=selector=>document.querySelector(selector);
  const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls;if(text!==undefined)el.textContent=text;return el;};
  const svg=paths=>'<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
@@ -25,6 +25,14 @@ var ModernoHeaderActions=(()=>{
   const menu=node('div','desktop-menu');menu.append(action('Mi perfil',()=>userModal()),action('Ajustes',()=>SettingsUI.open('cuenta')));
   for(const [view,caption] of [['automatizaciones','Automatizaciones'],['plugins','Plugins'],['integraciones','Integraciones']])if(canView(view))menu.append(action(caption,()=>go(view)));
   profile.append(menu);box.append(profile);document.body.append(box);return box;
+ }
+ function projectTools(){
+  projectActions?.remove();projectActions=null;document.body.classList.remove('has-project-header-actions');
+  if(state.view!=='proyectos'||!window.matchMedia('(min-width:1100px)').matches||!host?.isConnected)return;
+  const source=$('#view .projects-primary-actions');if(!source)return;
+  projectActions=node('div','ha-project-actions');projectActions.setAttribute('aria-label','Acciones de proyectos');
+  for(const selector of ['.projects-new','.projects-archive']){const button=source.querySelector(selector);if(button)projectActions.append(button.cloneNode(true));}
+  host.insertBefore(projectActions,notificationHost||nativeNotification||host.firstChild);document.body.classList.add('has-project-header-actions');
  }
  function measure(){if(host?.isConnected)document.body.style.setProperty('--header-actions-width',Math.ceil(host.getBoundingClientRect().width)+'px');}
  function recover(){useOriginal=false;queueMicrotask(()=>{clear();refresh();});}
@@ -73,6 +81,7 @@ var ModernoHeaderActions=(()=>{
   notifications();measure();
  }
  function clear(){
+  projectActions?.remove();projectActions=null;document.body.classList.remove('has-project-header-actions');
   notificationComponent?.unmount();notificationComponent=null;notificationHost?.remove();notificationHost=null;nativeNotification?.classList.remove('ha-original-notification');nativeNotification=null;
   component?.unmount();component=null;nativeProfile?.classList.remove('ha-original-profile');nativeProfile=null;
   observer?.disconnect();observer=null;group?.remove();group=null;standalone?.remove();standalone=null;host=null;
@@ -85,7 +94,7 @@ var ModernoHeaderActions=(()=>{
   const desktop=$('#desktop-header .desktop-actions');
   const target=desktop||standalone;
   if(!target?.isConnected||host!==target){clear();host=desktop||(standalone=fallback());decorate(host);observer=new ResizeObserver(measure);observer.observe(host);}
-  document.body.classList.add('has-header-actions');paint();
+  document.body.classList.add('has-header-actions');projectTools();paint();
  }
  document.addEventListener('moderno:team-presence',paint);
  document.addEventListener('click',e=>{if(host&&!host.contains(e.target))host.querySelectorAll('details[open]').forEach(d=>d.open=false);});
