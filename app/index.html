@@ -5281,6 +5281,17 @@ async function folioAnimate(el,opening){
   }
   if(!opening)el.open=false;
 }
+function projectOverviewCard(p){
+  const E=ModernoDaily.escape,id=Number(p.id),m=ModernoProjectInsights.metrics(p);
+  const avatar=projectClientAvatar(p).replace(' tabindex="0"','');
+  return `<article class="project-overview-card project-folio-shell">
+    <a class="project-card-open" href="${E(ModernoRouter.path({view:'proyecto',project:id}))}" aria-label="Abrir proyecto ${E([p.num,p.name].filter(Boolean).join(' '))}" onclick="if(!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();projectOpen(${id})}"></a>
+    <div class="project-card-top"><span class="project-card-avatar" aria-hidden="true">${avatar||ico('proyectos')}</span><span class="project-card-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span></div>
+    <div class="project-card-identity"><h2>${E(p.name||'Proyecto')}</h2><p class="project-card-code">${E(p.num||'')}</p><p class="project-card-client">${E(p.client||'Sin cliente asignado')}</p></div>
+    <div class="project-card-footer"><div class="project-card-status-row"><span class="project-card-status">${E(p.status||'Sin estado')}</span>${typeof projectFolderNotifications==='function'?projectFolderNotifications(p):''}</div>
+    <div class="project-card-progress">${m.total?`<span class="project-card-percent">${m.progress} % completado</span><progress max="100" value="${m.progress}" aria-label="Avance de ${E(p.name||'proyecto')}">${m.progress} %</progress><span class="project-card-task-count">${m.total-m.pending} de ${m.total} ${m.total===1?'tarea completada':'tareas completadas'}</span>`:'<span class="project-card-no-tasks">Sin tareas</span>'}</div></div>
+  </article>`;
+}
 function projectFolio(p,options={}){
   const neutral=options?.neutral===true;
   const E=ModernoDaily.escape,id=Number(p.id),colors=folderColors(p);
@@ -5786,12 +5797,12 @@ function vProjects(){
   ${PQ?`<div class="daily-filter-info">Para «${ModernoDaily.escape(state.projQ)}» <button class="btn btn-ghost" onclick="state.projQ='';render()">Limpiar búsqueda</button></div>`:''}
   <hr class="projects-divider"></header><div class="projects-view-content">
   ${PQ&&!projs.length?'<div class="empty">No hay proyectos que coincidan en esta vista.'+(archHits.length?' Hay coincidencias archivadas más abajo.':' Prueba otro nombre, número o cliente.')+'</div>':''}
-  <div class="proj-grid">
-    ${projs.map(p=>projectFolio(p,{neutral:true})).join("")}
-    ${arch? (projs.length||PQ?"":`<div class="empty" style="grid-column:1/-1">Nada archivado todavía.</div>`) : PQ&&!projs.length?"":`<div class="folder add" onclick="newProject()">+</div>`}
+  <div class="proj-grid project-cards-grid">
+    ${projs.map(projectOverviewCard).join("")}
+    ${arch? (projs.length||PQ?"":`<div class="empty" style="grid-column:1/-1">Nada archivado todavía.</div>`) : PQ&&!projs.length?"":`<button type="button" class="project-card-add" onclick="newProject()"><span aria-hidden="true">+</span><strong>Nuevo proyecto</strong></button>`}
   </div>
-  ${archHits.length?`<h2 class="sec" style="margin-top:22px">Archivados <span class="sec-note">${archHits.length} coincidencia${archHits.length===1?"":"s"}</span></h2><div class="proj-grid">${archHits.map(p=>projectFolio(p,{neutral:true})).join("")}</div>`:""}
-  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">Pulsa una carpeta para abrir el proyecto.</p>`}</div></section>`;
+  ${archHits.length?`<h2 class="sec" style="margin-top:22px">Archivados <span class="sec-note">${archHits.length} coincidencia${archHits.length===1?"":"s"}</span></h2><div class="proj-grid project-cards-grid">${archHits.map(projectOverviewCard).join("")}</div>`:""}
+  ${arch?"":`<p style="margin-top:22px;font-size:12px;color:var(--ink-faint)">Pulsa una tarjeta para abrir el proyecto.</p>`}</div></section>`;
 }
 function toggleArchive(id){
   const p = state.projects.find(x=>x.id===id);
@@ -11412,7 +11423,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.122";
+const MODERNO_VER="v3.65.123";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13557,7 +13568,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365122">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365123">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
