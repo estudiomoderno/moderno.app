@@ -439,3 +439,17 @@ html body .projects-identity .proj-grid>.folder.add{width:calc(100% - 20px);heig
 /* The mounted desktop project bar already provides the + project search.
    Keep the native field available on mobile and if the desktop bar is absent. */
 @media screen and (min-width:1100px){body.project-windows .projects-identity .projects-toolbar>.projects-search{display:none!important}}
+
+/* Projects actions share the notification row on desktop. */
+.projects-page-title{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.projects-primary-actions,.ha-project-actions{display:flex;align-items:center;gap:8px;flex:none}
+.ha-project-actions{margin-right:8px}
+html body .projects-primary-actions>.btn,html body .ha-project-actions>.btn{box-sizing:border-box;height:32px;min-height:32px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--ui-line,#ddd);border-radius:8px;background:var(--app-surface,#fff);color:var(--ink);font:500 13px/1.4 Inter,Segoe UI,sans-serif;white-space:nowrap;box-shadow:0 1px 2px #00000005}
+html body :is(.projects-primary-actions,.ha-project-actions)>.projects-archive{width:32px;min-width:32px;padding:0}
+html body :is(.projects-primary-actions,.ha-project-actions)>.projects-new{background:#0666ff;color:#fff;border-color:#0666ff}
+html body :is(.projects-primary-actions,.ha-project-actions)>.btn svg{width:16px;height:16px;flex:none}
+html body :is(.projects-primary-actions,.ha-project-actions)>.projects-archive.is-active{background:#fff2ed;color:#ad302d;border-color:#e9b8ae}
+html body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) .ha-project-actions>.projects-new:hover{background:#0055dc!important}
+@media screen and (min-width:1100px){body.has-project-header-actions .projects-primary-actions{display:none}}
+@media(pointer:coarse){html body .projects-primary-actions>.btn{height:44px;min-height:44px}html body .projects-primary-actions>.projects-archive{width:44px;min-width:44px}}
+@media print{.ha-project-actions{display:none}}

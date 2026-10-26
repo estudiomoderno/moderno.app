@@ -33,8 +33,19 @@ try:
     state.projView='grid';state.projQ='';state.showArchived=false;go('proyectos');window.before=JSON.stringify(state.projects);
    }""")
    cards=page.locator('.projects-identity .project-folio-neutral');expect(cards).to_have_count(27)
-   title=page.locator('.projects-header h1');assert '27 proyectos' in title.inner_text()
-   if width>=1100:assert 52<=title.bounding_box()['y']<=80,title.bounding_box()
+   title=page.locator('.projects-header h1');expect(title).to_have_text('Proyectos')
+   assert 'Estos son tus' not in page.locator('.projects-header').inner_text()
+   if width>=1100:
+    group=page.locator('.ha-project-actions');expect(group).to_be_visible()
+    trash=group.get_by_role('button',name='Proyectos archivados',exact=True).bounding_box()
+    bell=page.locator('.ha-notification-host button').bounding_box()
+    assert trash['width']==trash['height']==bell['width']==bell['height']==32,(trash,bell)
+    assert abs(trash['y']+trash['height']/2-bell['y']-bell['height']/2)<1,(trash,bell)
+    bar=page.locator('#project-window-bar').bounding_box();assert bar['x']+bar['width']<group.bounding_box()['x']
+    expect(page.locator('.projects-primary-actions')).to_be_hidden()
+   else:expect(page.locator('.projects-primary-actions')).to_be_visible()
+   page.get_by_role('button',name='Nuevo proyecto',exact=True).click()
+   expect(page.locator('.overlay.open')).to_be_visible();page.evaluate('closeModal()')
    art=cards.first.locator('.neutral-folder-art');caption=cards.first.locator('.neutral-folder-caption')
    assert caption.bounding_box()['y']>=art.bounding_box()['y']+art.bounding_box()['height']
    shape=art.locator('svg');before=shape.bounding_box();shape.hover();page.wait_for_timeout(350)
@@ -44,6 +55,7 @@ try:
    assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
    if output:page.screenshot(path=str(output/f'projects-{width}.png'))
    cards.first.locator('summary').first.focus();page.keyboard.press('Enter');expect(page.locator('.projects-identity')).to_have_count(0)
+   expect(page.locator('.ha-project-actions')).to_have_count(0)
    page.evaluate("go('proyectos')")
    lower=page.get_by_role('textbox',name='Buscar por proyecto o cliente',include_hidden=True)
    if width>=1100:
@@ -68,7 +80,7 @@ try:
    assert page.evaluate('JSON.stringify(state.projects)===before')
    assert page.evaluate("projectFolio(state.projects[0]).includes('folio-flap')&&!projectFolio(state.projects[0]).includes('project-folio-neutral')")
    assert not errors,errors;assert not writes,writes
-   print(width,'PASS: neutral static folders, dynamic elevated title, keyboard navigation, search, list, archive, unchanged data and home presentation',flush=True)
+   print(width,'PASS: neutral static folders, removed greeting, header actions, keyboard navigation, search, list, archive, unchanged data and home presentation',flush=True)
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)
