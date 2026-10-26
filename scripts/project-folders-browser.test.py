@@ -54,6 +54,11 @@ try:
    assert cards.first.locator('.folio-flap').count()==0
    assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
    expect(page.locator('.projects-divider')).to_be_visible()
+   if width>=1100:
+    divider=page.locator('.projects-divider').bounding_box()
+    brand=page.locator('#desktop-header .desktop-brand')
+    edge=brand.bounding_box()['y']+brand.bounding_box()['height']-brand.evaluate("e=>parseFloat(getComputedStyle(e).borderBottomWidth)")
+    assert abs(divider['y']-edge)<1,(divider,edge)
    if output:page.screenshot(path=str(output/f'projects-{width}.png'))
    cards.first.locator('summary').first.focus();page.keyboard.press('Enter');expect(page.locator('.projects-identity')).to_have_count(0)
    expect(page.locator('.ha-project-actions')).to_have_count(0)
