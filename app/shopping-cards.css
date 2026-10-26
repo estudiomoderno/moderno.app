@@ -85,3 +85,10 @@ html body .shopping-scroll-up[hidden]{display:none!important}
 .shopping-room-view .shopping-product-total{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 12px}
 .shopping-product-quantity{min-width:0;font-size:12px;font-weight:500;color:var(--ink-soft);overflow-wrap:anywhere}
 .shopping-product-total>strong{margin-left:auto;overflow-wrap:anywhere}
+
+/* Direct product website shortcut, separate from image zoom and editing. */
+.shopping-room-view .shopping-product-media>.shopping-product-quick-link{position:absolute;right:8px;bottom:8px;z-index:3;box-sizing:border-box;width:32px;height:32px;display:grid;place-items:center;padding:0;border:1px solid var(--ui-line,#ddd);border-radius:50%;background:var(--app-surface,#fff);color:var(--ink);text-decoration:none;box-shadow:0 1px 4px #00000012}
+.shopping-product-quick-link svg{width:16px;height:16px}
+.shopping-product-quick-link:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.shopping-product-media:has(>.shopping-product-quick-link)>.shopping-product-badges{max-width:calc(100% - 58px)}
+@media(hover:hover){.shopping-room-view .shopping-product-media>.shopping-product-quick-link:hover{background:var(--card,#f4f4f4)}}
