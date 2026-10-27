@@ -8,8 +8,8 @@ import {Sheet,SheetClose,SheetContent,SheetDescription,SheetFooter,SheetHeader,S
 
 export function NewProject({draft,brands,types,clients,templates,onChange,onCreate,onCancel,onNewClient,container}:any){
  const [values,setValues]=useState(draft),name=useRef<HTMLInputElement>(null),[addressBusy,setAddressBusy]=useState(false),[addressRevision,setAddressRevision]=useState(0);
- function change(key:string,value:string){if(['street','number','city','province','country'].includes(key)){setAddressRevision(n=>n+1);setAddressBusy(false);}setValues((old:any)=>({...old,[key]:value,...(['street','number','city','province','country'].includes(key)?{placeId:''}:{})}));onChange(key,value);}
- function selectAddress(address:any){for(const key of ['street','number','city','province','country','placeId'])onChange(key,address[key]);setValues((old:any)=>({...old,...address}));}
+ function change(key:string,value:string){if(['street','number','city','province','cp','country'].includes(key)){setAddressRevision(n=>n+1);setAddressBusy(false);}setValues((old:any)=>({...old,[key]:value,...(['street','number','city','province','cp','country'].includes(key)?{placeId:''}:{})}));onChange(key,value);}
+ function selectAddress(address:any){for(const key of ['street','number','city','province','cp','country','placeId'])onChange(key,address[key]);setValues((old:any)=>({...old,...address}));}
  const input=(key:string,label:string,auto='off',placeholder='')=><Field><FieldLabel htmlFor={'np-'+key}>{label}</FieldLabel><Input id={'np-'+key} name={key} value={values[key]} onChange={e=>change(key,e.target.value)} autoComplete={auto} placeholder={placeholder}/></Field>;
  return <Sheet open onOpenChange={(open,details)=>{if(!open)details.cancel();}}>
   <SheetContent container={container} className="new-project-sheet" showCloseButton={false} initialFocus={name} finalFocus={false}>
@@ -24,10 +24,10 @@ export function NewProject({draft,brands,types,clients,templates,onChange,onCrea
       <AddressSearch cancelRevision={addressRevision} onSelect={selectAddress} onBusy={setAddressBusy}/>
       {input('street','Calle','section-project address-line1')}
       <div className="new-project-two-col">{input('number','Número')}{input('city','Ciudad','section-project address-level2')}</div>
-      <div className="new-project-two-col">{input('province','Provincia','section-project address-level1')}{input('country','País','section-project country-name')}</div>
+      <div className="new-project-two-col">{input('province','Provincia','section-project address-level1')}{input('cp','Código postal','section-project postal-code')}</div>
+      {input('country','País','section-project country-name')}
      </FieldGroup></fieldset>
      <Field><FieldLabel htmlFor="np-type">Tipo de proyecto</FieldLabel><select id="np-type" name="type" className="cn-input" value={values.type} onChange={e=>change('type',e.target.value)}><option value="">Seleccionar tipo</option>{types.map((type:string)=><option key={type} value={type}>{type}</option>)}</select></Field>
-     <details className="new-project-options"><summary>Empezar desde</summary><FieldGroup><Field><FieldLabel htmlFor="np-from">Origen</FieldLabel><select id="np-from" className="cn-input" value={values.from} onChange={e=>change('from',e.target.value)}><option value="blank">En blanco</option><option value="tpl">Plantilla de proyecto</option></select></Field>{values.from==='tpl'&&<Field><FieldLabel htmlFor="np-template">Plantilla</FieldLabel><select id="np-template" className="cn-input" value={values.template} onChange={e=>change('template',e.target.value)}>{templates.length?templates.map((t:any)=><option key={t.id} value={t.id}>{t.name}</option>):<option value="">Sin plantillas disponibles</option>}</select></Field>}</FieldGroup></details>
     </FieldGroup></div>
     <SheetFooter><Button type="submit" disabled={addressBusy} className="new-project-create">Crear proyecto</Button><SheetClose render={<Button type="button" variant="outline"/>} onClick={onCancel}>Cancelar</SheetClose></SheetFooter>
    </form>

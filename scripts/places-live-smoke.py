@@ -28,8 +28,8 @@ try:
   page.route('**/*',route)
   page.goto('https://app.moderno.app/__maps_smoke__',wait_until='domcontentloaded')
   page.add_script_tag(url='https://app.moderno.app/places.js')
-  result=page.evaluate("""async()=>{const session=await ModernoPlaces.session();try{const items=await session.search('Calle de Alcalá 1, Madrid, España');if(!items.length)return {suggestions:false};const address=await session.select(items[0]);return {suggestions:true,address:!!(address?.street&&address?.city&&address?.country),persistence:ModernoPlaces.canPersistLocation()};}finally{session.close();}}""")
-  assert result.get('suggestions') and result.get('address') and not blocked
+  result=page.evaluate("""async()=>{const session=await ModernoPlaces.session();try{const items=await session.search('Calle de Alcalá 1, Madrid, España');if(!items.length)return {suggestions:false};const address=await session.select(items[0]);return {suggestions:true,address:!!(address?.street&&address?.city&&address?.country),postalCode:!!address?.cp,persistence:ModernoPlaces.canPersistLocation()};}finally{session.close();}}""")
+  assert result.get('suggestions') and result.get('address') and result.get('postalCode') and not blocked
   assert result.get('persistence')==bool(config.get('locationPersistenceReady'))
   browser.close()
  print('Google Places: sugerencias y selección verificadas; sin conexiones con Supabase ni guardados.')

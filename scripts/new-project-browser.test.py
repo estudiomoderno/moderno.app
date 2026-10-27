@@ -36,15 +36,20 @@ try:
    assert 'Número de proyecto (propuesto' not in dialog.inner_text()
    dialog.evaluate('e=>Promise.all(e.getAnimations().map(a=>a.finished))')
    box=dialog.bounding_box();edge=page.evaluate('document.body.getBoundingClientRect().right');assert abs(box['x']+box['width']-edge)<1 and box['x']>=0 and box['height']>=height-1,box
+   expect(dialog.get_by_text('Empezar desde',exact=True)).to_have_count(0)
+   for label in ['Nombre del proyecto','Cliente','Calle','Número','Ciudad','Provincia','Código postal','País']:
+    field=dialog.get_by_label(label,exact=True);field.fill('abcd');field.press('End');field.press('Backspace');expect(field).to_have_value('abc')
+    field.press('Home');field.press('Delete');expect(field).to_have_value('bc')
+    field.press('ControlOrMeta+A');field.press('Backspace');expect(field).to_have_value('')
    dialog.get_by_label('Nombre del proyecto',exact=True).fill('Proyecto nuevo ficticio')
    dialog.get_by_label('Cliente',exact=True).fill('Cliente ficticio')
-   for label,value in [('Calle','Calle de Prueba'),('Número','12B'),('Ciudad','Ciudad ficticia'),('Provincia','Provincia ficticia'),('País','España')]:dialog.get_by_label(label,exact=True).fill(value)
+   for label,value in [('Calle','Calle de Prueba'),('Número','12B'),('Ciudad','Ciudad ficticia'),('Provincia','Provincia ficticia'),('Código postal','00123'),('País','España')]:dialog.get_by_label(label,exact=True).fill(value)
    dialog.get_by_label('Tipo de proyecto',exact=True).select_option('Reforma integral')
    dialog.get_by_label('Nombre del proyecto',exact=True).press('Escape');expect(dialog).to_be_visible()
    if output:page.screenshot(path=str(output/f'new-project-{width}.png'))
    # Configure a fictitious provider only in this isolated browser. No Google calls.
    expect(dialog.get_by_label('Buscar dirección',exact=True)).to_have_count(0)
-   page.evaluate("""window.ModernoPlaces={available:async()=>true,enabled:()=>true,canPersistLocation:()=>false,session:async()=>({close(){},search:async(q)=>{window.fixturePlaceSearches=(window.fixturePlaceSearches||0)+1;return q.includes('fallo')?Promise.reject(Error('fixture')):[{label:'Calle sugerida, Ciudad de prueba',prediction:{}}]},select:async()=>({street:'Calle sugerida',number:'27',city:'Ciudad de prueba',province:'Provincia de prueba',country:'España',placeId:'fixture-place-only'})})}""")
+   page.evaluate("""window.ModernoPlaces={available:async()=>true,enabled:()=>true,canPersistLocation:()=>false,session:async()=>({close(){},search:async(q)=>{window.fixturePlaceSearches=(window.fixturePlaceSearches||0)+1;return q.includes('fallo')?Promise.reject(Error('fixture')):[{label:'Calle sugerida, Ciudad de prueba',prediction:{}}]},select:async()=>({street:'Calle sugerida',number:'27',city:'Ciudad de prueba',province:'Provincia de prueba',cp:'28014',country:'España',placeId:'fixture-place-only'})})}""")
    dialog.get_by_role('button',name='Cancelar',exact=True).click()
    page.locator('.projects-new:visible').click();expect(dialog).to_be_visible()
    search=dialog.get_by_label('Buscar dirección',exact=True);expect(search).to_be_visible()
@@ -56,6 +61,7 @@ try:
    search.press('ArrowDown');search.press('Enter')
    expect(dialog.get_by_label('Calle',exact=True)).to_have_value('Calle sugerida')
    expect(dialog.get_by_label('Número',exact=True)).to_have_value('27')
+   expect(dialog.get_by_label('Código postal',exact=True)).to_have_value('28014')
    assert page.evaluate('ModernoNewProject.data().placeId')=='fixture-place-only'
    dialog.get_by_label('Número',exact=True).fill('29')
    assert page.evaluate('ModernoNewProject.data().placeId')==''
@@ -63,14 +69,15 @@ try:
    # Restore the existing manual-creation scenario.
    dialog.get_by_label('Nombre del proyecto',exact=True).fill('Proyecto nuevo ficticio')
    dialog.get_by_label('Cliente',exact=True).fill('Cliente ficticio')
-   for label,value in [('Calle','Calle de Prueba'),('Número','12B'),('Ciudad','Ciudad ficticia'),('Provincia','Provincia ficticia'),('País','España')]:dialog.get_by_label(label,exact=True).fill(value)
+   for label,value in [('Calle','Calle de Prueba'),('Número','12B'),('Ciudad','Ciudad ficticia'),('Provincia','Provincia ficticia'),('Código postal','00123'),('País','España')]:dialog.get_by_label(label,exact=True).fill(value)
    dialog.get_by_label('Tipo de proyecto',exact=True).select_option('Reforma integral')
    reserved=code.input_value()
    page.evaluate("num=>state.projects.push({...structuredClone(state.projects[0]),id:990099,num,name:'Reserva ficticia de numeración',tasks:[]})",reserved)
    before=page.evaluate('state.projects.length');old=page.evaluate('JSON.stringify(state.projects)')
    dialog.get_by_role('button',name='Crear proyecto',exact=True).click()
    page.wait_for_function('state.projects.some(p=>p.name==="Proyecto nuevo ficticio")')
-   project=page.evaluate('state.projects.at(-1)');assert project['addr']=='Calle de Prueba 12B, Ciudad ficticia, Provincia ficticia, España',project
+   project=page.evaluate('state.projects.at(-1)');assert project['addr']=='Calle de Prueba 12B, Ciudad ficticia, Provincia ficticia, 00123, España',project
+   assert project['cp']=='00123'
    assert 'placeId' not in project
    assert project['num']!=reserved
    assert project['type']=='Reforma integral' and project['city']=='Ciudad ficticia' and project['country']=='España'
@@ -86,13 +93,15 @@ try:
    # A failed component stylesheet restores the native drawer with all values.
    page.evaluate("document.querySelector('.new-project-sheet-host').shadowRoot.querySelector('link').dispatchEvent(new Event('error'))")
    expect(dialog).to_have_count(0);expect(page.locator('#npName')).to_be_visible();expect(page.locator('#npName')).to_have_value('Borrador para cliente');expect(page.locator('#npStreet')).to_have_value('Calle conservada')
+   expect(page.locator('#modalBox').get_by_text('Empezar desde',exact=True)).to_have_count(0)
+   page.locator('#npCp').fill('00123');page.locator('#npCp').press('End');page.locator('#npCp').press('Backspace');expect(page.locator('#npCp')).to_have_value('0012')
    assert page.locator('#npStreet').get_attribute('autocomplete')=='section-project address-line1'
    page.get_by_role('button',name='Cancelar',exact=True).click();expect(page.locator('.overlay.open')).to_have_count(0)
    # The existing Templates action preselects the source in the new Sheet.
    page.evaluate("state.projects.push({id:991199,num:'TPL-1',brand:'cm',name:'Plantilla ficticia',tpl:true,tasks:[{id:'template-task',title:'Tarea de plantilla',col:'listo',done:true,assignees:[],comments:[]}]});tplUse(991199)")
-   expect(dialog).to_be_visible();dialog.get_by_text('Empezar desde',exact=True).click()
-   expect(dialog.get_by_label('Origen',exact=True)).to_have_value('tpl')
-   expect(dialog.get_by_label('Plantilla',exact=True)).to_have_value('991199')
+   expect(dialog).to_be_visible();expect(dialog.get_by_text('Empezar desde',exact=True)).to_have_count(0)
+   assert page.evaluate('ModernoNewProject.data().from')=='tpl'
+   assert page.evaluate('ModernoNewProject.data().template')=='991199'
    dialog.get_by_label('Nombre del proyecto',exact=True).fill('Proyecto de plantilla ficticio')
    dialog.get_by_role('button',name='Crear proyecto',exact=True).click()
    page.wait_for_function("state.projects.some(p=>p.name==='Proyecto de plantilla ficticio')")
@@ -103,7 +112,7 @@ try:
    page.locator('.projects-new:visible').click();expect(dialog).to_be_visible()
    page.evaluate("document.querySelector('.new-project-sheet-host').shadowRoot.querySelector('link').dispatchEvent(new Event('error'))")
    expect(page.locator('#npName')).to_be_visible();page.locator('#npName').fill('Proyecto colaborador ficticio')
-   page.locator('#npStreet').fill('Calle colaboradora');page.locator('#npNumber').fill('5');page.locator('#npCity').fill('Ciudad ficticia');page.locator('#npProvince').fill('Provincia ficticia');page.locator('#npCountry').fill('España');page.locator('#npType').select_option('Decoración')
+   page.locator('#npStreet').fill('Calle colaboradora');page.locator('#npNumber').fill('5');page.locator('#npCity').fill('Ciudad ficticia');page.locator('#npProvince').fill('Provincia ficticia');page.locator('#npCp').fill('00123');page.locator('#npCountry').fill('España');page.locator('#npType').select_option('Decoración')
    page.get_by_role('button',name='Crear proyecto',exact=True).click()
    page.wait_for_function("state.projects.some(p=>p.name==='Proyecto colaborador ficticio')")
    assert page.evaluate("state.projects.at(-1).type==='Decoración'&&state.projects.at(-1).addr.includes('Calle colaboradora 5')")

@@ -43,7 +43,7 @@
   const part=(type,short=false)=>{const c=components.find(c=>(c.types||[]).includes(type));return String(c?.[short?'shortText':'longText']||'');};
   // Stable Place IDs are retained; coordinates will be resolved when rendering a
  // future map. Do not persist a permanent cache of restricted Google content.
-  return {street:part('route')||part('premise'),number:part('street_number'),city:part('locality')||part('postal_town')||part('administrative_area_level_3'),province:part('administrative_area_level_2')||part('administrative_area_level_1'),country:part('country'),placeId:String(place.id||'')};
+  return {street:part('route')||part('premise'),number:part('street_number'),city:part('locality')||part('postal_town')||part('administrative_area_level_3'),province:part('administrative_area_level_2')||part('administrative_area_level_1'),cp:[part('postal_code'),part('postal_code_suffix')].filter(Boolean).join('-'),country:part('country'),placeId:String(place.id||'')};
  }
  root.ModernoPlaces={available,session,enabled:()=>ready,canPersistLocation:()=>ready&&persistenceReady,address};
  if(typeof module!=='undefined')module.exports={address};
