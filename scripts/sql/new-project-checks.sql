@@ -5,7 +5,7 @@ set local role authenticated;
 do $$declare e uuid:='00000000-0000-0000-0000-000000000001';r record;v jsonb;p jsonb;idx integer;
 begin
  select * into r from public.app_leer_bloques(e,array['proyectos']);
- p:='{"id":99001,"num":"PR-99001","brand":"cm","name":"Nuevo proyecto ficticio","client":"Cliente ficticio","status":"En progreso","type":"Reforma integral","addr":"Calle de Prueba 12B, Ciudad ficticia, Provincia ficticia, España","city":"Ciudad ficticia","country":"España","cp":"00123","placeId":"place-fixture-only","tasks":[]}'::jsonb;
+ p:='{"id":99001,"num":"PR-99001","brand":"cm","name":"Nuevo proyecto ficticio","client":"Cliente ficticio","status":"En progreso","type":"Reforma integral","addr":"Calle de Prueba 12B, Portal B 2º A, Ciudad ficticia, Provincia ficticia, España","city":"Ciudad ficticia","country":"España","cp":"00123","placeId":"place-fixture-only","tasks":[]}'::jsonb;
  idx:=jsonb_array_length(r.contenido);v:=r.contenido||jsonb_build_array(p);
  perform public.app_guardar_lote(e,jsonb_build_array(jsonb_build_object('bloque','proyectos','base',r.updated_at,'contenido',v)));
  select * into r from public.app_leer_bloques(e,array['proyectos']);

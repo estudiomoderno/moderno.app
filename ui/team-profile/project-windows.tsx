@@ -12,7 +12,7 @@ export function ProjectWindows({tabs,projects,searchOpen,onSearchToggle,onSearch
  const matches=useMemo(()=>projects.filter((item:any)=>norm(item.search).includes(norm(query))).slice(0,50),[projects,query]);
  useEffect(()=>{setQuery('');if(searchOpen)input.current?.focus();},[searchOpen]);
  function choose(id:string){if(onOpen(id))onSearchClose();}
- return <div className="pw-window-controls flex items-center gap-2">
+ return <div className="pw-window-controls flex items-center gap-1">
   <Button size="icon" variant="outline" className="relative pw-all" aria-label="Ver todos los proyectos" title="Ver todos los proyectos" onClick={onList}>
    <HouseIcon aria-hidden="true"/>
   </Button>
