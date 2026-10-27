@@ -1279,6 +1279,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
 <script src="/project-ui.js?v=365119"></script>
+<script src="/new-project.js?v=365125"></script>
 <script src="/shopping-export.js?v=365113"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=365100"></script>
@@ -9087,27 +9088,7 @@ function editLinks(pid){
 }
 
 /* =================== ACTIONS =================== */
-function newProject(preClient){
-  modal(`<h3>Nuevo proyecto</h3>
-  ${wsOrder.length>1?`<label>Marca (elige la serie)</label>
-  <div class="opt-pills" id="npBrand">
-    ${wsOrder.map((k,i)=>`<button class="${i===0?"on":""} ${k==="em"?"b-em":""}" data-b="${k}">${BRAND[k].name||"Mi espacio"}</button>`).join("")}
-  </div>`:""}
-  <label>Número de proyecto (propuesto — puedes cambiarlo)</label>
-  <div style="display:flex;align-items:center;gap:8px"><b>${projPre(visibleWsOrder()[0])}-</b><input id="npNum" type="number" value="${nextProjNum(visibleWsOrder()[0])}" style="width:110px"></div>
-  <label>Nombre del proyecto</label><input id="npName" placeholder="Ej: Reforma calle Maestra">
-  <label>Cliente</label><div style="display:flex;gap:6px">
-    <input id="npClient" list="npCliList" placeholder="Escribe para buscar el cliente\u2026" value="${preClient||""}" style="flex:1" autocomplete="off">
-    <button class="btn btn-ghost" title="Crear cliente nuevo" onclick="state.afterClient='newproject';clientModal(-1,'Cliente')">\uff0b</button>
-  </div>
-  <datalist id="npCliList">${state.clients.filter(c=>c.type==="Cliente").map(c=>`<option value="${(c.name||"").replace(/"/g,"&quot;")}" label="${(c.num||"")} · ${(c.name||"").replace(/"/g,"&quot;")}${c.city?" · "+c.city:""}">`).join("")}</datalist>
-  <label>Empezar desde</label>
-  <div class="opt-pills" id="npFrom"><button class="on" data-f="blank">En blanco</button><button data-f="tpl">Plantilla de proyecto</button></div>
-  <select id="npTpl" style="margin-top:6px">${state.projects.filter(x=>x.tpl).map(x=>`<option value="${x.id}">${x.name}</option>`).join("")||`<option value="">— No hay plantillas de proyecto (guárdalas desde el Resumen de un proyecto) —</option>`}</select>
-  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-dark" onclick="createProject()">Crear proyecto</button></div>`);
-  pills("npBrand"); pills("npFrom");
-  document.querySelectorAll("#npBrand button").forEach(b=>b.addEventListener("click",()=>{ document.getElementById("npNum").value = state.counters[b.dataset.b]+1; }));
-}
+function newProject(preClient){return ModernoNewProject.open(preClient);}
 function pills(id){ const __pe=document.getElementById(id); if(!__pe) return; const box=document.getElementById(id); box.querySelectorAll("button").forEach(b=>b.onclick=()=>{box.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");}); }
 function newProjectModal(){ return newProject(); }
 function saveAsTemplate(pid){
@@ -9137,22 +9118,20 @@ function saveAsTemplateDo(pid){
   toast("Guardado como plantilla de proyecto — la encontrarás en Plantillas y docs");
 }
 function tplDelete(id){ const i=state.projects.findIndex(x=>x.tpl&&x.id===id); if(i<0) return; state.projects.splice(i,1); try{ cloudDirty(); }catch(e){} render(); toast("Plantilla eliminada"); }
-function tplUse(id){ newProjectModal(); setTimeout(()=>{ const s=document.getElementById("npTpl"); if(s) s.value=String(id); const b=document.querySelector('#npFrom [data-f="tpl"]'); if(b) b.click(); },30); }
+function tplUse(id){return ModernoNewProject.openTemplate(id); }
 function createProject(){
-  const brand = (document.querySelector("#npBrand .on")||{dataset:{b:wsOrder[0]}}).dataset.b || wsOrder[0];
-  const from = document.querySelector("#npFrom .on").dataset.f;
-  const name = document.getElementById("npName").value || "Proyecto sin nombre";
-  const client = document.getElementById("npClient").value || null;
-  const num = Math.max(1, Math.floor(+document.getElementById("npNum").value || nextProjNum(brand)));
+  if(!ModernoNewProject.validate())return;
+  const draft=ModernoNewProject.data(),brand=draft.brand,from=draft.from,name=draft.name.trim(),client=draft.client.trim()||null;
+  const num=ModernoNewProject.nextNumber(brand);
   if(state.projects.some(x=>!x.tpl && x.brand===brand && x.num===projPre(brand)+"-"+num)){ toast(projPre(brand)+"-"+num+" ya existe en la serie "+BRAND[brand].name); return; }
-  state.counters[brand] = Math.max(state.counters[brand], num);
-  const tplId = (document.getElementById("npTpl")||{}).value;
+  const tplId = draft.template;
   const tpl = state.projects.find(p=>p.tpl && String(p.id)===String(tplId)) || state.projects.find(p=>p.tpl);
   if(from==="tpl" && !tpl){ toast("Aún no hay plantillas de proyecto: guarda una desde el Resumen de cualquier proyecto"); return; }
+  state.counters[brand] = Math.max(Number(state.counters[brand])||0, num);
   const tasks = from==="tpl" ? cloneTasksWithDeps(tpl.tasks, t=>{ t.col="pend"; t.done=false; t.assignee=""; t.assignees=[]; t.comments=[]; }) : [];
-  const p = {id:Date.now(), num:projPre(brand)+"-"+num, brand, name, tpl:false, client, status:"En progreso", curPhase:0, tasks};
+  const p = {id:Date.now(), num:projPre(brand)+"-"+num, brand, name, tpl:false, client, status:"En progreso", curPhase:0, tasks,addr:ModernoNewProject.formatAddress(draft),city:draft.city.trim(),country:draft.country.trim(),type:draft.type};
   if(from==="tpl" && tpl){ try{ if(tpl.rooms) p.rooms=tpl.rooms.map(r=>roomCloneData(r,-1)); if(tpl.phases) p.phases=JSON.parse(JSON.stringify(tpl.phases)); if(tpl.obraF) p.obraF=JSON.parse(JSON.stringify(tpl.obraF)).map(f=>({...f,items:(f.items||[]).map(x=>({...x,done:false}))})); }catch(e){} }
-  p.createdBy=meName(); p.createdByMail=meMail(); p.createdAt=p.createdAt||new Date().toISOString(); state.projects.push(p); closeModal(); toast(`Creado ${p.num} · la serie ${BRAND[brand].name} sigue en ${projPre(brand)}-${nextProjNum(brand)}`); go("proyecto",p.id);
+  p.createdBy=meName(); p.createdByMail=meMail(); p.createdAt=p.createdAt||new Date().toISOString(); state.projects.push(p); ModernoNewProject.created(); closeModal(); toast(`Creado ${p.num} · la serie ${BRAND[brand].name} sigue en ${projPre(brand)}-${nextProjNum(brand)}`); go("proyecto",p.id);
 }
 function duplicateProject(id){
   const src = state.projects.find(p=>p.id===id);
@@ -11370,10 +11349,10 @@ function askInputCancel(){ const cb=_inpCancel; _inpOk=_inpCancel=null; closeMod
 
 /* =================== UI HELPERS =================== */
 const ov=document.getElementById("overlay"), mb=document.getElementById("modalBox");
-function modal(html){ shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
-function closeModal(){ shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
+function modal(html){ if(window.ModernoNewProject)ModernoNewProject.cleanup(); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
+function closeModal(){ if(window.ModernoNewProject)ModernoNewProject.cleanup();mb.removeAttribute('aria-hidden'); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
 ov.addEventListener("click",e=>{ /* clic fuera NO cierra: solo Cancelar/Guardar */ });
-document.addEventListener("keydown",e=>{if(ov.classList.contains("open")&&!ov.classList.contains("shopping-delete-overlay"))ModernoDialog.trap(e,mb);});
+document.addEventListener("keydown",e=>{if(ov.classList.contains("open")&&!ov.classList.contains("shopping-delete-overlay")&&!ov.classList.contains("new-project-enhanced-overlay"))ModernoDialog.trap(e,mb);});
 let toastTimer;
 function toast(msg){ const el=document.getElementById("toast"); el.textContent=msg; el.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("show"),2800); }
 function wire(){}
@@ -11423,7 +11402,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.124";
+const MODERNO_VER="v3.65.125";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13568,7 +13547,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365124">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365125">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
@@ -13589,14 +13568,14 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/project-workspace.js?v=36554"></script>
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36554">
-<link rel="stylesheet" href="/brand/reui/font.css?v=36570">
-<script src="/profile-component.js?v=365112"></script>
+<link rel="stylesheet" href="/brand/reui/font.css?v=365125">
+<script src="/profile-component.js?v=365125"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=365120"></script>
 <link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=365110">
 <script src="/page-breadcrumbs.js?v=36559"></script>
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=365112">
-<script src="/calendar-ui.js?v=365112"></script>
+<script src="/calendar-ui.js?v=365125"></script>
 <script>
 ModernoAppLoading.setProbe(()=>(_localResumeFailed||!_localResumePending&&!document.documentElement.classList.contains('portalboot'))&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
 if(!sb)ModernoAppLoading.sessionReady();
