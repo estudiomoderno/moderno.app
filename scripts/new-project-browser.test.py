@@ -62,15 +62,27 @@ try:
    search.fill('Cancelar consulta');search.press('Escape');page.wait_for_timeout(500)
    assert page.evaluate('window.fixturePlaceSearches||0')==0
    expect(dialog.locator('.new-project-search-status')).to_have_text('')
-   search.fill('Calle sugerida');expect(dialog.get_by_role('option',name='Calle sugerida, Ciudad de prueba')).to_be_visible()
+   search.fill('Calle su');expect(dialog.get_by_role('option',name='Calle sugerida, Ciudad de prueba')).to_be_visible()
    if output:page.screenshot(path=str(output/f'address-suggestions-{width}.png'))
    search.press('ArrowDown');search.press('Enter')
+   expect(search).to_have_value('Calle sugerida, Ciudad de prueba')
+   expect(dialog.get_by_role('option',name='Calle sugerida, Ciudad de prueba')).to_have_count(0)
+   selected_queries=page.evaluate('window.fixturePlaceSearches')
+   page.wait_for_timeout(500)
+   assert page.evaluate('window.fixturePlaceSearches')==selected_queries
+   expect(dialog.get_by_role('status')).to_contain_text('Dirección seleccionada')
+   if output:page.screenshot(path=str(output/f'address-selected-{width}.png'))
+   # A fresh typed search still works, including selection by mouse.
+   search.fill('Otra consulta');expect(dialog.get_by_role('option',name='Calle sugerida, Ciudad de prueba')).to_be_visible()
+   dialog.get_by_role('option',name='Calle sugerida, Ciudad de prueba').click()
+   expect(search).to_have_value('Calle sugerida, Ciudad de prueba')
    expect(dialog.get_by_label('Calle',exact=True)).to_have_value('Calle sugerida')
    expect(dialog.get_by_label('Número',exact=True)).to_have_value('27')
    expect(dialog.get_by_label('Código postal',exact=True)).to_have_value('28014')
    expect(dialog.get_by_label('Dirección 2',exact=True)).to_have_value('Portal B, 2.º A')
    assert page.evaluate('ModernoNewProject.data().placeId')=='fixture-place-only'
    dialog.get_by_label('Número',exact=True).fill('29')
+   expect(search).to_have_value('')
    assert page.evaluate('ModernoNewProject.data().placeId')==''
    search.fill('fallo buscador');expect(dialog.get_by_role('status')).to_contain_text('Puedes escribir')
    # Restore the existing manual-creation scenario.
