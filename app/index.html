@@ -1279,7 +1279,8 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
 <script src="/project-ui.js?v=365119"></script>
-<script src="/new-project.js?v=365125"></script>
+<script src="/places.js?v=365126"></script>
+<script src="/new-project.js?v=365126"></script>
 <script src="/shopping-export.js?v=365113"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=365100"></script>
@@ -9130,6 +9131,7 @@ function createProject(){
   state.counters[brand] = Math.max(Number(state.counters[brand])||0, num);
   const tasks = from==="tpl" ? cloneTasksWithDeps(tpl.tasks, t=>{ t.col="pend"; t.done=false; t.assignee=""; t.assignees=[]; t.comments=[]; }) : [];
   const p = {id:Date.now(), num:projPre(brand)+"-"+num, brand, name, tpl:false, client, status:"En progreso", curPhase:0, tasks,addr:ModernoNewProject.formatAddress(draft),city:draft.city.trim(),country:draft.country.trim(),type:draft.type};
+  if(draft.placeId&&window.ModernoPlaces?.enabled())p.placeId=draft.placeId;
   if(from==="tpl" && tpl){ try{ if(tpl.rooms) p.rooms=tpl.rooms.map(r=>roomCloneData(r,-1)); if(tpl.phases) p.phases=JSON.parse(JSON.stringify(tpl.phases)); if(tpl.obraF) p.obraF=JSON.parse(JSON.stringify(tpl.obraF)).map(f=>({...f,items:(f.items||[]).map(x=>({...x,done:false}))})); }catch(e){} }
   p.createdBy=meName(); p.createdByMail=meMail(); p.createdAt=p.createdAt||new Date().toISOString(); state.projects.push(p); ModernoNewProject.created(); closeModal(); toast(`Creado ${p.num} · la serie ${BRAND[brand].name} sigue en ${projPre(brand)}-${nextProjNum(brand)}`); go("proyecto",p.id);
 }
@@ -11402,7 +11404,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.125";
+const MODERNO_VER="v3.65.126";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13568,14 +13570,14 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/project-workspace.js?v=36554"></script>
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36554">
-<link rel="stylesheet" href="/brand/reui/font.css?v=365125">
-<script src="/profile-component.js?v=365125"></script>
+<link rel="stylesheet" href="/brand/reui/font.css?v=365126">
+<script src="/profile-component.js?v=365126"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=365120"></script>
 <link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=365110">
 <script src="/page-breadcrumbs.js?v=36559"></script>
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=365112">
-<script src="/calendar-ui.js?v=365125"></script>
+<script src="/calendar-ui.js?v=365126"></script>
 <script>
 ModernoAppLoading.setProbe(()=>(_localResumeFailed||!_localResumePending&&!document.documentElement.classList.contains('portalboot'))&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
 if(!sb)ModernoAppLoading.sessionReady();
