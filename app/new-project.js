@@ -10,6 +10,25 @@
  function nextNumber(brand){let n=Math.max(1,Number(nextProjNum(brand))||1);const taken=new Set(state.projects.filter(p=>!p.tpl&&p.brand===brand).map(p=>p.num));while(taken.has(projPre(brand)+'-'+n))n++;return n;}
  function code(brand){return projPre(brand)+'-'+nextNumber(brand);}
  function formatAddress(value){return [[value.street,value.number].map(x=>String(x||'').trim()).filter(Boolean).join(' '),value.address2,value.city,value.province,value.cp,value.country].map(x=>String(x||'').trim()).filter(Boolean).join(', ');}
+ // Recover only the address layout we can identify from existing city/country/CP.
+ // Older free text is kept whole, and never reformatted merely by opening/saving.
+ function addressFields(project){
+  const raw=String(project.addr||''),value={street:raw,number:'',address2:'',city:String(project.city||''),province:'',cp:String(project.cp||''),country:String(project.country||''),placeId:''};
+  const parts=raw.split(',').map(s=>s.trim());
+  for(const key of ['country','cp'])if(value[key]&&parts.at(-1)===value[key])parts.pop();
+  const cityIndex=value.city?(parts.length>=3&&parts.at(-2)===value.city?parts.length-2:parts.lastIndexOf(value.city)):-1;
+  if(cityIndex>0&&parts.length-cityIndex<=2){
+   value.province=parts[cityIndex+1]||'';
+   value.address2=parts.slice(1,cityIndex).join(', ');
+   value.street=parts[0];
+  }else if(parts.length===1){value.street=parts[0];}
+  else return value;
+  const number=value.street.match(/^(.*?)\s+(\d+[a-zA-Z]?(?:[-/]\d+[a-zA-Z]?)?)$/);
+  if(number){value.street=number[1];value.number=number[2];}
+  // Lossless decoding is required; ambiguous historical strings stay untouched.
+  if(formatAddress(value)!==raw.trim())return {...value,street:raw,number:'',address2:'',province:''};
+  return value;
+ }
  function data(){return draft&&owner===identity()?{...draft}:null;}
  function props(){const brands=visibleWsOrder().map(key=>({key,name:BRAND[key]?.name||'Mi espacio',code:code(key)}));return {draft:{...draft},brands,types,clients:state.clients.filter(c=>c.type==='Cliente').map(c=>c.name),templates:state.projects.filter(p=>p.tpl).map(p=>({id:String(p.id),name:p.name})),onChange:change,onCreate:()=>queueMicrotask(()=>createProject()),onCancel:()=>queueMicrotask(()=>closeModal()),onNewClient:()=>queueMicrotask(createClient)};}
  function cleanup(){const entry=ui;ui=null;if(entry){entry.component?.unmount();entry.host.remove();}document.getElementById('overlay')?.classList.remove('new-project-enhanced-overlay','new-project-native-overlay');document.getElementById('modalBox')?.classList.remove('new-project-enhanced','new-project-native');document.getElementById('modalBox')?.removeAttribute('aria-hidden');}
@@ -46,6 +65,6 @@
  }
  function createClient(){if(!data())return;resume={owner,draft:{...draft}};state.afterClient='newproject';closeModal();clientModal(-1,'Cliente');const cancel=document.querySelector('#modalBox .modal-foot .btn-ghost');if(cancel)cancel.onclick=()=>{state.afterClient=null;closeModal();open();};}
  function created(){draft=null;resume=null;}
- root.ModernoNewProject={open,openTemplate:id=>open(undefined,id),cleanup,change,data,validate,code,nextNumber,formatAddress,createClient,created,types};
- if(typeof module!=='undefined')module.exports={formatAddress,types};
+ root.ModernoNewProject={open,openTemplate:id=>open(undefined,id),cleanup,change,data,validate,code,nextNumber,formatAddress,addressFields,createClient,created,types};
+ if(typeof module!=='undefined')module.exports={formatAddress,addressFields,types};
 })(typeof globalThis!=='undefined'?globalThis:this);
