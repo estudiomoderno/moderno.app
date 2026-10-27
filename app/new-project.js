@@ -2,14 +2,14 @@
 (function(root){
  'use strict';
  const types=['Interiorismo','Reforma integral','Reforma parcial','Obra nueva','Decoración','Paisajismo','Otro'];
- const ids={brand:'npBrand',name:'npName',client:'npClient',street:'npStreet',number:'npNumber',city:'npCity',province:'npProvince',cp:'npCp',country:'npCountry',placeId:'npPlaceId',type:'npType',from:'npFrom',template:'npTpl'};
+ const ids={brand:'npBrand',name:'npName',client:'npClient',street:'npStreet',number:'npNumber',address2:'npAddress2',city:'npCity',province:'npProvince',cp:'npCp',country:'npCountry',placeId:'npPlaceId',type:'npType',from:'npFrom',template:'npTpl'};
  let draft=null,owner='',resume=null,ui=null;
  const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const identity=()=>JSON.stringify([typeof ESTUDIO_ID==='undefined'?'':ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,_accessRole]);
  const allowed=()=>!_accessLoading&&['admin','colaborador','miembro'].includes(_accessRole)&&canView('proyecto');
  function nextNumber(brand){let n=Math.max(1,Number(nextProjNum(brand))||1);const taken=new Set(state.projects.filter(p=>!p.tpl&&p.brand===brand).map(p=>p.num));while(taken.has(projPre(brand)+'-'+n))n++;return n;}
  function code(brand){return projPre(brand)+'-'+nextNumber(brand);}
- function formatAddress(value){return [[value.street,value.number].map(x=>String(x||'').trim()).filter(Boolean).join(' '),value.city,value.province,value.cp,value.country].map(x=>String(x||'').trim()).filter(Boolean).join(', ');}
+ function formatAddress(value){return [[value.street,value.number].map(x=>String(x||'').trim()).filter(Boolean).join(' '),value.address2,value.city,value.province,value.cp,value.country].map(x=>String(x||'').trim()).filter(Boolean).join(', ');}
  function data(){return draft&&owner===identity()?{...draft}:null;}
  function props(){const brands=visibleWsOrder().map(key=>({key,name:BRAND[key]?.name||'Mi espacio',code:code(key)}));return {draft:{...draft},brands,types,clients:state.clients.filter(c=>c.type==='Cliente').map(c=>c.name),templates:state.projects.filter(p=>p.tpl).map(p=>({id:String(p.id),name:p.name})),onChange:change,onCreate:()=>queueMicrotask(()=>createProject()),onCancel:()=>queueMicrotask(()=>closeModal()),onNewClient:()=>queueMicrotask(createClient)};}
  function cleanup(){const entry=ui;ui=null;if(entry){entry.component?.unmount();entry.host.remove();}document.getElementById('overlay')?.classList.remove('new-project-enhanced-overlay','new-project-native-overlay');document.getElementById('modalBox')?.classList.remove('new-project-enhanced','new-project-native');document.getElementById('modalBox')?.removeAttribute('aria-hidden');}
@@ -22,13 +22,13 @@
   <div class="new-project-field"><label for="npCode">PR</label><input id="npCode" value="${E(code(draft.brand))}" readonly aria-readonly="true"></div>
   ${field('name','Nombre del proyecto','','Ej: Reforma calle Maestra')}
   <div class="new-project-field"><label for="npClient">Cliente</label><div class="new-project-client-row"><input id="npClient" name="client" list="npCliList" autocomplete="off" value="${E(draft.client)}" placeholder="Buscar cliente"><button type="button" class="btn btn-ghost" aria-label="Crear cliente nuevo" onclick="ModernoNewProject.createClient()">+</button></div><datalist id="npCliList">${state.clients.filter(c=>c.type==='Cliente').map(c=>`<option value="${E(c.name)}"></option>`).join('')}</datalist></div>
-  <fieldset><legend>Dirección del proyecto</legend>${field('street','Calle','section-project address-line1')}<div class="new-project-two-col">${field('number','Número')}${field('city','Ciudad','section-project address-level2')}</div><div class="new-project-two-col">${field('province','Provincia','section-project address-level1')}${field('cp','Código postal','section-project postal-code')}</div>${field('country','País','section-project country-name')}</fieldset>
+  <fieldset><legend>Dirección del proyecto</legend>${field('street','Calle','section-project address-line1')}<div class="new-project-two-col">${field('number','Número')}${field('city','Ciudad','section-project address-level2')}</div>${field('address2','Dirección 2','off','Portal, piso, puerta…')}<div class="new-project-two-col">${field('province','Provincia','section-project address-level1')}${field('cp','Código postal','section-project postal-code')}</div>${field('country','País','section-project country-name')}</fieldset>
   <div class="new-project-field"><label for="npType">Tipo de proyecto</label><select id="npType" name="type"><option value="">Seleccionar tipo</option>${options(types.map(t=>[t,t]),draft.type)}</select></div>
   <p id="new-project-error" role="alert"></p></div><footer class="modal-foot"><button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button type="submit" class="btn projects-new">Crear proyecto</button></footer></form>`;
  }
  function open(preClient,templateId){
   if(!allowed())return;const saved=templateId==null&&resume&&resume.owner===identity()?resume.draft:null;resume=null;
-  draft=saved?{...saved}:{brand:visibleWsOrder()[0],name:'',client:'',street:'',number:'',city:'',province:'',cp:'',country:'',placeId:'',type:'',from:'blank',template:String(state.projects.find(p=>p.tpl)?.id||'')};
+  draft=saved?{...saved}:{brand:visibleWsOrder()[0],name:'',client:'',street:'',number:'',address2:'',city:'',province:'',cp:'',country:'',placeId:'',type:'',from:'blank',template:String(state.projects.find(p=>p.tpl)?.id||'')};
   if(templateId!=null){const template=state.projects.find(p=>p.tpl&&String(p.id)===String(templateId));if(!template){toast('Esta plantilla ya no está disponible.');return;}draft.from='tpl';draft.template=String(template.id);}
   if(preClient!=null)draft.client=String(preClient);owner=identity();
   modal(nativeHtml());const box=document.getElementById('modalBox'),overlay=document.getElementById('overlay');box.classList.add('new-project-native');overlay.classList.add('new-project-native-overlay');

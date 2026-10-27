@@ -8,6 +8,7 @@
  #project-window-bar button{border:0}
  #project-window-bar .pw-tabs{display:flex;align-items:center;gap:5px;min-width:0;max-width:calc(100% - 160px);overflow-x:auto;scrollbar-width:none;height:38px;padding:0 2px}
  #project-window-bar .pw-tabs::-webkit-scrollbar{display:none}
+ #project-window-bar .pw-tabs:empty{display:none}
  #project-window-bar .pw-tab{display:flex;align-items:center;flex:0 0 auto;min-width:90px;max-width:244px;height:36px;border:1px solid transparent;border-radius:10px;background:var(--app-control);color:var(--ink-soft);animation:projectWindowIn 160ms ease-out}
  #project-window-bar .pw-tab.is-active{background:var(--app-surface);color:var(--ink);border-color:var(--ui-line);box-shadow:0 2px 5px #00000006}
  #project-window-bar .pw-tab-select{display:flex;align-items:center;min-width:0;height:34px;padding:0 4px 0 12px;border-radius:9px 0 0 9px;background:transparent;text-align:left}

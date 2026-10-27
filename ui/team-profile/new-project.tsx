@@ -24,6 +24,7 @@ export function NewProject({draft,brands,types,clients,templates,onChange,onCrea
       <AddressSearch cancelRevision={addressRevision} onSelect={selectAddress} onBusy={setAddressBusy}/>
       {input('street','Calle','section-project address-line1')}
       <div className="new-project-two-col">{input('number','Número')}{input('city','Ciudad','section-project address-level2')}</div>
+      {input('address2','Dirección 2','off','Portal, piso, puerta…')}
       <div className="new-project-two-col">{input('province','Provincia','section-project address-level1')}{input('cp','Código postal','section-project postal-code')}</div>
       {input('country','País','section-project country-name')}
      </FieldGroup></fieldset>

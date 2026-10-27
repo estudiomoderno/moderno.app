@@ -29,6 +29,10 @@ try:
     r.continue_()
    page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.evaluate(setup)
    page.evaluate("go('proyectos')")
+   if width>=1100:
+    while page.locator('.pw-window-host .pw-close').count():page.locator('.pw-window-host .pw-close').first.click()
+    home=page.locator('.pw-window-host .pw-all').bounding_box();plus=page.locator('.pw-window-host .pw-add').bounding_box()
+    assert home and plus and 0<=plus['x']-home['x']-home['width']<=6,(home,plus)
    page.locator('.projects-new:visible').click()
    dialog=page.locator('[data-slot=sheet-content]');expect(dialog).to_be_visible()
    expect(dialog.get_by_role('heading',name='Nuevo proyecto',exact=True)).to_be_visible()
@@ -37,13 +41,13 @@ try:
    dialog.evaluate('e=>Promise.all(e.getAnimations().map(a=>a.finished))')
    box=dialog.bounding_box();edge=page.evaluate('document.body.getBoundingClientRect().right');assert abs(box['x']+box['width']-edge)<1 and box['x']>=0 and box['height']>=height-1,box
    expect(dialog.get_by_text('Empezar desde',exact=True)).to_have_count(0)
-   for label in ['Nombre del proyecto','Cliente','Calle','Número','Ciudad','Provincia','Código postal','País']:
+   for label in ['Nombre del proyecto','Cliente','Calle','Número','Dirección 2','Ciudad','Provincia','Código postal','País']:
     field=dialog.get_by_label(label,exact=True);field.fill('abcd');field.press('End');field.press('Backspace');expect(field).to_have_value('abc')
     field.press('Home');field.press('Delete');expect(field).to_have_value('bc')
     field.press('ControlOrMeta+A');field.press('Backspace');expect(field).to_have_value('')
    dialog.get_by_label('Nombre del proyecto',exact=True).fill('Proyecto nuevo ficticio')
    dialog.get_by_label('Cliente',exact=True).fill('Cliente ficticio')
-   for label,value in [('Calle','Calle de Prueba'),('Número','12B'),('Ciudad','Ciudad ficticia'),('Provincia','Provincia ficticia'),('Código postal','00123'),('País','España')]:dialog.get_by_label(label,exact=True).fill(value)
+   for label,value in [('Calle','Calle de Prueba'),('Número','12B'),('Dirección 2','Portal B, 2.º A'),('Ciudad','Ciudad ficticia'),('Provincia','Provincia ficticia'),('Código postal','00123'),('País','España')]:dialog.get_by_label(label,exact=True).fill(value)
    dialog.get_by_label('Tipo de proyecto',exact=True).select_option('Reforma integral')
    dialog.get_by_label('Nombre del proyecto',exact=True).press('Escape');expect(dialog).to_be_visible()
    if output:page.screenshot(path=str(output/f'new-project-{width}.png'))
@@ -53,6 +57,8 @@ try:
    dialog.get_by_role('button',name='Cancelar',exact=True).click()
    page.locator('.projects-new:visible').click();expect(dialog).to_be_visible()
    search=dialog.get_by_label('Buscar dirección',exact=True);expect(search).to_be_visible()
+   dialog.get_by_label('Dirección 2',exact=True).fill('Portal B, 2.º A')
+   assert dialog.get_by_label('Dirección 2',exact=True).get_attribute('autocomplete')=='off'
    search.fill('Cancelar consulta');search.press('Escape');page.wait_for_timeout(500)
    assert page.evaluate('window.fixturePlaceSearches||0')==0
    expect(dialog.locator('.new-project-search-status')).to_have_text('')
@@ -62,6 +68,7 @@ try:
    expect(dialog.get_by_label('Calle',exact=True)).to_have_value('Calle sugerida')
    expect(dialog.get_by_label('Número',exact=True)).to_have_value('27')
    expect(dialog.get_by_label('Código postal',exact=True)).to_have_value('28014')
+   expect(dialog.get_by_label('Dirección 2',exact=True)).to_have_value('Portal B, 2.º A')
    assert page.evaluate('ModernoNewProject.data().placeId')=='fixture-place-only'
    dialog.get_by_label('Número',exact=True).fill('29')
    assert page.evaluate('ModernoNewProject.data().placeId')==''
@@ -69,14 +76,14 @@ try:
    # Restore the existing manual-creation scenario.
    dialog.get_by_label('Nombre del proyecto',exact=True).fill('Proyecto nuevo ficticio')
    dialog.get_by_label('Cliente',exact=True).fill('Cliente ficticio')
-   for label,value in [('Calle','Calle de Prueba'),('Número','12B'),('Ciudad','Ciudad ficticia'),('Provincia','Provincia ficticia'),('Código postal','00123'),('País','España')]:dialog.get_by_label(label,exact=True).fill(value)
+   for label,value in [('Calle','Calle de Prueba'),('Número','12B'),('Dirección 2','Portal B, 2.º A'),('Ciudad','Ciudad ficticia'),('Provincia','Provincia ficticia'),('Código postal','00123'),('País','España')]:dialog.get_by_label(label,exact=True).fill(value)
    dialog.get_by_label('Tipo de proyecto',exact=True).select_option('Reforma integral')
    reserved=code.input_value()
    page.evaluate("num=>state.projects.push({...structuredClone(state.projects[0]),id:990099,num,name:'Reserva ficticia de numeración',tasks:[]})",reserved)
    before=page.evaluate('state.projects.length');old=page.evaluate('JSON.stringify(state.projects)')
    dialog.get_by_role('button',name='Crear proyecto',exact=True).click()
    page.wait_for_function('state.projects.some(p=>p.name==="Proyecto nuevo ficticio")')
-   project=page.evaluate('state.projects.at(-1)');assert project['addr']=='Calle de Prueba 12B, Ciudad ficticia, Provincia ficticia, 00123, España',project
+   project=page.evaluate('state.projects.at(-1)');assert project['addr']=='Calle de Prueba 12B, Portal B, 2.º A, Ciudad ficticia, Provincia ficticia, 00123, España',project
    assert project['cp']=='00123'
    assert 'placeId' not in project
    assert project['num']!=reserved
@@ -86,6 +93,7 @@ try:
    page.evaluate("go('proyectos')");page.locator('.projects-new:visible').click();expect(dialog).to_be_visible()
    dialog.get_by_label('Nombre del proyecto',exact=True).fill('Borrador para cliente')
    dialog.get_by_label('Calle',exact=True).fill('Calle conservada')
+   dialog.get_by_label('Dirección 2',exact=True).fill('Portal conservado')
    dialog.get_by_role('button',name='Crear cliente nuevo',exact=True).click()
    expect(page.locator('#clName')).to_be_visible()
    page.locator('#modalBox .modal-foot .btn-ghost').click()
@@ -95,6 +103,8 @@ try:
    expect(dialog).to_have_count(0);expect(page.locator('#npName')).to_be_visible();expect(page.locator('#npName')).to_have_value('Borrador para cliente');expect(page.locator('#npStreet')).to_have_value('Calle conservada')
    expect(page.locator('#modalBox').get_by_text('Empezar desde',exact=True)).to_have_count(0)
    page.locator('#npCp').fill('00123');page.locator('#npCp').press('End');page.locator('#npCp').press('Backspace');expect(page.locator('#npCp')).to_have_value('0012')
+   expect(page.locator('#npAddress2')).to_have_value('Portal conservado')
+   assert page.locator('#npAddress2').get_attribute('autocomplete')=='off'
    assert page.locator('#npStreet').get_attribute('autocomplete')=='section-project address-line1'
    page.get_by_role('button',name='Cancelar',exact=True).click();expect(page.locator('.overlay.open')).to_have_count(0)
    # The existing Templates action preselects the source in the new Sheet.
