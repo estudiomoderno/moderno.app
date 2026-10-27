@@ -95,3 +95,7 @@
 .new-project-address-search [role="option"]:hover,.new-project-address-search [aria-selected="true"]{background:var(--accent)}
 .new-project-search-status{font-size:12px;color:var(--muted-foreground)}
 .new-project-google-attribution{display:block;text-align:right;font-family:Arial,sans-serif;font-size:14px;color:#5f6368;letter-spacing:0;white-space:nowrap}
+
+.new-project-form .edit-project-sheet-header{min-height:64px}
+
+.new-project-form .edit-project-address{display:block;height:auto;min-height:84px;padding:8px 12px;line-height:20px;resize:vertical}

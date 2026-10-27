@@ -330,7 +330,7 @@ function projectClientValidate(){
  if(name===cz.client)return true;
  const found=state.clients.find(c=>c.type==='Cliente'&&c.name===name);
  if(found){cz.client=found.name;return true;}
- toast('Selecciona un cliente de la lista o crea uno nuevo.');input.focus();return false;
+ toast('Selecciona un cliente existente de la lista.');input.focus();return false;
 }
 let projectClientDraft=null;
 function projectClientCreate(id){
@@ -527,3 +527,31 @@ async function projectDiaryPhoto(pid,id,index){
  const current=state.projects.find(p=>p.id===pid)?.events?.find(e=>e.id===id&&e.cat==='diario-obra')?.files?.[index];if(current?.data!==file.data)return;
  modal(`<h3>Foto de la visita</h3><img ${fileImageAttrs(file.data)} alt="${ModernoDaily.escape(file.name)}" style="display:block;width:100%;max-height:70vh;object-fit:contain"><div class="btn-row"><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
 }
+
+/* Data editor: original Sheet, existing cz validation and save implementation. */
+var ModernoProjectEdit=(()=>{
+ let entry=null;
+ const ids={name:'czName',status:'czStatus',client:'czClient',addr:'czAddr',tags:'czTags'};
+ const identity=()=>JSON.stringify([typeof ESTUDIO_ID==='undefined'?'':ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,_accessRole]);
+ const allowed=()=>!_accessLoading&&['admin','colaborador','miembro'].includes(_accessRole)&&canView('proyecto');
+ const current=()=>entry&&entry.owner===identity()&&entry.draft===cz&&allowed()&&state.projects.some(p=>String(p.id)===String(entry.id));
+ function cleanup(){const old=entry;entry=null;if(old){old.component?.unmount();old.host?.remove();}document.getElementById('overlay')?.classList.remove('new-project-enhanced-overlay','new-project-native-overlay');const box=document.getElementById('modalBox');box?.classList.remove('new-project-enhanced','new-project-native');box?.removeAttribute('aria-hidden');}
+ function change(key,value){if(!current()||!Object.hasOwn(ids,key))return;value=String(value);if(key!=='client')cz[key]=value;const input=document.getElementById(ids[key]);if(input&&input.value!==value)input.value=value;}
+ function save(){if(!current()){toast('La sesión ha cambiado. Vuelve a abrir Editar proyecto.');return;}if(!cz.name.trim()){toast('Escribe el nombre del proyecto.');return;}if(!projectClientValidate()){entry.host?.shadowRoot?.querySelector('#ep-client')?.focus();return;}saveCustomize(entry.id);}
+ function open(id,saved){
+  if(!allowed())return;const p=state.projects.find(p=>p.id===id);if(!p)return;
+  cz={mode:'data',folderPhotos:[...folderPhotoSources(p)],busy:false,color:p.color||null,icon:p.icon||'',tags:(p.tags||[]).join(', '),client:p.client||'',name:p.name||'',status:p.status||'En progreso',addr:p.addr||'',...saved};cz.mode='data';
+  const E=ModernoDaily.escape,clients=[...new Set(state.clients.filter(c=>c.type==='Cliente').map(c=>c.name))];
+  const field=(key,label,extra='')=>`<div class="new-project-field"><label for="${ids[key]}">${E(label)}</label><input id="${ids[key]}" name="${key}" autocomplete="off" value="${E(cz[key])}" ${extra}></div>`;
+  modal(`<form id="project-edit-native-form" onsubmit="event.preventDefault();ModernoProjectEdit.save()"><header class="edit-project-native-header"><h3 class="sr-only">Editar proyecto</h3><button type="button" class="new-project-close" aria-label="Cerrar edición" onclick="closeModal()">×</button></header><div class="new-project-native-body"><div class="new-project-field"><label for="ep-native-code">PR</label><input id="ep-native-code" value="${E(p.num||'')}" readonly></div>${field('name','Nombre del proyecto','required maxlength="200"')}<div class="new-project-field"><label for="czStatus">Estado</label><select id="czStatus" name="status">${['En progreso','En revisión','Entregado','Archivado'].map(s=>`<option ${cz.status===s?'selected':''}>${E(s)}</option>`).join('')}</select></div>${field('client','Cliente','list="ep-native-clients" placeholder="Buscar cliente"')}<datalist id="ep-native-clients">${clients.map(c=>`<option value="${E(c)}"></option>`).join('')}</datalist><div class="new-project-field"><label for="czAddr">Dirección</label><textarea id="czAddr" name="addr" autocomplete="off" rows="3">${E(cz.addr)}</textarea></div>${field('tags','Etiquetas')}</div><footer class="modal-foot"><button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button type="submit" class="btn projects-new">Guardar cambios</button></footer></form>`);
+  const box=document.getElementById('modalBox'),overlay=document.getElementById('overlay');box.classList.add('new-project-native');overlay.classList.add('new-project-native-overlay');
+  const form=document.getElementById('project-edit-native-form');for(const event of ['input','change'])form.addEventListener(event,e=>{if(e.target?.name)change(e.target.name,e.target.value);});
+  const active={id,owner:identity(),draft:cz,component:null,host:null};entry=active;
+  if(!window.ModernoProfileComponent?.mountEditProject){document.getElementById('czName')?.focus();return;}
+  const host=document.createElement('span');host.className='new-project-sheet-host';document.body.append(host);active.host=host;
+  const recover=()=>queueMicrotask(()=>{if(entry!==active)return;active.component?.unmount();active.component=null;active.host?.remove();active.host=null;box.classList.remove('new-project-enhanced');box.removeAttribute('aria-hidden');box.setAttribute('aria-modal','true');overlay.classList.remove('new-project-enhanced-overlay');document.getElementById('czName')?.focus();});
+  const ready=()=>{if(entry!==active||!active.component)return;box.classList.add('new-project-enhanced');box.removeAttribute('aria-modal');box.setAttribute('aria-hidden','true');overlay.classList.add('new-project-enhanced-overlay');active.component.update({draft:{...cz},code:p.num||'',clients,onChange:(key,value)=>{if(entry===active)change(key,value);},onSave:()=>queueMicrotask(()=>{if(entry===active)save();}),onCancel:()=>queueMicrotask(()=>{if(entry===active)closeModal();})});};
+  try{active.component=ModernoProfileComponent.mountEditProject(host,recover,ready);}catch{recover();}
+ }
+ return {open,cleanup,change,save};
+})();

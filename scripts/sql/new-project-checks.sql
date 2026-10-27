@@ -23,6 +23,9 @@ begin
  perform public.app_guardar_lote_delta(e,jsonb_build_array(jsonb_build_object('bloque','proyectos','base',r.updated_at,'cambios',jsonb_build_array(jsonb_build_object('op','set','path',jsonb_build_array(idx::text,'placeId'),'value','""'::jsonb)))));
  select * into r from public.app_leer_bloques(e,array['proyectos']);
  perform pg_temp.assert_true(r.contenido->idx->>'placeId'='','stale reference can be cleared after a manual address change');
+ perform public.app_guardar_lote_delta(e,jsonb_build_array(jsonb_build_object('bloque','proyectos','base',r.updated_at,'cambios',jsonb_build_array(jsonb_build_object('op','set','path',jsonb_build_array(idx::text,'addr'),'value','"Dirección editada, Portal B, 00123, España"'::jsonb)))));
+ select * into r from public.app_leer_bloques(e,array['proyectos']);
+ perform pg_temp.assert_true(r.contenido->idx->>'addr'='Dirección editada, Portal B, 00123, España' and r.contenido->idx->>'cp'='00123','address-only edit survives collaborator delta and reread');
  perform pg_temp.assert_true(strpos(r.contenido::text,'"fee"')=0,'new project metadata cannot expose protected finances');
 end$$;
 reset role;

@@ -72,7 +72,7 @@ try:
     page.locator('.project-settings-host').wait_for(state='detached')
     page.locator('.project-options>summary').click()
     page.get_by_role('button',name='Editar datos',exact=True).click()
-    assert page.locator('#czName').is_visible();page.evaluate('closeModal()')
+    page.locator('[data-slot=sheet-content]').get_by_role('textbox',name='Nombre del proyecto',exact=True).wait_for(state='visible');assert page.locator('[data-slot=sheet-content]').get_by_role('textbox',name='Nombre del proyecto',exact=True).is_visible();page.evaluate('closeModal()')
     assert page.evaluate('records()===baseline')
     assert not errors,errors;assert not writes,writes
     print(width,'PASS: original mobile navigation and project heading unchanged');page.close();continue
@@ -163,9 +163,9 @@ try:
    page.locator('#project-window-9002').click();page.locator('#project-window-9001').click();assert page.evaluate('state.view')=='estancia' and page.evaluate('state.currentRoom')==9101
    page.evaluate("go('proyecto',9001);projTab('planos')")
    page.locator('[data-project-settings-trigger]').click();page.get_by_role('menuitem',name='Editar datos',exact=True).click()
-   page.locator('#czName').fill('Nombre ficticio sin guardar')
+   page.locator('[data-slot=sheet-content]').get_by_role('textbox',name='Nombre del proyecto',exact=True).fill('Nombre ficticio sin guardar')
    assert not page.evaluate('ModernoProjectWorkspace.open(9002)');assert not page.evaluate('ModernoProjectWorkspace.close(9001)')
-   assert page.locator('#czName').input_value()=='Nombre ficticio sin guardar';assert tabs.count()==2
+   assert page.locator('[data-slot=sheet-content]').get_by_role('textbox',name='Nombre del proyecto',exact=True).input_value()=='Nombre ficticio sin guardar';assert tabs.count()==2
    assert page.evaluate('state.currentProject')==9001 and page.evaluate('records()===baseline')
    page.wait_for_function('!document.querySelector(".project-options").open');page.evaluate('closeModal()')
    page.locator('[data-project-settings-trigger]').click();page.get_by_role('menuitem',name='Portal del cliente',exact=True).click()
