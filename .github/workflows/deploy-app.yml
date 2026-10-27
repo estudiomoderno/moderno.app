@@ -38,6 +38,14 @@ jobs:
           GOOGLE_MAPS_BROWSER_KEY: ${{ secrets.GOOGLE_MAPS_BROWSER_KEY }}
           PLACES_LOCATION_READY: ${{ vars.PLACES_LOCATION_READY }}
         run: node scripts/build-places-config.mjs
+      - name: Comprobar Google con una dirección pública y sin conectar la app
+        env:
+          GOOGLE_MAPS_BROWSER_KEY: ${{ secrets.GOOGLE_MAPS_BROWSER_KEY }}
+        run: |
+          if [ -n "$GOOGLE_MAPS_BROWSER_KEY" ]; then
+            python3 -m pip install --disable-pip-version-check playwright==1.56.0
+            python3 scripts/places-live-smoke.py
+          fi
       - name: Separar recursos de la entrada
         run: |
           mkdir -p release-assets release-entry

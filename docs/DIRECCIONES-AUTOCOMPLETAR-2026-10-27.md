@@ -1,5 +1,7 @@
 # Direcciones de proyectos — v3.65.127
 
+> Actualización v3.65.128: el buscador se activa por separado del guardado de `placeId`, usando los campos de dirección existentes. Ver [activación de Google](ACTIVAR-GOOGLE-DIRECCIONES-2026-10-27.md). El procedimiento siguiente se conserva para la futura activación de la referencia.
+
 Buscador opcional en el Sheet Nuevo proyecto: sugerencias a partir de tres caracteres, espera de 350 ms, navegación por teclado, separación de calle/número/ciudad/provincia/país y entrada manual cuando no hay configuración o falla el servicio. SDK bajo demanda; tokens de sesión por búsqueda, consultas limitadas a 12 s y resultados antiguos descartados. Los textos se renderizan mediante React, nunca como HTML externo.
 
 La referencia `placeId` queda preparada para resolver la posición en el futuro mapa. No se solicita ni persiste una caché permanente de coordenadas de Google. Al modificar cualquier campo de la dirección, se elimina la referencia seleccionada para evitar una ubicación incorrecta. El mapa no forma parte de esta entrega.
