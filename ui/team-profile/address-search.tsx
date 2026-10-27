@@ -12,6 +12,7 @@ export function AddressSearch({onSelect,onBusy,cancelRevision}:any){
   if(!available||query.trim().length<3)return;
   const revision=++epoch.current;let cancelled=false;
   const timer=setTimeout(async()=>{
+   if(cancelled||!mounted.current||revision!==epoch.current)return;
    setMessage('Buscando direcciones…');
    try{session.current ||= (window as any).ModernoPlaces.session();const api=await session.current;
     if(cancelled||revision!==epoch.current)return;

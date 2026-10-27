@@ -1,4 +1,4 @@
-# Direcciones de proyectos — v3.65.126
+# Direcciones de proyectos — v3.65.127
 
 Buscador opcional en el Sheet Nuevo proyecto: sugerencias a partir de tres caracteres, espera de 350 ms, navegación por teclado, separación de calle/número/ciudad/provincia/país y entrada manual cuando no hay configuración o falla el servicio. SDK bajo demanda; tokens de sesión por búsqueda, consultas limitadas a 12 s y resultados antiguos descartados. Los textos se renderizan mediante React, nunca como HTML externo.
 
