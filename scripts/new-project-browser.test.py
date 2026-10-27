@@ -44,7 +44,7 @@ try:
    if output:page.screenshot(path=str(output/f'new-project-{width}.png'))
    # Configure a fictitious provider only in this isolated browser. No Google calls.
    expect(dialog.get_by_label('Buscar dirección',exact=True)).to_have_count(0)
-   page.evaluate("""window.ModernoPlaces={available:async()=>true,enabled:()=>true,session:async()=>({close(){},search:async(q)=>{window.fixturePlaceSearches=(window.fixturePlaceSearches||0)+1;return q.includes('fallo')?Promise.reject(Error('fixture')):[{label:'Calle sugerida, Ciudad de prueba',prediction:{}}]},select:async()=>({street:'Calle sugerida',number:'27',city:'Ciudad de prueba',province:'Provincia de prueba',country:'España',placeId:'fixture-place-only'})})}""")
+   page.evaluate("""window.ModernoPlaces={available:async()=>true,enabled:()=>true,canPersistLocation:()=>false,session:async()=>({close(){},search:async(q)=>{window.fixturePlaceSearches=(window.fixturePlaceSearches||0)+1;return q.includes('fallo')?Promise.reject(Error('fixture')):[{label:'Calle sugerida, Ciudad de prueba',prediction:{}}]},select:async()=>({street:'Calle sugerida',number:'27',city:'Ciudad de prueba',province:'Provincia de prueba',country:'España',placeId:'fixture-place-only'})})}""")
    dialog.get_by_role('button',name='Cancelar',exact=True).click()
    page.locator('.projects-new:visible').click();expect(dialog).to_be_visible()
    search=dialog.get_by_label('Buscar dirección',exact=True);expect(search).to_be_visible()
@@ -71,6 +71,7 @@ try:
    dialog.get_by_role('button',name='Crear proyecto',exact=True).click()
    page.wait_for_function('state.projects.some(p=>p.name==="Proyecto nuevo ficticio")')
    project=page.evaluate('state.projects.at(-1)');assert project['addr']=='Calle de Prueba 12B, Ciudad ficticia, Provincia ficticia, España',project
+   assert 'placeId' not in project
    assert project['num']!=reserved
    assert project['type']=='Reforma integral' and project['city']=='Ciudad ficticia' and project['country']=='España'
    assert page.evaluate('state.projects.length')==before+1

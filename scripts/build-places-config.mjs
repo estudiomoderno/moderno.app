@@ -11,5 +11,5 @@ export function settings(env){
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const value=settings(process.env);
  await writeFile(new URL('../app/places-config.json',import.meta.url),JSON.stringify(value)+'\n');
- console.log(value.browserKey&&value.locationPersistenceReady?'Buscador de direcciones configurado':'Direcciones manuales: integración externa pendiente de activación');
+ console.log(value.browserKey?'Buscador de direcciones configurado':'Direcciones manuales: falta clave de Google');
 }

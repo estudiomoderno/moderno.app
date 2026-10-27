@@ -1,15 +1,16 @@
 /* Google Places adapter. No external requests until configured and used. */
 (function(root){
  'use strict';
- let config,library,ready=false;
+ let config,library,ready=false,persistenceReady=false;
  function bounded(promise){let timer;return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('El buscador no responde')),12000);})]).finally(()=>clearTimeout(timer));}
  async function available(){
-  if(!config)config=fetch('/places-config.json',{credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(5000)}).then(r=>r.ok?r.json():null).then(v=>v&&/^AIza[\w-]{30,60}$/.test(v.browserKey||'')&&v.locationPersistenceReady===true?v:null).catch(()=>null);
+  if(!config)config=fetch('/places-config.json',{credentials:'omit',cache:'no-store',signal:AbortSignal.timeout(5000)}).then(r=>r.ok?r.json():null).then(v=>v&&/^AIza[\w-]{30,60}$/.test(v.browserKey||'')?v:null).catch(()=>null);
   return !!(await config);
  }
  async function load(){
   if(!await available())throw Error('Direcciones manuales');
   const settings=await config;
+  persistenceReady=settings.locationPersistenceReady===true;
   if(!library)library=(async()=>{
    if(!root.google?.maps?.importLibrary)await new Promise((resolve,reject)=>{
     const script=document.createElement('script');let timer;
@@ -44,6 +45,6 @@
  // future map. Do not persist a permanent cache of restricted Google content.
   return {street:part('route')||part('premise'),number:part('street_number'),city:part('locality')||part('postal_town')||part('administrative_area_level_3'),province:part('administrative_area_level_2')||part('administrative_area_level_1'),country:part('country'),placeId:String(place.id||'')};
  }
- root.ModernoPlaces={available,session,enabled:()=>ready,address};
+ root.ModernoPlaces={available,session,enabled:()=>ready,canPersistLocation:()=>ready&&persistenceReady,address};
  if(typeof module!=='undefined')module.exports={address};
 })(typeof globalThis!=='undefined'?globalThis:this);
