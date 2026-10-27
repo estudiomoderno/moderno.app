@@ -5,11 +5,11 @@ import {Input} from './vendor/reui/input';
 // Suggestions remain in this dialog only; no localStorage or analytics payloads.
 export function AddressSearch({onSelect,onBusy,cancelRevision}:any){
  const [available,setAvailable]=useState(false),[query,setQuery]=useState(''),[items,setItems]=useState<any[]>([]),[message,setMessage]=useState(''),[active,setActive]=useState(-1);
- const session=useRef<any>(null),epoch=useRef(0),mounted=useRef(true);
+ const session=useRef<any>(null),confirmedQuery=useRef<string|null>(null),epoch=useRef(0),mounted=useRef(true);
  useEffect(()=>{mounted.current=true;const api=(window as any).ModernoPlaces;api?.available().then((ok:boolean)=>{if(mounted.current)setAvailable(ok);});return()=>{mounted.current=false;epoch.current++;session.current?.then((s:any)=>s.close()).catch(()=>{});};},[]);
- useEffect(()=>{epoch.current++;setItems([]);setMessage('');},[cancelRevision]);
+ useEffect(()=>{epoch.current++;confirmedQuery.current=null;setQuery('');setItems([]);setActive(-1);setMessage('');},[cancelRevision]);
  useEffect(()=>{
-  if(!available||query.trim().length<3)return;
+  if(!available||query.trim().length<3||query===confirmedQuery.current)return;
   const revision=++epoch.current;let cancelled=false;
   const timer=setTimeout(async()=>{
    if(cancelled||!mounted.current||revision!==epoch.current)return;
@@ -26,12 +26,12 @@ export function AddressSearch({onSelect,onBusy,cancelRevision}:any){
   const revision=++epoch.current;setItems([]);setMessage('Completando dirección…');onBusy(true);
   try{const api=await session.current;const address=await api.select(item);if(!mounted.current||revision!==epoch.current)return;
    if(!address?.placeId||!address.street)throw Error('Dirección incompleta');
-   onSelect(address);setMessage('Dirección seleccionada. Revisa el número y los demás datos.');
+   confirmedQuery.current=item.label;setQuery(item.label);setActive(-1);onSelect(address);setMessage('Dirección seleccionada. Revisa el número y los demás datos.');
   }catch{if(mounted.current&&revision===epoch.current)setMessage('No se pudo completar. Puedes escribir la dirección abajo.');}
   finally{if(mounted.current&&revision===epoch.current)onBusy(false);}
  }
  if(!available)return null;
- return <Field className="new-project-address-search"><FieldLabel htmlFor="np-address-search">Buscar dirección</FieldLabel><Input id="np-address-search" role="combobox" aria-autocomplete="list" aria-expanded={items.length>0} aria-controls="np-address-results" aria-activedescendant={active>=0?`np-address-option-${active}`:undefined} autoComplete="off" placeholder="Calle, número y ciudad" value={query} onChange={e=>{epoch.current++;onBusy(false);setQuery(e.target.value);setItems([]);setActive(-1);setMessage('');}} onKeyDown={e=>{
+ return <Field className="new-project-address-search"><FieldLabel htmlFor="np-address-search">Buscar dirección</FieldLabel><Input id="np-address-search" role="combobox" aria-autocomplete="list" aria-expanded={items.length>0} aria-controls="np-address-results" aria-activedescendant={active>=0?`np-address-option-${active}`:undefined} autoComplete="off" placeholder="Calle, número y ciudad" value={query} onChange={e=>{epoch.current++;confirmedQuery.current=null;onBusy(false);setQuery(e.target.value);setItems([]);setActive(-1);setMessage('');}} onKeyDown={e=>{
   if(e.key==='ArrowDown'&&items.length){e.preventDefault();setActive(i=>(i+1)%items.length);}
   if(e.key==='ArrowUp'&&items.length){e.preventDefault();setActive(i=>(i-1+items.length)%items.length);}
   if(e.key==='Enter'){e.preventDefault();if(items[active])select(items[active]);}

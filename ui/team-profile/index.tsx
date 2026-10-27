@@ -12,7 +12,7 @@ import {NewProject} from './new-project';
 
 export function mountComponent(host:HTMLElement,Component:React.ComponentType<any>,onError?:()=>void,onReady?:()=>void){
  const shadow=host.attachShadow({mode:'open'});
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=365130';
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=365131';
  const frame=document.createElement('div');frame.className='style-nova';
  const content=document.createElement('div'),portals=document.createElement('div');portals.className='reui-portals';frame.append(content,portals);
  shadow.append(sheet,frame);host.style.visibility='hidden';sheet.addEventListener('load',()=>{host.style.visibility='';host.dataset.reuiReady='true';onReady?.();});
