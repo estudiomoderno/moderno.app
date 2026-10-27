@@ -7,6 +7,7 @@
 @source "./project-settings.tsx";
 @source "./shopping-delete.tsx";
 @source "./shopping-add.tsx";
+@source "./new-project.tsx";
 @source "./project-windows.tsx";
 @source "./page-breadcrumbs.tsx";
 @source "./vendor/reui/**/*.tsx";
@@ -64,3 +65,25 @@
 .finance-sections::-webkit-scrollbar {display:none}
 .finance-sections button {flex:none}
 @media(max-width:1099px){.finance-route {display:none}.finance-header {width:100%}}
+
+/* New project Sheet layout, preserving the original Nova primitives. */
+.new-project-sheet{position:fixed;inset:0 0 0 auto!important;width:min(480px,100%)!important;max-width:100%!important;height:100dvh!important;max-height:100dvh!important;display:flex;padding:0!important;gap:0!important;border-radius:0!important}
+.new-project-form{display:flex;flex-direction:column;width:100%;min-height:0;height:100%;overflow:hidden}
+.new-project-form [data-slot=sheet-header]{position:relative;flex:none;padding:24px!important}
+.new-project-form [data-slot=sheet-title]{padding-right:32px}
+.new-project-sheet-close{position:absolute;top:20px;right:20px}
+.new-project-sheet-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 24px 24px}
+.new-project-form [data-slot=sheet-footer]{flex:none;padding:20px 24px!important;border-top:1px solid var(--border);background:var(--background)}
+.new-project-form [data-slot=field-group]{gap:20px}
+.new-project-form [data-slot=field]{gap:8px;min-width:0}
+.new-project-form .cn-input{min-height:36px;width:100%;min-width:0}
+.new-project-client-row,.new-project-two-col{display:grid;gap:12px;min-width:0}
+.new-project-client-row{grid-template-columns:minmax(0,1fr) auto}
+.new-project-two-col{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.new-project-address{min-width:0;border:0;padding:0;margin:0}
+.new-project-address legend{margin-bottom:16px;font-size:14px;font-weight:600}
+.new-project-form .new-project-create{background:#0666ff;color:#fff;border-color:#0666ff}
+.new-project-form .new-project-create:hover{background:#0055dc}
+.new-project-options{font-size:13px;color:var(--muted-foreground)}
+.new-project-options>summary{cursor:pointer;margin-bottom:12px}
+@media(max-width:380px){.new-project-sheet-body{padding-left:16px;padding-right:16px}.new-project-form [data-slot=sheet-header],.new-project-form [data-slot=sheet-footer]{padding-left:16px!important;padding-right:16px!important}}

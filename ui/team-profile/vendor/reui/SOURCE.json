@@ -164,9 +164,24 @@
       "path": "registry/bases/base/ui/alert-dialog.tsx",
       "git_blob": "ab1dc757812bf207ee16691f265470b78ce56d40",
       "adaptation": "Add optional portal container for CSS isolation."
+    },
+    "field.tsx": {
+      "path": "registry/bases/base/ui/field.tsx",
+      "git_blob": "d58e0d29dbfe52053a21eff0b837f571b278f1ef",
+      "adaptation": "Unchanged source."
+    },
+    "input.tsx": {
+      "path": "registry/bases/base/ui/input.tsx",
+      "git_blob": "06c96abffafcd0fbbedb24778f0c2f668e1b2109",
+      "adaptation": "Unchanged source."
+    },
+    "sheet.tsx": {
+      "path": "registry/bases/base/ui/sheet.tsx",
+      "git_blob": "72669ad9cb812dcbf389f8be6e8157eaa8023479",
+      "adaptation": "Portal container adaptation for Shadow DOM; all component behavior retained."
     }
   },
-  "css": "Original Avatar, Button, Button Group Dropdown Menu Scroll Area, Breadcrumb and Card sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css. Original Calendar, Popover, Tooltip, Select, Switch, Tabs and Label sections from the same Nova source.",
+  "css": "Original Avatar, Button, Button Group Dropdown Menu Scroll Area, Breadcrumb and Card sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css. Original Calendar, Popover, Tooltip, Select, Switch, Tabs and Label sections from the same Nova source. Original Field, Input and Sheet sections from the same Nova source.",
   "license": "MIT; see LICENSE.md",
   "notifications": "Owner-provided Button/BellIcon/Badge pattern. The ReUI badge is original, not the shadcn UI badge.",
   "calendar": "Owner-provided c-event-calendar-1 composition adapted to existing application data and native handlers. Original engine in registry-reui/bases/base/reui/event-calendar; demo data are not instantiated."
