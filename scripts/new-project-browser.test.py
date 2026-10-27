@@ -44,10 +44,13 @@ try:
    if output:page.screenshot(path=str(output/f'new-project-{width}.png'))
    # Configure a fictitious provider only in this isolated browser. No Google calls.
    expect(dialog.get_by_label('Buscar dirección',exact=True)).to_have_count(0)
-   page.evaluate("""window.ModernoPlaces={available:async()=>true,enabled:()=>true,session:async()=>({close(){},search:async(q)=>q.includes('fallo')?Promise.reject(Error('fixture')):[{label:'Calle sugerida, Ciudad de prueba',prediction:{}}],select:async()=>({street:'Calle sugerida',number:'27',city:'Ciudad de prueba',province:'Provincia de prueba',country:'España',placeId:'fixture-place-only'})})}""")
+   page.evaluate("""window.ModernoPlaces={available:async()=>true,enabled:()=>true,session:async()=>({close(){},search:async(q)=>{window.fixturePlaceSearches=(window.fixturePlaceSearches||0)+1;return q.includes('fallo')?Promise.reject(Error('fixture')):[{label:'Calle sugerida, Ciudad de prueba',prediction:{}}]},select:async()=>({street:'Calle sugerida',number:'27',city:'Ciudad de prueba',province:'Provincia de prueba',country:'España',placeId:'fixture-place-only'})})}""")
    dialog.get_by_role('button',name='Cancelar',exact=True).click()
    page.locator('.projects-new:visible').click();expect(dialog).to_be_visible()
    search=dialog.get_by_label('Buscar dirección',exact=True);expect(search).to_be_visible()
+   search.fill('Cancelar consulta');search.press('Escape');page.wait_for_timeout(500)
+   assert page.evaluate('window.fixturePlaceSearches||0')==0
+   expect(dialog.locator('.new-project-search-status')).to_have_text('')
    search.fill('Calle sugerida');expect(dialog.get_by_role('option',name='Calle sugerida, Ciudad de prueba')).to_be_visible()
    if output:page.screenshot(path=str(output/f'address-suggestions-{width}.png'))
    search.press('ArrowDown');search.press('Enter')
