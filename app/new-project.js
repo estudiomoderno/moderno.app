@@ -2,7 +2,7 @@
 (function(root){
  'use strict';
  const types=['Interiorismo','Reforma integral','Reforma parcial','Obra nueva','Decoración','Paisajismo','Otro'];
- const ids={brand:'npBrand',name:'npName',client:'npClient',street:'npStreet',number:'npNumber',city:'npCity',province:'npProvince',country:'npCountry',type:'npType',from:'npFrom',template:'npTpl'};
+ const ids={brand:'npBrand',name:'npName',client:'npClient',street:'npStreet',number:'npNumber',city:'npCity',province:'npProvince',country:'npCountry',placeId:'npPlaceId',type:'npType',from:'npFrom',template:'npTpl'};
  let draft=null,owner='',resume=null,ui=null;
  const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const identity=()=>JSON.stringify([typeof ESTUDIO_ID==='undefined'?'':ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,_accessRole]);
@@ -13,7 +13,7 @@
  function data(){return draft&&owner===identity()?{...draft}:null;}
  function props(){const brands=visibleWsOrder().map(key=>({key,name:BRAND[key]?.name||'Mi espacio',code:code(key)}));return {draft:{...draft},brands,types,clients:state.clients.filter(c=>c.type==='Cliente').map(c=>c.name),templates:state.projects.filter(p=>p.tpl).map(p=>({id:String(p.id),name:p.name})),onChange:change,onCreate:()=>queueMicrotask(()=>createProject()),onCancel:()=>queueMicrotask(()=>closeModal()),onNewClient:()=>queueMicrotask(createClient)};}
  function cleanup(){const entry=ui;ui=null;if(entry){entry.component?.unmount();entry.host.remove();}document.getElementById('overlay')?.classList.remove('new-project-enhanced-overlay','new-project-native-overlay');document.getElementById('modalBox')?.classList.remove('new-project-enhanced','new-project-native');document.getElementById('modalBox')?.removeAttribute('aria-hidden');}
- function change(key,value){if(!draft||owner!==identity()||!Object.hasOwn(ids,key))return;draft[key]=String(value);const field=document.getElementById(ids[key]);if(field&&field.value!==String(value))field.value=String(value);const pr=document.getElementById('npCode');if(pr)pr.value=code(draft.brand);const select=document.getElementById('np-template-field');if(select)select.hidden=draft.from!=='tpl';}
+ function change(key,value){if(!draft||owner!==identity()||!Object.hasOwn(ids,key))return;if(['street','number','city','province','country'].includes(key))draft.placeId='';draft[key]=String(value);const field=document.getElementById(ids[key]);if(field&&field.value!==String(value))field.value=String(value);const pr=document.getElementById('npCode');if(pr)pr.value=code(draft.brand);const select=document.getElementById('np-template-field');if(select)select.hidden=draft.from!=='tpl';}
  function nativeHtml(){
   const options=(values,value)=>values.map(([v,label])=>`<option value="${E(v)}" ${String(value)===String(v)?'selected':''}>${E(label)}</option>`).join('');
   const field=(key,label,auto='',placeholder='')=>`<div class="new-project-field"><label for="${ids[key]}">${E(label)}</label><input id="${ids[key]}" name="${key}" value="${E(draft[key])}" autocomplete="${auto||'off'}" placeholder="${E(placeholder)}" ${key==='name'?'required maxlength="200"':''}></div>`;
@@ -29,7 +29,7 @@
  }
  function open(preClient,templateId){
   if(!allowed())return;const saved=templateId==null&&resume&&resume.owner===identity()?resume.draft:null;resume=null;
-  draft=saved?{...saved}:{brand:visibleWsOrder()[0],name:'',client:'',street:'',number:'',city:'',province:'',country:'',type:'',from:'blank',template:String(state.projects.find(p=>p.tpl)?.id||'')};
+  draft=saved?{...saved}:{brand:visibleWsOrder()[0],name:'',client:'',street:'',number:'',city:'',province:'',country:'',placeId:'',type:'',from:'blank',template:String(state.projects.find(p=>p.tpl)?.id||'')};
   if(templateId!=null){const template=state.projects.find(p=>p.tpl&&String(p.id)===String(templateId));if(!template){toast('Esta plantilla ya no está disponible.');return;}draft.from='tpl';draft.template=String(template.id);}
   if(preClient!=null)draft.client=String(preClient);owner=identity();
   modal(nativeHtml());const box=document.getElementById('modalBox'),overlay=document.getElementById('overlay');box.classList.add('new-project-native');overlay.classList.add('new-project-native-overlay');

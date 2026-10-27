@@ -42,6 +42,26 @@ try:
    dialog.get_by_label('Tipo de proyecto',exact=True).select_option('Reforma integral')
    dialog.get_by_label('Nombre del proyecto',exact=True).press('Escape');expect(dialog).to_be_visible()
    if output:page.screenshot(path=str(output/f'new-project-{width}.png'))
+   # Configure a fictitious provider only in this isolated browser. No Google calls.
+   expect(dialog.get_by_label('Buscar dirección',exact=True)).to_have_count(0)
+   page.evaluate("""window.ModernoPlaces={available:async()=>true,enabled:()=>true,session:async()=>({close(){},search:async(q)=>q.includes('fallo')?Promise.reject(Error('fixture')):[{label:'Calle sugerida, Ciudad de prueba',prediction:{}}],select:async()=>({street:'Calle sugerida',number:'27',city:'Ciudad de prueba',province:'Provincia de prueba',country:'España',placeId:'fixture-place-only'})})}""")
+   dialog.get_by_role('button',name='Cancelar',exact=True).click()
+   page.locator('.projects-new:visible').click();expect(dialog).to_be_visible()
+   search=dialog.get_by_label('Buscar dirección',exact=True);expect(search).to_be_visible()
+   search.fill('Calle sugerida');expect(dialog.get_by_role('option',name='Calle sugerida, Ciudad de prueba')).to_be_visible()
+   if output:page.screenshot(path=str(output/f'address-suggestions-{width}.png'))
+   search.press('ArrowDown');search.press('Enter')
+   expect(dialog.get_by_label('Calle',exact=True)).to_have_value('Calle sugerida')
+   expect(dialog.get_by_label('Número',exact=True)).to_have_value('27')
+   assert page.evaluate('ModernoNewProject.data().placeId')=='fixture-place-only'
+   dialog.get_by_label('Número',exact=True).fill('29')
+   assert page.evaluate('ModernoNewProject.data().placeId')==''
+   search.fill('fallo buscador');expect(dialog.get_by_role('status')).to_contain_text('Puedes escribir')
+   # Restore the existing manual-creation scenario.
+   dialog.get_by_label('Nombre del proyecto',exact=True).fill('Proyecto nuevo ficticio')
+   dialog.get_by_label('Cliente',exact=True).fill('Cliente ficticio')
+   for label,value in [('Calle','Calle de Prueba'),('Número','12B'),('Ciudad','Ciudad ficticia'),('Provincia','Provincia ficticia'),('País','España')]:dialog.get_by_label(label,exact=True).fill(value)
+   dialog.get_by_label('Tipo de proyecto',exact=True).select_option('Reforma integral')
    reserved=code.input_value()
    page.evaluate("num=>state.projects.push({...structuredClone(state.projects[0]),id:990099,num,name:'Reserva ficticia de numeración',tasks:[]})",reserved)
    before=page.evaluate('state.projects.length');old=page.evaluate('JSON.stringify(state.projects)')

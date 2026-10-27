@@ -62,7 +62,7 @@ var ModernoCalendarUI=(()=>{
   if(!target||!isCalendar()||!allowed()){clear();document.querySelector('.calendar-native')?.removeAttribute('hidden');return;}
   const native=document.querySelector('.calendar-native');
   if(!window.ModernoCalendarComponent){
-   if(!loading){loading=true;const script=document.createElement('script');script.src='/calendar-component.js?v=365125';script.onload=()=>{loading=false;safeRefresh();};script.onerror=fail;document.head.append(script);}return;
+   if(!loading){loading=true;const script=document.createElement('script');script.src='/calendar-component.js?v=365126';script.onload=()=>{loading=false;safeRefresh();};script.onerror=fail;document.head.append(script);}return;
   }
   if(!component){host=document.createElement('div');host.className='calendar-component-host';component=ModernoCalendarComponent.mount(host,fail,()=>{if(host?.isConnected)document.querySelector('.calendar-native')?.setAttribute('hidden','');});}
   target.append(host);component.update(props());if(host.dataset.reuiReady==='true'&&native)native.hidden=true;
