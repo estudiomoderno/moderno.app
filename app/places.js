@@ -55,7 +55,7 @@
  async function createMap(host,onInteract=()=>{}){
   await load();const api=await bounded(root.google.maps.importLibrary('maps'));
   if(!host?.isConnected)throw Error('Mapa cerrado');
-  const map=new api.Map(host,{center:{lat:40.2,lng:-3.7},zoom:6,minZoom:2,maxZoom:20,disableDefaultUI:true,clickableIcons:false,gestureHandling:'cooperative',keyboardShortcuts:true,styles:[{featureType:'all',stylers:[{saturation:-100},{lightness:12}]},{featureType:'poi',stylers:[{visibility:'off'}]},{featureType:'transit',stylers:[{visibility:'off'}]},{featureType:'water',elementType:'geometry',stylers:[{color:'#c5cbcb'}]},{featureType:'landscape',elementType:'geometry',stylers:[{color:'#e9ece9'}]},{featureType:'road',elementType:'geometry',stylers:[{color:'#ffffff'}]}]});
+  const map=new api.Map(host,{center:{lat:40.2,lng:-3.7},zoom:6,minZoom:2,maxZoom:20,disableDefaultUI:true,clickableIcons:false,gestureHandling:'greedy',scrollwheel:true,keyboardShortcuts:true,styles:[{featureType:'all',stylers:[{saturation:-100},{lightness:12}]},{featureType:'poi',stylers:[{visibility:'off'}]},{featureType:'transit',stylers:[{visibility:'off'}]},{featureType:'water',elementType:'geometry',stylers:[{color:'#c5cbcb'}]},{featureType:'landscape',elementType:'geometry',stylers:[{color:'#e9ece9'}]},{featureType:'road',elementType:'geometry',stylers:[{color:'#ffffff'}]}]});
   let rows=[],select=()=>{},layer,disposed=false;
   class Pins extends api.OverlayView{
    onAdd(){this.div=document.createElement('div');this.getPanes().overlayMouseTarget.append(this.div);api.OverlayView.preventMapHitsAndGesturesFrom(this.div);}
