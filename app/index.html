@@ -1025,6 +1025,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/client-portal-site.js?v=36578"></script>
 <link rel="stylesheet" href="/client-portal-site.css?v=36578">
 <link rel="stylesheet" href="/home-dashboard.css?v=3640">
+<link rel="stylesheet" href="/home-map.css?v=365134">
 <link rel="stylesheet" href="/menu-polish.css?v=3650">
 <link rel="stylesheet" href="/folder-automations.css?v=3652"></head>
 <body>
@@ -1279,7 +1280,8 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
 <script src="/project-ui.js?v=365133"></script>
-<script src="/places.js?v=365133"></script>
+<script src="/places.js?v=365134"></script>
+<script src="/home-map.js?v=365134"></script>
 <script src="/new-project.js?v=365133"></script>
 <script src="/shopping-export.js?v=365113"></script>
 <script src="/plan-annotations.js?v=36522"></script>
@@ -4498,6 +4500,7 @@ document.querySelectorAll(".nav-item[data-view]").forEach(b=>b.onclick=()=>{_wan
 drawBrandSwitch();
 
 function render(){
+  if(typeof ModernoHomeMap!=='undefined')ModernoHomeMap.unmount();
   if(typeof _localResumePending!=='undefined'&&_localResumePending)return;
   (state.projects||[]).forEach(p=>ModernoSpec.reindex(p));
   if(_accessLoading&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>'+(_accessError?'No se ha podido abrir el estudio':'Conectando con tu estudio')+'</h1><p>'+ModernoDaily.escape(_accessError||'Comprobando el acceso y cargando tus datos.')+'</p>'+(_accessError?'<p>Tus copias se conservan. Puedes descargar los cambios desde el estado de sincronización.</p>':'')+'<button class="btn btn-ghost" '+(_accessConnecting?'disabled':'')+' onclick="cloudLoad()">'+(_accessConnecting?'Conectando…':'Reintentar conexión')+'</button>'+((typeof ModernoInvitations!=='undefined'&&ModernoInvitations.context()&&_accessError)?'<button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión y usar la cuenta invitada</button>':'');return;}
@@ -4509,6 +4512,7 @@ function render(){
   const projectsEntering=state.view==='proyectos'&&!V.querySelector('.projects-identity');
   V.innerHTML = r();
   wire();
+  if(state.view==='home')mountHomeMap();
   /* Main navigation supplies the entrance fade; project view changes retain their local motion. */
   if(state.view==='compras')ProductOps.overview();
 }
@@ -4863,7 +4867,7 @@ function vHome(){
   const events=(state.cal?.events||[]).filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
   const date=d=>new Date(d+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short'});
   const V=finance?ventaEstimada():null;
-  return `<div class="home-dashboard">
+  return `<div class="home-dashboard">${typeof ModernoHomeMap!=='undefined'?ModernoHomeMap.shell():''}<details class="home-activity"><summary>Actividad del estudio</summary>
     <header class="home-welcome"><div><p class="home-date">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</p><h1>${greet()}${userFirst()?', '+E(userFirst()):''}.</h1></div>
     <div class="home-actions"><button class="btn btn-dark" onclick="wsNewTask('pend')">${ico('mas')} Nueva tarea</button>${canView('facturas')?`<button class="btn btn-ghost" onclick="homeNewInvoice()">Nueva factura</button>`:''}${canView('agenda')?`<button class="btn btn-ghost" onclick="clientModal()">Nuevo cliente</button>`:''}</div></header>
     <div class="home-columns"><section class="home-panel"><div class="home-heading"><h2>Hoy en tu estudio</h2><button class="btn btn-ghost" onclick="go('workspace')">Ver todas · ${tasks.length}</button></div>${dailyScope()}
@@ -4871,7 +4875,19 @@ function vHome(){
     <aside class="home-panel"><div class="home-heading"><h2>Tu agenda</h2><button class="btn btn-ghost" onclick="go('calendario')">Ver calendario</button></div>${events.map(e=>`<button class="home-task" onclick="WorkflowPolish.eventInfo('${e.date}')"><span><strong>${E(e.title)}</strong><small>${date(e.date)}</small></span></button>`).join('')||'<p class="home-empty">No hay próximas citas en tu calendario.</p>'}<div class="home-attention"><h3>Necesita atención <span>${alerts.length}</span></h3>${alerts.slice(0,3).map(a=>`<button class="home-task" onclick="${a.action}"><span><strong>${E(a.title)}</strong><small>${E(a.detail)}</small></span></button>`).join('')||'<p class="home-empty">Sin avisos de cobros ni fases de obra.</p>'}${alerts.length>3?`<details><summary>Ver ${alerts.length-3} avisos más</summary>${alerts.slice(3).map(a=>`<button class="home-task" onclick="${a.action}"><span><strong>${E(a.title)}</strong><small>${E(a.detail)}</small></span></button>`).join('')}</details>`:''}</div></aside></div>
     <section class="home-projects"><div class="home-heading"><div><h2>${recent.some(id=>projs.some(p=>p.id===id))?'Retoma tus proyectos':'Tus proyectos'}</h2><p>${projs.length} proyectos activos</p></div><button class="btn btn-ghost" onclick="go('proyectos')">Ver proyectos</button></div><div class="home-project-grid">${ordered.slice(0,4).map(projectFolio).join('')}<button class="home-add-project" onclick="newProject()"><span>+</span>Nuevo proyecto</button></div></section>
     ${finance?`<section class="home-finance"><div class="home-heading"><h2>Resumen del estudio</h2><button class="btn btn-ghost" onclick="go('informes')">Ver detalle</button></div><div class="home-metrics"><button onclick="go('contabilidad')"><span>Pendiente de cobrar</span><strong>${fmt(pending.reduce((n,e)=>n+pendienteCobro(e),0))}</strong><small>${late.length?late.length+' cobros vencidos':'Sin cobros vencidos'}</small></button><button onclick="go('facturas')"><span>Facturado</span><strong>${fmt(V.facturado)}</strong><small>Según la marca seleccionada</small></button><button onclick="go('presupuestos')"><span>Presupuestos pendientes</span><strong>${fmt(V.quotesSum)}</strong><small>Por aceptar</small></button></div></section>`:''}
-  </div>`;
+  </details></div>`;
+}
+
+function mountHomeMap(){
+  const host=V.querySelector('.home-map');if(!host||!window.ModernoHomeMap)return;
+  const identity=()=>JSON.stringify([ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,_accessRole,state.brandFilter,visibleWsOrder()]);
+  const allowed=()=>!_accessLoading&&state.view==='home'&&canView('proyecto')&&['admin','colaborador','miembro'].includes(_accessRole);
+  const projects=()=>!allowed()?[]:byBrand(state.projects.filter(p=>!p.tpl)).map(p=>{
+    const m=ModernoProjectInsights.metrics(p),fields=ModernoNewProject.addressFields(p);
+    const addressQuery=fields.street!==p.addr?ModernoNewProject.formatAddress({...fields,address2:''}):p.addr||'';
+    return {id:String(p.id),code:p.num||'',name:p.name||'Proyecto',client:p.client||'',status:p.status||'En progreso',addr:p.addr||'',addressQuery,progress:m.progress,total:m.total,done:m.total-m.pending,attention:m.overdue>0||m.stale};
+  });
+  ModernoHomeMap.mount(host,{identity,allowed,projects,api:()=>window.ModernoPlaces,open:id=>{if(allowed()){const p=byBrand(state.projects.filter(p=>!p.tpl)).find(p=>String(p.id)===id);if(p)go('proyecto',p.id);}},create:()=>{if(allowed())newProject();}});
 }
 
 function miniCal(now){
@@ -11417,7 +11433,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.133";
+const MODERNO_VER="v3.65.134";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
