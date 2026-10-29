@@ -75,7 +75,7 @@ try:
    assert overview.locator('.dl-grid').count()==3 and overview.locator('.dl-card').count()==4
    assert overview.get_by_role('button',name='Exportar PDF',exact=True).count()==0
    assert overview.get_by_role('button',name='Hoja de cálculo',exact=True).count()==0
-   expect(overview.locator('.shopping-list-header .shopping-room-count')).to_have_text('2')
+   expect(overview.locator('.shopping-room-count')).to_have_count(0)
    assert overview.locator('.shopping-list-header h2').inner_text().strip().startswith('Listas de compra')
    assert 'Estancias' not in overview.locator('.dl-ghead>b').all_inner_texts()
    assert overview.locator('.shopping-list-header .line').count()==0
@@ -162,7 +162,7 @@ try:
    assert page.evaluate('records()===baseline')
    settings=room.get_by_role('button',name='Ajustes de la lista',exact=True)
    settings.click();expect(page.locator('#rmName')).to_have_value('Salón ficticio')
-   page.get_by_role('button',name='Hecho',exact=True).click();assert page.evaluate('records()===baseline')
+   page.get_by_role('button',name='Guardar',exact=True).click();assert page.evaluate('records()===baseline')
    delete=room.get_by_role('button',name='Eliminar lista',exact=True)
    delete.hover();delete.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
    assert delete.evaluate('(e)=>getComputedStyle(e).color')=='rgb(220, 38, 38)'
@@ -231,24 +231,23 @@ try:
    page.get_by_role('button',name='Cancelar',exact=True).click();assert page.evaluate('records()===baseline')
    # PDF and sheet retain the existing list selector; an empty selection stays disabled.
    overview.get_by_role('button',name='Exportar',exact=True).click()
-   page.get_by_role('button',name='PDF',exact=True).click()
    assert page.locator('.expR:checked').count()==4
-   page.evaluate("expSet('none')");assert page.locator('#expGo').is_disabled()
-   page.locator('.expR[value="8001"]').check();page.locator('#expGo').click()
+   page.evaluate("expSet('none')");assert page.locator('#shopping-export-go').is_disabled()
+   page.locator('.expR[value="8001"]').check();page.locator('#shopping-export-go').click()
    page.wait_for_function('printCount===1')
    assert 'Salón ficticio' in page.evaluate('printHTML') and 'Dormitorio ficticio' not in page.evaluate('printHTML')
    overview.get_by_role('button',name='Exportar',exact=True).click()
-   page.get_by_role('button',name='Hoja de cálculo (CSV)',exact=True).click()
+   page.get_by_role('button',name='Hoja de cálculo',exact=False).click()
    page.evaluate("expSet('none')");page.locator('.expR[value="8002"]').check()
-   with page.expect_download() as downloaded:page.locator('#expGo').click()
+   with page.expect_download() as downloaded:page.locator('#shopping-export-go').click()
    download=downloaded.value;csv=Path(download.path()).read_text(encoding='utf-8-sig')
    assert download.suggested_filename=='PR-9001-listas-de-compra.csv'
    assert 'Producto ficticio 1' in csv and 'Producto ficticio 0' not in csv
    # Print has its own entry and labels, using the same document renderer.
    overview.get_by_role('button',name='Imprimir',exact=True).click()
-   expect(page.locator('#modalBox h3')).to_have_text('Imprimir listas')
-   expect(page.locator('#expGo')).to_have_text('Imprimir')
-   page.evaluate("expSet('none')");page.locator('.expR[value="8003"]').check();page.locator('#expGo').click()
+   expect(page.locator('#modalBox h3')).to_have_text('Selecciona el diseño')
+   expect(page.locator('#shopping-export-go')).to_have_text('Imprimir listas')
+   page.evaluate("expSet('none')");page.locator('.expR[value="8003"]').check();page.locator('#shopping-export-go').click()
    page.wait_for_function('printCount===2')
    assert 'Pavimentos ficticios' in page.evaluate('printHTML') and 'Salón ficticio' not in page.evaluate('printHTML')
    assert page.evaluate('records()===baseline'),'Presentation/export changed stored records'

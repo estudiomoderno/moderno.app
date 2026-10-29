@@ -42,7 +42,7 @@ try:
    }""")
    html=(repo/'app/index.html').read_text();flush_source=html.split('async function cloudFlush(){',1)[1].split('function cloudSnapshotAll(){',1)[0]
    dirty_source=html.split('function cloudDirty(){',1)[1].split('const _cloudCount=',1)[0]
-   page.evaluate("source=>{cloudFlush=new Function('sb','cloudReadBlock','return async function cloudFlush(){'+source)(fixtureClient,fixtureRead);}",flush_source)
+   page.evaluate("source=>{cloudFlush=new Function('sb','cloudReadBlock','cloudReadSaveVersions','cloudSaveBatch','return async function cloudFlush(){'+source)(fixtureClient,fixtureRead,async()=>null,(study,plans)=>fixtureClient.rpc('app_guardar_lote',{p_estudio:study,p_cambios:plans.map(p=>({bloque:p.b,contenido:p.merged,base:p.version}))}));}",flush_source)
    page.evaluate("source=>{cloudDirty=new Function('sb','return function cloudDirty(){'+source)(fixtureClient);}",dirty_source)
    page.evaluate('roomMenu(9001,8001)');page.get_by_role('button',name='Duplicar lista',exact=True).click()
    page.wait_for_function('_cloudBusy&&fixtureWrites===1')

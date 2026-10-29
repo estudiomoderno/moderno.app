@@ -278,14 +278,15 @@ function shoppingRoomFilterApply(form){
 }
 function shoppingRoomFilterClear(){state.rf=null;render();document.querySelector('.shopping-filter-control summary')?.focus();}
 function shoppingRoomFilterRemove(key){if(!['label','supplier','min','max'].includes(key))return;if(state.rf)state.rf[key]='';render();document.querySelector('.shopping-filter-control summary')?.focus();}
-function shoppingRoomDelete(pid,rid){
+function shoppingRoomDelete(pid,rid,onCancel,guard){
  const project=state.projects.find(p=>p.id===pid),room=project?.rooms?.find(r=>r.id===rid);if(!room)return;
  askConfirm(`¿Eliminar «${ModernoDaily.escape(room.name)}» y todos sus productos?`,'Eliminar lista',()=>{
+  if(guard&&!guard()){toast('La lista o la sesión ha cambiado. Vuelve a abrir sus ajustes.');return;}
   const current=state.projects.find(p=>p.id===pid);if(!current?.rooms?.some(r=>r.id===rid))return;
   current.rooms=current.rooms.filter(r=>r.id!==rid);
   if(state.view==='estancia'&&state.currentProject===pid&&state.currentRoom===rid){state.projTab='listas';state.roomSearch='';state.rf=null;go('proyecto',pid);}else render();
   toast('Lista eliminada');
- });
+ },onCancel);
  shoppingRoomEnhanceDelete(room.name);
 }
 function projectTabsHtml(current){
@@ -606,4 +607,55 @@ var ModernoTaskPhaseEditor=(()=>{
   const box=document.getElementById('modalBox');box.classList.add('task-phase-confirm');box.querySelector('h3').textContent='Eliminar fase';box.setAttribute('aria-label','Eliminar fase');box.querySelector('.modal-foot button')?.focus();
  }
  return {open,save,remove};
+})();
+
+function projectSettingsHtml(p){return `<div class="project-options-control"><details class="project-options"><summary class="btn btn-ghost project-options-trigger" aria-label="Opciones del proyecto" title="Opciones del proyecto">${projectMoreIcon()}</summary><div class="project-options-body">
+      <button class="btn btn-ghost" onclick="customizeModal(${p.id})">${ico('editar')} Editar datos</button>
+      <button class="btn btn-ghost" onclick="customizeModal(${p.id},'appearance')">${ico('personalizar')} Personalizar proyecto</button>
+      <button id="project-client-access" class="btn btn-ghost" onclick="projTab('cliente')">${ico('portal')} Portal del cliente</button>
+      <button class="btn btn-ghost" onclick="duplicateProject(${p.id})">${ico('dup_proyecto')} Duplicar proyecto</button>
+      ${_accessRole==='colaborador'?'':`<button class="btn btn-ghost project-delete-action" onclick="deleteProject(${p.id})">${ico('eliminar')} Eliminar proyecto</button>`}
+    </div></details></div>`;}
+
+/* Native product accordions keep their contents mounted while opening and closing. */
+var ModernoProductFolds=(()=>{
+ const pending=new WeakMap();
+ if(typeof document==='undefined'||!document.addEventListener)return {};
+ document.addEventListener('click',event=>{
+  const summary=event.target.closest?.('.shopping-product-editor .product-editor-fold>summary');if(!summary)return;
+  event.preventDefault();const details=summary.parentElement,previous=pending.get(details),opening=previous?!previous.opening:!details.open,start=details.getBoundingClientRect().height;
+  previous?.animation.cancel();pending.delete(details);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches||!details.animate){details.open=opening;summary.setAttribute('aria-expanded',String(opening));return;}
+  details.open=opening;const end=details.getBoundingClientRect().height;details.open=true;
+  const animation=details.animate([{height:start+'px',overflow:'hidden'},{height:end+'px',overflow:'hidden'}],{duration:200,easing:'ease-in-out'}),record={animation,opening};
+  pending.set(details,record);summary.setAttribute('aria-expanded',String(opening));
+  animation.finished.then(()=>{if(pending.get(details)!==record)return;pending.delete(details);details.open=opening;}).catch(()=>{});
+ });
+ return {};
+})();
+
+/* Shopping list settings are a metadata draft; existing transfer and delete flows remain explicit. */
+var ModernoRoomSettings=(()=>{
+ let entry=null;
+ const E=v=>ModernoDaily.escape(String(v??''));
+ const allowed=p=>!_accessLoading&&['admin','miembro','colaborador'].includes(_accessRole)&&canView('proyecto')&&byBrand([p]).includes(p);
+ function valid(ctx){return entry===ctx&&shoppingProductIdentity()===ctx.owner&&allowed(ctx.p)&&state.currentProject===ctx.p.id&&state.projects.filter(p=>p.id===ctx.p.id).length===1&&state.projects.includes(ctx.p)&&ctx.p.rooms.filter(r=>r.id===ctx.r.id).length===1&&ctx.p.rooms.includes(ctx.r)&&JSON.stringify([ctx.r.name,ctx.r.icon])===ctx.snapshot;}
+ function stale(){toast('La lista o la sesión ha cambiado. Vuelve a abrir sus ajustes.');}
+ function read(){const ctx=entry,form=document.getElementById('shopping-list-settings-form');if(!ctx||ctx.form!==form||!form?.isConnected||!document.getElementById('overlay').classList.contains('open'))return null;return {name:document.getElementById('rmName').value,icon:ctx.icon};}
+ function show(ctx,draft){
+  if(!valid(ctx)){stale();return;}ctx.icon=draft.icon;
+  modal(`<form id="shopping-list-settings-form" class="shopping-list-settings" onsubmit="event.preventDefault();ModernoRoomSettings.save()"><header><h3>Ajustes de la lista</h3><button type="button" class="product-editor-close" aria-label="Cerrar ajustes de la lista" onclick="closeModal()">×</button></header>
+  <div class="shopping-list-settings-body"><label for="rmName">Nombre</label><input id="rmName" value="${E(draft.name)}" required maxlength="200" autocomplete="off">
+   <details class="shopping-list-icon-picker"><summary><span id="rmIconPreview">${rico(draft.icon)}</span>Cambiar icono</summary><div id="rmIcons">${picker(draft.icon)}</div></details>
+   <div class="shopping-list-settings-actions"><button type="button" class="btn btn-ghost" onclick="ModernoRoomSettings.action('export')">${ico('rm_exportar')} Exportar a otro proyecto</button><button type="button" class="btn btn-ghost" onclick="ModernoRoomSettings.action('import')">${ico('rm_importar')} Importar de otro proyecto</button><button type="button" class="btn btn-ghost" onclick="ModernoRoomSettings.action('duplicate')">${ico('copiar')} Duplicar lista</button></div>
+  </div><footer><div><p>Eliminar la lista borrará todos sus productos.</p><div class="shopping-list-settings-footer"><button type="button" class="btn room-settings-delete" onclick="ModernoRoomSettings.remove()">Eliminar</button><button type="submit" class="btn room-settings-save">Guardar</button></div></div></footer></form>`);
+  ctx.form=document.getElementById('shopping-list-settings-form');document.getElementById('rmName').focus();
+ }
+ function picker(icon){return riconPicker(icon,"ModernoRoomSettings.icon('KEY')").replaceAll('<button ','<button type="button" ');}
+ function open(pid,rid){const p=state.projects.find(p=>p.id===pid),r=p?.rooms?.find(r=>r.id===rid);if(!p||!r||!allowed(p))return;const ctx={p,r,owner:shoppingProductIdentity(),snapshot:JSON.stringify([r.name,r.icon]),icon:r.icon||''};entry=ctx;show(ctx,{name:r.name||'',icon:r.icon||''});}
+ function icon(value){const draft=read(),ctx=entry;if(!draft||!valid(ctx)||!Object.hasOwn(RICONS,value))return;ctx.icon=value;document.getElementById('rmIconPreview').innerHTML=rico(value);document.getElementById('rmIcons').innerHTML=picker(value);}
+ function save(){const draft=read(),ctx=entry;if(!draft)return;if(!valid(ctx)){stale();return;}const name=draft.name.trim();if(!name||name.length>200){document.getElementById('rmName').focus();return;}ctx.r.name=name;if((ctx.r.icon||'')!==draft.icon)ctx.r.icon=draft.icon;entry=null;persistSoon();closeModal();render();toast('Lista actualizada');}
+ function action(kind){const draft=read(),ctx=entry;if(!draft)return;if(!valid(ctx)){stale();return;}if(draft.name!==String(ctx.r.name||'')||draft.icon!==(ctx.r.icon||'')){toast('Guarda los cambios de nombre o icono antes de usar esta acción.');return;}if(kind==='duplicate')return duplicateShoppingRoom(ctx.p.id,ctx.r.id);if(!['export','import'].includes(kind))return;closeModal();return kind==='export'?roomToProjectModal(ctx.p.id,ctx.r.id):roomFromProjectModal(ctx.p.id,ctx.r.id);}
+ function remove(){const draft=read(),ctx=entry;if(!draft)return;if(!valid(ctx)){stale();return;}shoppingRoomDelete(ctx.p.id,ctx.r.id,()=>show(ctx,draft),()=>valid(ctx));}
+ return {open,icon,save,action,remove};
 })();
