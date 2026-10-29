@@ -1279,7 +1279,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=365136"></script>
+<script src="/project-ui.js?v=365140"></script>
 <script src="/places.js?v=365135"></script>
 <script src="/home-map.js?v=365135"></script>
 <script src="/new-project.js?v=365133"></script>
@@ -1293,7 +1293,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/library-brands.js?v=3617"></script>
 <script src="/project-quotes.js?v=365137"></script>
 <script src="/spec-audit.js?v=340"></script>
-<script src="/spec-master.js?v=341"></script>
+<script src="/spec-master.js?v=365140"></script>
 <script src="/room-boards.js?v=342"></script>
 <script src="/purchase-logistics.js?v=344"></script>
 <script src="/dialog-access.js?v=345"></script>
@@ -5680,6 +5680,11 @@ function mgUI(pfx, cur){
   const libre = cur==="libre" || cur===null || cur===undefined;
   cur = libre ? "" : ((cur===undefined||cur==="") ? (state.defMargin??0) : +cur);
   const std=[0,5,10,15,20], custom=!libre && !std.includes(cur);
+  if(pfx==='it')return `<label for="itMgInp">Margen comercial (%)</label><div class="opt-pills product-editor-margin" id="itMgPills">
+    <input id="itMgInp" aria-label="Margen comercial personalizado" title="Escribe un porcentaje. Déjalo vacío para editar precio y coste por separado." type="number" step="0.5" placeholder="Libre" value="${libre?'':cur}" oninput="mgPick('it',this.value,null)">
+    ${std.map(v=>`<button type="button" class="${!libre&&cur===v?'on':''}" onclick="mgPick('it',${v},this)">${v}%</button>`).join('')}
+    <span id="itMgInfo"></span></div><input type="hidden" id="itMgV" value="${libre?'':cur}">`;
+
   return `<label>Margen comercial (%) <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— con un %, el otro campo se calcula solo; con «Libre», precio y coste van cada uno a su aire</small></label>
   <div class="opt-pills" id="${pfx}MgPills">
     <button class="${libre?'on':''}" title="Sin margen automático: escribes precio y coste por separado" onclick="mgPick('${pfx}','libre',this)">Libre</button>
@@ -5711,14 +5716,15 @@ function mgSync(pfx, src){
   unitSum(...map[2]);
 }
 function mgPick(pfx, v, btn){
+  if(pfx==='it'&&v==='')v='libre';
   if(v==="libre"){ document.getElementById(pfx+"MgV").value=""; const pills=document.getElementById(pfx+"MgPills"); pills.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b===btn)); const inp=document.getElementById(pfx+"MgInp"); if(inp){ inp.value=""; inp.style.borderColor="#E2E2E0"; } mgSync(pfx,null); return; }
   v=+v; if(!v&&v!==0) return;
   document.getElementById(pfx+"MgV").value=v;
   const pills=document.getElementById(pfx+"MgPills");
   pills.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b===btn));
   const inp=document.getElementById(pfx+"MgInp");
-  if(btn){ inp.value=""; inp.style.borderColor="#E2E2E0"; } else { inp.style.borderColor="var(--ink)"; }
-  mgSync(pfx, null);
+  if(btn){ inp.value=pfx==='it'?v:""; inp.style.borderColor="#E2E2E0"; } else { inp.style.borderColor="var(--ink)"; }
+  mgSync(pfx, null);if(pfx==='it')mgInfo(pfx);
 }
 // Los valores de cada proyecto son independientes del producto maestro.
 function syncFromLibrary(){ return false; }
@@ -8914,7 +8920,6 @@ function itemModal(si,ii,fromUrl){
     <button type="button" class="thumb" id="itThumb" aria-label="Cambiar imagen del producto" title="Cambiar imagen del producto" onclick="document.getElementById('itImgFile').click()"></button>
     <div><span class="product-editor-photo-label">Imagen del producto</span>
       <button type="button" class="btn btn-ghost" onclick="document.getElementById('itImgFile').click()">${ico("subir")} Subir imagen</button><input type="file" id="itImgFile" accept="image/*" style="display:none" onchange="itLoadImg(this.files[0])">
-      <p class="product-editor-help">También puedes pulsar la imagen para cambiarla.</p>
     </div>
   </div>
   <label for="itName">Nombre</label><input id="itName" value="${ModernoDaily.escape(it.name||"")}">
@@ -8925,7 +8930,7 @@ function itemModal(si,ii,fromUrl){
   </div>
   ${shoppingRoomLabelEditor(si,ii)}
   </section>
-  <section class="product-editor-section" aria-labelledby="product-editor-specs"><h4 id="product-editor-specs">Características</h4>
+  <details class="product-editor-section product-editor-fold" aria-labelledby="product-editor-specs"><summary><h4 id="product-editor-specs">Características</h4></summary><div class="product-editor-fold-body">
   <div class="row2">
     <div><label for="itDims">Dimensiones estándar o a medida</label><input id="itDims" value="${ModernoDaily.escape(it.dims||"")}" placeholder="Ej: 120×35×80 cm"></div>
     <div><label for="itMat">Material / acabado</label><input id="itMat" value="${ModernoDaily.escape(it.material||"")}" placeholder="Ej: Roble, cerámica…"></div>
@@ -8935,7 +8940,7 @@ function itemModal(si,ii,fromUrl){
     <div><label for="itPlz">Plazo de entrega</label><input id="itPlz" value="${ModernoDaily.escape(it.plazo||"")}" placeholder="Ej: 2-3 semanas"></div>
   </div>
   <label for="itNote">Nota interna</label><input id="itNote" value="${ModernoDaily.escape(it.note||"")}" placeholder="Solo la ve el equipo">
-  </section>
+  </div></details>
   </div><div class="product-editor-column">
   <section class="product-editor-section" aria-labelledby="product-editor-prices"><h4 id="product-editor-prices">Precios y cantidades</h4>
   <div class="row2">
@@ -8949,11 +8954,11 @@ function itemModal(si,ii,fromUrl){
   <div id="itSum" class="entry product-editor-total"></div>
   ${_accessRole==='colaborador'?'<input type="hidden" id="itMgV" value="">':mgUI("it", mgAuto(it))}
   </section>
-  <section class="product-editor-section" aria-labelledby="product-editor-files"><h4 id="product-editor-files">Archivos</h4>
+  <details class="product-editor-section product-editor-fold" aria-labelledby="product-editor-files"><summary><h4 id="product-editor-files">Archivos</h4></summary><div class="product-editor-fold-body">
   <div class="product-editor-attachments"><span class="product-editor-photo-label">Adjuntos del producto</span><p class="product-editor-help">Instrucciones, ficha técnica y otros documentos.</p>
   <div id="itFilesBox"></div>
   <button type="button" class="btn btn-ghost" onclick="document.getElementById('itAttachFiles').click()">${ico("adj_archivo")} Añadir archivo</button><input id="itAttachFiles" type="file" multiple style="display:none" onchange="itAddFiles([...this.files])"></div>
-  </section>
+  </div></details>
   </div>
   ${ii>=0?shoppingProductEditorActions(si,ii):''}
   <div id="itOrigin" class="product-editor-origin"></div>
@@ -11417,7 +11422,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.139";
+const MODERNO_VER="v3.65.140";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13562,7 +13567,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365139">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365140">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

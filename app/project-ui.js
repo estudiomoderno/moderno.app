@@ -371,14 +371,14 @@ function shoppingProductEditorTarget(si,ii,allowDirty=false){
  return {p,r,it};
 }
 function shoppingProductEditorActions(si,ii){
- return `<section class="product-editor-section shopping-editor-actions" aria-labelledby="shopping-editor-actions-title"><h4 id="shopping-editor-actions-title">Acciones del producto</h4>
+ return `<details class="product-editor-section product-editor-fold shopping-editor-actions" aria-labelledby="shopping-editor-actions-title"><summary><h4 id="shopping-editor-actions-title">Acciones del producto</h4></summary><div class="product-editor-fold-body">
   <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('visibility',${si},${ii})">${getRoom().r.sections[si].items[ii].hidden?'Mostrar al cliente':'Ocultar al cliente'}</button>
   <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('duplicate',${si},${ii})">Duplicar producto</button>
   <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('copy',${si},${ii})">Copiar a otra lista</button>
   <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('alternative',${si},${ii})">Añadir opción alternativa</button>
   <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('url',${si},${ii})">Actualizar desde URL</button>
   <button type="button" class="btn btn-ghost shopping-editor-delete" onclick="shoppingProductDelete(${si},${ii})">Eliminar producto</button>
- </section>`;
+ </div></details>`;
 }
 function shoppingProductEditorAction(action,si,ii){
  const current=shoppingProductEditorTarget(si,ii);if(!current)return;
