@@ -592,8 +592,14 @@ html body:not(.portalmode) #modalBox.shopping-quote-tax-dialog .modal-foot>.shop
  .shopping-list-settings-body{flex:1;min-height:0;overflow:auto;padding:24px;display:flex;flex-direction:column}
  html body #modalBox .shopping-list-settings label{margin:0 0 8px;font-size:13px;font-weight:500;letter-spacing:normal;text-transform:none}
  html body:not(.portalmode) #modalBox .shopping-list-settings input{border:1px solid var(--ui-line)!important;border-radius:8px!important;min-height:36px!important;padding:8px 12px!important}
- .shopping-list-icon-picker{margin-top:24px}.shopping-list-icon-picker>summary{display:flex;align-items:center;gap:12px;cursor:pointer;list-style:none;font-size:13px}.shopping-list-icon-picker svg{width:22px;height:22px}
+ .shopping-list-icon-picker{margin-top:24px}.shopping-list-icon-picker>#rmIconToggle{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-size:13px}.shopping-list-icon-picker svg{width:22px;height:22px}
  .shopping-list-icon-picker #rmIcons{margin-top:16px}
+ .shopping-list-icon-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+ html body #modalBox .shopping-list-icon-grid>button{display:grid;place-items:center;height:38px;min-width:0;padding:0;border:1px solid transparent;border-radius:8px;background:#f5f5f5;color:var(--ink);cursor:pointer;transition:background-color 120ms,border-color 120ms,color 120ms}
+ html body #modalBox .shopping-list-icon-grid>button[aria-pressed=true]{background:#eaf2ff;border-color:#0666ff;color:#0666ff}
+ @media(hover:hover){html body #modalBox .shopping-list-icon-grid>button:hover{background:#dceafe;border-color:#8cb7ff;color:#0666ff}}
+ html body #modalBox .shopping-list-icon-grid>button:focus-visible{outline:2px solid #0666ff;outline-offset:2px}
+ @media(prefers-reduced-motion:reduce){html body #modalBox .shopping-list-icon-grid>button{transition:none}}
  .shopping-list-settings-actions{margin-top:auto;padding-top:32px;display:grid;gap:10px}
  .shopping-list-settings>footer{padding:20px 24px;border-top:1px solid var(--ui-line);flex:none}
  .shopping-list-settings>footer p{font-size:12px;line-height:1.5;color:var(--ink-faint);margin:0 0 16px}
