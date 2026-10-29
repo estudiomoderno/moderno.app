@@ -1291,7 +1291,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3617"></script>
-<script src="/project-quotes.js?v=343"></script>
+<script src="/project-quotes.js?v=365137"></script>
 <script src="/spec-audit.js?v=340"></script>
 <script src="/spec-master.js?v=341"></script>
 <script src="/room-boards.js?v=342"></script>
@@ -10736,23 +10736,28 @@ function editInvoiceRef(ref){
   if(i<0){ toast("No encuentro la factura "+ref); return; }
   loadDoc(i,"factura");
 }
-async function listToQuote(pid){
+async function listToQuote(pid,selection){
+  if(!selection)return ProjectQuotes.prepare(pid);
   if(_accessRole!=='admin'){toast('Solo un administrador puede preparar presupuestos');return;}
   const study=ESTUDIO_ID;
   const p = state.projects.find(x=>x.id===pid);
-  if(!p)return;
+  if(!p||!ProjectQuotes.conversionValid(selection))return;
   let lines;
   try{
+    const policy=ProjectQuotes.taxPolicy(selection.profile,selection.mode);
     specPrepare(p);persistNow();await cloudFlush();
+    if(!ProjectQuotes.conversionOpen(selection))return;
+    if(!ProjectQuotes.conversionValid(selection))throw Error('El proyecto o la configuración fiscal han cambiado. Vuelve a abrir Generar presupuesto.');
     if(_accessRole!=='admin'||ESTUDIO_ID!==study||state.projects.find(x=>x.id===pid)!==p||_cloudBusy||_saveErr||_cloudHash.proyectos!==canon(CLOUD_BLOCKS.proyectos.get()))throw Error('Primero guarda los cambios del proyecto y vuelve a intentarlo');
-    lines=ModernoSpec.rows(p).filter(r=>!r.item.hidden&&!r.item.alt).map(r=>ProjectQuotes.line(r,study,pid));
+    lines=ModernoSpec.rows(p).filter(r=>!r.item.hidden&&!r.item.alt).map(r=>ProjectQuotes.line(r,study,pid,policy));
     if(!lines.length)throw Error('Añade productos al proyecto antes de preparar el presupuesto');
-  }catch(e){toast(e.message);return;}
+  }catch(e){ProjectQuotes.taxError(selection,e.message);toast(e.message);return;}
   const cliIdx = p.client ? state.clients.findIndex(c=>c.name===p.client) : -1;
   state.draft = { kind:"presupuesto", brand:p.brand, clientIdx:cliIdx,
     lines,projectId:pid,
-    iva:{on:true,pct:state.account.vat}, irpf:{on:false,pct:retPct()}, disc:{on:false,pct:10},
+    iva:{on:true,pct:selection.profile.rate}, irpf:{on:false,pct:retPct()}, disc:{on:false,pct:10},
     legend:"Presupuesto generado desde las listas de compra de "+p.num+" "+p.name, validUntil:"", num:null, date:new Date().toISOString().slice(0,10), editRef:null };
+  ProjectQuotes.finishTax(selection);
   state.qView = "nuevo";
   toast("✓ Presupuesto generado desde las listas — revisa las líneas y guarda");
   go("presupuestos");
@@ -11354,8 +11359,8 @@ function askInputCancel(){ const cb=_inpCancel; _inpOk=_inpCancel=null; closeMod
 
 /* =================== UI HELPERS =================== */
 const ov=document.getElementById("overlay"), mb=document.getElementById("modalBox");
-function modal(html){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup(); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
-function closeModal(){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup();mb.removeAttribute('aria-hidden'); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
+function modal(html){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup(); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm','shopping-quote-tax-dialog');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
+function closeModal(){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup();mb.removeAttribute('aria-hidden'); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm','shopping-quote-tax-dialog');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
 ov.addEventListener("click",e=>{ /* clic fuera NO cierra: solo Cancelar/Guardar */ });
 document.addEventListener("keydown",e=>{if(ov.classList.contains("open")&&!ov.classList.contains("shopping-delete-overlay")&&!ov.classList.contains("new-project-enhanced-overlay"))ModernoDialog.trap(e,mb);});
 let toastTimer;
@@ -11412,7 +11417,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.136";
+const MODERNO_VER="v3.65.137";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13557,7 +13562,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365136">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365137">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
