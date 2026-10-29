@@ -1279,7 +1279,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=365133"></script>
+<script src="/project-ui.js?v=365136"></script>
 <script src="/places.js?v=365135"></script>
 <script src="/home-map.js?v=365135"></script>
 <script src="/new-project.js?v=365133"></script>
@@ -8097,29 +8097,8 @@ function vTimeline(list){
     </div>
   </div>`;
 }
-function phaseDelete(pid,idx){
-  const p=state.projects.find(x=>x.id===pid); const ph=p&&p.phases&&p.phases[idx]; if(!ph) return;
-  const nm=(ph.name||ph.n||ph||"").toString().replace(/</g,"&lt;");
-  askConfirm(`¿Eliminar la fase «<b>${nm}</b>» de ${p.num}? Las tareas del proyecto no se borran.`, "Eliminar fase",
-    ()=>{ p.phases.splice(idx,1); if((p.curPhase||0)>=p.phases.length) p.curPhase=Math.max(0,p.phases.length-1); persistSoon(); render(); toast("✕ Fase «"+nm+"» eliminada"); },
-    ()=>phaseModal(pid,idx));
-}
-function phaseModal(pid,idx){
-  const p = state.projects.find(x=>x.id===pid); ensurePhases(p);
-  const ph = idx>=0 ? p.phases[idx] : {name:"", color:"#E2E2E0", start:new Date().toISOString().slice(0,10), end:new Date(Date.now()+30*864e5).toISOString().slice(0,10)};
-  modal(`<h3>${idx>=0?"✎ Fase de "+p.num:"＋ Nueva fase · "+p.num}</h3>
-  <label>Nombre</label><input id="phN" value="${ph.name}" placeholder="Ej: Diseño, Obra, Licencias…">
-  <label>Color</label>
-  <div class="opt-pills" id="phC">${["#fdf880","#CBBBF2","#F2C4A0","#BFD9C8","#F6DBD7","#D3DDC8","#E2E2E0"].map(c=>`<button data-v="${c}" class="${ph.color===c?"on":""}" style="background:${c};width:34px;height:26px"></button>`).join("")}</div>
-  <div class="row2"><div><label>Inicio</label><input id="phS" type="date" data-range-end="phE" value="${ph.start}"></div>
-  <div><label>Fin</label><input id="phE" type="date" data-after="phS" min="${ph.start||""}" value="${ph.end}"></div></div>
-  <div class="modal-foot">
-    ${idx>=0?`<button class="danger" style="margin-right:auto" onclick="phaseDelete(${pid},${idx})">Eliminar fase</button>`:""}
-    <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-    <button class="btn btn-dark" onclick="(function(){const p=state.projects.find(x=>x.id===${pid});const v={name:document.getElementById('phN').value||'Fase',color:document.querySelector('#phC .on').dataset.v,start:document.getElementById('phS').value,end:document.getElementById('phE').value};if(${idx}>=0)p.phases[${idx}]=v;else p.phases.push(v);closeModal();render()})()">Guardar</button>
-  </div>`);
-  pills("phC");
-}
+function phaseDelete(pid,idx){return ModernoTaskPhaseEditor.remove(pid,idx);}
+function phaseModal(pid,idx){return ModernoTaskPhaseEditor.open(pid,idx);}
 /* ============ PRESENTACIONES (editor de lienzo libre) ============ */
 let presCur=null, presClient=false, presPg=0, presSel=null, presHist=[], presHistI=-1, presComm=false, dragEl=null;
 const PFONTS = {
@@ -11375,8 +11354,8 @@ function askInputCancel(){ const cb=_inpCancel; _inpOk=_inpCancel=null; closeMod
 
 /* =================== UI HELPERS =================== */
 const ov=document.getElementById("overlay"), mb=document.getElementById("modalBox");
-function modal(html){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup(); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
-function closeModal(){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup();mb.removeAttribute('aria-hidden'); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
+function modal(html){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup(); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
+function closeModal(){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup();mb.removeAttribute('aria-hidden'); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
 ov.addEventListener("click",e=>{ /* clic fuera NO cierra: solo Cancelar/Guardar */ });
 document.addEventListener("keydown",e=>{if(ov.classList.contains("open")&&!ov.classList.contains("shopping-delete-overlay")&&!ov.classList.contains("new-project-enhanced-overlay"))ModernoDialog.trap(e,mb);});
 let toastTimer;
@@ -11433,7 +11412,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.135";
+const MODERNO_VER="v3.65.136";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13578,7 +13557,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365133">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365136">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

@@ -555,3 +555,55 @@ var ModernoProjectEdit=(()=>{
  }
  return {open,cleanup,change,save};
 })();
+
+/* Task phases use compact dialog actions and a reversible confirmation step. */
+var ModernoTaskPhaseEditor=(()=>{
+ let entry=null;
+ const E=value=>ModernoDaily.escape(String(value??''));
+ const identity=()=>JSON.stringify([ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,_accessRole]);
+ const allowed=p=>!_accessLoading&&['admin','colaborador','miembro'].includes(_accessRole)&&canView('proyecto')&&byBrand([p]).includes(p);
+ function valid(ctx){return entry===ctx&&identity()===ctx.owner&&state.projects.find(p=>p.id===ctx.pid)===ctx.project&&allowed(ctx.project)&&Array.isArray(ctx.project.phases)&&(ctx.phase===null||(ctx.project.phases.includes(ctx.phase)&&(typeof ctx.phase==='object'||ctx.project.phases[ctx.index]===ctx.phase)&&JSON.stringify(ctx.phase)===ctx.snapshot));}
+ function stale(){toast('La fase o la sesión ha cambiado. Vuelve a abrir Editar fase.');}
+ function read(){const form=document.getElementById('task-phase-form');if(!form||!document.getElementById('overlay')?.classList.contains('open')||!document.getElementById('modalBox')?.classList.contains('task-phase-dialog'))return null;return {name:document.getElementById('phN').value,color:form.querySelector('[name=phaseColor]:checked')?.value||'#E2E2E0',start:document.getElementById('phS').value,end:document.getElementById('phE').value};}
+ function show(ctx,value){
+  if(!valid(ctx)){stale();return;}
+  const palette=[['#fdf880','Amarillo'],['#CBBBF2','Lila'],['#F2C4A0','Melocotón'],['#BFD9C8','Verde'],['#F6DBD7','Rosa'],['#D3DDC8','Oliva'],['#E2E2E0','Gris']];
+  const color=/^#(?:[\da-f]{3}|[\da-f]{6}|[\da-f]{8})$/i.test(value.color||'')?value.color:'#E2E2E0';
+  if(!palette.some(([c])=>c.toLowerCase()===color.toLowerCase()))palette.push([color,'Color actual']);
+  modal(`<form id="task-phase-form" onsubmit="event.preventDefault();ModernoTaskPhaseEditor.save()"><header class="task-phase-header"><h3>${ctx.phase===null?'Nueva fase':'Editar fase'} <span>· ${E(ctx.project.num||'')}</span></h3><button type="button" class="task-phase-close" aria-label="Cerrar edición de fase" onclick="closeModal()">${ico('cerrar')||'×'}</button></header>
+   <div class="task-phase-body"><label for="phN">Nombre</label><input id="phN" name="name" value="${E(value.name)}" required maxlength="200" autocomplete="off" placeholder="Ej: Diseño, Obra, Licencias…">
+   <fieldset class="task-phase-colors"><legend>Color</legend><div>${palette.map(([c,label],i)=>`<label class="task-phase-color" title="${E(label)}"><input class="sr-only" type="radio" name="phaseColor" value="${E(c)}" aria-label="${E(label)}" ${c.toLowerCase()===color.toLowerCase()?'checked':''}><span style="--phase-color:${E(c)}" aria-hidden="true"></span></label>`).join('')}</div></fieldset>
+   <div class="task-phase-dates"><div><label for="phS">Inicio</label><input id="phS" type="date" data-range-end="phE" value="${E(value.start||'')}"></div><div><label for="phE">Fin</label><input id="phE" type="date" data-after="phS" min="${E(value.start||'')}" value="${E(value.end||'')}"></div></div><p id="task-phase-error" role="alert"></p></div>
+   <footer class="modal-foot">${ctx.phase!==null?'<button type="button" class="btn task-phase-danger" onclick="ModernoTaskPhaseEditor.remove()">Eliminar fase</button>':''}<button type="button" class="btn task-phase-cancel" onclick="closeModal()">Cancelar</button><button type="submit" class="btn task-phase-primary">Guardar</button></footer></form>`);
+  document.getElementById('modalBox').classList.add('task-phase-dialog');document.getElementById('phN').focus();
+ }
+ function open(pid,index){
+  const project=state.projects.find(p=>p.id===pid);if(!project||!allowed(project))return;
+  ensurePhases(project);const phase=index>=0?project.phases[index]:null;if(index>=0&&!phase)return;
+  const value=phase===null?{name:'',color:'#E2E2E0',start:new Date().toISOString().slice(0,10),end:new Date(Date.now()+30*864e5).toISOString().slice(0,10)}:{name:typeof phase==='string'?phase:phase.name||phase.n||'',color:phase.color,start:phase.start,end:phase.end};
+  const ctx={pid,index,project,phase,owner:identity(),snapshot:JSON.stringify(phase)};entry=ctx;show(ctx,value);
+ }
+ function save(){
+  const ctx=entry,value=read();if(!ctx||!value)return;if(!valid(ctx)){stale();return;}
+  const name=value.name.trim();let error='';
+  if(!name||name.length>200)error='Escribe un nombre de hasta 200 caracteres.';
+  else if([value.start,value.end].some(d=>d&&!ModernoProjectInsights.validDate(d)))error='Revisa las fechas de la fase.';
+  else if(value.start&&value.end&&value.end<value.start)error='La fecha de fin debe ser igual o posterior al inicio.';
+  if(error){document.getElementById('task-phase-error').textContent=error;return;}
+  const next={...(ctx.phase&&typeof ctx.phase==='object'?ctx.phase:{}),...value,name};
+  if(ctx.phase===null)ctx.project.phases.push(next);else ctx.project.phases[typeof ctx.phase==='object'?ctx.project.phases.indexOf(ctx.phase):ctx.index]=next;
+  entry=null;persistSoon();closeModal();render();
+ }
+ function remove(pid,index){
+  const ctx=entry,value=read();if(!ctx||!value||ctx.phase===null)return;
+  if((pid!=null&&pid!==ctx.pid)||(index!=null&&index!==ctx.index)||!valid(ctx)){stale();return;}
+  const name=typeof ctx.phase==='string'?ctx.phase:ctx.phase.name||ctx.phase.n||'Fase';
+  askConfirm(`¿Quieres eliminar la fase «${E(name)}» de ${E(ctx.project.num||'este proyecto')}? Las tareas del proyecto se conservarán.`, 'Eliminar fase',()=>{
+   if(!valid(ctx)){stale();return;}const at=typeof ctx.phase==='object'?ctx.project.phases.indexOf(ctx.phase):ctx.index;
+   ctx.project.phases.splice(at,1);const current=ctx.project.curPhase||0;ctx.project.curPhase=Math.max(0,Math.min(current-(at<current?1:0),ctx.project.phases.length-1));
+   entry=null;persistSoon();render();toast('Fase eliminada');
+  },()=>show(ctx,value));
+  const box=document.getElementById('modalBox');box.classList.add('task-phase-confirm');box.querySelector('h3').textContent='Eliminar fase';box.setAttribute('aria-label','Eliminar fase');box.querySelector('.modal-foot button')?.focus();
+ }
+ return {open,save,remove};
+})();
