@@ -310,7 +310,7 @@
  html body:not(.portalmode) #modalBox .product-editor-footer>.btn-dark{background:#0666ff!important;border:1px solid #0666ff!important;color:#fff!important}
  html body:not(.portalmode) #modalBox .product-editor-footer>.btn-dark:hover{background:#0055dc!important}
  @keyframes productSheetIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
- @media(prefers-reduced-motion:reduce){html body #modalBox:has(>.shopping-product-editor){animation:none}}
+ @media(prefers-reduced-motion:reduce){html body:not(.portalmode) #modalBox:has(>.shopping-product-editor){animation:none}}
  @media(max-width:380px){.shopping-product-editor .product-editor-header,.shopping-product-editor .product-editor-body,html body #modalBox .product-editor-footer{padding-left:16px;padding-right:16px}.shopping-product-editor .row2{grid-template-columns:minmax(0,1fr);gap:0}.shopping-product-editor .product-editor-photo{gap:12px}}
  @media(pointer:coarse){html body:not(.portalmode) #modalBox .shopping-product-editor .btn,html body:not(.portalmode) #modalBox .shopping-product-editor .opt-pills button{min-height:40px!important}}
 }

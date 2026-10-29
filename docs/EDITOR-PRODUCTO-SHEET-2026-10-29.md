@@ -1,4 +1,4 @@
-# Editor de productos en Sheet — v3.65.138
+# Editor de productos en Sheet — v3.65.139
 
 El editor de las listas de compra pasa del modal centrado a un panel lateral derecho de 480 px, a altura completa y de ancho disponible en móvil. Sigue el estilo de crear/editar proyecto: esquinas rectas en el panel, Inter, campos compactos, botones de radio 8 px y Guardar azul. La cabecera incorpora un cierre explícito; el pie y la cabecera permanecen visibles y solo se desplaza el cuerpo. Se conserva Añadir a mi biblioteca.
 
@@ -13,7 +13,7 @@ Los selectores del panel se aplican únicamente mientras modalBox contiene shopp
 - 700 pruebas Node aprobadas.
 - Chromium aislado con servidor oficial, credenciales ficticias, SDK nulo y bloqueo de peticiones externas/escrituras: 1440×900, 1100×768, 390×844 y 320×568.
 - Una columna, alineación derecha con el área del overlay (excluye el espacio de la barra de desplazamiento), altura completa, sin desbordamiento horizontal y pie visible al desplazarse.
-- Recorrido de foco contenido entre cierre y Guardar; selector de imagen mediante teclado; cierre y Cancelar sin alterar registros; recuperación del tamaño del siguiente diálogo.
+- Preferencia de movimiento reducido sin animación; recorrido de foco contenido entre cierre y Guardar; selector de imagen mediante teclado; cierre y Cancelar sin alterar registros; recuperación del tamaño del siguiente diálogo.
 - Comparación con biblioteca en borrador, cálculo bidireccional de margen, cantidades y guardado ficticio conservando ID, campos personalizados, vínculo a biblioteca, notas, imagen y adjuntos.
 - Recorridos de tres orígenes de producto a 1440, 1100 y 390 px: manual, biblioteca y revisión de enlace sin guardado automático.
 - Revisión visual de capturas de escritorio y móvil. No se prueban cuentas, archivos, tiendas ni escrituras reales.
