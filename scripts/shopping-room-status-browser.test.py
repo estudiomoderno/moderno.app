@@ -83,7 +83,7 @@ try:
    assert page.evaluate('records()===legacyRecords')
    room.get_by_role('button',name='Ajustes de la lista',exact=True).click()
    assert page.locator('#modalBox').get_by_text('Estado de la estancia',exact=True).count()==0
-   page.locator('#modalBox').get_by_role('button',name='Hecho',exact=True).click()
+   page.locator('#modalBox').get_by_role('button',name='Guardar',exact=True).click()
    assert page.evaluate('records()===legacyRecords')
    page.evaluate('window.beforeDelete=records()')
    delete=room.get_by_role('button',name='Eliminar lista',exact=True);delete.click()

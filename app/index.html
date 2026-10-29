@@ -1279,7 +1279,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=365140"></script>
+<script src="/project-ui.js?v=365141"></script>
 <script src="/places.js?v=365135"></script>
 <script src="/home-map.js?v=365135"></script>
 <script src="/new-project.js?v=365133"></script>
@@ -5861,13 +5861,7 @@ function vProject(){
     ${p.client?`<button class="project-client-link" onclick="projectClientCard(this.dataset.name)" data-name="${E(p.client)}">${E(p.client)}</button>`:""}
     ${(p.tags||[]).length?`<div class="project-detail-tags">${p.tags.map(t=>`<span>#${E(String(t).replace(/^#+/,''))}</span>`).join(' ')}</div>`:""}
     ${p.tpl?'<span class="chip tpl">Plantilla</span>':''}
-    <div class="project-options-control"><details class="project-options"><summary class="btn btn-ghost project-options-trigger" aria-label="Opciones del proyecto" title="Opciones del proyecto">${projectMoreIcon()}</summary><div class="project-options-body">
-      <button class="btn btn-ghost" onclick="customizeModal(${p.id})">${ico('editar')} Editar datos</button>
-      <button class="btn btn-ghost" onclick="customizeModal(${p.id},'appearance')">${ico('personalizar')} Personalizar proyecto</button>
-      <button id="project-client-access" class="btn btn-ghost" onclick="projTab('cliente')">${ico('portal')} Portal del cliente</button>
-      <button class="btn btn-ghost" onclick="duplicateProject(${p.id})">${ico('dup_proyecto')} Duplicar proyecto</button>
-      ${_accessRole==='colaborador'?'':`<button class="btn btn-ghost project-delete-action" onclick="deleteProject(${p.id})">${ico('eliminar')} Eliminar proyecto</button>`}
-    </div></details></div>
+    ${projectSettingsHtml(p)}
   </div>
   ${projectTabsHtml(tb)}
   <section class="project-tab-panel" id="project-tab-panel" role="tabpanel" ${tb==='cliente'?'aria-label="Portal del cliente"':`aria-labelledby="project-tab-${tb}"`} tabindex="0">
@@ -5910,13 +5904,13 @@ function vProject(){
   </div>`}
   ${tb!=="listas"?"":`
   <div class="dl shopping-list-overview">
-  <div class="shopping-list-header"><h2 class="sec" style="margin:0">Listas de compra <span class="dl-cnt shopping-room-count" aria-label="${(p.rooms||[]).filter(r=>(r.kind||'estancia')==='estancia').length} estancias">${(p.rooms||[]).filter(r=>(r.kind||'estancia')==='estancia').length}</span></h2>${shoppingListActions(p.id)}</div>
+  <div class="shopping-list-header"><h2 class="sec" style="margin:0">Listas de compra </h2>${shoppingListActions(p.id)}</div>
   ${[["estancia","Estancias","Nueva estancia"],["pav","Pavimentos y Revestimientos","Nueva lista de pavimentos"],["otra","Otras listas","Nueva lista"]].map(([kind,label,addLabel])=>{
     const groupRooms = (p.rooms||[]).filter(r=>(r.kind||"estancia")===kind);
     if(kind!=="estancia" && !groupRooms.length) return "";
     return `
   ${kind==="estancia"?"":`<div class="dl-ghead">
-    <b>${label}</b><span class="dl-cnt">${groupRooms.length}</span><span class="line"></span>
+    <b>${label}</b><span class="line"></span>
     <button class="dl-btn pri" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</button>
   </div>`}
   <div class="dl-grid">
@@ -5931,7 +5925,7 @@ function vProject(){
     ${kind==="estancia"?`<button type="button" class="dl-add room-create-card" aria-label="Nueva estancia" onclick="newRoom(${p.id},'estancia')"><img class="room-create-illustration" src="/brand/illustrations/nueva-estancia.webp?v=36563" width="640" height="427" alt="" aria-hidden="true" draggable="false" decoding="async" onerror="this.hidden=true"><span class="room-create-caption"><span class="room-create-plus" aria-hidden="true">+</span><span>Nueva estancia</span></span></button>`:`<div class="dl-add" onclick="newRoom(${p.id},'${kind}')">＋ ${addLabel}</div>`}
   </div>`}).join("")}
   ${(p.rooms||[]).length?`<div class="dl-budget" style="margin-top:24px">
-    <div><span class="dl-lab">Presupuesto del Proyecto</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px">${(p.rooms||[]).length} lista${(p.rooms||[]).length===1?"":"s"} · ${(p.rooms||[]).reduce((s,r)=>s+r.sections.reduce((a,x)=>a+x.items.length,0),0)} productos</div></div>
+    <div><span class="dl-lab">Presupuesto del Proyecto</span><div style="font-size:11px;color:var(--dl-soft);margin-top:3px">${(p.rooms||[]).reduce((s,r)=>s+r.sections.reduce((a,x)=>a+x.items.length,0),0)} productos</div></div>
     <button type="button" class="shopping-quote" title="Crea un presupuesto con las fichas del proyecto, agrupadas por estancia" onclick="listToQuote(${p.id})"><span class="shopping-quote-paper" aria-hidden="true">${ico("presupuestos")}</span><span>Generar presupuesto</span><span class="shopping-quote-arrow" aria-hidden="true">→</span></button>
     <b class="dl-num">${fmt((p.rooms||[]).reduce((s,r)=>s+roomTotal(r),0))}</b>
   </div>`:""}
@@ -7297,6 +7291,7 @@ function vRoom(){
   const inp=(si,ii,key,val,ph)=>`<input value="${esc(val)}" placeholder="${ph||"-"}" onchange="setItem(${si},${ii},'${key}',this.value)">`;
   return `
   <div class="shopping-room-view">
+  <div class="project-detail-head shopping-project-settings-head">${projectSettingsHtml(p)}</div>
   ${projectTabsHtml('listas')}
   <section class="dl" id="project-tab-panel" role="tabpanel" aria-labelledby="project-tab-listas" tabindex="0">
   <div class="dl-top shopping-room-header">
@@ -7470,23 +7465,7 @@ async function duplicateShoppingRoom(pid,rid){
  persistNow();closeModal();render();toast('Lista duplicada. Guardando cambios…');
  await cloudFlush();return copy;
 }
-function roomMenu(pid,rid){
-  const p=state.projects.find(x=>x.id===pid), r=p.rooms.find(x=>x.id===rid);
-  modal(`<h3>${rico(r.icon)} ${r.name}</h3>
-  <label>Nombre</label><input id="rmName" value="${r.name.replace(/"/g,"&quot;")}" onchange="(function(v){const r=state.projects.find(x=>x.id===${pid}).rooms.find(x=>x.id===${rid});r.name=v;toast('Renombrada ✓')})(this.value)">
-  <label>Acciones</label>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <button class="btn btn-ghost" onclick="closeModal();openRoom(${pid},${rid});setTimeout(marginModal,120)">％ Margen general</button>
-    <button class="btn btn-ghost" onclick="closeModal();roomIconModal(${pid},${rid})">${ico("rm_icono")} Cambiar icono</button>
-    <button class="btn btn-ghost" onclick="closeModal();openRoom(${pid},${rid});setTimeout(shareModal,120)">${ico("rm_compartir")} Compartir / visibilidad</button>
-    <button class="btn btn-ghost" onclick="closeModal();openRoom(${pid},${rid});setTimeout(exportRoomModal,120)">${ico("pdf")} Exportar PDF / hoja</button>
-    <button class="btn btn-ghost" onclick="closeModal();roomToProjectModal(${pid},${rid})">${ico("rm_exportar")} Exportar a otro proyecto</button>
-    <button class="btn btn-ghost" onclick="closeModal();roomFromProjectModal(${pid},${rid})">${ico("rm_importar")} Importar de otro proyecto</button>
-    <button class="btn btn-ghost" onclick="duplicateShoppingRoom(${pid},${rid})">${ico("copiar")} Duplicar lista</button>
-    <button class="danger" onclick="shoppingRoomDelete(${pid},${rid})">🗑 Eliminar</button>
-  </div>
-  <div class="modal-foot"><button class="btn btn-dark" onclick="closeModal();render()">Hecho</button></div>`);
-}
+function roomMenu(pid,rid){return ModernoRoomSettings.open(pid,rid);}
 function shareModal(){
   const {p,r} = getRoom();
   if(r.visible===undefined) r.visible=true;
@@ -8930,17 +8909,7 @@ function itemModal(si,ii,fromUrl){
   </div>
   ${shoppingRoomLabelEditor(si,ii)}
   </section>
-  <details class="product-editor-section product-editor-fold" aria-labelledby="product-editor-specs"><summary><h4 id="product-editor-specs">Características</h4></summary><div class="product-editor-fold-body">
-  <div class="row2">
-    <div><label for="itDims">Dimensiones estándar o a medida</label><input id="itDims" value="${ModernoDaily.escape(it.dims||"")}" placeholder="Ej: 120×35×80 cm"></div>
-    <div><label for="itMat">Material / acabado</label><input id="itMat" value="${ModernoDaily.escape(it.material||"")}" placeholder="Ej: Roble, cerámica…"></div>
-  </div>
-  <div class="row2">
-    <div><label for="itCol">Color</label><input id="itCol" value="${ModernoDaily.escape(it.color||"")}" placeholder="Ej: Azul Marino"></div>
-    <div><label for="itPlz">Plazo de entrega</label><input id="itPlz" value="${ModernoDaily.escape(it.plazo||"")}" placeholder="Ej: 2-3 semanas"></div>
-  </div>
-  <label for="itNote">Nota interna</label><input id="itNote" value="${ModernoDaily.escape(it.note||"")}" placeholder="Solo la ve el equipo">
-  </div></details>
+
   </div><div class="product-editor-column">
   <section class="product-editor-section" aria-labelledby="product-editor-prices"><h4 id="product-editor-prices">Precios y cantidades</h4>
   <div class="row2">
@@ -8954,6 +8923,17 @@ function itemModal(si,ii,fromUrl){
   <div id="itSum" class="entry product-editor-total"></div>
   ${_accessRole==='colaborador'?'<input type="hidden" id="itMgV" value="">':mgUI("it", mgAuto(it))}
   </section>
+  <details class="product-editor-section product-editor-fold" aria-labelledby="product-editor-specs"><summary><h4 id="product-editor-specs">Características</h4></summary><div class="product-editor-fold-body">
+  <div class="row2">
+    <div><label for="itDims">Dimensiones estándar o a medida</label><input id="itDims" value="${ModernoDaily.escape(it.dims||"")}" placeholder="Ej: 120×35×80 cm"></div>
+    <div><label for="itMat">Material / acabado</label><input id="itMat" value="${ModernoDaily.escape(it.material||"")}" placeholder="Ej: Roble, cerámica…"></div>
+  </div>
+  <div class="row2">
+    <div><label for="itCol">Color</label><input id="itCol" value="${ModernoDaily.escape(it.color||"")}" placeholder="Ej: Azul Marino"></div>
+    <div><label for="itPlz">Plazo de entrega</label><input id="itPlz" value="${ModernoDaily.escape(it.plazo||"")}" placeholder="Ej: 2-3 semanas"></div>
+  </div>
+  <label for="itNote">Nota interna</label><input id="itNote" value="${ModernoDaily.escape(it.note||"")}" placeholder="Solo la ve el equipo">
+  </div></details>
   <details class="product-editor-section product-editor-fold" aria-labelledby="product-editor-files"><summary><h4 id="product-editor-files">Archivos</h4></summary><div class="product-editor-fold-body">
   <div class="product-editor-attachments"><span class="product-editor-photo-label">Adjuntos del producto</span><p class="product-editor-help">Instrucciones, ficha técnica y otros documentos.</p>
   <div id="itFilesBox"></div>
@@ -11422,7 +11402,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.140";
+const MODERNO_VER="v3.65.141";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13567,7 +13547,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365140">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365141">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
