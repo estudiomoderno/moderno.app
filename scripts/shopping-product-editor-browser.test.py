@@ -72,14 +72,22 @@ try:
    assert body.evaluate('(e)=>e.scrollWidth<=e.clientWidth'),width
    assert box.evaluate('(e)=>e.scrollWidth<=e.clientWidth'),width
    columns=body.evaluate('(e)=>getComputedStyle(e).gridTemplateColumns.split(" ").length')
-   assert columns==(2 if width>700 else 1),(width,columns)
-   if width>700:assert bounds['width']>900,bounds
+   assert columns==1,(width,columns)
+   viewport_width=page.locator('#overlay').bounding_box()['width']
+   assert abs(bounds['x']+bounds['width']-viewport_width)<1,bounds
+   assert bounds['y']==0 and abs(bounds['height']-height)<1,bounds
+   assert abs(bounds['width']-min(480,viewport_width))<1,bounds
+   expect(save).to_have_css('background-color','rgb(6, 102, 255)')
+   expect(box).to_have_css('border-top-left-radius','0px')
    assert page.evaluate('records()===editorBaseline')
    # The enlarged image is a keyboard-accessible upload button, with the same file control.
    expect(box.get_by_role('button',name='Cambiar imagen del producto')).to_be_visible()
    with page.expect_file_chooser() as chooser:box.get_by_role('button',name='Cambiar imagen del producto').click()
    assert chooser.value.element.get_attribute('id')=='itImgFile'
    if output:page.screenshot(path=str(output/f'product-editor-{width}.png'),full_page=True)
+   close=box.get_by_role('button',name='Cerrar edición de producto',exact=True)
+   close.focus();page.keyboard.press('Shift+Tab');expect(save).to_be_focused()
+   page.keyboard.press('Tab');expect(close).to_be_focused()
    footer_before=footer.bounding_box()
    body.evaluate('(e)=>e.scrollTop=e.scrollHeight')
    assert abs(footer.bounding_box()['y']-footer_before['y'])<1
@@ -98,6 +106,9 @@ try:
    box.evaluate('(e)=>Promise.all(e.getAnimations({subtree:true}).map(a=>a.finished))')
    if width>700:assert box.bounding_box()['width']<600
    box.get_by_role('button',name='Cerrar',exact=True).click()
+   page.evaluate('itemModal(0,0)')
+   box.get_by_role('button',name='Cerrar edición de producto',exact=True).click()
+   assert page.evaluate('records()===editorBaseline')
    page.evaluate('itemModal(0,0)')
    expect(box.locator('#itName')).to_have_value('Sillón ficticio')
    box.locator('#itPrice').fill('120')

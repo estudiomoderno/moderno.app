@@ -8906,7 +8906,7 @@ function itemModal(si,ii,fromUrl){
   const it = ii>=0 ? r.sections[si].items[ii] : {name:"",url:"",sku:"",supplier:"",price:null,cost:null,qty:1,unit:r.kind==="pav"?"m2":"ud",status:"Revisión Cliente",img:"",files:[]};
   itFiles=[...(it.files||[])]; itImg=it.img||""; itLibId=it.libId;
   modal(`<div class="shopping-product-editor">
-  <header class="product-editor-header"><h3>${ii>=0?"Editar":"Añadir"} producto</h3><p>Datos del producto y condiciones de compra.</p></header>
+  <header class="product-editor-header"><h3>${ii>=0?"Editar":"Añadir"} producto</h3><p>Datos del producto y condiciones de compra.</p><button type="button" class="product-editor-close" aria-label="Cerrar edición de producto" onclick="closeModal()">${ico("cerrar")||"×"}</button></header>
   <div class="product-editor-body">
   <div class="product-editor-column">
   <section class="product-editor-section" aria-labelledby="product-editor-info"><h4 id="product-editor-info">Producto</h4>
@@ -11417,7 +11417,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.137";
+const MODERNO_VER="v3.65.138";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13562,7 +13562,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365137">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365138">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
