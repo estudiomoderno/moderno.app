@@ -130,6 +130,10 @@ try:
      it.img==='/brand/illustrations/nuevo-producto.webp'&&it.name==='Sillón actualizado ficticio'&&it.price===100&&it.cost===80&&it.qty===3&&it.margin===25&&
      it.url==='https://tienda.example.invalid/producto'&&it.sku==='FIC-001'&&it.material==='Poliéster'&&it.color==='Azul índigo'&&it.note==='Nota ficticia'&&it.plazo==='2-3 semanas'&&it.status==='Revisión Cliente';
    }"""),'Editing must preserve the original product data and attachments'
+   page.emulate_media(reduced_motion='reduce')
+   page.evaluate('itemModal(0,0)')
+   expect(box).to_have_css('animation-name','none')
+   box.get_by_role('button',name='Cerrar edición de producto',exact=True).click()
    assert page.evaluate('sb===null')
    assert not writes,writes;assert not errors,errors
    print(width,height,'PASS: responsive editor, visible footer, keyboard image action, scoped width, comparison/cancel, price/margin/quantity, preserved fields/files; no remote writes')
