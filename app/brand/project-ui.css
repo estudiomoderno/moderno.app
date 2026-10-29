@@ -286,6 +286,19 @@
  #modalBox .shopping-product-editor label{margin:18px 0 8px;font-size:13px;font-weight:500;line-height:1.4;letter-spacing:normal;text-transform:none}
  .shopping-product-editor .row2{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
  .shopping-product-editor .row2>div{min-width:0}
+ .shopping-product-editor .row2>div:not([hidden]){display:flex;flex-direction:column}
+ .shopping-product-editor .row2>div>label{flex:1}
+ .shopping-product-editor .product-editor-fold>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;cursor:pointer;min-height:32px}
+ .shopping-product-editor .product-editor-fold>summary::-webkit-details-marker{display:none}
+ html body #modalBox .shopping-product-editor .product-editor-fold>summary h4{margin:0}
+ .shopping-product-editor .product-editor-fold>summary::after{content:'';display:block;mask:none;background:transparent;margin-left:auto;border-radius:0;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-right:4px;flex:none}
+ .shopping-product-editor .product-editor-fold[open]>summary::after{transform:rotate(225deg)}
+ .shopping-product-editor .product-editor-fold-body{padding-top:16px}
+ #modalBox .shopping-product-editor .product-editor-margin{display:grid;grid-template-columns:minmax(64px,1.5fr) repeat(5,minmax(0,1fr));align-items:center;gap:5px}
+ html body:not(.portalmode) #modalBox .shopping-product-editor .product-editor-margin :is(input,button){min-width:0;width:100%;box-sizing:border-box;padding:7px 3px!important;font-size:12px}
+ #modalBox .shopping-product-editor #itMgInfo{grid-column:1/-1;font-size:11px;color:var(--ink-faint)}
+ #modalBox .shopping-product-editor #itMgInfo:empty{display:none}
+
  html body:not(.portalmode) #modalBox .shopping-product-editor :is(input:not([type=hidden]):not([type=file]):not([type=checkbox]),select){border:1px solid var(--ui-line)!important;border-radius:8px!important;min-height:36px!important;padding:8px 12px!important;line-height:1.4;box-shadow:0 1px 2px #00000005}
  html body:not(.portalmode) #modalBox .shopping-product-editor .btn,html body:not(.portalmode) #modalBox .shopping-product-editor .opt-pills button{border-radius:8px!important;min-height:32px!important;padding:7px 12px!important;font-size:13px;font-weight:500;line-height:1.3}
  html body:not(.portalmode) #modalBox .shopping-product-editor .btn-ghost{background:var(--app-surface,#fff)!important;border:1px solid var(--ui-line)!important}

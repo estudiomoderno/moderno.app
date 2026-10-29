@@ -79,9 +79,11 @@ try:
    assert new['kind']=='pav' and new['icon']=='wall' and new['sections'][0]['items'][0]['name']=='Producto nuevo colaboradora'
    # Explicit cancel keeps the item; confirm deletes it through the real local writer.
    page.evaluate('itemModal(0,0)')
+   if page.locator('.shopping-editor-actions:not([open])').count():page.locator('.shopping-editor-actions>summary').click()
    page.get_by_role('button',name='Eliminar producto',exact=True).click()
    page.locator('#shopping-product-delete').get_by_role('button',name='Cancelar',exact=True).click()
    assert page.evaluate('getRoom().r.sections[0].items.length')==1
+   if page.locator('.shopping-editor-actions:not([open])').count():page.locator('.shopping-editor-actions>summary').click()
    page.get_by_role('button',name='Eliminar producto',exact=True).click()
    page.locator('#shopping-product-delete').get_by_role('button',name='Eliminar producto',exact=True).click()
    page.evaluate('async()=>{await cloudFlush();clearTimeout(_cloudT);clearTimeout(_saveT)}')

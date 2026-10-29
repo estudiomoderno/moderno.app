@@ -7,7 +7,8 @@ var SpecMaster=(()=>{
   draft={form:document.getElementById('itName'),libId:item.libId};review=null;
   const box=document.getElementById('itOrigin');if(!box)return;
   const origin=ModernoSpec.origin(item,state.library||[]);
-  box.innerHTML='<p>'+E({independiente:'Ficha independiente: puedes definir una pieza a medida con su referencia, acabado y dimensiones.',biblioteca:'Copia independiente de biblioteca. Puedes revisar qué campos recuperar del maestro.',ambiguo:'Origen de biblioteca ambiguo: no se puede actualizar automáticamente.',no_disponible:'El producto de origen ya no está disponible en biblioteca.'}[origin.kind])+'</p>'+(_accessRole==='admin'&&origin.master?'<button type="button" class="btn btn-ghost" onclick="SpecMaster.compare()">Revisar datos de biblioteca</button>':'')+'<div id="itMasterReview"></div>';
+  if(origin.kind==='independiente'){box.innerHTML='';return;}
+  box.innerHTML='<p>'+E({biblioteca:'Copia independiente de biblioteca. Puedes revisar qué campos recuperar del maestro.',ambiguo:'Origen de biblioteca ambiguo: no se puede actualizar automáticamente.',no_disponible:'El producto de origen ya no está disponible en biblioteca.'}[origin.kind])+'</p>'+(_accessRole==='admin'&&origin.master?'<button type="button" class="btn btn-ghost" onclick="SpecMaster.compare()">Revisar datos de biblioteca</button>':'')+'<div id="itMasterReview"></div>';
  }
  function active(){return _accessRole==='admin'&&draft?.form?.isConnected&&draft.form===document.getElementById('itName');}
  function compare(){
@@ -25,7 +26,7 @@ var SpecMaster=(()=>{
   const chosen=review.changes.filter((x,i)=>document.getElementById('itMasterPick'+i)?.checked);
   if(chosen.some(x=>document.getElementById(x.id).value!==x.before)){toast('Has editado el formulario. Revisa las diferencias de nuevo');compare();return;}
   for(const x of chosen){const el=document.getElementById(x.id);if(x.key==='unit'&&![...el.options].some(o=>o.value===x.after)){const opt=document.createElement('option');opt.value=x.after;opt.textContent=x.after;el.append(opt);}el.value=x.after;}
-  if(chosen.some(x=>x.key==='price'||x.key==='cost'))mgPick('it','libre',document.getElementById('itMgPills').querySelector('button'));
+  if(chosen.some(x=>x.key==='price'||x.key==='cost'))mgPick('it','libre',null);
   unitSum('itQty','itPrice','itUnit','itSum','itCost');
   document.getElementById('itMasterReview').innerHTML='<p>'+chosen.length+' campos aplicados al formulario. Guarda para conservarlos o cancela para descartarlos.</p>';review=null;
  }

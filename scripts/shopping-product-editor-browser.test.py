@@ -65,6 +65,15 @@ try:
    box=page.locator('#modalBox');body=box.locator('.product-editor-body')
    footer=box.locator('.product-editor-footer');save=footer.get_by_role('button',name='Guardar',exact=True)
    expect(box.get_by_role('heading',name='Editar producto',exact=True)).to_be_visible()
+   folds=box.locator('details.product-editor-fold')
+   assert folds.count()==3 and box.locator('details.product-editor-fold[open]').count()==0
+   for el in ['itDims','itFilesBox']:expect(box.locator('#'+el)).to_be_hidden()
+   assert 'También puedes pulsar' not in box.inner_text()
+   summary=box.locator('details[aria-labelledby=product-editor-specs]>summary')
+   summary.click()
+   if width>380:assert abs(box.locator('#itDims').bounding_box()['y']-box.locator('#itMat').bounding_box()['y'])<1
+   if output:page.screenshot(path=str(output/f'product-features-{width}.png'),full_page=True)
+   summary.click()
    box.evaluate('(e)=>Promise.all(e.getAnimations({subtree:true}).map(a=>a.finished))')
    bounds=box.bounding_box();f=footer.bounding_box()
    assert bounds['x']>=0 and bounds['y']>=0 and bounds['x']+bounds['width']<=width and bounds['y']+bounds['height']<=height,(width,bounds)
@@ -117,11 +126,23 @@ try:
    box.locator('#itCost').fill('80')
    expect(box.locator('#itPrice')).to_have_value('96.00')
    box.locator('#itMgInp').fill('25')
+   expect(box.locator('#itMgV')).to_have_value('25')
+   if output:page.screenshot(path=str(output/f'product-margin-{width}.png'),full_page=True)
+   pill=box.locator('#itMgPills').get_by_role('button',name='20%',exact=True)
+   assert abs(pill.bounding_box()['y']-box.locator('#itMgInp').bounding_box()['y'])<4
+   box.locator('#itMgInp').fill('')
+   expect(box.locator('#itMgV')).to_have_value('')
+   box.locator('#itPrice').fill('111')
+   expect(box.locator('#itCost')).to_have_value('80')
+   box.locator('#itCost').fill('80')
+   box.locator('#itMgInp').fill('25')
    expect(box.locator('#itPrice')).to_have_value('100.00')
+   expect(box.locator('#itMgInfo')).to_be_empty()
    box.locator('#itQty').fill('3')
    expect(box.locator('#itSum')).to_contain_text('300,00')
    box.locator('#itName').fill('Sillón actualizado ficticio')
    # Tab onto the action remains possible even when the last body control was scrolled to.
+   box.locator('.shopping-editor-actions>summary').click()
    box.get_by_role('button',name='Eliminar producto',exact=True).focus();expect(save).to_be_in_viewport()
    save.click()
    assert page.evaluate("""()=>{
@@ -130,6 +151,10 @@ try:
      it.img==='/brand/illustrations/nuevo-producto.webp'&&it.name==='Sillón actualizado ficticio'&&it.price===100&&it.cost===80&&it.qty===3&&it.margin===25&&
      it.url==='https://tienda.example.invalid/producto'&&it.sku==='FIC-001'&&it.material==='Poliéster'&&it.color==='Azul índigo'&&it.note==='Nota ficticia'&&it.plazo==='2-3 semanas'&&it.status==='Revisión Cliente';
    }"""),'Editing must preserve the original product data and attachments'
+   page.evaluate('itemModal(0,-1)')
+   expect(box.locator('#itOrigin')).to_be_empty()
+   assert 'Ficha independiente' not in box.inner_text()
+   box.get_by_role('button',name='Cerrar edición de producto',exact=True).click()
    page.emulate_media(reduced_motion='reduce')
    page.evaluate('itemModal(0,0)')
    expect(box).to_have_css('animation-name','none')

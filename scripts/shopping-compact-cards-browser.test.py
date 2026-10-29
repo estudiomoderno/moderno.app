@@ -70,7 +70,7 @@ try:
     window.libraryBefore=JSON.stringify(state.library);state.rf={status:'Comprado'};render();window.cleanBefore=records();
    }""")
    expect(grid.locator('.shopping-product-card')).to_have_count(3)
-   assert grid.locator('.shopping-product-controls,.shopping-product-footer,.shopping-product-quantity').count()==0
+   assert grid.locator('.shopping-product-controls,.shopping-product-footer').count()==0
    assert grid.locator('select').count()==0
    first=grid.locator('.shopping-product-card').first
    expect(first.locator('.shopping-product-description')).to_have_text('Proveedor A')
@@ -84,17 +84,18 @@ try:
    assert first.locator('.shopping-product-label').count()==1
    expect(grid.locator('.shopping-product-card').nth(1).locator('.shopping-product-unit-price')).to_contain_text('0,00')
    expect(grid.locator('.shopping-product-card').nth(2).locator('.shopping-product-unit-price')).to_have_text('Por confirmar')
-   expect(grid.locator('.shopping-product-card').nth(2).locator('.shopping-product-total')).to_have_text('Total por confirmar')
+   expect(grid.locator('.shopping-product-card').nth(2).locator('.shopping-product-total strong')).to_have_text('Total por confirmar')
    assert page.evaluate('records()===cleanBefore')
    if output:page.screenshot(path=str(output/f'compact-cards-{width}.png'),full_page=True)
    room.get_by_role('button',name='Filtrar productos',exact=True).click()
    assert room.locator('[name=status]').count()==0
    page.get_by_role('button',name='Aplicar',exact=True).click()
    first.get_by_role('button',name='Editar Sillón ficticio',exact=True).click()
-   box=page.locator('#modalBox');expect(box.get_by_role('button',name='Duplicar producto',exact=True)).to_be_attached()
+   box=page.locator('#modalBox');box.locator('.shopping-editor-actions>summary').click();expect(box.get_by_role('button',name='Duplicar producto',exact=True)).to_be_attached()
    assert box.locator('#itSt').count()==0
    # Cancel deletion keeps the exact unsaved form and all records.
    box.locator('#itName').fill('Borrador que conservar')
+   if page.locator('.shopping-editor-actions:not([open])').count():page.locator('.shopping-editor-actions>summary').click()
    box.get_by_role('button',name='Eliminar producto',exact=True).click()
    confirm=page.locator('#shopping-product-delete');expect(confirm).to_be_visible()
    bounds=confirm.bounding_box()
@@ -103,12 +104,15 @@ try:
    confirm.get_by_role('button',name='Cancelar',exact=True).click();expect(box.locator('#itName')).to_have_value('Borrador que conservar')
    assert page.evaluate('records()===cleanBefore')
    # An action cannot discard the entered values.
+   if page.locator('.shopping-editor-actions:not([open])').count():page.locator('.shopping-editor-actions>summary').click()
    box.get_by_role('button',name='Duplicar producto',exact=True).click();expect(box.locator('#itName')).to_have_value('Borrador que conservar');assert page.evaluate('records()===cleanBefore')
+   if page.locator('.shopping-editor-actions:not([open])').count():page.locator('.shopping-editor-actions>summary').click()
    box.locator('#itName').fill('Sillón ficticio');box.get_by_role('button',name='Duplicar producto',exact=True).click()
    expect(grid.locator('.shopping-product-card')).to_have_count(4)
    assert page.evaluate("state.projects[0].rooms[0].sections[0].items[1].id!=='chair'")
    # Confirmed delete removes only the selected instance, despite the duplicated historic ID.
    grid.locator('.shopping-product-card').first.get_by_role('button',name='Editar Sillón ficticio',exact=True).click()
+   if page.locator('.shopping-editor-actions:not([open])').count():page.locator('.shopping-editor-actions>summary').click()
    box.get_by_role('button',name='Eliminar producto',exact=True).click()
    page.locator('#shopping-product-delete').get_by_role('button',name='Eliminar producto',exact=True).click()
    expect(grid.locator('.shopping-product-card')).to_have_count(3)
@@ -124,6 +128,7 @@ try:
    if output:page.screenshot(path=str(output/f'compact-rows-{width}.png'),full_page=True)
    # A live list change while the confirmation is open cannot delete the new occupant.
    grid.get_by_role('button',name='Editar Mesa editada',exact=True).click()
+   if page.locator('.shopping-editor-actions:not([open])').count():page.locator('.shopping-editor-actions>summary').click()
    box.get_by_role('button',name='Eliminar producto',exact=True).click()
    page.evaluate('(()=>{const items=state.projects[0].rooms[0].sections[0].items;items.push(items.shift());})();window.afterExternalChange=records()')
    page.locator('#shopping-product-delete').get_by_role('button',name='Eliminar producto',exact=True).click()
@@ -146,6 +151,7 @@ try:
    page.evaluate("source=>{window.fixtureFlush=new Function('sb','cloudReadBlock','cloudReadSaveVersions','cloudSaveBatch','return async function cloudFlush(){'+source)(fixtureClient,fixtureRead,async()=>null,(study,plans)=>fixtureClient.rpc('app_guardar_lote',{p_estudio:study,p_cambios:plans.map(p=>({bloque:p.b,contenido:p.merged,base:p.version}))}));}",flush_source)
    def remove_first():
     grid.locator('.shopping-product-card').get_by_role('button',name='Editar Secuencial',exact=False).first.click()
+    if page.locator('.shopping-editor-actions:not([open])').count():page.locator('.shopping-editor-actions>summary').click()
     box.get_by_role('button',name='Eliminar producto',exact=True).click()
     page.locator('#shopping-product-delete').get_by_role('button',name='Eliminar producto',exact=True).click()
    remove_first();expect(grid.locator('.shopping-product-card')).to_have_count(3)
@@ -155,6 +161,7 @@ try:
    grid.locator('.shopping-product-card').get_by_role('button',name='Editar Secuencial',exact=False).first.click()
    page.evaluate('async()=>{fixtureRelease();await fixtureSaving;clearTimeout(_cloudRetryT);}')
    expect(box.locator('#itName')).to_have_value('Secuencial 3')
+   if page.locator('.shopping-editor-actions:not([open])').count():page.locator('.shopping-editor-actions>summary').click()
    box.get_by_role('button',name='Eliminar producto',exact=True).click()
    expect(page.locator('#shopping-product-delete')).to_be_visible()
    page.locator('#shopping-product-delete').get_by_role('button',name='Eliminar producto',exact=True).click()
