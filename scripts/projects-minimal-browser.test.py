@@ -61,7 +61,7 @@ try:
    expect(cards.nth(1).locator('.project-card-client')).to_have_count(0)
    expect(cards.nth(1).locator('.project-card-progress')).to_have_count(0)
    assert 'Sin tareas' not in page.locator('.projects-identity').inner_text()
-   link=cards.first.locator('.project-card-open');link.focus();assert link.evaluate("e=>getComputedStyle(e).outlineStyle==='solid'")
+   link=cards.first.locator('.project-card-open');page.keyboard.press('Tab');link.focus();assert link.evaluate("e=>e.matches(':focus-visible')&&getComputedStyle(e).outlineStyle==='solid'")
    link.press('Space');assert page.evaluate('state.currentProject===9100')
    page.evaluate("go('proyectos')")
    # A modified click retains the original href and is not intercepted by the opener.
