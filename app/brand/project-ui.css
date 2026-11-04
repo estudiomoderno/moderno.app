@@ -581,6 +581,9 @@ html body .main .projects-identity.projects-mode-compact .proj-grid.project-card
 .projects-mode-compact .project-card-identity{display:block;grid-column:auto;grid-row:auto;margin:0;padding:0;align-self:auto;min-height:0}
 html body .projects-identity.projects-mode-compact .project-card-identity h2{font:600 22px/1.27 Acorn,Georgia,serif;letter-spacing:-.25px;margin:0;max-width:100%;overflow-wrap:anywhere}
 .projects-mode-compact .project-card-client{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;margin-top:9px;color:var(--ink-soft);font:400 13px/1.5 Inter,Segoe UI,sans-serif}
+.project-card-reference-person{display:none}
+.projects-mode-compact .project-card-reference-person{display:inline-block;vertical-align:-3px;width:16px;height:16px;flex:none;margin-right:7px;color:var(--ink-soft)}
+
 .projects-mode-compact .project-card-reference-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px 16px;min-height:20px;margin:15px 0 17px;color:var(--ink-soft);font:400 12px/1.45 Inter,Segoe UI,sans-serif}
 .project-card-reference-code{white-space:nowrap}
 .project-card-due{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
