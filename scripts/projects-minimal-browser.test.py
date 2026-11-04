@@ -32,7 +32,27 @@ try:
     window.makeProjects=n=>{const base=state.projects[0]||window.baseProject;window.baseProject=structuredClone(base);state.projects=Array.from({length:n},(_,i)=>({...structuredClone(base),id:9100+i,num:'PR-'+(9100+i),name:i===0?'Casa con nombre muy largo '+ 'arquitectura '.repeat(60):'Casa ficticia '+(i+1),client:i%2?'':'Cliente ficticio',files:[],tasks:i%3===0?[{id:'a',col:'listo'},{id:'b',col:'pend',due:'2000-01-01'}]:[]}));state.projQ='';state.showArchived=false;go('proyectos')};makeProjects(27);window.before=JSON.stringify(state.projects);
    }""")
    cards=page.locator('.projects-identity .project-overview-card');expect(cards).to_have_count(27)
-   cw=page.locator('.projects-identity').evaluate('e=>e.clientWidth');columns=4 if cw>=1100 else 3 if cw>=800 else 2 if cw>=560 else 1
+   # Compact by default; both alternate views retain the same identity and records.
+   selector=page.get_by_role('group',name='Vista de proyectos')
+   expect(selector).to_be_visible()
+   compact=selector.get_by_role('button',name='Compacta')
+   visual=selector.get_by_role('button',name='Visual')
+   listing=selector.get_by_role('button',name='Lista')
+   expect(compact).to_have_attribute('aria-pressed','true')
+   assert page.locator('.projects-identity').evaluate("e=>e.classList.contains('projects-mode-compact')")
+   assert cards.first.evaluate('e=>e.getBoundingClientRect().height<180')
+   visual.click()
+   expect(visual).to_have_attribute('aria-pressed','true')
+   expect(cards).to_have_count(27)
+   assert cards.first.locator('.project-card-cover').evaluate("e=>getComputedStyle(e).aspectRatio==='16 / 10'")
+   listing.click()
+   expect(listing).to_have_attribute('aria-pressed','true')
+   expect(cards).to_have_count(27)
+   assert page.locator('.project-cards-grid').first.evaluate("e=>getComputedStyle(e).gridTemplateColumns.split(' ').length")==1
+   compact.click()
+   expect(compact).to_have_attribute('aria-pressed','true')
+   assert page.evaluate('JSON.stringify(state.projects)===before')
+   cw=page.locator('.projects-identity').evaluate('e=>e.clientWidth');columns=5 if cw>=1450 else 4 if cw>=1100 else 3 if cw>=800 else 2 if cw>=560 else 1
    actual=page.locator('.project-cards-grid').first.evaluate("e=>getComputedStyle(e).gridTemplateColumns.split(' ').length")
    assert actual==columns,(width,cw,actual,columns)
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),width
