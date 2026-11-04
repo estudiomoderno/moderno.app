@@ -83,8 +83,10 @@ try:
    page.locator('#project-window-9002').click();assert page.evaluate("state.view==='proyecto'&&state.currentProject===9002&&state.projTab==='tareas'")
    page.locator('#desktop-header [data-desktop-view=agenda]').click()
    page.get_by_role('button',name='Comprimir menú lateral',exact=True).click();page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
+   page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===64')
    assert rail.bounding_box()['width']==64 and bar.bounding_box()['x']==12
    page.get_by_role('button',name='Desplegar menú lateral',exact=True).click();page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
+   page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===224')
    assert rail.bounding_box()['width']==224 and bar.bounding_box()['x']==12
    page.evaluate('(()=>{document.querySelector(".main").scrollTop=1000})()');assert bar.bounding_box()['y']==10
    # An open form blocks both the tabs and the home button.

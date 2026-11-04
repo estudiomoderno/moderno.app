@@ -5301,13 +5301,29 @@ async function folioAnimate(el,opening){
 }
 function projectOverviewCard(p){
   const E=ModernoDaily.escape,id=Number(p.id),m=ModernoProjectInsights.metrics(p);
-  const avatar=projectClientAvatar(p).replace(' tabindex="0"','');
+  // Only the existing, explicitly selected project cover; never infer one from attachments.
+  let image='';
+  try{
+    const cover=typeof ClientPortalSite!=='undefined'?ClientPortalSite.cover(p):null;
+    const source=cover&&(cover.url||cover.data);
+    if(source&&/^image\/(?:jpeg|png|webp)$/i.test(cover.type||'')){
+      const origins=[new URL(SUPABASE_URL).origin,'https://auth.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co'];
+      const path=ModernoFiles.storagePath(source,origins);
+      const embedded=/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=\r\n]+$/i.test(source);
+      if(embedded||(path&&path.split('/')[0]===ESTUDIO_ID)){
+        const position=ClientPortalSite.coverPosition(cover);
+        image=`<img ${fileImageAttrs(source)} loading="lazy" decoding="async" aria-hidden="true" style="object-position:${position.x}% ${position.y}%">`;
+      }
+    }
+  }catch{/* Unavailable or malformed covers use the editorial fallback. */}
+  const initials=String(p.name||'Proyecto').trim().split(/\s+/).slice(0,2).map(word=>Array.from(word)[0]||'').join('').toLocaleUpperCase('es');
   return `<article class="project-overview-card project-folio-shell">
-    <a class="project-card-open" href="${E(ModernoRouter.path({view:'proyecto',project:id}))}" aria-label="Abrir proyecto ${E([p.num,p.name].filter(Boolean).join(' '))}" onclick="if(!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();projectOpen(${id})}"></a>
-    <div class="project-card-top"><span class="project-card-avatar" aria-hidden="true">${avatar||ico('proyectos')}</span><span class="project-card-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M7 7h10v10"/></svg></span></div>
-    <div class="project-card-identity"><h2>${E(p.name||'Proyecto')}</h2><p class="project-card-code">${E(p.num||'')}</p><p class="project-card-client">${E(p.client||'Sin cliente asignado')}</p></div>
-    <div class="project-card-footer"><div class="project-card-status-row"><span class="project-card-status">${E(p.status||'Sin estado')}</span>${typeof projectFolderNotifications==='function'?projectFolderNotifications(p):''}</div>
-    <div class="project-card-progress">${m.total?`<span class="project-card-percent">${m.progress} % completado</span><progress max="100" value="${m.progress}" aria-label="Avance de ${E(p.name||'proyecto')}">${m.progress} %</progress><span class="project-card-task-count">${m.total-m.pending} de ${m.total} ${m.total===1?'tarea completada':'tareas completadas'}</span>`:'<span class="project-card-no-tasks">Sin tareas</span>'}</div></div>
+    <a class="project-card-open" href="${E(ModernoRouter.path({view:'proyecto',project:id}))}" aria-label="Abrir proyecto ${E([p.num,p.name].filter(Boolean).join(' '))}" onclick="if(!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();projectOpen(${id})}" onkeydown="if(event.key===' '&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();projectOpen(${id})}"></a>
+    <div class="project-card-cover" aria-hidden="true"><span class="project-card-monogram">${E(initials)}</span>${image}</div>
+    <div class="project-card-identity"><h2>${E(p.name||'Proyecto')}</h2>${p.client?`<p class="project-card-client">${E(p.client)}</p>`:''}</div>
+    <div class="project-card-footer"><span class="project-card-code">${E(p.num||'')}</span>
+    ${m.total?`<div class="project-card-progress"><span class="project-card-percent">${m.progress} %<span class="sr-only"> completado · ${m.total-m.pending} de ${m.total} ${m.total===1?'tarea completada':'tareas completadas'}</span></span><progress max="100" value="${m.progress}" aria-label="Avance de ${E(p.name||'proyecto')}">${m.progress} %</progress></div>`:''}
+    ${typeof projectFolderNotifications==='function'?projectFolderNotifications(p):''}</div>
   </article>`;
 }
 function projectFolio(p,options={}){
@@ -11056,7 +11072,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const observed=new WeakSet();
   const start=img=>{if(!_imageLoads.has(img))fileLoadImage(img).catch(()=>{if(img.hasAttribute('data-client-brand')){ClientPortalSite.brandFallback(img);return;}img.alt='Imagen no disponible';img.classList.add('image-failed');window.ModernoShoppingFeedback?.imageState(img,'failed');});};
   const lazy=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){lazy.unobserve(entry.target);start(entry.target);}},{rootMargin:'300px'}):null;
-  const scan=()=>document.querySelectorAll('img[data-private-file],.shopping-product-photo img,.shopping-image-frame img').forEach(img=>{
+  const scan=()=>document.querySelectorAll('img[data-private-file],.shopping-product-photo img,.shopping-image-frame img,.project-card-cover img').forEach(img=>{
     if(_imageLoads.has(img)||observed.has(img))return;
     observed.add(img);
     if(lazy&&img.loading==='lazy')lazy.observe(img);else start(img);
@@ -11403,7 +11419,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.145";
+const MODERNO_VER="v3.65.146";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13548,7 +13564,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365145">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365146">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

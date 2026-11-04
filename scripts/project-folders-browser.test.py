@@ -46,12 +46,12 @@ try:
    else:expect(page.locator('.projects-primary-actions')).to_be_visible()
    page.locator('.projects-new:visible').click()
    expect(page.locator('.overlay.open')).to_be_visible();page.evaluate('closeModal()')
-   expect(cards.first.locator('.project-card-percent')).to_have_text('67 % completado')
+   expect(cards.first.locator('.project-card-percent')).to_contain_text('67 %')
    expect(cards.first.locator('progress')).to_have_attribute('value','67')
-   expect(cards.first.locator('.project-card-task-count')).to_have_text('2 de 3 tareas completadas')
-   expect(cards.nth(1).locator('.project-card-no-tasks')).to_have_text('Sin tareas')
+   expect(cards.first.locator('.project-card-percent .sr-only')).to_contain_text('2 de 3 tareas completadas')
+   expect(cards.nth(1).locator('.project-card-no-tasks')).to_have_count(0)
    expect(cards.nth(1).locator('progress')).to_have_count(0)
-   expect(cards.nth(1).locator('.project-card-client')).to_have_text('Sin cliente asignado')
+   expect(cards.nth(1).locator('.project-card-client')).to_have_count(0)
    expect(cards.nth(2).locator('progress')).to_have_attribute('value','100')
    expect(cards.nth(3).locator('progress')).to_have_attribute('value','0')
    page.evaluate("state.projects[0].tasks[2].col='listo';render()")
@@ -63,19 +63,13 @@ try:
    assert page.evaluate("state.view==='proyectos'")
    notice.locator('summary').press('Escape');expect(notice).not_to_have_attribute('open','')
    before=cards.first.bounding_box();cards.first.hover();page.wait_for_timeout(250);assert cards.first.bounding_box()==before
-   arrow=cards.first.locator('.project-card-arrow').bounding_box()
-   assert abs(arrow['y']-before['y'])<1
-   assert abs(arrow['x']+arrow['width']-before['x']-before['width'])<1
-   assert arrow['width']==arrow['height']==34
-   assert cards.first.evaluate("e=>getComputedStyle(e,'::before').maskImage.includes('radial-gradient')")
+   expect(cards.first.locator('.project-card-arrow')).to_have_count(0)
+   expect(cards.first.locator('.project-card-cover')).to_be_visible()
+   assert cards.first.locator('.project-card-cover').evaluate("e=>Math.abs(e.clientWidth/e.clientHeight-1.6)<.03")
    expect(page.locator('.projects-identity .neutral-folder-art')).to_have_count(0)
    assert page.evaluate("document.documentElement.scrollWidth<=innerWidth")
-   expect(page.locator('.projects-divider')).to_be_visible()
-   if width>=1100:
-    divider=page.locator('.projects-divider').bounding_box()
-    brand=page.locator('#desktop-header .desktop-brand')
-    edge=brand.bounding_box()['y']+brand.bounding_box()['height']-brand.evaluate("e=>parseFloat(getComputedStyle(e).borderBottomWidth)")
-    assert abs(divider['y']-edge)<1,(divider,edge)
+   if width>=1100:expect(page.locator('.projects-divider')).to_be_hidden()
+   else:expect(page.locator('.projects-divider')).to_be_visible()
    page.locator('.project-card-open').first.evaluate('e=>document.activeElement?.blur()')
    if output:page.screenshot(path=str(output/f'projects-{width}.png'))
    link=cards.first.locator('.project-card-open');size=link.bounding_box()
@@ -104,13 +98,6 @@ try:
    expect(page.get_by_role('button',name='Cuadrícula',exact=True)).to_have_count(0)
    expect(page.locator('.projects-clean-list')).to_have_count(0)
    page.evaluate("state.projView='timeline';render()");expect(cards).to_have_count(27)
-   divider=page.locator('.projects-divider');expect(divider).to_be_visible()
-   assert divider.evaluate("e=>getComputedStyle(e).borderTopWidth==='1px'")
-   line=divider.bounding_box();first=cards.first.bounding_box()
-   assert line['y']+line['height']<first['y']
-   assert page.locator('.projects-view-content').bounding_box()['y']>=line['y']+line['height']
-   if width>=1100:
-    bar=page.locator('#project-window-bar').bounding_box();assert line['y']>bar['y']+bar['height']
    page.get_by_role('button',name='Proyectos archivados',exact=True).click();expect(cards).to_have_count(0)
    page.get_by_role('button',name='Volver a proyectos activos',exact=True).click();expect(cards).to_have_count(27)
    assert page.evaluate('JSON.stringify(state.projects)===before')

@@ -476,49 +476,47 @@ html body .projects-identity .projects-divider{display:block;width:100%;height:0
 html body .projects-identity>.projects-view-content{margin-top:0;padding-top:0}
 
 /* Project overview cards use existing tasks, clients and notices. */
-html body .main .projects-identity .proj-grid.project-cards-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))!important;gap:16px!important;align-items:stretch}
-.project-overview-card{position:relative;display:flex;flex-direction:column;min-width:0;min-height:264px;box-sizing:border-box;padding:18px;border:1px solid var(--ui-line,#dedede);border-radius:24px;background:var(--app-surface,#fff);color:var(--ink);transition:background-color .15s ease}
+/* Estudio minimalista: container sizing also covers narrow desktop/WebView windows. */
+.projects-identity{container-type:inline-size}
+html body .main .projects-identity .proj-grid.project-cards-grid{grid-template-columns:minmax(0,1fr)!important;gap:24px!important;align-items:stretch}
+@container(min-width:560px){html body .main .projects-identity .proj-grid.project-cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+@container(min-width:800px){html body .main .projects-identity .proj-grid.project-cards-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@container(min-width:1100px){html body .main .projects-identity .proj-grid.project-cards-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+.project-overview-card{position:relative;display:flex;flex-direction:column;min-width:0;box-sizing:border-box;padding:0;border:1px solid var(--ui-line,#dedbd5);border-radius:14px;background:var(--app-surface,#fff);color:var(--ink);transition:border-color .18s ease,box-shadow .18s ease}
 .project-card-open{position:absolute;inset:0;z-index:1;border-radius:inherit}
-.project-card-open:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
-.project-card-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-.project-card-avatar{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:50%;background:var(--card,#f3f3f3);color:var(--ink-soft)}
-.project-card-avatar .project-client-avatar{width:38px;height:38px;background:var(--card,#f3f3f3);color:var(--ink-soft);box-shadow:none;font:500 12px/1 Inter,Segoe UI,sans-serif;pointer-events:none}
-.project-card-avatar>svg{width:20px;height:20px}
-.project-card-arrow{display:grid;place-items:center;width:30px;height:30px;border:1px solid var(--ui-line,#dedede);border-radius:50%;color:var(--ink-soft)}
-.project-card-arrow svg{width:15px;height:15px}
-.project-card-identity{min-width:0;margin-bottom:18px}
-html body .projects-identity .project-card-identity h2{font:600 16px/1.35 Inter,Segoe UI,sans-serif;letter-spacing:-.2px;margin:0 0 5px;overflow-wrap:anywhere}
+.project-card-open:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+.project-card-cover{position:relative;aspect-ratio:16/10;overflow:hidden;isolation:isolate;border-radius:13px 13px 0 0;background:#eee9df;color:#625d52}
+.project-card-cover::before{content:"";position:absolute;width:65%;height:140%;top:15%;right:-12%;border:1px solid #d4cabb;border-radius:48% 48% 0 0;background:#e2dbce;transform:rotate(-28deg)}
+.project-card-cover::after{content:"";position:absolute;inset:14% 32% -30% -20%;border:1px solid #d9d0c2;border-radius:50%;pointer-events:none}
+.project-card-monogram{position:absolute;left:9%;bottom:12%;font:400 clamp(32px,5cqi,54px)/1 Acorn,Georgia,serif;letter-spacing:-2px}
+.project-card-cover img{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .2s ease}
+.project-card-cover img.image-ready:not(.image-failed){opacity:1}
+.project-card-cover img.image-failed{display:none}
+.project-card-identity{min-width:0;padding:17px 18px 14px}
+html body .projects-identity .project-card-identity h2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:600 21px/1.25 Acorn,Georgia,serif;letter-spacing:-.25px;margin:0;overflow-wrap:anywhere}
 .project-card-code,.project-card-client{font:400 12px/1.5 Inter,Segoe UI,sans-serif;color:var(--ink-soft);margin:0;overflow-wrap:anywhere}
-.project-card-footer{margin-top:auto}
-.project-card-status-row{display:flex;align-items:center;gap:8px;min-height:28px;margin-bottom:14px}
-.project-card-status{max-width:100%;font:500 11px/1.4 Inter,Segoe UI,sans-serif;color:var(--ink-soft);background:var(--card,#f3f3f3);border-radius:999px;padding:4px 9px;overflow-wrap:anywhere}
-.project-overview-card .folio-notifications{position:static;inset:auto;z-index:3;pointer-events:auto;margin-left:auto}
+.project-card-client{margin-top:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.project-card-footer{display:flex;align-items:center;gap:12px;margin: auto 18px 0;padding:12px 0 15px;border-top:1px solid var(--ui-line,#e8e4dd);min-width:0}
+.project-card-code{flex:none}
+.project-card-progress{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;margin-left:auto;font:500 11px/1.4 Inter,Segoe UI,sans-serif;color:var(--ink-soft)}
+.project-card-percent{white-space:nowrap}
+.project-card-percent .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.project-card-progress progress{appearance:none;display:block;width:48px;height:4px;flex:none;border:0;border-radius:999px;overflow:hidden;background:#e8e4dd;accent-color:#62645c}
+.project-card-progress progress::-webkit-progress-bar{background:#e8e4dd;border-radius:999px}
+.project-card-progress progress::-webkit-progress-value{background:#62645c;border-radius:999px}
+.project-card-progress progress::-moz-progress-bar{background:#62645c;border-radius:999px}
+.project-overview-card .folio-notifications{position:static;inset:auto;z-index:3;pointer-events:auto;margin-left:auto;flex:none}
 .project-overview-card .folio-notifications>summary{width:26px;height:26px;box-sizing:border-box;box-shadow:none}
 .project-overview-card .folio-notifications svg{width:14px;height:14px}
 .project-overview-card .folio-notice-count{min-width:14px;height:14px;padding:0 2px;font-size:9px;right:-5px;top:-5px}
 .project-overview-card .folio-notice-panel{position:absolute;left:0;right:0;top:calc(100% + 4px);margin:0;z-index:20}
-.project-card-progress{display:flex;flex-direction:column;gap:7px;min-height:57px;font:400 11px/1.4 Inter,Segoe UI,sans-serif;color:var(--ink-soft)}
-.project-card-percent{font-weight:500;color:var(--ink)}
-.project-card-progress progress{appearance:none;display:block;width:100%;height:5px;flex:none;border:0;border-radius:999px;overflow:hidden;background:var(--card,#eee);accent-color:#62676d}
-.project-card-progress progress::-webkit-progress-bar{background:var(--card,#eee);border-radius:999px}
-.project-card-progress progress::-webkit-progress-value{background:#62676d;border-radius:999px}
-.project-card-progress progress::-moz-progress-bar{background:#62676d;border-radius:999px}
-.project-card-task-count{font-size:10px}
-html body .projects-identity .project-card-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-width:0;min-height:264px;box-sizing:border-box;padding:18px;border:1px dashed var(--ui-line,#dedede);border-radius:24px;background:transparent;color:var(--ink-soft);cursor:pointer}
+.project-overview-card:has(.folio-notifications[open]){z-index:4}
+html body .projects-identity .project-card-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-width:0;min-height:160px;box-sizing:border-box;padding:24px;border:1px dashed var(--ui-line,#dedbd5);border-radius:14px;background:transparent;color:var(--ink-soft);cursor:pointer}
 .project-card-add>span{font-size:26px;font-weight:300;line-height:1}
-.project-card-add>strong{font:500 13px/1.4 Inter,Segoe UI,sans-serif}
-.project-card-add:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
-@media(hover:hover){html body .projects-identity .project-card-add:hover{background:var(--card,#f7f7f7)}}
-@media(max-width:600px){html body .main .projects-identity .proj-grid.project-cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}.project-overview-card{padding:14px;border-radius:20px}.project-card-top{gap:8px}.project-card-avatar,.project-card-avatar .project-client-avatar{width:32px;height:32px}.project-card-arrow{width:26px;height:26px}html body .projects-identity .project-card-identity h2{font-size:14px}.project-card-code,.project-card-client{font-size:11px}}
-@media(prefers-reduced-motion:reduce){.project-overview-card{transition:none}}
-
-/* Rounded body with a concave corner around the separate arrow circle. */
-@supports(mask-image:radial-gradient(circle,#000,#0000)){
- .project-overview-card{isolation:isolate;border:0;background:transparent;transition:none}
- .project-overview-card::before{content:"";position:absolute;inset:0;z-index:-1;box-sizing:border-box;border:1px solid var(--ui-line,#dedede);border-radius:inherit;background:radial-gradient(circle at calc(100% - 16px) 16px,transparent 26px,var(--ui-line,#dedede) 27px,var(--ui-line,#dedede) 28px,transparent 29px),var(--project-card-surface,var(--app-surface,#fff));mask-image:radial-gradient(circle at calc(100% - 17px) 17px,transparent 27px,#000 28px);pointer-events:none}
- .project-overview-card .project-card-arrow{position:absolute;right:0;top:0;box-sizing:border-box;width:34px;height:34px;background:var(--app-surface,#fff);border:1px solid var(--ui-line,#dedede);border-radius:50%;box-shadow:0 1px 3px #00000005}
- @media(hover:hover){.project-overview-card:hover{--project-card-surface:var(--card,#f7f7f7)}}
-}
+.project-card-add>strong{font:500 14px/1.4 Inter,Segoe UI,sans-serif}
+.project-card-add:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+@media(hover:hover){.projects-identity .project-overview-card:hover{border-color:#bdb6a9;box-shadow:0 4px 16px #30291e09}html body .projects-identity .project-card-add:hover{background:var(--card,#f7f7f7)}}
+@media(prefers-reduced-motion:reduce){.project-overview-card,.project-card-cover img{transition:none}}
 
 /* Native fallback for the original New Project Sheet. */
 .new-project-sheet-host{position:relative;display:block;width:0;height:0;z-index:10000}
