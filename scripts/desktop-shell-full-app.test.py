@@ -291,7 +291,7 @@ try:
     assert page.locator('#view').inner_text().strip(),view
     neutral_canvas(page)
     if width>=1100:
-     if view=='proyectos':
+     if view in ['home','proyectos']:
       assert page.locator('#page-route-bar').count()==0
       page.get_by_role('button',name='Ver todos los proyectos',exact=True).wait_for(state='visible')
      else:
@@ -332,11 +332,13 @@ try:
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(false)')
     assert page.locator('#page-route-bar').count()==0
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
+    assert page.locator('#page-route-bar').count()==0
+    page.evaluate("go('agenda')")
     page.locator('#page-route-bar [aria-current=page]').wait_for(state='visible')
-    assert page.locator('#page-route-bar [aria-current=page]').inner_text()=='Inicio'
+    assert page.locator('#page-route-bar [aria-current=page]').inner_text()=='Agenda'
     page.evaluate('document.querySelector(".route-component-host").shadowRoot.querySelector("link").dispatchEvent(new Event("error"))')
     page.locator('.route-component-host').wait_for(state='detached')
-    assert page.locator('#page-route-bar [aria-current=page]').inner_text()=='Inicio'
+    assert page.locator('#page-route-bar [aria-current=page]').inner_text()=='Agenda'
     page.evaluate("go('contabilidad')")
     page.locator('#page-route-bar').get_by_role('button',name='Inicio',exact=True).click()
     assert page.evaluate('state.view')=='home'
