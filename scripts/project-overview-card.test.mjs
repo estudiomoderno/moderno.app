@@ -22,3 +22,21 @@ test('covers use explicit existing selection only, reject arbitrary origins and 
  }
  assert.match(c.projectOverviewCard(base),/project-card-monogram">CC/);
 });
+
+test('reference card uses only genuine project fields and dated tasks, never fabricated priority',()=>{
+ const c=fixture(),p={id:15,num:'PR-15',name:'Reforma ficticia',client:'Cliente real del fixture',status:'En progreso',tasks:[{col:'listo'},{col:'pend',due:'2040-01-02'}]};
+ const before=JSON.stringify(p),out=c.projectOverviewCard(p);
+ assert.match(out,/project-card-reference-head/);
+ assert.match(out,/project-card-folder-symbol/);
+ assert.match(out,/data-tone="active"/);
+ assert.match(out,/En progreso/);
+ assert.match(out,/Próxima tarea: 02\/01\/2040/);
+ assert.match(out,/project-card-reference-ring/);
+ assert.match(out,/1\/2 tareas/);
+ assert.match(out,/value="50"/);
+ assert.doesNotMatch(out,/High|Medium|Prioridad|Fecha inventada|foto de stock/);
+ assert.equal(JSON.stringify(p),before);
+ const absent=c.projectOverviewCard({id:17,name:'Sin fecha ni tareas',tasks:[]});
+ assert.doesNotMatch(absent,/Próxima tarea:|project-card-reference-ring|project-card-reference-task-count/);
+ assert.match(absent,/project-card-reference-head/);
+});

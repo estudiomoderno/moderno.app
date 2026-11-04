@@ -5317,11 +5317,22 @@ function projectOverviewCard(p){
     }
   }catch{/* Unavailable or malformed covers use the editorial fallback. */}
   const initials=String(p.name||'Proyecto').trim().split(/\s+/).slice(0,2).map(word=>Array.from(word)[0]||'').join('').toLocaleUpperCase('es');
+  const status=String(p.status||'').trim();
+  const statusKind=status==='Archivado'?'archived':/^(Entregado|Finalizado)$/i.test(status)?'finished':status==='En progreso'?'active':'neutral';
+  const nextDue=m.next&&ModernoProjectInsights.validDate(m.next.due)
+    ?`<span class="project-card-due"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>Próxima tarea: ${E(m.next.due.split('-').reverse().join('/'))}</span>`:'';
+
   return `<article class="project-overview-card project-folio-shell">
     <a class="project-card-open" href="${E(ModernoRouter.path({view:'proyecto',project:id}))}" aria-label="Abrir proyecto ${E([p.num,p.name].filter(Boolean).join(' '))}" onclick="if(!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();projectOpen(${id})}" onkeydown="if(event.key===' '&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();projectOpen(${id})}"></a>
+    <div class="project-card-reference-head">
+      <svg class="project-card-folder-symbol" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h5l2.2 3H19a2 2 0 0 1 2 2v1"/><path d="M3 8h17a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 1-2Z"/></svg>
+      ${status?`<span class="project-card-status-label" data-tone="${statusKind}"><span class="project-card-status-dot"></span>${E(status)}</span>`:''}
+    </div>
     <div class="project-card-cover" aria-hidden="true"><span class="project-card-monogram">${E(initials)}</span>${image}</div>
-    <div class="project-card-identity"><h2>${E(p.name||'Proyecto')}</h2>${p.client?`<p class="project-card-client">${E(p.client)}</p>`:''}</div>
+    <div class="project-card-identity"><h2>${E(p.name||'Proyecto')}</h2>${p.client?`<p class="project-card-client"><svg class="project-card-reference-person" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>${E(p.client)}</p>`:''}</div>
+    <div class="project-card-reference-meta"><span class="project-card-reference-code">${E(p.num||'')}</span>${nextDue}</div>
     <div class="project-card-footer"><span class="project-card-code">${E(p.num||'')}</span>
+    ${m.total?`<div class="project-card-reference-progress"><span class="project-card-reference-ring" style="--project-progress:${m.progress}%" aria-hidden="true"></span><span>${m.progress}%</span><span class="project-card-reference-task-count">${m.total-m.pending}/${m.total} ${m.total===1?'tarea':'tareas'}</span></div>`:''}
     ${m.total?`<div class="project-card-progress"><span class="project-card-percent">${m.progress} %<span class="sr-only"> completado · ${m.total-m.pending} de ${m.total} ${m.total===1?'tarea completada':'tareas completadas'}</span></span><progress max="100" value="${m.progress}" aria-label="Avance de ${E(p.name||'proyecto')}">${m.progress} %</progress></div>`:''}
     ${typeof projectFolderNotifications==='function'?projectFolderNotifications(p):''}</div>
   </article>`;
@@ -11431,7 +11442,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.147";
+const MODERNO_VER="v3.65.148";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13576,7 +13587,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365147">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365148">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){

@@ -40,7 +40,13 @@ try:
    listing=selector.get_by_role('button',name='Lista')
    expect(compact).to_have_attribute('aria-pressed','true')
    assert page.locator('.projects-identity').evaluate("e=>e.classList.contains('projects-mode-compact')")
-   assert cards.first.evaluate('e=>e.getBoundingClientRect().height<180')
+   assert cards.first.evaluate('e=>e.getBoundingClientRect().height>=220')
+   expect(cards.first.locator('.project-card-reference-head')).to_be_visible()
+   expect(cards.first.locator('.project-card-folder-symbol')).to_be_visible()
+   expect(cards.first.locator('.project-card-reference-meta')).to_contain_text('PR-9100')
+   expect(cards.first.locator('.project-card-reference-progress')).to_contain_text('1/2 tareas')
+   expect(cards.nth(1).locator('.project-card-reference-progress')).to_have_count(0)
+   assert cards.first.locator('.project-card-cover').evaluate("e=>getComputedStyle(e).display==='none'")
    visual.click()
    expect(visual).to_have_attribute('aria-pressed','true')
    expect(cards).to_have_count(27)
@@ -52,7 +58,7 @@ try:
    compact.click()
    expect(compact).to_have_attribute('aria-pressed','true')
    assert page.evaluate('JSON.stringify(state.projects)===before')
-   cw=page.locator('.projects-identity').evaluate('e=>e.clientWidth');columns=5 if cw>=1450 else 4 if cw>=1100 else 3 if cw>=800 else 2 if cw>=560 else 1
+   cw=page.locator('.projects-identity').evaluate('e=>e.clientWidth');columns=3 if cw>=1650 else 2 if cw>=850 else 1
    actual=page.locator('.project-cards-grid').first.evaluate("e=>getComputedStyle(e).gridTemplateColumns.split(' ').length")
    assert actual==columns,(width,cw,actual,columns)
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),width
@@ -76,10 +82,13 @@ try:
     state.projects[2].files=[{type:'image/png',data:png}];
     state.projects[3].files=[{docKind:'portal-cover',type:'image/png',url:'https://stock.invalid/never-load.png'}];render();
    }""")
+   visual.click()
    image=cards.first.locator('.project-card-cover img');expect(image).to_have_class('image-ready');expect(image).to_have_css('object-position','25% 75%')
    cards.nth(1).scroll_into_view_if_needed();expect(cards.nth(1).locator('img')).to_have_class('image-failed');expect(cards.nth(1).locator('.project-card-monogram')).to_be_visible()
    expect(cards.nth(2).locator('img')).to_have_count(0);expect(cards.nth(3).locator('img')).to_have_count(0)
    assert not any('stock.invalid' in x for x in external)
+   compact.click()
+   expect(cards.first.locator('.project-card-reference-head')).to_be_visible()
    if output:
     page.evaluate('scrollTo(0,0)');page.screenshot(path=str(output/f'minimal-projects-{width}.png'))
    for count in [0,1,80]:
