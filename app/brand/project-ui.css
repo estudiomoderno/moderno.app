@@ -518,6 +518,51 @@ html body .projects-identity .project-card-add{display:flex;flex-direction:colum
 @media(hover:hover){.projects-identity .project-overview-card:hover{border-color:#bdb6a9;box-shadow:0 4px 16px #30291e09}html body .projects-identity .project-card-add:hover{background:var(--card,#f7f7f7)}}
 @media(prefers-reduced-motion:reduce){.project-overview-card,.project-card-cover img{transition:none}}
 
+/* #189: Three non-persistent ways to inspect the very same projects. */
+.projects-display-switch{display:inline-flex;align-items:center;flex-wrap:nowrap;gap:2px;padding:3px;border:1px solid var(--ui-line,#dedbd5);border-radius:11px;background:var(--app-surface,#fff);flex-shrink:0}
+html body .projects-display-switch .projects-display-option{box-sizing:border-box;min-height:30px;min-width:0;margin:0;padding:6px 11px;border:0;border-radius:8px;background:transparent;color:var(--ink-soft);font:500 12px/1.3 Inter,Segoe UI,sans-serif;white-space:nowrap;cursor:pointer}
+html body .projects-display-switch .projects-display-option[aria-pressed=true]{background:var(--ink,#20201e);color:var(--app-surface,#fffdf5)}
+html body .projects-display-switch .projects-display-option:focus-visible{outline:2px solid var(--ink,#20201e);outline-offset:2px}
+@media(hover:hover){html body .projects-display-switch .projects-display-option:not([aria-pressed=true]):hover{background:var(--app-control,#e4dfce);color:var(--ink)}}
+@media screen and (max-width:700px){.projects-toolbar{flex-wrap:wrap}.projects-display-switch{order:2}.projects-primary-actions{order:3}}
+
+/* Compacta: visible identity over empty decorative image area. The existing cover is a thumbnail. */
+html body .main .projects-identity.projects-mode-compact .proj-grid.project-cards-grid{gap:14px!important}
+@container(min-width:1450px){html body .main .projects-identity.projects-mode-compact .proj-grid.project-cards-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important}}
+.projects-mode-compact .project-overview-card{display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:auto auto;align-content:center;align-items:start;column-gap:12px;min-height:114px;padding:14px;border-radius:13px}
+.projects-mode-compact .project-card-cover{grid-column:1;grid-row:1 / span 2;align-self:center;box-sizing:border-box;width:56px;height:56px;aspect-ratio:1;border-radius:11px}
+.projects-mode-compact .project-card-cover::before,.projects-mode-compact .project-card-cover::after{opacity:.3}
+.projects-mode-compact .project-card-monogram{inset:0;display:grid;place-items:center;font:600 17px/1 Acorn,Georgia,serif;letter-spacing:0}
+.projects-mode-compact .project-card-identity{grid-column:2;grid-row:1;padding:0;align-self:end}
+html body .projects-identity.projects-mode-compact .project-card-identity h2{font-size:16px;line-height:1.24;letter-spacing:-.12px}
+.projects-mode-compact .project-card-client{margin-top:4px;font-size:11px;line-height:1.4;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.projects-mode-compact .project-card-footer{grid-column:2;grid-row:2;margin:8px 0 0;padding:0;border:0;gap:7px;align-self:start}
+.projects-mode-compact .project-card-code{font-size:11px;line-height:1.4}
+.projects-mode-compact .project-card-progress{font-size:10px;gap:5px}
+.projects-mode-compact .project-card-progress progress{width:32px}
+.projects-mode-compact .project-card-add{min-height:114px!important;flex-direction:row!important;gap:10px!important;padding:12px!important}
+.projects-mode-compact .project-card-add>span{font-size:23px}
+
+/* Lista: identical content/permissions, linear reading order and compact scan-friendly rows. */
+html body .main .projects-identity.projects-mode-list .proj-grid.project-cards-grid{grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+.projects-mode-list .project-overview-card{display:grid;grid-template-columns:46px minmax(0,1fr) auto;grid-template-rows:auto;align-items:center;column-gap:14px;min-height:76px;padding:11px 15px;border-radius:12px}
+.projects-mode-list .project-card-cover{grid-column:1;grid-row:1;width:46px;height:46px;aspect-ratio:1;border-radius:9px}
+.projects-mode-list .project-card-cover::before,.projects-mode-list .project-card-cover::after{opacity:.25}
+.projects-mode-list .project-card-monogram{inset:0;display:grid;place-items:center;font:600 15px/1 Acorn,Georgia,serif;letter-spacing:0}
+.projects-mode-list .project-card-identity{grid-column:2;grid-row:1;padding:0}
+html body .projects-identity.projects-mode-list .project-card-identity h2{font-size:16px;line-height:1.25}
+.projects-mode-list .project-card-client{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px;font-size:11px}
+.projects-mode-list .project-card-footer{grid-column:3;grid-row:1;display:flex;align-items:center;margin:0;padding:0;border:0;min-width:140px;gap:14px}
+.projects-mode-list .project-card-progress{gap:7px}
+.projects-mode-list .project-card-add{min-height:65px!important;flex-direction:row!important;padding:12px!important}
+@container(max-width:650px){
+ .projects-mode-list .project-overview-card{grid-template-columns:46px minmax(0,1fr);grid-template-rows:auto auto;min-height:90px;column-gap:12px}
+ .projects-mode-list .project-card-cover{grid-row:1 / span 2;align-self:center}
+ .projects-mode-list .project-card-footer{grid-column:2;grid-row:2;min-width:0;margin-top:5px;justify-content:flex-start}
+ .projects-mode-list .project-card-progress{margin-left:0}
+}
+@media(prefers-reduced-motion:reduce){.projects-display-switch *{transition:none!important}}
+
 /* Native fallback for the original New Project Sheet. */
 .new-project-sheet-host{position:relative;display:block;width:0;height:0;z-index:10000}
 #overlay.new-project-native-overlay{place-items:stretch end;padding:0}
