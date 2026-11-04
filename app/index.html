@@ -5814,6 +5814,17 @@ function projectsViewSet(view){
  const animations=content?.getAnimations()||[];
  Promise.allSettled(animations.map(a=>a.finished)).then(()=>page?.classList.remove('projects-switching'));
 }
+// Purely presentational preference for this browser session; never persisted to project records.
+let projectsDisplayMode='compact';
+function setProjectsDisplayMode(mode){
+  if(!['compact','visual','list'].includes(mode)||projectsDisplayMode===mode)return;
+  projectsDisplayMode=mode;
+  render();
+}
+function projectsViewSelector(){
+  const views=[['compact','Compacta'],['visual','Visual'],['list','Lista']];
+  return `<div class="projects-display-switch" role="group" aria-label="Vista de proyectos">${views.map(([mode,label])=>`<button type="button" class="projects-display-option" aria-pressed="${projectsDisplayMode===mode}" onclick="setProjectsDisplayMode('${mode}')">${label}</button>`).join('')}</div>`;
+}
 function vProjects(){
   const PQ=(state.projQ||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const pSearch = p => !PQ || (p.num+" "+p.name+" "+(p.client||"")).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(PQ);
@@ -5826,9 +5837,10 @@ function vProjects(){
     <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Buscar por proyecto o cliente" aria-label="Buscar por proyecto o cliente" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
   </div>`;
   return `
-  <section class="projects-identity"><header class="projects-header"><h1 class="projects-page-title">${arch?'Proyectos archivados':'Proyectos'}</h1>
+  <section class="projects-identity projects-mode-${projectsDisplayMode}"><header class="projects-header"><h1 class="projects-page-title">${arch?'Proyectos archivados':'Proyectos'}</h1>
   <div class="projects-toolbar">
     ${buscador}
+    ${projectsViewSelector()}
     <div class="projects-primary-actions">
     <button class="btn projects-archive ${arch?'is-active':'btn-ghost'}" title="${arch?'Volver a proyectos activos':'Proyectos archivados'}" aria-label="${arch?'Volver a proyectos activos':'Proyectos archivados'}" aria-pressed="${arch}" onclick="projectsArchivedToggle()">${ico('eliminar')}</button>
     <button class="btn projects-new" title="Nuevo proyecto" aria-label="Nuevo proyecto" onclick="newProject()">${ico("mas")}<span>Nuevo proyecto</span></button>
@@ -11419,7 +11431,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.146";
+const MODERNO_VER="v3.65.147";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13564,7 +13576,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365146">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365147">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
