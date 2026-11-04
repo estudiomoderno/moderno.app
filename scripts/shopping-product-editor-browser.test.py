@@ -65,6 +65,12 @@ try:
    box=page.locator('#modalBox');body=box.locator('.product-editor-body')
    footer=box.locator('.product-editor-footer');save=footer.get_by_role('button',name='Guardar',exact=True)
    expect(box.get_by_role('heading',name='Editar producto',exact=True)).to_be_visible()
+   delete=footer.get_by_role('button',name='Eliminar producto',exact=True)
+   expect(delete).to_be_visible();expect(delete).to_have_css('color','rgb(185, 28, 28)')
+   expect(box.locator('.shopping-editor-actions .shopping-editor-delete')).to_have_count(0)
+   delete.click();confirm=page.locator('#shopping-product-delete');expect(confirm).to_be_visible()
+   confirm.get_by_role('button',name='Cancelar',exact=True).click()
+   expect(delete).to_be_focused();assert page.evaluate('records()===editorBaseline')
    folds=box.locator('details.product-editor-fold')
    assert folds.count()==3 and box.locator('details.product-editor-fold[open]').count()==0
    for el in ['itDims','itFilesBox']:expect(box.locator('#'+el)).to_be_hidden()
@@ -80,6 +86,7 @@ try:
    assert f['y']>=0 and f['y']+f['height']<=height,(width,f)
    assert body.evaluate('(e)=>e.scrollWidth<=e.clientWidth'),width
    assert box.evaluate('(e)=>e.scrollWidth<=e.clientWidth'),width
+   assert footer.evaluate('(e)=>e.scrollWidth<=e.clientWidth'),width
    columns=body.evaluate('(e)=>getComputedStyle(e).gridTemplateColumns.split(" ").length')
    assert columns==1,(width,columns)
    viewport_width=page.locator('#overlay').bounding_box()['width']
@@ -142,8 +149,7 @@ try:
    expect(box.locator('#itSum')).to_contain_text('300,00')
    box.locator('#itName').fill('Sillón actualizado ficticio')
    # Tab onto the action remains possible even when the last body control was scrolled to.
-   box.locator('.shopping-editor-actions>summary').click()
-   box.get_by_role('button',name='Eliminar producto',exact=True).focus();expect(save).to_be_in_viewport()
+   footer.get_by_role('button',name='Eliminar producto',exact=True).focus();expect(save).to_be_in_viewport()
    save.click()
    assert page.evaluate("""()=>{
     const it=state.projects[0].rooms[0].sections[0].items[0];
@@ -152,6 +158,7 @@ try:
      it.url==='https://tienda.example.invalid/producto'&&it.sku==='FIC-001'&&it.material==='Poliéster'&&it.color==='Azul índigo'&&it.note==='Nota ficticia'&&it.plazo==='2-3 semanas'&&it.status==='Revisión Cliente';
    }"""),'Editing must preserve the original product data and attachments'
    page.evaluate('itemModal(0,-1)')
+   expect(footer.locator('.shopping-editor-delete')).to_have_count(0)
    expect(box.locator('#itOrigin')).to_be_empty()
    assert 'Ficha independiente' not in box.inner_text()
    box.get_by_role('button',name='Cerrar edición de producto',exact=True).click()

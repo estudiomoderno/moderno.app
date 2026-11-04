@@ -378,7 +378,6 @@ function shoppingProductEditorActions(si,ii){
   <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('copy',${si},${ii})">Copiar a otra lista</button>
   <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('alternative',${si},${ii})">Añadir opción alternativa</button>
   <button type="button" class="btn btn-ghost" onclick="shoppingProductEditorAction('url',${si},${ii})">Actualizar desde URL</button>
-  <button type="button" class="btn btn-ghost shopping-editor-delete" onclick="shoppingProductDelete(${si},${ii})">Eliminar producto</button>
  </div></details>`;
 }
 function shoppingProductEditorAction(action,si,ii){
