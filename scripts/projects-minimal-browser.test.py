@@ -19,7 +19,7 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official isolated server unavailable')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  browser=p.chromium.launch(executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,headless=True,args=['--no-sandbox'])
   for width,height in [(1920,1080),(1440,1000),(1200,900),(1000,900),(768,1024),(390,844),(320,700)]:
    page=browser.new_page(viewport={'width':width,'height':height},locale='es-ES',timezone_id='Europe/Madrid');errors=[];writes=[];external=[]
    page.on('pageerror',lambda e:errors.append(str(e)))
