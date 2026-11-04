@@ -10,7 +10,7 @@ const end=html.indexOf('function vProjects(){',begin);
 
 function sandbox(){
   assert.ok(begin>=0&&end>begin,'view-mode functions must exist');
-  const context={renderCount:0,render(){this.renderCount++}};
+  const context={renderCount:0};context.render=()=>{context.renderCount++};
   vm.createContext(context);
   vm.runInContext(html.slice(begin,end),context);
   return context;
