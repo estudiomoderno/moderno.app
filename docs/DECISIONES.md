@@ -1,5 +1,14 @@
 # Decisiones de TALLER
 
+## 2026-11-04 — Corrección de Compacta según captura real de referencia
+
+El propietario compara **dos imágenes**, la versión Compacta publicada en #190 (minitarjetas de 114 px con monograma pequeño) y una **referencia de fichas amplias de gestión** con icono de carpeta, estado en cápsula, nombre destacado, filas informativas, divisor y progreso. Declara inequívocamente que la implementación **no se parece a la referencia**. Se corrige la anterior interpretación: «Compacta» es el nombre del modo, **no** la instrucción de limitar cada tarjeta a una franja diminuta.
+
+Se implementan fichas mayores y anchas —**2 por fila en escritorio habitual**, una en ventanas estrechas, tres si hay ancho suficiente— con icono de carpeta, etiqueta con estado real, nombre Acorn, cliente, PR, fecha de siguiente tarea solo si existe, y pie con avance/contador real y avisos. No se inventan prioridades, duraciones, fechas, descripciones ni fotografías de responsables que no figuren en el modelo. Se conservan los modos **Visual** y **Lista** y toda la navegación, datos y permisos existentes.
+
+La corrección es exclusivamente visual, sin cambios de Supabase/Auth/Storage ni registros productivos; está documentada en [PROYECTOS-FICHAS-REFERENCIA](PROYECTOS-FICHAS-REFERENCIA-2026-11-04.md), issue [#191](https://github.com/estudiomoderno/moderno.app/issues/191) y PR [#192](https://github.com/estudiomoderno/moderno.app/pull/192). **Publicada y verificada** en `https://app.moderno.app` como `v3.65.148`: [CI general](https://github.com/estudiomoderno/moderno.app/actions/runs/41891585142), [prueba visual](https://github.com/estudiomoderno/moderno.app/actions/runs/41891585021), [despliegue con comprobación de recursos públicos](https://github.com/estudiomoderno/moderno.app/actions/runs/41892192801). Reversión mediante revert del PR sin alterar datos.
+
+
 ## 2026-11-04 — Vista Compacta como predeterminada; Visual y Lista alternativas
 
 Tras revisar en producción las portadas geométricas grandes de la opción «Estudio minimalista» (#187 / PR #188), el propietario elige **«1 — Tarjetas compactas»** y responde **«sí»** a la propuesta de **implementarla y publicarla**.
