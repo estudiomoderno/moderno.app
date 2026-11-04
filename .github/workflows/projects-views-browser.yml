@@ -1,0 +1,52 @@
+name: Proyectos - comprobacion visual aislada
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - app/index.html
+      - app/brand/project-ui.css
+      - scripts/projects-minimal-browser.test.py
+      - scripts/projects-display-modes.test.mjs
+      - .github/workflows/projects-views-browser.yml
+
+permissions:
+  contents: read
+
+jobs:
+  visual-regression:
+    name: Proyectos con datos ficticios en Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Obtener codigo sin credenciales persistentes
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar Chromium controlado
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Validar grid, portadas, modos y navegacion sin red externa ni escrituras
+        run: python scripts/projects-minimal-browser.test.py "${{ runner.temp }}/proyectos-capturas"
+
+      - name: Guardar capturas sinteticas de UI
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moderno-proyectos-vistas-fixtures
+          path: ${{ runner.temp }}/proyectos-capturas/*.png
+          if-no-files-found: ignore
+          retention-days: 7
