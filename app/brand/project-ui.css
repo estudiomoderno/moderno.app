@@ -320,6 +320,9 @@
  html body #modalBox .product-editor-footer{flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:0;padding:20px 24px;border-top:1px solid var(--ui-line);background:var(--app-surface,#fff)}
  html body #modalBox .product-editor-footer>.btn{flex:1;justify-content:center;min-height:36px!important}
  html body #modalBox .product-editor-footer>.product-editor-library{flex:1 0 100%;margin:0}
+ html body:not(.portalmode) #modalBox .product-editor-footer>.shopping-editor-delete{min-width:0;background:#fff5f5!important;border:1px solid #efb6b6!important;color:#b91c1c!important}
+ html body:not(.portalmode) #modalBox .product-editor-footer>.shopping-editor-delete:hover{background:#fee2e2!important}
+ body:has(#overlay.open #modalBox>.shopping-product-editor) #toast{bottom:144px;pointer-events:none}
  html body:not(.portalmode) #modalBox .product-editor-footer>.btn-dark{background:#0666ff!important;border:1px solid #0666ff!important;color:#fff!important}
  html body:not(.portalmode) #modalBox .product-editor-footer>.btn-dark:hover{background:#0055dc!important}
  @keyframes productSheetIn{from{transform:translateX(100%)}to{transform:translateX(0)}}

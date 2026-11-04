@@ -1279,7 +1279,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=365142"></script>
+<script src="/project-ui.js?v=365145"></script>
 <script src="/places.js?v=365135"></script>
 <script src="/home-map.js?v=365135"></script>
 <script src="/new-project.js?v=365133"></script>
@@ -8944,6 +8944,7 @@ function itemModal(si,ii,fromUrl){
   <div id="itOrigin" class="product-editor-origin"></div>
   </div>
   <footer class="modal-foot product-editor-footer"><button type="button" class="btn btn-ghost product-editor-library" title="Guardar este producto en tu biblioteca transversal" onclick="itemToLibrary()">${ico("guardar")} Añadir a mi biblioteca</button>
+  ${ii>=0?`<button type="button" class="btn shopping-editor-delete" aria-label="Eliminar producto" onclick="shoppingProductDelete(${si},${ii})">Eliminar</button>`:''}
   <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
   <button class="btn btn-dark" onclick="saveItem(${si},${ii})">Guardar</button></footer></div>`);
   SpecMaster.mount(it);
@@ -11402,7 +11403,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.144";
+const MODERNO_VER="v3.65.145";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13547,7 +13548,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365143">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365145">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
