@@ -10,9 +10,9 @@ test('a route UI failure restores the original sidebar so all five Finance pages
  const context=vm.createContext({
   window:{matchMedia:()=>({matches:true,addEventListener(){}})},
   document:{body:{classList:{contains:()=>desktop}},
-   querySelector:selector=>selector.startsWith('aside.sidebar')?{textContent:'Inicio'}:null,
+   querySelector:selector=>selector.startsWith('aside.sidebar')?{textContent:'Agenda'}:null,
    createElement(){throw Error('Synthetic presentation failure');}},
-  state:{view:'home'},_accessLoading:false,_accessRole:'admin',canView:()=>true,
+  state:{view:'agenda'},_accessLoading:false,_accessRole:'admin',canView:()=>true,
   ModernoDesktopShell:{setEnabled(value){desktop=value;calls.push(['desktop',value]);}},
   console:{warn(){calls.push(['warning']);}},
   render(...args){calls.push(['render',...args]);return 'native-render';}

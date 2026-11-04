@@ -65,6 +65,9 @@ try:
     assert rail.bounding_box()['y']==56 and rail.bounding_box()['height']==944
     expect(page.locator('.desktop-brand')).to_be_hidden()
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),view
+    if view=='home':
+     expect(page.locator('#page-route-bar')).to_have_count(0)
+     assert page.locator('.main').evaluate('(e)=>getComputedStyle(e).paddingTop')=='80px'
     if page.locator('#page-route-bar').count():
      route=page.locator('#page-route-bar').bounding_box();assert route['y']>=56,(view,route)
      assert float(page.locator('.main').evaluate('(e)=>getComputedStyle(e).paddingTop').removesuffix('px'))>=route['y']+route['height']

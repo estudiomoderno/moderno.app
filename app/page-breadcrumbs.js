@@ -39,12 +39,12 @@ var ModernoPageBreadcrumbs=(()=>{
   const restoreFocus=pendingFocus||bar?.contains(document.activeElement);
   const active=enabled&&(!media.matches||document.body.classList.contains('desktop-shell'))&&!_accessLoading&&['admin','miembro','colaborador'].includes(_accessRole)&&!['ajustes','admin','presedit','portalcli','portalobra'].includes(state.view);
   syncNative(active);
-  if(!active||!canView(state.view)||['proyectos','proyecto','estancia'].includes(state.view)){clear();return;}
+  if(!active||!canView(state.view)||['home','proyectos','proyecto','estancia'].includes(state.view)){clear();return;}
   const sections=financial()?allowed():null;
   if(!sections&&(!media.matches||!document.body.classList.contains('desktop-shell'))){clear();return;}
   const source=document.querySelector('aside.sidebar .nav-item[data-view="'+state.view+'"]');if(!source){clear();return;}
   const name=state.view==='agenda'?'Agenda':source.textContent.trim();
-  const items=sections?[{label:'Inicio',view:'home'},{label:'Finanzas'}]:state.view==='home'?[{label:'Inicio'}]:[{label:'Inicio',view:'home'},...(['biblioteca','catalogo'].includes(state.view)?[{label:'Productos y servicios'}]:[]),{label:name}];
+  const items=sections?[{label:'Inicio',view:'home'},{label:'Finanzas'}]:[{label:'Inicio',view:'home'},...(['biblioteca','catalogo'].includes(state.view)?[{label:'Productos y servicios'}]:[]),{label:name}];
   if(sections&&bar?.classList.contains('is-finance')&&component&&original){
    if(media.matches){if(bar.parentElement!==document.body)document.body.append(bar);}else if(bar.nextElementSibling!==document.querySelector('#view'))document.querySelector('#view').before(bar);
    component.update({items,finance:sections,current:state.view,onNavigate:navigate});return;
