@@ -19,7 +19,7 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official isolated server unavailable')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  browser=p.chromium.launch(executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,headless=True,args=['--no-sandbox'])
   for width,height in [(1920,1080),(1440,1000),(1200,900),(1000,900),(768,1024),(390,844),(320,700)]:
    page=browser.new_page(viewport={'width':width,'height':height},locale='es-ES',timezone_id='Europe/Madrid');errors=[];writes=[];external=[]
    page.on('pageerror',lambda e:errors.append(str(e)))
@@ -32,7 +32,27 @@ try:
     window.makeProjects=n=>{const base=state.projects[0]||window.baseProject;window.baseProject=structuredClone(base);state.projects=Array.from({length:n},(_,i)=>({...structuredClone(base),id:9100+i,num:'PR-'+(9100+i),name:i===0?'Casa con nombre muy largo '+ 'arquitectura '.repeat(60):'Casa ficticia '+(i+1),client:i%2?'':'Cliente ficticio',files:[],tasks:i%3===0?[{id:'a',col:'listo'},{id:'b',col:'pend',due:'2000-01-01'}]:[]}));state.projQ='';state.showArchived=false;go('proyectos')};makeProjects(27);window.before=JSON.stringify(state.projects);
    }""")
    cards=page.locator('.projects-identity .project-overview-card');expect(cards).to_have_count(27)
-   cw=page.locator('.projects-identity').evaluate('e=>e.clientWidth');columns=4 if cw>=1100 else 3 if cw>=800 else 2 if cw>=560 else 1
+   # Compact by default; both alternate views retain the same identity and records.
+   selector=page.get_by_role('group',name='Vista de proyectos')
+   expect(selector).to_be_visible()
+   compact=selector.get_by_role('button',name='Compacta')
+   visual=selector.get_by_role('button',name='Visual')
+   listing=selector.get_by_role('button',name='Lista')
+   expect(compact).to_have_attribute('aria-pressed','true')
+   assert page.locator('.projects-identity').evaluate("e=>e.classList.contains('projects-mode-compact')")
+   assert cards.first.evaluate('e=>e.getBoundingClientRect().height<180')
+   visual.click()
+   expect(visual).to_have_attribute('aria-pressed','true')
+   expect(cards).to_have_count(27)
+   assert cards.first.locator('.project-card-cover').evaluate("e=>getComputedStyle(e).aspectRatio==='16 / 10'")
+   listing.click()
+   expect(listing).to_have_attribute('aria-pressed','true')
+   expect(cards).to_have_count(27)
+   assert page.locator('.project-cards-grid').first.evaluate("e=>getComputedStyle(e).gridTemplateColumns.split(' ').length")==1
+   compact.click()
+   expect(compact).to_have_attribute('aria-pressed','true')
+   assert page.evaluate('JSON.stringify(state.projects)===before')
+   cw=page.locator('.projects-identity').evaluate('e=>e.clientWidth');columns=5 if cw>=1450 else 4 if cw>=1100 else 3 if cw>=800 else 2 if cw>=560 else 1
    actual=page.locator('.project-cards-grid').first.evaluate("e=>getComputedStyle(e).gridTemplateColumns.split(' ').length")
    assert actual==columns,(width,cw,actual,columns)
    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),width
@@ -41,7 +61,7 @@ try:
    expect(cards.nth(1).locator('.project-card-client')).to_have_count(0)
    expect(cards.nth(1).locator('.project-card-progress')).to_have_count(0)
    assert 'Sin tareas' not in page.locator('.projects-identity').inner_text()
-   link=cards.first.locator('.project-card-open');link.focus();assert link.evaluate("e=>getComputedStyle(e).outlineStyle==='solid'")
+   link=cards.first.locator('.project-card-open');page.keyboard.press('Tab');link.focus();assert link.evaluate("e=>e.matches(':focus-visible')&&getComputedStyle(e).outlineStyle==='solid'")
    link.press('Space');assert page.evaluate('state.currentProject===9100')
    page.evaluate("go('proyectos')")
    # A modified click retains the original href and is not intercepted by the opener.
