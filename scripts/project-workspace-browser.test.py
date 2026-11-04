@@ -102,12 +102,12 @@ try:
    page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
    page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
    compact_bar=page.locator('#project-window-bar').bounding_box()
-   assert compact_bar['x']==88 and page.locator('.desktop-row').bounding_box()['width']==64,compact_bar
+   assert compact_bar['x']==12 and page.locator('.desktop-row').bounding_box()['width']==64,compact_bar
    assert page.locator('.main').evaluate('(e)=>getComputedStyle(e).paddingLeft')=='88px'
    page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
    page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
-   assert page.locator('#project-window-bar').bounding_box()['x']==248
-   assert bar['y']<=24 and bar['x']>rail['x']+rail['width'],(bar,rail)
+   assert page.locator('#project-window-bar').bounding_box()['x']==12
+   assert bar['y']<=24 and rail['y']>=56 and bar['x']==12,(bar,rail)
    assert bar['x']+bar['width']<profile['x'] and abs(bar['y']-profile['y'])<8,(bar,profile)
    assert after<100,after
    assert page.evaluate('originalOptions===document.querySelector(".project-options")')

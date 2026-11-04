@@ -8,7 +8,7 @@ var ModernoHeaderActions=(()=>{
  const bell=svg('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>');
  const team=svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/>');
  const more=svg('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>');
- const allowed=()=>enabled&&!_accessLoading&&['admin','colaborador','miembro'].includes(_accessRole)&&!!state.sessionUser&&!['portalcli','portalobra','presedit'].includes(state.view)&&!document.body.classList.contains('portalmode')&&$('#loginScreen')?.style.display!=='grid';
+ const allowed=()=>enabled&&!_accessLoading&&['admin','colaborador','miembro'].includes(_accessRole)&&!!state.sessionUser&&!['portalcli','portalobra'].includes(state.view)&&!document.body.classList.contains('portalmode')&&$('#loginScreen')?.style.display!=='grid';
  function notifications(){
   const n=(state.notifs||[]).filter(item=>!item.read).length;
   for(const button of document.querySelectorAll('.ha-notifications')){

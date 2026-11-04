@@ -44,3 +44,8 @@
 @keyframes projectWindowIn{from{opacity:.5;translate:0 -3px}to{opacity:1;translate:0 0}}
 @media(prefers-reduced-motion:reduce){#project-window-bar *{animation:none!important;transition:none!important}}
 @media print{#project-window-bar{display:none!important}}
+
+@media screen and (min-width:1100px){
+ html body.global-project-header #project-window-bar{top:10px;left:12px;right:max(148px,calc(var(--header-actions-width,104px) + 40px));height:36px;z-index:80;transition:none}
+ html body.global-project-header #project-window-bar .pw-tabs{max-width:calc(100% - 100px)}
+}

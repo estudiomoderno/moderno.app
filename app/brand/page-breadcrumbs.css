@@ -28,3 +28,8 @@
 }
 
 @media screen{#page-route-bar .finance-fallback::-webkit-scrollbar{display:none}}
+
+/* Section routes and finance controls sit below the permanent project row. */
+@media screen and (min-width:1100px){
+ html body.global-project-header #page-route-bar{top:72px;right:24px;background:var(--app-surface,#fff);box-shadow:0 0 0 12px var(--app-surface,#fff)}
+}

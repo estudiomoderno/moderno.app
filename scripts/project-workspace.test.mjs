@@ -4,16 +4,16 @@ import vm from 'node:vm';
 import fs from 'node:fs';
 const source=fs.readFileSync(new URL('../app/project-workspace.js',import.meta.url),'utf8');
 function fixture({role='admin',loading=false,matches=true,allow=true,overlay=false,welcome=false,view='home'}={}){
- const calls=[],events={},projects=Object.freeze([Object.freeze({id:1,brand:'a',num:'PR-1',name:'Ficticio'}),Object.freeze({id:2,brand:'b',name:'Otro espacio'}),Object.freeze({id:3,brand:'a',tpl:true})]);
+ let mounted=false;const calls=[],events={},projects=Object.freeze([Object.freeze({id:1,brand:'a',num:'PR-1',name:'Ficticio'}),Object.freeze({id:2,brand:'b',name:'Otro espacio'}),Object.freeze({id:3,brand:'a',tpl:true})]);
  const context=vm.createContext({
   window:{matchMedia:()=>({matches,addEventListener:(key,fn)=>events[key]=fn})},
-  document:{addEventListener(){},querySelector(selector){if(selector==='.overlay.open,dialog[open]'&&overlay||selector==='#cliWelTa'&&welcome)return {};return null;},createElement(){throw Error('Synthetic missing DOM');},body:{classList:{contains:()=>true,remove(){},add(){}}}},
+  document:{addEventListener(){},querySelector(selector){if(selector==='.overlay.open,dialog[open]'&&overlay||selector==='#cliWelTa'&&welcome)return {};return null;},createElement(){throw Error('Synthetic missing DOM');},body:{classList:{contains:()=>mounted,remove(){},add(){}}}},
   state:{view,sessionUser:{id:'fictional'},myRole:'admin',brandFilter:'a',projects,projTab:'planos',_welEdit:welcome},
   _accessRole:role,_accessLoading:loading,ESTUDIO_ID:'fictional-study',canView:()=>allow,byBrand:items=>items.filter(p=>p.brand==='a'),projectTabKey:x=>x,
   toast:message=>calls.push(['toast',message]),console:{warn:()=>calls.push(['warning'])},ModernoDesktopShell:{setEnabled(value){calls.push(['shell',value]);return 'shell-result';}},
   go:(...args)=>calls.push(['go',...args]),render:(...args)=>{calls.push(['render',...args]);return 'original-result';},
   persistSoon(){throw Error('Navigation must not persist project data');}
- });vm.runInContext(source,context);return {context,calls,events};
+ });vm.runInContext(source,context);mounted=true;return {context,calls,events};
 }
 test('project windows never grant access to excluded roles, denied views or a loading session',()=>{
  for(const options of [{role:'cliente'},{role:'contratista'},{role:'gestoria'},{role:null},{role:'unknown'},{allow:false},{loading:true},{matches:false}]){

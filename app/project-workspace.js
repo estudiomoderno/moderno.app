@@ -32,7 +32,7 @@ var ModernoProjectWorkspace=(()=>{
  function node(tag,className,text){const el=document.createElement(tag);if(className)el.className=className;if(text!==undefined)el.textContent=text;return el;}
  function button(label,fn,className=''){const el=node('button',className);el.type='button';el.setAttribute('aria-label',label);el.title=label;el.addEventListener('click',fn);return el;}
  function move(el,target){if(!el)return;const marker=document.createComment('project-workspace: original position');el.before(marker);moved.push({el,marker});target.append(el);}
- function restore(){for(const {el,marker} of moved.splice(0).reverse())if(marker.isConnected)marker.replaceWith(el);bar?.remove();bar=null;document.body.classList.remove('project-windows');}
+ function restore(){for(const {el,marker} of moved.splice(0).reverse())if(marker.isConnected)marker.replaceWith(el);bar?.remove();bar=null;document.body.classList.remove('project-windows','global-project-header');}
  function tabButtons(){return [...(windowHost?.shadowRoot||bar)?.querySelectorAll('[role=tab]')||[]];}
  function discardComponent(){windowComponent?.unmount();windowComponent=null;windowHost?.remove();windowHost=null;pendingFocus=false;searchOpen=false;windowProps=null;}
  function componentFailed(){useOriginal=false;queueMicrotask(()=>{discardComponent();safeRefresh();});}
@@ -92,7 +92,7 @@ var ModernoProjectWorkspace=(()=>{
  }
  function refresh(){
   const pool=sync();restore();
-  if(!active()||!['proyectos',...projectViews].includes(state.view)){discardComponent();return;}
+  if(!active()||['portalcli','portalobra'].includes(state.view)){discardComponent();return;}
   const project=projectViews.includes(state.view)?pool.find(p=>key(p.id)===key(state.currentProject)):null;
   if(project&&!windows.has(key(project.id)))windows.set(key(project.id),{section:projectTabKey(state.projTab||'proyecto'),view:state.view,room:state.currentRoom,scroll:0});
   const item=current();if(item){item.section=projectTabKey(state.projTab||'proyecto');item.view=state.view;item.room=state.currentRoom;}
@@ -121,7 +121,7 @@ var ModernoProjectWorkspace=(()=>{
    move(head.querySelector('.project-options-control')||head.querySelector('.project-options'),tools);
    const retained=node('div','pw-retained-head');retained.hidden=true;bar.append(retained);move(head,retained);
   }
-  document.body.append(bar);document.body.classList.add('project-windows');
+  document.body.append(bar);document.body.classList.add('project-windows','global-project-header');
   tabButtons().find(b=>b.getAttribute('aria-selected')==='true')?.scrollIntoView({block:'nearest',inline:'nearest'});
  }
  function safeRefresh(){try{refresh();}catch(error){enabled=false;discardComponent();restore();console.warn('Pestañas de proyectos desactivadas; se conserva la navegación anterior.',error);}}
