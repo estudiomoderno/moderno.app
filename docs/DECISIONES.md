@@ -1,5 +1,16 @@
 # Decisiones de TALLER
 
+## 2026-11-04 — Vista Compacta como predeterminada; Visual y Lista alternativas
+
+Tras revisar en producción las portadas geométricas grandes de la opción «Estudio minimalista» (#187 / PR #188), el propietario elige **«1 — Tarjetas compactas»** y responde **«sí»** a la propuesta de **implementarla y publicarla**.
+
+La pantalla general de Proyectos pasa a usar por defecto **fichas horizontales bajas con miniatura discreta, nombre y cliente predominantes, código PR, progreso real únicamente con tareas y avisos existentes**. El usuario puede alternar entre **Compacta, Visual (portada grande anterior) y Lista** mediante botones accesibles. La preferencia de vista es temporal y no se guarda en registros. Se conservan la marca, Acorn, menús, acciones, búsquedas, filtro de archivados, navegación, permisos e información real. La imagen solo puede ser una portada legítima ya seleccionada; si no existe, pequeño monograma editorial. Diseño responsive, sin imágenes inventadas.
+
+La orden **autoriza la publicación ordinaria en `https://app.moderno.app` tras CI, revisión y verificación del despliegue**, exclusivamente para cambios visuales reversibles. No autoriza escrituras de prueba en producción, nuevos campos, modificación de permisos, RLS, Storage, Auth ni cambios en datos reales o aplicaciones Windows.
+
+[Encargo y criterios #189](https://github.com/estudiomoderno/moderno.app/issues/189) · [Especificación](PROYECTOS-VISTAS-COMPACTA-2026-11-04.md). Registrar la decisión en GitHub no inicia el chat Codex Cloud por sí solo.
+
+
 ## 2026-11-04 — Rediseño de Proyectos «Estudio minimalista» y publicación aprobada
 
 El propietario revisa la pantalla general **Proyectos** y elige expresamente la **Opción 1 «Estudio minimalista»**: cuadrícula de 4 fichas visuales en escritorio ancho, imagen real de portada solo cuando exista soporte y permisos actuales, fallback editorial neutro elegante en ausencia de imagen, nombre destacado, cliente, código PR, avisos reales y progreso de tareas solo si hay tareas. Mantener la identidad corporativa vigente, logo exacto, Acorn, menú lateral, pestañas, cabecera, buscador, creación y selector de vistas. Cambiar la densidad actual de cinco tarjetas altas y vacías por fichas de proporción más horizontal y jerarquía visual de software profesional de arquitectura/interiorismo. Conservación integral de navegación, permisos y datos existentes.
