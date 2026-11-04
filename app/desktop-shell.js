@@ -120,10 +120,12 @@ var ModernoDesktopShell=(()=>{
   header?.remove();header=null;document.body.classList.remove('desktop-shell','desktop-menu-collapsed');
  }
  function refresh(){
-  const excluded=['ajustes','admin','presedit','portalcli','portalobra'];
+  const excluded=['portalcli','portalobra'];
   const active=enabled&&media.matches&&!_accessLoading&&!excluded.includes(state.view)&&!['cliente','contratista','gestoria'].includes(_accessRole);
   if(!active){if(header)restore();return;}
   if(!header)build();document.body.classList.add('desktop-shell');
+  const settingsNav=$('#settings-nav');if(settingsNav&&!header.contains(settingsNav))move(settingsNav,$('#desktop-header .desktop-nav-clip'));
+  header.classList.toggle('desktop-settings-active',['ajustes','admin'].includes(state.view));
   for(const b of header.querySelectorAll('[data-desktop-view]')){
    b.hidden=!available(b.dataset.desktopView);
    const selected=b.dataset.desktopView===state.view||(b.dataset.desktopView==='proyectos'&&['proyecto','estancia'].includes(state.view));

@@ -158,7 +158,7 @@ def check_finances(page,width):
  expect(sections.get_by_role('button')).to_have_text(expected)
  if width>=1100:
   r=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
-  assert 32<=r['height']<=40 and abs(r['y']+r['height']/2-profile['y']-profile['height']/2)<1,(r,profile)
+  assert 32<=r['height']<=40 and r['y']>=56 and profile['y']+profile['height']<r['y'],(r,profile)
   assert r['x']+r['width']<profile['x'],(r,profile)
  page.locator('.route-component-host[data-reui-ready=true]').wait_for(state='attached')
  sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
@@ -305,9 +305,9 @@ try:
       assert 'Moderno ReUI Inter' in crumb.evaluate('(e)=>getComputedStyle(e).fontFamily')
       card=page.locator('#page-route-bar [data-slot=card]').first.bounding_box()
       assert abs(card['height']-project_box['height'])<1,(view,card,project_box)
-      assert abs(card['y']-project_box['y'])<1,(view,card,project_box)
+      assert card['y']>=56 and project_box['y']<56,(view,card,project_box)
       profile=page.locator('[data-profile-trigger]').bounding_box()
-      assert abs(card['y']+card['height']/2-profile['y']-profile['height']/2)<1,(view,card,profile)
+      assert profile['y']+profile['height']<card['y'],(view,card,profile)
       assert card['x']+card['width']<profile['x'],(view,card,profile)
       if view in finance:assert 'Finanzas' in page.locator('#page-route-bar [data-slot=breadcrumb-list]').inner_text()
     else:
@@ -369,7 +369,7 @@ try:
      assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
      page.locator('#ptM2').fill('24');assert '4.0 L' in page.locator('#ptRes').inner_text()
    if width>=1100:
-    page.locator('.desktop-brand').click();assert page.evaluate('state.view')=='proyecto'
+    expect(page.locator('.desktop-brand')).to_be_hidden();assert page.evaluate('state.view')=='proyecto'
     assert page.locator('#desktop-primary [data-desktop-view=home] svg').count()==1
     page.get_by_role('button',name='Inicio',exact=True).click();assert page.evaluate('state.view')=='home'
     page.evaluate("go('proyecto',9001);projTab('utilidades')")
@@ -381,7 +381,7 @@ try:
     assert page.locator('#desktop-navigation').is_visible()
     assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
     assert page.locator('.desktop-row').bounding_box()['width']<100
-    assert page.locator('.desktop-brand').is_visible()
+    expect(page.locator('.desktop-brand')).to_be_hidden()
     assert page.locator('[data-profile-trigger]').is_visible()
     page.locator('[data-profile-trigger]').click();page.get_by_role('menuitem',name='Automatizaciones',exact=True).wait_for(state='visible')
     page.locator('[data-profile-trigger]').press('Escape')
@@ -402,7 +402,7 @@ try:
    assert page.evaluate('fixtureRecords()===fixtureBaseline'),'Navigation changed stored records'
    if width>=1100:
     assert page.locator('#desktop-header .logo').is_hidden()
-    assert page.locator('#desktop-header .logo-mini').is_visible()
+    expect(page.locator('#desktop-header .logo-mini')).to_be_hidden()
     assert page.locator('[data-profile-trigger]').evaluate('(e)=>e.scrollHeight<=e.clientHeight')
     assert page.locator('#themeBtn').is_hidden() and page.locator('#brandSwitch').is_hidden()
     page.evaluate("state.notifs=[{txt:'Aviso ficticio',when:'Hoy',read:false}];notifBadge()")
@@ -423,7 +423,7 @@ try:
     sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
     expect(sections.get_by_role('button')).to_have_text(['Resumen','Facturas','Presupuestos','Contabilidad','Previsión'])
     rect=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
-    assert abs(rect['y']+rect['height']/2-profile['y']-profile['height']/2)<1
+    assert rect['y']>=56 and profile['y']+profile['height']<rect['y']
     assert rect['x']+rect['width']<profile['x']
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'finance-navigation-{width}.png'),full_page=True)
     page.evaluate("go('proyecto',9001)")
@@ -461,8 +461,8 @@ try:
    if width>=1100:
     page.locator('[data-profile-trigger]').click();page.get_by_role('menuitem',name='Ajustes',exact=True).click()
     assert page.evaluate('state.view')=='ajustes'
-    assert page.locator('#desktop-header').count()==0
-    assert page.locator('aside.sidebar #settings-nav').count()==1
+    assert page.locator('#desktop-header').count()==1
+    expect(page.locator('#desktop-header #settings-nav')).to_be_visible()
     original_name=page.evaluate('state.sessionUser.name')
     page.locator('#settings-first').fill('Borrador sin guardar')
     page.locator('#settings-nav [data-settings-action=back]').click()

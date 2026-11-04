@@ -104,3 +104,18 @@
 }
 
 @media screen{.sidebar a.nav-item{text-decoration:none}}
+
+/* Full-width application header; the navigation rail begins beneath it. */
+@media screen and (min-width:1100px){
+ body.global-project-header{--app-header-height:56px}
+ body.global-project-header #desktop-header::before{content:'';position:fixed;inset:0 0 auto;height:var(--app-header-height);box-sizing:border-box;background:var(--app-surface,#fff);border-bottom:1px solid var(--ui-line);pointer-events:none}
+ body.global-project-header #desktop-header .desktop-row{margin-top:var(--app-header-height);height:calc(100dvh - var(--app-header-height))}
+ body.global-project-header #desktop-header .desktop-brand{display:none!important}
+ #desktop-header.desktop-settings-active .desktop-nav{display:none}
+ #desktop-header .is-collapsed #settings-nav .settings-nav-label{display:none}
+ #desktop-header .is-collapsed #settings-nav button{justify-content:center;padding:12px 4px}
+ body.global-project-header #desktop-header .desktop-actions{position:relative;margin-top:10px;min-height:36px}
+ html body.desktop-shell.global-project-header:not(.portalmode) .main{padding-top:80px!important;scroll-padding-top:80px}
+ html body.desktop-shell.global-project-header:not(.portalmode):has(#page-route-bar) .main{padding-top:132px!important;scroll-padding-top:132px}
+ html body.desktop-shell.global-project-header .projects-divider{display:none!important}
+}
