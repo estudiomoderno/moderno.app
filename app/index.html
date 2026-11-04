@@ -5301,24 +5301,8 @@ async function folioAnimate(el,opening){
 }
 function projectOverviewCard(p){
   const E=ModernoDaily.escape,id=Number(p.id),m=ModernoProjectInsights.metrics(p);
-  // Only the existing, explicitly selected project cover; never infer one from attachments.
-  let image='';
-  try{
-    const cover=typeof ClientPortalSite!=='undefined'?ClientPortalSite.cover(p):null;
-    const source=cover&&(cover.url||cover.data);
-    if(source&&/^image\/(?:jpeg|png|webp)$/i.test(cover.type||'')){
-      const origins=[new URL(SUPABASE_URL).origin,'https://auth.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co'];
-      const path=ModernoFiles.storagePath(source,origins);
-      const embedded=/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=\r\n]+$/i.test(source);
-      if(embedded||(path&&path.split('/')[0]===ESTUDIO_ID)){
-        const position=ClientPortalSite.coverPosition(cover);
-        image=`<img ${fileImageAttrs(source)} loading="lazy" decoding="async" aria-hidden="true" style="object-position:${position.x}% ${position.y}%">`;
-      }
-    }
-  }catch{/* Unavailable or malformed covers use the editorial fallback. */}
-  const initials=String(p.name||'Proyecto').trim().split(/\s+/).slice(0,2).map(word=>Array.from(word)[0]||'').join('').toLocaleUpperCase('es');
   const status=String(p.status||'').trim();
-  const statusKind=status==='Archivado'?'archived':/^(Entregado|Finalizado)$/i.test(status)?'finished':status==='En progreso'?'active':'neutral';
+  const statusKind=status==='Archivado'?'archived':/^(Entregado|Finalizado)$/i.test(status)?'finished':/^En (progreso|proceso)$/i.test(status)?'active':'neutral';
   const nextDue=m.next&&ModernoProjectInsights.validDate(m.next.due)
     ?`<span class="project-card-due"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>Próxima tarea: ${E(m.next.due.split('-').reverse().join('/'))}</span>`:'';
 
@@ -5328,12 +5312,10 @@ function projectOverviewCard(p){
       <svg class="project-card-folder-symbol" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h5l2.2 3H19a2 2 0 0 1 2 2v1"/><path d="M3 8h17a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 1-2Z"/></svg>
       ${status?`<span class="project-card-status-label" data-tone="${statusKind}"><span class="project-card-status-dot"></span>${E(status)}</span>`:''}
     </div>
-    <div class="project-card-cover" aria-hidden="true"><span class="project-card-monogram">${E(initials)}</span>${image}</div>
     <div class="project-card-identity"><h2>${E(p.name||'Proyecto')}</h2>${p.client?`<p class="project-card-client"><svg class="project-card-reference-person" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>${E(p.client)}</p>`:''}</div>
     <div class="project-card-reference-meta"><span class="project-card-reference-code">${E(p.num||'')}</span>${nextDue}</div>
-    <div class="project-card-footer"><span class="project-card-code">${E(p.num||'')}</span>
-    ${m.total?`<div class="project-card-reference-progress"><span class="project-card-reference-ring" style="--project-progress:${m.progress}%" aria-hidden="true"></span><span>${m.progress}%</span><span class="project-card-reference-task-count">${m.total-m.pending}/${m.total} ${m.total===1?'tarea':'tareas'}</span></div>`:''}
-    ${m.total?`<div class="project-card-progress"><span class="project-card-percent">${m.progress} %<span class="sr-only"> completado · ${m.total-m.pending} de ${m.total} ${m.total===1?'tarea completada':'tareas completadas'}</span></span><progress max="100" value="${m.progress}" aria-label="Avance de ${E(p.name||'proyecto')}">${m.progress} %</progress></div>`:''}
+    <div class="project-card-footer">
+    ${m.total?`<div class="project-card-reference-progress" aria-label="${m.progress}% completado; ${m.total-m.pending} de ${m.total} ${m.total===1?'tarea completada':'tareas completadas'}"><span class="project-card-reference-ring" style="--project-progress:${m.progress}%" aria-hidden="true"></span><span class="project-card-reference-percent">${m.progress}%</span><span class="project-card-reference-task-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 6 2 2 4-4M3 13l2 2 4-4M13 6h8M13 13h8M13 20h8"/></svg>${m.total-m.pending}/${m.total} ${m.total===1?'tarea':'tareas'}</span></div>`:''}
     ${typeof projectFolderNotifications==='function'?projectFolderNotifications(p):''}</div>
   </article>`;
 }
@@ -5825,17 +5807,6 @@ function projectsViewSet(view){
  const animations=content?.getAnimations()||[];
  Promise.allSettled(animations.map(a=>a.finished)).then(()=>page?.classList.remove('projects-switching'));
 }
-// Purely presentational preference for this browser session; never persisted to project records.
-let projectsDisplayMode='compact';
-function setProjectsDisplayMode(mode){
-  if(!['compact','visual','list'].includes(mode)||projectsDisplayMode===mode)return;
-  projectsDisplayMode=mode;
-  render();
-}
-function projectsViewSelector(){
-  const views=[['compact','Compacta'],['visual','Visual'],['list','Lista']];
-  return `<div class="projects-display-switch" role="group" aria-label="Vista de proyectos">${views.map(([mode,label])=>`<button type="button" class="projects-display-option" aria-pressed="${projectsDisplayMode===mode}" onclick="setProjectsDisplayMode('${mode}')">${label}</button>`).join('')}</div>`;
-}
 function vProjects(){
   const PQ=(state.projQ||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   const pSearch = p => !PQ || (p.num+" "+p.name+" "+(p.client||"")).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").includes(PQ);
@@ -5848,10 +5819,9 @@ function vProjects(){
     <input id="projQBox" value="${ModernoDaily.escape(state.projQ||"")}" placeholder="Buscar por proyecto o cliente" aria-label="Buscar por proyecto o cliente" style="padding-left:36px;min-width:220px" oninput="state.projQ=this.value;renderKeep(this)">
   </div>`;
   return `
-  <section class="projects-identity projects-mode-${projectsDisplayMode}"><header class="projects-header"><h1 class="projects-page-title">${arch?'Proyectos archivados':'Proyectos'}</h1>
+  <section class="projects-identity"><header class="projects-header"><h1 class="projects-page-title">${arch?'Proyectos archivados':'Proyectos'}</h1>
   <div class="projects-toolbar">
     ${buscador}
-    ${projectsViewSelector()}
     <div class="projects-primary-actions">
     <button class="btn projects-archive ${arch?'is-active':'btn-ghost'}" title="${arch?'Volver a proyectos activos':'Proyectos archivados'}" aria-label="${arch?'Volver a proyectos activos':'Proyectos archivados'}" aria-pressed="${arch}" onclick="projectsArchivedToggle()">${ico('eliminar')}</button>
     <button class="btn projects-new" title="Nuevo proyecto" aria-label="Nuevo proyecto" onclick="newProject()">${ico("mas")}<span>Nuevo proyecto</span></button>
@@ -11442,7 +11412,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.148";
+const MODERNO_VER="v3.65.149";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13587,7 +13557,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=3655">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365148">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365149">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
