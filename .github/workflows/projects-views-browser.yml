@@ -7,7 +7,6 @@ on:
       - app/index.html
       - app/brand/project-ui.css
       - scripts/projects-minimal-browser.test.py
-      - scripts/projects-display-modes.test.mjs
       - .github/workflows/projects-views-browser.yml
 
 permissions:
@@ -39,14 +38,14 @@ jobs:
           python -m pip install playwright
           python -m playwright install --with-deps chromium
 
-      - name: Validar grid, portadas, modos y navegacion sin red externa ni escrituras
+      - name: Validar grid unico, estados, tareas y navegacion sin escrituras
         run: python scripts/projects-minimal-browser.test.py "${{ runner.temp }}/proyectos-capturas"
 
       - name: Guardar capturas sinteticas de UI
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: moderno-proyectos-vistas-fixtures
+          name: moderno-proyectos-cuadricula-fixtures
           path: ${{ runner.temp }}/proyectos-capturas/*.png
           if-no-files-found: ignore
           retention-days: 7

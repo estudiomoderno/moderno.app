@@ -1,21 +1,26 @@
-# Corrección de Proyectos: ficha de gestión fiel a referencia · #191
+# Proyectos: ficha de gestión fiel a la referencia
 
-**Fecha:** 4 de noviembre de 2026. El propietario rechaza el resultado visual de la tarjeta «Compacta» del PR #190: aparecían fichas demasiado pequeñas de dos columnas internas, monograma beige a la izquierda y casi ninguna jerarquía. Aporta una captura de referencia de fichas grandes, con icono de carpeta superior, estado destacado y filas de información, más una segunda captura del resultado actual. Solicita que se parezcan de verdad.
+**Fecha:** 4 de noviembre de 2026. Tras ver el resultado de dos columnas y el selector Compacta / Visual / Lista, el propietario solicita una única vista y un mínimo de cuatro fichas por fila en escritorio normal. La referencia visual fija la composición: carpeta arriba a la izquierda, estado real arriba a la derecha y progreso circular con porcentaje y tareas en el pie.
 
-## Nueva composición elegida
+## Composición final
 
-- El selector **Compacta / Visual / Lista** se conserva; **Compacta** sigue seleccionada al entrar.
-- **Compacta** pasa a parecerse a las fichas de la referencia, no a minitarjetas: 2 columnas cuando la zona de proyectos permita una ficha ancha, 3 solo en pantallas ultrapanorámicas; 1 columna en tablet/móvil estrecho. Altura objetivo 316 px, fondo claro, borde fino, radio 19 px.
-- Primera fila: **icono de carpeta de línea** a la izquierda y **estado verdadero** del proyecto (por ejemplo, «En progreso») a la derecha, con punto de color. No traducir ni sustituir estados por «Active» ficticios.
-- Nombre Acorn grande (hasta 2 líneas), cliente con icono de persona. Metadatos: código PR y, solo si existe, **fecha válida de la próxima tarea fechada** del proyecto. No inventar una fecha de fin del proyecto, duración, prioridad, descripción ni responsable.
-- Separador y pie: cuando existen tareas, progreso circular, porcentaje y número `completadas/total`; aviso original integrado. Sin tareas: no mostrar barra/progreso ficticios ni repetir «Sin tareas» en toda la pantalla.
-- Las vistas **Visual** y **Lista** mantienen las portadas autorizadas, fallback y navegación de #187/#189; el cambio de estructura extra está oculto en esas vistas.
-- Mantener buscador, archivados, tareas, números de proyecto, permisos, pestañas, nuevo proyecto y acceso con teclado. **No tocar Supabase, Auth, Storage ni registros reales.**
+- Una única cuadrícula. Se retiran el selector y su estado efímero; no queda ninguna opción Compacta, Visual o Lista.
+- Cuatro columnas cuando la zona de proyectos mide al menos 700 px, tres entre 560 y 699, dos entre 420 y 559 y una en móvil estrecho. La decisión se basa en el contenedor para responder también al ancho de WebView y al menú lateral.
+- Ficha blanca con borde fino, radio 18 px y altura compacta de 252 px. Carpeta de línea y estado verdadero del proyecto en la primera fila.
+- Nombre Acorn hasta dos líneas, cliente si existe, código PR y próxima tarea únicamente si hay una fecha válida real.
+- Si existen tareas: anillo dinámico mediante `conic-gradient`, porcentaje y completadas/total, calculados por `ModernoProjectInsights.metrics`. Si no hay tareas, se omite el bloque; no se inventa progreso.
+- Los avisos existentes conservan su interacción independiente y la tarjeta completa sigue abriendo el proyecto con las guardas y navegación actuales.
 
-## Validación y publicación
-- Fixtures sintéticos, sin tráfico externo ni escrituras; comprobación responsive desde 320 hasta 1920 px, foco de teclado, nombres largos, avisos, portadas seguras, tres vistas, 0/1/27/80 proyectos.
-- Suite Node completa, CI de PR y Playwright. Confirmar que a ancho de escritorio habitual se muestren **2 tarjetas por fila** y que la primera tarjeta tenga estructura, texto y altura próximos a la captura de referencia.
-- Si pasan, publicación ordinaria previamente autorizada para presentación UI; verificar Actions e integridad del HTML/CSS desde producción antes de anunciar. En caso de fallo, no fusionar.
-- Reversión: revert del PR sin restaurar/migrar datos.
+No se añaden descripción, prioridad, duración, responsable, fechas ni estados ficticios. Las portadas persistidas no se borran ni se modifican, pero dejan de mostrarse en esta pantalla al desaparecer la vista Visual. No hay cambios en proyectos, tareas, Supabase, Auth, Storage, RLS, compras, PDFs, Windows o prototipo.
 
-**Seguimiento:** [issue #191](https://github.com/estudiomoderno/moderno.app/issues/191), antecedente [PR #190](https://github.com/estudiomoderno/moderno.app/pull/190).
+## Validación
+
+- 701 pruebas Node correctas.
+- Chromium aislado a 1920, 1440, 1200, 1000, 768, 390 y 320 px con 0/1/27/80 proyectos, nombres largos, estados, tareas con progreso 0/50/67/100 %, búsquedas y archivados, teclado, roles y zoom 125/200 %.
+- Cuatro columnas verificadas a 1920, 1440 y 1200 px; responsive sin desbordamiento en los demás anchos.
+- Regresión de la pantalla a 1440/1100/390: búsqueda, creación, avisos, archivos, navegación, archivados y registros ficticios sin cambios.
+- Servidor oficial con datos ficticios; conexiones externas y escrituras HTTP bloqueadas. Capturas de escritorio y móvil revisadas.
+
+La publicación usa el workflow habitual: pruebas PHP en CI, recursos antes del HTML y verificación pública por hash. Revertir el commit recupera la presentación anterior sin restaurar ni migrar datos.
+
+**Antecedentes:** [issue #191](https://github.com/estudiomoderno/moderno.app/issues/191), [PR #190](https://github.com/estudiomoderno/moderno.app/pull/190) y [PR #192](https://github.com/estudiomoderno/moderno.app/pull/192).
