@@ -5324,12 +5324,12 @@ function projectOverviewCard(p){
 
   return `<article class="project-overview-card project-folio-shell">
     <a class="project-card-open" href="${E(ModernoRouter.path({view:'proyecto',project:id}))}" aria-label="Abrir proyecto ${E([p.num,p.name].filter(Boolean).join(' '))}" onclick="if(!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();projectOpen(${id})}" onkeydown="if(event.key===' '&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey){event.preventDefault();projectOpen(${id})}"></a>
-    <div class="project-card-reference-head" aria-hidden="true">
-      <svg class="project-card-folder-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h5l2.2 3H19a2 2 0 0 1 2 2v1"/><path d="M3 8h17a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 1-2Z"/></svg>
+    <div class="project-card-reference-head">
+      <svg class="project-card-folder-symbol" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h5l2.2 3H19a2 2 0 0 1 2 2v1"/><path d="M3 8h17a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 1-2Z"/></svg>
       ${status?`<span class="project-card-status-label" data-tone="${statusKind}"><span class="project-card-status-dot"></span>${E(status)}</span>`:''}
     </div>
     <div class="project-card-cover" aria-hidden="true"><span class="project-card-monogram">${E(initials)}</span>${image}</div>
-    <div class="project-card-identity"><h2>${E(p.name||'Proyecto')}</h2>${p.client?`<p class="project-card-client">${E(p.client)}</p>`:''}</div>
+    <div class="project-card-identity"><h2>${E(p.name||'Proyecto')}</h2>${p.client?`<p class="project-card-client"><svg class="project-card-reference-person" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>${E(p.client)}</p>`:''}</div>
     <div class="project-card-reference-meta"><span class="project-card-reference-code">${E(p.num||'')}</span>${nextDue}</div>
     <div class="project-card-footer"><span class="project-card-code">${E(p.num||'')}</span>
     ${m.total?`<div class="project-card-reference-progress"><span class="project-card-reference-ring" style="--project-progress:${m.progress}%" aria-hidden="true"></span><span>${m.progress}%</span><span class="project-card-reference-task-count">${m.total-m.pending}/${m.total} ${m.total===1?'tarea':'tareas'}</span></div>`:''}
