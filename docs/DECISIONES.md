@@ -1,5 +1,16 @@
 # Decisiones de TALLER
 
+## 2026-11-04 — Rediseño de Proyectos «Estudio minimalista» y publicación aprobada
+
+El propietario revisa la pantalla general **Proyectos** y elige expresamente la **Opción 1 «Estudio minimalista»**: cuadrícula de 4 fichas visuales en escritorio ancho, imagen real de portada solo cuando exista soporte y permisos actuales, fallback editorial neutro elegante en ausencia de imagen, nombre destacado, cliente, código PR, avisos reales y progreso de tareas solo si hay tareas. Mantener la identidad corporativa vigente, logo exacto, Acorn, menú lateral, pestañas, cabecera, buscador, creación y selector de vistas. Cambiar la densidad actual de cinco tarjetas altas y vacías por fichas de proporción más horizontal y jerarquía visual de software profesional de arquitectura/interiorismo. Conservación integral de navegación, permisos y datos existentes.
+
+**Orden expresa: «manda al taller el encargo y que publique»**. Queda autorizada la implementación por el **Taller principal Codex Moderno.app** y la **publicación directa en `https://app.moderno.app`** tras pruebas automáticas/visuales, revisión del PR, despliegue por procedimiento existente y verificación de la web servida. No se requiere validación manual del propietario en un segundo entorno para un cambio de presentación acotado. Mantener `desktop/windows/` y el Taller experimental separados.
+
+**Límites:** no inventar imágenes de cliente a partir de stock, no cargar por defecto imágenes privadas arbitrarias, no crear datos ni modificar Supabase/Storage/RLS/Auth ni proyectos productivos. Si actualmente no existe portada segura, publicar el rediseño con fallback sin crear persistencia; elección de portada a tratar por separado cuando proceda con autorización específica. La aprobación no autoriza migraciones ni cambios de permisos.
+
+[Encargo técnico y comprobaciones #187](https://github.com/estudiomoderno/moderno.app/issues/187) · Marco general [#49](https://github.com/estudiomoderno/moderno.app/issues/49). Registrar issue **no** implica iniciar el chat Codex Cloud ni publicar producción.
+
+
 ## 2026-10-20 — Taller Windows independiente y programa espejo con WebView2
 
 El propietario **autoriza comenzar** la versión de escritorio para Windows y confirma que desea una **ventana que refleje exclusivamente `https://app.moderno.app/`**, con **acceso obligatorio a internet**, sin aplicación duplicada, sin mover datos de producción y con novedades visuales/funcionales del sitio disponibles al **abrir o recargar** sin reinstalar el programa. No forzar recarga de sesiones activas con borradores. Los cambios en la propia carcasa ejecutable sí requerirán actualizarla.
