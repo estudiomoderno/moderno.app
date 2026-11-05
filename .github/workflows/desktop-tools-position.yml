@@ -1,0 +1,44 @@
+name: Barra superior de herramientas y lateral compacto (aislado)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - app/desktop-shell.js
+      - app/brand/desktop-shell.css
+      - scripts/desktop-shell-browser.test.py
+      - scripts/desktop-shell-full-app.test.py
+      - scripts/global-project-header-browser.test.py
+      - .github/workflows/desktop-tools-position.yml
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    name: Escritorio con proyectos ficticios en Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Obtener codigo sin permisos de escritura
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar navegador aislado
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Comprobar lateral, barra de herramientas y foco
+        run: python scripts/desktop-shell-browser.test.py
+      - name: Comprobar cabecera global, dock fijo, panel y permisos
+        run: python scripts/global-project-header-browser.test.py
+      - name: Comprobar navegacion real de fixtures, cambios sin guardar y movil
+        run: python scripts/desktop-shell-full-app.test.py
