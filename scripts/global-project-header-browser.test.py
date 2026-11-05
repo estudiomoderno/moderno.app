@@ -43,6 +43,18 @@ try:
     window.records=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes});window.baseline=records();
    }""")
    assert page.evaluate('sb===null')
+   if width>=1100:
+    toolbar=page.locator('.project-tabs').first.bounding_box()
+    winbar=page.locator('#project-window-bar').bounding_box()
+    assert 70<=toolbar['y']<=95,toolbar
+    assert toolbar['height']<=56,toolbar
+    assert winbar['y']+winbar['height']<toolbar['y'],(winbar,toolbar)
+    panel=page.locator('#project-tab-panel').first.bounding_box()
+    assert toolbar['y']+toolbar['height']<panel['y'],(toolbar,panel)
+    page.evaluate('document.querySelector(".main").scrollTop=120')
+    assert abs(page.locator('.project-tabs').first.bounding_box()['y']-toolbar['y'])<1
+    page.evaluate('document.querySelector(".main").scrollTop=0')
+    assert page.locator('.desktop-row').bounding_box()['width']==64
    if width<1100:
     expect(page.locator('#project-window-bar')).to_have_count(0)
     expect(page.locator('#desktop-header')).to_have_count(0)
