@@ -19,7 +19,7 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official isolated server unavailable')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  browser=p.chromium.launch(executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,headless=True,args=['--no-sandbox'])
   for width,height in [(1440,900),(390,844)]:
    page=browser.new_page(viewport={'width':width,'height':height});errors=[];writes=[]
    page.on('pageerror',lambda e:errors.append(str(e)))
@@ -36,10 +36,10 @@ try:
    page.locator('.project-file-category').click();expect(page.locator('.project-document-name')).to_have_count(0)
    page.evaluate("projTab('planos')")
    expect(page.locator('.project-document-name')).to_have_text(['Contrato.pdf','Plano.pdf'])
-   expect(page.locator('text=Planos definitivos').first).to_be_visible()
+   expect(page.locator('.plan-gallery').first).to_be_visible()
    page.locator('.project-file-category').first.click()
    page.evaluate("projTab('obra')")
-   expect(page.locator('text=Planos definitivos')).to_have_count(0)
+   expect(page.locator('.plan-gallery')).to_have_count(0)
    expect(page.locator('#project-tab-panel').get_by_role('button',name='Calendario',exact=True)).to_have_count(0)
    dates=page.evaluate('JSON.stringify(state.projects[0].obraF)')
    page.evaluate("projTab('calobra')")

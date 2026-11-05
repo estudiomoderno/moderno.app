@@ -1286,9 +1286,9 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/shopping-export.js?v=365113"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=365100"></script>
-<script src="/project-documents.js?v=198"></script>
-<script src="/plan-gallery.js?v=198"></script>
-<link rel="stylesheet" href="/brand/plan-gallery.css?v=198">
+<script src="/project-documents.js?v=199"></script>
+<script src="/plan-gallery.js?v=199"></script>
+<link rel="stylesheet" href="/brand/plan-gallery.css?v=199">
 <link rel="stylesheet" href="/plan-editor.css?v=36573">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
@@ -6106,11 +6106,11 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
   ${!['archivos','planos'].includes(tb)?"":`
   <div class="${tb==='planos'?'project-plans-section':''}" style="max-width:820px">
       ${ModernoProjectDocuments.heading(tb)}
-      <p class="project-files-help">${tb==='planos'?'Planos del proyecto. Los documentos generales tienen su propia sección.':'Contratos, informes y otros documentos. Puedes mover un archivo a Planos desde su tarjeta.'}</p>
+      ${tb==='planos'?'':`<p class="project-files-help">Contratos, informes y otros documentos. Puedes mover un archivo a Planos desde su tarjeta.</p>
       <div class="project-files-grid">
         ${(p.files||[]).map((f,i)=>({f,i})).filter(({f})=>ModernoProjectDocuments.category(f)===tb).map(({f,i})=>ModernoProjectDocuments.card(p,i,{available:fileOk(f),clientVisible:fileCli(f)})).join("")}
         ${ModernoProjectDocuments.uploadCard(p,tb)}
-      </div>
+      </div>`}
       ${tb!=="planos"?"":` ${ModernoPlanGallery.html(p)}
     <input type="file" id="obraPlanoInp" accept="application/pdf,image/*" multiple style="display:none" onchange="obraPlanoLoad(this)">
 `}
