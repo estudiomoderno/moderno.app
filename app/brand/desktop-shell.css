@@ -111,3 +111,5 @@
  html body.desktop-shell.global-project-header:not(.portalmode):has(#page-route-bar) .main{padding-top:132px!important;scroll-padding-top:132px}
  html body.desktop-shell.global-project-header .projects-divider{display:none!important}
 }
+
+@media(min-width:1100px){#desktop-primary>[data-desktop-view="biblioteca"]{border-top:1px solid var(--ui-line);margin-top:7px;padding-top:12px}}
