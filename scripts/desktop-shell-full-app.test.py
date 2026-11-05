@@ -227,7 +227,7 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official isolated server did not start')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  browser=p.chromium.launch(executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,headless=True,args=['--no-sandbox'])
   for width in [1440,1100,390]:
    page=browser.new_page(viewport={'width':width,'height':1000});errors=[];writes=[];external=[]
    page.on('pageerror',lambda e:errors.append(str(e)))
