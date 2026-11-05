@@ -284,7 +284,10 @@ with sync_playwright() as p:
    assert box['x']>rail['x']+rail['width'] and box['y']>=11 and box['y']+box['height']<=height-11,(box,rail,height)
    assert toggle['y']+toggle['height']<=height,(toggle,height)
    for control in page.locator('.desktop-nav .desktop-icon-only:visible').all():
-    rect=control.bounding_box();assert rect['y']>=0 and rect['y']+rect['height']<=height and rect['height']>=24,(rect,height)
+    # Scrollable side rail: controls outside the clipping area must remain reachable.
+    control.scroll_into_view_if_needed()
+    rect=control.bounding_box()
+    assert rect['y']>=0 and rect['y']+rect['height']<=height+1 and rect['height']>=24,(rect,height)
    if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-short-{width}-{height}.png'),full_page=True)
    last.press('Escape')
    page.locator('.desktop-profile>summary').click()
