@@ -45,7 +45,7 @@ def reveal_route(page,view):
  button.evaluate('(b)=>{const d=b.closest("details");if(d)d.open=true;}')
  return button
 with sync_playwright() as p:
- browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+ browser=p.chromium.launch(executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,headless=True,args=['--no-sandbox'])
  for width in [1440,1280,1100,1024,390]:
   page=browser.new_page(viewport={'width':width,'height':1000});errors=[]
   page.on('pageerror',lambda e:errors.append(str(e)))
@@ -77,6 +77,11 @@ with sync_playwright() as p:
   page.evaluate('ModernoDesktopShell.setEnabled(false)')
   assert page.locator('#desktop-header').count()==0,'explicit rollback must restore the old UI'
   page.evaluate('ModernoDesktopShell.setEnabled(true)')
+  if width>=1100:
+   assert page.locator('.desktop-row').bounding_box()['width']==64,'Desktop rail must start collapsed'
+   assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).get_attribute('aria-expanded')=='false'
+   page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
+   settle_header(page)
   if width<1100:
    assert page.locator('#desktop-header').count()==0
    assert page.locator('aside.sidebar .sb-head').evaluate('(el)=>el.innerHTML')==logos
@@ -120,16 +125,17 @@ with sync_playwright() as p:
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
    assert rect['width']>=180 and rect['height']==36,rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
-  assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades]):not([data-view=conversaciones]):not([data-view=plantillas])').count()-len(finance)
+  assert page.locator('#desktop-primary>.desktop-link').count()==7,'Keep the 7 existing primary desktop actions'
   assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0
-  assert page.locator('#desktop-header [data-desktop-view=plantillas],#desktop-header [data-desktop-view=conversaciones]').count()==0
+  assert page.locator('#desktop-header [data-desktop-view=conversaciones]').count()==0
+  assert page.locator('#desktop-header .desktop-discover [data-desktop-view=plantillas]').count()==1,'Templates stay in the dedicated discovery section'
   assert page.locator('.desktop-nav [data-desktop-view]:is([data-desktop-view=automatizaciones],[data-desktop-view=plugins],[data-desktop-view=integraciones])').count()==0
   assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['automatizaciones','plugins','integraciones']
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
-  assert page.locator('.project-tabs').bounding_box()['y']>850
-  keys=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
+  assert 72<=page.locator('.project-tabs').bounding_box()['y']<=94,'Project tools should be fixed directly below the global header'
+  keys=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','cliente','utilidades']
   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.id.replace("project-tab-",""))')==keys
-  assert page.locator('.project-tabs [role=separator]').count()==5
+  assert page.locator('.project-tabs [role=separator]').count()==6
   dock=page.locator('.project-tabs').bounding_box()
   assert dock['x']>0 and dock['x']+dock['width']<width
   assert page.locator('.project-tabs').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
@@ -141,7 +147,7 @@ with sync_playwright() as p:
   page.locator('#project-tab-planos').press('End');assert page.evaluate('state.projTab')=='utilidades'
   page.locator('#project-tab-utilidades').hover()
   label=page.locator('#project-tab-utilidades .project-tab-label')
-  assert label.inner_text()=='Utilidades' and label.bounding_box()['y']<dock['y']
+  assert label.inner_text()=='Utilidades' and label.bounding_box()['y']>=dock['y']+dock['height'],'Tooltips must appear below the pinned toolbar'
   page.mouse.move(0,0);page.locator('#project-tab-utilidades').blur()
   assert label.evaluate('(e)=>getComputedStyle(e).clip')!='auto'
   # Changing only the navigation group must keep the same editor and unsaved input.
@@ -235,7 +241,7 @@ with sync_playwright() as p:
   assert page.locator('.desktop-profile').get_attribute('open') is not None
   assert page.locator('#settings-switch').get_attribute('open') is not None
   page.locator('#settings-switch>summary').press('Escape')
-  page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Ajustes',exact=True).click();assert page.evaluate('state.view')=='ajustes';assert page.locator('#desktop-header').count()==0
+  page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Ajustes',exact=True).click();assert page.evaluate('state.view')=='ajustes';assert page.locator('#desktop-header.desktop-settings-active').count()==1
   page.evaluate("go('proyecto',1)")
   page.locator('.desktop-group>summary').first.click();page.locator('.desktop-group>summary').first.press('Escape');assert page.locator('.desktop-group[open]').count()==0
   page.evaluate("_accessRole='colaborador';render()")
@@ -278,7 +284,10 @@ with sync_playwright() as p:
    assert box['x']>rail['x']+rail['width'] and box['y']>=11 and box['y']+box['height']<=height-11,(box,rail,height)
    assert toggle['y']+toggle['height']<=height,(toggle,height)
    for control in page.locator('.desktop-nav .desktop-icon-only:visible').all():
-    rect=control.bounding_box();assert rect['y']>=0 and rect['y']+rect['height']<=height and rect['height']>=24,(rect,height)
+    # Scrollable side rail: controls outside the clipping area must remain reachable.
+    control.scroll_into_view_if_needed()
+    rect=control.bounding_box()
+    assert rect['y']>=0 and rect['y']+rect['height']<=height+1 and rect['height']>=24,(rect,height)
    if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-short-{width}-{height}.png'),full_page=True)
    last.press('Escape')
    page.locator('.desktop-profile>summary').click()

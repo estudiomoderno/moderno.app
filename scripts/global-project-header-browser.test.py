@@ -18,7 +18,7 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official isolated server did not start')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  browser=p.chromium.launch(executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,headless=True,args=['--no-sandbox'])
   for width in [1440,1100,900,390]:
    page=browser.new_page(viewport={'width':width,'height':1000},locale='es-ES');errors=[];writes=[];external=[]
    page.on('pageerror',lambda e:errors.append(str(e)))
@@ -43,6 +43,18 @@ try:
     window.records=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes});window.baseline=records();
    }""")
    assert page.evaluate('sb===null')
+   if width>=1100:
+    toolbar=page.locator('.project-tabs').first.bounding_box()
+    winbar=page.locator('#project-window-bar').bounding_box()
+    assert 70<=toolbar['y']<=95,toolbar
+    assert toolbar['height']<=56,toolbar
+    assert winbar['y']+winbar['height']<toolbar['y'],(winbar,toolbar)
+    panel=page.locator('#project-tab-panel').first.bounding_box()
+    assert toolbar['y']+toolbar['height']<panel['y'],(toolbar,panel)
+    page.evaluate('document.querySelector(".main").scrollTop=120')
+    assert abs(page.locator('.project-tabs').first.bounding_box()['y']-toolbar['y'])<1
+    page.evaluate('document.querySelector(".main").scrollTop=0')
+    assert page.locator('.desktop-row').bounding_box()['width']==64
    if width<1100:
     expect(page.locator('#project-window-bar')).to_have_count(0)
     expect(page.locator('#desktop-header')).to_have_count(0)
@@ -82,6 +94,9 @@ try:
    page.locator('#project-window-9001').click();assert page.evaluate("state.view==='estancia'&&state.currentProject===9001&&state.currentRoom===9101")
    page.locator('#project-window-9002').click();assert page.evaluate("state.view==='proyecto'&&state.currentProject===9002&&state.projTab==='tareas'")
    page.locator('#desktop-header [data-desktop-view=agenda]').click()
+   assert rail.bounding_box()['width']==64,'The navigation must remain collapsed after changing views'
+   page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
+   page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===224')
    page.get_by_role('button',name='Comprimir menú lateral',exact=True).click();page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
    page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===64')
    assert rail.bounding_box()['width']==64 and bar.bounding_box()['x']==12

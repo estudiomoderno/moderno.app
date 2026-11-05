@@ -3,7 +3,9 @@ var ModernoDesktopShell=(()=>{
  'use strict';
  // #49 recovery gate verified: production physical backup + separate Storage inventory.
  const ENABLED=true;
- let enabled=ENABLED,header=null,collapsed=false,foldTimer=null;
+ // At every fresh app load, desktop navigation starts as a compact icon rail.
+ // The existing toggle stays fully operational for the rest of the session.
+ let enabled=ENABLED,header=null,collapsed=true,foldTimer=null;
  const moved=[],decorations=[],media=window.matchMedia('(min-width:1100px)');
  const $=s=>document.querySelector(s);
  const finance=['informes','facturas','presupuestos','contabilidad','prevision'];

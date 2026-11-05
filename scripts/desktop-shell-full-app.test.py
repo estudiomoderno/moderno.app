@@ -227,7 +227,7 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official isolated server did not start')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  browser=p.chromium.launch(executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,headless=True,args=['--no-sandbox'])
   for width in [1440,1100,390]:
    page=browser.new_page(viewport={'width':width,'height':1000});errors=[];writes=[];external=[]
    page.on('pageerror',lambda e:errors.append(str(e)))
@@ -377,6 +377,10 @@ try:
     page.evaluate("go('proyecto',9001);projTab('utilidades')")
     page.locator('#ptM2').fill('24')
     page.evaluate('window.originalCalculator=document.querySelector("#ptM2")')
+    assert page.locator('.desktop-row').bounding_box()['width']==64,'El menú de escritorio debe empezar contraído'
+    page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
+    settle_header(page)
+    assert page.locator('.desktop-row').bounding_box()['width']==224
     page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
     settle_header(page)
     page.locator('#desktop-navigation').wait_for(state='visible')
