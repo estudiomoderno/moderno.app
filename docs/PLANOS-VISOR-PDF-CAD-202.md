@@ -25,7 +25,7 @@ La conversión DWG no se activa. Si se aprueba después, habrá que elegir prove
 - DXF binario, entidades 3D, referencias externas, bloques complejos, sombreados, splines y tipografías CAD específicas pueden no representarse. El visor lo indica en vez de alterar el archivo.
 - Máximo de 50 MB, 100.000 entidades y 1.500.000 pares DXF en la vista local.
 - Las mediciones calibradas no se activan en esta fase. El panel reserva el lugar sin guardar ni calcular medidas falsas.
-- Los SVG definitivos de la nueva barra aún no estaban adjuntos al entorno el 5 de noviembre de 2026. Los trazos actuales son los iconos provisionales ya presentes en el visor; deben sustituirse por los archivos del propietario antes de cerrar la revisión visual definitiva.
+- La barra utiliza los ocho SVG definitivos entregados por el propietario: Capas, Comentar, Desplazar, Dibujar, Flecha, Medir y los dos controles de zoom. El botón Medir se presenta desactivado hasta que exista una implementación calibrada real.
 
 ## Comprobación y reversión
 

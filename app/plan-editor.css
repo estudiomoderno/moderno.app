@@ -47,7 +47,7 @@
 .plan-toolbox{position:static;display:flex;align-items:center;gap:8px;transform:none;width:auto;max-width:none;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;flex:none}
 .plan-palette,.plan-toolbar{padding:0;border:0;overflow:visible;justify-content:flex-start;gap:2px;flex:none}.plan-palette{padding-right:7px;border-right:1px solid var(--ui-line,#d8d3cc)}
 .plan-navigation{position:static;max-width:none;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;flex:none}
-.plan-editor .plan-icon-button{flex-basis:34px;width:34px;height:34px;min-height:34px;padding:7px;border-radius:8px}.plan-icon-button svg{width:19px;height:19px}
+.plan-editor .plan-icon-button{flex-basis:34px;width:34px;height:34px;min-height:34px;padding:7px;border-radius:8px}.plan-icon-button svg,.plan-icon-button img{display:block;width:19px;height:19px;object-fit:contain}.plan-icon-button:disabled img{opacity:.42}
 .plan-editor .plan-color{flex-basis:25px;width:25px;height:25px;padding:3px}.plan-color span{width:17px;height:17px}.plan-editor input[type=color]{width:25px;height:25px}.plan-editor input[type=range]{width:72px;min-width:72px;margin:0 4px}
 .plan-viewport{top:56px;left:0;right:0;bottom:0;padding:24px;background:#eef0ef;transition:left .2s ease,right .2s ease}
 .plan-editor:has(.plan-pages-panel.is-open) .plan-viewport{left:220px}.plan-editor:has(.plan-info-panel.is-open) .plan-viewport{right:260px}

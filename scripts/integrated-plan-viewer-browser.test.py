@@ -1,6 +1,7 @@
 """Offline visual proof for #202. Uses only fictitious PDF/DXF files."""
 import pathlib
 import sys
+from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
 
 repo=pathlib.Path(__file__).resolve().parents[1]
@@ -155,9 +156,10 @@ with sync_playwright() as p:
  page=browser.new_page(viewport={'width':1440,'height':900},device_scale_factor=1)
  errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
  def route(r):
-  name=r.request.url.rsplit('/',1)[-1]
+  parsed=urlparse(r.request.url);name=pathlib.PurePosixPath(parsed.path).name
   if name=='index.html':r.fulfill(body='<meta name="viewport" content="width=device-width"><body></body>',content_type='text/html')
   elif name in ['pdf.min.js','pdf.worker.min.js']:r.fulfill(path=str(pdfjs/name),content_type='application/javascript')
+  elif parsed.path.startswith('/brand/icons/plan-viewer/') and (repo/'app/brand/icons/plan-viewer'/name).is_file():r.fulfill(path=str(repo/'app/brand/icons/plan-viewer'/name),content_type='image/svg+xml')
   else:r.abort()
  page.route('**/*',route);page.goto('https://planos-prueba.invalid/index.html')
  page.add_style_tag(content=':root{--ink:#242424;--ink-soft:#6d706f;--white:#fff;--bg:#f4f5f4;--card:#ecefed;--ui-line:#dfe2e0}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif}.btn{border:1px solid var(--ui-line);background:#fff;border-radius:9px;padding:8px 12px;color:var(--ink)}')
@@ -170,17 +172,19 @@ with sync_playwright() as p:
   for(let n=1;n<=2;n++){const c=document.createElement('canvas');c.width=1200;c.height=760;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.strokeStyle='#252525';x.lineWidth=6;x.strokeRect(90,90,1020,560);x.lineWidth=3;x.beginPath();x.moveTo(510,90);x.lineTo(510,650);x.moveTo(90,360);x.lineTo(510,360);x.stroke();x.strokeRect(650,190,330,220);x.beginPath();x.arc(815,300,58,0,Math.PI*2);x.stroke();x.fillStyle='#252525';x.font='bold 30px Arial';x.fillText(n===1?'PLANTA GENERAL · PR-70':'PLANTA DE ILUMINACIÓN · PR-70',90,55);x.font='18px Arial';x.fillText('Documento ficticio para revisión visual',90,710);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.94));pages.push({width:c.width,height:c.height,jpeg:new Uint8Array(await blob.arrayBuffer())});}
   window.pdfSource=ModernoPlanEditor.pdf(pages);window.doc=await ModernoPlanEditor.openFile(new File([pdfSource],'PR-70 - Planta general.pdf',{type:'application/pdf'}),{pdfjs:pdfjsLib});window.model=new ModernoPlanAnnotations.Model({reference:{studyId:'moderno-prueba',projectId:'PR-70',fileId:'pdf-ficticio',revisionId:'original'},pages:doc.pages,authorize:()=>true});window.editor=await ModernoPlanEditor.mount(document.querySelector('#viewer'),{document:doc,model,filename:'PR-70 - Planta general.pdf'});
  }""")
- page.wait_for_function("document.querySelector('.plan-paper canvas').width>0");page.wait_for_timeout(350)
+ page.wait_for_function("document.querySelector('.plan-paper canvas').width>0");page.wait_for_function("[...document.querySelectorAll('.plan-icon-button img')].every(img=>img.complete&&img.naturalWidth>0)");page.wait_for_timeout(350)
  assert page.locator('.plan-viewer-bar').bounding_box()['y'] < page.locator('.plan-viewport').bounding_box()['y']
  assert page.get_by_role('button',name='Página 2').count()==1
  page.screenshot(path=str(out/'visor-pdf-202.png'),full_page=True)
  page.evaluate('editor.discard()')
  page.evaluate("""async source=>{shell('PR-70 · Planta general.dxf');window.doc=await ModernoCadViewer.open(new File([source],'PR-70 - Planta general.dxf',{type:'application/dxf'}));window.model=new ModernoPlanAnnotations.Model({reference:{studyId:'moderno-prueba',projectId:'PR-70',fileId:'dxf-ficticio',revisionId:'original'},pages:1,authorize:()=>true});window.editor=await ModernoPlanEditor.mount(document.querySelector('#viewer'),{document:doc,model,filename:'PR-70 - Planta general.dxf',readOnly:true,metadata:doc.metadata});}""",dxf)
- page.wait_for_function("document.querySelector('.plan-paper canvas').width>0");page.wait_for_timeout(350)
+ page.wait_for_function("document.querySelector('.plan-paper canvas').width>0");page.wait_for_function("[...document.querySelectorAll('.plan-icon-button img')].every(img=>img.complete&&img.naturalWidth>0)");page.wait_for_timeout(350)
  assert page.get_by_text('DXF',exact=True).count()==1
  assert page.get_by_text('Muros, Mobiliario, Cotas',exact=True).count()==1
  assert page.get_by_role('button',name='Lápiz',exact=True).count()==0
  assert page.get_by_role('button',name='Desplazar',exact=True).count()==1
+ assert page.get_by_role('button',name='Desplazar',exact=True).locator('img').get_attribute('src').endswith('/Desplazar.svg?v=202')
+ assert page.get_by_role('button',name='Medir',exact=True).is_disabled()
  page.screenshot(path=str(out/'visor-cad-dxf-202.png'),full_page=True)
  assert not errors,errors
  page.evaluate('editor.discard()');page.close();browser.close()

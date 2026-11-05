@@ -67,7 +67,7 @@ with sync_playwright() as p:
         page.get_by_role('button', name='Color Azul', exact=True).click()
         page.get_by_label('Grosor', exact=True).fill('5')
         assert page.get_by_role('button', name='Color Azul', exact=True).get_attribute('aria-pressed') == 'true'
-        assert page.get_by_role('button', name='Lápiz', exact=True).locator('svg').count() == 1
+        assert page.get_by_role('button', name='Lápiz', exact=True).locator('img').get_attribute('src').endswith('/Dibujar.svg?v=202')
         assert page.locator('.plan-selection').get_attribute('open') is None
         assert page.locator('.plan-viewer-bar').bounding_box()['width'] <= viewport['width']
         assert page.get_by_role("button",name="Lápiz",exact=True).get_attribute("aria-pressed")=="false"
