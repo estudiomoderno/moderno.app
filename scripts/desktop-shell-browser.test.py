@@ -95,7 +95,7 @@ with sync_playwright() as p:
   assert page.locator('#brandSwitch').is_hidden()
   assert page.locator('#desktop-header').evaluate('(e)=>getComputedStyle(e).position')=='fixed'
   assert page.locator('#desktop-header .desktop-context').count()==0
-  assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Proyectos','Tareas','Calendario','Agenda','Finanzas','Mail']
+  assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Proyectos','Tareas','Calendario','Agenda','Finanzas','Mail','Productos','Servicios']
   assert page.locator('#desktop-primary .desktop-icon-only>.desktop-label').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).clip==="auto")')
   brand=page.locator('.desktop-brand');background=brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')
   brand.hover();assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background
@@ -125,7 +125,7 @@ with sync_playwright() as p:
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
    assert rect['width']>=180 and rect['height']==36,rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
-  assert page.locator('#desktop-primary>.desktop-link').count()==7,'Keep the 7 existing primary desktop actions'
+  assert page.locator('#desktop-primary>.desktop-link').count()==9,'Include separate Products and Services actions'
   assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0
   assert page.locator('#desktop-header [data-desktop-view=conversaciones]').count()==0
   assert page.locator('#desktop-header .desktop-discover [data-desktop-view=plantillas]').count()==1,'Templates stay in the dedicated discovery section'
@@ -173,14 +173,12 @@ with sync_playwright() as p:
   assert page.locator('.desktop-row').bounding_box()['height']==row['height']
   assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).get_attribute('aria-expanded')=='false'
   assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).evaluate('(e)=>document.activeElement===e')
-  compact_menu=page.locator('.desktop-group>summary').first
-  compact_menu.click()
-  compact_popup=page.locator('.desktop-group[open]>.desktop-menu')
-  compact_popup.wait_for(state='visible')
-  popup_bounds=compact_popup.bounding_box()
-  assert popup_bounds['x']>=64 and popup_bounds['x']+popup_bounds['width']<width,popup_bounds
-  compact_menu.press('Escape')
-  assert compact_menu.evaluate('(e)=>document.activeElement===e')
+  products=page.locator('#desktop-primary>[data-desktop-view=biblioteca]')
+  services=page.locator('#desktop-primary>[data-desktop-view=catalogo]')
+  assert products.get_attribute('aria-label')=='Productos'
+  assert services.get_attribute('aria-label')=='Servicios'
+  assert products.evaluate("el=>el.nextElementSibling.dataset.desktopView==='catalogo'")
+  assert page.locator('.desktop-group').count()==0
   assert page.evaluate('document.querySelector("#view input")===originalDraft')
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.locator('.desktop-profile>summary').click()
@@ -243,7 +241,9 @@ with sync_playwright() as p:
   page.locator('#settings-switch>summary').press('Escape')
   page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Ajustes',exact=True).click();assert page.evaluate('state.view')=='ajustes';assert page.locator('#desktop-header.desktop-settings-active').count()==1
   page.evaluate("go('proyecto',1)")
-  page.locator('.desktop-group>summary').first.click();page.locator('.desktop-group>summary').first.press('Escape');assert page.locator('.desktop-group[open]').count()==0
+  products.click();assert page.evaluate('state.view')=='biblioteca'
+  services.click();assert page.evaluate('state.view')=='catalogo'
+  page.evaluate("go('proyecto',1)")
   page.evaluate("_accessRole='colaborador';render()")
   assert page.locator('#desktop-header [data-desktop-view=contabilidad]').is_hidden()
   assert page.locator('.desktop-finance').is_hidden()
@@ -275,13 +275,11 @@ with sync_playwright() as p:
   for height in [500,400]:
    page.set_viewport_size({'width':width,'height':height})
    page.wait_for_function('Math.abs(document.querySelector(".desktop-row").getBoundingClientRect().height-innerHeight)<0.5&&!document.querySelector(".desktop-row").getAnimations().some(a=>a.playState==="running")')
-   last=page.locator('.desktop-group>summary').first
-   last.click()
-   menu=page.locator('.desktop-group[open]>.desktop-menu');menu.wait_for(state='visible')
-   page.wait_for_function('(()=>{const r=document.querySelector(".desktop-group[open]>.desktop-menu").getBoundingClientRect();return r.top>=11&&r.bottom<=innerHeight-11})()')
-   box=menu.bounding_box();rail=page.locator('.desktop-row').bounding_box();toggle=page.locator('.desktop-toggle').bounding_box()
+   last=page.locator('#desktop-primary>[data-desktop-view=catalogo]')
+   last.scroll_into_view_if_needed()
+   box=last.bounding_box();rail=page.locator('.desktop-row').bounding_box();toggle=page.locator('.desktop-toggle').bounding_box()
    assert abs(rail['height']-height)<0.5,(rail,height)
-   assert box['x']>rail['x']+rail['width'] and box['y']>=11 and box['y']+box['height']<=height-11,(box,rail,height)
+   assert box['y']>=0 and box['y']+box['height']<=height,(box,height)
    assert toggle['y']+toggle['height']<=height,(toggle,height)
    for control in page.locator('.desktop-nav .desktop-icon-only:visible').all():
     # Scrollable side rail: controls outside the clipping area must remain reachable.
@@ -289,7 +287,6 @@ with sync_playwright() as p:
     rect=control.bounding_box()
     assert rect['y']>=0 and rect['y']+rect['height']<=height+1 and rect['height']>=24,(rect,height)
    if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-short-{width}-{height}.png'),full_page=True)
-   last.press('Escape')
    page.locator('.desktop-profile>summary').click()
    box=page.locator('.desktop-profile>.desktop-menu').bounding_box()
    assert box['y']>=0 and box['y']+box['height']<=height-12,(box,height)

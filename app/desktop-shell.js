@@ -9,7 +9,7 @@ var ModernoDesktopShell=(()=>{
  const moved=[],decorations=[],media=window.matchMedia('(min-width:1100px)');
  const $=s=>document.querySelector(s);
  const finance=['informes','facturas','presupuestos','contabilidad','prevision'];
- const navigation=['home','proyectos','workspace','calendario','agenda',['Finanzas',finance,'contabilidad'],'mail',['Productos y servicios',['biblioteca','catalogo'],'catalogo']];
+ const navigation=['home','proyectos','workspace','calendario','agenda',['Finanzas',finance,'contabilidad'],'mail','biblioteca','catalogo'];
  const originals=()=>[...document.querySelectorAll('aside.sidebar .nav-item[data-view]')];
  const original=view=>originals().find(b=>b.dataset.view===view);
  const available=view=>!_accessLoading&&canView(view)&&!!original(view);
@@ -17,7 +17,7 @@ var ModernoDesktopShell=(()=>{
   const source=original(view);if(!source)return null;
   const icon=source.querySelector('.ico');if(icon){
    const copy=icon.cloneNode(true);copy.setAttribute('aria-hidden','true');
-   if(source.dataset.newIcon==='true'){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/menu-icons/${view}.svg?v=200')`);}
+   if(source.dataset.newIcon==='true'){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/menu-icons/${view}.svg?v=201')`);}
    return copy;
   }
   return null;
