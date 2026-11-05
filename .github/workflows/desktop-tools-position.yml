@@ -19,6 +19,13 @@ jobs:
     name: Escritorio con proyectos ficticios en Chromium
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        script:
+          - desktop-shell-browser.test.py
+          - global-project-header-browser.test.py
+          - desktop-shell-full-app.test.py
     steps:
       - name: Obtener codigo sin permisos de escritura
         uses: actions/checkout@v4
@@ -36,9 +43,5 @@ jobs:
         run: |
           python -m pip install playwright
           python -m playwright install --with-deps chromium
-      - name: Comprobar lateral, barra de herramientas y foco
-        run: python scripts/desktop-shell-browser.test.py
-      - name: Comprobar cabecera global, dock fijo, panel y permisos
-        run: python scripts/global-project-header-browser.test.py
-      - name: Comprobar navegacion real de fixtures, cambios sin guardar y movil
-        run: python scripts/desktop-shell-full-app.test.py
+      - name: Probar interfaz con datos ficticios, sin red externa ni escrituras
+        run: python scripts/${{ matrix.script }}
