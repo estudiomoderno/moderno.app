@@ -291,17 +291,17 @@ function shoppingRoomDelete(pid,rid,onCancel,guard){
 }
 function projectTabsHtml(current){
  const groups=[
-  [['proyecto','Inicio','home']],
-  [['planos','Planos','planos'],['obra','Obra','tab_obra'],['diario','Diario de obra','tab_archivos'],['calobra','Calendario de obra','calendario']],
-  [['tareas','Tareas','tab_tareas'],['listas','Compras','tab_listas']],
-  [['fin','Economía','finanzas'],['archivos','Documentos','tab_archivos']],
-  [['ai','AI','ai'],['conversaciones','Conversaciones','tab_chat']],
-  [['cliente','Portal del cliente','portal']],
-  [['utilidades','Utilidades','tools']]
- ].map(group=>group.filter(([key])=>(key!=='fin'||myAccessLevel()!=='colab')&&(!['utilidades','conversaciones'].includes(key)||canView(key)))).filter(group=>group.length);
- const first=groups.flat()[0][0],selected=groups.flat().some(([key])=>key===current)?current:first;
- const special={diario:'<path d="M5 3h14v18H5zM8 7h8M8 11h8M8 15h4M3 7h4M3 12h4M3 17h4"/>',planos:'<path d="M3 3h18v18H3zM3 10h8V3m0 7v5h10M8 21v-6H3"/>',ai:'<path d="m12 3 2.6 6.4L21 12l-6.4 2.6L12 21l-2.6-6.4L3 12l6.4-2.6ZM20 3v4m-2-2h4"/>'};
- return `<div class="project-tabs" role="tablist" aria-label="Secciones del proyecto">${groups.map(group=>group.map(([key,label,icon])=>`<button type="button" role="tab" id="project-tab-${key}" aria-controls="project-tab-panel" aria-selected="${current===key}" tabindex="${selected===key?0:-1}" class="${current===key?'on':''}" aria-label="${label}" onclick="projTab('${key}')">${key==='fin'?projectFinanceIcon():special[key]?`<svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${special[key]}</svg>`:ico(icon)}<span class="project-tab-label" aria-hidden="true">${label}</span></button>`).join('')).join('<span class="project-tab-separator" role="separator" aria-orientation="vertical"></span>')}</div>`;
+  [['tareas','Tareas','Tareas'],['listas','Compras','Compras'],['ai','AI Asistente','Ai Asistente'],['conversaciones','Conversaciones','Conversacion']],
+  [['planos','Planos','Planos'],['obra','Obra','Obra'],['diario','Diario','Diario'],['calobra','Calendario','Calendario']],
+  [['estudio','Estudio de Diseño','Estudio'],['pres','Presentaciones','Presentaciones'],['mediciones','Mediciones','Mediciones'],['utilidades','Utilidades','Utilidades']],
+  [['fin','Finanzas','Finanzas'],['cliente','Portal Cliente','Portal Cliente'],['archivos','Documentos','Documentos'],['ajustes','Ajustes (Editar)','Ajustes']]
+ ].map(group=>group.map((item,index)=>[...item,index]).filter(([key])=>(key!=='fin'||myAccessLevel()!=='colab')&&(!['utilidades','conversaciones'].includes(key)||canView(key)))).filter(group=>group.length);
+ const selected=groups.flat().some(([key])=>key===current)?current:groups[0][0][0];
+ return `<div class="project-tabs project-dock" role="tablist" aria-label="Secciones del proyecto">${groups.map((group,groupIndex)=>group.map(([key,label,icon,index])=>{
+  const unavailable=['estudio','mediciones'].includes(key),edit=key==='ajustes';
+  const action=unavailable?'':edit?'customizeModal(state.currentProject)':`projTab('${key}')`;
+  return `<button type="button" style="grid-column:${groupIndex*3+index%2+1};grid-row:${Math.floor(index/2)+1};--label-rise:${index<2?12:44}px" role="${edit?'button':'tab'}" id="project-tab-${key}" ${edit?'aria-haspopup="dialog"':`aria-controls="project-tab-panel" aria-selected="${current===key}"`} ${unavailable?'aria-disabled="true"':''} tabindex="${edit||selected===key?0:-1}" class="${current===key?'on':''}" aria-label="${label}" title="${label}${unavailable?' — No disponible todavía':''}" onclick="${action}"><img src="/brand/project-icons/${encodeURIComponent(icon)}.svg" alt="" aria-hidden="true" width="24" height="24"><span class="project-tab-label" aria-hidden="true">${label}${unavailable?' — No disponible todavía':''}</span></button>`;
+ }).join('')).join('<span class="project-tab-separator" role="separator" aria-orientation="vertical"></span>')}</div>`;
 }
 function projectDrawerOpen(){
  mb.classList.add('project-drawer');ov.classList.add('project-drawer-overlay');
@@ -355,7 +355,7 @@ if(typeof document!=='undefined'){
  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('.shopping-filter-control[open]')){event.preventDefault();shoppingRoomFilterClose(true);}});
  document.addEventListener('keydown',event=>{
   const tab=event.target.closest?.('.project-tabs [role="tab"]');if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
-  event.preventDefault();const buttons=[...tab.parentElement.querySelectorAll('[role="tab"]')],index=buttons.indexOf(tab);
+  event.preventDefault();const buttons=[...tab.parentElement.querySelectorAll('[role="tab"]:not([aria-disabled="true"])')],index=buttons.indexOf(tab);
   const next=event.key==='Home'?0:event.key==='End'?buttons.length-1:(index+(event.key==='ArrowRight'?1:-1)+buttons.length)%buttons.length;
   const id=buttons[next].id;buttons[next].click();document.getElementById(id)?.focus();
  });
@@ -608,7 +608,7 @@ var ModernoTaskPhaseEditor=(()=>{
  return {open,save,remove};
 })();
 
-function projectSettingsHtml(p){return `<div class="project-options-control"><details class="project-options"><summary class="btn btn-ghost project-options-trigger" aria-label="Opciones del proyecto" title="Opciones del proyecto">${projectMoreIcon()}</summary><div class="project-options-body">
+function projectSettingsHtml(p){return `<div class="project-options-control"><details class="project-options"><summary class="btn btn-ghost project-options-trigger" aria-label="Opciones del proyecto" title="Opciones del proyecto">${projectMoreIcon()}</summary><div class="project-options-body"><button class="btn btn-ghost" onclick="projTab('proyecto')">Inicio del proyecto</button>
       <button class="btn btn-ghost" onclick="customizeModal(${p.id})">${ico('editar')} Editar datos</button>
       <button class="btn btn-ghost" onclick="customizeModal(${p.id},'appearance')">${ico('personalizar')} Personalizar proyecto</button>
       <button id="project-client-access" class="btn btn-ghost" onclick="projTab('cliente')">${ico('portal')} Portal del cliente</button>

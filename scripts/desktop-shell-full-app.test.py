@@ -343,7 +343,7 @@ try:
     page.locator('#page-route-bar').get_by_role('button',name='Inicio',exact=True).click()
     assert page.evaluate('state.view')=='home'
    page.evaluate("go('proyecto',9001)")
-   keys=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
+   keys=['tareas','listas','ai','conversaciones','planos','obra','diario','calobra','pres','utilidades','fin','archivos']
    for key in keys+['cliente']:page.evaluate('(key)=>projTab(key)',key)
    page.evaluate("window.fixtureRecords=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes,library:state.library,docs:state.docs});window.fixtureBaseline=fixtureRecords()")
    for view in routes:
@@ -352,7 +352,7 @@ try:
     else:page.evaluate('(view)=>document.querySelector(`aside.sidebar .nav-item[data-view="${view}"]`).click()',view)
     assert page.evaluate('state.view')==view
    page.evaluate("go('proyecto',9001)")
-   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Planos','Obra','Diario de obra','Calendario de obra','Tareas','Compras','Economía','Documentos','AI','Conversaciones','Portal del cliente','Utilidades']
+   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Tareas','Compras','AI Asistente','Conversaciones','Planos','Obra','Diario','Calendario','Estudio de Diseño','Presentaciones','Mediciones','Utilidades','Finanzas','Portal Cliente','Documentos']
    for key in keys:
     page.locator('#project-tab-'+key).click(force=width<1100)
     assert page.locator('#project-tab-'+key).get_attribute('aria-selected')=='true'
@@ -404,7 +404,7 @@ try:
    page.locator('[data-project-settings-trigger]').click()
    page.get_by_role('menuitem',name='Portal del cliente',exact=True).click()
    assert page.locator('#project-tab-panel> .client-project-editor').is_visible()
-   assert page.locator('.project-tabs [tabindex="0"]').count()==1,'Portal must keep dock reachable by keyboard'
+   assert page.locator('.project-tabs [role=tab][tabindex="0"]').count()==1,'Portal must keep dock reachable by keyboard'
    assert page.evaluate('fixtureRecords()===fixtureBaseline'),'Navigation changed stored records'
    if width>=1100:
     assert page.locator('#desktop-header .logo').is_hidden()

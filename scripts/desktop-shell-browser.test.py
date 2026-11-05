@@ -132,22 +132,22 @@ with sync_playwright() as p:
   assert page.locator('.desktop-nav [data-desktop-view]:is([data-desktop-view=automatizaciones],[data-desktop-view=plugins],[data-desktop-view=integraciones])').count()==0
   assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['automatizaciones','plugins','integraciones']
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
-  assert 72<=page.locator('.project-tabs').bounding_box()['y']<=94,'Project tools should be fixed directly below the global header'
-  keys=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','cliente','utilidades']
-  assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.id.replace("project-tab-",""))')==keys
-  assert page.locator('.project-tabs [role=separator]').count()==6
+  assert page.locator('.project-tabs').bounding_box()['y']>900,'Project tools should float at the bottom'
+  keys=['tareas','listas','ai','conversaciones','planos','obra','diario','calobra','pres','utilidades','fin','cliente','archivos']
+  assert page.locator('.project-tabs [role=tab]:not([aria-disabled=true])').evaluate_all('(bs)=>bs.map(b=>b.id.replace("project-tab-",""))')==keys
+  assert page.locator('.project-tabs [role=separator]').count()==3
   dock=page.locator('.project-tabs').bounding_box()
   assert dock['x']>0 and dock['x']+dock['width']<width
   assert page.locator('.project-tabs').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
   for key in keys:
    page.locator('#project-tab-'+key).click();assert page.evaluate('state.projTab')==key
    assert page.locator('#project-tab-'+key).get_attribute('aria-selected')=='true'
-  page.locator('#project-tab-utilidades').press('Home');assert page.evaluate('state.projTab')=='proyecto'
-  page.locator('#project-tab-proyecto').press('ArrowRight');assert page.evaluate('state.projTab')=='planos'
-  page.locator('#project-tab-planos').press('End');assert page.evaluate('state.projTab')=='utilidades'
+  page.locator('#project-tab-utilidades').press('Home');assert page.evaluate('state.projTab')=='tareas'
+  page.locator('#project-tab-tareas').press('ArrowRight');assert page.evaluate('state.projTab')=='listas'
+  page.locator('#project-tab-planos').press('End');assert page.evaluate('state.projTab')=='archivos'
   page.locator('#project-tab-utilidades').hover()
   label=page.locator('#project-tab-utilidades .project-tab-label')
-  assert label.inner_text()=='Utilidades' and label.bounding_box()['y']>=dock['y']+dock['height'],'Tooltips must appear below the pinned toolbar'
+  assert label.inner_text()=='Utilidades' and label.bounding_box()['y']<dock['y'],'Tooltips must appear above the dock'
   page.mouse.move(0,0);page.locator('#project-tab-utilidades').blur()
   assert label.evaluate('(e)=>getComputedStyle(e).clip')!='auto'
   # Changing only the navigation group must keep the same editor and unsaved input.
