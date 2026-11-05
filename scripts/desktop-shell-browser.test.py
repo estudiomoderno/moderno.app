@@ -77,6 +77,11 @@ with sync_playwright() as p:
   page.evaluate('ModernoDesktopShell.setEnabled(false)')
   assert page.locator('#desktop-header').count()==0,'explicit rollback must restore the old UI'
   page.evaluate('ModernoDesktopShell.setEnabled(true)')
+  if width>=1100:
+   assert page.locator('.desktop-row').bounding_box()['width']==64,'Desktop rail must start collapsed'
+   assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).get_attribute('aria-expanded')=='false'
+   page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
+   settle_header(page)
   if width<1100:
    assert page.locator('#desktop-header').count()==0
    assert page.locator('aside.sidebar .sb-head').evaluate('(el)=>el.innerHTML')==logos
@@ -126,7 +131,7 @@ with sync_playwright() as p:
   assert page.locator('.desktop-nav [data-desktop-view]:is([data-desktop-view=automatizaciones],[data-desktop-view=plugins],[data-desktop-view=integraciones])').count()==0
   assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['automatizaciones','plugins','integraciones']
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
-  assert page.locator('.project-tabs').bounding_box()['y']>850
+  assert 72<=page.locator('.project-tabs').bounding_box()['y']<=94,'Project tools should be fixed directly below the global header'
   keys=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.id.replace("project-tab-",""))')==keys
   assert page.locator('.project-tabs [role=separator]').count()==5
@@ -141,7 +146,7 @@ with sync_playwright() as p:
   page.locator('#project-tab-planos').press('End');assert page.evaluate('state.projTab')=='utilidades'
   page.locator('#project-tab-utilidades').hover()
   label=page.locator('#project-tab-utilidades .project-tab-label')
-  assert label.inner_text()=='Utilidades' and label.bounding_box()['y']<dock['y']
+  assert label.inner_text()=='Utilidades' and label.bounding_box()['y']>=dock['y']+dock['height'],'Tooltips must appear below the pinned toolbar'
   page.mouse.move(0,0);page.locator('#project-tab-utilidades').blur()
   assert label.evaluate('(e)=>getComputedStyle(e).clip')!='auto'
   # Changing only the navigation group must keep the same editor and unsaved input.
