@@ -17,7 +17,7 @@ var ModernoDesktopShell=(()=>{
   const source=original(view);if(!source)return null;
   const icon=source.querySelector('.ico');if(icon){
    const copy=icon.cloneNode(true);copy.setAttribute('aria-hidden','true');
-   if(source.dataset.newIcon==='true'){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/menu-icons/${view}.svg')`);}
+   if(source.dataset.newIcon==='true'){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/menu-icons/${view}.svg?v=200')`);}
    return copy;
   }
   return null;
@@ -34,6 +34,7 @@ var ModernoDesktopShell=(()=>{
   const source=document.querySelector('aside.sidebar [data-discover="documentation"]');if(!source)return null;
   const b=source.cloneNode(true);b.className='desktop-link desktop-icon-only';
   for(const child of [...b.childNodes])if(child.nodeType===Node.TEXT_NODE)child.remove();
+  const icon=b.querySelector('.ico');if(icon){icon.classList.add('desktop-mask');icon.style.setProperty('--desktop-icon',"url('/brand/menu-icons/documentation.svg?v=200')");}
   label(b,'Documentación');return b;
  }
  function move(node,target){

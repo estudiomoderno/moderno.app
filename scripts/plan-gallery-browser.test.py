@@ -64,6 +64,10 @@ try:
    assert page.locator('[data-collection=obraPlanos][data-index="1"] canvas').evaluate('(c)=>c.width>0&&c.width<=480&&c.height<=320')
    page.locator('[data-collection=obraPlanos][data-index="2"]').scroll_into_view_if_needed()
    expect(page.locator('[data-collection=obraPlanos][data-index="2"]')).to_have_text('Vista previa no disponible')
+   assert page.evaluate("""()=>{const add=document.querySelector('.project-file-add').getBoundingClientRect();return [...document.querySelectorAll('.plan-preview')].every(el=>{const r=el.getBoundingClientRect();return Math.abs(r.width-add.width)<1&&Math.abs(r.height-add.height)<1})}""")
+   if width>=1100:
+    for name in ['home','proyectos','workspace','agenda','contabilidad','mail','catalogo','biblioteca','plantillas','tutoriales','documentation']:
+     assert page.locator('#desktop-header .desktop-mask').evaluate_all("(nodes,name)=>nodes.some(n=>getComputedStyle(n).maskImage.includes('/'+name+'.svg?v=200'))",name),name
    assert page.evaluate('JSON.stringify(state.projects)===beforePlans')
    page.get_by_role('button',name='Abrir Planta definitiva.png',exact=True).click()
    expect(page.locator('#modalBox').get_by_role('link',name='↓ Descargar')).to_be_visible()
