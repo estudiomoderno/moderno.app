@@ -125,9 +125,10 @@ with sync_playwright() as p:
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
    assert rect['width']>=180 and rect['height']==36,rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
-  assert page.locator('#desktop-header [data-desktop-view]').count()==page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades]):not([data-view=conversaciones]):not([data-view=plantillas])').count()-len(finance)
+  assert page.locator('#desktop-primary>.desktop-link').count()==7,'Keep the 7 existing primary desktop actions'
   assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0
-  assert page.locator('#desktop-header [data-desktop-view=plantillas],#desktop-header [data-desktop-view=conversaciones]').count()==0
+  assert page.locator('#desktop-header [data-desktop-view=conversaciones]').count()==0
+  assert page.locator('#desktop-header .desktop-discover [data-desktop-view=plantillas]').count()==1,'Templates stay in the dedicated discovery section'
   assert page.locator('.desktop-nav [data-desktop-view]:is([data-desktop-view=automatizaciones],[data-desktop-view=plugins],[data-desktop-view=integraciones])').count()==0
   assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['automatizaciones','plugins','integraciones']
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
