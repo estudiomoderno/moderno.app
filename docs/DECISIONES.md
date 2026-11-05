@@ -1,5 +1,14 @@
 # Decisiones de TALLER
 
+## 2026-11-05 — Herramientas del proyecto fijas arriba y lateral contraído al abrir
+
+El propietario marca en rojo la franja horizontal inmediatamente debajo de las pestañas globales de un proyecto (captura de «Planos») y solicita **mover allí, arriba y fija, la barra de herramientas que estaba abajo**. También establece que **la barra del menú lateral de escritorio debe empezar contraída al cargar Moderno.app**, con expansión manual disponible como hasta ahora.
+
+Se modifica únicamente la disposición UI en escritorio: dock real en franja superior bajo las pestañas globales, tooltips hacia abajo y espacio reservado al contenido para no tapar Planos u otras secciones; lateral de 64 px inicialmente sin borrar el estado elegido manualmente al navegar. Conservar controles e IDs, permisos, navegación, roles, pestañas globales, archivos y datos. Tablet/móvil no se modifican. **Cambio reversible de UI, autorizado a publicar tras pruebas y verificación** conforme a AGENTS.md; nada de migraciones ni escrituras de datos reales.
+
+[Encargo #194](https://github.com/estudiomoderno/moderno.app/issues/194) · [Diseño y comprobaciones](DOCK-PROYECTO-ARRIBA-2026-11-05.md).
+
+
 ## 2026-11-04 — Corrección de Compacta según captura real de referencia
 
 El propietario compara **dos imágenes**, la versión Compacta publicada en #190 (minitarjetas de 114 px con monograma pequeño) y una **referencia de fichas amplias de gestión** con icono de carpeta, estado en cápsula, nombre destacado, filas informativas, divisor y progreso. Declara inequívocamente que la implementación **no se parece a la referencia**. Se corrige la anterior interpretación: «Compacta» es el nombre del modo, **no** la instrucción de limitar cada tarjeta a una franja diminuta.
