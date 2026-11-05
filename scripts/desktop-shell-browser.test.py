@@ -241,7 +241,7 @@ with sync_playwright() as p:
   assert page.locator('.desktop-profile').get_attribute('open') is not None
   assert page.locator('#settings-switch').get_attribute('open') is not None
   page.locator('#settings-switch>summary').press('Escape')
-  page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Ajustes',exact=True).click();assert page.evaluate('state.view')=='ajustes';assert page.locator('#desktop-header').count()==0
+  page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Ajustes',exact=True).click();assert page.evaluate('state.view')=='ajustes';assert page.locator('#desktop-header.desktop-settings-active').count()==1
   page.evaluate("go('proyecto',1)")
   page.locator('.desktop-group>summary').first.click();page.locator('.desktop-group>summary').first.press('Escape');assert page.locator('.desktop-group[open]').count()==0
   page.evaluate("_accessRole='colaborador';render()")
