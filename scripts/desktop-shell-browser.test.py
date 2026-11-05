@@ -133,9 +133,9 @@ with sync_playwright() as p:
   assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['automatizaciones','plugins','integraciones']
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
   assert 72<=page.locator('.project-tabs').bounding_box()['y']<=94,'Project tools should be fixed directly below the global header'
-  keys=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','utilidades']
+  keys=['proyecto','planos','obra','diario','calobra','tareas','listas','fin','archivos','ai','conversaciones','cliente','utilidades']
   assert page.locator('.project-tabs [role=tab]').evaluate_all('(bs)=>bs.map(b=>b.id.replace("project-tab-",""))')==keys
-  assert page.locator('.project-tabs [role=separator]').count()==5
+  assert page.locator('.project-tabs [role=separator]').count()==6
   dock=page.locator('.project-tabs').bounding_box()
   assert dock['x']>0 and dock['x']+dock['width']<width
   assert page.locator('.project-tabs').evaluate('(e)=>e.scrollWidth<=e.clientWidth')
