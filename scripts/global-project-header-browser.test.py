@@ -46,11 +46,12 @@ try:
    if width>=1100:
     toolbar=page.locator('.project-tabs').first.bounding_box()
     winbar=page.locator('#project-window-bar').bounding_box()
-    assert 70<=toolbar['y']<=95,toolbar
-    assert toolbar['height']<=56,toolbar
+    assert 900<=toolbar['y']<=928,toolbar
+    assert toolbar['height']==72,toolbar
     assert winbar['y']+winbar['height']<toolbar['y'],(winbar,toolbar)
     panel=page.locator('#project-tab-panel').first.bounding_box()
-    assert toolbar['y']+toolbar['height']<panel['y'],(toolbar,panel)
+    assert panel['y']<toolbar['y'],(toolbar,panel)
+    assert float(page.locator('.main').evaluate('(e)=>getComputedStyle(e).paddingBottom').removesuffix('px'))>=104
     page.evaluate('document.querySelector(".main").scrollTop=120')
     assert abs(page.locator('.project-tabs').first.bounding_box()['y']-toolbar['y'])<1
     page.evaluate('document.querySelector(".main").scrollTop=0')
