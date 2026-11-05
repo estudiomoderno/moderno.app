@@ -72,13 +72,15 @@
  #desktop-header .study-settings-collapsed{display:none!important}
  #desktop-header .settings-popup{position:fixed;width:240px}
  /* Real project tabs keep IDs, roving keyboard focus, handlers and the panel relationship. */
- html body.desktop-shell:not(.portalmode) .project-tabs{position:fixed;left:calc((100vw + var(--desktop-sidebar-width))/2);bottom:24px;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:4px;width:max-content;max-width:calc(100vw - var(--desktop-sidebar-width) - 48px);overflow:visible;padding:7px 12px;margin:0;border:1px solid var(--ui-line);background:var(--app-surface,var(--panel));border-radius:30px;box-shadow:var(--shadow)}
+ html body.desktop-shell:not(.portalmode) .project-tabs{position:fixed;left:calc((100vw + var(--desktop-sidebar-width))/2);top:calc(var(--app-header-height,56px) + 21px);bottom:auto;transform:translateX(-50%);z-index:70;display:flex;align-items:center;gap:4px;width:max-content;max-width:calc(100vw - var(--desktop-sidebar-width) - 48px);overflow:visible;padding:4px 10px;margin:0;border:1px solid var(--ui-line);background:var(--app-surface,var(--panel));border-radius:24px;box-shadow:0 3px 14px #0000000d}
  html body.desktop-shell:not(.portalmode) .project-tab-separator{height:28px;margin:0 5px;background:var(--ui-line)}
- html body.desktop-shell:not(.portalmode) .project-tabs [role=tab]{width:44px;height:44px;flex:0 0 44px;padding:0;margin:0;border-radius:12px;border:0;background:transparent;transform:none}
+  /* Reserve space under the pinned dock without shifting non-project pages. */
+  html body.desktop-shell.global-project-header:not(.portalmode):has(#view .project-tabs) .main{padding-top:128px!important;scroll-padding-top:128px!important}
+ html body.desktop-shell:not(.portalmode) .project-tabs [role=tab]{width:36px;height:36px;flex:0 0 36px;padding:0;margin:0;border-radius:10px;border:0;background:transparent;transform:none}
  html body.desktop-shell:not(.portalmode) .project-tabs [role=tab].on{background:var(--app-selected);color:var(--app-selected-text)}
  html body.desktop-shell:not(.portalmode) .project-tabs [role=tab]::before,html body.desktop-shell:not(.portalmode) .project-tabs [role=tab]::after{display:none}
  html body.desktop-shell:not(.portalmode) .project-tabs [role=tab]:hover:not(.on){background:var(--app-control)}
- html body.desktop-shell:not(.portalmode) .project-tabs [role=tab]:is(:hover,:focus-visible) .project-tab-label{clip:auto;width:max-content;height:auto;max-width:240px;white-space:nowrap;overflow:visible;bottom:calc(100% + 16px);left:50%;transform:translateX(-50%);padding:7px 10px;border-radius:9px;background:var(--app-selected);color:var(--app-selected-text);font-size:12px;pointer-events:none;animation:projectDockLabel 120ms ease-out}
+ html body.desktop-shell:not(.portalmode) .project-tabs [role=tab]:is(:hover,:focus-visible) .project-tab-label{clip:auto;width:max-content;height:auto;max-width:240px;white-space:nowrap;overflow:visible;bottom:auto;top:calc(100% + 9px);left:50%;transform:translateX(-50%);padding:7px 10px;border-radius:9px;background:var(--app-selected);color:var(--app-selected-text);font-size:12px;pointer-events:none;animation:projectDockLabel 120ms ease-out}
  body.desktop-shell #syncTag{max-width:280px}
 
 }
