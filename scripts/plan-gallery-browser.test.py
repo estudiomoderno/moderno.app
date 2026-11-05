@@ -56,10 +56,16 @@ try:
    expect(page.locator('.project-plans-section .project-file-plus')).to_have_count(0)
    expect(page.locator('.project-plans-section .project-files-help')).to_have_count(0)
    expect(page.locator('.project-plans-section h2')).to_have_text('Planos')
+   with page.expect_file_chooser():
+    page.get_by_role('button',name='Subir o arrastrar plano',exact=True).click()
+   assert page.evaluate("state.view==='proyecto'&&state.projTab==='planos'")
+   assert page.get_by_role('heading',name='Historial de versiones',exact=True).count()==0
    assert page.locator('[onclick*=obraPlanosToggle]').count()==0
    expect(page.locator('[data-collection=files] img')).to_have_count(1)
    page.locator('.plan-gallery').scroll_into_view_if_needed()
+   page.locator('[data-collection=obraPlanos][data-index="0"]').scroll_into_view_if_needed()
    expect(page.locator('[data-collection=obraPlanos][data-index="0"] img')).to_have_count(1)
+   page.locator('[data-collection=obraPlanos][data-index="1"]').scroll_into_view_if_needed()
    expect(page.locator('[data-collection=obraPlanos][data-index="1"] canvas')).to_have_count(1,timeout=20000)
    assert page.locator('[data-collection=obraPlanos][data-index="1"] canvas').evaluate('(c)=>c.width>0&&c.width<=480&&c.height<=320')
    page.locator('[data-collection=obraPlanos][data-index="2"]').scroll_into_view_if_needed()
@@ -85,11 +91,44 @@ try:
    page.locator('.project-file-add').evaluate("el=>{const dt=new DataTransfer();dt.items.add(new File(['fixture'],'Arrastrado.pdf',{type:'application/pdf'}));el.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:dt}))}")
    assert page.evaluate("uploadCalls.length===2&&uploadCalls.every(c=>c.pid===9001&&c.section==='planos')")
    assert page.evaluate('JSON.stringify(state.projects)===beforePlans')
+   for collection,name in [('files','Distribución.png'),('obraPlanos','Planta definitiva.png')]:
+    page.get_by_role('button',name='Opciones de '+name,exact=True).click()
+    panel=page.locator('.plan-options-editor')
+    expect(panel).to_be_visible()
+    page.locator('#modalBox').evaluate('(el)=>Promise.all(el.getAnimations().map(a=>a.finished))')
+    bounds=page.locator('#modalBox').bounding_box()
+    assert abs(bounds['x']+bounds['width']-width)<1 and bounds['height']==height,bounds
+    before=page.evaluate('JSON.stringify(state.projects)')
+    page.get_by_label('Nombre del plano',exact=True).fill('Cambio cancelado')
+    panel.get_by_role('button',name='Cancelar',exact=True).click()
+    assert page.evaluate('JSON.stringify(state.projects)')==before
+    page.get_by_role('button',name='Opciones de '+name,exact=True).click()
+    page.get_by_label('Nombre del plano',exact=True).fill('Plano renombrado '+collection)
+    if output:page.screenshot(path=str(output/f'opciones-plano-{width}.png'))
+    panel.get_by_role('button',name='Guardar',exact=True).click()
+    renamed='Plano renombrado '+collection+'.png'
+    assert page.evaluate("args=>{const file=state.projects[0][args[0]].find(f=>f.name===args[1]);return file&&file.data===planFixtureImage}",[collection,renamed])
+    page.get_by_role('button',name='Opciones de '+renamed,exact=True).click()
+    before=page.evaluate('JSON.stringify(state.projects)')
+    page.evaluate("args=>{state.projects[0][args[0]].find(f=>f.name===args[1]).name='Nombre remoto.png'}",[collection,renamed])
+    remote=page.evaluate('JSON.stringify(state.projects)')
+    panel.get_by_role('button',name='Guardar',exact=True).click()
+    assert page.evaluate('JSON.stringify(state.projects)')==remote
+    page.evaluate("args=>{state.projects[0][args[0]].find(f=>f.name==='Nombre remoto.png').name=args[1]}",[collection,renamed])
+    page.evaluate("_accessRole='cliente'")
+    panel.get_by_role('button',name='Guardar',exact=True).click()
+    assert page.evaluate('JSON.stringify(state.projects)')==before
+    page.evaluate("_accessRole='admin'")
+    panel.get_by_role('button',name='Eliminar',exact=True).click()
+    assert page.evaluate('JSON.stringify(state.projects)')==before
+    panel.get_by_role('button',name='Confirmar eliminación',exact=True).click()
+    assert page.evaluate("args=>!state.projects[0][args[0]].some(f=>f.name===args[1])",[collection,renamed])
+   assert page.evaluate("state.projects[0].files.some(f=>f.name==='Contrato.pdf')")
    page.evaluate("_accessRole='colaborador';state.myRole='colaborador';render()")
-   expect(page.locator('.plan-gallery-open')).to_have_count(3)
+   expect(page.locator('.plan-gallery-open')).to_have_count(2)
    assert not errors,errors
    assert not writes,writes
-   print(width,'PASS: real PDF and image previews, fallback, original indices and actions, no data mutation',flush=True)
+   print(width,'PASS: upload stays in Planos, previews and options drawer, rename/cancel/confirmed deletion, stale and revoked access guards',flush=True)
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)
