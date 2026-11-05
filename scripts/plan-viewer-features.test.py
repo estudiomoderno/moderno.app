@@ -60,7 +60,7 @@ with sync_playwright() as p:
         page.wait_for_function("document.querySelector('[data-plan-page=\"2\"] canvas').width <= 140")
         if len(sys.argv)>2:
             page.screenshot(path=str(pathlib.Path(sys.argv[2])/f'pages-{width}.png'))
-        page.get_by_role('button',name='Cerrar páginas',exact=True).click()
+        page.get_by_role('button',name='Páginas',exact=True).click()
         assert page.get_by_role('button',name='Páginas',exact=True).get_attribute('aria-expanded')=='false'
         page.get_by_role('button',name='Ajustar',exact=True).click()
         page.get_by_role('button',name='Selector',exact=True).click()

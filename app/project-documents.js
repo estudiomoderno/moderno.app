@@ -1,4 +1,4 @@
-/* Document navigation and temporary annotation/export. No database or Storage writes. */
+/* Document navigation and authorized plan saving through the existing private upload flow. */
 var ModernoProjectDocuments = (() => {
   const E = value => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   const types = {pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',dxf:'application/dxf',dwg:'application/vnd.dwg'};
@@ -65,8 +65,8 @@ async function projectPlanOpen(pid,index,collection='files'){
   if(!allowed()){toast('Comprueba tu sesión y tu acceso al proyecto');return;}
   const controller=new AbortController(),dialog=document.createElement('dialog');dialog.className='project-plan-dialog';dialog.setAttribute('aria-label','Plano del proyecto');
   const header=document.createElement('header'),title=document.createElement('strong'),close=document.createElement('button'),root=document.createElement('section');
-  const actions=document.createElement('div'),download=document.createElement('a'),fullscreen=document.createElement('button');actions.className='plan-dialog-actions';download.className='btn btn-ghost';download.textContent='Descargar original';download.download=file.name||'plano';download.hidden=true;fullscreen.type='button';fullscreen.className='btn btn-ghost';fullscreen.textContent='Pantalla completa';close.type='button';close.className='btn btn-ghost';close.textContent='Cerrar';title.textContent=file.name;actions.append(download,fullscreen,close);header.append(title,actions);root.textContent='Abriendo plano…';dialog.append(header,root);document.body.append(dialog);dialog.showModal();close.focus();fullscreen.onclick=()=>document.fullscreenElement?document.exitFullscreen():dialog.requestFullscreen?.();
-  let editor=null,doc=null,closed=false,closing=false;
+  const actions=document.createElement('div'),save=document.createElement('button'),saveCopy=document.createElement('button');actions.className='plan-dialog-actions';save.type='button';save.className='btn btn-dark project-plan-save';save.textContent='Guardar';save.disabled=true;saveCopy.type='button';saveCopy.className='btn btn-ghost';saveCopy.textContent='Guardar como copia';saveCopy.disabled=true;close.type='button';close.className='project-plan-close';close.setAttribute('aria-label','Cerrar plano');close.textContent='×';title.textContent=file.name;actions.append(save,saveCopy,close);header.append(title,actions);root.textContent='Abriendo plano…';dialog.append(header,root);document.body.append(dialog);dialog.showModal();close.focus();
+  let editor=null,doc=null,closed=false,closing=false,saving=false;
   async function dismiss(force=false){
     if(closed||closing)return;closing=true;
     try{
@@ -78,20 +78,33 @@ async function projectPlanOpen(pid,index,collection='files'){
   const timer=setInterval(()=>{if(!allowed())dismiss(true);},250);
   // Opaque file scope: URLs, names and document bytes never enter a broadcast.
   crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([pid,String(file.id??index),source]))).then(hash=>{if(!closed){dialog.dataset.cursorFile=Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');document.dispatchEvent(new Event('moderno:cursor-context'));}}).catch(()=>{});
-  projectPlanDialog={dismiss};close.onclick=()=>dismiss();dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
+  async function store(copy){
+    if(closed||saving||!editor||kind==='application/dxf'||kind==='application/vnd.dwg')return;saving=true;save.disabled=true;saveCopy.disabled=true;
+    try{
+      const blob=await editor.exportPdf();if(closed||!allowed())throw Error('El plano ha cambiado mientras se preparaba');
+      const base=String(file.name||'Plano').replace(/\.[a-zA-Z0-9]{1,10}$/,'')||'Plano',siblings=project[collection]||[];let name=base+(copy?' - copia':'')+'.pdf';
+      if(copy){let n=2;while(siblings.some(item=>String(item?.name||'').toLocaleLowerCase()===name.toLocaleLowerCase()))name=base+' - copia ('+(n++)+').pdf';}
+      const data=await fileUp(new File([blob],name,{type:'application/pdf'}));if(!data)throw Error('No se pudo subir el plano');if(closed||!allowed())throw Error('El plano ha cambiado durante la subida');
+      const next={...file,id:copy?crypto.randomUUID():(file.id||crypto.randomUUID()),name,type:'application/pdf',data,when:hoyEs()};delete next.url;delete next.subiendo;delete next.signed;
+      if(copy)siblings.push(next);else{delete file.url;delete file.subiendo;delete file.signed;Object.assign(file,next);}
+      editor.markSaved();persistSoon();
+      if(copy){render();toast('Copia del plano guardada');}else{await dismiss(true);render();toast('Plano guardado');}
+    }catch(error){if(!closed)toast(error.message||'No se pudo guardar el plano');}
+    finally{saving=false;if(!closed){save.disabled=false;saveCopy.disabled=false;}}
+  }
+  projectPlanDialog={dismiss};save.onclick=()=>store(false);saveCopy.onclick=()=>store(true);close.onclick=()=>dismiss();dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
   try{
     const resolved=await fileResolveForView(file);
     if(!resolved)throw Error('Archivo no disponible; comprueba tu acceso o vuelve a subirlo desde Archivos.');
     if(closed||!allowed())return;
-    download.href=resolved;download.target='_blank';download.rel='noopener';download.hidden=false;
-    if(kind==='application/vnd.dwg')throw Error('DWG requiere conversión antes de previsualizarlo. Puedes descargar el original sin salir del proyecto.');
+    if(kind==='application/vnd.dwg')throw Error('DWG requiere conversión antes de previsualizarlo.');
     const blob=await ModernoProjectDocuments.readBlob(resolved,kind,controller.signal);
     const pdfjs=kind==='application/pdf'?await loadPdfJs():undefined;
     if(closed||!allowed())return;
     doc=kind==='application/dxf'?await ModernoCadViewer.open(blob):await ModernoPlanEditor.openFile(blob,{pdfjs});
     if(closed||!allowed()){await doc.close?.();return;}
     const model=new ModernoPlanAnnotations.Model({reference:{studyId:ESTUDIO_ID,projectId:String(pid),fileId:String(file.id??index),revisionId:'original'},pages:doc.pages,authorize:()=>!closed&&allowed()});
-    editor=await ModernoPlanEditor.mount(root,{document:doc,model,filename:file.name,readOnly:kind==='application/dxf',metadata:doc.metadata});
+    editor=await ModernoPlanEditor.mount(root,{document:doc,model,filename:file.name,readOnly:kind==='application/dxf'});save.disabled=kind==='application/dxf';saveCopy.disabled=kind==='application/dxf';
     if(closed){await editor.discard();return;}
     root.querySelector('h2').textContent=file.name;
   }catch(error){if(!closed){root.replaceChildren();const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.name==='AbortError'?'Lectura cancelada':error.message;root.append(message);}}

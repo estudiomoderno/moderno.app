@@ -33,6 +33,7 @@ try:
     r.continue_()
    page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.evaluate(setup)
    page.evaluate("""()=>{
+    ESTUDIO_ID='moderno-prueba';
     const canvas=document.createElement('canvas');canvas.width=360;canvas.height=240;
     const ctx=canvas.getContext('2d');ctx.fillStyle='white';ctx.fillRect(0,0,360,240);ctx.strokeStyle='#333';ctx.lineWidth=3;ctx.strokeRect(30,30,300,180);ctx.beginPath();ctx.moveTo(180,30);ctx.lineTo(180,150);ctx.lineTo(330,150);ctx.stroke();
     const image=canvas.toDataURL('image/png');
@@ -76,8 +77,8 @@ try:
      assert page.locator('#desktop-header .desktop-mask').evaluate_all("(nodes,name)=>nodes.some(n=>getComputedStyle(n).maskImage.includes('/'+name+'.svg?v='))",name),name
    assert page.evaluate('JSON.stringify(state.projects)===beforePlans')
    page.get_by_role('button',name='Abrir Planta definitiva.png',exact=True).click()
-   expect(page.locator('#modalBox').get_by_role('link',name='↓ Descargar')).to_be_visible()
-   page.locator('#modalBox').get_by_role('button',name='Cerrar',exact=True).click()
+   first_viewer=page.get_by_role('dialog',name='Plano del proyecto',exact=True);expect(first_viewer).to_be_visible();expect(first_viewer.get_by_role('button',name='Guardar',exact=True)).to_be_enabled()
+   first_viewer.get_by_role('button',name='Cerrar plano',exact=True).click();expect(first_viewer).to_be_hidden()
    assert page.evaluate('JSON.stringify(state.projects)===beforePlans')
    image=page.locator('[data-collection=obraPlanos][data-index="0"] img')
    image.hover()
@@ -95,14 +96,20 @@ try:
     page.get_by_role('button',name='Opciones de '+name,exact=True).click()
     panel=page.locator('.plan-options-editor')
     expect(panel).to_be_visible()
+    assert 'shopping-product-editor' in (panel.get_attribute('class') or '')
+    assert panel.get_by_role('button',name='Guardar',exact=True).evaluate("e=>getComputedStyle(e).backgroundColor")=='rgb(6, 102, 255)'
+    assert page.get_by_label('Nombre del plano',exact=True).evaluate("e=>getComputedStyle(e).borderRadius")=='8px'
+    assert panel.locator('.product-editor-footer>.btn').evaluate_all("nodes=>nodes.every(el=>{const r=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();return r.left>=p.left&&r.right<=p.right})")
     page.locator('#modalBox').evaluate('(el)=>Promise.all(el.getAnimations().map(a=>a.finished))')
     bounds=page.locator('#modalBox').bounding_box()
-    assert abs(bounds['x']+bounds['width']-width)<1 and bounds['height']==height,bounds
+    client_width=page.evaluate('document.documentElement.clientWidth')
+    assert 0<=client_width-(bounds['x']+bounds['width'])<=20 and bounds['height']==height and bounds['width']>=min(478,client_width-20),bounds
     before=page.evaluate('JSON.stringify(state.projects)')
     page.get_by_label('Nombre del plano',exact=True).fill('Cambio cancelado')
     panel.get_by_role('button',name='Cancelar',exact=True).click()
     assert page.evaluate('JSON.stringify(state.projects)')==before
     page.get_by_role('button',name='Opciones de '+name,exact=True).click()
+    page.locator('#modalBox').evaluate('(el)=>Promise.all(el.getAnimations().map(a=>a.finished))')
     page.get_by_label('Nombre del plano',exact=True).fill('Plano renombrado '+collection)
     if output:page.screenshot(path=str(output/f'opciones-plano-{width}.png'))
     panel.get_by_role('button',name='Guardar',exact=True).click()
@@ -124,11 +131,27 @@ try:
     panel.get_by_role('button',name='Confirmar eliminación',exact=True).click()
     assert page.evaluate("args=>!state.projects[0][args[0]].some(f=>f.name===args[1])",[collection,renamed])
    assert page.evaluate("state.projects[0].files.some(f=>f.name==='Contrato.pdf')")
+   page.evaluate("""()=>{state.projects[0].files.push({id:'fixture-save',name:'Guardado.png',cat:'plano',type:'image/png',data:planFixtureImage,cli:true});window.savedPlanUploads=[];window.planPersistCalls=0;fileUp=async file=>{savedPlanUploads.push({name:file.name,type:file.type,size:file.size});return 'data:application/pdf;base64,'+btoa('saved-'+savedPlanUploads.length)};persistSoon=()=>{planPersistCalls++};render();}""")
+   page.get_by_role('button',name='Abrir Guardado.png',exact=True).click()
+   viewer=page.get_by_role('dialog',name='Plano del proyecto',exact=True);expect(viewer).to_be_visible()
+   expect(viewer.get_by_role('button',name='Guardar',exact=True)).to_be_enabled()
+   expect(viewer.get_by_role('button',name='Guardar como copia',exact=True)).to_be_enabled()
+   assert viewer.get_by_role('button',name='Pantalla completa',exact=True).count()==0
+   assert viewer.get_by_role('button',name='Descargar original',exact=True).count()==0
+   assert viewer.get_by_text('Propiedades',exact=True).count()==0 and viewer.get_by_text('Mediciones',exact=True).count()==0
+   assert viewer.locator('.plan-pages-panel').get_attribute('aria-hidden')=='true'
+   assert viewer.get_by_role('button',name='Páginas',exact=True).get_attribute('aria-expanded')=='false'
+   viewer.get_by_role('button',name='Guardar como copia',exact=True).click()
+   page.wait_for_function("savedPlanUploads.length===1&&state.projects[0].files.some(f=>f.name==='Guardado - copia.pdf')")
+   assert page.evaluate("state.projects[0].files.find(f=>f.id==='fixture-save').name==='Guardado.png'")
+   viewer.get_by_role('button',name='Guardar',exact=True).click()
+   expect(viewer).to_be_hidden(timeout=20000)
+   save_result=page.evaluate("()=>{const source=state.projects[0].files.find(f=>f.id==='fixture-save'),copy=state.projects[0].files.find(f=>f.name==='Guardado - copia.pdf');return {source,copy,uploads:savedPlanUploads,persists:planPersistCalls}}");assert save_result['source']['name']=='Guardado.pdf' and save_result['source']['type']=='application/pdf' and save_result['source']['data'].endswith('c2F2ZWQtMg==') and save_result['copy']['id']!=save_result['source']['id'] and save_result['copy']['cat']=='plano' and len(save_result['uploads'])==2 and save_result['persists']>=2,save_result
    page.evaluate("_accessRole='colaborador';state.myRole='colaborador';render()")
    expect(page.locator('.plan-gallery-open')).to_have_count(2)
    assert not errors,errors
    assert not writes,writes
-   print(width,'PASS: upload stays in Planos, previews and options drawer, rename/cancel/confirmed deletion, stale and revoked access guards',flush=True)
+   print(width,'PASS: Planos sheet, private save/duplicate, collapsed pages, rename/cancel/delete and access guards',flush=True)
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)

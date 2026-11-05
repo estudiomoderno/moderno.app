@@ -44,7 +44,7 @@ with sync_playwright() as p:
           window.model=new ModernoPlanAnnotations.Model({reference:{studyId:'fake-study',projectId:'fake-project',fileId:'fake-file',revisionId:'fake-original'},pages:doc.pages,authorize:()=>true});
           window.editor=await ModernoPlanEditor.mount(document.querySelector('main'),{document:doc,model});
         }""")
-        assert page.get_by_role("button", name="Guardar", exact=True).is_disabled()
+        assert page.get_by_role("button", name="Guardar", exact=True).count() == 0
         canvas = page.get_by_label("Lienzo de anotación")
         page.wait_for_timeout(250)
         paper=page.locator('.plan-paper').bounding_box();area=page.locator('.plan-viewport').bounding_box();box=page.locator('.plan-toolbox').bounding_box();bar=page.locator('.plan-viewer-bar').bounding_box()

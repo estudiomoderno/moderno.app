@@ -32,4 +32,6 @@ html body:not(.portalmode) #modalBox:has(>.plan-options-editor){width:min(480px,
 .plan-options-body{flex:1;min-height:0;overflow:auto;padding:24px}
 .plan-options-body input{box-sizing:border-box;width:100%}
 .plan-options-body p{font-size:13px;color:var(--ink-soft)}
+.plan-options-warning{padding:10px 12px;border:1px solid #efb6b6;border-radius:8px;background:#fff5f5;color:#b91c1c!important}
+.plan-options-editor .product-editor-footer>.btn{min-width:0}
 .plan-options-editor [hidden]{display:none!important}
