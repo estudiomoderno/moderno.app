@@ -1,7 +1,7 @@
 /* Document navigation and temporary annotation/export. No database or Storage writes. */
 var ModernoProjectDocuments = (() => {
   const E = value => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  const types = {pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp'};
+  const types = {pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',dxf:'application/dxf',dwg:'application/vnd.dwg'};
   function type(file) {
     if(!file || typeof file !== 'object' || file.docRef || file.body) return '';
     if(Object.values(types).includes(file.type)) return file.type;
@@ -18,7 +18,8 @@ var ModernoProjectDocuments = (() => {
   function action(project,index) {
     const file=(project.files||[])[index];
     if(!type(file))return '';
-    return `<button type="button" class="btn btn-ghost project-plan-open" ${file.subiendo||!(file.url||file.data)?'disabled title="Archivo pendiente de subida o sin contenido"':''} data-project="${E(project.id)}" data-index="${index}" onclick="event.stopPropagation();projectPlanOpen(Number(this.dataset.project),Number(this.dataset.index))">Ver y anotar</button>`;
+    const label=['application/dxf','application/vnd.dwg'].includes(type(file))?'Abrir visor':'Ver y anotar';
+    return `<button type="button" class="btn btn-ghost project-plan-open" ${file.subiendo||!(file.url||file.data)?'disabled title="Archivo pendiente de subida o sin contenido"':''} data-project="${E(project.id)}" data-index="${index}" onclick="event.stopPropagation();projectPlanOpen(Number(this.dataset.project),Number(this.dataset.index),'files')">${label}</button>`;
   }
   function card(project,index,{available,clientVisible,actions=true,selection=false}={}) {
     const stored=(project.files||[])[index],file=typeof stored==='string'?{name:stored}:stored||{},name=String(file.name||'Archivo');
@@ -27,9 +28,10 @@ var ModernoProjectDocuments = (() => {
     const ext=name.includes('.')?name.split('.').pop().slice(0,5).toUpperCase():'DOC',id=E(project.id),label=E(name);
     const data=`data-project="${id}" data-index="${index}"`;
     const visibility=!available?'<span class="project-file-status is-missing" title="Solo se guardó el nombre. Vuelve a subirlo para abrir el archivo.">Solo nombre</span>':`<span class="project-file-status">${clientVisible?'Lo ve el cliente':'Oculto al cliente'}</span>`;
-    return `<article class="project-file-card">${selection?`<label class="project-file-selection"><input type="checkbox" aria-label="Compartir ${label}" ${data} ${clientVisible?'checked':''} ${available?'':'disabled'} onchange="fileCliToggle(Number(this.dataset.project),Number(this.dataset.index))"><span>Compartir</span></label>`:''}<button type="button" class="project-file-open" ${data} aria-label="Abrir ${label}" onclick="fileView(Number(this.dataset.project),Number(this.dataset.index))">${category(file)==='planos'?ModernoPlanGallery.preview(project.id,index,'files'):`<span class="project-file-sheet" aria-hidden="true"><span class="project-file-fold"></span><span class="project-file-extension">${E(ext)}</span><span class="project-file-lines"></span></span>`}<strong class="project-document-name">${label}</strong></button><div class="project-file-meta">${file.signed?'<span class="project-file-status is-signed">Firmado</span>':''}${visibility}</div>${actions?`<div class="project-file-actions">${action(project,index)}${!file.docRef&&!file.docKind?`<button type="button" class="btn btn-ghost project-file-category" ${data} onclick="projectFileMove(Number(this.dataset.project),Number(this.dataset.index))">Mover a ${category(file)==='planos'?'Documentos':'Planos'}</button>`:''}${category(file)==='planos'?ModernoPlanOptions.button(project.id,index,'files',name):`<button type="button" class="project-file-delete" ${data} aria-label="Eliminar archivo ${label}" title="Eliminar archivo" onclick="trashFile(Number(this.dataset.project),Number(this.dataset.index))">×</button>`}</div>`:''}</article>`;
+    const open=category(file)==='planos'?`projectPlanOpen(Number(this.dataset.project),Number(this.dataset.index),'files')`:`fileView(Number(this.dataset.project),Number(this.dataset.index))`;
+    return `<article class="project-file-card">${selection?`<label class="project-file-selection"><input type="checkbox" aria-label="Compartir ${label}" ${data} ${clientVisible?'checked':''} ${available?'':'disabled'} onchange="fileCliToggle(Number(this.dataset.project),Number(this.dataset.index))"><span>Compartir</span></label>`:''}<button type="button" class="project-file-open" ${data} aria-label="Abrir ${label}" onclick="${open}">${category(file)==='planos'?ModernoPlanGallery.preview(project.id,index,'files'):`<span class="project-file-sheet" aria-hidden="true"><span class="project-file-fold"></span><span class="project-file-extension">${E(ext)}</span><span class="project-file-lines"></span></span>`}<strong class="project-document-name">${label}</strong></button><div class="project-file-meta">${file.signed?'<span class="project-file-status is-signed">Firmado</span>':''}${visibility}</div>${actions?`<div class="project-file-actions">${action(project,index)}${!file.docRef&&!file.docKind?`<button type="button" class="btn btn-ghost project-file-category" ${data} onclick="projectFileMove(Number(this.dataset.project),Number(this.dataset.index))">Mover a ${category(file)==='planos'?'Documentos':'Planos'}</button>`:''}${category(file)==='planos'?ModernoPlanOptions.button(project.id,index,'files',name):`<button type="button" class="project-file-delete" ${data} aria-label="Eliminar archivo ${label}" title="Eliminar archivo" onclick="trashFile(Number(this.dataset.project),Number(this.dataset.index))">×</button>`}</div>`:''}</article>`;
   }
-  function uploadCard(project,section='archivos'){return `<label class="project-file-card project-file-add" role="button" tabindex="0" aria-label="${section==='planos'?'Subir o arrastrar plano':'Subir o arrastrar archivos'}" data-project="${E(project.id)}" data-section="${section==='planos'?'planos':'archivos'}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input').click()}" ondragover="ModernoProjectDocuments.dragFiles(event)" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('is-dragover')" ondrop="ModernoProjectDocuments.dropFiles(event,Number(this.dataset.project),this.dataset.section)"><img class="project-upload-illustration" src="/brand/illustrations/subir-planos.webp?v=36573" width="640" height="427" alt="" aria-hidden="true" draggable="false" decoding="async" onerror="this.hidden=true"><strong>${section==='planos'?'Subir o arrastrar plano':'<span class="project-file-plus" aria-hidden="true">+</span> Subir o arrastrar archivos'}</strong><input type="file" multiple hidden onchange="addFiles(Number(this.closest('[data-project]').dataset.project),this.files,this.closest('[data-project]').dataset.section);this.value='' "></label>`;}
+  function uploadCard(project,section='archivos'){const accept=section==='planos'?'.pdf,.dxf,.dwg,image/png,image/jpeg,image/webp':'';return `<label class="project-file-card project-file-add" role="button" tabindex="0" aria-label="${section==='planos'?'Subir o arrastrar plano':'Subir o arrastrar archivos'}" data-project="${E(project.id)}" data-section="${section==='planos'?'planos':'archivos'}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input').click()}" ondragover="ModernoProjectDocuments.dragFiles(event)" ondragleave="if(!this.contains(event.relatedTarget))this.classList.remove('is-dragover')" ondrop="ModernoProjectDocuments.dropFiles(event,Number(this.dataset.project),this.dataset.section)"><img class="project-upload-illustration" src="/brand/illustrations/subir-planos.webp?v=36573" width="640" height="427" alt="" aria-hidden="true" draggable="false" decoding="async" onerror="this.hidden=true"><strong>${section==='planos'?'Subir o arrastrar plano':'<span class="project-file-plus" aria-hidden="true">+</span> Subir o arrastrar archivos'}</strong><input type="file" ${accept?`accept="${accept}"`:''} multiple hidden onchange="addFiles(Number(this.closest('[data-project]').dataset.project),this.files,this.closest('[data-project]').dataset.section);this.value='' "></label>`;}
   function dragFiles(event){if(!Array.from(event.dataTransfer?.types||[]).includes('Files'))return;event.preventDefault();event.stopPropagation();event.dataTransfer.dropEffect='copy';event.currentTarget.classList.add('is-dragover');}
   function dropFiles(event,pid,section='archivos'){event.preventDefault();event.stopPropagation();event.currentTarget.classList.remove('is-dragover');const files=event.dataTransfer?.files;if(files?.length)addFiles(pid,files,section);}
   async function readBlob(source,type,signal) {
@@ -50,19 +52,20 @@ var ModernoProjectDocuments = (() => {
 
 let projectPlanDialog=null;
 function projectPlanIdentity(){return fileViewIdentity()+'|'+(state.sessionUser?.mail||state.sessionUser?.id||'');}
-async function projectPlanOpen(pid,index){
+async function projectPlanOpen(pid,index,collection='files'){
   if(projectPlanDialog)return;
-  const project=state.projects.find(p=>p.id===pid),file=project?.files?.[index],kind=ModernoProjectDocuments.type(file);
-  if(!kind){toast('Este archivo no admite anotaciones');return;}
+  if(!['files','obraPlanos'].includes(collection))return;
+  const project=state.projects.find(p=>p.id===pid),file=project?.[collection]?.[index],kind=ModernoProjectDocuments.type(file);
+  if(!kind){toast('Este formato no se puede abrir en el visor');return;}
   const identity=projectPlanIdentity(),source=fileSrc(file);
   const allowed=()=>{
-    const current=state.projects.find(p=>p.id===pid)?.files?.[index];
+    const current=state.projects.find(p=>p.id===pid)?.[collection]?.[index];
     return !_accessLoading&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon&&Boolean(state.sessionUser?.mail||state.sessionUser?.id)&&identity===projectPlanIdentity()&&current&&fileSrc(current)===source&&String(current.id??index)===String(file.id??index)&&ModernoProjectDocuments.type(current)===kind;
   };
   if(!allowed()){toast('Comprueba tu sesión y tu acceso al proyecto');return;}
   const controller=new AbortController(),dialog=document.createElement('dialog');dialog.className='project-plan-dialog';dialog.setAttribute('aria-label','Plano del proyecto');
   const header=document.createElement('header'),title=document.createElement('strong'),close=document.createElement('button'),root=document.createElement('section');
-  title.textContent=file.name;close.type='button';close.className='btn btn-ghost';close.textContent='Cerrar';header.append(title,close);root.textContent='Abriendo plano…';dialog.append(header,root);document.body.append(dialog);dialog.showModal();close.focus();
+  const actions=document.createElement('div'),download=document.createElement('a'),fullscreen=document.createElement('button');actions.className='plan-dialog-actions';download.className='btn btn-ghost';download.textContent='Descargar original';download.download=file.name||'plano';download.hidden=true;fullscreen.type='button';fullscreen.className='btn btn-ghost';fullscreen.textContent='Pantalla completa';close.type='button';close.className='btn btn-ghost';close.textContent='Cerrar';title.textContent=file.name;actions.append(download,fullscreen,close);header.append(title,actions);root.textContent='Abriendo plano…';dialog.append(header,root);document.body.append(dialog);dialog.showModal();close.focus();fullscreen.onclick=()=>document.fullscreenElement?document.exitFullscreen():dialog.requestFullscreen?.();
   let editor=null,doc=null,closed=false,closing=false;
   async function dismiss(force=false){
     if(closed||closing)return;closing=true;
@@ -80,13 +83,15 @@ async function projectPlanOpen(pid,index){
     const resolved=await fileResolveForView(file);
     if(!resolved)throw Error('Archivo no disponible; comprueba tu acceso o vuelve a subirlo desde Archivos.');
     if(closed||!allowed())return;
+    download.href=resolved;download.target='_blank';download.rel='noopener';download.hidden=false;
+    if(kind==='application/vnd.dwg')throw Error('DWG requiere conversión antes de previsualizarlo. Puedes descargar el original sin salir del proyecto.');
     const blob=await ModernoProjectDocuments.readBlob(resolved,kind,controller.signal);
     const pdfjs=kind==='application/pdf'?await loadPdfJs():undefined;
     if(closed||!allowed())return;
-    doc=await ModernoPlanEditor.openFile(blob,{pdfjs});
+    doc=kind==='application/dxf'?await ModernoCadViewer.open(blob):await ModernoPlanEditor.openFile(blob,{pdfjs});
     if(closed||!allowed()){await doc.close?.();return;}
     const model=new ModernoPlanAnnotations.Model({reference:{studyId:ESTUDIO_ID,projectId:String(pid),fileId:String(file.id??index),revisionId:'original'},pages:doc.pages,authorize:()=>!closed&&allowed()});
-    editor=await ModernoPlanEditor.mount(root,{document:doc,model});
+    editor=await ModernoPlanEditor.mount(root,{document:doc,model,filename:file.name,readOnly:kind==='application/dxf',metadata:doc.metadata});
     if(closed){await editor.discard();return;}
     root.querySelector('h2').textContent=file.name;
   }catch(error){if(!closed){root.replaceChildren();const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.name==='AbortError'?'Lectura cancelada':error.message;root.append(message);}}

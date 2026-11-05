@@ -6,7 +6,7 @@ var ModernoPlanGallery=(()=>{
  }
  function html(project){
   const plans=project.obraPlanos||[],id=Number(project.id);
-  return `<section class="plan-gallery" aria-label="Galería de planos"><div class="plan-gallery-grid">${(project.files||[]).map((file,index)=>({file,index})).filter(({file})=>ModernoProjectDocuments.category(file)==='planos').map(({file,index})=>ModernoProjectDocuments.card(project,index,{available:fileOk(file),clientVisible:fileCli(file)})).join('')}${plans.map((file,index)=>`<article class="plan-gallery-card"><button type="button" class="plan-gallery-open" aria-label="Abrir ${escape(file.name||'Plano')}" onclick="obraPlanoView(${id},${index})">${preview(id,index)}<strong>${escape(file.name||'Plano')}</strong></button>${ModernoPlanOptions.button(id,index,'obraPlanos',file.name||'Plano')}</article>`).join('')}${ModernoProjectDocuments.uploadCard(project,'planos')}</div></section>`;
+  return `<section class="plan-gallery" aria-label="Galería de planos"><div class="plan-gallery-grid">${(project.files||[]).map((file,index)=>({file,index})).filter(({file})=>ModernoProjectDocuments.category(file)==='planos').map(({file,index})=>ModernoProjectDocuments.card(project,index,{available:fileOk(file),clientVisible:fileCli(file)})).join('')}${plans.map((file,index)=>`<article class="plan-gallery-card"><button type="button" class="plan-gallery-open" aria-label="Abrir ${escape(file.name||'Plano')}" onclick="projectPlanOpen(${id},${index},'obraPlanos')">${preview(id,index)}<strong>${escape(file.name||'Plano')}</strong></button>${ModernoPlanOptions.button(id,index,'obraPlanos',file.name||'Plano')}</article>`).join('')}${ModernoProjectDocuments.uploadCard(project,'planos')}</div></section>`;
  }
  const active=new Map();let queue=Promise.resolve(),observer;
  function valid(node,file,identity){const project=state.projects?.find(p=>String(p.id)===node.dataset.project);return node.isConnected&&fileViewIdentity()===identity&&project?.[node.dataset.collection]?.[Number(node.dataset.index)]===file;}
@@ -27,6 +27,8 @@ var ModernoPlanGallery=(()=>{
     canvas.width=Math.max(1,Math.ceil(viewport.width));canvas.height=Math.max(1,Math.ceil(viewport.height));
     await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
     if(valid(node,file,identity))node.replaceChildren(canvas);
+   }else if(kind==='application/dxf'){
+    const blob=await ModernoProjectDocuments.readBlob(source,kind,controller.signal),cad=await ModernoCadViewer.open(blob),canvas=document.createElement('canvas');await cad.render(1,canvas);await cad.close();if(valid(node,file,identity))node.replaceChildren(canvas);
    }else if(kind.startsWith('image/')||file.type?.startsWith('image/')){
     const img=document.createElement('img');img.alt='';img.decoding='async';img.src=source;
     await img.decode();if(valid(node,file,identity))node.replaceChildren(img);

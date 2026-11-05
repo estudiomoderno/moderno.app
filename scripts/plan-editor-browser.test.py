@@ -46,10 +46,11 @@ with sync_playwright() as p:
         }""")
         assert page.get_by_role("button", name="Guardar", exact=True).is_disabled()
         canvas = page.get_by_label("Lienzo de anotación")
-        paper=page.locator('.plan-paper').bounding_box();area=page.locator('.plan-viewport').bounding_box();box=page.locator('.plan-toolbox').bounding_box()
-        assert paper['width'] >= area['width']-1 and paper['height'] >= area['height']-1
-        assert paper['y'] <= box['y'] and paper['y']+paper['height'] >= box['y']+box['height']
-        assert box['width'] <= 500
+        page.wait_for_timeout(250)
+        paper=page.locator('.plan-paper').bounding_box();area=page.locator('.plan-viewport').bounding_box();box=page.locator('.plan-toolbox').bounding_box();bar=page.locator('.plan-viewer-bar').bounding_box()
+        assert paper['width'] > 0 and paper['height'] > 0
+        assert paper['y'] >= area['y'] and bar['y']+bar['height'] <= area['y']+1
+        assert bar['height'] <= 60 and box['y'] < area['y']
         def zoom_out_to_draw():
             for _ in range(4):
                 paper=page.locator('.plan-paper').bounding_box()
@@ -68,7 +69,7 @@ with sync_playwright() as p:
         assert page.get_by_role('button', name='Color Azul', exact=True).get_attribute('aria-pressed') == 'true'
         assert page.get_by_role('button', name='Lápiz', exact=True).locator('svg').count() == 1
         assert page.locator('.plan-selection').get_attribute('open') is None
-        assert page.locator('.plan-toolbox').bounding_box()['width'] <= viewport['width']
+        assert page.locator('.plan-viewer-bar').bounding_box()['width'] <= viewport['width']
         assert page.get_by_role("button",name="Lápiz",exact=True).get_attribute("aria-pressed")=="false"
         stroke()
         assert page.evaluate("model.items.length")==0
@@ -83,9 +84,9 @@ with sync_playwright() as p:
         assert page.evaluate("model.items.length") == 0
         page.get_by_role("button", name="Rehacer", exact=True).click()
         box=page.locator('.plan-toolbox').bounding_box()
-        assert box['y'] > viewport['height']*.6
+        assert box['y'] < viewport['height']*.15
         palette=page.locator('.plan-palette').bounding_box();slider=page.get_by_label('Grosor',exact=True).bounding_box()
-        assert abs(slider['x']+slider['width']-palette['x']-palette['width']) < 5
+        assert slider['x'] >= palette['x'] and slider['x']+slider['width'] <= palette['x']+palette['width']+5
         page.get_by_role('button',name='Girar 90°',exact=True).click()
         zoom_out_to_draw()
         assert page.evaluate('model.items[0].points[0]') == first

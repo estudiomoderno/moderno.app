@@ -52,7 +52,8 @@ with sync_playwright() as p:
         touch('touchStart',[(x,y)]);touch('touchCancel',[])
         page.get_by_role('button',name='Lápiz',exact=True).click();assert page.get_by_role('button',name='Lápiz',exact=True).get_attribute('aria-pressed')=='true'
         page.get_by_role('button',name='Lápiz',exact=True).click();assert page.get_by_role('button',name='Lápiz',exact=True).get_attribute('aria-pressed')=='false'
-        page.get_by_role('button',name='Páginas',exact=True).click()
+        if page.get_by_role('button',name='Páginas',exact=True).get_attribute('aria-expanded')=='false':
+            page.get_by_role('button',name='Páginas',exact=True).click()
         page.get_by_role('button',name='Página 2',exact=True).click()
         page.wait_for_function("document.querySelector('.plan-page-label').textContent==='2 / 3'")
         assert page.get_by_role('button',name='Página 2',exact=True).get_attribute('aria-current')=='page'

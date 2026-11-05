@@ -1286,6 +1286,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/shopping-export.js?v=365113"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=365100"></script>
+<script src="/cad-viewer.js?v=202"></script>
 <script src="/project-documents.js?v=202"></script>
 <script src="/plan-options.js?v=202"></script>
 <script src="/plan-gallery.js?v=202"></script>
@@ -6113,7 +6114,7 @@ ${tb!=="obra"?"":(function(){ ensureObra(p);
         ${ModernoProjectDocuments.uploadCard(p,tb)}
       </div>`}
       ${tb!=="planos"?"":` ${ModernoPlanGallery.html(p)}
-    <input type="file" id="obraPlanoInp" accept="application/pdf,image/*" multiple style="display:none" onchange="obraPlanoLoad(this)">
+    <input type="file" id="obraPlanoInp" accept=".pdf,.dxf,.dwg,image/png,image/jpeg,image/webp" multiple style="display:none" onchange="obraPlanoLoad(this)">
 `}
 
 

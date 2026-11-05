@@ -39,6 +39,32 @@
 @media(max-width:1000px){.project-plan-dialog>header{top:8px;left:8px;max-width:calc(100% - 16px)}.plan-navigation{left:8px;right:8px;top:68px;max-width:none;justify-content:center}.plan-selection{top:164px}.plan-status{top:164px;max-width:65%}.plan-editor textarea{top:208px}}
 @media(prefers-reduced-motion:reduce){.plan-pages-panel{transition:none}}
 
+/* #202 integrated viewer: one compact horizontal toolbar below the document header. */
+.project-plan-dialog>header{position:relative;left:auto;top:auto;z-index:12;max-width:none!important;min-height:60px;box-sizing:border-box;border:0;border-bottom:1px solid var(--ui-line,#d8d3cc);border-radius:0;box-shadow:none;padding:10px 14px;background:var(--white,#fff)}
+.project-plan-dialog>header strong{font-size:14px}.project-plan-dialog>header .plan-dialog-actions{display:flex;align-items:center;gap:6px;margin-left:auto}.project-plan-dialog>header .btn{min-height:36px;padding:7px 11px}
+.project-plan-dialog>section{position:relative;inset:auto;flex:1;min-height:0}
+.plan-viewer-bar{position:absolute;z-index:10;left:0;right:0;top:0;height:56px;display:flex;align-items:center;gap:8px;padding:7px 10px;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--ui-line,#d8d3cc);background:var(--white,#fff);scrollbar-width:thin}
+.plan-toolbox{position:static;display:flex;align-items:center;gap:8px;transform:none;width:auto;max-width:none;margin:0;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;flex:none}
+.plan-palette,.plan-toolbar{padding:0;border:0;overflow:visible;justify-content:flex-start;gap:2px;flex:none}.plan-palette{padding-right:7px;border-right:1px solid var(--ui-line,#d8d3cc)}
+.plan-navigation{position:static;max-width:none;padding:0;border:0;border-radius:0;box-shadow:none;background:transparent;flex:none}
+.plan-editor .plan-icon-button{flex-basis:34px;width:34px;height:34px;min-height:34px;padding:7px;border-radius:8px}.plan-icon-button svg{width:19px;height:19px}
+.plan-editor .plan-color{flex-basis:25px;width:25px;height:25px;padding:3px}.plan-color span{width:17px;height:17px}.plan-editor input[type=color]{width:25px;height:25px}.plan-editor input[type=range]{width:72px;min-width:72px;margin:0 4px}
+.plan-viewport{top:56px;left:0;right:0;bottom:0;padding:24px;background:#eef0ef;transition:left .2s ease,right .2s ease}
+.plan-editor:has(.plan-pages-panel.is-open) .plan-viewport{left:220px}.plan-editor:has(.plan-info-panel.is-open) .plan-viewport{right:260px}
+.plan-pages-panel{left:0;right:auto;top:56px;width:220px;border-left:0;border-right:1px solid var(--ui-line,#d8d3cc);box-shadow:6px 0 20px #2424240a;transform:translateX(-100%);background:var(--white,#fff)}
+.plan-pages-panel.is-open{transform:translateX(0)}
+.plan-pages-panel>header,.plan-info-panel>header{min-height:50px;box-sizing:border-box}
+.plan-info-panel{position:absolute;z-index:8;right:0;top:56px;bottom:0;width:260px;display:flex;flex-direction:column;background:var(--white,#fff);border-left:1px solid var(--ui-line,#d8d3cc);box-shadow:-6px 0 20px #2424240a;visibility:hidden;opacity:0;transform:translateX(100%);transition:transform .2s ease,opacity .2s ease,visibility .2s}
+.plan-info-panel.is-open{visibility:visible;opacity:1;transform:translateX(0)}.plan-info-panel>header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--ui-line,#d8d3cc)}
+.plan-info-close{border:0;background:transparent;border-radius:8px;font-size:22px;min-width:36px;height:36px}.plan-info-list{margin:0;padding:14px 16px}.plan-info-list>div{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;padding:8px 0;border-bottom:1px solid var(--ui-line,#d8d3cc);font-size:12px}.plan-info-list dt{color:var(--ink-soft,#666)}.plan-info-list dd{margin:0;overflow-wrap:anywhere}.plan-info-section{padding:14px 16px;border-top:1px solid var(--ui-line,#d8d3cc)}.plan-info-section p{margin:6px 0 0;color:var(--ink-soft,#666);font-size:12px;line-height:1.45}
+.plan-info-list [hidden]{display:none!important}
+.plan-selection{left:auto;right:276px;top:70px}.plan-status{top:66px;right:276px}.plan-editor textarea{top:66px;left:236px}.plan-editor .project-plan-notice{bottom:8px}
+.plan-editor.is-readonly .plan-palette,.plan-editor.is-readonly .plan-selection,.plan-editor.is-readonly .project-plan-notice{display:none}.plan-editor.is-readonly .plan-sheet canvas+canvas{cursor:grab}.plan-editor.is-readonly .plan-sheet canvas+canvas:active{cursor:grabbing}
+.plan-paper{box-shadow:0 3px 18px #1b25231a}
+@media(max-width:900px){.plan-editor:has(.plan-pages-panel.is-open) .plan-viewport,.plan-editor:has(.plan-info-panel.is-open) .plan-viewport{left:0;right:0}.plan-pages-panel,.plan-info-panel{top:56px;width:min(300px,88%);z-index:15}.plan-selection{right:12px}.plan-status{right:12px}.plan-editor textarea{left:12px}.project-plan-dialog>header .btn span{display:none}}
+@media(max-width:700px){.project-plan-dialog>header{min-height:54px;padding:8px}.plan-viewer-bar{height:52px;padding:6px}.plan-viewport{top:52px}.plan-pages-panel,.plan-info-panel{top:52px}.plan-navigation{position:static;left:auto;right:auto;top:auto;max-width:none;flex-wrap:nowrap}.plan-selection{top:62px}.plan-status{top:62px}.plan-editor textarea{top:62px}.plan-toolbox{width:auto;padding:0;border-radius:0}.plan-toolbar,.plan-palette{gap:1px}.plan-editor .plan-icon-button{flex-basis:34px;height:34px}.plan-editor .plan-color{flex-basis:24px;width:24px}}
+@media(prefers-reduced-motion:reduce){.plan-viewport,.plan-info-panel{transition:none}}
+
 .project-files-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;margin:16px 0}.project-files-grid>.empty{grid-column:1/-1}
 .project-file-card{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:16px 12px 10px;border:1px solid var(--ui-line,#d8d3cc);border-radius:18px;background:var(--card,#e7e2d2);min-width:0}
 .project-file-open{display:flex;flex:1;flex-direction:column;align-items:center;gap:14px;padding:0;border:0;background:transparent;color:var(--ink,#242424);cursor:pointer;text-align:center;font:inherit;min-width:0}.project-file-open:focus-visible{outline:2px solid var(--ink,#242424);outline-offset:4px;border-radius:8px}
