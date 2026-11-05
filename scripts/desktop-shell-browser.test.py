@@ -45,7 +45,7 @@ def reveal_route(page,view):
  button.evaluate('(b)=>{const d=b.closest("details");if(d)d.open=true;}')
  return button
 with sync_playwright() as p:
- browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+ browser=p.chromium.launch(executable_path='/usr/bin/chromium' if Path('/usr/bin/chromium').exists() else None,headless=True,args=['--no-sandbox'])
  for width in [1440,1280,1100,1024,390]:
   page=browser.new_page(viewport={'width':width,'height':1000});errors=[]
   page.on('pageerror',lambda e:errors.append(str(e)))
