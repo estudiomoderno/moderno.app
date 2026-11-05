@@ -20,3 +20,16 @@
 }
 
 .plan-gallery-grid>.project-file-card:not(.project-file-add){padding:0;border:0;background:transparent;align-self:start}
+
+.plan-gallery-card .plan-options-button{position:absolute;right:0;bottom:0}
+.plan-options-button{display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:7px;background:transparent;color:var(--ink);cursor:pointer;font-size:22px}
+.plan-options-button:hover{background:var(--card,#eee)}
+.plan-options-button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+#overlay:has(#modalBox>.plan-options-editor){place-items:stretch end;padding:0}
+html body:not(.portalmode) #modalBox:has(>.plan-options-editor){width:min(480px,100%);max-width:100%;height:100dvh;max-height:100dvh;padding:0;overflow:hidden;box-sizing:border-box;border-radius:0;border:0;border-left:1px solid var(--ui-line);background:var(--app-surface,#fff)}
+.plan-options-editor{display:flex;flex-direction:column;height:100%;min-height:0;color:var(--ink)}
+.plan-options-editor .product-editor-header{position:relative;padding:24px;border-bottom:1px solid var(--ui-line)}
+.plan-options-body{flex:1;min-height:0;overflow:auto;padding:24px}
+.plan-options-body input{box-sizing:border-box;width:100%}
+.plan-options-body p{font-size:13px;color:var(--ink-soft)}
+.plan-options-editor [hidden]{display:none!important}

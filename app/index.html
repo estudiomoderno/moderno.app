@@ -1286,9 +1286,10 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/shopping-export.js?v=365113"></script>
 <script src="/plan-annotations.js?v=36522"></script>
 <script src="/plan-editor.js?v=365100"></script>
-<script src="/project-documents.js?v=199"></script>
-<script src="/plan-gallery.js?v=199"></script>
-<link rel="stylesheet" href="/brand/plan-gallery.css?v=200">
+<script src="/project-documents.js?v=202"></script>
+<script src="/plan-options.js?v=202"></script>
+<script src="/plan-gallery.js?v=202"></script>
+<link rel="stylesheet" href="/brand/plan-gallery.css?v=202">
 <link rel="stylesheet" href="/plan-editor.css?v=36573">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
@@ -7585,7 +7586,7 @@ async function descargaArchivo(data,name){
 function fileBtns(getPath,name){
   return `<div style="display:flex;gap:8px;margin:0 0 10px">
     <button class="btn btn-ghost" onclick="fileFull(${getPath})">\u26f6 Pantalla completa</button>
-    <button class="btn btn-dark" onclick="descargaArchivo(${getPath},'${(name||"archivo").replace(/'/g,"")}')">\u2b07 Descargar</button>
+    <button class="btn btn-dark" data-download-name="${ModernoDaily.escape(name||"archivo")}" onclick="descargaArchivo(${getPath},this.dataset.downloadName)">\u2b07 Descargar</button>
   </div>`;
 }
 async function obraFileView(pid,f,i){
@@ -7617,10 +7618,10 @@ async function obraPlanoView(pid,i){
   const _btns = fileBtns(`state.projects.find(x=>x.id===${pid}).obraPlanos[${i}].data`, fl.name);
   const body = _btns + (fl.type==="application/pdf" ? `<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:84vh;border-radius:12px">`
     : fl.type&&fl.type.startsWith("image/") ? `<img ${fileImageAttrs(resolvedSrc)} style="width:100%;max-height:82vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto">`
-    : `<p style="font-size:13px">\ud83d\udcd0 ${fl.name}</p>`);
-  mb.classList.add("wide"); mb.classList.add("xwide"); modal(`<h3 style="display:flex;align-items:center;gap:7px">\ud83d\udcd0 ${fl.name}</h3>
+    : `<p style="font-size:13px">\ud83d\udcd0 ${ModernoDaily.escape(fl.name)}</p>`);
+  mb.classList.add("wide"); mb.classList.add("xwide"); modal(`<h3 style="display:flex;align-items:center;gap:7px">\ud83d\udcd0 ${ModernoDaily.escape(fl.name)}</h3>
   <p style="font-size:11.5px;color:var(--ink-faint);margin-top:0">Plano definitivo de la obra</p>${body}
-  <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${resolvedSrc}" download="${fl.name}">\u2193 Descargar</a><button class="btn btn-ghost" onclick="obraPlanoDel(${pid},${i})">\u2715 Quitar plano</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
+  <div class="btn-row" style="margin-top:12px"><a class="btn btn-ghost" href="${resolvedSrc}" download="${ModernoDaily.escape(fl.name)}">\u2193 Descargar</a><button class="btn btn-ghost" onclick="obraPlanoDel(${pid},${i})">\u2715 Quitar plano</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`,true);
 }
 function obraPlanoDel(pid,i){ obraSnap(pid); state.projects.find(x=>x.id===pid).obraPlanos.splice(i,1); closeModal(); render(); toast("Plano quitado \u2014 \u21a9 deshacer arriba si te arrepientes"); }
 async function obraPack(pid){
@@ -9443,15 +9444,15 @@ async function fileView(pid,i,fromPortal){
   const resolvedSrc=await fileResolveForView(f); if(resolvedSrc===false)return;
   mb.classList.add("wide");
   mb.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-    ${ico("docs","lg")} <b style="font-size:15px;min-width:0">${f.name}</b>
+    ${ico("docs","lg")} <b style="font-size:15px;min-width:0">${ModernoDaily.escape(f.name)}</b>
     ${f.signed?`<span class="chip" style="background:#DBEBDD;color:#2E6B4F">✍ Firmado por ${f.signed.by} · ${f.signed.date}</span>`:""}
     <span style="margin-left:auto"></span>
     ${fromPortal&&!f.signed?`<button class="btn btn-gold" onclick="signModal(${pid},${i})">✍ Firmar online</button>`:""}
-    ${resolvedSrc?`<a class="btn btn-ghost" href="${resolvedSrc}" download="${f.name}" target="_blank" rel="noopener">${ico('download')} Descargar</a>`:f.body?`<button class="btn btn-ghost" onclick="documentBodyDownload(${pid},${i})">${ico('download')} Descargar texto</button>`:`<button class="btn btn-ghost" onclick="toast('Este archivo es de una versión anterior (solo nombre): vuelve a subirlo para poder descargarlo')">${ico('download')} Descargar</button>`}
+    ${resolvedSrc?`<a class="btn btn-ghost" href="${resolvedSrc}" download="${ModernoDaily.escape(f.name)}" target="_blank" rel="noopener">${ico('download')} Descargar</a>`:f.body?`<button class="btn btn-ghost" onclick="documentBodyDownload(${pid},${i})">${ico('download')} Descargar texto</button>`:`<button class="btn btn-ghost" onclick="toast('Este archivo es de una versión anterior (solo nombre): vuelve a subirlo para poder descargarlo')">${ico('download')} Descargar</button>`}
     <button onclick="mb.classList.remove('wide');${fromPortal?`projectPortal(${pid})`:"closeModal()"}" style="font-size:16px">✕</button>
   </div>
   <div style="background:#FBFAF7;color:var(--ink);border-radius:14px;padding:${resolvedSrc?"10px":"34px 38px"};min-height:340px;box-shadow:var(--shadow)">
-    ${resolvedSrc?(f.type==="application/pdf"?`<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:72vh;border-radius:10px">`:(f.type||"").startsWith("image/")?`<img ${fileImageAttrs(resolvedSrc)} style="width:100%;max-height:72vh;object-fit:contain;border-radius:10px;display:block">`:`<div style="text-align:center;padding:60px 20px">\ud83d\udcc4 ${f.name}<br><a class="btn btn-ghost" style="margin-top:12px" href="${resolvedSrc}" download="${f.name}" target="_blank" rel="noopener">\u2193 Descargar</a></div>`)
+    ${resolvedSrc?(f.type==="application/pdf"?`<embed src="${resolvedSrc}" type="application/pdf" style="width:100%;height:72vh;border-radius:10px">`:(f.type||"").startsWith("image/")?`<img ${fileImageAttrs(resolvedSrc)} style="width:100%;max-height:72vh;object-fit:contain;border-radius:10px;display:block">`:`<div style="text-align:center;padding:60px 20px">\ud83d\udcc4 ${ModernoDaily.escape(f.name)}<br><a class="btn btn-ghost" style="margin-top:12px" href="${resolvedSrc}" download="${ModernoDaily.escape(f.name)}" target="_blank" rel="noopener">\u2193 Descargar</a></div>`)
     :f.body?`<pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.65;margin:0">${f.body.replace(/</g,"&lt;")}</pre>`
       :`<div style="text-align:center;color:#9A938A;padding:70px 20px">📄<br><br>Vista previa del archivo<br><small>En la app real aquí se muestra el PDF o la imagen tal cual. Los documentos creados desde Plantillas sí se ven con su contenido.</small></div>`}
     ${f.signed?`<div style="margin-top:30px;border-top:1px solid #E2E2E0;padding-top:14px;font-size:12.5px">Firmado electrónicamente por <b>${f.signed.by}</b> el ${f.signed.date}<br><span style="font-family:cursive;font-size:22px">${f.signed.by}</span></div>`:""}
@@ -13524,7 +13525,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <script src="/team-presence.js?v=3562"></script>
 <script src="/settings-icons.js?v=353"></script>
 <script src="/team-settings.js?v=3531"></script>
-<script src="/settings-ui.js?v=36581"></script>
+<script src="/settings-ui.js?v=202"></script>
 <link rel="stylesheet" href="/brand/hook-sidebar.css?v=3588">
 <script src="/hook-sidebar.js?v=3587"></script>
 <link rel="stylesheet" href="/brand/project-options.css?v=36550">

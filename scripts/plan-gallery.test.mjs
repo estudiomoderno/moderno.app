@@ -4,11 +4,11 @@ import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const code=readFileSync(new URL('../app/plan-gallery.js',import.meta.url),'utf8');
 const docs=readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8');
-function fixture(){const c=vm.createContext({});vm.runInContext(code,c);vm.runInContext(docs,c);return c;}
+function fixture(){const c=vm.createContext({});vm.runInContext(readFileSync(new URL('../app/plan-options.js',import.meta.url),'utf8'),c);vm.runInContext(code,c);vm.runInContext(docs,c);return c;}
 test('final plan gallery preserves indices and file data while exposing existing actions',()=>{
  const c=fixture(),p={id:8,obraPlanos:[{name:'<Plano "A">.pdf',data:'private:secret',type:'application/pdf'},{name:'Plano B.png',data:'private:other'}]},before=JSON.stringify(p);
  const out=c.ModernoPlanGallery.html(p);assert.equal(JSON.stringify(p),before);
- assert.match(out,/obraPlanoView\(8,0\)/);assert.match(out,/obraPlanoView\(8,1\)/);assert.match(out,/obraPlanoDel\(8,1\)/);assert.equal((out.match(/class="project-file-card project-file-add"/g)||[]).length,1);assert.match(out,/Subir o arrastrar plano/);assert.doesNotMatch(out,/Planos definitivos|project-file-plus|Subir plano/);
+ assert.match(out,/obraPlanoView\(8,0\)/);assert.match(out,/obraPlanoView\(8,1\)/);assert.match(out,/ModernoPlanOptions.open\(8,1,'obraPlanos'\)/);assert.equal((out.match(/class="project-file-card project-file-add"/g)||[]).length,1);assert.match(out,/Subir o arrastrar plano/);assert.doesNotMatch(out,/Planos definitivos|project-file-plus|Subir plano/);
  assert.match(out,/&lt;Plano &quot;A&quot;&gt;/);assert.doesNotMatch(out,/private:|obraPlanosToggle|Desplegar/);
 });
 test('regular plans preview correct original indices and retain annotations and permissions',()=>{
