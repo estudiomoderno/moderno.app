@@ -377,6 +377,10 @@ try:
     page.evaluate("go('proyecto',9001);projTab('utilidades')")
     page.locator('#ptM2').fill('24')
     page.evaluate('window.originalCalculator=document.querySelector("#ptM2")')
+    assert page.locator('.desktop-row').bounding_box()['width']==64,'El menú de escritorio debe empezar contraído'
+    page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
+    settle_header(page)
+    assert page.locator('.desktop-row').bounding_box()['width']==224
     page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
     settle_header(page)
     page.locator('#desktop-navigation').wait_for(state='visible')
