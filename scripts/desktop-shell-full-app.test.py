@@ -289,6 +289,14 @@ try:
     page.evaluate('(view)=>go(view)',view)
     assert page.evaluate('state.view')==view
     assert page.locator('#view').inner_text().strip(),view
+    if view=='biblioteca':
+     expect(page.locator('aside.sidebar [data-view=biblioteca]')).to_have_text('Productos')
+     expect(page.get_by_role('button',name='Añadir producto',exact=False)).to_be_visible()
+     assert page.locator('.catalog-board').count()==0
+    if view=='catalogo':
+     expect(page.locator('aside.sidebar [data-view=catalogo]')).to_have_text('Servicios')
+     expect(page.locator('.catalog-board')).to_be_visible()
+     expect(page.locator('.catalog-board select[aria-label=Tipo]')).to_contain_text('Servicios')
     neutral_canvas(page)
     if width>=1100:
      if view in ['home','proyectos']:
