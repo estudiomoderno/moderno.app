@@ -94,6 +94,9 @@ try:
    page.locator('#project-window-9001').click();assert page.evaluate("state.view==='estancia'&&state.currentProject===9001&&state.currentRoom===9101")
    page.locator('#project-window-9002').click();assert page.evaluate("state.view==='proyecto'&&state.currentProject===9002&&state.projTab==='tareas'")
    page.locator('#desktop-header [data-desktop-view=agenda]').click()
+   assert rail.bounding_box()['width']==64,'The navigation must remain collapsed after changing views'
+   page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
+   page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===224')
    page.get_by_role('button',name='Comprimir menú lateral',exact=True).click();page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
    page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===64')
    assert rail.bounding_box()['width']==64 and bar.bounding_box()['x']==12
