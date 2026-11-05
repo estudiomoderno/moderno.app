@@ -49,8 +49,8 @@ test('overdue notification uses the original task index after filtering',()=>{
 });
 test('project navigation preserves legacy aliases and existing finance and utility restrictions',()=>{
  const c=fixture({myAccessLevel:()=> 'colab',canView:v=>!['utilidades','conversaciones'].includes(v)});assert.equal(c.projectTabKey('resumen'),'proyecto');assert.equal(c.projectTabKey('chat'),'cliente');
- const tabs=c.projectTabsHtml('proyecto');assert.doesNotMatch(tabs,/project-tab-fin|project-tab-utilidades|project-tab-conversaciones/);assert.match(tabs,/aria-label="Inicio"/);assert.match(tabs,/aria-selected="true"/);
- const portal=c.projectTabsHtml('cliente');assert.match(portal,/id="project-tab-cliente"[^>]*aria-selected="true"/);assert.match(portal,/aria-label="Portal del cliente"/);
+ const tabs=c.projectTabsHtml('proyecto');assert.doesNotMatch(tabs,/project-tab-fin|project-tab-utilidades|project-tab-conversaciones/);assert.match(tabs,/aria-label="Tareas"/);assert.match(source,/Inicio del proyecto/);
+ const portal=c.projectTabsHtml('cliente');assert.match(portal,/id="project-tab-cliente"[^>]*aria-selected="true"/);assert.match(portal,/aria-label="Portal Cliente"/);
 });
 test('shopping row fields escape text and keep unknown prices distinct from zero',()=>{
  const c=fixture({fmt:v=>Number(v).toFixed(2)}),item={name:'Ficticio',price:0,cost:null,qty:3,unit:'m2',dims:'<img src=x>',material:'"Material"',note:'<script>privado</script>'},before=JSON.stringify(item);
@@ -98,4 +98,15 @@ test('existing contact save returns to the project editor after validation',()=>
  c.projectClientCreateReturn=name=>returned=name;
  vm.runInContext(html.slice(html.indexOf('function saveClient('),html.indexOf('let enFile=',html.indexOf('function saveClient('))),c);
  c.saveClient();assert.equal(c.state.clients.length,1);assert.equal(c.state.clients[0].name,'Nuevo cliente');assert.equal(returned,'Nuevo cliente');assert.equal(c.state.afterClient,null);
+});
+
+test('#196 dock keeps the four ordered groups and marks missing modules honestly',()=>{
+ const c=fixture(),out=c.projectTabsHtml('listas');
+ assert.deepEqual([...out.matchAll(/id="project-tab-([^"]+)"/g)].map(m=>m[1]),['tareas','listas','ai','conversaciones','planos','obra','diario','calobra','estudio','pres','mediciones','utilidades','fin','cliente','archivos','ajustes']);
+ assert.equal((out.match(/role="separator"/g)||[]).length,3);
+ assert.equal((out.match(/<img /g)||[]).length,16);
+ for(const key of ['estudio','mediciones'])assert.match(out,new RegExp('id="project-tab-'+key+'"[^>]*aria-disabled="true"'));
+ assert.match(out,/onclick="customizeModal\(state.currentProject\)"/);
+ assert.match(out,/id="project-tab-listas"[^>]*aria-selected="true"/);
+ assert.match(html,/<body class="navmini">/);
 });
