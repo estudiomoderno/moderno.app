@@ -176,6 +176,8 @@ with sync_playwright() as p:
  page.wait_for_function("document.querySelector('.plan-paper canvas').width>0");page.wait_for_function("[...document.querySelectorAll('.plan-icon-button img')].every(img=>img.complete&&img.naturalWidth>0)");page.wait_for_timeout(350)
  assert page.locator('.plan-viewer-bar').bounding_box()['y'] > page.locator('.plan-viewport').bounding_box()['y']
  dock_box=page.locator('.project-dock').bounding_box();tools_box=page.locator('.plan-viewer-bar').bounding_box();assert abs((dock_box['x']+dock_box['width'])-tools_box['x']) < 3
+ assert abs(dock_box['y']-tools_box['y']) < 1 and abs(dock_box['height']-tools_box['height']) < 1
+ assert page.locator('.project-dock').evaluate("el=>getComputedStyle(el).backgroundColor")==page.locator('.plan-viewer-bar').evaluate("el=>getComputedStyle(el).backgroundColor")
  assert page.locator('.plan-tool-separator').count()==4 and page.locator('.plan-viewer-bar').evaluate("el=>getComputedStyle(el).opacity")=='1'
  assert page.locator('#app-header').is_visible() and page.locator('#app-sidebar').is_visible() and page.locator('#project-heading').is_visible()
  assert page.get_by_role('button',name='Páginas',exact=True).count()==0
@@ -187,6 +189,9 @@ with sync_playwright() as p:
  for removed in ['Rectángulo','Círculo','Nota','Lápiz','Resaltador','Panel de comentarios']:
   assert page.get_by_role('button',name=removed,exact=True).count()==0
  assert 'Selector de Color.svg?v=203' in page.get_by_role('button',name='Color',exact=True).locator('img').get_attribute('src')
+ assert page.get_by_text('Grosor',exact=True).count()==0 and page.locator('.plan-width-label').bounding_box()['width'] <= 48
+ eraser=page.get_by_role('button',name='Borrador',exact=True).bounding_box();rotate=page.get_by_role('button',name='Girar 90°',exact=True).bounding_box();assert abs(eraser['y']-rotate['y']) < 1 and 0 < rotate['x']-eraser['x'] < 34
+ assert page.get_by_role('button',name='Desplazar',exact=True).locator('img').evaluate("el=>getComputedStyle(el).filter")=='brightness(0) invert(0.45)'
  page.get_by_role('button',name='Color',exact=True).click();assert page.get_by_label('Opacidad',exact=True).is_visible() and page.locator('.plan-color-swatch').count()==8
  page.screenshot(path=str(out/'visor-pdf-202.png'),full_page=True)
  page.evaluate('editor.discard()')

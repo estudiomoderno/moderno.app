@@ -30,6 +30,9 @@ with sync_playwright() as p:
     assert page.get_by_label('Color personalizado',exact=True).count()==1 and page.get_by_label('Opacidad',exact=True).count()==1
     assert page.locator('.plan-color-swatch').count()==8
     assert page.get_by_label('Grosor',exact=True).count()==1
+    assert page.get_by_text('Grosor',exact=True).count()==0 and page.locator('.plan-width-label').bounding_box()['width'] <= 48
+    eraser=page.get_by_role('button',name='Borrador',exact=True).bounding_box();rotate=page.get_by_role('button',name='Girar 90°',exact=True).bounding_box()
+    assert abs(eraser['y']-rotate['y']) < 1 and 0 < rotate['x']-eraser['x'] < 34
     canvas=page.get_by_label('Lienzo de anotación');box=canvas.bounding_box()
     def click_at(x,y): canvas.click(position={'x':box['width']*x,'y':box['height']*y})
     page.get_by_role('button',name='Texto',exact=True).click();click_at(.25,.25)
