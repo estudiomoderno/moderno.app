@@ -2,6 +2,8 @@
 var ModernoPlanAnnotations=(()=>{
  const tools=['pen','highlight','arrow','rect','ellipse','text','note','image','tag'];
  const clone=v=>JSON.parse(JSON.stringify(v));
+ const safeAvatar=value=>typeof value==='string'&&value.length<=300000&&(/^https:\/\/[^\s]+$/i.test(value)||/^data:image\/(png|jpeg|webp);base64,[a-z0-9+/=]+$/i.test(value))?value:'';
+ function threadMessage(value){const message=clone(value||{}),text=String(message.text||'').trim(),createdAt=String(message.createdAt||'');if(typeof message.id!=='string'||!message.id||message.id.length>100||!text||text.length>1000||createdAt.length>50||!message.author||typeof message.author!=='object')throw Error('Comentario no válido');const id=String(message.author.id||'').slice(0,160),name=String(message.author.name||'').trim().slice(0,100);if(!id||!name)throw Error('Autor no válido');return {id:message.id,author:{id,name,avatar:safeAvatar(message.author.avatar)},text,createdAt};}
  function point(x,y,rect){if(!rect||rect.width<=0||rect.height<=0)throw Error('Área de dibujo no válida');return {x:Math.max(0,Math.min(1,(x-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(y-rect.top)/rect.height))};}
  function annotation(value,pages){
   const a=clone(value);
@@ -10,6 +12,10 @@ var ModernoPlanAnnotations=(()=>{
   if(!Array.isArray(a.points)||!a.points.length||a.points.length>10000||a.points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.x>1||p.y<0||p.y>1))throw Error('Coordenadas no válidas');
   if(a.type==='image'&&(a.points.length!==2||a.points[1].x<=a.points[0].x||a.points[1].y<=a.points[0].y||typeof a.imageData!=='string'||a.imageData.length>700000||!/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(a.imageData)))throw Error('Imagen no válida');
   a.text=String(a.text||'');if(a.text.length>1000)throw Error('Texto demasiado largo');
+  if(a.type==='note'){
+   const legacy=a.text?[{id:'legacy-'+a.id,author:{id:'legacy',name:'Equipo',avatar:''},text:a.text,createdAt:String(a.createdAt||'')}]:[];
+   const source=Array.isArray(a.thread)?a.thread:legacy;if(!source.length||source.length>50||JSON.stringify(source).length>500000)throw Error('Conversación no válida');a.thread=source.map(threadMessage);a.text=a.thread[0].text;a.resolved=Boolean(a.resolved);
+  }
   if(a.type==='tag'){
    const product=a.product;
    if(!product||typeof product!=='object')throw Error('Producto no válido');
@@ -33,6 +39,7 @@ var ModernoPlanAnnotations=(()=>{
   }
   change(fn){this.check(true);const before=clone(this.items);fn();this.undoStack.push(before);if(this.undoStack.length>50)this.undoStack.shift();this.redoStack=[];this.dirty=true;}
   add(value){const a=annotation(value,this.pages);if(a.type==='image'&&this.items.filter(a=>a.type==='image').length>=10)throw Error('Máximo 10 fotos por plano');if(this.items.length>=2000||this.items.some(x=>x.id===a.id))throw Error('Límite o identificador duplicado');this.change(()=>this.items.push(a));}
+  update(id,changes){const index=this.items.findIndex(a=>a.id===id);if(index<0)return;const next=annotation({...this.items[index],...clone(changes)},this.pages);this.change(()=>{this.items[index]=next;});}
   remove(id){if(this.items.some(a=>a.id===id))this.change(()=>this.items=this.items.filter(a=>a.id!==id));}
   undo(){this.check(true);if(!this.undoStack.length)return;this.redoStack.push(clone(this.items));this.items=this.undoStack.pop();this.dirty=true;}
   redo(){this.check(true);if(!this.redoStack.length)return;this.undoStack.push(clone(this.items));this.items=this.redoStack.pop();this.dirty=true;}

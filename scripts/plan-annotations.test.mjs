@@ -30,3 +30,10 @@ test('product labels keep a bounded product snapshot without mutating the source
  source.name='Cambio externo';assert.equal(model.items[0].product.name,'Lámpara de mesa');assert.equal(model.snapshot().annotations[0].product.reference,'L-20');
  assert.throws(()=>model.add({id:'tag-2',page:1,type:'tag',color:'#242424',width:3,points:[{x:.2,y:.2}],text:'',createdAt:'2026-11-06'}),/Producto/);
 });
+test('plan comments preserve authors, replies, position and bounded profile photos',()=>{
+ const model=make(),first={id:'message-1',author:{id:'user-1',name:'Estudio Moderno',avatar:'https://example.invalid/avatar.png'},text:'Revisar este punto',createdAt:'2026-11-06T10:00:00.000Z'};
+ model.add({...ink,id:'comment-1',type:'note',points:[{x:.3,y:.4}],text:first.text,thread:[first]});
+ model.update('comment-1',{points:[{x:.6,y:.7}],thread:[first,{id:'message-2',author:{id:'user-2',name:'Equipo',avatar:'javascript:alert(1)'},text:'Ya está revisado',createdAt:'2026-11-06T10:05:00.000Z'}]});
+ const comment=model.snapshot().annotations[0];assert.deepEqual(comment.points,[{x:.6,y:.7}]);assert.equal(comment.thread.length,2);assert.equal(comment.thread[1].author.avatar,'');assert.equal(comment.text,'Revisar este punto');model.undo();assert.deepEqual(model.items[0].points,[{x:.3,y:.4}]);
+ assert.throws(()=>model.update('comment-1',{thread:[]}),/Conversación/);assert.throws(()=>model.update('comment-1',{thread:Array.from({length:51},(_,i)=>({...first,id:'m-'+i}))}),/Conversación/);
+});

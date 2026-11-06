@@ -90,11 +90,12 @@ async function projectPlanOpen(pid,index,collection='files'){
   async function store(copy,after=null){
     if(closed||saving||!editor||kind==='application/dxf'||kind==='application/vnd.dwg')return false;saving=true;save.disabled=true;saveCopy.disabled=true;
     try{
-      const blob=await editor.exportPdf();if(closed||!allowed())throw Error('El plano ha cambiado mientras se preparaba');
+      const blob=await editor.exportPdf(),annotationRecord=editor.snapshot();if(closed||!allowed())throw Error('El plano ha cambiado mientras se preparaba');
       const base=String(file.name||'Plano').replace(/\.[a-zA-Z0-9]{1,10}$/,'')||'Plano',siblings=project[collection]||[];let name=base+(copy?' - copia':'')+'.pdf';
       if(copy){let n=2;while(siblings.some(item=>String(item?.name||'').toLocaleLowerCase()===name.toLocaleLowerCase()))name=base+' - copia ('+(n++)+').pdf';}
       const data=await fileUp(new File([blob],name,{type:'application/pdf'}));if(!data)throw Error('No se pudo subir el plano');if(closed||!allowed())throw Error('El plano ha cambiado durante la subida');
-      const next={...file,id:copy?crypto.randomUUID():(file.id||crypto.randomUUID()),name,type:'application/pdf',data,when:hoyEs()};delete next.url;delete next.subiendo;delete next.signed;
+      const nextId=copy?crypto.randomUUID():(file.id||crypto.randomUUID()),revision='plan-comments-'+Date.now()+'-'+crypto.randomUUID();
+      const next={...file,id:nextId,name,type:'application/pdf',data,when:hoyEs(),planAnnotations:{record:{...annotationRecord,reference:{...annotationRecord.reference,fileId:String(nextId)}},revision}};delete next.url;delete next.subiendo;delete next.signed;
       if(copy)siblings.push(next);else{delete file.url;delete file.subiendo;delete file.signed;Object.assign(file,next);}
       editor.markSaved();persistSoon();
       if(copy)toast('Copia del plano guardada');else{const navigate=typeof after==='function';await dismiss(true,!navigate);toast('Plano guardado');if(navigate)after();}return true;
@@ -130,8 +131,10 @@ async function projectPlanOpen(pid,index,collection='files'){
     doc=kind==='application/dxf'?await ModernoCadViewer.open(blob):await ModernoPlanEditor.openFile(blob,{pdfjs});
     if(closed||!allowed()){await doc.close?.();return;}
     const model=new ModernoPlanAnnotations.Model({reference:{studyId:ESTUDIO_ID,projectId:String(pid),fileId:String(file.id??index),revisionId:'original'},pages:doc.pages,authorize:()=>!closed&&allowed()});
+    if(file.planAnnotations?.record)model.load(file.planAnnotations.record,String(file.planAnnotations.revision||'stored-comments'));
     const products=(project.rooms||[]).flatMap((room,ri)=>(room.sections||[]).flatMap((section,si)=>(section.items||[]).map((item,ii)=>({id:String(item.instanceId||item.id||`${ri}:${si}:${ii}`),name:String(item.name||'Producto'),room:String(room.name||''),reference:String(item.sku||item.ref||'')}))));
-    editor=await ModernoPlanEditor.mount(root,{document:doc,model,filename:file.name,readOnly:kind==='application/dxf',products,onDetached:()=>{if(closed)return;closed=true;controller.abort();clearInterval(timer);clearExitAlert();projectPlanDialog=null;}});save.disabled=kind==='application/dxf';saveCopy.disabled=kind==='application/dxf';
+    const author={id:String(state.sessionUser?.id||state.sessionUser?.mail||'usuario'),name:String(state.sessionUser?.name||'Equipo'),avatar:String(state.sessionUser?.avatar||'')};
+    editor=await ModernoPlanEditor.mount(root,{document:doc,model,filename:file.name,readOnly:kind==='application/dxf',products,author,onDetached:()=>{if(closed)return;closed=true;controller.abort();clearInterval(timer);clearExitAlert();projectPlanDialog=null;}});save.disabled=kind==='application/dxf';saveCopy.disabled=kind==='application/dxf';
     if(closed){await editor.discard();return;}
     root.querySelector('h2').textContent=file.name;
   }catch(error){if(!closed){root.replaceChildren();const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.name==='AbortError'?'Lectura cancelada':error.message;root.append(message);}}
