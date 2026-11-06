@@ -65,6 +65,7 @@ with sync_playwright() as p:
     assert page.get_by_label('Conversación del plano',exact=True).is_visible() and page.get_by_text('Revisar esta cota',exact=True).is_visible()
     page.get_by_label('Responder al comentario',exact=True).fill('De acuerdo, lo revisamos');page.get_by_role('button',name='Responder',exact=True).click()
     assert page.evaluate("model.items[1].thread.length===2&&model.items[1].thread[1].author.id==='user-jj'")
+    page.get_by_title('Resolver conversación',exact=True).click();assert page.get_by_role('button',name='Comentario de Javier Jiménez',exact=True).evaluate("el=>getComputedStyle(el).opacity")=='1'
     page.get_by_label('Cerrar conversación',exact=True).click();before=page.evaluate('model.items[1].points[0]');marker=page.get_by_role('button',name='Comentario de Javier Jiménez',exact=True);m=marker.bounding_box();page.mouse.move(m['x']+m['width']/2,m['y']+m['height']/2);page.mouse.down();page.mouse.move(m['x']+90,m['y']+55,steps=5);page.mouse.up();after=page.evaluate('model.items[1].points[0]');assert abs(after['x']-before['x'])>.03 and abs(after['y']-before['y'])>.03
     page.get_by_role('button',name='Etiqueta de producto',exact=True).click();click_at(.6,.55)
     page.get_by_role('option',name='Lámpara ficticia Salón · LF-1',exact=True).click()
