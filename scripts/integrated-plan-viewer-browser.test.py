@@ -166,7 +166,7 @@ with sync_playwright() as p:
  page.add_style_tag(path=str(repo/'app/plan-editor.css'))
  page.add_script_tag(url='https://planos-prueba.invalid/pdf.min.js');page.evaluate("pdfjsLib.GlobalWorkerOptions.workerSrc='https://planos-prueba.invalid/pdf.worker.min.js'")
  for name in ['plan-annotations.js','cad-viewer.js','plan-editor.js']:page.add_script_tag(path=str(repo/'app'/name))
- page.evaluate("""()=>{window.shell=name=>{document.querySelector('#project-tab-panel').innerHTML='<section class="project-plan-dialog" role="dialog" aria-label="Plano del proyecto"><header><strong>'+name+'</strong><div class="plan-dialog-actions"><button class="btn project-plan-save">Guardar</button><button class="btn btn-ghost">Guardar como copia</button><button class="btn project-plan-delete">Eliminar</button><button class="btn btn-ghost project-plan-close">Cerrar</button></div></header><section id="viewer"></section></section>';};}""")
+ page.evaluate("""()=>{window.shell=name=>{document.querySelector('#project-tab-panel').innerHTML='<section class="project-plan-dialog" role="dialog" aria-label="Plano del proyecto"><header><strong>'+name+'</strong><div class="plan-dialog-actions"><button class="btn btn-ghost project-plan-save">Guardar</button><button class="btn btn-ghost">Guardar como copia</button><button class="btn btn-ghost project-plan-delete">Eliminar</button><button class="btn btn-ghost project-plan-edit">Editar</button><button class="btn btn-ghost project-plan-close">Cerrar</button></div></header><section id="viewer"></section></section>';};}""")
  page.evaluate("""async()=>{
   shell('PR-70 · Planta general.pdf');const pages=[];
   for(let n=1;n<=2;n++){const c=document.createElement('canvas');c.width=1200;c.height=760;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.strokeStyle='#252525';x.lineWidth=6;x.strokeRect(90,90,1020,560);x.lineWidth=3;x.beginPath();x.moveTo(510,90);x.lineTo(510,650);x.moveTo(90,360);x.lineTo(510,360);x.stroke();x.strokeRect(650,190,330,220);x.beginPath();x.arc(815,300,58,0,Math.PI*2);x.stroke();x.fillStyle='#252525';x.font='bold 30px Arial';x.fillText(n===1?'PLANTA GENERAL · PR-70':'PLANTA DE ILUMINACIÓN · PR-70',90,55);x.font='18px Arial';x.fillText('Documento ficticio para revisión visual',90,710);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.94));pages.push({width:c.width,height:c.height,jpeg:new Uint8Array(await blob.arrayBuffer())});}
@@ -180,7 +180,7 @@ with sync_playwright() as p:
  assert page.get_by_text('Añade notas desde la barra superior.',exact=True).count()==0
  assert page.get_by_role('button',name='Pantalla completa',exact=True).count()==0 and page.get_by_role('button',name='Descargar original',exact=True).count()==0
  assert page.get_by_role('button',name='Guardar',exact=True).count()==1 and page.get_by_role('button',name='Guardar como copia',exact=True).count()==1
- assert page.get_by_role('button',name='Eliminar',exact=True).count()==1 and page.get_by_role('button',name='Cerrar',exact=True).count()==1
+ assert page.get_by_role('button',name='Eliminar',exact=True).count()==1 and page.get_by_role('button',name='Editar',exact=True).count()==1 and page.get_by_role('button',name='Cerrar',exact=True).count()==1
  for removed in ['Rectángulo','Círculo','Nota','Lápiz','Resaltador','Panel de comentarios']:
   assert page.get_by_role('button',name=removed,exact=True).count()==0
  page.screenshot(path=str(out/'visor-pdf-202.png'),full_page=True)
