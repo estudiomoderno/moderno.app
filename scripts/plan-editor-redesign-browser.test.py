@@ -26,6 +26,11 @@ with sync_playwright() as p:
     for removed in ['Lápiz','Resaltador','Rectángulo','Círculo','Nota','Páginas','Panel de comentarios','Añadir foto','Hacer foto']:
         assert page.get_by_role('button',name=removed,exact=True).count()==0, removed
     assert page.get_by_role('button',name='Color',exact=True).count()==1
+    canvas=page.get_by_label('Lienzo de anotación')
+    cursor_icons={'Desplazar':'Desplazar.svg','Selector':'Selector.svg','Flecha':'Flecha.svg','Texto':'Texto.svg','Comentario':'Comentar.svg','Etiqueta de producto':'Etiqueta.svg','Borrador':'Borrar.svg'}
+    for label,asset in cursor_icons.items():
+        page.get_by_role('button',name=label,exact=True).click()
+        assert asset in canvas.evaluate("el=>getComputedStyle(el).cursor"),label
     page.get_by_role('button',name='Color',exact=True).click()
     assert page.get_by_label('Color personalizado',exact=True).count()==1 and page.get_by_label('Opacidad',exact=True).count()==1
     assert page.locator('.plan-color-swatch').count()==8
@@ -42,7 +47,7 @@ with sync_playwright() as p:
     assert page.get_by_text('Grosor',exact=True).count()==0 and 60 <= page.locator('.plan-width-label').bounding_box()['width'] <= 66
     eraser=page.get_by_role('button',name='Borrador',exact=True).bounding_box();rotate=page.get_by_role('button',name='Girar 90°',exact=True).bounding_box()
     assert abs(eraser['y']-rotate['y']) < 1 and 0 < rotate['x']-eraser['x'] < 34
-    canvas=page.get_by_label('Lienzo de anotación');box=canvas.bounding_box()
+    box=canvas.bounding_box()
     def click_at(x,y): canvas.click(position={'x':box['width']*x,'y':box['height']*y})
     page.get_by_role('button',name='Texto',exact=True).click();click_at(.25,.25)
     inline=page.get_by_label('Texto en el plano',exact=True);assert inline.is_visible();inline.fill('Texto directo seguro');inline.press('Enter');page.wait_for_function('model.items.length===1')
