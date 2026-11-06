@@ -8,9 +8,10 @@ with sync_playwright() as p:
     page = browser.new_page(viewport={'width': 1360, 'height': 900})
     errors = []
     page.on('pageerror', lambda error: errors.append(str(error)))
-    page.route('**/*', lambda route: route.fulfill(body='<main><nav class="project-tabs project-dock"></nav><section id="project-tab-panel" style="height:760px"></section></main>', content_type='text/html'))
+    page.route('**/*', lambda route: route.fulfill(body='<main><section id="view"><nav class="project-tabs project-dock"></nav><section id="project-tab-panel" style="height:760px"></section></section></main>', content_type='text/html'))
     page.goto('https://plan-navigation-prueba.invalid/')
     page.add_style_tag(path=str(repo/'app/plan-editor.css'))
+    page.add_style_tag(path=str(repo/'app/brand/app-identity.css'))
     for name in ['plan-annotations.js', 'plan-editor.js', 'project-documents.js']:
         page.add_script_tag(path=str(repo/'app'/name))
     page.evaluate("""async()=>{
@@ -49,6 +50,9 @@ with sync_playwright() as p:
     assert page.get_by_role('button', name='Guardar como copia', exact=True).evaluate("el=>getComputedStyle(el).borderRadius")=='8px'
     header_buttons=page.locator('.plan-dialog-actions>button');assert header_buttons.count()==5
     boxes=[button.bounding_box() for button in header_buttons.all()];assert len({round(box['y']+box['height']/2) for box in boxes})==1
+    assert [box['height'] for box in boxes]==[32,32,32,32,28]
+    assert all(button.evaluate("el=>getComputedStyle(el).borderRadius")=='8px' for button in header_buttons.all())
+    assert header_buttons.evaluate_all("els=>els.map(el=>[el.dataset.variant,el.dataset.size])")==[['default','default'],['outline','icon'],['destructive','default'],['ghost','default'],['outline','icon-xs']]
     assert page.get_by_role('button', name='Eliminar', exact=True).inner_text()=='Eliminar' and page.get_by_role('button', name='Editar', exact=True).inner_text()=='Editar'
     assert page.get_by_role('button', name='Eliminar', exact=True).locator('svg').count()==1 and page.get_by_role('button', name='Editar', exact=True).locator('svg').count()==1
     assert page.get_by_role('button', name='Guardar como copia', exact=True).inner_text()=='' and page.get_by_role('button', name='Cerrar', exact=True).inner_text()==''
