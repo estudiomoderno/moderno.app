@@ -29,7 +29,7 @@ test('bounded download rejects HTTP and size errors without returning partial co
 test('viewer saves through the existing authorized upload flow without direct storage access',()=>{
  const js=readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8'),html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
  assert.ok(!js.includes('sb.storage')&&!js.includes('sb.rpc')&&!js.includes('localStorage'));
- assert.match(js,/mount\(root,\{document:doc,model,filename:file\.name,readOnly:kind==='application\/dxf'\}\)/);assert.match(js,/fileUp\(new File/);assert.match(js,/persistSoon\(\)/);assert.match(js,/Guardar como copia/);assert.doesNotMatch(js,/Pantalla completa|Descargar original/);assert.match(html,/ModernoProjectDocuments.uploadCard\(p,tb\)/);assert.match(js,/addFiles\(Number/);assert.doesNotMatch(html,/<h2 class="sec">Notas del proyecto/);
+ assert.match(js,/mount\(root,\{document:doc,model,filename:file\.name,readOnly:kind==='application\/dxf',products\}\)/);assert.match(js,/fileUp\(new File/);assert.match(js,/persistSoon\(\)/);assert.match(js,/Guardar como copia/);assert.match(js,/project-plan-delete/);assert.match(js,/getElementById\('project-tab-panel'\).*view\.replaceChildren\(dialog\)/);assert.doesNotMatch(js,/showModal\(\).*project-plan-dialog|Pantalla completa|Descargar original/);assert.match(html,/ModernoProjectDocuments.uploadCard\(p,tb\)/);assert.match(js,/addFiles\(Number/);assert.doesNotMatch(html,/<h2 class="sec">Notas del proyecto/);
 });
 test('viewer identity changes for real-format sessions without a user id',()=>{
  const code=readFileSync(new URL('../app/project-documents.js',import.meta.url),'utf8');

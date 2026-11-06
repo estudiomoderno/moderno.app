@@ -63,16 +63,16 @@ async function projectPlanOpen(pid,index,collection='files'){
     return !_accessLoading&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon&&Boolean(state.sessionUser?.mail||state.sessionUser?.id)&&identity===projectPlanIdentity()&&current&&fileSrc(current)===source&&String(current.id??index)===String(file.id??index)&&ModernoProjectDocuments.type(current)===kind;
   };
   if(!allowed()){toast('Comprueba tu sesión y tu acceso al proyecto');return;}
-  const controller=new AbortController(),dialog=document.createElement('dialog');dialog.className='project-plan-dialog';dialog.setAttribute('aria-label','Plano del proyecto');
+  const controller=new AbortController(),dialog=document.createElement('section');dialog.className='project-plan-dialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-label','Plano del proyecto');
   const header=document.createElement('header'),title=document.createElement('strong'),close=document.createElement('button'),root=document.createElement('section');
-  const actions=document.createElement('div'),save=document.createElement('button'),saveCopy=document.createElement('button');actions.className='plan-dialog-actions';save.type='button';save.className='btn btn-dark project-plan-save';save.textContent='Guardar';save.disabled=true;saveCopy.type='button';saveCopy.className='btn btn-ghost';saveCopy.textContent='Guardar como copia';saveCopy.disabled=true;close.type='button';close.className='project-plan-close';close.setAttribute('aria-label','Cerrar plano');close.textContent='×';title.textContent=file.name;actions.append(save,saveCopy,close);header.append(title,actions);root.textContent='Abriendo plano…';dialog.append(header,root);document.body.append(dialog);dialog.showModal();close.focus();
+  const actions=document.createElement('div'),save=document.createElement('button'),saveCopy=document.createElement('button'),remove=document.createElement('button');actions.className='plan-dialog-actions';save.type='button';save.className='btn project-plan-save';save.textContent='Guardar';save.disabled=true;saveCopy.type='button';saveCopy.className='btn btn-ghost';saveCopy.textContent='Guardar como copia';saveCopy.disabled=true;remove.type='button';remove.className='btn project-plan-delete';remove.textContent='Eliminar';close.type='button';close.className='btn btn-ghost project-plan-close';close.textContent='Cerrar';title.textContent=file.name;actions.append(save,saveCopy,remove,close);header.append(title,actions);root.textContent='Abriendo plano…';dialog.append(header,root);const view=document.getElementById('project-tab-panel')||document.getElementById('view');if(!view)throw Error('Vista del proyecto no disponible');view.replaceChildren(dialog);close.focus();
   let editor=null,doc=null,closed=false,closing=false,saving=false;
   async function dismiss(force=false){
     if(closed||closing)return;closing=true;
     try{
       if(editor&&!force){try{await editor.close();}catch{if(!window.confirm('Las anotaciones no se han guardado en la nube. ¿Descartarlas y cerrar?'))return;await editor.discard();}}
       else if(editor)await editor.discard();else await doc?.close?.();
-      closed=true;controller.abort();clearInterval(timer);dialog.close();dialog.remove();projectPlanDialog=null;
+      closed=true;controller.abort();clearInterval(timer);dialog.remove();projectPlanDialog=null;render();
     }finally{closing=false;}
   }
   const timer=setInterval(()=>{if(!allowed())dismiss(true);},250);
@@ -88,11 +88,19 @@ async function projectPlanOpen(pid,index,collection='files'){
       const next={...file,id:copy?crypto.randomUUID():(file.id||crypto.randomUUID()),name,type:'application/pdf',data,when:hoyEs()};delete next.url;delete next.subiendo;delete next.signed;
       if(copy)siblings.push(next);else{delete file.url;delete file.subiendo;delete file.signed;Object.assign(file,next);}
       editor.markSaved();persistSoon();
-      if(copy){render();toast('Copia del plano guardada');}else{await dismiss(true);render();toast('Plano guardado');}
+      if(copy)toast('Copia del plano guardada');else{await dismiss(true);toast('Plano guardado');}
     }catch(error){if(!closed)toast(error.message||'No se pudo guardar el plano');}
     finally{saving=false;if(!closed){save.disabled=false;saveCopy.disabled=false;}}
   }
-  projectPlanDialog={dismiss};save.onclick=()=>store(false);saveCopy.onclick=()=>store(true);close.onclick=()=>dismiss();dialog.addEventListener('cancel',event=>{event.preventDefault();dismiss();});
+  function confirmDelete(){
+    if(document.getElementById('project-plan-delete-confirm'))return;
+    const warning=document.createElement('dialog');warning.id='project-plan-delete-confirm';warning.className='shopping-product-delete-dialog';warning.setAttribute('aria-labelledby','project-plan-delete-title');warning.setAttribute('aria-describedby','project-plan-delete-description');warning.innerHTML=`<div class="shopping-product-delete-symbol" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></div><h3 id="project-plan-delete-title">¿Eliminar plano?</h3><p id="project-plan-delete-description">Se eliminará «${ModernoDaily.escape(file.name||'Plano')}». Esta acción lo moverá a la Papelera cuando esté disponible.</p><div class="modal-foot"><button type="button" class="btn btn-ghost" data-cancel>Cancelar</button><button type="button" class="btn btn-dark" data-confirm>Eliminar plano</button></div>`;
+    warning.querySelector('[data-cancel]').onclick=()=>warning.close();warning.addEventListener('close',()=>{warning.remove();remove.focus();},{once:true});
+    warning.querySelector('[data-confirm]').onclick=async()=>{const currentProject=state.projects.find(p=>p.id===pid),currentIndex=(currentProject?.[collection]||[]).findIndex(item=>item===file||(fileSrc(item)===source&&String(item.id??index)===String(file.id??index)));if(currentIndex<0){warning.close();return;}warning.close();await dismiss(true);if(collection==='files'){trashFile(pid,currentIndex);persistSoon();}else{obraSnap(pid);currentProject.obraPlanos.splice(currentIndex,1);persistSoon();render();toast('Plano eliminado');}};
+    document.body.append(warning);warning.showModal();warning.querySelector('[data-cancel]').focus();
+  }
+  const escape=event=>{if(event.key==='Escape'&&!document.querySelector('dialog[open]')){event.preventDefault();dismiss();}};window.addEventListener('keydown',escape,{signal:controller.signal});
+  projectPlanDialog={dismiss};save.onclick=()=>store(false);saveCopy.onclick=()=>store(true);remove.onclick=confirmDelete;close.onclick=()=>dismiss();
   try{
     const resolved=await fileResolveForView(file);
     if(!resolved)throw Error('Archivo no disponible; comprueba tu acceso o vuelve a subirlo desde Archivos.');
@@ -104,7 +112,8 @@ async function projectPlanOpen(pid,index,collection='files'){
     doc=kind==='application/dxf'?await ModernoCadViewer.open(blob):await ModernoPlanEditor.openFile(blob,{pdfjs});
     if(closed||!allowed()){await doc.close?.();return;}
     const model=new ModernoPlanAnnotations.Model({reference:{studyId:ESTUDIO_ID,projectId:String(pid),fileId:String(file.id??index),revisionId:'original'},pages:doc.pages,authorize:()=>!closed&&allowed()});
-    editor=await ModernoPlanEditor.mount(root,{document:doc,model,filename:file.name,readOnly:kind==='application/dxf'});save.disabled=kind==='application/dxf';saveCopy.disabled=kind==='application/dxf';
+    const products=(project.rooms||[]).flatMap((room,ri)=>(room.sections||[]).flatMap((section,si)=>(section.items||[]).map((item,ii)=>({id:String(item.instanceId||item.id||`${ri}:${si}:${ii}`),name:String(item.name||'Producto'),room:String(room.name||''),reference:String(item.sku||item.ref||'')}))));
+    editor=await ModernoPlanEditor.mount(root,{document:doc,model,filename:file.name,readOnly:kind==='application/dxf',products});save.disabled=kind==='application/dxf';saveCopy.disabled=kind==='application/dxf';
     if(closed){await editor.discard();return;}
     root.querySelector('h2').textContent=file.name;
   }catch(error){if(!closed){root.replaceChildren();const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.name==='AbortError'?'Lectura cancelada':error.message;root.append(message);}}

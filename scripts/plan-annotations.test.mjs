@@ -23,3 +23,9 @@ test('photo data rejects URLs, SVG, oversized payloads and invalid bounds',()=>{
  assert.throws(()=>m.add({...image,points:[{x:.8,y:.8},{x:.2,y:.2}]}),/Imagen/);assert.equal(m.items.length,0);
  for(let i=0;i<10;i++)m.add({...image,id:'photo-'+i});assert.throws(()=>m.add({...image,id:'extra'}),/10 fotos/);
 });
+test('product labels keep a bounded product snapshot without mutating the source',()=>{
+ const model=make(),source={id:'product-1',name:'Lámpara de mesa',room:'Salón',reference:'L-20'};
+ model.add({id:'tag-1',page:1,type:'tag',color:'#242424',width:3,points:[{x:.4,y:.3}],text:source.name,product:source,createdAt:'2026-11-06'});
+ source.name='Cambio externo';assert.equal(model.items[0].product.name,'Lámpara de mesa');assert.equal(model.snapshot().annotations[0].product.reference,'L-20');
+ assert.throws(()=>model.add({id:'tag-2',page:1,type:'tag',color:'#242424',width:3,points:[{x:.2,y:.2}],text:'',createdAt:'2026-11-06'}),/Producto/);
+});

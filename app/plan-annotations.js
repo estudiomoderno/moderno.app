@@ -1,6 +1,6 @@
 /* Plan annotations: independent from original files. Persistence must be supplied by an authorized backend. */
 var ModernoPlanAnnotations=(()=>{
- const tools=['pen','highlight','arrow','rect','ellipse','text','note','image'];
+ const tools=['pen','highlight','arrow','rect','ellipse','text','note','image','tag'];
  const clone=v=>JSON.parse(JSON.stringify(v));
  function point(x,y,rect){if(!rect||rect.width<=0||rect.height<=0)throw Error('Área de dibujo no válida');return {x:Math.max(0,Math.min(1,(x-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(y-rect.top)/rect.height))};}
  function annotation(value,pages){
@@ -10,6 +10,12 @@ var ModernoPlanAnnotations=(()=>{
   if(!Array.isArray(a.points)||!a.points.length||a.points.length>10000||a.points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.x>1||p.y<0||p.y>1))throw Error('Coordenadas no válidas');
   if(a.type==='image'&&(a.points.length!==2||a.points[1].x<=a.points[0].x||a.points[1].y<=a.points[0].y||typeof a.imageData!=='string'||a.imageData.length>700000||!/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(a.imageData)))throw Error('Imagen no válida');
   a.text=String(a.text||'');if(a.text.length>1000)throw Error('Texto demasiado largo');
+  if(a.type==='tag'){
+   const product=a.product;
+   if(!product||typeof product!=='object')throw Error('Producto no válido');
+   a.product={id:String(product.id||'').slice(0,120),name:String(product.name||'').slice(0,240),room:String(product.room||'').slice(0,200),reference:String(product.reference||'').slice(0,160)};
+   if(!a.product.id||!a.product.name)throw Error('Producto no válido');
+  }
   return a;
  }
  class Model{
