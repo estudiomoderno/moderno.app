@@ -34,6 +34,8 @@ with sync_playwright() as p:
     page.evaluate("projectPlanDialog.navigate(()=>window.navigated=true)")
     alert=page.get_by_role('alertdialog', name='¿Guardar los cambios del plano?')
     assert alert.is_visible() and not page.evaluate('window.navigated')
+    alert_box=alert.bounding_box();assert abs((alert_box['x']+alert_box['width']/2)-680)<2 and abs((alert_box['y']+alert_box['height']/2)-450)<2
+    assert alert.locator('[data-slot="alert-dialog-media"]').count()==1 and alert.locator('[data-slot="alert-dialog-footer"]').count()==1
     page.get_by_role('button', name='Seguir editando', exact=True).click()
     assert page.locator('.project-plan-dialog').count()==1 and page.locator('.project-plan-exit-alert').count()==0
 
@@ -46,9 +48,13 @@ with sync_playwright() as p:
     assert page.get_by_role('button', name='Guardar', exact=True).evaluate("el=>getComputedStyle(el).backgroundColor")=='rgb(6, 102, 255)'
     assert page.get_by_role('button', name='Guardar como copia', exact=True).evaluate("el=>getComputedStyle(el).borderRadius")=='8px'
     header_buttons=page.locator('.plan-dialog-actions>button');assert header_buttons.count()==5
-    assert len({button.bounding_box()['y'] for button in header_buttons.all()})==1 and all(button.bounding_box()['height']==32 for button in header_buttons.all())
-    assert page.get_by_role('button', name='Eliminar', exact=True).inner_text()=='' and page.get_by_role('button', name='Editar', exact=True).inner_text()==''
+    boxes=[button.bounding_box() for button in header_buttons.all()];assert len({round(box['y']+box['height']/2) for box in boxes})==1
+    assert page.get_by_role('button', name='Eliminar', exact=True).inner_text()=='Eliminar' and page.get_by_role('button', name='Editar', exact=True).inner_text()=='Editar'
     assert page.get_by_role('button', name='Eliminar', exact=True).locator('svg').count()==1 and page.get_by_role('button', name='Editar', exact=True).locator('svg').count()==1
+    assert page.get_by_role('button', name='Guardar como copia', exact=True).inner_text()=='' and page.get_by_role('button', name='Cerrar', exact=True).inner_text()==''
+    page.get_by_role('button', name='Eliminar', exact=True).click();delete_alert=page.get_by_role('alertdialog', name='¿Eliminar plano?');assert delete_alert.is_visible()
+    assert delete_alert.locator('[data-slot="alert-dialog-media"]').count()==1 and delete_alert.locator('[data-slot="alert-dialog-footer"]').count()==1
+    delete_alert.get_by_role('button', name='Cancelar', exact=True).click()
 
     add_text('Guardar antes de salir')
     page.evaluate("projectPlanDialog.navigate(()=>window.navigated=true)")
