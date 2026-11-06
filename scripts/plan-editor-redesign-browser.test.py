@@ -1,8 +1,13 @@
 """Offline smoke test for the compact plan editor. Uses fictitious raster data only."""
 import pathlib
+import xml.etree.ElementTree as ET
 from playwright.sync_api import sync_playwright
 
 repo = pathlib.Path(__file__).resolve().parents[1]
+for asset in ['Desplazar.svg','Selector.svg','Flecha.svg','Texto.svg','Comentar.svg','Etiqueta.svg','Borrar.svg']:
+    source=(repo/'app/brand/icons/plan-viewer/cursors'/asset).read_text()
+    ET.fromstring(source)
+    assert 'fill="white"' in source and 'stroke="white"' in source,asset
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path='/usr/bin/chromium', headless=True, args=['--no-sandbox','--disable-crash-reporter','--disable-crashpad'])
     page = browser.new_page(viewport={'width': 1280, 'height': 840})
