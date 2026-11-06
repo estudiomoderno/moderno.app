@@ -29,6 +29,11 @@ with sync_playwright() as p:
     page.get_by_role('button',name='Color',exact=True).click()
     assert page.get_by_label('Color personalizado',exact=True).count()==1 and page.get_by_label('Opacidad',exact=True).count()==1
     assert page.locator('.plan-color-swatch').count()==8
+    assert page.locator('[data-slot="color-picker"]').count()==1 and page.get_by_label('Saturación y brillo',exact=True).count()==1
+    assert page.get_by_label('Color personalizado',exact=True).input_value()=='#6366f1'
+    page.get_by_role('button',name='Color #3b82f6',exact=True).click()
+    assert page.get_by_label('Color personalizado',exact=True).input_value()=='#3b82f6'
+    page.get_by_label('Opacidad',exact=True).fill('50');assert page.locator('.plan-color-alpha-value').text_content()=='50%'
     color_panel=page.locator('.plan-color-panel');assert color_panel.is_visible()
     panel_box=color_panel.bounding_box();color_box=page.get_by_role('button',name='Color',exact=True).bounding_box()
     assert panel_box['y']+panel_box['height'] <= color_box['y'] and page.evaluate("getComputedStyle(document.querySelector('.plan-color-panel')).position")=='fixed'

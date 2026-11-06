@@ -6,7 +6,7 @@ var ModernoPlanAnnotations=(()=>{
  function annotation(value,pages){
   const a=clone(value);
   if(!tools.includes(a.type)||!Number.isInteger(a.page)||a.page<1||a.page>pages||typeof a.id!=='string'||!a.id||a.id.length>100)throw Error('Anotación no válida');
-  if(!/^#[a-f0-9]{6}$/i.test(a.color)||!Number.isFinite(a.width)||a.width<1||a.width>30)throw Error('Estilo no válido');
+  if(!/^#[a-f0-9]{6}(?:[a-f0-9]{2})?$/i.test(a.color)||!Number.isFinite(a.width)||a.width<1||a.width>30)throw Error('Estilo no válido');
   if(!Array.isArray(a.points)||!a.points.length||a.points.length>10000||a.points.some(p=>!Number.isFinite(p.x)||!Number.isFinite(p.y)||p.x<0||p.x>1||p.y<0||p.y>1))throw Error('Coordenadas no válidas');
   if(a.type==='image'&&(a.points.length!==2||a.points[1].x<=a.points[0].x||a.points[1].y<=a.points[0].y||typeof a.imageData!=='string'||a.imageData.length>700000||!/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(a.imageData)))throw Error('Imagen no válida');
   a.text=String(a.text||'');if(a.text.length>1000)throw Error('Texto demasiado largo');

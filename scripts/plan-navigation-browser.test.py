@@ -45,6 +45,10 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelector('.plan-paper canvas').width>0")
     assert page.get_by_role('button', name='Guardar', exact=True).evaluate("el=>getComputedStyle(el).backgroundColor")=='rgb(6, 102, 255)'
     assert page.get_by_role('button', name='Guardar como copia', exact=True).evaluate("el=>getComputedStyle(el).borderRadius")=='8px'
+    header_buttons=page.locator('.plan-dialog-actions>button');assert header_buttons.count()==5
+    assert len({button.bounding_box()['y'] for button in header_buttons.all()})==1 and all(button.bounding_box()['height']==32 for button in header_buttons.all())
+    assert page.get_by_role('button', name='Eliminar', exact=True).inner_text()=='' and page.get_by_role('button', name='Editar', exact=True).inner_text()==''
+    assert page.get_by_role('button', name='Eliminar', exact=True).locator('svg').count()==1 and page.get_by_role('button', name='Editar', exact=True).locator('svg').count()==1
 
     add_text('Guardar antes de salir')
     page.evaluate("projectPlanDialog.navigate(()=>window.navigated=true)")
