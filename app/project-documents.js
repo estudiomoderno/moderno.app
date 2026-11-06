@@ -66,20 +66,22 @@ async function projectPlanOpen(pid,index,collection='files'){
   const controller=new AbortController(),dialog=document.createElement('section');dialog.className='project-plan-dialog';dialog.setAttribute('role','dialog');dialog.setAttribute('aria-label','Plano del proyecto');
   const header=document.createElement('header'),title=document.createElement('strong'),close=document.createElement('button'),root=document.createElement('section');
   const actions=document.createElement('div'),save=document.createElement('button'),saveCopy=document.createElement('button'),remove=document.createElement('button'),edit=document.createElement('button');actions.className='plan-dialog-actions';save.type='button';save.className='btn btn-ghost project-plan-save';save.textContent='Guardar';save.disabled=true;saveCopy.type='button';saveCopy.className='btn btn-ghost';saveCopy.textContent='Guardar como copia';saveCopy.disabled=true;remove.type='button';remove.className='btn btn-ghost project-plan-delete';remove.textContent='Eliminar';edit.type='button';edit.className='btn btn-ghost project-plan-edit';edit.textContent='Editar';close.type='button';close.className='btn btn-ghost project-plan-close';close.textContent='Cerrar';title.textContent=file.name;actions.append(save,saveCopy,remove,edit,close);header.append(title,actions);root.textContent='Abriendo plano…';dialog.append(header,root);const view=document.getElementById('project-tab-panel')||document.getElementById('view');if(!view)throw Error('Vista del proyecto no disponible');view.replaceChildren(dialog);close.focus();
-  let editor=null,doc=null,closed=false,closing=false,saving=false;
-  async function dismiss(force=false){
+  let editor=null,doc=null,closed=false,closing=false,saving=false,exitAlert=null,pendingNavigation=null;
+  function clearExitAlert(){exitAlert?.remove();exitAlert=null;pendingNavigation=null;}
+  async function dismiss(force=false,renderView=true){
     if(closed||closing)return;closing=true;
     try{
-      if(editor&&!force){try{await editor.close();}catch{if(!window.confirm('Las anotaciones no se han guardado en la nube. ¿Descartarlas y cerrar?'))return;await editor.discard();}}
+      if(editor&&!force&&editor.hasChanges()){showExitAlert(renderView?render:()=>{});return false;}
+      if(editor&&!force)await editor.close();
       else if(editor)await editor.discard();else await doc?.close?.();
-      closed=true;controller.abort();clearInterval(timer);dialog.remove();projectPlanDialog=null;render();
+      closed=true;controller.abort();clearInterval(timer);clearExitAlert();dialog.remove();projectPlanDialog=null;if(renderView)render();return true;
     }finally{closing=false;}
   }
   const timer=setInterval(()=>{if(!allowed())dismiss(true);},250);
   // Opaque file scope: URLs, names and document bytes never enter a broadcast.
   crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify([pid,String(file.id??index),source]))).then(hash=>{if(!closed){dialog.dataset.cursorFile=Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');document.dispatchEvent(new Event('moderno:cursor-context'));}}).catch(()=>{});
-  async function store(copy){
-    if(closed||saving||!editor||kind==='application/dxf'||kind==='application/vnd.dwg')return;saving=true;save.disabled=true;saveCopy.disabled=true;
+  async function store(copy,after=null){
+    if(closed||saving||!editor||kind==='application/dxf'||kind==='application/vnd.dwg')return false;saving=true;save.disabled=true;saveCopy.disabled=true;
     try{
       const blob=await editor.exportPdf();if(closed||!allowed())throw Error('El plano ha cambiado mientras se preparaba');
       const base=String(file.name||'Plano').replace(/\.[a-zA-Z0-9]{1,10}$/,'')||'Plano',siblings=project[collection]||[];let name=base+(copy?' - copia':'')+'.pdf';
@@ -88,10 +90,19 @@ async function projectPlanOpen(pid,index,collection='files'){
       const next={...file,id:copy?crypto.randomUUID():(file.id||crypto.randomUUID()),name,type:'application/pdf',data,when:hoyEs()};delete next.url;delete next.subiendo;delete next.signed;
       if(copy)siblings.push(next);else{delete file.url;delete file.subiendo;delete file.signed;Object.assign(file,next);}
       editor.markSaved();persistSoon();
-      if(copy)toast('Copia del plano guardada');else{await dismiss(true);toast('Plano guardado');}
-    }catch(error){if(!closed)toast(error.message||'No se pudo guardar el plano');}
+      if(copy)toast('Copia del plano guardada');else{const navigate=typeof after==='function';await dismiss(true,!navigate);toast('Plano guardado');if(navigate)after();}return true;
+    }catch(error){if(!closed)toast(error.message||'No se pudo guardar el plano');return false;}
     finally{saving=false;if(!closed){save.disabled=false;saveCopy.disabled=false;}}
   }
+  function showExitAlert(action){
+    if(exitAlert||closed)return;pendingNavigation=action;
+    exitAlert=document.createElement('aside');exitAlert.className='project-plan-exit-alert';exitAlert.setAttribute('role','alertdialog');exitAlert.setAttribute('aria-labelledby','project-plan-exit-title');exitAlert.setAttribute('aria-describedby','project-plan-exit-description');exitAlert.innerHTML=`<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3 4 6v5c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V6l-8-3Z"/><path d="m9 12 2 2 4-5"/></svg><div><h3 id="project-plan-exit-title">¿Guardar los cambios del plano?</h3><p id="project-plan-exit-description">Guarda las anotaciones antes de salir del editor.</p></div><div class="project-plan-exit-actions"><button type="button" class="btn" data-stay>Seguir editando</button><button type="button" class="btn project-plan-exit-discard" data-discard>Salir sin guardar</button><button type="button" class="btn project-plan-exit-save" data-save>Guardar y salir</button></div>`;
+    exitAlert.querySelector('[data-stay]').onclick=()=>{clearExitAlert();close.focus();};
+    exitAlert.querySelector('[data-discard]').onclick=async()=>{const next=pendingNavigation;clearExitAlert();if(await dismiss(true,false))next?.();};
+    exitAlert.querySelector('[data-save]').onclick=async()=>{const next=pendingNavigation,buttons=[...exitAlert.querySelectorAll('button')];buttons.forEach(button=>button.disabled=true);if(!await store(false,next))buttons.forEach(button=>button.disabled=false);};
+    document.body.append(exitAlert);exitAlert.querySelector('[data-save]').focus();
+  }
+  function navigate(action){if(closed){action?.();return;}if(editor?.hasChanges()){showExitAlert(action);return;}dismiss(true,false).then(done=>{if(done)action?.();});}
   function confirmDelete(){
     if(document.getElementById('project-plan-delete-confirm'))return;
     const warning=document.createElement('dialog');warning.id='project-plan-delete-confirm';warning.className='project-plan-alert-dialog';warning.setAttribute('aria-labelledby','project-plan-delete-title');warning.setAttribute('aria-describedby','project-plan-delete-description');warning.innerHTML=`<div class="project-plan-alert-header"><div class="project-plan-alert-media" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg></div><div><h3 id="project-plan-delete-title">¿Eliminar plano?</h3><p id="project-plan-delete-description">Se eliminará «${ModernoDaily.escape(file.name||'Plano')}» y se moverá a la Papelera.</p></div></div><div class="project-plan-alert-footer"><button type="button" class="btn btn-ghost" data-cancel>Cancelar</button><button type="button" class="btn project-plan-alert-delete" data-confirm>Eliminar</button></div>`;
@@ -100,7 +111,7 @@ async function projectPlanOpen(pid,index,collection='files'){
     document.body.append(warning);warning.showModal();warning.querySelector('[data-cancel]').focus();
   }
   const escape=event=>{if(event.key==='Escape'&&!document.querySelector('dialog[open]')){event.preventDefault();dismiss();}};window.addEventListener('keydown',escape,{signal:controller.signal});
-  projectPlanDialog={dismiss};save.onclick=()=>store(false);saveCopy.onclick=()=>store(true);remove.onclick=confirmDelete;edit.onclick=()=>ModernoPlanOptions.open(pid,index,collection,name=>{file.name=name;title.textContent=name;});close.onclick=()=>dismiss();
+  projectPlanDialog={dismiss,navigate};save.onclick=()=>store(false);saveCopy.onclick=()=>store(true);remove.onclick=confirmDelete;edit.onclick=()=>ModernoPlanOptions.open(pid,index,collection,name=>{file.name=name;title.textContent=name;});close.onclick=()=>dismiss();
   try{
     const resolved=await fileResolveForView(file);
     if(!resolved)throw Error('Archivo no disponible; comprueba tu acceso o vuelve a subirlo desde Archivos.');
@@ -113,7 +124,7 @@ async function projectPlanOpen(pid,index,collection='files'){
     if(closed||!allowed()){await doc.close?.();return;}
     const model=new ModernoPlanAnnotations.Model({reference:{studyId:ESTUDIO_ID,projectId:String(pid),fileId:String(file.id??index),revisionId:'original'},pages:doc.pages,authorize:()=>!closed&&allowed()});
     const products=(project.rooms||[]).flatMap((room,ri)=>(room.sections||[]).flatMap((section,si)=>(section.items||[]).map((item,ii)=>({id:String(item.instanceId||item.id||`${ri}:${si}:${ii}`),name:String(item.name||'Producto'),room:String(room.name||''),reference:String(item.sku||item.ref||'')}))));
-    editor=await ModernoPlanEditor.mount(root,{document:doc,model,filename:file.name,readOnly:kind==='application/dxf',products});save.disabled=kind==='application/dxf';saveCopy.disabled=kind==='application/dxf';
+    editor=await ModernoPlanEditor.mount(root,{document:doc,model,filename:file.name,readOnly:kind==='application/dxf',products,onDetached:()=>{if(closed)return;closed=true;controller.abort();clearInterval(timer);clearExitAlert();projectPlanDialog=null;}});save.disabled=kind==='application/dxf';saveCopy.disabled=kind==='application/dxf';
     if(closed){await editor.discard();return;}
     root.querySelector('h2').textContent=file.name;
   }catch(error){if(!closed){root.replaceChildren();const message=document.createElement('p');message.setAttribute('role','alert');message.textContent=error.name==='AbortError'?'Lectura cancelada':error.message;root.append(message);}}

@@ -1285,13 +1285,13 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/new-project.js?v=365133"></script>
 <script src="/shopping-export.js?v=365113"></script>
 <script src="/plan-annotations.js?v=36523"></script>
-<script src="/plan-editor.js?v=202.7"></script>
+<script src="/plan-editor.js?v=202.8"></script>
 <script src="/cad-viewer.js?v=202.2"></script>
-<script src="/project-documents.js?v=202.5"></script>
+<script src="/project-documents.js?v=202.8"></script>
 <script src="/plan-options.js?v=202.5"></script>
 <script src="/plan-gallery.js?v=202.2"></script>
 <link rel="stylesheet" href="/brand/plan-gallery.css?v=202.3">
-<link rel="stylesheet" href="/plan-editor.css?v=202.7">
+<link rel="stylesheet" href="/plan-editor.css?v=202.8">
 <script src="/document-builder.js?v=3604"></script>
 <script src="/library-origin.js?v=3570"></script>
 <script src="/library-brands.js?v=3617"></script>
@@ -4444,6 +4444,7 @@ function projTab(t){
  if(['utilidades','conversaciones'].includes(t)&&!canView(t)){toast('No tienes acceso a esta sección');return;}
  if(myAccessLevel()==="colab" && (t==="fin"||t==="resumen")){toast("No tienes acceso a los datos económicos");t="tareas";}
  const previous=state.view==='estancia'?'listas':state.projTab||'tareas';if(t===previous&&state.view!=='estancia')return;
+ if(typeof projectPlanDialog!=='undefined'&&projectPlanDialog?.navigate){projectPlanDialog.navigate(()=>projTab(t));return;}
  state.projTab=t;
  if(state.view==='estancia'){state.roomSearch='';state.rf=null;go('proyecto',state.currentProject);}else render();
  window.scrollTo(0,0);const m=document.querySelector('.main');if(m)m.scrollTop=0;
@@ -4485,6 +4486,7 @@ function applyRoleNav(){
   document.querySelectorAll("aside.sidebar .nav-group, aside.sidebar details").forEach(g=>{ const items=[...g.querySelectorAll("[data-view]")]; if(items.length) g.style.display = items.some(x=>x.style.display!=="none") ? "" : "none"; });
 }
 function go(view, arg){
+  if(typeof projectPlanDialog!=='undefined'&&projectPlanDialog?.navigate){projectPlanDialog.navigate(()=>go(view,arg));return;}
   if(view!=="proyectos")state.showArchived=false;
   if(!canView(view)){ toast("No tienes acceso a esta sección"); view="home"; arg=undefined; }
   if(view==="proyectos" && state.view!=="proyectos") state.projQ="";
