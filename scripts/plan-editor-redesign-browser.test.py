@@ -25,7 +25,10 @@ with sync_playwright() as p:
         assert page.get_by_role('button',name=label,exact=True).count()==1, label
     for removed in ['Lápiz','Resaltador','Rectángulo','Círculo','Nota','Páginas','Panel de comentarios','Añadir foto','Hacer foto']:
         assert page.get_by_role('button',name=removed,exact=True).count()==0, removed
-    assert page.get_by_label('Color',exact=True).count()==1
+    assert page.get_by_role('button',name='Color',exact=True).count()==1
+    page.get_by_role('button',name='Color',exact=True).click()
+    assert page.get_by_label('Color personalizado',exact=True).count()==1 and page.get_by_label('Opacidad',exact=True).count()==1
+    assert page.locator('.plan-color-swatch').count()==8
     assert page.get_by_label('Grosor',exact=True).count()==1
     canvas=page.get_by_label('Lienzo de anotación');box=canvas.bounding_box()
     def click_at(x,y): canvas.click(position={'x':box['width']*x,'y':box['height']*y})
@@ -41,5 +44,7 @@ with sync_playwright() as p:
     assert page.evaluate("model.items[2].type==='tag'&&model.items[2].product.id==='fake-product'")
     assert page.locator('#editor script').count()==0
     assert not errors, errors
-    page.evaluate('editor.discard()');browser.close()
-print('PASS: barra compacta, texto directo, comentario en sheet y etiqueta vinculada a producto')
+    assert page.evaluate("()=>{window.exitPromise=editor.discard();return document.querySelector('.plan-viewer-bar')?.classList.contains('is-leaving')}")
+    assert page.locator('body').evaluate("el=>!el.classList.contains('plan-editor-active')")
+    page.evaluate('exitPromise');browser.close()
+print('PASS: dock animado, color con opacidad, texto, comentario y etiqueta vinculada')

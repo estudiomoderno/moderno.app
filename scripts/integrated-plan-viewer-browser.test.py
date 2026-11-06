@@ -1,7 +1,7 @@
 """Offline visual proof for #202. Uses only fictitious PDF/DXF files."""
 import pathlib
 import sys
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from playwright.sync_api import sync_playwright
 
 repo=pathlib.Path(__file__).resolve().parents[1]
@@ -156,13 +156,14 @@ with sync_playwright() as p:
  page=browser.new_page(viewport={'width':1440,'height':900},device_scale_factor=1)
  errors=[];page.on('pageerror',lambda error:errors.append(str(error)))
  def route(r):
-  parsed=urlparse(r.request.url);name=pathlib.PurePosixPath(parsed.path).name
-  if name=='index.html':r.fulfill(body='<meta name="viewport" content="width=device-width"><body><aside id="app-sidebar">Menú lateral</aside><header id="app-header">Cabecera Moderno</header><main><div id="project-heading">PR-70 · Proyecto ficticio</div><section id="project-tab-panel"></section></main></body>',content_type='text/html')
+  parsed=urlparse(r.request.url);name=unquote(pathlib.PurePosixPath(parsed.path).name)
+  if name=='index.html':r.fulfill(body='<meta name="viewport" content="width=device-width"><body><aside id="app-sidebar">Menú lateral</aside><header id="app-header">Cabecera Moderno</header><main><div id="project-heading">PR-70 · Proyecto ficticio</div><section id="project-tab-panel"></section><div class="project-tabs project-dock" role="tablist" aria-label="Secciones del proyecto"><button aria-label="Tareas"></button><button aria-label="Compras"></button><span class="project-tab-separator"></span><button aria-label="Planos"></button><button aria-label="Obra"></button><span class="project-tab-separator"></span><button aria-label="Estudio"></button><button aria-label="Presentaciones"></button><span class="project-tab-separator"></span><button aria-label="Documentos"></button><button aria-label="Ajustes"></button></div></main></body>',content_type='text/html')
   elif name in ['pdf.min.js','pdf.worker.min.js']:r.fulfill(path=str(pdfjs/name),content_type='application/javascript')
   elif parsed.path.startswith('/brand/icons/plan-viewer/') and (repo/'app/brand/icons/plan-viewer'/name).is_file():r.fulfill(path=str(repo/'app/brand/icons/plan-viewer'/name),content_type='image/svg+xml')
   else:r.abort()
  page.route('**/*',route);page.goto('https://planos-prueba.invalid/index.html')
  page.add_style_tag(content=':root{--ink:#242424;--ink-soft:#6d706f;--white:#fff;--bg:#f4f5f4;--card:#ecefed;--ui-line:#dfe2e0}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;display:grid;grid-template-columns:190px 1fr;grid-template-rows:56px 1fr;height:100vh}#app-sidebar{grid-row:1/3;padding:20px;border-right:1px solid var(--ui-line)}#app-header{padding:18px;border-bottom:1px solid var(--ui-line)}main{padding:16px;min-width:0}#project-heading{padding:0 0 12px;font-weight:700}.btn{border:1px solid var(--ui-line);background:#fff;border-radius:9px;padding:8px 12px;color:var(--ink)}')
+ page.add_style_tag(path=str(repo/'app/brand/project-dock.css'))
  page.add_style_tag(path=str(repo/'app/plan-editor.css'))
  page.add_script_tag(url='https://planos-prueba.invalid/pdf.min.js');page.evaluate("pdfjsLib.GlobalWorkerOptions.workerSrc='https://planos-prueba.invalid/pdf.worker.min.js'")
  for name in ['plan-annotations.js','cad-viewer.js','plan-editor.js']:page.add_script_tag(path=str(repo/'app'/name))
@@ -173,7 +174,9 @@ with sync_playwright() as p:
   window.pdfSource=ModernoPlanEditor.pdf(pages);window.doc=await ModernoPlanEditor.openFile(new File([pdfSource],'PR-70 - Planta general.pdf',{type:'application/pdf'}),{pdfjs:pdfjsLib});window.model=new ModernoPlanAnnotations.Model({reference:{studyId:'moderno-prueba',projectId:'PR-70',fileId:'pdf-ficticio',revisionId:'original'},pages:doc.pages,authorize:()=>true});window.editor=await ModernoPlanEditor.mount(document.querySelector('#viewer'),{document:doc,model,filename:'PR-70 - Planta general.pdf',products:[{id:'producto-ficticio',name:'Sillón de muestra',room:'Salón',reference:'SF-1'}]});
  }""")
  page.wait_for_function("document.querySelector('.plan-paper canvas').width>0");page.wait_for_function("[...document.querySelectorAll('.plan-icon-button img')].every(img=>img.complete&&img.naturalWidth>0)");page.wait_for_timeout(350)
- assert page.locator('.plan-viewer-bar').bounding_box()['y'] < page.locator('.plan-viewport').bounding_box()['y']
+ assert page.locator('.plan-viewer-bar').bounding_box()['y'] > page.locator('.plan-viewport').bounding_box()['y']
+ dock_box=page.locator('.project-dock').bounding_box();tools_box=page.locator('.plan-viewer-bar').bounding_box();assert abs((dock_box['x']+dock_box['width'])-tools_box['x']) < 3
+ assert page.locator('.plan-tool-separator').count()==4 and page.locator('.plan-viewer-bar').evaluate("el=>getComputedStyle(el).opacity")=='1'
  assert page.locator('#app-header').is_visible() and page.locator('#app-sidebar').is_visible() and page.locator('#project-heading').is_visible()
  assert page.get_by_role('button',name='Páginas',exact=True).count()==0
  assert page.get_by_text('Propiedades',exact=True).count()==0 and page.get_by_text('Mediciones',exact=True).count()==0
@@ -183,6 +186,8 @@ with sync_playwright() as p:
  assert page.get_by_role('button',name='Eliminar',exact=True).count()==1 and page.get_by_role('button',name='Editar',exact=True).count()==1 and page.get_by_role('button',name='Cerrar',exact=True).count()==1
  for removed in ['Rectángulo','Círculo','Nota','Lápiz','Resaltador','Panel de comentarios']:
   assert page.get_by_role('button',name=removed,exact=True).count()==0
+ assert 'Selector de Color.svg?v=203' in page.get_by_role('button',name='Color',exact=True).locator('img').get_attribute('src')
+ page.get_by_role('button',name='Color',exact=True).click();assert page.get_by_label('Opacidad',exact=True).is_visible() and page.locator('.plan-color-swatch').count()==8
  page.screenshot(path=str(out/'visor-pdf-202.png'),full_page=True)
  page.evaluate('editor.discard()')
  page.evaluate("""async source=>{shell('PR-70 · Planta general.dxf');window.doc=await ModernoCadViewer.open(new File([source],'PR-70 - Planta general.dxf',{type:'application/dxf'}));window.model=new ModernoPlanAnnotations.Model({reference:{studyId:'moderno-prueba',projectId:'PR-70',fileId:'dxf-ficticio',revisionId:'original'},pages:1,authorize:()=>true});window.editor=await ModernoPlanEditor.mount(document.querySelector('#viewer'),{document:doc,model,filename:'PR-70 - Planta general.dxf',readOnly:true,metadata:doc.metadata});}""",dxf)
@@ -190,9 +195,9 @@ with sync_playwright() as p:
  assert page.get_by_text('Propiedades',exact=True).count()==0 and page.get_by_text('Mediciones',exact=True).count()==0 and page.get_by_text('DXF',exact=True).count()==0
  assert page.get_by_role('button',name='Lápiz',exact=True).count()==0
  assert page.get_by_role('button',name='Desplazar',exact=True).count()==1
- assert page.get_by_role('button',name='Desplazar',exact=True).locator('img').get_attribute('src').endswith('/Desplazar.svg?v=202')
+ assert page.get_by_role('button',name='Desplazar',exact=True).locator('img').get_attribute('src').endswith('/Desplazar.svg?v=203')
  assert page.get_by_role('button',name='Medir',exact=True).count()==0
  page.screenshot(path=str(out/'visor-cad-dxf-202.png'),full_page=True)
  assert not errors,errors
  page.evaluate('editor.discard()');page.close();browser.close()
- print('PASS: visor PDF y DXF integrado, toolbar superior, paneles, capas CAD y solo lectura')
+ print('PASS: visor PDF y DXF integrado, dock inferior animado, paneles y solo lectura')
