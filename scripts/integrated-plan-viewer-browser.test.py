@@ -167,7 +167,7 @@ with sync_playwright() as p:
  page.add_style_tag(path=str(repo/'app/plan-editor.css'))
  page.add_script_tag(url='https://planos-prueba.invalid/pdf.min.js');page.evaluate("pdfjsLib.GlobalWorkerOptions.workerSrc='https://planos-prueba.invalid/pdf.worker.min.js'")
  for name in ['plan-annotations.js','cad-viewer.js','plan-editor.js']:page.add_script_tag(path=str(repo/'app'/name))
- page.evaluate("""()=>{window.shell=name=>{document.querySelector('#project-tab-panel').innerHTML='<section class="project-plan-dialog" role="dialog" aria-label="Plano del proyecto"><header><strong>'+name+'</strong><div class="plan-dialog-actions"><button class="btn btn-ghost project-plan-save">Guardar</button><button class="btn btn-ghost">Guardar como copia</button><button class="btn btn-ghost project-plan-delete">Eliminar</button><button class="btn btn-ghost project-plan-edit">Editar</button><button class="btn btn-ghost project-plan-close">Cerrar</button></div></header><section id="viewer"></section></section>';};}""")
+ page.evaluate("""()=>{window.shell=name=>{document.querySelector('#project-tab-panel').innerHTML='<section class="project-plan-dialog" role="dialog" aria-label="Plano del proyecto"><header><strong>'+name+'</strong><div class="plan-dialog-actions"><button class="btn btn-ghost project-plan-save">Guardar</button><button class="btn btn-ghost">Guardar como copia</button><button class="btn btn-ghost project-plan-delete">Eliminar</button><button class="btn btn-ghost project-plan-edit">Editar</button><button class="btn btn-ghost project-plan-close">Cerrar</button></div></header><section id="viewer"></section></section>';const dialog=document.querySelector('.project-plan-dialog'),top=Math.max(0,Math.round(dialog.getBoundingClientRect().top));dialog.style.height=`calc(100dvh - ${top}px)`;dialog.style.minHeight='0';};}""")
  page.evaluate("""async()=>{
   shell('PR-70 · Planta general.pdf');const pages=[];
   for(let n=1;n<=2;n++){const c=document.createElement('canvas');c.width=1200;c.height=760;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.strokeStyle='#252525';x.lineWidth=6;x.strokeRect(90,90,1020,560);x.lineWidth=3;x.beginPath();x.moveTo(510,90);x.lineTo(510,650);x.moveTo(90,360);x.lineTo(510,360);x.stroke();x.strokeRect(650,190,330,220);x.beginPath();x.arc(815,300,58,0,Math.PI*2);x.stroke();x.fillStyle='#252525';x.font='bold 30px Arial';x.fillText(n===1?'PLANTA GENERAL · PR-70':'PLANTA DE ILUMINACIÓN · PR-70',90,55);x.font='18px Arial';x.fillText('Documento ficticio para revisión visual',90,710);const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.94));pages.push({width:c.width,height:c.height,jpeg:new Uint8Array(await blob.arrayBuffer())});}
@@ -178,6 +178,7 @@ with sync_playwright() as p:
  dock_box=page.locator('.project-dock').bounding_box();tools_box=page.locator('.plan-viewer-bar').bounding_box();assert abs((dock_box['x']+dock_box['width'])-tools_box['x']) < 3
  assert abs(dock_box['y']-tools_box['y']) < 1 and abs(dock_box['height']-tools_box['height']) < 1
  assert page.locator('.project-dock').evaluate("el=>getComputedStyle(el).backgroundColor")==page.locator('.plan-viewer-bar').evaluate("el=>getComputedStyle(el).backgroundColor")
+ assert page.locator('.plan-toolbox').evaluate("el=>getComputedStyle(el).backgroundColor")=='rgba(0, 0, 0, 0)'
  assert page.locator('.plan-tool-separator').count()==4 and page.locator('.plan-viewer-bar').evaluate("el=>getComputedStyle(el).opacity")=='1'
  assert page.locator('#app-header').is_visible() and page.locator('#app-sidebar').is_visible() and page.locator('#project-heading').is_visible()
  assert page.get_by_role('button',name='Páginas',exact=True).count()==0
@@ -189,7 +190,9 @@ with sync_playwright() as p:
  for removed in ['Rectángulo','Círculo','Nota','Lápiz','Resaltador','Panel de comentarios']:
   assert page.get_by_role('button',name=removed,exact=True).count()==0
  assert 'Selector de Color.svg?v=203' in page.get_by_role('button',name='Color',exact=True).locator('img').get_attribute('src')
- assert page.get_by_text('Grosor',exact=True).count()==0 and page.locator('.plan-width-label').bounding_box()['width'] <= 48
+ assert page.get_by_text('Grosor',exact=True).count()==0 and 60 <= page.locator('.plan-width-label').bounding_box()['width'] <= 66
+ project_button=page.locator('.project-dock button').first.bounding_box();plan_button=page.get_by_role('button',name='Color',exact=True).bounding_box();assert abs(project_button['y']-plan_button['y']) < 1 and abs(project_button['height']-plan_button['height']) < 1
+ dialog_box=page.locator('.project-plan-dialog').bounding_box();viewport_box=page.locator('.plan-viewport').bounding_box();assert abs(dialog_box['y']+dialog_box['height']-900) < 2 and viewport_box['y']+viewport_box['height'] > tools_box['y']
  eraser=page.get_by_role('button',name='Borrador',exact=True).bounding_box();rotate=page.get_by_role('button',name='Girar 90°',exact=True).bounding_box();assert abs(eraser['y']-rotate['y']) < 1 and 0 < rotate['x']-eraser['x'] < 34
  assert page.get_by_role('button',name='Desplazar',exact=True).locator('img').evaluate("el=>getComputedStyle(el).filter")=='brightness(0) invert(0.45)'
  page.get_by_role('button',name='Color',exact=True).click();assert page.get_by_label('Opacidad',exact=True).is_visible() and page.locator('.plan-color-swatch').count()==8

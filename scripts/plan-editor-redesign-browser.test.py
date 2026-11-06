@@ -39,7 +39,7 @@ with sync_playwright() as p:
     assert panel_box['y']+panel_box['height'] <= color_box['y'] and page.evaluate("getComputedStyle(document.querySelector('.plan-color-panel')).position")=='fixed'
     page.get_by_role('button',name='Color',exact=True).click()
     assert page.get_by_label('Grosor',exact=True).count()==1
-    assert page.get_by_text('Grosor',exact=True).count()==0 and page.locator('.plan-width-label').bounding_box()['width'] <= 48
+    assert page.get_by_text('Grosor',exact=True).count()==0 and 60 <= page.locator('.plan-width-label').bounding_box()['width'] <= 66
     eraser=page.get_by_role('button',name='Borrador',exact=True).bounding_box();rotate=page.get_by_role('button',name='Girar 90°',exact=True).bounding_box()
     assert abs(eraser['y']-rotate['y']) < 1 and 0 < rotate['x']-eraser['x'] < 34
     canvas=page.get_by_label('Lienzo de anotación');box=canvas.bounding_box()
