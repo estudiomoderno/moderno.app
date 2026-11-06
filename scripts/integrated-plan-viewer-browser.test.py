@@ -178,6 +178,9 @@ with sync_playwright() as p:
  dock_box=page.locator('.project-dock').bounding_box();tools_box=page.locator('.plan-viewer-bar').bounding_box();assert abs((dock_box['x']+dock_box['width'])-tools_box['x']) < 3
  assert abs(dock_box['y']-tools_box['y']) < 1 and abs(dock_box['height']-tools_box['height']) < 1
  assert page.locator('.project-dock').evaluate("el=>getComputedStyle(el).backgroundColor")==page.locator('.plan-viewer-bar').evaluate("el=>getComputedStyle(el).backgroundColor")
+ surface=page.locator('.plan-dock-unified-surface');surface_box=surface.bounding_box();assert surface.is_visible() and surface.evaluate("el=>getComputedStyle(el).backgroundColor")=='rgb(255, 255, 255)'
+ assert abs(surface_box['x']-dock_box['x']) < 2 and abs(surface_box['x']+surface_box['width']-(tools_box['x']+tools_box['width'])) < 2
+ assert page.locator('.project-dock').evaluate("el=>getComputedStyle(el).backgroundColor")=='rgba(0, 0, 0, 0)'
  assert page.locator('.plan-toolbox').evaluate("el=>getComputedStyle(el).backgroundColor")=='rgba(0, 0, 0, 0)'
  assert page.locator('.plan-tool-separator').count()==4 and page.locator('.plan-viewer-bar').evaluate("el=>getComputedStyle(el).opacity")=='1'
  assert page.locator('#app-header').is_visible() and page.locator('#app-sidebar').is_visible() and page.locator('#project-heading').is_visible()
