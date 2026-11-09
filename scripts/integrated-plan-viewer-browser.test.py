@@ -207,7 +207,7 @@ with sync_playwright() as p:
  assert page.get_by_role('button',name='Lápiz',exact=True).count()==0
  assert page.get_by_role('button',name='Desplazar',exact=True).count()==1
  assert page.get_by_role('button',name='Desplazar',exact=True).locator('img').get_attribute('src').endswith('/Desplazar.svg?v=203')
- page.get_by_role('button',name='Desplazar',exact=True).click();assert 'Desplazar.svg' in page.get_by_label('Lienzo de anotación').evaluate("el=>getComputedStyle(el).cursor")
+ page.get_by_role('button',name='Desplazar',exact=True).click();assert 'sizeall-32.png' in page.get_by_label('Lienzo de anotación').evaluate("el=>getComputedStyle(el).cursor")
  assert page.get_by_role('button',name='Medir',exact=True).count()==0
  page.screenshot(path=str(out/'visor-cad-dxf-202.png'),full_page=True)
  assert not errors,errors

@@ -1,0 +1,8 @@
+Studio Cursor: Dusk cursor pack for the web
+https://studiocursor.com/cursors/dusk/
+
+CC0 1.0 Universal: free to use, change and share for any purpose, with no
+credit needed. https://creativecommons.org/publicdomain/zero/1.0/
+
+The cursor roles and hotspots in Moderno.app follow the cursors.css supplied
+with the Dusk pack.

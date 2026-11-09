@@ -1,13 +1,11 @@
 """Offline smoke test for the compact plan editor. Uses fictitious raster data only."""
 import pathlib
-import xml.etree.ElementTree as ET
 from playwright.sync_api import sync_playwright
 
 repo = pathlib.Path(__file__).resolve().parents[1]
-for asset in ['Desplazar.svg','Selector.svg','Flecha.svg','Texto.svg','Comentar.svg','Etiqueta.svg','Borrar.svg']:
-    source=(repo/'app/brand/icons/plan-viewer/cursors'/asset).read_text()
-    ET.fromstring(source)
-    assert 'fill="white"' in source and 'stroke="white"' in source,asset
+for asset in ['sizeall-32.png','crosshair-32.png','person-32.png','ibeam-32.png','hand-32.png','nwpen-32.png']:
+    source=(repo/'app/brand/icons/plan-viewer/cursors/dusk'/asset).read_bytes()
+    assert source.startswith(b'\x89PNG\r\n\x1a\n') and len(source)>100,asset
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path='/usr/bin/chromium', headless=True, args=['--no-sandbox','--disable-crash-reporter','--disable-crashpad'])
     page = browser.new_page(viewport={'width': 1280, 'height': 840})
@@ -32,7 +30,7 @@ with sync_playwright() as p:
         assert page.get_by_role('button',name=removed,exact=True).count()==0, removed
     assert page.get_by_role('button',name='Color',exact=True).count()==1
     canvas=page.get_by_label('Lienzo de anotación')
-    cursor_icons={'Desplazar':'Desplazar.svg','Selector':'Selector.svg','Flecha':'Flecha.svg','Texto':'Texto.svg','Comentario':'Comentar.svg','Etiqueta de producto':'Etiqueta.svg','Borrador':'Borrar.svg'}
+    cursor_icons={'Desplazar':'sizeall-32.png','Selector':'crosshair-32.png','Flecha':'person-32.png','Texto':'ibeam-32.png','Comentario':'hand-32.png','Etiqueta de producto':'person-32.png','Borrador':'nwpen-32.png'}
     for label,asset in cursor_icons.items():
         page.get_by_role('button',name=label,exact=True).click()
         assert asset in canvas.evaluate("el=>getComputedStyle(el).cursor"),label
