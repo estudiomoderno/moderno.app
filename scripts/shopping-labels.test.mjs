@@ -13,10 +13,11 @@ function fixture(){
  const values={itLabel:'Iluminación',itName:item.name,itPrice:'25',itCost:'12',itQty:'2',itUnit:'ud',itSt:'Borrador',itSku:'FIC',itMgV:'',itUrl:'',itSup:'',itDims:'',itMat:'',itCol:'',itPlz:'',itNote:''};
  const elements=Object.fromEntries(Object.entries(values).map(([k,value])=>[k,{value}])),messages=[];
  const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const c={state:{projects:[p]},_accessRole:'admin',ModernoDaily:{escape:E},ModernoSpec:spec,crypto:webcrypto,itFiles:structuredClone(item.files),itImg:item.img,itLibId:item.libId,itemUploadDraft:null,productAmountsValid:()=>true,getRoom:()=>({p,r:room}),toast:m=>messages.push(m),render(){},closeModal(){},document:{getElementById:id=>elements[id],addEventListener(){}}};
+ let saves=0;
+ const c={state:{projects:[p]},_accessRole:'admin',ModernoDaily:{escape:E},ModernoSpec:spec,crypto:webcrypto,itFiles:structuredClone(item.files),itImg:item.img,itLibId:item.libId,itemUploadDraft:null,productAmountsValid:()=>true,getRoom:()=>({p,r:room}),toast:m=>messages.push(m),render(){},closeModal(){},persistSoon(){saves++;},document:{getElementById:id=>elements[id],addEventListener(){}}};
  c.specPrepare=project=>{if(c._accessRole==='colaborador')return false;spec.prepare(project);return true;};
  vm.createContext(c);vm.runInContext(source,c);vm.runInContext(html.slice(html.indexOf('function saveItem(si,ii)'),html.indexOf('function refreshPrices()',html.indexOf('function saveItem(si,ii)'))),c);
- return {c,p,room,item,e:elements,messages};
+ return {c,p,room,item,e:elements,messages,saves:()=>saves};
 }
 test('flattening includes collapsed legacy groups, maps General to no label, and never writes records',()=>{
  const f=fixture(),before=JSON.stringify(f.p),rows=f.c.shoppingRoomRows(f.room);
@@ -30,6 +31,7 @@ test('changing a label preserves files, identity and positional presentation/moo
  assert.equal(saved.id,f.item.id);assert.equal(saved.cliNote,'Conservar');assert.equal(saved.custom,'histórico');assert.equal(saved.libId,77);assert.deepEqual(JSON.parse(JSON.stringify(saved.files)),f.item.files);
  for(const ref of [f.p.pres[0].pages[0].els[0],f.p.moods[0].secs[0].items[0].prodRef]){assert.equal(spec.resolve(f.p,ref).item,saved);assert.equal(ref.rsi,2);}
  assert.equal(f.item.img,saved.img);assert.equal(saved.price,25);assert.equal(saved.cost,12);
+ assert.equal(f.saves(),1);
 });
 test('clearing a label uses General; cancelling a draft does not create a label or section',()=>{
  const f=fixture(),before=JSON.stringify(f.p);f.c.shoppingRoomLabelEditor(0,0);f.e.itLabel.value='Sin guardar';assert.equal(JSON.stringify(f.p),before);
@@ -40,7 +42,7 @@ test('saving unchanged duplicate label names keeps the exact source position',()
  f.c.saveItem(2,0);assert.equal(f.room.sections[0].items[0],f.item);assert.equal(f.room.sections[2].items.length,1);assert.equal(JSON.stringify(f.p.pres),before);
 });
 test('collaborator and invalid amounts cannot reclassify products or create labels',()=>{
- for(const denied of ['role','amount']){const f=fixture(),before=JSON.stringify(f.p);f.e.itLabel.value='Nueva';if(denied==='role')f.c._accessRole='colaborador';else f.c.productAmountsValid=()=>false;f.c.saveItem(0,0);assert.equal(JSON.stringify(f.p),before);}
+ for(const denied of ['role','amount']){const f=fixture(),before=JSON.stringify(f.p);f.e.itLabel.value='Nueva';if(denied==='role')f.c._accessRole='colaborador';else f.c.productAmountsValid=()=>false;f.c.saveItem(0,0);assert.equal(JSON.stringify(f.p),before);assert.equal(f.saves(),0);}
 });
 test('label text is escaped and drag cannot silently change a product label',()=>{
  const f=fixture(),before=JSON.stringify(f.p),chip=f.c.shoppingRoomLabelChip('\"><img src=x onerror=alert(1)>');

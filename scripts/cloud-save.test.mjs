@@ -9,7 +9,7 @@ const base=[{id:1,name:'A'},{id:2,name:'B'}];
 function fixture(){return {row:{contenido:structuredClone(base),updated_at:'2026-01-01T00:00:00Z'},writes:0};}
 function session(store,items=structuredClone(base),hooks={}){
  const local={dirty:true,timers:[]};
- const c={Date,console:{warn(){},info(){}},window:{},localStorage:{removeItem(){local.dirty=false}},LS_KEY:'test',ESTUDIO_ID:'test',_accessRole:'admin',_cloudBusy:false,_cloudApplying:false,_cloudForce:{},_cloudCount:{contactos:base.length},_cloudHash:{contactos:sync.canonical(base)},_cloudSeen:{contactos:store.row?.updated_at},_cloudRetryT:null,CLOUD_BLOCKS:{contactos:{get:()=>items,set:v=>{items=v}}},canon:sync.canonical,ModernoSync:sync,persistSoon(){},blockCount:v=>v.length,syncTag(mode,msg){local.mode=mode;local.message=msg},clearTimeout(){},setTimeout(){},cloudGuardModal(){local.guarded=true},sb:{from(){let method='GET',payload,filters={};return {select(){return this},eq(k,v){filters[k]=v;return this},update(v){method='PATCH';payload=structuredClone(v);return this},insert(v){method='POST';payload=structuredClone(v);return this},async maybeSingle(){
+ const c={Date,console:{warn(){},info(){}},window:{},localStorage:{removeItem(){local.dirty=false}},LS_KEY:'test',ESTUDIO_ID:'test',_accessRole:'admin',_cloudBusy:false,_cloudApplying:false,_cloudForce:{},_cloudCount:{contactos:base.length},_cloudHash:{contactos:sync.canonical(base)},_cloudSeen:{contactos:store.row?.updated_at},_cloudRetryT:null,CLOUD_SAVE_DEBOUNCE_MS:120,CLOUD_BLOCKS:{contactos:{get:()=>items,set:v=>{items=v}}},canon:sync.canonical,ModernoSync:sync,persistSoon(){},blockCount:v=>v.length,syncTag(mode,msg){local.mode=mode;local.message=msg},clearTimeout(){},setTimeout(){},cloudGuardModal(){local.guarded=true},sb:{from(){let method='GET',payload,filters={};return {select(){return this},eq(k,v){filters[k]=v;return this},update(v){method='PATCH';payload=structuredClone(v);return this},insert(v){method='POST';payload=structuredClone(v);return this},async maybeSingle(){
  if(method==='GET'){if(hooks.failRead)return {error:new Error('offline')};const result=structuredClone(store.row);await hooks.afterRead?.();return {data:result};}
  await hooks.beforeWrite?.();
  if(method==='PATCH'&&store.row?.updated_at!==filters.updated_at)return {data:null};
@@ -46,7 +46,7 @@ test('successive deletions during a slow save stay local and drain promptly with
  release();await uploading;
  assert.equal(s.get(),items);assert.equal(s.get().length,0);assert.equal(s.local.dirty,true);
  assert.equal(s.local.mode,'pending');
- const next=s.local.timers.filter(t=>!t.cancelled).at(-1);assert.equal(next.ms,900);
+ const next=s.local.timers.filter(t=>!t.cancelled).at(-1);assert.equal(next.ms,120);
  await next.fn();assert.equal(store.writes,2);assert.equal(store.row.contenido.length,0);assert.equal(s.local.dirty,false);
 });
 test('acknowledgement still applies actual remote changes instead of preserving a stale local block',async()=>{

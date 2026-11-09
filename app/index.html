@@ -9018,7 +9018,7 @@ function saveItem(si,ii){
     it.id=crypto.randomUUID();it.addedAt=new Date().toISOString();r.sections[target].items.push(it);
   }
 
-  closeModal(); render();
+  closeModal();render();persistSoon();
 }
 function refreshPrices(){
   const {r} = getRoom();
@@ -11392,7 +11392,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.150";
+const MODERNO_VER="v3.65.151";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11600,6 +11600,7 @@ async function fileUp(f){
     return await _readDataURL(f);
   }
 }
+const LOCAL_SAVE_DEBOUNCE_MS=80,CLOUD_SAVE_DEBOUNCE_MS=120;
 function cloudDirty(){
   if(_accessLoading||_accessRole==='gestoria')return;
   if(!sb||!ESTUDIO_ID||_cloudApplying) return;
@@ -11608,7 +11609,7 @@ function cloudDirty(){
   syncRefresh();
   try{ localStorage.setItem(LS_KEY+"_dirty","1"); }catch(e){}
   clearTimeout(_cloudT);
-  _cloudT=setTimeout(cloudFlush,typeof _cloudRetryAfter==='undefined'?900:Math.max(900,_cloudRetryAfter-Date.now()));
+  _cloudT=setTimeout(cloudFlush,typeof _cloudRetryAfter==='undefined'?CLOUD_SAVE_DEBOUNCE_MS:Math.max(CLOUD_SAVE_DEBOUNCE_MS,_cloudRetryAfter-Date.now()));
 }
 const _cloudCount={}; const _cloudForce={};
 /* JSON canónico: Postgres reordena las claves de jsonb; comparar con claves ordenadas evita ecos falsos */
@@ -11784,7 +11785,7 @@ async function cloudFlush(){
     }
     if(typeof _cloudFailures!=='undefined'){_cloudFailures=0;_cloudRetryAfter=0;}
     if(Object.keys(conflicts).length){syncTag('err','Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.');return;}
-    if(Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))){syncTag('pending','Guardando los siguientes cambios…');clearTimeout(_cloudRetryT);_cloudRetryT=setTimeout(cloudFlush,900);}
+    if(Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))){syncTag('pending','Guardando los siguientes cambios…');clearTimeout(_cloudRetryT);_cloudRetryT=setTimeout(cloudFlush,CLOUD_SAVE_DEBOUNCE_MS);}
     else{localStorage.removeItem(LS_KEY+'_dirty');syncTag('ok','Guardado ✓');}
   }catch(e){
     if(ESTUDIO_ID!==estudio||_accessRole!==role)return;
@@ -12347,7 +12348,7 @@ async function syncRetrySave(){
 }
 /* v3.28: sombra en la barra fija de Contabilidad cuando queda pegada arriba */
 document.addEventListener("scroll", ev=>{ const el=document.getElementById("accSticky"); if(!el) return; const r=el.getBoundingClientRect(); const m=el.closest(".main"); const top=m?m.getBoundingClientRect().top:0; el.classList.toggle("stuck", r.top<=top+2); }, true);
-function persistSoon(){ clearTimeout(_saveT); _saveT=setTimeout(persistNow, 500); gcalSchedule(); try{syncRefresh();}catch(e){} }
+function persistSoon(){ clearTimeout(_saveT); _saveT=setTimeout(persistNow,LOCAL_SAVE_DEBOUNCE_MS); gcalSchedule(); try{syncRefresh();}catch(e){} }
 /* ============ ARRANQUE VACÍO (producción): sin datos de demostración ============ */
 (function(){
   state.projects = state.projects.filter(p=>p.tpl);   // solo las plantillas internas de proyecto
