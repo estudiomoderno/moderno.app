@@ -169,7 +169,7 @@ with sync_playwright() as p:
           const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Count 1 /Kids [3 0 R] >>','<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Rotate 90 /Resources << >> /Contents 4 0 R >>','<< /Length '+stream.length+' >>\\nstream\\n'+stream+'\\nendstream'];
           let pdf='%PDF-1.4\\n',offsets=[0];objects.forEach((obj,i)=>{offsets.push(pdf.length);pdf+=(i+1)+' 0 obj\\n'+obj+'\\nendobj\\n'});
           const start=pdf.length;pdf+='xref\\n0 5\\n0000000000 65535 f \\n'+offsets.slice(1).map(n=>String(n).padStart(10,'0')+' 00000 n \\n').join('')+'trailer\\n<< /Size 5 /Root 1 0 R >>\\nstartxref\\n'+start+'\\n%%EOF';
-          const rotated=await ModernoPlanEditor.openFile(new Blob([pdf],{type:'application/pdf'}),{pdfjs:pdfjsLib});const size=await rotated.pageSize(1);await rotated.render(1,target);const rotation=size.width===200&&size.height===300&&target.width===300&&target.height===450;await rotated.close();
+          const rotated=await ModernoPlanEditor.openFile(new Blob([pdf],{type:'application/pdf'}),{pdfjs:pdfjsLib});const size=await rotated.pageSize(1);await rotated.render(1,target);const rotation=size.width===200&&size.height===300&&target.width===600&&target.height===900;await rotated.close();
           return correct&&errors===3&&rotation;
         }""") is True
         # Rotation/export follows the same path for an uploaded image.

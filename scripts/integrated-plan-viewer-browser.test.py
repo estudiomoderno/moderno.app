@@ -174,6 +174,8 @@ with sync_playwright() as p:
   window.pdfSource=ModernoPlanEditor.pdf(pages);window.doc=await ModernoPlanEditor.openFile(new File([pdfSource],'PR-70 - Planta general.pdf',{type:'application/pdf'}),{pdfjs:pdfjsLib});window.model=new ModernoPlanAnnotations.Model({reference:{studyId:'moderno-prueba',projectId:'PR-70',fileId:'pdf-ficticio',revisionId:'original'},pages:doc.pages,authorize:()=>true});window.editor=await ModernoPlanEditor.mount(document.querySelector('#viewer'),{document:doc,model,filename:'PR-70 - Planta general.pdf',products:[{id:'producto-ficticio',name:'Sillón de muestra',room:'Salón',reference:'SF-1'}]});
  }""")
  page.wait_for_function("document.querySelector('.plan-paper canvas').width>0");page.wait_for_function("[...document.querySelectorAll('.plan-icon-button img')].every(img=>img.complete&&img.naturalWidth>0)");page.wait_for_timeout(350)
+ base_canvas=page.locator('.plan-sheet canvas').first;assert base_canvas.evaluate('el=>el.width')>=2600
+ assert base_canvas.evaluate('el=>el.width/el.getBoundingClientRect().width')>=1.5
  assert page.locator('.plan-viewer-bar').bounding_box()['y'] > page.locator('.plan-viewport').bounding_box()['y']
  dock_box=page.locator('.project-dock').bounding_box();tools_box=page.locator('.plan-viewer-bar').bounding_box();assert abs((dock_box['x']+dock_box['width'])-tools_box['x']) < 3
  assert abs(dock_box['y']-tools_box['y']) < 1 and abs(dock_box['height']-tools_box['height']) < 1
@@ -203,6 +205,7 @@ with sync_playwright() as p:
  page.evaluate('editor.discard()')
  page.evaluate("""async source=>{shell('PR-70 · Planta general.dxf');window.doc=await ModernoCadViewer.open(new File([source],'PR-70 - Planta general.dxf',{type:'application/dxf'}));window.model=new ModernoPlanAnnotations.Model({reference:{studyId:'moderno-prueba',projectId:'PR-70',fileId:'dxf-ficticio',revisionId:'original'},pages:1,authorize:()=>true});window.editor=await ModernoPlanEditor.mount(document.querySelector('#viewer'),{document:doc,model,filename:'PR-70 - Planta general.dxf',readOnly:true,metadata:doc.metadata});}""",dxf)
  page.wait_for_function("document.querySelector('.plan-paper canvas').width>0");page.wait_for_function("[...document.querySelectorAll('.plan-icon-button img')].every(img=>img.complete&&img.naturalWidth>0)");page.wait_for_timeout(350)
+ assert max(page.locator('.plan-sheet canvas').first.evaluate('el=>el.width'),page.locator('.plan-sheet canvas').first.evaluate('el=>el.height'))==2400
  assert page.get_by_text('Propiedades',exact=True).count()==0 and page.get_by_text('Mediciones',exact=True).count()==0 and page.get_by_text('DXF',exact=True).count()==0
  assert page.get_by_role('button',name='Lápiz',exact=True).count()==0
  assert page.get_by_role('button',name='Desplazar',exact=True).count()==1

@@ -40,8 +40,8 @@ var ModernoCadViewer=(()=>{
   for(const e of model.entities){e.points.forEach(p=>p&&add(p.x,p.y));if(['CIRCLE','ARC'].includes(e.type)&&e.points[0]){add(e.points[0].x-e.radius,e.points[0].y-e.radius);add(e.points[0].x+e.radius,e.points[0].y+e.radius);}}
   if(!Number.isFinite(minX)||maxX===minX||maxY===minY)throw Error('El DXF no contiene una extensión visible.');return {minX,minY,maxX,maxY,width:maxX-minX,height:maxY-minY};
  }
- function paint(model,canvas){
-  const box=bounds(model),max=1800,ratio=box.width/box.height;canvas.width=Math.max(640,Math.min(max,Math.round(ratio>=1?max:max*ratio)));canvas.height=Math.max(480,Math.min(max,Math.round(ratio>=1?max/ratio:max)));
+ function paint(model,canvas,{quality='display'}={}){
+  const box=bounds(model),density=quality==='display'?Math.max(1,Math.min(2,Number(globalThis.devicePixelRatio)||1)):1,max=Math.min(3600,2400*density),ratio=box.width/box.height;canvas.width=Math.max(640*density,Math.min(max,Math.round(ratio>=1?max:max*ratio)));canvas.height=Math.max(480*density,Math.min(max,Math.round(ratio>=1?max/ratio:max)));
   const ctx=canvas.getContext('2d'),pad=Math.max(28,Math.min(canvas.width,canvas.height)*.05),scale=Math.min((canvas.width-pad*2)/box.width,(canvas.height-pad*2)/box.height),sx=x=>pad+(x-box.minX)*scale,sy=y=>canvas.height-pad-(y-box.minY)*scale;
   ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.lineWidth=Math.max(1,Math.min(2,scale*.02));ctx.lineCap='round';ctx.lineJoin='round';
   for(const e of model.entities){ctx.strokeStyle=e.color||model.layers.find(l=>l.name===e.layer)?.color||'#343434';ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();
@@ -56,7 +56,7 @@ var ModernoCadViewer=(()=>{
  }
  async function open(file){
   if(!file||file.size>MAX_BYTES)throw Error('Límite de archivo CAD: 50 MB');const text=await file.text(),model=parse(text),box=bounds(model);
-  return {pages:1,format:'DXF',readOnly:true,metadata:{layers:model.layers,entities:model.entities.length,bounds:box},async pageSize(){return {width:box.width,height:box.height};},async render(page,canvas){if(page!==1)throw Error('Página CAD no válida');paint(model,canvas);},close:async()=>{}};
+  return {pages:1,format:'DXF',readOnly:true,metadata:{layers:model.layers,entities:model.entities.length,bounds:box},async pageSize(){return {width:box.width,height:box.height};},async render(page,canvas,options){if(page!==1)throw Error('Página CAD no válida');paint(model,canvas,options);},close:async()=>{}};
  }
  return {open,parse,paint};
 })();
