@@ -53,6 +53,16 @@ try:
    page.evaluate("data=>{state.projects[0].obraPlanos.splice(1,0,{name:'Plano final.pdf',type:'application/pdf',data});render();window.beforePlans=JSON.stringify(state.projects);}",pdf)
    expect(page.locator('.plan-gallery-open')).to_have_count(3)
    expect(page.locator('.project-plans-section .project-file-add')).to_have_count(1)
+   card_actions=page.locator('.project-plans-section .project-file-actions').first
+   primary=card_actions.get_by_role('button',name='Ver y anotar',exact=True)
+   move=card_actions.get_by_role('button',name='Mover a Documentos',exact=True)
+   more=card_actions.get_by_role('button',name='Opciones de Distribución.png',exact=True)
+   expect(primary).to_have_css('background-color','rgb(6, 102, 255)');expect(primary).to_have_css('border-radius','8px')
+   expect(move).to_have_css('background-color','rgb(255, 255, 255)');expect(move).to_have_css('border-radius','8px')
+   expect(more.locator('svg')).to_have_count(1);expect(more).to_have_css('border-radius','8px')
+   primary_box=primary.bounding_box();actions_box=card_actions.bounding_box();move_box=move.bounding_box();more_box=more.bounding_box()
+   assert abs(primary_box['width']-actions_box['width'])<1 and primary_box['height']==36
+   assert abs(move_box['y']-more_box['y'])<1 and move_box['height']==more_box['height']==36
    expect(page.get_by_role('button',name='Subir o arrastrar plano',exact=True)).to_be_visible()
    expect(page.locator('.project-plans-section .project-file-plus')).to_have_count(0)
    expect(page.locator('.project-plans-section .project-files-help')).to_have_count(0)
@@ -78,7 +88,7 @@ try:
    assert page.evaluate('JSON.stringify(state.projects)===beforePlans')
    page.get_by_role('button',name='Abrir Planta definitiva.png',exact=True).click()
    first_viewer=page.get_by_role('dialog',name='Plano del proyecto',exact=True);expect(first_viewer).to_be_visible();expect(first_viewer.get_by_role('button',name='Guardar',exact=True)).to_be_enabled()
-   first_viewer.get_by_role('button',name='Cerrar plano',exact=True).click();expect(first_viewer).to_be_hidden()
+   first_viewer.get_by_role('button',name='Cerrar',exact=True).click();expect(first_viewer).to_be_hidden()
    assert page.evaluate('JSON.stringify(state.projects)===beforePlans')
    image=page.locator('[data-collection=obraPlanos][data-index="0"] img')
    image.hover()
@@ -139,8 +149,8 @@ try:
    assert viewer.get_by_role('button',name='Pantalla completa',exact=True).count()==0
    assert viewer.get_by_role('button',name='Descargar original',exact=True).count()==0
    assert viewer.get_by_text('Propiedades',exact=True).count()==0 and viewer.get_by_text('Mediciones',exact=True).count()==0
-   assert viewer.locator('.plan-pages-panel').get_attribute('aria-hidden')=='true'
-   assert viewer.get_by_role('button',name='Páginas',exact=True).get_attribute('aria-expanded')=='false'
+   assert viewer.locator('.plan-pages-panel').count()==0
+   assert viewer.get_by_role('button',name='Páginas',exact=True).count()==0
    viewer.get_by_role('button',name='Guardar como copia',exact=True).click()
    page.wait_for_function("savedPlanUploads.length===1&&state.projects[0].files.some(f=>f.name==='Guardado - copia.pdf')")
    assert page.evaluate("state.projects[0].files.find(f=>f.id==='fixture-save').name==='Guardado.png'")

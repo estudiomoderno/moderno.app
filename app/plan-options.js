@@ -4,7 +4,7 @@ var ModernoPlanOptions=(()=>{
  let context=null;
  const allowed=()=>!_accessLoading&&!state.portalAnon&&['admin','miembro','colaborador'].includes(_accessRole)&&canView('proyecto');
  function button(pid,index,collection='obraPlanos',name='Plano'){
-  return `<button type="button" class="plan-options-button" aria-label="Opciones de ${E(name)}" title="Opciones del plano" onclick="ModernoPlanOptions.open(${Number(pid)},${Number(index)},'${collection==='files'?'files':'obraPlanos'}')">⋯</button>`;
+  return `<button type="button" class="plan-options-button" data-slot="button" data-variant="outline" data-size="icon" aria-label="Opciones de ${E(name)}" title="Opciones del plano" onclick="ModernoPlanOptions.open(${Number(pid)},${Number(index)},'${collection==='files'?'files':'obraPlanos'}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="19" cy="12" r="1" fill="currentColor"/></svg></button>`;
  }
  function current(){
   const c=context;
