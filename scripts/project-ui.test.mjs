@@ -17,6 +17,7 @@ test('avatar safely labels historical client names without downloading portraits
 test('shopping picker uses only the supplied project, escapes list names and marks its current room',()=>{
  const p={rooms:[{id:1,name:'Salón',icon:'sofa'},{id:2,name:'<img src=x> "Prueba"',icon:'bed'}]},before=JSON.stringify(p),c=fixture({rico:()=>'<svg></svg>',RSTATES:['Borrador','En curso']});
  const out=c.shoppingRoomPickerHtml(p,p.rooms[0]);assert.equal(JSON.stringify(p),before);assert.match(out,/role="menu"/);assert.match(out,/role="menuitemradio" aria-checked="true"/);assert.match(out,/&lt;img src=x&gt;/);assert.doesNotMatch(out,/<img/);assert.equal((out.match(/data-room-index=/g)||[]).length,2);
+ assert.match(out,/role="separator"/);assert.match(out,/role="menuitem"[^>]*onclick="shoppingRoomCreateList\(\)"/);assert.match(out,/Crear nueva lista/);assert.doesNotMatch(out,/Crear nueva estancia/);
 });
 test('shopping header omits list status without changing historical records',()=>{
  const room={id:1,name:'Sala',icon:'sofa',rstatus:'Estado histórico',sections:[{name:'General',items:[{status:'Pendiente'}]}]},p={rooms:[room]},before=JSON.stringify(p),c=fixture({rico:()=>'<svg></svg>'});
@@ -29,6 +30,18 @@ test('shopping picker rejects invalid, forbidden or modal selections and only cl
  allowed=false;assert.equal(c.shoppingRoomChoose(1),false);allowed=true;modal=true;assert.equal(c.shoppingRoomChoose(1),false);modal=false;
  assert.equal(c.state.roomSearch,'texto');assert.equal(c.shoppingRoomChoose(0),true);assert.equal(c.state.roomSearch,'texto');assert.equal(calls.length,0);
  assert.equal(c.shoppingRoomChoose(1),true);assert.deepEqual(calls,[[90,2]]);assert.equal(c.state.roomSearch,'');assert.equal(c.state.rf,null);assert.equal(JSON.stringify(p),before);
+});
+test('shopping picker creates a generic list through the existing editor only when navigation is available',()=>{
+ const p={id:90,rooms:[{id:1,name:'Sala'}]},calls=[];let modal=false,allowed=true;
+ const elements={};const c=fixture({state:{view:'estancia'},getRoom:()=>({p,r:p.rooms[0]}),canView:()=>allowed,newRoom:(...args)=>calls.push(args),document:{getElementById:id=>elements[id],querySelector:()=>modal?{}:null,addEventListener(){}}});
+ assert.equal(c.shoppingRoomCreateList(),true);assert.deepEqual(calls,[[90,'otra']]);
+ modal=true;assert.equal(c.shoppingRoomCreateList(),false);modal=false;allowed=false;assert.equal(c.shoppingRoomCreateList(),false);assert.equal(calls.length,1);
+});
+test('the existing new-list form persists a created list before opening it',()=>{
+ const p={id:90,rooms:[]},fields={nrName:{value:'Lista ficticia'}};let saves=0,closed=0,opened;
+ const c=fixture({state:{projects:[p]},document:{getElementById:id=>fields[id],addEventListener(){}},riconPicker:()=>'',modal(){},closeModal(){closed++;},persistSoon(){saves++;},openRoom:(...args)=>opened=args,crypto:{randomUUID:()=> 'section-fictional'}});
+ vm.runInContext(html.slice(html.indexOf('let nrIcon = "";'),html.indexOf('function renameSection(')),c);c.newRoom(90,'otra');c.doNewRoom(90,'otra');
+ assert.equal(p.rooms.length,1);assert.equal(p.rooms[0].name,'Lista ficticia');assert.equal(p.rooms[0].kind,'otra');assert.equal(saves,1);assert.equal(closed,1);assert.deepEqual(opened,[90,p.rooms[0].id]);
 });
 test('archive is a reversible view filter and leaves projects intact',()=>{
  const projects=[{id:1,status:'En progreso'},{id:2,status:'Archivado'}],before=JSON.stringify(projects),calls=[];

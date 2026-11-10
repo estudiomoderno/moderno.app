@@ -28,7 +28,7 @@ function shoppingRoomPickerHtml(project,current){
   <h2 class="sec"><button type="button" id="shopping-room-trigger" class="shopping-room-trigger" aria-label="Cambiar lista: ${E(current.name)}" aria-haspopup="menu" aria-expanded="false" aria-controls="shopping-room-menu" onclick="shoppingRoomPickerToggle()">
    <span class="shopping-room-current-icon" aria-hidden="true">${rico(current.icon)}</span><span class="shopping-room-current-name">${E(current.name)}</span><svg class="shopping-room-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
   </button></h2>
-  <div id="shopping-room-menu" class="shopping-room-menu" role="menu" aria-label="Listas de compra del proyecto" hidden>${(project.rooms||[]).map((room,index)=>`<button type="button" role="menuitemradio" aria-checked="${room.id===current.id}" tabindex="-1" data-room-index="${index}" onclick="shoppingRoomChoose(Number(this.dataset.roomIndex))" title="${E(room.name)}"><span class="shopping-room-choice-icon" aria-hidden="true">${rico(room.icon)}</span><span class="shopping-room-choice-name">${E(room.name)}</span><span class="shopping-room-choice-check" aria-hidden="true">${room.id===current.id?'✓':''}</span></button>`).join('')}</div>
+  <div id="shopping-room-menu" class="shopping-room-menu" role="menu" aria-label="Listas de compra del proyecto" hidden>${(project.rooms||[]).map((room,index)=>`<button type="button" role="menuitemradio" aria-checked="${room.id===current.id}" tabindex="-1" data-room-index="${index}" onclick="shoppingRoomChoose(Number(this.dataset.roomIndex))" title="${E(room.name)}"><span class="shopping-room-choice-icon" aria-hidden="true">${rico(room.icon)}</span><span class="shopping-room-choice-name">${E(room.name)}</span><span class="shopping-room-choice-check" aria-hidden="true">${room.id===current.id?'✓':''}</span></button>`).join('')}<div class="shopping-room-menu-separator" role="separator"></div><button type="button" class="shopping-room-create-list" role="menuitem" tabindex="-1" onclick="shoppingRoomCreateList()"><span class="shopping-room-create-icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="shopping-room-choice-name">Crear nueva lista</span></button></div>
  </div>`;
 }
 var shoppingDeleteUi=null;
@@ -118,6 +118,11 @@ function shoppingRoomChoose(index){
  if(target.id!==r?.id){state.roomSearch='';state.rf=null;shoppingRoomSearchState={scope:'',open:false};openRoom(p.id,target.id);}
  document.getElementById('shopping-room-trigger')?.focus();return true;
 }
+function shoppingRoomCreateList(){
+ if(state.view!=='estancia'||!canView('proyecto')||document.querySelector('.overlay.open,dialog[open]'))return false;
+ const {p}=getRoom();if(!p)return false;
+ shoppingRoomPickerClose();newRoom(p.id,'otra');return true;
+}
 function shoppingRoomPickerKey(event){
  const picker=event.target.closest?.('.shopping-room-picker');if(!picker)return;
  const menu=picker.querySelector('[role=menu]');if(!menu)return;
@@ -125,7 +130,7 @@ function shoppingRoomPickerKey(event){
  if(event.key==='Tab'&&!menu.hidden){shoppingRoomPickerClose(true);return;}
  if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
  event.preventDefault();if(menu.hidden){shoppingRoomPickerToggle(true);if(['ArrowDown','ArrowUp'].includes(event.key))return;}
- const items=[...menu.querySelectorAll('[role=menuitemradio]')],index=items.indexOf(document.activeElement);
+ const items=[...menu.querySelectorAll('[role=menuitemradio],[role=menuitem]')],index=items.indexOf(document.activeElement);
  const next=event.key==='Home'?0:event.key==='End'?items.length-1:(index+(event.key==='ArrowDown'?1:-1)+items.length)%items.length;items[next]?.focus();
 }
 /* Adapt the supplied filter example to existing shopping fields, not demo task data. */

@@ -107,6 +107,13 @@ try:
    assert room.get_by_role('button',name='Exportar PDF / hoja',exact=True).count()==0
    assert 'Pulsa el nombre o el botón de editar' not in room.inner_text()
    assert room.get_by_role('button',name='Añadir sección',exact=True).count()==0
+   picker=room.get_by_role('button',name='Cambiar lista: Salón ficticio',exact=True)
+   picker.click();menu=room.get_by_role('menu',name='Listas de compra del proyecto')
+   expect(menu).to_be_visible();assert menu.get_by_role('menuitemradio').count()==4
+   create_list=menu.get_by_role('menuitem',name='Crear nueva lista',exact=True);expect(create_list).to_be_visible()
+   assert menu.get_by_role('menuitem',name='Crear nueva estancia',exact=True).count()==0
+   create_list.click();expect(page.locator('#modalBox h3')).to_have_text('Nueva lista')
+   page.get_by_role('button',name='Cancelar',exact=True).click();assert page.evaluate('records()===baseline')
    assert room.locator('.shopping-product-grid').count()==1
    assert room.locator('.dl-sec,.shopping-section-jump').count()==0
    filter_button=room.get_by_role('button',name='Filtrar productos',exact=True)

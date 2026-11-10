@@ -1279,7 +1279,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=196.3"></script>
+<script src="/project-ui.js?v=196.4"></script>
 <script src="/places.js?v=365135"></script>
 <script src="/home-map.js?v=365135"></script>
 <script src="/new-project.js?v=365133"></script>
@@ -8848,7 +8848,7 @@ function doNewRoom(pid,kind){
   const p = state.projects.find(x=>x.id===pid);
   p.rooms = p.rooms || [];
   const r = {id:Date.now(), kind:kind||"estancia", icon:nrIcon, name:document.getElementById("nrName").value||"Lista", created:new Date().toISOString().slice(0,10), sections:[{id:crypto.randomUUID(),name:"General", items:[]}]};
-  p.rooms.push(r); closeModal(); openRoom(pid, r.id);
+  p.rooms.push(r);closeModal();persistSoon();openRoom(pid,r.id);
 }
 function renameSection(si){
   const {r}=getRoom(); const s=r&&r.sections[si]; if(!s) return;
@@ -11392,7 +11392,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.151";
+const MODERNO_VER="v3.65.152";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13538,7 +13538,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/document-builder.css?v=3605">
 <link rel="stylesheet" href="/brand/menu-finish.css?v=201">
 <link rel="stylesheet" href="/brand/project-compact.css?v=3657">
-<link rel="stylesheet" href="/brand/project-ui.css?v=365149">
+<link rel="stylesheet" href="/brand/project-ui.css?v=365152">
 <style>
 /* Compact page tops; mobile navigation retains its reserved space. */
 @media screen and (min-width:701px){
