@@ -55,6 +55,11 @@ try:
   context_style=tasks.evaluate("""bar=>{const button=bar.querySelector('.plan-icon-button'),separator=bar.querySelector('.plan-tool-separator'),bs=getComputedStyle(bar),bb=getComputedStyle(button),ss=getComputedStyle(separator);return {background:bs.backgroundColor,shadow:bs.boxShadow,height:bs.height,padding:bs.padding,color:bb.color,button:[bb.width,bb.height,bb.borderRadius],separator:[ss.width,ss.height,ss.backgroundColor]}}""")
   assert context_style==original_style,(original_style,context_style)
   assert page.evaluate("document.body.classList.contains('project-context-dock-joined')")
+  page.wait_for_timeout(350)
+  joined=page.evaluate("""()=>{const dock=document.querySelector('.project-dock'),bar=document.querySelector('.project-context-tools'),surface=document.querySelector('.plan-dock-unified-surface:not([hidden])'),style=el=>{const s=getComputedStyle(el);return {background:s.backgroundColor,border:s.borderColor,shadow:s.boxShadow}},d=dock.getBoundingClientRect(),b=bar.getBoundingClientRect(),u=surface.getBoundingClientRect(),rect=r=>({left:r.left,right:r.right,width:r.width});return {dock:style(dock),bar:style(bar),surface:style(surface),rects:{dock:rect(d),bar:rect(b),surface:rect(u)},aligned:Math.abs(d.right-b.left)<=2&&u.left<=d.left+1&&u.right>=b.right-1}}""")
+  assert joined['dock']=={'background':'rgba(0, 0, 0, 0)','border':'rgba(0, 0, 0, 0)','shadow':'none'},joined
+  assert joined['bar']=={'background':'rgba(0, 0, 0, 0)','border':'rgba(0, 0, 0, 0)','shadow':'none'},joined
+  assert joined['surface']['background']=='rgb(255, 255, 255)' and joined['aligned'],joined
   tasks.get_by_role('button',name='Nueva tarea',exact=True).click();assert page.evaluate("contextCalls.at(-1)[0]==='taskModal'")
   if output: toolbar_shot(page,'02-desplegable-tareas.png',tasks)
 
