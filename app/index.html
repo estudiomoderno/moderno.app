@@ -1286,7 +1286,6 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/shopping-export.js?v=365113"></script>
 <script src="/plan-annotations.js?v=202.10"></script>
 <script src="/plan-editor.js?v=202.13"></script>
-<script src="/project-context-tools.js?v=204.1"></script>
 <script src="/cad-viewer.js?v=202.3"></script>
 <script src="/project-documents.js?v=202.15"></script>
 <script src="/plan-options.js?v=202.6"></script>
@@ -13575,9 +13574,8 @@ if(!sb)ModernoAppLoading.sessionReady();
 </script>
 <script>
 const renderBeforeShoppingAdd=render;
-render=function(...args){const started=Date.now();try{const result=renderBeforeShoppingAdd.apply(this,args);shoppingRoomAddEnhance();ModernoProjectContextTools.sync();return result;}finally{efficiencyMetrics.record('render',{ms:Date.now()-started});}};
+render=function(...args){const started=Date.now();try{const result=renderBeforeShoppingAdd.apply(this,args);shoppingRoomAddEnhance();return result;}finally{efficiencyMetrics.record('render',{ms:Date.now()-started});}};
 shoppingRoomAddEnhance();
-ModernoProjectContextTools.sync();
 </script>
 </body>
 </html>
