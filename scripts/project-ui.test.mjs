@@ -23,6 +23,21 @@ test('shopping header omits list status without changing historical records',()=
  const room={id:1,name:'Sala',icon:'sofa',rstatus:'Estado histórico',sections:[{name:'General',items:[{status:'Pendiente'}]}]},p={rooms:[room]},before=JSON.stringify(p),c=fixture({rico:()=>'<svg></svg>'});
  const output=c.shoppingRoomPickerHtml(p,room);assert.doesNotMatch(output,/shopping-room-status|Estado histórico|Estado general de la estancia/);assert.equal(JSON.stringify(p),before);
 });
+test('shopping collaboration reuses the existing action and is off by default',()=>{
+ const project={id:90,rooms:[]},calls=[];
+ const c=fixture({state:{projects:[project]},_accessLoading:false,persistSoon:()=>calls.push('persist'),cloudFlush:()=>calls.push('flush'),render:()=>calls.push('render'),toast:message=>calls.push(message)});
+ let out=c.shoppingListActions(90);assert.match(out,/data-shopping-action="collaborate"/);assert.match(out,/aria-pressed="false"/);assert.match(out,/aria-label="Colaborar con cliente"/);
+ assert.equal(c.shoppingClientCollaborationToggle(90),true);assert.equal(project.clientShoppingCollaboration,true);assert.deepEqual(calls.slice(0,3),['persist','flush','render']);
+ out=c.shoppingListActions(90);assert.match(out,/aria-pressed="true"/);assert.match(out,/is-active/);assert.match(out,/Desactivar colaboración con cliente/);
+ c.shoppingClientCollaborationToggle(90);assert.equal(project.clientShoppingCollaboration,false);
+});
+test('only an administrator sees and can change client shopping collaboration',()=>{
+ const project={id:90,clientShoppingCollaboration:true},calls=[],c=fixture({state:{projects:[project]},_accessLoading:false,myAccessLevel:()=> 'colab',persistSoon:()=>calls.push('save'),cloudFlush:()=>calls.push('flush'),render:()=>calls.push('render'),toast:message=>calls.push(message)});
+ assert.doesNotMatch(c.shoppingListActions(90),/data-shopping-action="collaborate"/);assert.equal(c.shoppingClientCollaborationToggle(90),false);assert.equal(project.clientShoppingCollaboration,true);assert.equal(calls.length,1);
+});
+test('client-added products have an explicit study-side badge',()=>{
+ const c=fixture();assert.match(c.shoppingClientProductBadge({clientAdded:true}),/Añadido por el cliente/);assert.equal(c.shoppingClientProductBadge({}),'');
+});
 test('shopping picker rejects invalid, forbidden or modal selections and only clears transient filters on a real switch',()=>{
  const p={id:90,rooms:[{id:1,name:'Sala'},{id:2,name:'Dormitorio'}]},calls=[],elements={};let modal=false,allowed=true;
  const c=fixture({state:{view:'estancia',currentProject:90,currentRoom:1,roomSearch:'texto',rf:{label:'label:Iluminación'}},getRoom:()=>({p,r:p.rooms[0]}),canView:()=>allowed,document:{getElementById:id=>elements[id],querySelector:()=>modal?{}:null,addEventListener(){}},toast(){},openRoom:(...args)=>calls.push(args)}),before=JSON.stringify(p);

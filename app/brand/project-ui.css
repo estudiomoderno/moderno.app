@@ -19,6 +19,8 @@
  }
  .shopping-action-icon{fill:rgb(70,70,70);width:18px;height:18px;flex:none}
  :is(.shopping-list-overview,.shopping-room-view) .shopping-action:hover{background-color:rgb(241,241,241);transition-duration:.3s}
+ :is(.shopping-list-overview,.shopping-room-view) .shopping-action.is-active{background-color:rgb(241,241,241);border-color:rgb(70,70,70)}
+ :is(.shopping-list-overview,.shopping-room-view) .shopping-action.is-active::after{content:"";position:absolute;right:5px;bottom:5px;width:6px;height:6px;border-radius:50%;background:#22a447;box-shadow:0 0 0 2px #fff}
  .shopping-list-overview .shopping-quote{
   width:200px;height:40px;min-height:40px;box-sizing:border-box;flex:0 0 200px;
   display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:0 15px;
@@ -104,6 +106,7 @@
  .shopping-room-view .shopping-add-card:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
  .shopping-room-view .shopping-product-label{display:table;max-width:100%;margin-top:6px;padding:2px 7px;border:1px solid var(--ui-line);border-radius:6px;background:var(--app-surface,#fff);color:var(--ink-soft);font:inherit;font-size:11px;line-height:1.5;text-align:left;overflow-wrap:anywhere;cursor:pointer}
  .shopping-room-view .shopping-product-label:hover{background:var(--app-control,#eee)}
+ .shopping-room-view .shopping-client-added{box-sizing:border-box;max-width:100%;padding:3px 7px;border:1px solid #b9d9c1;border-radius:6px;background:#eef8f0;color:#236b35;font-size:10px;font-weight:600;line-height:1.4;box-shadow:0 1px 4px #00000012;overflow-wrap:anywhere}
  .shopping-room-view .shopping-product-label:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
  .shopping-flat-products .shopping-empty-results{font-size:13px;color:var(--ink-soft);align-self:center}
  html body .shopping-room-view .shopping-tool-button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;position:relative;flex:0 0 32px;width:32px;height:32px;min-height:32px;padding:0;border:1px solid var(--ui-line);border-radius:8px;background:var(--app-surface,#fff);color:var(--ink);cursor:pointer;list-style:none}

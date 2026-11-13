@@ -79,7 +79,11 @@ try:
    assert overview.locator('.shopping-list-header h2').inner_text().strip().startswith('Listas de compra')
    assert 'Estancias' not in overview.locator('.dl-ghead>b').all_inner_texts()
    assert overview.locator('.shopping-list-header .line').count()==0
-   assert overview.locator('.shopping-list-header .shopping-action').count()==3
+   header_actions=overview.locator('.shopping-list-header .shopping-action')
+   assert header_actions.count()==4
+   assert header_actions.evaluate_all('(buttons)=>buttons.map(button=>button.title)')==['Añadir lista','Descargar','Imprimir','Colaborar con cliente']
+   collaboration=overview.get_by_role('button',name='Colaborar con cliente',exact=True)
+   assert collaboration.get_attribute('aria-pressed')=='false'
    footers=overview.locator('.dl-card .dl-cfoot')
    expect(footers).to_have_text(['Salón ficticio','Dormitorio ficticio','Pavimentos ficticios','Otras compras ficticias'])
    assert footers.locator('.dl-date,.dl-grip,button').count()==0
@@ -198,7 +202,7 @@ try:
    overview.evaluate('(e)=>Promise.all(e.getAnimations({subtree:true}).map(a=>a.finished))')
    assert page.evaluate('records()===baseline')
    buttons=overview.locator('.shopping-action')
-   assert buttons.evaluate_all('(es)=>es.map(e=>e.getAttribute("aria-label"))')==['Crear','Exportar','Imprimir']
+   assert buttons.evaluate_all('(es)=>es.map(e=>e.getAttribute("aria-label"))')==['Añadir lista','Descargar','Imprimir','Colaborar con cliente']
    assert buttons.locator('.shopping-action-tray').count()==0
    assert buttons.evaluate_all('(es)=>es.every(e=>e.children.length===1&&e.firstElementChild.tagName.toLowerCase()==="svg")')
    boxes=[b.bounding_box() for b in buttons.all()]
