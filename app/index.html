@@ -6255,9 +6255,10 @@ function typeColorsModal(){
 }
 function contactCategoryIcon(category){
   const file={"Todos":"todos","Proveedores":"proovedores","Contratistas":"contratistas","Técnicos":"arquitectos","Team":"team"}[category];
-  return file?`<span class="contact-category-icon" aria-hidden="true" style="--contact-icon:url('/contact-${file}.svg')"></span>`:ico('contactos');
+  return file?`<span class="contact-category-icon" aria-hidden="true" style="--contact-icon:url('/contact-${file}.svg?v=36605')"></span>`:ico('contactos');
 }
-function agendaAssetIcon(file){return `<span class="agenda-action-icon" aria-hidden="true" style="--agenda-icon:url('/brand/agenda-icons/${file}.svg?v=36604')"></span>`;}
+function agendaAssetIcon(file){return `<span class="agenda-action-icon" aria-hidden="true" style="--agenda-icon:url('/brand/agenda-icons/${file}.svg?v=36605')"></span>`;}
+function agendaContactBadge(type){return ({Cliente:"client",Proveedor:"provider",Contratista:"contractor",Técnico:"technical",Team:"team"})[type]||"info";}
 function vAgenda(){
   ensureClientNums();
   const rows = byBrand(state.clients.map((c,i)=>({...c,__i:i})));
@@ -6272,6 +6273,11 @@ function vAgenda(){
   return `
   <div class="contact-toolbar">
     <div class="pill-tabs contact-category-tabs" aria-label="Filtrar contactos">${tabs.map(x=>`<button class="${tab===x?'on':''}" aria-pressed="${tab===x}" onclick="WorkflowPolish.contact('${x}')">${contactCategoryIcon(x)}${x}</button>`).join("")}</div>
+    <div class="agenda-search-group" role="search" aria-label="Buscar contactos">
+      <button type="button" class="agenda-search-label" onclick="document.getElementById('agQBox')?.focus()">Buscar</button>
+      <input id="agQBox" type="search" value="${(state.agQ||"").replace(/"/g,"&quot;")}" placeholder="Nombre, ID o email" aria-label="Buscar contactos"
+        oninput="state.agQ=this.value; renderKeep(this)">
+    </div>
     <div class="contact-toolbar-actions">
       <button class="btn contact-new" onclick="clientModal()">${ico("mas")} Nuevo contacto</button>
       <details class="contact-settings">
@@ -6285,24 +6291,14 @@ function vAgenda(){
       </details>
     </div>
   </div>
-  <div class="agenda-list-tools">
-    <div class="agenda-search-group" role="search" aria-label="Buscar contactos">
-      <button type="button" class="agenda-search-label" onclick="document.getElementById('agQBox')?.focus()">Buscar</button>
-      <input id="agQBox" type="search" value="${(state.agQ||"").replace(/"/g,"&quot;")}" placeholder="Nombre, ID o email" aria-label="Buscar contactos"
-        oninput="state.agQ=this.value; renderKeep(this)">
-    </div>
-  </div>
-  <table class="list"><thead><tr><th>ID</th><th>Nombre</th><th style="text-align:center">Tipo</th>${multiWs?`<th>Espacio de trabajo</th>`:""}<th>Tel\u00e9fono</th><th>NIF/CIF</th><th></th></tr></thead><tbody>
+  <table class="list agenda-contact-table"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th>${multiWs?`<th>Espacio de trabajo</th>`:""}<th>Tel\u00e9fono</th><th>NIF/CIF</th><th class="agenda-contact-actions-head">Acciones</th></tr></thead><tbody>
   ${shown.length?shown.map(c=>`<tr style="cursor:pointer" onclick="clientCard(this.dataset.n)" data-n="${c.name}">
-    <td style="white-space:nowrap;font-size:11.5px;color:var(--ink-faint)">${c.num||"\u2014"}</td>
-    <td><b>${c.name}</b>${(c.type==="Contratista"||c.type==="Técnico")&&c.trade?` <span class="chip neutral" style="font-size:10px;padding:2px 8px;vertical-align:1px">${c.trade}</span>`:""}<br><span style="font-size:11px;color:var(--ink-faint)">\u25a6 ${c.fiscal}</span></td>
-    <td style="text-align:center"><span class="chip cm" style="background:${typeColor(c.type)}">${c.type}</span></td>
+    <td class="agenda-contact-id">${c.num||"\u2014"}</td>
+    <td><div class="agenda-contact-primary">${c.name}${(c.type==="Contratista"||c.type==="Técnico")&&c.trade?` <span class="agenda-contact-trade">${c.trade}</span>`:""}</div><div class="agenda-contact-secondary">${c.fiscal}</div></td>
+    <td><span class="agenda-contact-badge agenda-contact-badge--${agendaContactBadge(c.type)}">${c.type}</span></td>
     ${multiWs?`<td>${c.type==="Cliente"?`<span class="chip ${c.brand==='both'?'both':BRAND[c.brand]?.chip||'cm'}">${c.brand==="both"?"Ambas":BRAND[c.brand]?.name??"\u2014"}</span>`:"\u2014"}</td>`:""}
-    <td>\u2706 ${c.phone||"\u2014"}</td><td>${c.nif||"\u2014"}</td>
-    <td style="text-align:right"><div style="display:inline-flex;flex-direction:row;gap:10px;align-items:center;white-space:nowrap">
-      <button class="collbtn" title="Editar" onclick="event.stopPropagation();clientModal(${c.__i})">\u270e</button>
-      <button class="collbtn" title="Eliminar" onclick="event.stopPropagation();delClient(${c.__i})">${ico("del_contacto")}</button>
-    </div></td></tr>`).join(""):`<tr><td colspan="${multiWs?7:6}"><div class="empty">Nada por aqu\u00ed todav\u00eda.</div></td></tr>`}
+    <td>${c.phone||"\u2014"}</td><td>${c.nif||"\u2014"}</td>
+    <td class="agenda-contact-actions"><button type="button" class="agenda-row-settings" aria-label="Ajustes de ${(c.name||"contacto").replace(/"/g,"&quot;")}" title="Ajustes" onclick="event.stopPropagation();clientModal(${c.__i})">${agendaAssetIcon('gear-six-light')}</button></td></tr>`).join(""):`<tr><td colspan="${multiWs?7:6}"><div class="empty">Nada por aqu\u00ed todav\u00eda.</div></td></tr>`}
   </tbody></table>`;
 }
 
@@ -9978,7 +9974,9 @@ function draftEditClient(){
 }
 function clientModal(editIdx=-1, presetType){
   const c = editIdx>=0 ? state.clients[editIdx] : {name:"",fiscal:"",type:presetType||"Cliente",brand:wsOrder[0],num:nextClientNum(presetType||"Cliente"),phone:"",email:"",nif:"",addr:"",cp:"",city:"",country:(state.account&&state.account.country)||"España",folder:"",trade:"",notes:""};
-  modal(`<h3>${editIdx>=0?"Editar «"+c.name+"»":"Nuevo en la agenda"}</h3>
+  modal(`<div class="shopping-product-editor agenda-contact-editor">
+  <header class="product-editor-header"><h3>${editIdx>=0?"Editar contacto":"Nuevo contacto"}</h3><p>${editIdx>=0?c.name:"Datos de contacto y clasificación."}</p><button type="button" class="product-editor-close" aria-label="Cerrar edición de contacto" onclick="closeModal()">${ico("cerrar")||"×"}</button></header>
+  <div class="product-editor-body agenda-contact-editor-body"><div class="product-editor-column"><section class="product-editor-section">
   <label>Tipo</label><div class="opt-pills" id="clType">${["Cliente","Proveedor","Contratista","Técnico","Team"].map(x=>`<button class="${c.type===x?'on':''}" data-v="${x}">${typeLabel(x)}</button>`).join("")}</div>
   <label>ID</label>
   <div style="display:flex;align-items:center;gap:8px">
@@ -10007,7 +10005,8 @@ function clientModal(editIdx=-1, presetType){
   <div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>Dirección</label><input id="clAddr" name="street-address" autocomplete="street-address" value="${(c.addr||"").replace(/"/g,"&quot;")}" placeholder="Calle Mayor, 1, 2º B" style="width:100%"></div>
   <div class="row2"><div><label>Código postal</label><input id="clCp" name="postal-code" autocomplete="postal-code" value="${c.cp||""}" placeholder="23001"></div><div><label>Ciudad</label><input id="clCity" name="city" autocomplete="address-level2" value="${c.city}" placeholder="Jaén"></div></div>
   <div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>Notas internas</label><textarea id="clNotes" rows="2" placeholder="Solo las ve tu equipo — preferencias, avisos, contexto…">${c.notes||""}</textarea></div>
-  <div class="modal-foot">${editIdx>=0?`<button class="btn btn-ghost" style="color:var(--red-ink);margin-right:auto" onclick="delClient(${editIdx})">${ico("del_contacto")} Eliminar</button>`:""}<button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-dark" onclick="saveClient(${editIdx})">${editIdx>=0?"Guardar cambios":"Añadir"}</button></div>`);
+  </section></div></div>
+  <footer class="modal-foot product-editor-footer">${editIdx>=0?`<button type="button" class="btn btn-ghost shopping-editor-delete" onclick="delClient(${editIdx})">${ico("del_contacto")} Eliminar contacto</button>`:""}<button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button type="button" class="btn btn-dark" onclick="saveClient(${editIdx})">${editIdx>=0?"Guardar cambios":"Añadir"}</button></footer></div>`);
   _obLock=true;                       // este modal solo se cierra con sus botones
   pills("clType"); pills("clBrand"); pills("clTrade");
   document.querySelectorAll("#clType button").forEach(b=>b.addEventListener("click",()=>{
@@ -11158,8 +11157,7 @@ function clientCard(name){
   ${facturas.length?facturas.map(f=>`<div class="entry" style="background:var(--white)"><b>${f.ref}</b><span class="chip ${(BRAND[f.brand]||{}).chip||'cm'}">${(BRAND[f.brand]||{}).name||""}</span><span class="amt in">${fmt(f.total)}</span></div>`).join(""):`<div style="font-size:12px;color:var(--ink-faint)">Sin facturas todavía</div>`}
   ${presupuestos.length?`<label class="cc-lab">${ico("c_presu")} Presupuestos (${presupuestos.length})</label>`+presupuestos.map(f=>`<div class="entry" style="background:var(--white)"><b>${f.ref}</b><span class="amt">${fmt(f.total)}</span></div>`).join(""):""}
   <div class="modal-foot">
-  <button class="btn btn-ghost" style="color:var(--red-ink);margin-right:auto" onclick="delClient(${state.clients.indexOf(c)})">${ico("del_contacto")} Eliminar</button>
-  <button class="btn btn-ghost" onclick="closeModal();clientModal(${state.clients.indexOf(c)})">\u270e Editar</button>
+  <button class="btn btn-ghost" onclick="closeModal();clientModal(${state.clients.indexOf(c)})">${agendaAssetIcon('gear-six-light')} Ajustes</button>
   <button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
 }
 async function exportPeriodInvoices(kind){
@@ -11409,7 +11407,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.4";
+const MODERNO_VER="v3.66.5";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13567,7 +13565,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 }
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=208">
-<link rel="stylesheet" href="/brand/agenda-ui.css?v=36604">
+<link rel="stylesheet" href="/brand/agenda-ui.css?v=36605">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>

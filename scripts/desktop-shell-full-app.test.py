@@ -349,22 +349,39 @@ try:
     assert len({round(box['y'],1) for box in filter_boxes})==1 and len({round(box['height'],1) for box in filter_boxes})==1
     header_bottom=page.locator('.desktop-inset-header').evaluate('(e)=>e.getBoundingClientRect().bottom')
     assert 8<=filter_boxes[0]['y']-header_bottom<=32,(header_bottom,filter_boxes[0]['y'])
-    toolbar_controls=page.locator('.contact-settings-trigger,.contact-new').evaluate_all('(bs)=>bs.map(b=>{const r=b.getBoundingClientRect();return {y:r.y,height:r.height}})')
+    toolbar_controls=page.locator('.agenda-search-group,.contact-settings-trigger,.contact-new').evaluate_all('(bs)=>bs.map(b=>{const r=b.getBoundingClientRect();return {y:r.y,height:r.height}})')
     assert len({round(box['y'],1) for box in toolbar_controls+filter_boxes})==1
+    assert page.locator('.contact-toolbar').evaluate('(e)=>[...e.children].map(c=>c.className)')==['pill-tabs contact-category-tabs','agenda-search-group','contact-toolbar-actions']
     assert page.locator('.contact-new').count()==1
     assert page.locator('.contact-toolbar-actions').evaluate('(e)=>[...e.children].map(c=>c.tagName)')==['BUTTON','DETAILS']
     assert page.locator('.contact-new').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(6, 102, 255)'
     assert page.locator('.agenda-settings-icon').evaluate('(e)=>getComputedStyle(e).maskImage').find('menu-importar-exportar.svg')>=0
     assert page.locator('.contact-settings-trigger').evaluate('(e)=>[getComputedStyle(e,"::before").content,getComputedStyle(e,"::after").content]')==['none','none']
-    assert page.locator('.agenda-list-tools').get_by_role('searchbox',name='Buscar contactos').count()==1
-    assert page.locator('.agenda-list-tools').get_by_role('button',name='Buscar',exact=True).count()==1
+    assert page.locator('.contact-toolbar').get_by_role('searchbox',name='Buscar contactos').count()==1
+    assert page.locator('.contact-toolbar').get_by_role('button',name='Buscar',exact=True).count()==1
     assert page.locator('.agenda-sort').count()==0
     search_group=page.locator('.agenda-search-group').bounding_box()
-    assert abs(search_group['x']-filter_boxes[0]['x'])<=1 and search_group['width']<=520,search_group
-    assert page.locator('.agenda-list-tools #agQBox').evaluate('(e)=>getComputedStyle(e).borderRadius')=='0px 8px 8px 0px'
-    page.locator('.agenda-list-tools').get_by_role('button',name='Buscar',exact=True).click()
+    filter_group=page.locator('.contact-category-tabs').bounding_box()
+    new_contact_box=page.locator('.contact-new').bounding_box()
+    assert search_group['x']>=filter_group['x']+filter_group['width']-1 and search_group['x']+search_group['width']<=new_contact_box['x']+1,search_group
+    assert page.locator('.contact-toolbar #agQBox').evaluate('(e)=>getComputedStyle(e).borderRadius')=='0px 8px 8px 0px'
+    page.locator('.contact-toolbar').get_by_role('button',name='Buscar',exact=True).click()
     assert page.locator('#agQBox').evaluate('(e)=>e===document.activeElement')
+    assert page.locator('.agenda-contact-table').count()==1
+    assert page.locator('.agenda-contact-table tbody tr').first.locator('td').nth(3).inner_text().strip()=='—'
+    assert page.locator('.agenda-contact-badge').first.evaluate('(e)=>getComputedStyle(e).borderRadius')=='6px'
+    assert page.locator('.agenda-contact-table .agenda-row-settings').count()==page.locator('.agenda-contact-table tbody tr').count()
+    assert page.locator('.agenda-contact-table button[title="Editar"],.agenda-contact-table button[title="Eliminar"]').count()==0
+    assert page.locator('.agenda-row-settings .agenda-action-icon').first.evaluate('(e)=>getComputedStyle(e).maskImage').find('gear-six-light.svg')>=0
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'agenda-toolbar-{width}.png'),full_page=True)
+    page.locator('.agenda-row-settings').first.click()
+    expect(page.locator('.agenda-contact-editor')).to_be_visible()
+    assert page.locator('#modalBox').evaluate('(e)=>getComputedStyle(e).height')==str(page.viewport_size['height'])+'px'
+    expect(page.locator('.agenda-contact-editor .product-editor-footer').get_by_role('button')).to_have_text(['Eliminar contacto','Cancelar','Guardar cambios'])
+    if len(sys.argv)>1:
+     page.wait_for_timeout(250)
+     page.screenshot(path=str(Path(sys.argv[1])/f'agenda-contact-editor-{width}.png'),full_page=True)
+    page.get_by_role('button',name='Cerrar edición de contacto',exact=True).click()
     page.locator('.contact-settings-trigger').click()
     expect(page.locator('.contact-settings-menu').get_by_role('menuitem')).to_have_text(['Exportar PDF','Exportar CSV','Importar contactos'])
     with page.expect_download() as agenda_download:
