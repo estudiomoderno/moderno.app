@@ -80,10 +80,8 @@ with sync_playwright() as p:
   assert page.locator('#desktop-header').count()==0,'explicit rollback must restore the old UI'
   page.evaluate('ModernoDesktopShell.setEnabled(true)')
   if width>=1100:
-   assert page.locator('.desktop-row').bounding_box()['width']==64,'Desktop rail must start collapsed'
-   assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).get_attribute('aria-expanded')=='false'
-   page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
-   settle_header(page)
+   assert page.locator('.desktop-row').bounding_box()['width']==256,'Desktop ReUI sidebar must start expanded'
+   assert page.get_by_role('button',name='Comprimir menú lateral',exact=True).get_attribute('aria-expanded')=='true'
   if width<1100:
    assert page.locator('#desktop-header').count()==0
    assert page.locator('aside.sidebar .sb-head').evaluate('(el)=>el.innerHTML')==logos
@@ -99,6 +97,9 @@ with sync_playwright() as p:
   assert page.locator('#desktop-header .desktop-context').count()==0
   assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Finanzas','Agenda','Mail','Calendario','Tareas','Productos','Servicios']
   assert page.locator('.desktop-section-label').inner_text()=='Workspace'
+  assert page.locator('.desktop-brand-copy strong').inner_text()=='Moderno.app'
+  assert page.locator('.desktop-brand-plan').inner_text()=='Free plan'
+  assert page.locator('.desktop-inset-workspace').inner_text()=='Estudio ficticio'
   assert page.locator('.desktop-projects h2').inner_text()=='Proyectos'
   assert page.locator('.desktop-recent-title').inner_text()=='Recientes'
   assert page.get_by_role('button',name='Crear proyecto',exact=True).count()==1
@@ -124,19 +125,18 @@ with sync_playwright() as p:
   bell=page.locator('#desktop-header .desktop-actions>button').bounding_box()
   profile=page.locator('.desktop-profile>summary').bounding_box()
   assert page.locator('.desktop-account #topUserDot img').count()==1
-  assert page.locator('.desktop-account').evaluate('(e)=>e.nextElementSibling.classList.contains("desktop-toggle")')
-  assert page.locator('.desktop-toggle').evaluate('(e)=>e.nextElementSibling.classList.contains("desktop-support")')
+  assert page.locator('.desktop-account').evaluate('(e)=>e.nextElementSibling.classList.contains("desktop-support")')
+  assert page.locator('.desktop-toggle').evaluate('(e)=>e.closest(".desktop-inset-header")!==null')
   row=page.locator('.desktop-row').bounding_box()
-  assert page.locator('.desktop-row').evaluate('(e)=>getComputedStyle(e).backgroundColor')!='rgba(0, 0, 0, 0)'
-  assert page.locator('#desktop-header .logo-mini svg').evaluate('(e)=>getComputedStyle(e).filter')=='none'
-  assert bell['width']==bell['height']==44
+  assert page.locator('.desktop-row').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgba(0, 0, 0, 0)'
+  assert bell['width']==bell['height']==32
   assert profile['x']>=row['x'] and profile['x']+profile['width']<=row['x']+row['width']
   assert row['x']+row['width']<bell['x']
-  assert row['x']==8 and row['y']==8 and bell['y']==16
+  assert row['x']==8 and row['y']==8 and 8<=bell['y']<24,(row,bell)
   assert row['width']==256 and row['height']==984,'Expanded rail must stay inset inside the available screen height'
   for rect in page.locator('.desktop-nav .desktop-icon-only:visible').evaluate_all('(els)=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width,height:r.height}})'):
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
-   assert rect['width']>=180 and rect['height'] in [36,44],rect
+   assert rect['width']>=180 and rect['height'] in [32,44],rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
   assert page.locator('#desktop-primary>.desktop-link').count()==7,'Keep the exact Workspace order with separate Products and Services actions'
   assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0

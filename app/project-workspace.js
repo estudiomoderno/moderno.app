@@ -92,7 +92,7 @@ var ModernoProjectWorkspace=(()=>{
  }
  function refresh(){
   const pool=sync();restore();
-  if(!active()||['portalcli','portalobra'].includes(state.view)){discardComponent();return;}
+  if(!active()||!['proyectos','proyecto','estancia'].includes(state.view)||['portalcli','portalobra'].includes(state.view)){discardComponent();return;}
   const project=projectViews.includes(state.view)?pool.find(p=>key(p.id)===key(state.currentProject)):null;
   if(project&&!windows.has(key(project.id)))windows.set(key(project.id),{section:projectTabKey(state.projTab||'proyecto'),view:state.view,room:state.currentRoom,scroll:0});
   const item=current();if(item){item.section=projectTabKey(state.projTab||'proyecto');item.view=state.view;item.room=state.currentRoom;}

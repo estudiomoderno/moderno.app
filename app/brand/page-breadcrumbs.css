@@ -31,5 +31,7 @@
 
 /* Section routes and finance controls sit below the permanent project row. */
 @media screen and (min-width:1100px){
- html body.global-project-header #page-route-bar{top:72px;right:24px;background:var(--app-surface,#fff);box-shadow:0 0 0 12px var(--app-surface,#fff)}
+ html body.desktop-shell #page-route-bar:not(.is-finance){display:none!important}
+ html body.desktop-shell #page-route-bar.is-finance,html body.desktop-shell.global-project-header #page-route-bar.is-finance{top:64px;left:calc(var(--desktop-content-left) + 16px);right:24px;height:36px;background:#fff;box-shadow:none}
+ html body.desktop-shell.finance-navigation .main{padding-top:112px!important}
 }

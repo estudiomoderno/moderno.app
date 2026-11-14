@@ -37,6 +37,7 @@ def contrast_navigation(page):
  for selector in ['.desktop-projects-all','#desktop-primary [data-desktop-view=workspace]']:
   colors=page.locator(selector).evaluate('(e)=>[getComputedStyle(e).backgroundColor,getComputedStyle(e).color]')
   if colors[0]=='rgba(0, 0, 0, 0)':colors[0]=row.evaluate('(e)=>getComputedStyle(e).backgroundColor')
+  if colors[0]=='rgba(0, 0, 0, 0)':colors[0]=page.locator('body').evaluate('(e)=>getComputedStyle(e).backgroundColor')
   a,b=sorted(map(luminance,colors));assert (b+.05)/(a+.05)>=4.5,colors
 def neutral_canvas(page):
  # Exercise computed styles on the real renderers, including legacy grid overrides.
@@ -279,8 +280,6 @@ try:
     page.evaluate("go('proyecto',9001)")
     reference=page.locator('#project-window-bar .pw-tab-select').first
     reference.wait_for(state='visible')
-    project_type=reference.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}')
-    project_box=page.locator('#project-window-bar [data-slot=badge]').first.bounding_box()
    # Warm real renderers once, so their existing normalizations are not attributed to the new shell.
    routes=page.locator('aside.sidebar .nav-item[data-view]:not([data-view=utilidades]):not([data-view=conversaciones])').evaluate_all('(bs)=>bs.map(b=>b.dataset.view)')
    assert page.locator('aside.sidebar [data-view=utilidades]').is_hidden()
@@ -300,24 +299,17 @@ try:
     neutral_canvas(page)
     if width>=1100:
      if view in ['home','proyectos']:
-      assert page.locator('#page-route-bar').count()==0
-      page.locator('.desktop-projects-all').wait_for(state='visible')
+      page.locator('#project-window-bar').wait_for(state='visible');assert page.locator('.desktop-inset-route').is_hidden()
      else:
-      crumb=page.locator('#page-route-bar [aria-current=page]').last
-      crumb.wait_for(state='visible')
-      if view in finance:crumb.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
-      expected='Proyectos' if view=='home' else 'Agenda' if view=='agenda' else page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip()
-      if view in finance:expected={'informes':'Resumen','prevision':'Previsión'}.get(view,expected)
-      assert crumb.inner_text()==expected,(view,crumb.inner_text())
-      assert crumb.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}')==project_type,(view,crumb.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}'),project_type)
-      assert 'Moderno ReUI Inter' in crumb.evaluate('(e)=>getComputedStyle(e).fontFamily')
-      card=page.locator('#page-route-bar [data-slot=card]').first.bounding_box()
-      assert abs(card['height']-project_box['height'])<1,(view,card,project_box)
-      assert card['y']>=56 and project_box['y']<56,(view,card,project_box)
-      profile=page.locator('[data-profile-trigger]').bounding_box()
-      assert profile['y']+profile['height']<card['y'],(view,card,profile)
-      assert card['x']+card['width']<profile['x'],(view,card,profile)
-      if view in finance:assert 'Finanzas' in page.locator('#page-route-bar [data-slot=breadcrumb-list]').inner_text()
+      assert page.locator('#project-window-bar').count()==0,'Las pestañas de proyecto solo deben existir dentro de Proyectos'
+      route=page.locator('.desktop-inset-route');route.wait_for(state='visible')
+      expected={'workspace':'Tareas','agenda':'Agenda','mail':'Mail','calendario':'Calendario','biblioteca':'Productos','catalogo':'Servicios','informes':'Finanzas','prevision':'Previsión'}.get(view,page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip())
+      assert route.inner_text()==expected,(view,route.inner_text(),expected)
+      assert 'Moderno ReUI Inter' in route.evaluate('(e)=>getComputedStyle(e).fontFamily')
+      if view in finance:
+       sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True);sections.wait_for(state='visible')
+       assert sections.bounding_box()['y']>=56
+      else:assert page.locator('#page-route-bar:visible').count()==0
     else:
      assert page.locator('#page-route-bar').count()==(1 if view in finance else 0)
      if view in finance:
@@ -342,11 +334,12 @@ try:
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
     assert page.locator('#page-route-bar').count()==0
     page.evaluate("go('agenda')")
-    page.locator('#page-route-bar [aria-current=page]').wait_for(state='visible')
-    assert page.locator('#page-route-bar [aria-current=page]').inner_text()=='Agenda'
+    page.locator('.desktop-inset-route').wait_for(state='visible')
+    assert page.locator('.desktop-inset-route').inner_text()=='Agenda'
+    assert page.locator('#page-route-bar').is_hidden()
     page.evaluate('document.querySelector(".route-component-host").shadowRoot.querySelector("link").dispatchEvent(new Event("error"))')
     page.locator('.route-component-host').wait_for(state='detached')
-    assert page.locator('#page-route-bar [aria-current=page]').inner_text()=='Agenda'
+    assert page.locator('.desktop-inset-route').inner_text()=='Agenda'
     page.evaluate("go('contabilidad')")
     page.locator('#page-route-bar').get_by_role('button',name='Proyectos',exact=True).click()
     assert page.evaluate('state.view')=='proyectos'
@@ -379,23 +372,20 @@ try:
      assert page.evaluate('state.view')=='proyecto' and page.evaluate('state.currentProject')==9001
      page.locator('#ptM2').fill('24');assert '4.0 L' in page.locator('#ptRes').inner_text()
    if width>=1100:
-    expect(page.locator('.desktop-brand')).to_be_hidden();assert page.evaluate('state.view')=='proyecto'
+    expect(page.locator('.desktop-brand')).to_be_visible();assert page.evaluate('state.view')=='proyecto'
     assert page.locator('#desktop-header [data-desktop-view=home]').count()==0
     page.locator('.desktop-projects-all').click();assert page.evaluate('state.view')=='proyectos'
     page.evaluate("go('proyecto',9001);projTab('utilidades')")
     page.locator('#ptM2').fill('24')
     page.evaluate('window.originalCalculator=document.querySelector("#ptM2")')
-    assert page.locator('.desktop-row').bounding_box()['width']==64,'El menú de escritorio debe empezar contraído'
-    page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
-    settle_header(page)
-    assert page.locator('.desktop-row').bounding_box()['width']==256
+    assert page.locator('.desktop-row').bounding_box()['width']==256,'El menú ReUI debe empezar abierto'
     page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
     settle_header(page)
     page.locator('#desktop-navigation').wait_for(state='visible')
     assert page.locator('#desktop-navigation').is_visible()
     assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
     assert page.locator('.desktop-row').bounding_box()['width']<100
-    expect(page.locator('.desktop-brand')).to_be_hidden()
+    expect(page.locator('.desktop-brand')).to_be_visible();assert page.locator('.desktop-brand-copy').bounding_box()['width']<=1
     assert page.locator('[data-profile-trigger]').is_visible()
     page.locator('[data-profile-trigger]').click();page.get_by_role('menuitem',name='Automatizaciones',exact=True).wait_for(state='visible')
     page.locator('[data-profile-trigger]').press('Escape')
@@ -416,7 +406,7 @@ try:
    assert page.evaluate('fixtureRecords()===fixtureBaseline'),'Navigation changed stored records'
    if width>=1100:
     assert page.locator('#desktop-header .logo').is_hidden()
-    expect(page.locator('#desktop-header .logo-mini')).to_be_hidden()
+    expect(page.locator('#desktop-header .logo-mini')).to_be_visible()
     assert page.locator('[data-profile-trigger]').evaluate('(e)=>e.scrollHeight<=e.clientHeight')
     assert page.locator('#themeBtn').is_hidden() and page.locator('#brandSwitch').is_hidden()
     page.evaluate("state.notifs=[{txt:'Aviso ficticio',when:'Hoy',read:false}];notifBadge()")

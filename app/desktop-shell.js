@@ -3,9 +3,8 @@ var ModernoDesktopShell=(()=>{
  'use strict';
  // #49 recovery gate verified: production physical backup + separate Storage inventory.
  const ENABLED=true;
- // At every fresh app load, desktop navigation starts as a compact icon rail.
- // The existing toggle stays fully operational for the rest of the session.
- let enabled=ENABLED,header=null,collapsed=true,foldTimer=null;
+ // The approved ReUI shell starts expanded. Collapse remains a session-only view choice.
+ let enabled=ENABLED,header=null,collapsed=false,foldTimer=null;
  const moved=[],decorations=[],media=window.matchMedia('(min-width:1100px)');
  const $=s=>document.querySelector(s);
  const finance=['informes','facturas','presupuestos','contabilidad','prevision'];
@@ -41,6 +40,15 @@ var ModernoDesktopShell=(()=>{
   const value=state.mailUnread??state.mailCount??state.mails?.filter?.(message=>message?.read!==true).length??0;
   return Math.max(0,Number(value)||0);
  }
+ function planName(){
+  const value=state.account?.plan||state.account?.subscription?.plan||state.account?.tier||'Free';
+  return /plan$/i.test(String(value))?String(value):String(value)+' plan';
+ }
+ function routeName(){
+  if(['proyecto','estancia'].includes(state.view))return state.projects?.find(project=>String(project.id)===String(state.currentProject))?.name||'Proyecto';
+  const labels={proyectos:'Proyectos',informes:'Finanzas',facturas:'Facturas',presupuestos:'Presupuestos',contabilidad:'Contabilidad',prevision:'Previsión',workspace:'Tareas',agenda:'Agenda',mail:'Mail',calendario:'Calendario',biblioteca:'Productos',catalogo:'Servicios',plantillas:'Plantillas',tutoriales:'Tutoriales',soporte:'Soporte',ajustes:'Ajustes',admin:'Administración'};
+  return labels[state.view]||original(state.view)?.textContent.trim()||'Proyectos';
+ }
  function projectPool(){
   const projects=byBrand((state.projects||[]).filter(project=>!project.tpl&&project.status!=='Archivado'));
   const recent=typeof homeRecent==='function'?homeRecent():[];
@@ -71,6 +79,9 @@ var ModernoDesktopShell=(()=>{
    if(img.src!==photo)img.src=photo;
   }else if(dot&&!dot.querySelector('img'))dot.textContent=(name[0]||'?').toUpperCase();
   const badge=header.querySelector('.desktop-mail-badge');if(badge){const count=mailCount();badge.textContent=String(count);badge.setAttribute('aria-label',`${count} correos`);}
+  const plan=header.querySelector('.desktop-brand-plan');if(plan)plan.textContent=planName();
+  const workspace=header.querySelector('.desktop-inset-workspace');if(workspace)workspace.textContent=state.account?.name||'Moderno.app';
+  const route=header.querySelector('.desktop-inset-route');if(route)route.textContent=routeName();
  }
  function move(node,target){
   if(!node)return;
@@ -110,6 +121,8 @@ var ModernoDesktopShell=(()=>{
   header=document.createElement('header');header.id='desktop-header';header.setAttribute('aria-label','Moderno.app');
   const row=document.createElement('div');row.className='desktop-row';row.classList.toggle('is-collapsed',collapsed);header.append(row);
   const brand=document.createElement('div');brand.className='desktop-brand';row.append(brand);move($('aside.sidebar .sb-head'),brand);
+  const brandCopy=document.createElement('span');brandCopy.className='desktop-brand-copy';brandCopy.innerHTML='<strong>Moderno.app</strong><small class="desktop-brand-plan"></small>';brand.append(brandCopy);
+  const brandChevron=document.createElement('span');brandChevron.className='desktop-brand-chevron';brandChevron.textContent='⌃\n⌄';brandChevron.setAttribute('aria-hidden','true');brand.append(brandChevron);
   const clip=document.createElement('div');clip.className='desktop-nav-clip';row.append(clip);
   const nav=document.createElement('nav');nav.id='desktop-navigation';nav.className='desktop-nav';nav.setAttribute('aria-label','Navegación general');clip.append(nav);
   clip.addEventListener('scroll',positionMenus);
@@ -146,9 +159,11 @@ var ModernoDesktopShell=(()=>{
   const popup=document.createElement('div');popup.className='desktop-menu';popup.append(action('Mi perfil',()=>userModal()),action('Ajustes',()=>SettingsUI.open('cuenta')));
   for(const view of ['automatizaciones','plugins','integraciones']){const b=button(view);if(b)popup.append(b);}
   move($('#sidebarStudy'),popup);profile.append(popup);row.append(profile);
-  row.append(toggle);
   const support=document.createElement('div');support.className='desktop-support';const supportButton=button('soporte',true);if(supportButton)support.append(supportButton);row.append(support);
-  const actions=document.createElement('div');actions.className='desktop-actions';header.append(actions);
+  const inset=document.createElement('div');inset.className='desktop-inset-header';header.append(inset);inset.append(toggle);
+  const breadcrumb=document.createElement('div');breadcrumb.className='desktop-inset-breadcrumb';breadcrumb.setAttribute('aria-label','Ruta de navegación');
+  const workspace=document.createElement('span');workspace.className='desktop-inset-workspace';const separator=document.createElement('span');separator.className='desktop-inset-separator';separator.textContent='›';separator.setAttribute('aria-hidden','true');const route=document.createElement('strong');route.className='desktop-inset-route';breadcrumb.append(workspace,separator,route);inset.append(breadcrumb);
+  const actions=document.createElement('div');actions.className='desktop-actions';inset.append(actions);
   const notifications=$('#nBadge')?.closest('button');move(notifications,actions);
   if(notifications){const label=notifications.getAttribute('aria-label');notifications.setAttribute('aria-label','Notificaciones');decorations.push(()=>{if(label===null)notifications.removeAttribute('aria-label');else notifications.setAttribute('aria-label',label);});}
   const bell=typeof ModernoSettingsIcons==='object'?ModernoSettingsIcons['Notificaciones.svg']:null;
