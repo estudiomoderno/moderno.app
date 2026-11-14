@@ -136,7 +136,7 @@ var ModernoDesktopShell=(()=>{
    if(typeof item==='string'){const b=button(item,true);if(b){if(item==='mail'){const badge=document.createElement('span');badge.className='desktop-mail-badge';b.append(badge);}primary.append(b);}continue;}
    const [name,views,symbol]=item;
    if(name==='Finanzas'){
-    const b=action('',()=>{const view=finance.find(available);if(view)original(view).click();});b.className='desktop-link desktop-icon-only desktop-finance';const copy=icon(symbol);if(copy)b.append(copy);label(b,name);primary.append(b);continue;
+    const b=document.createElement('button');b.type='button';b.className='desktop-link desktop-icon-only desktop-finance';b.append(assetIcon('finanzas'));label(b,name);b.addEventListener('click',()=>{closeMenus();const view=finance.find(available);if(view)original(view).click();});primary.append(b);continue;
    }
    const d=document.createElement('details');d.className='desktop-group';const s=document.createElement('summary');s.className='desktop-icon-only';
    const copy=icon(symbol);if(copy)s.append(copy);

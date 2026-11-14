@@ -100,6 +100,10 @@ with sync_playwright() as p:
   assert page.locator('#desktop-header').evaluate('(e)=>getComputedStyle(e).position')=='fixed'
   assert page.locator('#desktop-header .desktop-context').count()==0
   assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Finanzas','Agenda','Mail','Calendario','Tareas','Productos','Servicios']
+  primary_icon_x=page.locator('#desktop-primary>.desktop-link>.ico').evaluate_all('(es)=>es.map(e=>Math.round(e.getBoundingClientRect().x*100)/100)')
+  primary_label_x=page.locator('#desktop-primary>.desktop-link>.desktop-label').evaluate_all('(es)=>es.map(e=>Math.round(e.getBoundingClientRect().x*100)/100)')
+  assert len(set(primary_icon_x))==1,primary_icon_x
+  assert len(set(primary_label_x))==1,primary_label_x
   assert page.locator('.desktop-section-label').inner_text()=='Workspace'
   assert page.locator('.desktop-brand-copy strong').inner_text()=='Moderno.app'
   assert page.locator('.desktop-brand-plan').inner_text()=='Free plan'

@@ -42,6 +42,7 @@
  #desktop-header summary::-webkit-details-marker{display:none}
  #desktop-header .desktop-group{margin:0;padding:0;border:0}
  #desktop-header .desktop-finance{margin:0;justify-content:flex-start;text-align:left}
+ #desktop-header .desktop-finance>.ico,#desktop-header .desktop-finance>.desktop-label{margin-left:0!important;transform:none!important}
  #desktop-header .desktop-mail-badge{min-width:18px;margin-left:auto;padding:1px 4px;border-radius:999px;background:transparent;color:#171717;font-size:11px;text-align:center}
  #desktop-header .desktop-projects,#desktop-header .desktop-discover{display:flex;flex-direction:column;gap:2px;padding:0;border:0}
  #desktop-header .desktop-projects{margin-top:20px}

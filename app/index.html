@@ -6257,7 +6257,7 @@ function contactCategoryIcon(category){
   const file={"Todos":"todos","Proveedores":"proovedores","Contratistas":"contratistas","Técnicos":"arquitectos","Team":"team"}[category];
   return file?`<span class="contact-category-icon" aria-hidden="true" style="--contact-icon:url('/contact-${file}.svg')"></span>`:ico('contactos');
 }
-function agendaAssetIcon(file){return `<span class="agenda-action-icon" aria-hidden="true" style="--agenda-icon:url('/brand/agenda-icons/${file}.svg?v=36602')"></span>`;}
+function agendaAssetIcon(file){return `<span class="agenda-action-icon" aria-hidden="true" style="--agenda-icon:url('/brand/agenda-icons/${file}.svg?v=36603')"></span>`;}
 function vAgenda(){
   ensureClientNums();
   const rows = byBrand(state.clients.map((c,i)=>({...c,__i:i})));
@@ -6276,9 +6276,8 @@ function vAgenda(){
   <div class="contact-toolbar">
     <div class="pill-tabs contact-category-tabs" aria-label="Filtrar contactos">${tabs.map(x=>`<button class="${tab===x?'on':''}" aria-pressed="${tab===x}" onclick="WorkflowPolish.contact('${x}')">${contactCategoryIcon(x)}${x}</button>`).join("")}</div>
     <div class="contact-toolbar-actions">
-      <button class="btn btn-dark contact-new" onclick="clientModal()">${ico("mas")} Nuevo contacto</button>
       <details class="contact-settings">
-        <summary class="contact-settings-trigger" aria-label="Ajustes de Agenda" title="Ajustes"><span class="agenda-settings-icon" aria-hidden="true"></span></summary>
+        <summary class="contact-settings-trigger" aria-label="Importar y exportar contactos" title="Importar y exportar"><span class="agenda-settings-icon" aria-hidden="true"></span></summary>
         <div class="contact-settings-menu" role="menu" aria-label="Exportar e importar contactos">
           <button type="button" role="menuitem" onclick="this.closest('details').removeAttribute('open');agendaExportPDF()">${agendaAssetIcon('exportar-pdf')}<span>Exportar PDF</span></button>
           <button type="button" role="menuitem" onclick="this.closest('details').removeAttribute('open');agendaExportCSV()">${agendaAssetIcon('exportar-csv')}<span>Exportar CSV</span></button>
@@ -6286,18 +6285,16 @@ function vAgenda(){
           <button type="button" role="menuitem" onclick="this.closest('details').removeAttribute('open');importModal()">${agendaAssetIcon('importar-contactos')}<span>Importar contactos</span></button>
         </div>
       </details>
+      <button class="btn contact-new" onclick="clientModal()">${ico("mas")} Nuevo contacto</button>
     </div>
   </div>
-  <div style="display:flex;gap:10px;align-items:center;margin:10px 0 2px;flex-wrap:wrap">
-    <div class="flt" style="position:relative;display:inline-flex;align-items:center;flex:1;max-width:460px">
+  <div class="agenda-list-tools">
+    <div class="flt agenda-search" style="position:relative;display:inline-flex;align-items:center">
       <span style="position:absolute;left:11px;display:inline-flex;color:var(--ink-faint)">${ico("buscar")}</span>
-      <input id="agQBox" value="${(state.agQ||"").replace(/"/g,"&quot;")}" placeholder="Buscar por nombre, ID, email\u2026" style="padding-left:36px;width:100%"
+      <input id="agQBox" type="search" value="${(state.agQ||"").replace(/"/g,"&quot;")}" placeholder="Buscar por nombre, ID o email" aria-label="Buscar contactos" style="padding-left:36px"
         oninput="state.agQ=this.value; renderKeep(this)">
     </div>
-    <div class="opt-pills" style="margin:0">
-      <button class="${state.agSort==='nombre'?'on':''}" onclick="state.agSort='nombre';render()">Ordenar: Nombre</button>
-      <button class="${(state.agSort||'num')==='num'?'on':''}" onclick="state.agSort='num';render()">N\u00famero</button>
-    </div>
+    <label class="agenda-sort"><span>Ordenar</span><select aria-label="Ordenar contactos" onchange="state.agSort=this.value;render()"><option value="num" ${(state.agSort||'num')==='num'?'selected':''}>Número</option><option value="nombre" ${state.agSort==='nombre'?'selected':''}>Nombre</option></select></label>
   </div>
   <table class="list"><thead><tr><th>ID</th><th>Nombre</th><th style="text-align:center">Tipo</th>${multiWs?`<th>Espacio de trabajo</th>`:""}<th>Tel\u00e9fono</th><th>NIF/CIF</th><th></th></tr></thead><tbody>
   ${shown.length?shown.map(c=>`<tr style="cursor:pointer" onclick="clientCard(this.dataset.n)" data-n="${c.name}">
@@ -11416,7 +11413,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.2";
+const MODERNO_VER="v3.66.3";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13573,14 +13570,14 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
  .has-team-presence .projects-header{top:0!important}
 }
 </style>
-<link rel="stylesheet" href="/brand/desktop-shell.css?v=207">
-<link rel="stylesheet" href="/brand/agenda-ui.css?v=36602">
+<link rel="stylesheet" href="/brand/desktop-shell.css?v=208">
+<link rel="stylesheet" href="/brand/agenda-ui.css?v=36603">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>
 <link rel="stylesheet" href="/project-cursors.css?v=365100">
 <script src="/project-cursors.js?v=365100"></script>
-<script src="/desktop-shell.js?v=207"></script>
+<script src="/desktop-shell.js?v=208"></script>
 <link rel="stylesheet" href="/brand/project-workspace.css?v=365144">
 <script src="/project-workspace.js?v=365144"></script>
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
