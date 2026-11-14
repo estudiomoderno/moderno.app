@@ -388,7 +388,7 @@ try:
     assert page.locator('.desktop-row').bounding_box()['width']==64,'El menú de escritorio debe empezar contraído'
     page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
     settle_header(page)
-    assert page.locator('.desktop-row').bounding_box()['width']==224
+    assert page.locator('.desktop-row').bounding_box()['width']==256
     page.get_by_role('button',name='Comprimir menú lateral',exact=True).click()
     settle_header(page)
     page.locator('#desktop-navigation').wait_for(state='visible')
@@ -457,7 +457,7 @@ try:
     contrast_total(page)
     cards=page.locator('.project-overview>div').all()
     bounds=[card.bounding_box() for card in cards]
-    assert len(set(round(b['y']) for b in bounds))==1,bounds
+    assert len(set(round(b['y']) for b in bounds))<=(1 if width>=1280 else 2),bounds
     assert all(b['width']>=180 for b in bounds),bounds
     for button in ['Ver tareas','Ver finanzas']:
      size=page.get_by_role('button',name=button,exact=True).bounding_box()

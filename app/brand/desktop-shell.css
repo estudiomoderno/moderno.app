@@ -113,3 +113,25 @@
 }
 
 @media(min-width:1100px){#desktop-primary>[data-desktop-view="biblioteca"]{border-top:1px solid var(--ui-line);margin-top:7px;padding-top:12px}}
+
+/* App shell inset: adapts the approved sidebar reference without replacing navigation or routes. */
+@media screen and (min-width:1100px){
+ body.desktop-shell{--desktop-sidebar-width:256px;--desktop-shell-gap:8px;--desktop-content-left:calc(var(--desktop-sidebar-width) + 32px);background:var(--app-control,#f7f7f6)}
+ body.desktop-shell.desktop-menu-collapsed{--desktop-sidebar-width:64px}
+ body.desktop-shell .app{background:var(--app-control,#f7f7f6)}
+ body.global-project-header #desktop-header::before{background:var(--app-surface,#fff);box-shadow:0 1px 0 var(--ui-line);border:0}
+ body.global-project-header #desktop-header .desktop-row{margin:calc(var(--app-header-height) + var(--desktop-shell-gap)) 0 var(--desktop-shell-gap) var(--desktop-shell-gap);height:calc(100dvh - var(--app-header-height) - var(--desktop-shell-gap) * 2)}
+ #desktop-header .desktop-row{margin:var(--desktop-shell-gap) 0 var(--desktop-shell-gap) var(--desktop-shell-gap);height:calc(100dvh - var(--desktop-shell-gap) * 2);padding:10px 8px;gap:8px;border:1px solid var(--desktop-rail-line);border-radius:12px;background:var(--app-surface,#fff);box-shadow:0 1px 2px #00000008,0 4px 14px #00000005}
+ #desktop-header .desktop-nav-clip{scrollbar-width:none}
+ #desktop-header .desktop-nav-clip::-webkit-scrollbar{display:none}
+ #desktop-header .desktop-section-label,#desktop-header .desktop-discover h2{margin:0;padding:5px 10px 6px;font:600 11px/1.35 Inter,Segoe UI,sans-serif;letter-spacing:.01em;color:var(--ink-soft)}
+ #desktop-header .desktop-link,#desktop-header .desktop-group>summary{border-radius:8px}
+ #desktop-header [aria-current=page],#desktop-header .is-current>summary,#desktop-header .desktop-finance.is-current,#desktop-header .desktop-finance[aria-expanded=true]{background:var(--app-surface,#fff);box-shadow:0 1px 2px #0000000b}
+ #desktop-header .desktop-discover{margin-top:10px;padding-top:10px}
+ #desktop-header .desktop-support{margin-top:auto}
+ #desktop-header .desktop-toggle{flex:0 0 36px;border-top:1px solid var(--desktop-rail-line);border-radius:0;padding-top:8px;height:45px;min-height:45px}
+ #desktop-header .is-collapsed .desktop-section-label,#desktop-header .is-collapsed .desktop-discover h2{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0}
+ html body.desktop-shell.global-project-header:not(.portalmode) .main{height:calc(100dvh - var(--app-header-height) - var(--desktop-shell-gap) * 2);margin:calc(var(--app-header-height) + var(--desktop-shell-gap)) var(--desktop-shell-gap) var(--desktop-shell-gap) calc(var(--desktop-sidebar-width) + var(--desktop-shell-gap) * 2);border:1px solid var(--ui-line);border-radius:12px;background:var(--app-surface,#fff);box-shadow:0 1px 2px #00000008;transition:margin-left 240ms cubic-bezier(.22,.61,.36,1);overflow-y:auto}
+ html body.global-project-header #page-route-bar{top:calc(var(--app-header-height) + 20px);left:var(--desktop-content-left);right:24px;background:transparent;box-shadow:none}
+ body.desktop-shell #syncTag{right:20px;bottom:20px}
+}

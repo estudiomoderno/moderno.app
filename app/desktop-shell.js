@@ -79,6 +79,7 @@ var ModernoDesktopShell=(()=>{
   const nav=document.createElement('nav');nav.id='desktop-navigation';nav.className='desktop-nav';nav.setAttribute('aria-label','Navegación general');clip.append(nav);
   clip.addEventListener('scroll',positionMenus);
   row.addEventListener('transitionend',event=>{if(event.target===row&&event.propertyName==='width')finishFold();});
+  const primaryTitle=document.createElement('h2');primaryTitle.className='desktop-section-label';primaryTitle.textContent='Aplicación';nav.append(primaryTitle);
   const primary=document.createElement('div');primary.id='desktop-primary';primary.className='desktop-primary';nav.append(primary);
   for(const item of navigation){
    if(typeof item==='string'){const b=button(item,true);if(b)primary.append(b);continue;}
@@ -95,10 +96,10 @@ var ModernoDesktopShell=(()=>{
   const title=document.createElement('h2');title.id='desktop-discover-title';title.textContent='Discover';discover.append(title);
   for(const view of ['plantillas','tutoriales']){const b=button(view,true);if(b)discover.append(b);}
   const documentation=discoveryButton();if(documentation)discover.append(documentation);nav.append(discover);
+  const support=document.createElement('div');support.className='desktop-support';const supportButton=button('soporte',true);if(supportButton)support.append(supportButton);row.append(support);
   const toggle=action('',toggleFold);toggle.className='desktop-toggle desktop-icon-only';toggle.setAttribute('aria-controls','desktop-navigation');label(toggle,'Comprimir menú lateral');
   for(const name of ['collapse','expand']){const arrow=$('.sidebar .sb-arrow-'+name).cloneNode(true);arrow.setAttribute('class','desktop-arrow-'+name);toggle.append(arrow);}
   row.append(toggle);
-  const support=document.createElement('div');support.className='desktop-support';const supportButton=button('soporte',true);if(supportButton)support.append(supportButton);row.append(support);
   const actions=document.createElement('div');actions.className='desktop-actions';header.append(actions);
   const notifications=$('#nBadge')?.closest('button');move(notifications,actions);
   if(notifications){const label=notifications.getAttribute('aria-label');notifications.setAttribute('aria-label','Notificaciones');decorations.push(()=>{if(label===null)notifications.removeAttribute('aria-label');else notifications.setAttribute('aria-label',label);});}

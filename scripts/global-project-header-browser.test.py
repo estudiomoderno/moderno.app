@@ -75,7 +75,7 @@ try:
     expect(bar).to_have_count(1);expect(bar).to_be_visible()
     expect(tabs).to_have_count(2);assert tabs.evaluate_all('(es)=>es.map(e=>e.dataset.project)')==expected_tabs
     assert bar.bounding_box()['x']==12 and bar.bounding_box()['y']==10,(view,bar.bounding_box())
-    assert rail.bounding_box()['y']==56 and rail.bounding_box()['height']==944
+    assert rail.bounding_box()['y']==64 and rail.bounding_box()['height']==928
     expect(page.locator('.desktop-brand')).to_be_hidden()
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),view
     if view=='home':
@@ -97,13 +97,14 @@ try:
    page.locator('#desktop-header [data-desktop-view=agenda]').click()
    assert rail.bounding_box()['width']==64,'The navigation must remain collapsed after changing views'
    page.get_by_role('button',name='Desplegar menú lateral',exact=True).click()
-   page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===224')
+   page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===256')
    page.get_by_role('button',name='Comprimir menú lateral',exact=True).click();page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
    page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===64')
    assert rail.bounding_box()['width']==64 and bar.bounding_box()['x']==12
    page.get_by_role('button',name='Desplegar menú lateral',exact=True).click();page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
-   page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===224')
-   assert rail.bounding_box()['width']==224 and bar.bounding_box()['x']==12
+   page.wait_for_function('document.querySelector(".desktop-row").getBoundingClientRect().width===256')
+   assert rail.bounding_box()['width']==256 and bar.bounding_box()['x']==12
+   if output:page.screenshot(path=str(output/f'global-header-sidebar-expanded-{width}.png'),full_page=True)
    page.evaluate('(()=>{document.querySelector(".main").scrollTop=1000})()');assert bar.bounding_box()['y']==10
    # An open form blocks both the tabs and the home button.
    page.locator('#project-window-9001').click();page.evaluate('roomMenu(9001,9101)')
