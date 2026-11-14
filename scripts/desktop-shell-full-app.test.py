@@ -347,16 +347,23 @@ try:
     filter_boxes=page.locator('.contact-category-tabs>button').evaluate_all('(bs)=>bs.map(b=>{const r=b.getBoundingClientRect();return {x:r.x,right:r.right,y:r.y,height:r.height}})')
     assert all(abs(filter_boxes[i]['right']-filter_boxes[i+1]['x']-1)<=1 for i in range(len(filter_boxes)-1)),filter_boxes
     assert len({round(box['y'],1) for box in filter_boxes})==1 and len({round(box['height'],1) for box in filter_boxes})==1
+    header_bottom=page.locator('.desktop-inset-header').evaluate('(e)=>e.getBoundingClientRect().bottom')
+    assert 8<=filter_boxes[0]['y']-header_bottom<=32,(header_bottom,filter_boxes[0]['y'])
     toolbar_controls=page.locator('.contact-settings-trigger,.contact-new').evaluate_all('(bs)=>bs.map(b=>{const r=b.getBoundingClientRect();return {y:r.y,height:r.height}})')
     assert len({round(box['y'],1) for box in toolbar_controls+filter_boxes})==1
     assert page.locator('.contact-new').count()==1
+    assert page.locator('.contact-toolbar-actions').evaluate('(e)=>[...e.children].map(c=>c.tagName)')==['BUTTON','DETAILS']
     assert page.locator('.contact-new').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(6, 102, 255)'
     assert page.locator('.agenda-settings-icon').evaluate('(e)=>getComputedStyle(e).maskImage').find('menu-importar-exportar.svg')>=0
     assert page.locator('.contact-settings-trigger').evaluate('(e)=>[getComputedStyle(e,"::before").content,getComputedStyle(e,"::after").content]')==['none','none']
     assert page.locator('.agenda-list-tools').get_by_role('searchbox',name='Buscar contactos').count()==1
-    assert page.locator('.agenda-list-tools').get_by_role('combobox',name='Ordenar contactos').count()==1
-    agenda_search_radius=page.locator('.agenda-list-tools #agQBox').evaluate('(e)=>getComputedStyle(e).borderRadius')
-    assert agenda_search_radius=='999px',agenda_search_radius
+    assert page.locator('.agenda-list-tools').get_by_role('button',name='Buscar',exact=True).count()==1
+    assert page.locator('.agenda-sort').count()==0
+    search_group=page.locator('.agenda-search-group').bounding_box()
+    assert abs(search_group['x']-filter_boxes[0]['x'])<=1 and search_group['width']<=520,search_group
+    assert page.locator('.agenda-list-tools #agQBox').evaluate('(e)=>getComputedStyle(e).borderRadius')=='0px 8px 8px 0px'
+    page.locator('.agenda-list-tools').get_by_role('button',name='Buscar',exact=True).click()
+    assert page.locator('#agQBox').evaluate('(e)=>e===document.activeElement')
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'agenda-toolbar-{width}.png'),full_page=True)
     page.locator('.contact-settings-trigger').click()
     expect(page.locator('.contact-settings-menu').get_by_role('menuitem')).to_have_text(['Exportar PDF','Exportar CSV','Importar contactos'])
