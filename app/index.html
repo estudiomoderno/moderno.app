@@ -1310,7 +1310,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/catalog-ui.js?v=3607"></script>
 <link rel="stylesheet" href="/contact-controls.css?v=353">
 <script src="/phone-vendor.js?v=1.13.13"></script>
-<script src="/phone-controls.js?v=3491"></script>
+<script src="/phone-controls.js?v=3492"></script>
 <link rel="stylesheet" href="/product-clipper.css?v=36575">
 <script src="/product-clipper.js?v=36575"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
@@ -10026,12 +10026,13 @@ function clientModal(editIdx=-1, presetType){
   <div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>Nombre fiscal</label><input id="clFiscal" name="organization" autocomplete="organization" value="${c.fiscal||""}" placeholder="Estudio Ola S.L."></div>
   <div id="clBrandWrap" style="display:${c.type==="Cliente"&&wsOrder.length>1?"block":"none"}"><label>Espacio de trabajo del cliente</label><div class="opt-pills" id="clBrand">${wsOrder.map((k,i)=>`<button type="button" class="${c.brand===k||(i===0&&!wsOrder.includes(c.brand)&&c.brand!=='both')?'on':''} ${k==='em'?'b-em':''}" data-v="${k}">${BRAND[k].name||"Mi espacio"}</button>`).join("")}${wsOrder.length>1?`<button type="button" class="${c.brand==='both'?'on b-both':'b-both'}" data-v="both">Ambas</button>`:""}</div></div>
   <h4 class="agenda-contact-section-title">Datos fiscales</h4>
-  <div class="row2"><div class="cl-notteam agenda-contact-fiscal-field" style="display:${c.type==="Team"?"none":"flex"}"><label>NIF / CIF</label><input id="clNif" value="${c.nif||""}" placeholder="B00000000"></div><div><label>País</label><select id="clCountry" name="country" autocomplete="country-name">${paisOptions(c.country)}</select></div></div>
+  <div class="agenda-contact-section-fields"><div class="cl-notteam agenda-contact-fiscal-field" style="display:${c.type==="Team"?"none":"flex"}"><label for="clNif">NIF / CIF</label><input id="clNif" value="${c.nif||""}" placeholder="B00000000"></div></div>
   <h4 class="agenda-contact-section-title">Dirección</h4>
-  <div class="agenda-address-combobox"><label for="clAddr">Buscar dirección</label><input id="clAddr" name="street-address" role="combobox" aria-autocomplete="list" aria-controls="clAddressResults" autocomplete="off" value="${(c.addr||"").replace(/"/g,"&quot;")}" placeholder="Calle, número y ciudad" oninput="contactAddressSearch(this.value)"><div id="clAddressResults" class="agenda-address-results" role="listbox" aria-label="Direcciones sugeridas" hidden></div><span id="clAddressStatus" class="agenda-address-status" role="status"></span></div>
-  <div class="row2"><div><label>Código postal</label><input id="clCp" name="postal-code" autocomplete="postal-code" value="${c.cp||""}" placeholder="23001"></div><div><label>Ciudad</label><input id="clCity" name="city" autocomplete="address-level2" value="${c.city||""}" placeholder="Jaén"></div></div>
+  <div class="agenda-contact-section-fields agenda-contact-address-fields"><div class="agenda-address-combobox"><label for="clAddr">Dirección</label><input id="clAddr" name="street-address" role="combobox" aria-autocomplete="list" aria-controls="clAddressResults" autocomplete="off" value="${(c.addr||"").replace(/"/g,"&quot;")}" placeholder="Calle, número y ciudad" oninput="contactAddressSearch(this.value)"><div id="clAddressResults" class="agenda-address-results" role="listbox" aria-label="Direcciones sugeridas" hidden></div><span id="clAddressStatus" class="agenda-address-status" role="status"></span></div>
+  <div class="row2"><div><label for="clCp">Código postal</label><input id="clCp" name="postal-code" autocomplete="postal-code" value="${c.cp||""}" placeholder="23001"></div><div><label for="clCity">Ciudad</label><input id="clCity" name="city" autocomplete="address-level2" value="${c.city||""}" placeholder="Jaén"></div></div>
+  <div class="agenda-contact-country"><label for="clCountry">País</label><select id="clCountry" name="country" autocomplete="country-name">${paisOptions(c.country)}</select></div></div>
   <input id="clProvince" type="hidden" value="${c.province||""}"><input id="clPlaceId" type="hidden" value="${c.placeId||""}">
-  <div class="row2 agenda-contact-phone-mail"><div><label>Teléfono</label>${ModernoPhone.field(c.phone,PAIS_ISO,state.account?.country,'id="clPhone" name="tel"')}</div><div><label>Email</label><input id="clEmail" name="email" autocomplete="email" value="${c.email||""}" placeholder="hola@cliente.com"></div></div>
+  <div class="agenda-contact-phone-mail"><div><label for="clPhone">Teléfono</label>${ModernoPhone.field(c.phone,PAIS_ISO,state.account?.country,'id="clPhone" name="tel"','lg')}</div><div><label for="clEmail">Email</label><input id="clEmail" name="email" autocomplete="email" value="${c.email||""}" placeholder="hola@cliente.com"></div></div>
   </section></div></div>
   <footer class="modal-foot product-editor-footer">${editIdx>=0?`<button type="button" class="btn btn-ghost shopping-editor-delete" onclick="delClient(${editIdx})">Eliminar contacto</button>`:""}<button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button type="button" class="btn btn-dark" onclick="saveClient(${editIdx})">${editIdx>=0?"Guardar cambios":"Añadir"}</button></footer></div>`);
   _obLock=true;                       // este modal solo se cierra con sus botones
@@ -11436,7 +11437,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.10";
+const MODERNO_VER="v3.66.11";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13594,7 +13595,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 }
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=208">
-<link rel="stylesheet" href="/brand/agenda-ui.css?v=36609">
+<link rel="stylesheet" href="/brand/agenda-ui.css?v=36610">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>

@@ -29,4 +29,6 @@ test('rendering preserves saved value, escapes attributes and supplies fiscal co
  assert.match(html,/value="912 345 678"/);assert.match(html,/data-country="PT"/);
   assert.match(phone.field('" onfocus="evil',{España:'ES'},'España'),/value="&quot; onfocus=&quot;evil"/);
  assert.match(phone.field('+852 5123 4567',{España:'ES'},'España'),/value="HK" selected/);
+ const large=phone.field('+34 600 000 000',{España:'ES'},'España','id="large"','lg');
+ assert.match(large,/class="phone-control phone-control-lg"/);assert.match(large,/data-variant="lg"/);
 });

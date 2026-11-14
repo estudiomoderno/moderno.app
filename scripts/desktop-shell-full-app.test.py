@@ -393,8 +393,19 @@ try:
     assert dom_ids==['clNum','clType','clTradeWrap','clName','clFiscal','clNif','clAddr','clPhone','clEmail'],dom_ids
     expect(page.locator('#clType [role="option"]')).to_have_text(['Cliente','Proveedor','Contratista','Técnico','Team'])
     assert page.locator('#clType [data-v="Proveedor"] .agenda-cascader-icon').evaluate('(e)=>getComputedStyle(e).maskImage').find('contact-proovedores.svg')>=0
-    phone_style=page.locator('.agenda-contact-editor .phone-control').evaluate('(e)=>({radius:getComputedStyle(e).borderRadius,height:getComputedStyle(e).height,overflow:getComputedStyle(e).overflow})')
-    assert phone_style=={'radius':'8px','height':'38px','overflow':'hidden'},phone_style
+    expect(page.get_by_label('Buscar dirección',exact=True)).to_have_count(0)
+    expect(page.get_by_label('Dirección',exact=True)).to_be_visible();expect(page.get_by_label('País',exact=True)).to_be_visible()
+    section_gaps=page.locator('.agenda-contact-section-title').evaluate_all('(titles)=>titles.map(e=>e.nextElementSibling.getBoundingClientRect().top-e.getBoundingClientRect().bottom)')
+    assert max(section_gaps)-min(section_gaps)<=1 and max(section_gaps)<=10,section_gaps
+    address_gap=page.get_by_label('Código postal',exact=True).evaluate('(e)=>e.previousElementSibling.getBoundingClientRect().top-e.closest(".row2").previousElementSibling.querySelector("input").getBoundingClientRect().bottom')
+    assert address_gap<=12,address_gap
+    phone=page.locator('.agenda-contact-editor .phone-control')
+    assert phone.get_attribute('data-variant')=='lg'
+    phone_style=phone.evaluate('(e)=>({radius:getComputedStyle(e).borderRadius,height:getComputedStyle(e).height,overflow:getComputedStyle(e).overflow,border:getComputedStyle(e).borderWidth,outline:getComputedStyle(e).outlineWidth,shadow:getComputedStyle(e).boxShadow,inputBorder:getComputedStyle(e.querySelector("input")).borderWidth})')
+    assert phone_style=={'radius':'8px','height':'44px','overflow':'hidden','border':'1px','outline':'0px','shadow':'none','inputBorder':'0px'},phone_style
+    page.locator('#modalBox').evaluate('(e)=>Promise.all(e.getAnimations({subtree:true}).map(animation=>animation.finished.catch(()=>{})))')
+    phone_box=phone.bounding_box();email_box=page.locator('#clEmail').bounding_box()
+    assert abs(phone_box['x']-email_box['x'])<=1 and abs(phone_box['width']-email_box['width'])<=1 and email_box['y']>phone_box['y']+phone_box['height'],(phone_box,email_box)
     page.evaluate('''() => { window.__agendaPlacesOriginal=window.ModernoPlaces; window.ModernoPlaces={available:async()=>true,session:async()=>({search:async()=>[{label:"Calle Mayor 1, Jaén"}],select:async()=>({street:"Calle Mayor",number:"1",city:"Jaén",province:"Jaén",cp:"23001",country:"España",placeId:"place-fixture"}),close(){}})}; contactAddressStart(); }''')
     page.locator('#clAddr').fill('Calle Mayor');page.locator('#clAddr').dispatch_event('input')
     expect(page.locator('#clAddressResults [role="option"]')).to_have_text('Calle Mayor 1, Jaén',timeout=2500)
@@ -416,7 +427,7 @@ try:
     page.locator('#clTrade .agenda-cascader-new').click();expect(page.locator('#clTradeNew')).to_be_visible()
     page.locator('.agenda-contact-editor .product-editor-header h3').click();assert page.locator('#clTrade').get_attribute('open') is None
     fiscal_gap=page.locator('.agenda-contact-section-title').first.evaluate('(e)=>e.nextElementSibling.querySelector("label").getBoundingClientRect().top-e.getBoundingClientRect().bottom')
-    assert fiscal_gap<=9,fiscal_gap
+    assert fiscal_gap<=10,fiscal_gap
     if len(sys.argv)>1:
      page.wait_for_timeout(250)
      page.screenshot(path=str(Path(sys.argv[1])/f'agenda-contact-editor-{width}.png'),full_page=True)
