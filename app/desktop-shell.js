@@ -203,7 +203,14 @@ var ModernoDesktopShell=(()=>{
   syncNavigation();
  }
  function safeRefresh(){try{refresh();}catch(error){enabled=false;restore();console.warn('Navegación de escritorio desactivada; se conserva la interfaz anterior.',error);}}
- document.addEventListener('click',e=>{if(header&&!header.contains(e.target))closeMenus();});
+ document.addEventListener('click',e=>{
+  if(!header)return;
+  // A menu belongs to its own <details>, not to the whole desktop header.
+  // Close it when the user clicks anywhere outside that disclosure, including
+  // empty areas of the sidebar/header that are still descendants of `header`.
+  const open=header.querySelector('details[open]');
+  if(open&&!open.contains(e.target))closeMenus();
+ });
  document.addEventListener('keydown',e=>{if(e.key!=='Escape'||!header)return;const open=header.querySelector('details[open]');if(open){closeMenus();open.querySelector('summary')?.focus();}});
  window.addEventListener('resize',()=>{if(header)syncNavigation();});
  media.addEventListener('change',safeRefresh);

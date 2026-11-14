@@ -211,6 +211,11 @@ with sync_playwright() as p:
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.locator('.desktop-profile>summary').click()
   assert page.get_by_role('button',name='Perfil',exact=True).is_visible()
+  # Clicking elsewhere in the same desktop header also dismisses the account menu.
+  page.locator('.desktop-brand').click(position={'x':2,'y':2})
+  assert not page.locator('.desktop-profile').evaluate('(e)=>e.open')
+  assert page.get_by_role('button',name='Perfil',exact=True).is_hidden()
+  page.locator('.desktop-profile>summary').click()
   page.locator('.desktop-profile>summary').press('Escape')
   page.get_by_role('button',name='Desplegar menú lateral',exact=True).press('Enter')
   settle_header(page)
