@@ -120,7 +120,7 @@ test('creating or cancelling a contact returns the complete unsaved project draf
  c.projectClientCreate(8);c.projectClientCreateReturn('Nuevo');assert.equal(returned[2].client,'Nuevo');assert.equal(returned[2].tags,'Reforma');assert.equal(draft.client,'Original');
 });
 test('existing contact save returns to the project editor after validation',()=>{
- const values={clNum:'2',clFolder:'',clName:'Nuevo cliente',clFiscal:'',clPhone:'',clEmail:'',clNif:'',clCountry:'España',clAddr:'',clCp:'',clCity:'',clNotes:''};
+ const values={clNum:'2',clName:'Nuevo cliente',clFiscal:'',clPhone:'',clEmail:'',clNif:'',clCountry:'España',clAddr:'',clCp:'',clCity:'',clProvince:'',clPlaceId:''};
  let returned;
  const c=fixture({state:{clients:[],projects:[],afterClient:'projectedit'},wsOrder:['cm'],document:{addEventListener(){},getElementById:id=>({value:values[id]||''}),querySelector:selector=>({dataset:{v:selector.includes('clType')?'Cliente':'cm'}})},idPre:()=> 'CL',nextClientNum:()=> 'CL-2',clNumTaken:()=>false,closeModal(){},toast(){},render(){}});
  c.projectClientCreateReturn=name=>returned=name;

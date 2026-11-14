@@ -372,12 +372,37 @@ try:
     assert page.locator('.agenda-contact-badge').first.evaluate('(e)=>getComputedStyle(e).borderRadius')=='6px'
     assert page.locator('.agenda-contact-table .agenda-row-settings').count()==page.locator('.agenda-contact-table tbody tr').count()
     assert page.locator('.agenda-contact-table button[title="Editar"],.agenda-contact-table button[title="Eliminar"]').count()==0
-    assert page.locator('.agenda-row-settings .agenda-action-icon').first.evaluate('(e)=>getComputedStyle(e).maskImage').find('gear-six-light.svg')>=0
+    assert page.locator('.agenda-contact-actions-head').inner_text().strip()==''
+    assert page.locator('.agenda-row-settings .agenda-action-icon').count()==0
+    assert page.locator('.agenda-row-settings').first.inner_text().strip()=='…'
+    action_head=page.locator('.agenda-contact-actions-head').bounding_box();action_button=page.locator('.agenda-row-settings').first.bounding_box()
+    assert abs((action_head['x']+action_head['width']/2)-(action_button['x']+action_button['width']/2))<=1,(action_head,action_button)
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'agenda-toolbar-{width}.png'),full_page=True)
     page.locator('.agenda-row-settings').first.click()
     expect(page.locator('.agenda-contact-editor')).to_be_visible()
     assert page.locator('#modalBox').evaluate('(e)=>getComputedStyle(e).height')==str(page.viewport_size['height'])+'px'
     expect(page.locator('.agenda-contact-editor .product-editor-footer').get_by_role('button')).to_have_text(['Eliminar contacto','Cancelar','Guardar cambios'])
+    assert page.get_by_text('El nombre de la serie',exact=False).count()==0
+    assert page.locator('#clFolder,#clNotes').count()==0
+    assert page.locator('.shopping-editor-delete svg,.shopping-editor-delete .svgi').count()==0
+    dom_ids=page.locator('.agenda-contact-editor').evaluate('(root)=>[...root.querySelectorAll("#clNum,#clType,#clName,#clFiscal,#clNif,#clAddr,#clPhone,#clEmail,#clTradeWrap")].map(e=>e.id)')
+    assert dom_ids==['clNum','clType','clName','clFiscal','clNif','clAddr','clPhone','clEmail','clTradeWrap'],dom_ids
+    expect(page.locator('#clType [role="option"]')).to_have_text(['Cliente','Proveedor','Contratista','Técnico','Team'])
+    assert page.locator('#clType [data-v="Proveedor"] .agenda-cascader-icon').evaluate('(e)=>getComputedStyle(e).maskImage').find('contact-proovedores.svg')>=0
+    phone_style=page.locator('.agenda-contact-editor .phone-control').evaluate('(e)=>({radius:getComputedStyle(e).borderRadius,height:getComputedStyle(e).height,overflow:getComputedStyle(e).overflow})')
+    assert phone_style=={'radius':'8px','height':'38px','overflow':'hidden'},phone_style
+    page.evaluate('''() => { window.__agendaPlacesOriginal=window.ModernoPlaces; window.ModernoPlaces={available:async()=>true,session:async()=>({search:async()=>[{label:"Calle Mayor 1, Jaén"}],select:async()=>({street:"Calle Mayor",number:"1",city:"Jaén",province:"Jaén",cp:"23001",country:"España",placeId:"place-fixture"}),close(){}})}; contactAddressStart(); }''')
+    page.locator('#clAddr').fill('Calle Mayor');page.locator('#clAddr').dispatch_event('input')
+    expect(page.locator('#clAddressResults [role="option"]')).to_have_text('Calle Mayor 1, Jaén',timeout=2500)
+    page.locator('#clAddressResults [role="option"]').click()
+    expect(page.locator('#clAddr')).to_have_value('Calle Mayor 1');expect(page.locator('#clCp')).to_have_value('23001');expect(page.locator('#clCity')).to_have_value('Jaén')
+    assert page.locator('#clPlaceId').input_value()=='place-fixture'
+    page.evaluate('window.ModernoPlaces=window.__agendaPlacesOriginal;delete window.__agendaPlacesOriginal')
+    page.locator('#clType summary').click();page.locator('#clType [data-v="Contratista"]').click()
+    expect(page.locator('#clTradeWrap')).to_be_visible()
+    page.locator('#clTrade summary').click()
+    assert page.locator('#clTrade .agenda-cascader-new').inner_text().strip()=='＋ Nuevo oficio'
+    page.locator('#clTrade .agenda-cascader-new').click();expect(page.locator('#clTradeNew')).to_be_visible()
     if len(sys.argv)>1:
      page.wait_for_timeout(250)
      page.screenshot(path=str(Path(sys.argv[1])/f'agenda-contact-editor-{width}.png'),full_page=True)

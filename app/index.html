@@ -6255,7 +6255,7 @@ function typeColorsModal(){
 }
 function contactCategoryIcon(category){
   const file={"Todos":"todos","Proveedores":"proovedores","Contratistas":"contratistas","Técnicos":"arquitectos","Team":"team"}[category];
-  return file?`<span class="contact-category-icon" aria-hidden="true" style="--contact-icon:url('/contact-${file}.svg?v=36605')"></span>`:ico('contactos');
+  return file?`<span class="contact-category-icon" aria-hidden="true" style="--contact-icon:url('/contact-${file}.svg?v=36606')"></span>`:ico('contactos');
 }
 function agendaAssetIcon(file){return `<span class="agenda-action-icon" aria-hidden="true" style="--agenda-icon:url('/brand/agenda-icons/${file}.svg?v=36605')"></span>`;}
 function agendaContactBadge(type){return ({Cliente:"client",Proveedor:"provider",Contratista:"contractor",Técnico:"technical",Team:"team"})[type]||"info";}
@@ -6291,14 +6291,14 @@ function vAgenda(){
       </details>
     </div>
   </div>
-  <table class="list agenda-contact-table"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th>${multiWs?`<th>Espacio de trabajo</th>`:""}<th>Tel\u00e9fono</th><th>NIF/CIF</th><th class="agenda-contact-actions-head">Acciones</th></tr></thead><tbody>
+  <table class="list agenda-contact-table"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th>${multiWs?`<th>Espacio de trabajo</th>`:""}<th>Tel\u00e9fono</th><th>NIF/CIF</th><th class="agenda-contact-actions-head" aria-label="Ajustes"></th></tr></thead><tbody>
   ${shown.length?shown.map(c=>`<tr style="cursor:pointer" onclick="clientCard(this.dataset.n)" data-n="${c.name}">
     <td class="agenda-contact-id">${c.num||"\u2014"}</td>
-    <td><div class="agenda-contact-primary">${c.name}${(c.type==="Contratista"||c.type==="Técnico")&&c.trade?` <span class="agenda-contact-trade">${c.trade}</span>`:""}</div><div class="agenda-contact-secondary">${c.fiscal}</div></td>
+    <td><div class="agenda-contact-primary">${c.name}${(c.type==="Contratista"||c.type==="Técnico")&&c.trade?` <span class="agenda-contact-trade">${c.trade}</span>`:""}</div><div class="agenda-contact-secondary">${c.fiscal||""}</div></td>
     <td><span class="agenda-contact-badge agenda-contact-badge--${agendaContactBadge(c.type)}">${c.type}</span></td>
     ${multiWs?`<td>${c.type==="Cliente"?`<span class="chip ${c.brand==='both'?'both':BRAND[c.brand]?.chip||'cm'}">${c.brand==="both"?"Ambas":BRAND[c.brand]?.name??"\u2014"}</span>`:"\u2014"}</td>`:""}
     <td>${c.phone||"\u2014"}</td><td>${c.nif||"\u2014"}</td>
-    <td class="agenda-contact-actions"><button type="button" class="agenda-row-settings" aria-label="Ajustes de ${(c.name||"contacto").replace(/"/g,"&quot;")}" title="Ajustes" onclick="event.stopPropagation();clientModal(${c.__i})">${agendaAssetIcon('gear-six-light')}</button></td></tr>`).join(""):`<tr><td colspan="${multiWs?7:6}"><div class="empty">Nada por aqu\u00ed todav\u00eda.</div></td></tr>`}
+    <td class="agenda-contact-actions"><button type="button" class="agenda-row-settings" aria-label="Ajustes de ${(c.name||"contacto").replace(/"/g,"&quot;")}" title="Ajustes" onclick="event.stopPropagation();clientModal(${c.__i})"><span aria-hidden="true">…</span></button></td></tr>`).join(""):`<tr><td colspan="${multiWs?7:6}"><div class="empty">Nada por aqu\u00ed todav\u00eda.</div></td></tr>`}
   </tbody></table>`;
 }
 
@@ -9937,14 +9937,25 @@ function tradeList(type){
     state.trades=["Electricidad","Fontanería","Carpintería","Pintura","Albañilería","Limpieza"];
   return state.trades;
 }
-function clCurType(){ const b=document.querySelector("#clType .on"); return b?b.dataset.v:"Cliente"; }
-function clTradeDraw(type, sel){
-  const box=document.getElementById("clTrade"); if(!box) return;
-  const lbl=document.getElementById("clTradeLbl"); if(lbl) lbl.textContent = type==="Técnico"?"Profesión":"Oficio";
-  const ni=document.getElementById("clTradeNew"); if(ni) ni.placeholder = type==="Técnico"?"Otra profesión (Ej: Paisajista)":"Otro oficio (Ej: Domótica)";
-  box.innerHTML=tradeList(type).map(x=>`<button class="${x===sel?'on':''}" data-t="${x}">${x}</button>`).join("");
-  pills("clTrade");
+function agendaContactTypeIcon(type){
+  const file={Proveedor:"proovedores",Contratista:"contratistas",Técnico:"arquitectos",Team:"team"}[type];
+  return file?`<span class="agenda-cascader-icon" aria-hidden="true" style="--agenda-cascader-icon:url('/contact-${file}.svg?v=36606')"></span>`:`<span class="agenda-cascader-icon agenda-cascader-icon--client" aria-hidden="true">${ico("contactos")}</span>`;
 }
+function clTypePicker(type){
+  const types=["Cliente","Proveedor","Contratista","Técnico","Team"];
+  return `<details class="agenda-cascader" id="clType"><summary aria-label="Tipo de contacto">${agendaContactTypeIcon(type)}<span class="agenda-cascader-value">${type}</span><span class="agenda-cascader-chevron" aria-hidden="true"></span></summary><div class="agenda-cascader-content" role="listbox" aria-label="Tipo de contacto">${types.map(x=>`<button type="button" role="option" aria-selected="${x===type}" class="agenda-cascader-option ${x===type?'on':''}" data-v="${x}">${agendaContactTypeIcon(x)}<span>${x}</span></button>`).join("")}</div></details>`;
+}
+function clCurType(){ const b=document.querySelector("#clType .on"); return b?b.dataset.v:"Cliente"; }
+function clTradePicker(type,sel){
+  const value=sel||"Seleccionar oficio";
+  return `<details class="agenda-cascader" id="clTrade"><summary aria-label="Oficio">${agendaContactTypeIcon(type)}<span class="agenda-cascader-value">${value}</span><span class="agenda-cascader-chevron" aria-hidden="true"></span></summary><div class="agenda-cascader-content agenda-trade-content" role="listbox" aria-label="Oficio">${tradeList(type).map(x=>`<button type="button" role="option" aria-selected="${x===sel}" class="agenda-cascader-option ${x===sel?'on':''}" data-t="${x}">${agendaContactTypeIcon(type)}<span>${x}</span></button>`).join("")}<span class="agenda-cascader-separator" role="separator"></span><button type="button" class="agenda-cascader-new" onclick="clTradeNewToggle(event)">＋ Nuevo oficio</button><div class="agenda-trade-new" hidden><input id="clTradeNew" placeholder="Escribe el nuevo oficio" onkeydown="if(event.key==='Enter'){event.preventDefault();addTradeGo()}"><button type="button" class="btn btn-dark" onclick="addTradeGo()">Añadir</button></div></div></details>`;
+}
+function clTradeBind(){
+  const box=document.getElementById("clTrade");if(!box)return;
+  box.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{box.querySelectorAll("[data-t]").forEach(x=>{x.classList.toggle("on",x===b);x.setAttribute("aria-selected",String(x===b));});const value=box.querySelector(".agenda-cascader-value");if(value)value.textContent=b.dataset.t;box.open=false;});
+}
+function clTradeDraw(type,sel){const box=document.getElementById("clTrade");if(!box)return;box.outerHTML=clTradePicker(type,sel||"");clTradeBind();}
+function clTradeNewToggle(event){event.preventDefault();event.stopPropagation();const wrap=document.querySelector("#clTrade .agenda-trade-new");if(!wrap)return;wrap.hidden=!wrap.hidden;if(!wrap.hidden)queueMicrotask(()=>document.getElementById("clTradeNew")?.focus());}
 function addTradeGo(){
   const el=document.getElementById("clTradeNew");
   const t=(el&&el.value||"").trim(); const type=clCurType();
@@ -9952,7 +9963,24 @@ function addTradeGo(){
   const list=tradeList(type);
   if(!list.some(x=>x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""))) list.push(t);
   clTradeDraw(type, t);
-  el.value=""; persistSoon();
+  persistSoon();
+}
+let _contactPlaceSession=null,_contactPlaceRows=[],_contactPlaceRevision=0,_contactPlaceTimer=null;
+function contactAddressCleanup(){_contactPlaceRevision++;clearTimeout(_contactPlaceTimer);_contactPlaceTimer=null;try{_contactPlaceSession?.close();}catch(e){}_contactPlaceSession=null;_contactPlaceRows=[];}
+async function contactAddressStart(){const input=document.getElementById("clAddr");if(!input||!window.ModernoPlaces)return;const enabled=await ModernoPlaces.available().catch(()=>false);if(input.isConnected)input.dataset.google=enabled?"true":"false";}
+function contactAddressDraw(rows,status=""){
+  const list=document.getElementById("clAddressResults"),stateEl=document.getElementById("clAddressStatus");if(!list)return;
+  list.innerHTML=rows.map((row,i)=>`<button type="button" role="option" onmousedown="event.preventDefault()" onclick="contactAddressSelect(${i})">${ModernoDaily.escape(row.label)}</button>`).join("");
+  list.hidden=!rows.length;if(stateEl){stateEl.textContent=status;stateEl.dataset.google=rows.length?"true":"false";}
+}
+function contactAddressSearch(value){
+  const place=document.getElementById("clPlaceId");if(place)place.value="";const rev=++_contactPlaceRevision;clearTimeout(_contactPlaceTimer);_contactPlaceRows=[];contactAddressDraw([]);
+  if(String(value||"").trim().length<3)return;
+  _contactPlaceTimer=setTimeout(async()=>{if(rev!==_contactPlaceRevision)return;contactAddressDraw([],"Buscando direcciones…");try{_contactPlaceSession||=await ModernoPlaces.session();const rows=await _contactPlaceSession.search(value);if(rev!==_contactPlaceRevision)return;_contactPlaceRows=rows;contactAddressDraw(rows,rows.length?"":"Sin resultados. Puedes escribir la dirección manualmente.");}catch(e){if(rev===_contactPlaceRevision)contactAddressDraw([],"Buscador no disponible. Puedes escribir la dirección manualmente.");}},350);
+}
+async function contactAddressSelect(index){
+  const row=_contactPlaceRows[index];if(!row||!_contactPlaceSession)return;const rev=++_contactPlaceRevision;contactAddressDraw([],"Completando dirección…");
+  try{const value=await _contactPlaceSession.select(row);if(rev!==_contactPlaceRevision||!value)return;const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||"";};set("clAddr",[value.street,value.number].filter(Boolean).join(" "));set("clCity",value.city);set("clCp",value.cp);set("clProvince",value.province);set("clPlaceId",value.placeId);const country=document.getElementById("clCountry");if(country&&[...country.options].some(o=>o.value===value.country))country.value=value.country;contactAddressDraw([],"Dirección seleccionada. Revisa los datos.");}catch(e){if(rev===_contactPlaceRevision)contactAddressDraw([],"No se pudo completar. Puedes escribir la dirección manualmente.");}
 }
 function _rxEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
 function nextClientNum(type){
@@ -9973,45 +10001,36 @@ function draftEditClient(){
   else toast("Elige primero un cliente de la Agenda");
 }
 function clientModal(editIdx=-1, presetType){
-  const c = editIdx>=0 ? state.clients[editIdx] : {name:"",fiscal:"",type:presetType||"Cliente",brand:wsOrder[0],num:nextClientNum(presetType||"Cliente"),phone:"",email:"",nif:"",addr:"",cp:"",city:"",country:(state.account&&state.account.country)||"España",folder:"",trade:"",notes:""};
+  const c = editIdx>=0 ? state.clients[editIdx] : {name:"",fiscal:"",type:presetType||"Cliente",brand:wsOrder[0],num:nextClientNum(presetType||"Cliente"),phone:"",email:"",nif:"",addr:"",cp:"",city:"",province:"",placeId:"",country:(state.account&&state.account.country)||"España",folder:"",trade:"",notes:""};
   modal(`<div class="shopping-product-editor agenda-contact-editor">
   <header class="product-editor-header"><h3>${editIdx>=0?"Editar contacto":"Nuevo contacto"}</h3><p>${editIdx>=0?c.name:"Datos de contacto y clasificación."}</p><button type="button" class="product-editor-close" aria-label="Cerrar edición de contacto" onclick="closeModal()">${ico("cerrar")||"×"}</button></header>
   <div class="product-editor-body agenda-contact-editor-body"><div class="product-editor-column"><section class="product-editor-section">
-  <label>Tipo</label><div class="opt-pills" id="clType">${["Cliente","Proveedor","Contratista","Técnico","Team"].map(x=>`<button class="${c.type===x?'on':''}" data-v="${x}">${typeLabel(x)}</button>`).join("")}</div>
-  <label>ID</label>
-  <div style="display:flex;align-items:center;gap:8px">
-    <span id="clPre" class="chip cm" style="background:var(--card);font-weight:700">${idPre(c.type)} -</span>
-    <input id="clNum" type="number" min="1" step="1" style="max-width:120px" oninput="clNumCheck(${editIdx})"
+  <div class="agenda-contact-id-line"><label for="clNum">ID</label><div class="agenda-contact-id-control">
+    <span id="clPre">${idPre(c.type)} -</span>
+    <input id="clNum" type="number" min="1" step="1" oninput="clNumCheck(${editIdx})"
       value="${(()=>{const m=/(\d+)\s*$/.exec(c.num||""); if(m) return m[1]; const p=/(\d+)$/.exec(nextClientNum(c.type)); return p?p[1]:1;})()}">
-    <span id="clNumWarn" style="font-size:11.5px;color:var(--red-ink);font-weight:700"></span>
-  </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:3px">El nombre de la serie («${idPre(c.type)}») se cambia en Administración → Cuenta.</p>
-  <div id="clTradeWrap" style="display:${(c.type==="Contratista"||c.type==="Técnico")?"block":"none"}">
-    <label id="clTradeLbl">${c.type==="Técnico"?"Profesión":"Oficio"}</label>
-    <div class="opt-pills" id="clTrade">${tradeList(c.type).map(t=>`<button class="${(c.trade||"")===t?'on':''}" data-t="${t}">${t}</button>`).join("")}</div>
-    <div style="display:flex;gap:6px;margin-top:6px">
-      <input id="clTradeNew" placeholder="${c.type==="Técnico"?"Otra profesión (Ej: Paisajista)":"Otro oficio (Ej: Domótica)"}" style="max-width:240px" onkeydown="if(event.key==='Enter')addTradeGo()">
-      <button class="btn btn-ghost" onclick="addTradeGo()">＋ Añadir</button>
-    </div>
-  </div>
-  <div id="clBrandWrap" style="display:${c.type==="Cliente"?"block":"none"}"><label>Espacio de trabajo del cliente</label>
-  <div class="opt-pills" id="clBrand">${wsOrder.map((k,i)=>`<button class="${c.brand===k||(i===0&&!wsOrder.includes(c.brand)&&c.brand!=='both')?'on':''} ${k==='em'?'b-em':''}" data-v="${k}">${BRAND[k].name||"Mi espacio"}</button>`).join("")}${wsOrder.length>1?`<button class="${c.brand==='both'?'on b-both':'b-both'}" data-v="both">Ambas</button>`:""}</div></div>
+    <span id="clNumWarn" role="status"></span>
+  </div></div>
+  <label>Tipo</label>${clTypePicker(c.type)}
   <label>Nombre</label><input id="clName" name="name" autocomplete="name" value="${c.name}" placeholder="Estudio Ola">
-  <div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>Nombre fiscal</label><input id="clFiscal" name="organization" autocomplete="organization" value="${c.fiscal}" placeholder="Estudio Ola S.L."></div>
-  <div class="row2"><div><label>Teléfono</label>${ModernoPhone.field(c.phone,PAIS_ISO,state.account?.country,'id="clPhone" name="tel"')}</div><div><label>Email</label><input id="clEmail" name="email" autocomplete="email" value="${c.email||""}" placeholder="hola@cliente.com"></div></div>
-  <label>Carpeta de archivos <small style="color:var(--ink-faint);text-transform:none;letter-spacing:0">— interna o de Google Drive / Dropbox / OneDrive</small></label>
-  <input id="clFolder" value="${(c.folder||"").replace(/"/g,"&quot;")}" placeholder="https://drive.google.com/… · \\\\servidor\\clientes\\marta">
-  <div class="row2"><div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>NIF / CIF</label><input id="clNif" value="${c.nif}" placeholder="B00000000"></div><div><label>País</label><select id="clCountry" name="country" autocomplete="country-name">${paisOptions(c.country)}</select></div></div>
-  <div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>Dirección</label><input id="clAddr" name="street-address" autocomplete="street-address" value="${(c.addr||"").replace(/"/g,"&quot;")}" placeholder="Calle Mayor, 1, 2º B" style="width:100%"></div>
-  <div class="row2"><div><label>Código postal</label><input id="clCp" name="postal-code" autocomplete="postal-code" value="${c.cp||""}" placeholder="23001"></div><div><label>Ciudad</label><input id="clCity" name="city" autocomplete="address-level2" value="${c.city}" placeholder="Jaén"></div></div>
-  <div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>Notas internas</label><textarea id="clNotes" rows="2" placeholder="Solo las ve tu equipo — preferencias, avisos, contexto…">${c.notes||""}</textarea></div>
+  <div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>Nombre fiscal</label><input id="clFiscal" name="organization" autocomplete="organization" value="${c.fiscal||""}" placeholder="Estudio Ola S.L."></div>
+  <div id="clBrandWrap" style="display:${c.type==="Cliente"&&wsOrder.length>1?"block":"none"}"><label>Espacio de trabajo del cliente</label><div class="opt-pills" id="clBrand">${wsOrder.map((k,i)=>`<button type="button" class="${c.brand===k||(i===0&&!wsOrder.includes(c.brand)&&c.brand!=='both')?'on':''} ${k==='em'?'b-em':''}" data-v="${k}">${BRAND[k].name||"Mi espacio"}</button>`).join("")}${wsOrder.length>1?`<button type="button" class="${c.brand==='both'?'on b-both':'b-both'}" data-v="both">Ambas</button>`:""}</div></div>
+  <h4 class="agenda-contact-section-title">Datos fiscales</h4>
+  <div class="row2"><div class="cl-notteam agenda-contact-fiscal-field" style="display:${c.type==="Team"?"none":"flex"}"><label>NIF / CIF</label><input id="clNif" value="${c.nif||""}" placeholder="B00000000"></div><div><label>País</label><select id="clCountry" name="country" autocomplete="country-name">${paisOptions(c.country)}</select></div></div>
+  <h4 class="agenda-contact-section-title">Dirección</h4>
+  <div class="agenda-address-combobox"><label for="clAddr">Buscar dirección</label><input id="clAddr" name="street-address" role="combobox" aria-autocomplete="list" aria-controls="clAddressResults" autocomplete="off" value="${(c.addr||"").replace(/"/g,"&quot;")}" placeholder="Calle, número y ciudad" oninput="contactAddressSearch(this.value)"><div id="clAddressResults" class="agenda-address-results" role="listbox" aria-label="Direcciones sugeridas" hidden></div><span id="clAddressStatus" class="agenda-address-status" role="status"></span></div>
+  <div class="row2"><div><label>Código postal</label><input id="clCp" name="postal-code" autocomplete="postal-code" value="${c.cp||""}" placeholder="23001"></div><div><label>Ciudad</label><input id="clCity" name="city" autocomplete="address-level2" value="${c.city||""}" placeholder="Jaén"></div></div>
+  <input id="clProvince" type="hidden" value="${c.province||""}"><input id="clPlaceId" type="hidden" value="${c.placeId||""}">
+  <div class="row2 agenda-contact-phone-mail"><div><label>Teléfono</label>${ModernoPhone.field(c.phone,PAIS_ISO,state.account?.country,'id="clPhone" name="tel"')}</div><div><label>Email</label><input id="clEmail" name="email" autocomplete="email" value="${c.email||""}" placeholder="hola@cliente.com"></div></div>
+  <div id="clTradeWrap" style="display:${(c.type==="Contratista"||c.type==="Técnico")?"block":"none"}"><label id="clTradeLbl">Oficio</label>${clTradePicker(c.type,c.trade||"")}</div>
   </section></div></div>
-  <footer class="modal-foot product-editor-footer">${editIdx>=0?`<button type="button" class="btn btn-ghost shopping-editor-delete" onclick="delClient(${editIdx})">${ico("del_contacto")} Eliminar contacto</button>`:""}<button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button type="button" class="btn btn-dark" onclick="saveClient(${editIdx})">${editIdx>=0?"Guardar cambios":"Añadir"}</button></footer></div>`);
+  <footer class="modal-foot product-editor-footer">${editIdx>=0?`<button type="button" class="btn btn-ghost shopping-editor-delete" onclick="delClient(${editIdx})">Eliminar contacto</button>`:""}<button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button type="button" class="btn btn-dark" onclick="saveClient(${editIdx})">${editIdx>=0?"Guardar cambios":"Añadir"}</button></footer></div>`);
   _obLock=true;                       // este modal solo se cierra con sus botones
-  pills("clType"); pills("clBrand"); pills("clTrade");
+  pills("clBrand");clTradeBind();
   document.querySelectorAll("#clType button").forEach(b=>b.addEventListener("click",()=>{
-    document.getElementById("clBrandWrap").style.display = b.dataset.v==="Cliente"?"block":"none";
-    document.querySelectorAll(".cl-notteam").forEach(el=>el.style.display = b.dataset.v==="Team"?"none":"block");   // un miembro del estudio no es otra empresa
+    const typeBox=document.getElementById("clType");typeBox.querySelectorAll("[data-v]").forEach(x=>{x.classList.toggle("on",x===b);x.setAttribute("aria-selected",String(x===b));});const summary=typeBox.querySelector("summary");summary.innerHTML=agendaContactTypeIcon(b.dataset.v)+`<span class="agenda-cascader-value">${b.dataset.v}</span><span class="agenda-cascader-chevron" aria-hidden="true"></span>`;typeBox.open=false;
+    document.getElementById("clBrandWrap").style.display = b.dataset.v==="Cliente"&&wsOrder.length>1?"block":"none";
+    document.querySelectorAll(".cl-notteam").forEach(el=>el.style.display = b.dataset.v==="Team"?"none":(el.classList.contains("agenda-contact-fiscal-field")?"flex":"block"));   // un miembro del estudio no es otra empresa
     setTimeout(()=>{ try{ clNumCheck(editIdx); }catch(e){} },0);
     const tw=document.getElementById("clTradeWrap");
     if(tw){ tw.style.display = (b.dataset.v==="Contratista"||b.dataset.v==="Técnico")?"block":"none"; clTradeDraw(b.dataset.v); }
@@ -10023,6 +10042,7 @@ function clientModal(editIdx=-1, presetType){
       ni.value=m?m[1]:1;
     }
   }));
+  contactAddressStart();
 }
 function delClient(i){
   const c=state.clients[i]; if(!c) return;
@@ -10041,16 +10061,17 @@ function clNumCheck(editIdx){
 function saveClient(editIdx=-1){
   const type = document.querySelector("#clType .on").dataset.v;
   const _numEl=document.getElementById("clNum");
+  const previous=editIdx>=0?state.clients[editIdx]:null;
   const data = { trade: (type==="Contratista"||type==="Técnico") ? ((document.querySelector("#clTrade .on")||{dataset:{}}).dataset.t||"") : "",
     num: idPre(type)+" - "+(Math.max(1,Math.floor(+((_numEl&&_numEl.value)||0))) || (/(\d+)$/.exec(nextClientNum(type))||[,1])[1]),
-    folder:(document.getElementById("clFolder")||{value:""}).value.trim(),
+    folder:previous?.folder||"", notes:previous?.notes||"",
     name:document.getElementById("clName").value||"Sin nombre",
     fiscal:document.getElementById("clFiscal").value||document.getElementById("clName").value,
-    type, brand: type==="Cliente"? ((document.querySelector("#clBrand .on")||{dataset:{v:wsOrder[0]}}).dataset.v||wsOrder[0]) : wsOrder[0],
+    type, brand: type==="Cliente"? ((document.querySelector("#clBrand .on")||{dataset:{v:previous?.brand||wsOrder[0]}}).dataset.v||previous?.brand||wsOrder[0]) : wsOrder[0],
     phone:document.getElementById("clPhone").value, email:document.getElementById("clEmail").value,
     nif:document.getElementById("clNif").value, country:document.getElementById("clCountry").value,
     addr:document.getElementById("clAddr").value, cp:(document.getElementById("clCp")||{value:""}).value.trim(), city:document.getElementById("clCity").value,
-    notes:document.getElementById("clNotes").value };
+    province:(document.getElementById("clProvince")||{value:""}).value, placeId:(document.getElementById("clPlaceId")||{value:""}).value };
   if(clNumTaken(data.num, editIdx)){ toast("⚠ El ID "+data.num+" ya lo tiene otro contacto: elige otro número"); const e=document.getElementById("clNum"); if(e){ e.focus(); e.select(); } return; }
   if(editIdx>=0){
     const old = state.clients[editIdx].name;
@@ -11136,7 +11157,6 @@ function clientCard(name){
     c.folder ? (/^https?:\/\//i.test(c.folder)
       ? `<a href="${c.folder.replace(/"/g,"&quot;")}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:underline">Abrir carpeta ↗</a>`
       : c.folder) : "—"}</span></div>
-  ${c.notes?`<div class="entry cc-row" style="background:var(--gold-soft)"><span class="cc-k">${ico("c_notas")} Notas internas</span><span class="cc-v">${c.notes.replace(/</g,"&lt;")}</span></div>`:""}
   ${c.type!=="Proveedor"?"":(()=>{ 
     const prods=state.library.filter(x=>(x.supplier||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")===c.name.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""));
     let enListas=0, enProys=new Set();
@@ -11157,7 +11177,7 @@ function clientCard(name){
   ${facturas.length?facturas.map(f=>`<div class="entry" style="background:var(--white)"><b>${f.ref}</b><span class="chip ${(BRAND[f.brand]||{}).chip||'cm'}">${(BRAND[f.brand]||{}).name||""}</span><span class="amt in">${fmt(f.total)}</span></div>`).join(""):`<div style="font-size:12px;color:var(--ink-faint)">Sin facturas todavía</div>`}
   ${presupuestos.length?`<label class="cc-lab">${ico("c_presu")} Presupuestos (${presupuestos.length})</label>`+presupuestos.map(f=>`<div class="entry" style="background:var(--white)"><b>${f.ref}</b><span class="amt">${fmt(f.total)}</span></div>`).join(""):""}
   <div class="modal-foot">
-  <button class="btn btn-ghost" onclick="closeModal();clientModal(${state.clients.indexOf(c)})">${agendaAssetIcon('gear-six-light')} Ajustes</button>
+  <button class="btn btn-ghost" onclick="closeModal();clientModal(${state.clients.indexOf(c)})"><span aria-hidden="true">…</span> Ajustes</button>
   <button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
 }
 async function exportPeriodInvoices(kind){
@@ -11349,8 +11369,8 @@ function askInputCancel(){ const cb=_inpCancel; _inpOk=_inpCancel=null; closeMod
 
 /* =================== UI HELPERS =================== */
 const ov=document.getElementById("overlay"), mb=document.getElementById("modalBox");
-function modal(html){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup(); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm','shopping-quote-tax-dialog');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
-function closeModal(){ if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup();mb.removeAttribute('aria-hidden'); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm','shopping-quote-tax-dialog');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
+function modal(html){ try{contactAddressCleanup();}catch(e){} if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup(); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm','shopping-quote-tax-dialog');ov.classList.remove('project-drawer-overlay'); mb.innerHTML=html; ov.classList.add("open"); ModernoDialog.open(mb); try{syncRefresh();}catch(e){} }
+function closeModal(){ try{contactAddressCleanup();}catch(e){} if(window.ModernoProjectEdit)ModernoProjectEdit.cleanup();if(window.ModernoNewProject)ModernoNewProject.cleanup();mb.removeAttribute('aria-hidden'); shoppingRoomDeleteCleanup();mb.classList.remove('project-drawer','project-delete-confirm','task-phase-dialog','task-phase-confirm','shopping-quote-tax-dialog');ov.classList.remove('project-drawer-overlay'); ModernoDialog.close(); _obLock=false; state._entryEdit=null; ov.classList.remove("open"); mb.classList.remove("xwide"); setTimeout(()=>{ try{ _rtFlushRerender(); }catch(e){} },60); ov.classList.remove("ob"); mb.classList.remove("wide"); try{syncRefresh();}catch(e){} }
 ov.addEventListener("click",e=>{ /* clic fuera NO cierra: solo Cancelar/Guardar */ });
 document.addEventListener("keydown",e=>{if(ov.classList.contains("open")&&!ov.classList.contains("shopping-delete-overlay")&&!ov.classList.contains("new-project-enhanced-overlay"))ModernoDialog.trap(e,mb);});
 let toastTimer;
@@ -11407,7 +11427,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.5";
+const MODERNO_VER="v3.66.6";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13565,7 +13585,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 }
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=208">
-<link rel="stylesheet" href="/brand/agenda-ui.css?v=36605">
+<link rel="stylesheet" href="/brand/agenda-ui.css?v=36606">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>
