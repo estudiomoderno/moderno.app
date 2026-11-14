@@ -386,7 +386,7 @@ try:
     assert page.locator('#clFolder,#clNotes').count()==0
     assert page.locator('.shopping-editor-delete svg,.shopping-editor-delete .svgi').count()==0
     dom_ids=page.locator('.agenda-contact-editor').evaluate('(root)=>[...root.querySelectorAll("#clNum,#clType,#clName,#clFiscal,#clNif,#clAddr,#clPhone,#clEmail,#clTradeWrap")].map(e=>e.id)')
-    assert dom_ids==['clNum','clType','clName','clFiscal','clNif','clAddr','clPhone','clEmail','clTradeWrap'],dom_ids
+    assert dom_ids==['clNum','clType','clTradeWrap','clName','clFiscal','clNif','clAddr','clPhone','clEmail'],dom_ids
     expect(page.locator('#clType [role="option"]')).to_have_text(['Cliente','Proveedor','Contratista','Técnico','Team'])
     assert page.locator('#clType [data-v="Proveedor"] .agenda-cascader-icon').evaluate('(e)=>getComputedStyle(e).maskImage').find('contact-proovedores.svg')>=0
     phone_style=page.locator('.agenda-contact-editor .phone-control').evaluate('(e)=>({radius:getComputedStyle(e).borderRadius,height:getComputedStyle(e).height,overflow:getComputedStyle(e).overflow})')
@@ -394,15 +394,25 @@ try:
     page.evaluate('''() => { window.__agendaPlacesOriginal=window.ModernoPlaces; window.ModernoPlaces={available:async()=>true,session:async()=>({search:async()=>[{label:"Calle Mayor 1, Jaén"}],select:async()=>({street:"Calle Mayor",number:"1",city:"Jaén",province:"Jaén",cp:"23001",country:"España",placeId:"place-fixture"}),close(){}})}; contactAddressStart(); }''')
     page.locator('#clAddr').fill('Calle Mayor');page.locator('#clAddr').dispatch_event('input')
     expect(page.locator('#clAddressResults [role="option"]')).to_have_text('Calle Mayor 1, Jaén',timeout=2500)
+    page.locator('.agenda-contact-editor .product-editor-header h3').click()
+    expect(page.locator('#clAddressResults')).to_be_hidden()
+    page.locator('#clAddr').fill('Calle Mayor 2');page.locator('#clAddr').dispatch_event('input')
+    expect(page.locator('#clAddressResults [role="option"]')).to_have_text('Calle Mayor 1, Jaén',timeout=2500)
     page.locator('#clAddressResults [role="option"]').click()
     expect(page.locator('#clAddr')).to_have_value('Calle Mayor 1');expect(page.locator('#clCp')).to_have_value('23001');expect(page.locator('#clCity')).to_have_value('Jaén')
     assert page.locator('#clPlaceId').input_value()=='place-fixture'
     page.evaluate('window.ModernoPlaces=window.__agendaPlacesOriginal;delete window.__agendaPlacesOriginal')
+    page.locator('#clType summary').click();expect(page.locator('#clType .agenda-cascader-content')).to_be_visible()
+    page.locator('.agenda-contact-editor .product-editor-header h3').click();assert page.locator('#clType').get_attribute('open') is None
     page.locator('#clType summary').click();page.locator('#clType [data-v="Contratista"]').click()
     expect(page.locator('#clTradeWrap')).to_be_visible()
+    assert page.locator('#clTradeWrap').evaluate('(e)=>e.previousElementSibling.id')=='clType'
     page.locator('#clTrade summary').click()
     assert page.locator('#clTrade .agenda-cascader-new').inner_text().strip()=='＋ Nuevo oficio'
     page.locator('#clTrade .agenda-cascader-new').click();expect(page.locator('#clTradeNew')).to_be_visible()
+    page.locator('.agenda-contact-editor .product-editor-header h3').click();assert page.locator('#clTrade').get_attribute('open') is None
+    fiscal_gap=page.locator('.agenda-contact-section-title').first.evaluate('(e)=>e.nextElementSibling.querySelector("label").getBoundingClientRect().top-e.getBoundingClientRect().bottom')
+    assert fiscal_gap<=9,fiscal_gap
     if len(sys.argv)>1:
      page.wait_for_timeout(250)
      page.screenshot(path=str(Path(sys.argv[1])/f'agenda-contact-editor-{width}.png'),full_page=True)

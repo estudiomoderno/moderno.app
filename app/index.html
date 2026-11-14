@@ -9973,6 +9973,15 @@ function contactAddressDraw(rows,status=""){
   list.innerHTML=rows.map((row,i)=>`<button type="button" role="option" onmousedown="event.preventDefault()" onclick="contactAddressSelect(${i})">${ModernoDaily.escape(row.label)}</button>`).join("");
   list.hidden=!rows.length;if(stateEl){stateEl.textContent=status;stateEl.dataset.google=rows.length?"true":"false";}
 }
+function contactAddressDismiss(){
+  _contactPlaceRevision++;clearTimeout(_contactPlaceTimer);_contactPlaceTimer=null;_contactPlaceRows=[];try{_contactPlaceSession?.invalidate?.();}catch(e){}contactAddressDraw([]);
+}
+function contactEditorDismissPopovers(event){
+  const editor=document.querySelector(".agenda-contact-editor");if(!editor)return;
+  editor.querySelectorAll("details.agenda-cascader[open]").forEach(menu=>{if(!menu.contains(event.target))menu.open=false;});
+  const address=editor.querySelector(".agenda-address-combobox");if(address&&!address.contains(event.target))contactAddressDismiss();
+}
+document.addEventListener("click",contactEditorDismissPopovers,true);
 function contactAddressSearch(value){
   const place=document.getElementById("clPlaceId");if(place)place.value="";const rev=++_contactPlaceRevision;clearTimeout(_contactPlaceTimer);_contactPlaceRows=[];contactAddressDraw([]);
   if(String(value||"").trim().length<3)return;
@@ -10012,6 +10021,7 @@ function clientModal(editIdx=-1, presetType){
     <span id="clNumWarn" role="status"></span>
   </div></div>
   <label>Tipo</label>${clTypePicker(c.type)}
+  <div id="clTradeWrap" class="agenda-contact-trade-wrap" style="display:${(c.type==="Contratista"||c.type==="Técnico")?"block":"none"}"><label id="clTradeLbl">Oficio</label>${clTradePicker(c.type,c.trade||"")}</div>
   <label>Nombre</label><input id="clName" name="name" autocomplete="name" value="${c.name}" placeholder="Estudio Ola">
   <div class="cl-notteam" style="display:${c.type==="Team"?"none":"block"}"><label>Nombre fiscal</label><input id="clFiscal" name="organization" autocomplete="organization" value="${c.fiscal||""}" placeholder="Estudio Ola S.L."></div>
   <div id="clBrandWrap" style="display:${c.type==="Cliente"&&wsOrder.length>1?"block":"none"}"><label>Espacio de trabajo del cliente</label><div class="opt-pills" id="clBrand">${wsOrder.map((k,i)=>`<button type="button" class="${c.brand===k||(i===0&&!wsOrder.includes(c.brand)&&c.brand!=='both')?'on':''} ${k==='em'?'b-em':''}" data-v="${k}">${BRAND[k].name||"Mi espacio"}</button>`).join("")}${wsOrder.length>1?`<button type="button" class="${c.brand==='both'?'on b-both':'b-both'}" data-v="both">Ambas</button>`:""}</div></div>
@@ -10022,7 +10032,6 @@ function clientModal(editIdx=-1, presetType){
   <div class="row2"><div><label>Código postal</label><input id="clCp" name="postal-code" autocomplete="postal-code" value="${c.cp||""}" placeholder="23001"></div><div><label>Ciudad</label><input id="clCity" name="city" autocomplete="address-level2" value="${c.city||""}" placeholder="Jaén"></div></div>
   <input id="clProvince" type="hidden" value="${c.province||""}"><input id="clPlaceId" type="hidden" value="${c.placeId||""}">
   <div class="row2 agenda-contact-phone-mail"><div><label>Teléfono</label>${ModernoPhone.field(c.phone,PAIS_ISO,state.account?.country,'id="clPhone" name="tel"')}</div><div><label>Email</label><input id="clEmail" name="email" autocomplete="email" value="${c.email||""}" placeholder="hola@cliente.com"></div></div>
-  <div id="clTradeWrap" style="display:${(c.type==="Contratista"||c.type==="Técnico")?"block":"none"}"><label id="clTradeLbl">Oficio</label>${clTradePicker(c.type,c.trade||"")}</div>
   </section></div></div>
   <footer class="modal-foot product-editor-footer">${editIdx>=0?`<button type="button" class="btn btn-ghost shopping-editor-delete" onclick="delClient(${editIdx})">Eliminar contacto</button>`:""}<button type="button" class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button type="button" class="btn btn-dark" onclick="saveClient(${editIdx})">${editIdx>=0?"Guardar cambios":"Añadir"}</button></footer></div>`);
   _obLock=true;                       // este modal solo se cierra con sus botones
@@ -11427,7 +11436,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.7";
+const MODERNO_VER="v3.66.8";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13585,7 +13594,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 }
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=208">
-<link rel="stylesheet" href="/brand/agenda-ui.css?v=36607">
+<link rel="stylesheet" href="/brand/agenda-ui.css?v=36608">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>
