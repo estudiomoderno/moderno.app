@@ -51,8 +51,7 @@ var ModernoDesktopShell=(()=>{
   const copy=icon('proyectos');if(copy)b.append(copy);
   const text=document.createElement('span');text.className='desktop-label desktop-project-copy';
   const name=document.createElement('strong');name.textContent=project.name||project.num||'Proyecto';text.append(name);
-  if(project.num&&project.name){const code=document.createElement('small');code.textContent=project.num;text.append(code);}
-  b.append(text);b.setAttribute('aria-label',[project.num,project.name].filter(Boolean).join(' '));b.title=b.getAttribute('aria-label');
+  b.append(text);b.setAttribute('aria-label',project.name||'Proyecto');b.title=b.getAttribute('aria-label');
   b.addEventListener('click',()=>{closeMenus();projectOpen(project.id);});return b;
  }
  function syncProjects(){
@@ -66,6 +65,11 @@ var ModernoDesktopShell=(()=>{
   const nameNode=header.querySelector('.desktop-account-name'),mailNode=header.querySelector('.desktop-account-mail');
   if(nameNode)nameNode.textContent=name;if(mailNode)mailNode.textContent=mail;
   const summary=header.querySelector('.desktop-profile>summary');if(summary)summary.setAttribute('aria-label',`Cuenta de ${name}`);
+  const dot=header.querySelector('#topUserDot'),photo=window.ModernoHeaderPresence?.photo?.(user.avatar)||'';
+  if(dot&&photo){
+   let img=dot.querySelector('img');if(!img){dot.replaceChildren();img=document.createElement('img');img.alt='';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>{img.remove();dot.textContent=(name[0]||'?').toUpperCase();});dot.append(img);}
+   if(img.src!==photo)img.src=photo;
+  }else if(dot&&!dot.querySelector('img'))dot.textContent=(name[0]||'?').toUpperCase();
   const badge=header.querySelector('.desktop-mail-badge');if(badge){const count=mailCount();badge.textContent=String(count);badge.setAttribute('aria-label',`${count} correos`);}
  }
  function move(node,target){
@@ -128,6 +132,7 @@ var ModernoDesktopShell=(()=>{
   const projectsTitle=document.createElement('h2');projectsTitle.id='desktop-projects-title';projectsTitle.textContent='Proyectos';projectsHeader.append(projectsTitle);
   const add=action('+',()=>newProject());add.className='desktop-project-add';add.setAttribute('aria-label','Crear proyecto');add.title='Crear proyecto';projectsHeader.append(add);projects.append(projectsHeader);
   const all=button('proyectos',true);if(all){all.classList.add('desktop-projects-all');all.querySelector('.desktop-label').textContent='Ver todos';all.setAttribute('aria-label','Ver todos los proyectos');all.title='Ver todos los proyectos';projects.append(all);}
+  const recentTitle=document.createElement('h3');recentTitle.className='desktop-recent-title';recentTitle.textContent='Recientes';projects.append(recentTitle);
   const recent=document.createElement('div');recent.id='desktop-recent-projects';recent.className='desktop-recent-projects';projects.append(recent);nav.append(projects);
   const discover=document.createElement('section');discover.className='desktop-discover';discover.setAttribute('aria-labelledby','desktop-discover-title');
   const title=document.createElement('h2');title.id='desktop-discover-title';title.textContent='Discover';discover.append(title);
@@ -135,13 +140,13 @@ var ModernoDesktopShell=(()=>{
   const documentation=discoveryButton();if(documentation)discover.append(documentation);nav.append(discover);
   const toggle=action('',toggleFold);toggle.className='desktop-toggle desktop-icon-only';toggle.setAttribute('aria-controls','desktop-navigation');label(toggle,'Comprimir menú lateral');
   for(const name of ['collapse','expand']){const arrow=$('.sidebar .sb-arrow-'+name).cloneNode(true);arrow.setAttribute('class','desktop-arrow-'+name);toggle.append(arrow);}
-  row.append(toggle);
   const profile=document.createElement('details');profile.className='desktop-profile desktop-account';const summary=document.createElement('summary');summary.setAttribute('aria-label','Perfil y ajustes');move($('#topUser'),summary);
   const accountCopy=document.createElement('span');accountCopy.className='desktop-account-copy';const accountName=document.createElement('strong');accountName.className='desktop-account-name';const accountMail=document.createElement('small');accountMail.className='desktop-account-mail';accountCopy.append(accountName,accountMail);summary.append(accountCopy);
   const more=document.createElement('span');more.className='desktop-account-more';more.textContent='…';more.setAttribute('aria-hidden','true');summary.append(more);profile.append(summary);
   const popup=document.createElement('div');popup.className='desktop-menu';popup.append(action('Mi perfil',()=>userModal()),action('Ajustes',()=>SettingsUI.open('cuenta')));
   for(const view of ['automatizaciones','plugins','integraciones']){const b=button(view);if(b)popup.append(b);}
   move($('#sidebarStudy'),popup);profile.append(popup);row.append(profile);
+  row.append(toggle);
   const support=document.createElement('div');support.className='desktop-support';const supportButton=button('soporte',true);if(supportButton)support.append(supportButton);row.append(support);
   const actions=document.createElement('div');actions.className='desktop-actions';header.append(actions);
   const notifications=$('#nBadge')?.closest('button');move(notifications,actions);

@@ -144,16 +144,17 @@
  #desktop-header .desktop-project-add{display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:7px;background:transparent;color:var(--ink);font-size:19px;line-height:1}
  #desktop-header .desktop-project-add:hover{background:var(--desktop-rail-hover)}
  #desktop-header .desktop-projects.is-current .desktop-projects-all{background:var(--app-control);color:var(--ink);font-weight:600}
- #desktop-header .desktop-recent-project{height:44px!important;min-height:44px!important}
+ #desktop-header .desktop-recent-title{margin:5px 0 0;padding:3px 10px 1px;color:var(--ink-faint);font:500 10px/1.3 Inter,Segoe UI,sans-serif}
+ #desktop-header .desktop-recent-project{height:36px!important;min-height:36px!important}
  #desktop-header .desktop-project-copy{display:flex!important;flex-direction:column;align-items:flex-start;justify-content:center;line-height:1.15}
  #desktop-header .desktop-project-copy strong{display:block;max-width:174px;overflow:hidden;text-overflow:ellipsis;font:500 12px/1.3 Inter,Segoe UI,sans-serif}
- #desktop-header .desktop-project-copy small{display:block;margin-top:2px;color:var(--ink-faint);font:400 10px/1.2 Inter,Segoe UI,sans-serif}
  #desktop-header .desktop-mail-badge{min-width:20px;margin-left:auto;padding:2px 5px;box-sizing:border-box;border-radius:999px;background:var(--app-control);color:var(--ink-soft);font-size:10px;line-height:1.2;text-align:center}
  #desktop-header .desktop-account{position:relative;flex:none;border-top:1px solid var(--desktop-rail-line);padding-top:8px}
  #desktop-header .desktop-account>summary{display:flex;align-items:center;width:100%;height:58px;min-height:58px!important;padding:7px 8px;box-sizing:border-box;border:0;border-radius:9px;background:transparent!important;color:var(--ink);box-shadow:none;gap:9px}
  #desktop-header .desktop-account>summary:hover{background:var(--desktop-rail-hover)!important}
  #desktop-header .desktop-account #topUser{flex:0 0 32px;width:32px;height:32px;min-height:32px;padding:0}
- #desktop-header .desktop-account #topUserDot{width:32px;height:32px}
+ #desktop-header .desktop-account #topUserDot{width:32px;height:32px;overflow:hidden;border-radius:9px}
+ #desktop-header .desktop-account #topUserDot img{display:block;width:100%;height:100%;object-fit:cover}
  #desktop-header .desktop-account-copy{display:flex;min-width:0;flex:1;flex-direction:column;text-align:left;line-height:1.2}
  #desktop-header .desktop-account-copy strong,#desktop-header .desktop-account-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
  #desktop-header .desktop-account-copy strong{font-size:12px;font-weight:600}
@@ -162,7 +163,7 @@
  #desktop-header .desktop-account>.desktop-menu{position:fixed;top:auto;right:auto;bottom:12px;left:calc(var(--desktop-sidebar-width) + 8px);max-height:calc(100dvh - 24px)}
  #desktop-header .desktop-support{margin-top:0}
  #desktop-header .is-collapsed .desktop-projects-header{justify-content:center;padding:0}
- #desktop-header .is-collapsed .desktop-projects h2,#desktop-header .is-collapsed .desktop-project-add,#desktop-header .is-collapsed .desktop-recent-projects{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0}
+ #desktop-header .is-collapsed .desktop-projects h2,#desktop-header .is-collapsed .desktop-project-add,#desktop-header .is-collapsed .desktop-recent-title,#desktop-header .is-collapsed .desktop-recent-projects{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0}
  #desktop-header .is-collapsed .desktop-projects{align-items:center}
  #desktop-header .is-collapsed .desktop-mail-badge{position:absolute;top:-2px;right:-3px;min-width:15px;padding:1px 3px;border:1px solid var(--app-surface);font-size:8px}
  #desktop-header .is-collapsed .desktop-account{display:flex;justify-content:center}

@@ -11,7 +11,7 @@ go=source[source.index('function go(view, arg)'):source.index('drawBrandSwitch()
 proj=source[source.index('function projTab(t)'):source.index('var _accessRole=',source.index('function projTab(t)'))]
 fixture="""
 window.calls=[];window._wantProject=null;window._accessLoading=false;window._accessRole='admin';
-window.state={view:'proyecto',myRole:'admin',currentProject:1,projTab:'archivos',account:{name:'Estudio ficticio'},sessionUser:{name:'Persona ficticia',mail:'persona@example.invalid'},projects:[{id:1,num:'PR-1',name:'Proyecto ficticio',tasks:[{id:'task-original',title:'Tarea conservada',col:'pend',who:['Equipo ficticio']}],files:[{id:'file-original',name:'Plano ficticio.pdf',ref:'private-path-original'}],rooms:[{id:8,name:'Estancia ficticia'}]}],invoices:[{ref:'FA-1',total:123}],quotes:[{id:9}],entries:[{id:5}],history:[{id:4}]};
+window.state={view:'proyecto',myRole:'admin',currentProject:1,projTab:'archivos',account:{name:'Estudio ficticio'},sessionUser:{name:'Persona ficticia',mail:'persona@example.invalid',avatar:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='},projects:[{id:1,num:'PR-1',name:'Proyecto ficticio',tasks:[{id:'task-original',title:'Tarea conservada',col:'pend',who:['Equipo ficticio']}],files:[{id:'file-original',name:'Plano ficticio.pdf',ref:'private-path-original'}],rooms:[{id:8,name:'Estancia ficticia'}]}],invoices:[{ref:'FA-1',total:123}],quotes:[{id:9}],entries:[{id:5}],history:[{id:4}]};
 window.baseline=JSON.stringify({projects:state.projects,invoices:state.invoices,quotes:state.quotes,entries:state.entries,history:state.history});
 window.dirty=false;window.draftEditing=()=>dirty;window.draftDirty=()=>dirty;window.draftExitModal=(...args)=>calls.push(['draft',...args]);
 window.SettingsUI={open:s=>{calls.push(['settings',s]);go('ajustes');}};window.userModal=()=>calls.push(['profile']);window.notifModal=()=>calls.push(['notifications']);
@@ -73,6 +73,7 @@ with sync_playwright() as p:
   page.evaluate("window.originalBell=document.querySelector('#nBadge').closest('button');window.originalBellHTML=originalBell.innerHTML;window.originalBellLabel=originalBell.getAttribute('aria-label')")
   nodes=page.evaluate("()=>{window.originalNodes=['.sb-head','#topUser','#sidebarStudy','.topbar'].map(s=>document.querySelector(s));return true}")
   page.add_script_tag(path=str(repo/'app/settings-icons.js'))
+  page.add_script_tag(path=str(repo/'app/header-presence.js'))
   page.add_script_tag(path=str(repo/'app/desktop-shell.js'))
   assert page.locator('#desktop-header').count()==(1 if width>=1100 else 0)
   page.evaluate('ModernoDesktopShell.setEnabled(false)')
@@ -99,9 +100,12 @@ with sync_playwright() as p:
   assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Finanzas','Agenda','Mail','Calendario','Tareas','Productos','Servicios']
   assert page.locator('.desktop-section-label').inner_text()=='Workspace'
   assert page.locator('.desktop-projects h2').inner_text()=='Proyectos'
+  assert page.locator('.desktop-recent-title').inner_text()=='Recientes'
   assert page.get_by_role('button',name='Crear proyecto',exact=True).count()==1
   assert page.get_by_role('button',name='Ver todos los proyectos',exact=True).count()==1
   assert page.locator('.desktop-recent-project').count()==1
+  assert page.locator('.desktop-recent-project small').count()==0
+  assert page.locator('.desktop-recent-project .desktop-project-copy').inner_text()=='Proyecto ficticio'
   assert page.locator('#desktop-primary .desktop-icon-only>.desktop-label').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).clip==="auto")')
   brand=page.locator('.desktop-brand');background=brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')
   brand.hover();assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background
@@ -119,6 +123,9 @@ with sync_playwright() as p:
   assert page.locator('#desktop-header .desktop-actions>button').evaluate('(e)=>e===originalBell')
   bell=page.locator('#desktop-header .desktop-actions>button').bounding_box()
   profile=page.locator('.desktop-profile>summary').bounding_box()
+  assert page.locator('.desktop-account #topUserDot img').count()==1
+  assert page.locator('.desktop-account').evaluate('(e)=>e.nextElementSibling.classList.contains("desktop-toggle")')
+  assert page.locator('.desktop-toggle').evaluate('(e)=>e.nextElementSibling.classList.contains("desktop-support")')
   row=page.locator('.desktop-row').bounding_box()
   assert page.locator('.desktop-row').evaluate('(e)=>getComputedStyle(e).backgroundColor')!='rgba(0, 0, 0, 0)'
   assert page.locator('#desktop-header .logo-mini svg').evaluate('(e)=>getComputedStyle(e).filter')=='none'
