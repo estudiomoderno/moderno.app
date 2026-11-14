@@ -65,10 +65,56 @@ var ModernoDesktopShell=(()=>{
   b.append(text);b.setAttribute('aria-label',project.name||'Proyecto');b.title=b.getAttribute('aria-label');
   b.addEventListener('click',()=>{closeMenus();projectOpen(project.id);});return b;
  }
+ function projectSearchPool(){
+  return byBrand((state.projects||[]).filter(project=>!project.tpl)).sort((a,b)=>(a.name||a.num||'').localeCompare(b.name||b.num||'','es',{sensitivity:'base'}));
+ }
+ function projectSearchText(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
+ function projectSearchMatches(value){
+  const query=projectSearchText(value);
+  return projectSearchPool().filter(project=>!query||projectSearchText([project.name,project.num,project.client].filter(Boolean).join(' ')).includes(query)).slice(0,8);
+ }
+ function closeProjectSearch({clear=false}={}){
+  const root=header?.querySelector('.desktop-project-search'),input=root?.querySelector('input');if(!root)return;
+  root.classList.remove('is-open');input?.setAttribute('aria-expanded','false');
+  if(clear&&input){input.value='';syncProjectSearch();}
+ }
+ function openSearchedProject(project){
+  if(!project)return;closeMenus();closeProjectSearch({clear:true});projectOpen(project.id);
+ }
+ function syncProjectSearch(forceOpen=false){
+  const root=header?.querySelector('.desktop-project-search'),input=root?.querySelector('input'),list=root?.querySelector('.desktop-project-search-list'),empty=root?.querySelector('.desktop-project-search-empty'),clear=root?.querySelector('.desktop-project-search-clear');
+  if(!root||!input||!list||!empty||!clear)return;
+  const matches=projectSearchMatches(input.value);clear.hidden=!input.value;
+  list.replaceChildren(...matches.map(project=>{
+   const option=document.createElement('button');option.type='button';option.className='desktop-project-search-option';option.setAttribute('role','option');option.dataset.projectId=String(project.id);option.setAttribute('aria-selected','false');
+   option.append(assetIcon('proyectos-recientes'));
+   const copy=document.createElement('span'),name=document.createElement('strong'),meta=document.createElement('small');copy.className='desktop-project-search-copy';name.textContent=project.name||project.num||'Proyecto';meta.textContent=[project.num,project.client].filter(Boolean).join(' · ');copy.append(name,meta);option.append(copy);
+   option.addEventListener('mousedown',event=>event.preventDefault());option.addEventListener('click',()=>openSearchedProject(project));return option;
+  }));
+  empty.hidden=matches.length>0;const open=forceOpen||root.classList.contains('is-open');root.classList.toggle('is-open',open);input.setAttribute('aria-expanded',String(open));
+ }
+ function projectSearchWidget(){
+  const root=document.createElement('div');root.className='desktop-project-search';
+  const control=document.createElement('div');control.className='desktop-project-search-control';
+  const input=document.createElement('input');input.type='search';input.autocomplete='off';input.placeholder='Buscar proyecto';input.setAttribute('aria-label','Buscar proyecto');input.setAttribute('role','combobox');input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-controls','desktop-project-search-results');input.setAttribute('aria-expanded','false');
+  const clear=document.createElement('button');clear.type='button';clear.className='desktop-project-search-clear';clear.setAttribute('aria-label','Borrar búsqueda de proyectos');clear.textContent='×';clear.hidden=true;control.append(input,clear);root.append(control);
+  const content=document.createElement('div');content.id='desktop-project-search-results';content.className='desktop-project-search-content';content.setAttribute('role','listbox');content.setAttribute('aria-label','Proyectos encontrados');
+  const empty=document.createElement('p');empty.className='desktop-project-search-empty';empty.textContent='No se encontraron proyectos.';empty.hidden=true;
+  const list=document.createElement('div');list.className='desktop-project-search-list';content.append(empty,list);root.append(content);
+  input.addEventListener('focus',()=>syncProjectSearch(true));input.addEventListener('input',()=>syncProjectSearch(true));
+  input.addEventListener('keydown',event=>{
+   if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();if(!root.classList.contains('is-open'))syncProjectSearch(true);const options=[...list.querySelectorAll('[role=option]')],current=options.findIndex(option=>option.dataset.active==='true'),next=event.key==='ArrowDown'?Math.min(options.length-1,current+1):Math.max(0,current<0?options.length-1:current-1);options.forEach((option,index)=>{const active=index===next;option.dataset.active=String(active);option.setAttribute('aria-selected',String(active));});options[next]?.scrollIntoView({block:'nearest'});return;}
+   const options=[...list.querySelectorAll('[role=option]')],current=options.findIndex(option=>option.dataset.active==='true');
+   if(event.key==='Enter'&&current>=0){event.preventDefault();options[current].click();return;}
+   if(event.key==='Escape'){event.preventDefault();event.stopPropagation();closeProjectSearch();input.focus();}
+  });
+  clear.addEventListener('click',()=>{input.value='';syncProjectSearch(true);input.focus();});return root;
+ }
  function syncProjects(){
   const list=$('#desktop-recent-projects');if(!list)return;
   list.replaceChildren(...projectPool().map(projectButton));
   list.closest('.desktop-projects')?.classList.toggle('is-current',['proyecto','estancia'].includes(state.view));
+  syncProjectSearch();
  }
  function syncAccount(){
   if(!header)return;
@@ -149,12 +195,13 @@ var ModernoDesktopShell=(()=>{
   const add=action('+',()=>newProject());add.className='desktop-project-add';add.setAttribute('aria-label','Crear proyecto');add.title='Crear proyecto';projectsHeader.append(add);projects.append(projectsHeader);
   const all=button('proyectos',true);if(all){all.classList.add('desktop-projects-all');all.querySelector('.desktop-label').textContent='Ver todos';all.setAttribute('aria-label','Ver todos los proyectos');all.title='Ver todos los proyectos';projects.append(all);}
   const recentTitle=document.createElement('h3');recentTitle.className='desktop-recent-title';recentTitle.textContent='Recientes';projects.append(recentTitle);
-  const recent=document.createElement('div');recent.id='desktop-recent-projects';recent.className='desktop-recent-projects';projects.append(recent);nav.append(projects);
+  const recent=document.createElement('div');recent.id='desktop-recent-projects';recent.className='desktop-recent-projects';projects.append(recent,projectSearchWidget());nav.append(projects);
   const discover=document.createElement('section');discover.className='desktop-discover';discover.setAttribute('aria-labelledby','desktop-discover-title');
   const title=document.createElement('h2');title.id='desktop-discover-title';title.textContent='Discover';discover.append(title);
   for(const view of ['plantillas','tutoriales']){const b=button(view,true);if(b)discover.append(b);}
   const documentation=discoveryButton();if(documentation)discover.append(documentation);
   const supportButton=button('soporte',true);if(supportButton)discover.append(supportButton);nav.append(discover);
+  const accountRailSeparator=document.createElement('span');accountRailSeparator.className='desktop-account-rail-separator';accountRailSeparator.setAttribute('role','separator');row.append(accountRailSeparator);
   const toggle=action('',toggleFold);toggle.className='desktop-toggle desktop-icon-only';toggle.setAttribute('aria-controls','desktop-navigation');label(toggle,'Comprimir menú lateral');
   const panelIcon=document.createElementNS('http://www.w3.org/2000/svg','svg');panelIcon.setAttribute('viewBox','0 0 24 24');panelIcon.setAttribute('fill','none');panelIcon.setAttribute('stroke','currentColor');panelIcon.setAttribute('stroke-width','2');panelIcon.setAttribute('stroke-linecap','round');panelIcon.setAttribute('stroke-linejoin','round');panelIcon.setAttribute('aria-hidden','true');panelIcon.innerHTML='<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>';toggle.append(panelIcon);
   const profile=document.createElement('details');profile.className='desktop-profile desktop-account';const summary=document.createElement('summary');summary.setAttribute('aria-label','Cuenta');move($('#topUser'),summary);
@@ -210,6 +257,7 @@ var ModernoDesktopShell=(()=>{
   // empty areas of the sidebar/header that are still descendants of `header`.
   const open=header.querySelector('details[open]');
   if(open&&!open.contains(e.target))closeMenus();
+  const search=header.querySelector('.desktop-project-search');if(search&&!search.contains(e.target))closeProjectSearch();
  });
  document.addEventListener('keydown',e=>{if(e.key!=='Escape'||!header)return;const open=header.querySelector('details[open]');if(open){closeMenus();open.querySelector('summary')?.focus();}});
  window.addEventListener('resize',()=>{if(header)syncNavigation();});

@@ -6,8 +6,9 @@ html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-categor
 html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-category-tabs>button:first-child{margin-left:0;border-radius:8px 0 0 8px}
 html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-category-tabs>button:last-child{border-radius:0 8px 8px 0}
 html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-category-tabs>button:hover{background:#f3f3f3;color:#171717}
-html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-category-tabs>button.on{position:relative;z-index:1;border-color:#cfcfcf;background:#ededed;color:#171717}
-html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-category-tabs>button:focus-visible{position:relative;z-index:2;outline:2px solid #8b8b8b;outline-offset:-2px}
+html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-category-tabs>button:is(.on,[aria-pressed="true"]){position:relative;z-index:1;border-color:#cfcfcf!important;background:#e5e5e5!important;color:#171717!important}
+html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-category-tabs>button:active{position:relative;z-index:1;border-color:#cfcfcf!important;background:#e5e5e5!important;color:#171717!important}
+html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-category-tabs>button:focus-visible{position:relative;z-index:2;outline:2px solid #9a9a9a;outline-offset:-2px}
 html body.desktop-shell:not(.portalmode) #view>.contact-toolbar .contact-category-icon{width:15px;height:15px;flex:none;background:currentColor;mask:var(--contact-icon) center/contain no-repeat;-webkit-mask:var(--contact-icon) center/contain no-repeat}
 .contact-toolbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex:none}
 body.desktop-shell .contact-toolbar-actions .contact-new{min-height:34px!important;height:34px;padding:0 12px!important;border:1px solid #0666ff!important;border-radius:8px!important;background:#0666ff!important;color:#fff!important;font:500 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif!important;box-shadow:0 1px 2px #00000008}

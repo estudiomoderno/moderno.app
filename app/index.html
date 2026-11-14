@@ -6291,14 +6291,14 @@ function vAgenda(){
       </details>
     </div>
   </div>
-  <table class="list agenda-contact-table"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th>${multiWs?`<th>Espacio de trabajo</th>`:""}<th>Tel\u00e9fono</th><th>NIF/CIF</th><th class="agenda-contact-actions-head" aria-label="Ajustes"></th></tr></thead><tbody>
-  ${shown.length?shown.map(c=>`<tr style="cursor:pointer" onclick="clientCard(this.dataset.n)" data-n="${c.name}">
+  <table class="list agenda-contact-table"><thead><tr><th>ID</th><th>Nombre</th><th>Tipo</th>${multiWs?`<th>Espacio de trabajo</th>`:""}<th>Tel\u00e9fono</th><th>NIF/CIF</th><th class="agenda-contact-actions-head" aria-label="Editar"></th></tr></thead><tbody>
+  ${shown.length?shown.map(c=>`<tr style="cursor:pointer" onclick="clientModal(${c.__i})" data-n="${c.name}">
     <td class="agenda-contact-id">${c.num||"\u2014"}</td>
     <td><div class="agenda-contact-primary">${c.name}${(c.type==="Contratista"||c.type==="Técnico")&&c.trade?` <span class="agenda-contact-trade">${c.trade}</span>`:""}</div><div class="agenda-contact-secondary">${c.fiscal||""}</div></td>
     <td><span class="agenda-contact-badge agenda-contact-badge--${agendaContactBadge(c.type)}">${c.type}</span></td>
     ${multiWs?`<td>${c.type==="Cliente"?`<span class="chip ${c.brand==='both'?'both':BRAND[c.brand]?.chip||'cm'}">${c.brand==="both"?"Ambas":BRAND[c.brand]?.name??"\u2014"}</span>`:"\u2014"}</td>`:""}
     <td>${c.phone||"\u2014"}</td><td>${c.nif||"\u2014"}</td>
-    <td class="agenda-contact-actions"><button type="button" class="agenda-row-settings" aria-label="Ajustes de ${(c.name||"contacto").replace(/"/g,"&quot;")}" title="Ajustes" onclick="event.stopPropagation();clientModal(${c.__i})"><span aria-hidden="true">…</span></button></td></tr>`).join(""):`<tr><td colspan="${multiWs?7:6}"><div class="empty">Nada por aqu\u00ed todav\u00eda.</div></td></tr>`}
+    <td class="agenda-contact-actions"><button type="button" class="agenda-row-settings" aria-label="Editar ${(c.name||"contacto").replace(/"/g,"&quot;")}" title="Editar" onclick="event.stopPropagation();clientModal(${c.__i})"><span aria-hidden="true">…</span></button></td></tr>`).join(""):`<tr><td colspan="${multiWs?7:6}"><div class="empty">Nada por aqu\u00ed todav\u00eda.</div></td></tr>`}
   </tbody></table>`;
 }
 
@@ -11437,7 +11437,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.11";
+const MODERNO_VER="v3.66.12";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13594,14 +13594,14 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
  .has-team-presence .projects-header{top:0!important}
 }
 </style>
-<link rel="stylesheet" href="/brand/desktop-shell.css?v=208">
-<link rel="stylesheet" href="/brand/agenda-ui.css?v=36610">
+<link rel="stylesheet" href="/brand/desktop-shell.css?v=209">
+<link rel="stylesheet" href="/brand/agenda-ui.css?v=36612">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>
 <link rel="stylesheet" href="/project-cursors.css?v=365100">
 <script src="/project-cursors.js?v=365100"></script>
-<script src="/desktop-shell.js?v=209"></script>
+<script src="/desktop-shell.js?v=210"></script>
 <link rel="stylesheet" href="/brand/project-workspace.css?v=365144">
 <script src="/project-workspace.js?v=365144"></script>
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">

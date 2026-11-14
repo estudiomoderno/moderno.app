@@ -116,6 +116,23 @@ with sync_playwright() as p:
   assert page.locator('.desktop-recent-project').count()==1
   assert page.locator('.desktop-recent-project small').count()==0
   assert page.locator('.desktop-recent-project .desktop-project-copy').inner_text()=='Proyecto ficticio'
+  project_search=page.get_by_role('combobox',name='Buscar proyecto')
+  assert project_search.count()==1
+  search_box=project_search.bounding_box();projects_box=page.locator('.desktop-projects').bounding_box()
+  assert abs(search_box['x']-projects_box['x'])<=1 and abs(search_box['width']-projects_box['width'])<=1,(search_box,projects_box)
+  project_search.click()
+  assert page.get_by_role('option').count()==1 and 'Proyecto ficticio' in page.get_by_role('option').inner_text()
+  project_search.press('Escape');assert project_search.get_attribute('aria-expanded')=='false'
+  project_search.press('ArrowDown');assert project_search.get_attribute('aria-expanded')=='true'
+  assert page.get_by_role('option').get_attribute('aria-selected')=='true'
+  project_search.fill('sin coincidencias')
+  assert page.get_by_text('No se encontraron proyectos.',exact=True).is_visible()
+  page.get_by_role('button',name='Borrar búsqueda de proyectos').click()
+  assert project_search.input_value()==''
+  project_search.fill('ficticio')
+  project_search.press('ArrowDown');project_search.press('Enter')
+  assert page.evaluate('[state.view,state.currentProject]')==['proyecto',1]
+  assert project_search.get_attribute('aria-expanded')=='false'
   assert page.locator('#desktop-primary .desktop-icon-only>.desktop-label').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).clip==="auto")')
   brand=page.locator('.desktop-brand');background=brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')
   brand.hover();assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background
@@ -137,6 +154,11 @@ with sync_playwright() as p:
   assert page.locator('.desktop-account').evaluate('(e)=>e.nextElementSibling===null')
   assert page.locator('.desktop-discover [data-desktop-view="soporte"]').count()==1
   assert page.locator('.desktop-discover [data-desktop-view="soporte"] .desktop-mask').evaluate("e=>e.style.getPropertyValue('--desktop-icon').includes('/brand/sidebar-icons/soporte.svg')")
+  projects_box=page.locator('.desktop-projects').bounding_box();discover_box=page.locator('.desktop-discover').bounding_box()
+  assert discover_box['y']-(projects_box['y']+projects_box['height'])>=40,(projects_box,discover_box)
+  assert page.locator('.desktop-row').evaluate('(row)=>{const clip=row.querySelector(".desktop-nav-clip"),line=row.querySelector(".desktop-account-rail-separator"),profile=row.querySelector(".desktop-profile");return clip.nextElementSibling===line&&line.nextElementSibling===profile}')
+  support_box=page.locator('.desktop-discover [data-desktop-view="soporte"]').bounding_box();account_line=page.locator('.desktop-account-rail-separator').bounding_box()
+  assert support_box['y']+support_box['height']<account_line['y']<profile['y'],(support_box,account_line,profile)
   assert page.locator('.desktop-toggle').evaluate('(e)=>e.closest(".desktop-inset-header")!==null')
   row=page.locator('.desktop-row').bounding_box()
   assert page.locator('.desktop-row').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgba(0, 0, 0, 0)'

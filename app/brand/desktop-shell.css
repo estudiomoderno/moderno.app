@@ -24,6 +24,7 @@
  #desktop-header .desktop-nav-clip{width:100%;flex:1;min-height:0;overflow:auto;scrollbar-width:none}
  #desktop-header .desktop-nav-clip::-webkit-scrollbar{display:none}
  #desktop-header .desktop-nav,#desktop-header .desktop-primary,#desktop-header .desktop-subnav{display:flex;width:100%;min-width:0;flex-direction:column;align-items:stretch;gap:2px}
+ #desktop-header .desktop-nav{min-height:100%}
  #desktop-header .desktop-section-label,#desktop-header .desktop-discover h2,#desktop-header .desktop-projects h2{margin:0;padding:7px 8px 5px;color:#737373;font:500 12px/1.35 "Moderno ReUI Inter",Inter,sans-serif;letter-spacing:0}
  #desktop-header :is(button,summary,a.desktop-link){font-family:inherit;font-size:14px;cursor:pointer}
  #desktop-header .desktop-link,#desktop-header .desktop-group>summary{display:flex;align-items:center;gap:10px;width:100%;min-height:32px;padding:6px 8px;box-sizing:border-box;border:0;border-radius:7px;background:transparent;color:#202020;text-decoration:none;white-space:nowrap;text-align:left}
@@ -46,7 +47,7 @@
  #desktop-header .desktop-mail-badge{min-width:18px;margin-left:auto;padding:1px 4px;border-radius:999px;background:transparent;color:#171717;font-size:11px;text-align:center}
  #desktop-header .desktop-projects,#desktop-header .desktop-discover{display:flex;flex-direction:column;gap:2px;padding:0;border:0}
  #desktop-header .desktop-projects{margin-top:20px}
- #desktop-header .desktop-discover{margin-top:12px}
+ #desktop-header .desktop-discover{margin-top:auto;padding-top:24px}
  #desktop-header .desktop-projects-header{display:flex;align-items:center;justify-content:space-between;min-height:28px;padding:0 4px 0 0}
  #desktop-header .desktop-project-add{display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:7px;background:transparent;color:#171717;font-size:19px;line-height:1}
  #desktop-header .desktop-project-add:hover{background:#ededed}
@@ -55,6 +56,23 @@
  #desktop-header .desktop-recent-project{height:32px!important;min-height:32px!important}
  #desktop-header .desktop-project-copy{display:flex!important;min-width:0;flex-direction:column;align-items:flex-start;justify-content:center}
  #desktop-header .desktop-project-copy strong{display:block;max-width:184px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 14px/1.3 "Moderno ReUI Inter",Inter,sans-serif}
+ #desktop-header .desktop-project-search{position:relative;width:100%;margin-top:7px;padding:0;box-sizing:border-box;z-index:4}
+ #desktop-header .desktop-project-search-control{position:relative;width:100%}
+ #desktop-header .desktop-project-search input{display:block;width:100%;height:34px;min-height:34px;margin:0;padding:7px 31px 7px 10px;box-sizing:border-box;border:1px solid #dedede;border-radius:8px;background:#fff;color:#202020;font:400 13px/1.3 "Moderno ReUI Inter",Inter,sans-serif;outline:0;box-shadow:0 1px 2px #00000005}
+ #desktop-header .desktop-project-search input::placeholder{color:#8a8a8a}
+ #desktop-header .desktop-project-search input:focus{border-color:#8b8b8b;box-shadow:0 0 0 1px #8b8b8b}
+ #desktop-header .desktop-project-search-clear{position:absolute;top:50%;right:5px;display:grid;place-items:center;width:24px;height:24px;padding:0;transform:translateY(-50%);border:0;border-radius:6px;background:transparent;color:#737373;font-size:18px;line-height:1}
+ #desktop-header .desktop-project-search-clear:hover{background:#ededed;color:#171717}
+ #desktop-header .desktop-project-search-content{position:absolute;top:calc(100% + 6px);right:0;left:0;display:none;max-height:244px;overflow:auto;padding:5px;box-sizing:border-box;border:1px solid #dedede;border-radius:10px;background:#fff;box-shadow:0 12px 32px #0000001a,0 2px 7px #0000000d}
+ #desktop-header .desktop-project-search.is-open .desktop-project-search-content{display:block}
+ #desktop-header .desktop-project-search-list{display:grid;gap:2px}
+ #desktop-header .desktop-project-search-option{display:flex;align-items:center;gap:9px;width:100%;min-height:42px;padding:6px 8px;border:0;border-radius:7px;background:transparent;color:#202020;text-align:left}
+ #desktop-header .desktop-project-search-option:hover,#desktop-header .desktop-project-search-option[data-active=true]{background:#ededed}
+ #desktop-header .desktop-project-search-copy{display:flex;min-width:0;flex:1;flex-direction:column}
+ #desktop-header .desktop-project-search-copy strong,#desktop-header .desktop-project-search-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ #desktop-header .desktop-project-search-copy strong{font-size:13px;font-weight:500}#desktop-header .desktop-project-search-copy small{margin-top:2px;color:#737373;font-size:11px}
+ #desktop-header .desktop-project-search-empty{margin:0;padding:9px 8px;color:#737373;font-size:12px;line-height:1.4}
+ #desktop-header .desktop-account-rail-separator{display:block;flex:none;height:1px;margin:0 8px;background:#dedede}
  #desktop-header .desktop-account{position:relative;flex:none;margin-top:auto;padding:0;border:0}
  #desktop-header .desktop-account>summary{display:flex;align-items:center;width:100%;height:54px;min-height:54px!important;padding:7px 8px;box-sizing:border-box;border:0;border-radius:8px;background:transparent!important;color:#171717;box-shadow:none;gap:9px}
  #desktop-header .desktop-account>summary::after{display:none!important;content:none!important}
@@ -86,12 +104,13 @@
  #desktop-header .desktop-inset-separator{color:#a3a3a3;font-size:18px}
  #desktop-header .desktop-actions{display:flex;align-items:center;gap:8px;min-height:36px;margin-left:auto;pointer-events:auto}
  body.project-windows #desktop-header .desktop-inset-breadcrumb{visibility:hidden}
- #desktop-header .is-collapsed .desktop-brand-copy,#desktop-header .is-collapsed .desktop-section-label,#desktop-header .is-collapsed .desktop-projects-header,#desktop-header .is-collapsed .desktop-recent-title,#desktop-header .is-collapsed .desktop-recent-projects,#desktop-header .is-collapsed .desktop-discover h2,#desktop-header .is-collapsed .desktop-account-copy,#desktop-header .is-collapsed .desktop-account-more{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0}
+ #desktop-header .is-collapsed .desktop-brand-copy,#desktop-header .is-collapsed .desktop-section-label,#desktop-header .is-collapsed .desktop-projects-header,#desktop-header .is-collapsed .desktop-recent-title,#desktop-header .is-collapsed .desktop-recent-projects,#desktop-header .is-collapsed .desktop-project-search,#desktop-header .is-collapsed .desktop-discover h2,#desktop-header .is-collapsed .desktop-account-copy,#desktop-header .is-collapsed .desktop-account-more{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0}
  #desktop-header .is-collapsed .desktop-brand{justify-content:center;padding-inline:6px}
  #desktop-header .is-collapsed .desktop-nav .desktop-icon-only{width:40px;justify-content:center;align-self:center;padding-inline:0}
  #desktop-header .is-collapsed .desktop-icon-only>.desktop-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
  #desktop-header .is-collapsed .desktop-projects,#desktop-header .is-collapsed .desktop-discover{align-items:center;margin-top:8px}
  #desktop-header .is-collapsed .desktop-account{display:flex;justify-content:center}
+ #desktop-header .is-collapsed .desktop-account-rail-separator{margin-inline:6px}
  #desktop-header .is-collapsed .desktop-account>summary{width:40px;height:44px;min-height:44px!important;padding:6px 4px;justify-content:center}
  #desktop-header .is-collapsed .desktop-mail-badge{position:absolute;top:-2px;right:-3px;min-width:15px;padding:1px 3px;border:1px solid #f7f7f6;background:#fff;font-size:8px}
  #desktop-header.desktop-settings-active .desktop-nav{display:none}

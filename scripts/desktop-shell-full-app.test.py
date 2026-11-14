@@ -374,15 +374,21 @@ try:
     assert page.locator('.agenda-contact-table').count()==1
     assert page.locator('.agenda-contact-table tbody tr').first.locator('td').nth(3).inner_text().strip()=='—'
     assert page.locator('.agenda-contact-badge').first.evaluate('(e)=>getComputedStyle(e).borderRadius')=='6px'
+    provider_filter=page.get_by_role('button',name='Proveedores',exact=True)
+    provider_filter.click();provider_state=provider_filter.evaluate('(e)=>({background:getComputedStyle(e).backgroundColor,className:e.className,pressed:e.getAttribute("aria-pressed"),tab:state.agendaTab})')
+    assert provider_state['background']=='rgb(229, 229, 229)',provider_state
+    page.get_by_role('button',name='Clientes',exact=True).click()
     assert page.locator('.agenda-contact-table .agenda-row-settings').count()==page.locator('.agenda-contact-table tbody tr').count()
-    assert page.locator('.agenda-contact-table button[title="Editar"],.agenda-contact-table button[title="Eliminar"]').count()==0
+    assert page.locator('.agenda-contact-table button[title="Editar"]').count()==page.locator('.agenda-contact-table tbody tr').count()
+    assert page.locator('.agenda-contact-table button[title="Ajustes"],.agenda-contact-table button[title="Eliminar"]').count()==0
+    assert page.locator('.agenda-row-settings').first.get_attribute('aria-label').startswith('Editar ')
     assert page.locator('.agenda-contact-actions-head').inner_text().strip()==''
     assert page.locator('.agenda-row-settings .agenda-action-icon').count()==0
     assert page.locator('.agenda-row-settings').first.inner_text().strip()=='…'
     action_head=page.locator('.agenda-contact-actions-head').bounding_box();action_button=page.locator('.agenda-row-settings').first.bounding_box()
     assert abs((action_head['x']+action_head['width']/2)-(action_button['x']+action_button['width']/2))<=1,(action_head,action_button)
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'agenda-toolbar-{width}.png'),full_page=True)
-    page.locator('.agenda-row-settings').first.click()
+    page.locator('.agenda-contact-table tbody tr').first.locator('td').first.click()
     expect(page.locator('.agenda-contact-editor')).to_be_visible()
     assert page.locator('#modalBox').evaluate('(e)=>getComputedStyle(e).height')==str(page.viewport_size['height'])+'px'
     expect(page.locator('.agenda-contact-editor .product-editor-footer').get_by_role('button')).to_have_text(['Eliminar contacto','Cancelar','Guardar cambios'])
