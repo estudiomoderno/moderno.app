@@ -44,7 +44,7 @@ var ModernoPageBreadcrumbs=(()=>{
   if(!sections&&(!media.matches||!document.body.classList.contains('desktop-shell'))){clear();return;}
   const source=document.querySelector('aside.sidebar .nav-item[data-view="'+state.view+'"]');if(!source){clear();return;}
   const name=state.view==='agenda'?'Agenda':source.textContent.trim();
-  const items=sections?[{label:'Inicio',view:'home'},{label:'Finanzas'}]:[{label:'Inicio',view:'home'},{label:name}];
+  const items=sections?[{label:'Proyectos',view:'proyectos'},{label:'Finanzas'}]:[{label:'Proyectos',view:'proyectos'},{label:name}];
   if(sections&&bar?.classList.contains('is-finance')&&component&&original){
    if(media.matches){if(bar.parentElement!==document.body)document.body.append(bar);}else if(bar.nextElementSibling!==document.querySelector('#view'))document.querySelector('#view').before(bar);
    component.update({items,finance:sections,current:state.view,onNavigate:navigate});return;

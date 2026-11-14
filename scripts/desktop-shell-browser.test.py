@@ -11,12 +11,13 @@ go=source[source.index('function go(view, arg)'):source.index('drawBrandSwitch()
 proj=source[source.index('function projTab(t)'):source.index('var _accessRole=',source.index('function projTab(t)'))]
 fixture="""
 window.calls=[];window._wantProject=null;window._accessLoading=false;window._accessRole='admin';
-window.state={view:'proyecto',myRole:'admin',currentProject:1,projTab:'archivos',account:{name:'Estudio ficticio'},sessionUser:{name:'Persona ficticia'},projects:[{id:1,num:'PR-1',name:'Proyecto ficticio',tasks:[{id:'task-original',title:'Tarea conservada',col:'pend',who:['Equipo ficticio']}],files:[{id:'file-original',name:'Plano ficticio.pdf',ref:'private-path-original'}],rooms:[{id:8,name:'Estancia ficticia'}]}],invoices:[{ref:'FA-1',total:123}],quotes:[{id:9}],entries:[{id:5}],history:[{id:4}]};
+window.state={view:'proyecto',myRole:'admin',currentProject:1,projTab:'archivos',account:{name:'Estudio ficticio'},sessionUser:{name:'Persona ficticia',mail:'persona@example.invalid'},projects:[{id:1,num:'PR-1',name:'Proyecto ficticio',tasks:[{id:'task-original',title:'Tarea conservada',col:'pend',who:['Equipo ficticio']}],files:[{id:'file-original',name:'Plano ficticio.pdf',ref:'private-path-original'}],rooms:[{id:8,name:'Estancia ficticia'}]}],invoices:[{ref:'FA-1',total:123}],quotes:[{id:9}],entries:[{id:5}],history:[{id:4}]};
 window.baseline=JSON.stringify({projects:state.projects,invoices:state.invoices,quotes:state.quotes,entries:state.entries,history:state.history});
 window.dirty=false;window.draftEditing=()=>dirty;window.draftDirty=()=>dirty;window.draftExitModal=(...args)=>calls.push(['draft',...args]);
 window.SettingsUI={open:s=>{calls.push(['settings',s]);go('ajustes');}};window.userModal=()=>calls.push(['profile']);window.notifModal=()=>calls.push(['notifications']);
 window.sb={};window.ESTUDIO_ID='fictional-study';
 window.meMail=()=> 'persona@example.invalid';
+window.byBrand=items=>items;window.homeRecent=()=>[1];window.newProject=()=>calls.push(['new-project']);
 window.toast=s=>calls.push(['toast',s]);window.presenceTrack=()=>{};window.homeRemember=()=>{};window.wsSessionViews=new Set();window.wsViewKey=()=>'';window.portalBootDone=()=>{};
 window.ModernoBrands={reset:()=>{}};window.ico=()=>'<svg class="svgi" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/></svg>';
 window.V=document.getElementById('view');window.render=()=>{
@@ -95,18 +96,23 @@ with sync_playwright() as p:
   assert page.locator('#brandSwitch').is_hidden()
   assert page.locator('#desktop-header').evaluate('(e)=>getComputedStyle(e).position')=='fixed'
   assert page.locator('#desktop-header .desktop-context').count()==0
-  assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Inicio','Proyectos','Tareas','Calendario','Agenda','Finanzas','Mail','Productos','Servicios']
+  assert page.locator('#desktop-primary>.desktop-link').evaluate_all('(bs)=>bs.map(b=>b.getAttribute("aria-label"))')==['Finanzas','Agenda','Mail','Calendario','Tareas','Productos','Servicios']
+  assert page.locator('.desktop-section-label').inner_text()=='Workspace'
+  assert page.locator('.desktop-projects h2').inner_text()=='Proyectos'
+  assert page.get_by_role('button',name='Crear proyecto',exact=True).count()==1
+  assert page.get_by_role('button',name='Ver todos los proyectos',exact=True).count()==1
+  assert page.locator('.desktop-recent-project').count()==1
   assert page.locator('#desktop-primary .desktop-icon-only>.desktop-label').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).clip==="auto")')
   brand=page.locator('.desktop-brand');background=brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')
   brand.hover();assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background
   assert brand.evaluate('(e)=>e.tagName')=='DIV'
   assert brand.get_attribute('tabindex') is None and brand.get_attribute('data-desktop-view') is None
   brand.click();assert page.evaluate('state.view')=='proyecto'
-  page.get_by_role('button',name='Inicio',exact=True).click();assert page.evaluate('state.view')=='home'
+  page.get_by_role('button',name='Ver todos los proyectos',exact=True).click();assert page.evaluate('state.view')=='proyectos'
   assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background,'Home selection must not tint the logo'
   page.evaluate("go('proyecto',1)")
-  page.locator('#desktop-primary [data-desktop-view=proyectos]').hover()
-  assert page.locator('#desktop-primary [data-desktop-view=proyectos] .desktop-label').evaluate('(e)=>getComputedStyle(e).clip')=='auto'
+  page.locator('.desktop-projects-all').hover()
+  assert page.locator('.desktop-projects-all .desktop-label').evaluate('(e)=>getComputedStyle(e).clip')=='auto'
   page.mouse.move(0,0)
   page.locator('#desktop-header .desktop-actions>button').click()
   assert page.evaluate('calls.pop()')==['notifications']
@@ -117,15 +123,15 @@ with sync_playwright() as p:
   assert page.locator('.desktop-row').evaluate('(e)=>getComputedStyle(e).backgroundColor')!='rgba(0, 0, 0, 0)'
   assert page.locator('#desktop-header .logo-mini svg').evaluate('(e)=>getComputedStyle(e).filter')=='none'
   assert bell['width']==bell['height']==44
-  assert profile['x']>=bell['x']+bell['width']
+  assert profile['x']>=row['x'] and profile['x']+profile['width']<=row['x']+row['width']
   assert row['x']+row['width']<bell['x']
   assert row['x']==8 and row['y']==8 and bell['y']==16
   assert row['width']==256 and row['height']==984,'Expanded rail must stay inset inside the available screen height'
   for rect in page.locator('.desktop-nav .desktop-icon-only:visible').evaluate_all('(els)=>els.map(e=>{const r=e.getBoundingClientRect();return {x:r.x,right:r.right,width:r.width,height:r.height}})'):
    assert rect['x']>=row['x'] and rect['right']<=row['x']+row['width'],rect
-   assert rect['width']>=180 and rect['height']==36,rect
+   assert rect['width']>=180 and rect['height'] in [36,44],rect
   assert page.evaluate("originalNodes.every(n=>n.isConnected)")
-  assert page.locator('#desktop-primary>.desktop-link').count()==9,'Include separate Products and Services actions'
+  assert page.locator('#desktop-primary>.desktop-link').count()==7,'Keep the exact Workspace order with separate Products and Services actions'
   assert page.locator('#desktop-header [data-desktop-view=utilidades]').count()==0
   assert page.locator('#desktop-header [data-desktop-view=conversaciones]').count()==0
   assert page.locator('#desktop-header .desktop-discover [data-desktop-view=plantillas]').count()==1,'Templates stay in the dedicated discovery section'
@@ -154,8 +160,8 @@ with sync_playwright() as p:
   page.get_by_role('textbox',name='Borrador ficticio').fill('Cambios sin guardar')
   page.evaluate('window.originalDraft=document.querySelector("#view input");dirty=true')
   brand.click();assert page.evaluate('state.view')=='proyecto'
-  page.get_by_role('button',name='Inicio',exact=True).click()
-  assert page.evaluate('calls.pop()')==['draft','home',None]
+  page.get_by_role('button',name='Ver todos los proyectos',exact=True).click()
+  assert page.evaluate('calls.pop()')==['draft','proyectos',None]
   assert page.evaluate('state.view')=='proyecto'
   if width==1440:
    result=sample_fold(page);assert 64<result['middle']<result['start'],result
@@ -167,7 +173,7 @@ with sync_playwright() as p:
   assert page.locator('#desktop-navigation').is_visible()
   assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
   assert page.locator('.desktop-row [data-desktop-view]:visible').count()>0
-  assert page.locator('#desktop-primary [data-desktop-view=proyectos]').get_attribute('title')=='Proyectos'
+  assert page.locator('.desktop-projects-all').get_attribute('title')=='Ver todos los proyectos'
   assert page.locator('.desktop-brand .logo-mini').is_visible()
   assert page.locator('.desktop-row').bounding_box()['width']<100
   assert page.locator('.desktop-row').bounding_box()['height']==row['height']

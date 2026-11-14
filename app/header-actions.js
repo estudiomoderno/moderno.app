@@ -38,12 +38,12 @@ var ModernoHeaderActions=(()=>{
  function decorate(target){
   const notification=target.querySelector('button:has(#nBadge)');
   if(notification){notification.classList.add('ha-notifications');if(!notification.querySelector('.desktop-bell-icon')){const icon=node('span','ha-bell');icon.innerHTML=bell;notification.prepend(icon);}}
-  const summary=target.querySelector('.desktop-profile>summary');
+  const summary=target.querySelector('.desktop-profile>summary')||$('#desktop-header .desktop-account>summary');
   if(useOriginal&&window.ModernoProfileComponent){
    try{nativeNotification=target.querySelector('.ha-notifications');
     if(nativeNotification){notificationHost=node('span','ha-notification-host');nativeNotification.before(notificationHost);notificationComponent=ModernoProfileComponent.mountNotifications(notificationHost,recover);nativeNotification.classList.add('ha-original-notification');}
-    nativeProfile=summary?.closest('details');nativeProfile?.classList.add('ha-original-profile');
-    group=node('span','ha-component-host');target.insertBefore(group,nativeProfile||null);component=ModernoProfileComponent.mount(group,recover);return;
+    nativeProfile=summary?.closest('details');
+    group=node('span','ha-component-host');target.append(group);component=ModernoProfileComponent.mount(group,recover);return;
    }catch(error){useOriginal=false;notificationComponent?.unmount();notificationComponent=null;notificationHost?.remove();notificationHost=null;nativeNotification?.classList.remove('ha-original-notification');nativeNotification=null;group?.remove();group=null;nativeProfile?.classList.remove('ha-original-profile');nativeProfile=null;}
   }
   if(summary&&!summary.querySelector('.ha-dots')){const icon=node('span','ha-dots');icon.innerHTML=more;summary.append(icon);summary.title='Perfil y ajustes';}

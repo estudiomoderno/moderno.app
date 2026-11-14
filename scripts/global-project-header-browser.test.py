@@ -68,7 +68,7 @@ try:
    profile=page.locator('[data-profile-trigger]');expect(profile).to_be_visible()
    bar=page.locator('#project-window-bar');rail=page.locator('#desktop-header .desktop-row')
    expected_tabs=tabs.evaluate_all('(es)=>es.map(e=>e.dataset.project)')
-   routes=['home','proyectos','workspace','agenda','calendario','informes','facturas','presupuestos','contabilidad','prevision','catalogo','biblioteca','plantillas','tutoriales','soporte','utilidades','automatizaciones','integraciones','plugins','mail','conversaciones','ajustes','admin']
+   routes=['proyectos','workspace','agenda','calendario','informes','facturas','presupuestos','contabilidad','prevision','catalogo','biblioteca','plantillas','tutoriales','soporte','utilidades','automatizaciones','integraciones','plugins','mail','conversaciones','ajustes','admin']
    for view in routes:
     if not page.evaluate('view=>canView(view)',view):continue
     page.evaluate('view=>go(view)',view);assert page.evaluate('state.view')==view
@@ -78,7 +78,7 @@ try:
     assert rail.bounding_box()['y']==64 and rail.bounding_box()['height']==928
     expect(page.locator('.desktop-brand')).to_be_hidden()
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'),view
-    if view=='home':
+    if view=='proyectos':
      expect(page.locator('#page-route-bar')).to_have_count(0)
      assert page.locator('.main').evaluate('(e)=>getComputedStyle(e).paddingTop')=='80px'
     if page.locator('#page-route-bar').count():
@@ -111,7 +111,7 @@ try:
    page.locator('#rmName').fill('Borrador ficticio')
    page.locator('#project-window-9002').dispatch_event('click');expect(page.locator('#rmName')).to_have_value('Borrador ficticio')
    assert page.evaluate("state.view==='estancia'&&state.currentProject===9001")
-   page.get_by_role('button',name='Ver todos los proyectos',exact=True).dispatch_event('click');expect(page.locator('#rmName')).to_have_value('Borrador ficticio')
+   page.locator('.desktop-projects-all').dispatch_event('click');expect(page.locator('#rmName')).to_have_value('Borrador ficticio')
    page.evaluate('closeModal()')
    assert page.evaluate('records()===baseline')
    # The layout fallback keeps the same navigation when the enhanced component is unavailable.

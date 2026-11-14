@@ -1199,9 +1199,6 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 
     </div>
 
-    <div class="nav-group">
-      <button class="nav-item" data-view="home" data-new-icon="true" style="padding-left:10px;font-weight:800"><span class="ico i-home" style="opacity:1"></span> <b>Inicio</b></button>
-    </div>
 <div class="nav-group" id="ngCrear"><button class="nav-head" aria-expanded="true" onclick="const closed=this.parentElement.classList.toggle('closed');this.setAttribute('aria-expanded',String(!closed))"><span class="nav-group-label">Mi Estudio</span><span class="chev">▾</span></button><div class="nav-sub"><button class="nav-item" data-view="proyectos" data-new-icon="true"><span class="ico i-pro"></span> Proyectos</button><button class="nav-item" data-view="workspace" data-new-icon="true"><span class="ico i-ws"></span> Tareas</button><button class="nav-item" data-view="calendario" data-new-icon="true"><span class="ico i-cal"></span> Calendario</button></div></div>
 <div class="nav-group" id="ngRel"><button class="nav-head" aria-expanded="true" onclick="const closed=this.parentElement.classList.toggle('closed');this.setAttribute('aria-expanded',String(!closed))"><span class="nav-group-label">Oficina</span><span class="chev">▾</span></button><div class="nav-sub"><button class="nav-item" data-view="agenda" data-new-icon="true"><span class="ico i-con"></span> Contactos</button><button class="nav-item" data-view="mail" data-new-icon="true"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 5h16v14H4z M4 5l8 7 8-7"/></svg></span> Mail</button><button class="nav-item" data-view="conversaciones" data-new-icon="true"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 4h16v12H9l-5 4z"/></svg></span> Conversaciones</button></div></div>
 <div class="nav-group" id="ngFin"><button class="nav-head" aria-expanded="true" onclick="const closed=this.parentElement.classList.toggle('closed');this.setAttribute('aria-expanded',String(!closed))"><span class="nav-group-label">Empresa</span><span class="chev">▾</span></button><div class="nav-sub"><button class="nav-item" data-view="informes" data-new-icon="true"><span class="ico i-inf"></span> Informes</button><button class="nav-item" data-view="contabilidad" data-new-icon="true"><span class="ico i-cont"></span> Contabilidad</button><button class="nav-item" data-view="presupuestos" data-new-icon="true"><span class="ico i-pre"></span> Presupuestos</button><button class="nav-item" data-view="facturas" data-new-icon="true"><span class="ico i-fac"></span> Facturas</button><button class="nav-item" data-view="prevision" data-new-icon="true"><span class="ico i-inf"></span> Previsión de cobros</button></div></div>
@@ -4202,7 +4199,7 @@ function folderColors(p){
 }
 
 const state = {
-  brandFilter:"all", view:"home", currentProject:null,
+  brandFilter:"all", view:"proyectos", currentProject:null,
   counters:{ cm:68, em:12 },
   invCounter:37, quoteCounter:19,
   projects:[
@@ -4506,6 +4503,7 @@ function applyRoleNav(){
 }
 function go(view, arg){
   if(typeof projectPlanDialog!=='undefined'&&projectPlanDialog?.navigate){projectPlanDialog.navigate(()=>go(view,arg));return;}
+  if(view==="home"&&canView("proyectos"))view="proyectos";
   if(view!=="proyectos")state.showArchived=false;
   if(!canView(view)){ toast("No tienes acceso a esta sección"); view="home"; arg=undefined; }
   if(view==="proyectos" && state.view!=="proyectos") state.projQ="";
@@ -4527,11 +4525,12 @@ drawBrandSwitch();
 function render(){
   if(typeof ModernoHomeMap!=='undefined')ModernoHomeMap.unmount();
   if(typeof _localResumePending!=='undefined'&&_localResumePending)return;
+  if(state.view==='home'&&canView('proyectos'))state.view='proyectos';
   (state.projects||[]).forEach(p=>ModernoSpec.reindex(p));
   if(_accessLoading&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>'+(_accessError?'No se ha podido abrir el estudio':'Conectando con tu estudio')+'</h1><p>'+ModernoDaily.escape(_accessError||'Comprobando el acceso y cargando tus datos.')+'</p>'+(_accessError?'<p>Tus copias se conservan. Puedes descargar los cambios desde el estado de sincronización.</p>':'')+'<button class="btn btn-ghost" '+(_accessConnecting?'disabled':'')+' onclick="cloudLoad()">'+(_accessConnecting?'Conectando…':'Reintentar conexión')+'</button>'+((typeof ModernoInvitations!=='undefined'&&ModernoInvitations.context()&&_accessError)?'<button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión y usar la cuenta invitada</button>':'');return;}
   if((_accessRole==='contratista'||_accessRole==='cliente')&&!['portalcli','portalobra'].includes(state.view)){V.innerHTML='<h1>Acceso al proyecto</h1><p>Abre el enlace de proyecto que te ha compartido el estudio.</p><button class="btn btn-ghost" onclick="sbLogout()">Cerrar sesión</button>';return;}
   if(_accessRole==="gestoria"&&state.view!=="ajustes"){ V.innerHTML=vGestoria();applyRoleNav();return; }
-  if(!canView(state.view))state.view='home';
+  if(!canView(state.view))state.view=canView('proyectos')?'proyectos':'home';
   if(_accessRole==='colaborador'&&['fin','resumen'].includes(state.projTab))state.projTab='tareas';
   const r = {home:vHome, workspace:vWorkspace, biblioteca:vLibrary, proyectos:vProjects, proyecto:vProject, estancia:vRoom, agenda:vAgenda, calendario:vCalendar, contabilidad:vAccounting, prevision:vPrevision, facturas:()=>vInvoice("factura"), presupuestos:()=>vInvoice("presupuesto"), catalogo:vCatalog, compras:vCompras, informes:vInformes, plantillas:vDocs, tutoriales:()=>vOfficeSoon("Tutoriales"), soporte:()=>vOfficeSoon("Soporte"), utilidades:vUtils, automatizaciones:vAutomatizaciones, integraciones:vIntegraciones, plugins:()=>vIntegraciones(true), mail:()=>vOfficeSoon("Mail"), conversaciones:()=>vOfficeSoon("Conversaciones"), admin:vAdmin, ajustes:vAjustes, presedit:vPresEdit, portalcli:vPortalCli, portalobra:vPortalObra}[state.view];
   const projectsEntering=state.view==='proyectos'&&!V.querySelector('.projects-identity');
@@ -11411,7 +11410,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.155";
+const MODERNO_VER="v3.65.156";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13568,13 +13567,13 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
  .has-team-presence .projects-header{top:0!important}
 }
 </style>
-<link rel="stylesheet" href="/brand/desktop-shell.css?v=202">
+<link rel="stylesheet" href="/brand/desktop-shell.css?v=203">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>
 <link rel="stylesheet" href="/project-cursors.css?v=365100">
 <script src="/project-cursors.js?v=365100"></script>
-<script src="/desktop-shell.js?v=202"></script>
+<script src="/desktop-shell.js?v=203"></script>
 <link rel="stylesheet" href="/brand/project-workspace.css?v=365143">
 <script src="/project-workspace.js?v=365143"></script>
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
@@ -13582,9 +13581,9 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/reui/font.css?v=365133">
 <script src="/profile-component.js?v=365133"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
-<script src="/header-actions.js?v=365154"></script>
+<script src="/header-actions.js?v=365156"></script>
 <link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=365143">
-<script src="/page-breadcrumbs.js?v=201"></script>
+<script src="/page-breadcrumbs.js?v=203"></script>
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=365112">
 <script src="/calendar-ui.js?v=365133"></script>
 <script>

@@ -34,7 +34,7 @@ def contrast_navigation(page):
   values=[v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in values]
   return sum(v*w for v,w in zip(values,[.2126,.7152,.0722]))
  row=page.locator('.desktop-row')
- for selector in ['#desktop-primary [data-desktop-view=proyectos]','#desktop-primary [data-desktop-view=workspace]']:
+ for selector in ['.desktop-projects-all','#desktop-primary [data-desktop-view=workspace]']:
   colors=page.locator(selector).evaluate('(e)=>[getComputedStyle(e).backgroundColor,getComputedStyle(e).color]')
   if colors[0]=='rgba(0, 0, 0, 0)':colors[0]=row.evaluate('(e)=>getComputedStyle(e).backgroundColor')
   a,b=sorted(map(luminance,colors));assert (b+.05)/(a+.05)>=4.5,colors
@@ -301,12 +301,12 @@ try:
     if width>=1100:
      if view in ['home','proyectos']:
       assert page.locator('#page-route-bar').count()==0
-      page.get_by_role('button',name='Ver todos los proyectos',exact=True).wait_for(state='visible')
+      page.locator('.desktop-projects-all').wait_for(state='visible')
      else:
       crumb=page.locator('#page-route-bar [aria-current=page]').last
       crumb.wait_for(state='visible')
       if view in finance:crumb.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
-      expected='Inicio' if view=='home' else 'Agenda' if view=='agenda' else page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip()
+      expected='Proyectos' if view=='home' else 'Agenda' if view=='agenda' else page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip()
       if view in finance:expected={'informes':'Resumen','prevision':'Previsión'}.get(view,expected)
       assert crumb.inner_text()==expected,(view,crumb.inner_text())
       assert crumb.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}')==project_type,(view,crumb.evaluate('(e)=>{const s=getComputedStyle(e);return [s.fontFamily,s.fontSize,s.fontWeight,s.lineHeight]}'),project_type)
@@ -335,8 +335,8 @@ try:
    check_finances(page,width)
    if width>=1100:
     page.evaluate("go('contabilidad')")
-    page.locator('#page-route-bar').get_by_role('button',name='Inicio',exact=True).click()
-    assert page.evaluate('state.view')=='home'
+    page.locator('#page-route-bar').get_by_role('button',name='Proyectos',exact=True).click()
+    assert page.evaluate('state.view')=='proyectos'
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(false)')
     assert page.locator('#page-route-bar').count()==0
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
@@ -348,8 +348,8 @@ try:
     page.locator('.route-component-host').wait_for(state='detached')
     assert page.locator('#page-route-bar [aria-current=page]').inner_text()=='Agenda'
     page.evaluate("go('contabilidad')")
-    page.locator('#page-route-bar').get_by_role('button',name='Inicio',exact=True).click()
-    assert page.evaluate('state.view')=='home'
+    page.locator('#page-route-bar').get_by_role('button',name='Proyectos',exact=True).click()
+    assert page.evaluate('state.view')=='proyectos'
    page.evaluate("go('proyecto',9001)")
    keys=['tareas','listas','ai','conversaciones','planos','obra','diario','calobra','pres','utilidades','fin','archivos']
    for key in keys+['cliente']:page.evaluate('(key)=>projTab(key)',key)
@@ -380,8 +380,8 @@ try:
      page.locator('#ptM2').fill('24');assert '4.0 L' in page.locator('#ptRes').inner_text()
    if width>=1100:
     expect(page.locator('.desktop-brand')).to_be_hidden();assert page.evaluate('state.view')=='proyecto'
-    assert page.locator('#desktop-primary [data-desktop-view=home] svg').count()==1
-    page.get_by_role('button',name='Inicio',exact=True).click();assert page.evaluate('state.view')=='home'
+    assert page.locator('#desktop-header [data-desktop-view=home]').count()==0
+    page.locator('.desktop-projects-all').click();assert page.evaluate('state.view')=='proyectos'
     page.evaluate("go('proyecto',9001);projTab('utilidades')")
     page.locator('#ptM2').fill('24')
     page.evaluate('window.originalCalculator=document.querySelector("#ptM2")')
