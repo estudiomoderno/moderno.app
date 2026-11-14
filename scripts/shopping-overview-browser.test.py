@@ -204,7 +204,7 @@ try:
    buttons=overview.locator('.shopping-action')
    assert buttons.evaluate_all('(es)=>es.map(e=>e.getAttribute("aria-label"))')==['Añadir lista','Descargar','Imprimir','Colaborar con cliente']
    assert buttons.locator('.shopping-action-tray').count()==0
-   assert buttons.evaluate_all('(es)=>es.every(e=>e.children.length===1&&e.firstElementChild.tagName.toLowerCase()==="svg")')
+   assert buttons.evaluate_all('(es)=>es.every(e=>e.children.length===1&&e.firstElementChild.matches(".ui-icon-asset"))')
    boxes=[b.bounding_box() for b in buttons.all()]
    assert all(abs(b['width']-40)<.02 and abs(b['height']-40)<.02 for b in boxes),boxes
    assert len(set(b['y'] for b in boxes))==1,boxes
@@ -214,7 +214,7 @@ try:
     button.focus();assert button.evaluate('(e)=>e===document.activeElement')
    quote=overview.get_by_role('button',name='Generar presupuesto',exact=True)
    assert abs(quote.bounding_box()['width']-200)<.02 and abs(quote.bounding_box()['height']-40)<.02,quote.bounding_box()
-   assert quote.locator('.shopping-quote-paper svg').count()==1
+   assert quote.locator('.shopping-quote-paper .ui-icon-asset').count()==1
    label=quote.locator(':scope>span').nth(1).bounding_box();arrow=quote.locator('.shopping-quote-arrow').bounding_box()
    assert label['x']+label['width']<=arrow['x'],(label,arrow)
    assert page.evaluate('records()===baseline')
@@ -225,17 +225,17 @@ try:
    buttons.first.hover()
    buttons.first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
    assert buttons.first.evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(241, 241, 241)'
-   assert buttons.first.locator('svg').evaluate('(e)=>getComputedStyle(e).fill')=='rgb(70, 70, 70)'
+   assert buttons.first.locator('.shopping-action-icon').evaluate('(e)=>getComputedStyle(e).color')=='rgb(70, 70, 70)'
    for button in buttons.all():
     page.mouse.move(0,0);button.hover()
-    icon=button.locator('svg')
+    icon=button.locator('.shopping-action-icon')
     assert icon.evaluate('(e)=>getComputedStyle(e).animationName')=='none'
     assert icon.evaluate('(e)=>getComputedStyle(e).transform')=='none'
     assert icon.evaluate('(e)=>e.getAnimations().length')==0
     assert icon.evaluate('(e)=>getComputedStyle(e).opacity')=='1'
    buttons.first.hover()
    page.emulate_media(reduced_motion='reduce')
-   assert buttons.first.locator('svg').evaluate('(e)=>getComputedStyle(e).animationName')=='none'
+   assert buttons.first.locator('.shopping-action-icon').evaluate('(e)=>getComputedStyle(e).animationName')=='none'
    page.emulate_media(reduced_motion='no-preference');page.mouse.move(0,0)
    # Creation opens the existing form; cancel must not add a room.
    buttons.first.press('Enter');expect(page.locator('#modalBox h3')).to_have_text('Nueva estancia')

@@ -1,3 +1,4 @@
+function projectUiIcon(name,className=''){return typeof uiIcon==='function'?uiIcon(name,className):`<span class="svgi ui-icon-asset ${className}" data-ui-icon="${name}" aria-hidden="true"></span>`;}
 function projectCurrencySymbol(){return (CURR[state.account?.currency]||CURR.EUR).s;}
 function shoppingClientCollaborationEnabled(project){return project?.clientShoppingCollaboration===true;}
 function shoppingClientCollaborationToggle(pid){
@@ -11,16 +12,16 @@ function shoppingClientCollaborationToggle(pid){
 /* Uiverse.io by vinodjangid07: supplied button design, scoped to the shopping overview. */
 function shoppingListActions(pid){
  const project=state.projects.find(project=>project.id===pid),collaboration=shoppingClientCollaborationEnabled(project);
- const paths={create:'M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z',export:'M11 3h2v11l4-4 1.4 1.4-6.4 6.4-6.4-6.4L7 10l4 4z',print:'M6 3h12v5H6zM5 9h14a3 3 0 0 1 3 3v6h-4v4H6v-4H2v-6a3 3 0 0 1 3-3zm3 7v4h8v-4zm10-4v2h2v-2z',collaborate:'M8 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm8 1a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM1 21v-2a6 6 0 0 1 12 0v2h-2v-2a4 4 0 0 0-8 0v2zm14 0v-2a6 6 0 0 0-1.1-3.5A5 5 0 0 1 23 19v2h-2v-2a3 3 0 0 0-5.2-2l-.1.1c.2.6.3 1.2.3 1.9v2z'};
+ const icons={create:'anadir-mas',export:'descargar',print:'imprimir',collaborate:'colaborar-con-cliente'};
  const actions=[['create','Añadir lista',`newRoom(${pid},'estancia')`],['export','Descargar',`shoppingListExport(${pid})`],['print','Imprimir',`exportListsModal(${pid},'pdf',true)`]];
  if(myAccessLevel()==='owner')actions.push(['collaborate',collaboration?'Desactivar colaboración con cliente':'Colaborar con cliente',`shoppingClientCollaborationToggle(${pid})`]);
- return `<div class="shopping-actions" role="group" aria-label="Acciones de listas de compra">${actions.map(([key,label,action])=>`<button type="button" class="shopping-action ${key==='collaborate'&&collaboration?'is-active':''}" data-shopping-action="${key}" aria-label="${label}" title="${label}" ${key==='collaborate'?`aria-pressed="${collaboration}"`:''} onclick="${action}"><svg class="shopping-action-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="${paths[key]}"/></svg></button>`).join('')}</div>`;
+ return `<div class="shopping-actions" role="group" aria-label="Acciones de listas de compra">${actions.map(([key,label,action])=>`<button type="button" class="shopping-action ${key==='collaborate'&&collaboration?'is-active':''}" data-shopping-action="${key}" aria-label="${label}" title="${label}" ${key==='collaborate'?`aria-pressed="${collaboration}"`:''} onclick="${action}">${projectUiIcon(icons[key],'shopping-action-icon')}</button>`).join('')}</div>`;
 }
 function shoppingListExport(pid){exportListsModal(pid);}
 function shoppingClientProductBadge(item){return item?.clientAdded===true?'<span class="shopping-client-added">Añadido por el cliente</span>':'';}
 /* Project presentation. Existing editors and persistence remain the source of truth. */
 function projectTabKey(key){return key==='resumen'?'proyecto':key==='chat'?'cliente':key;}
-function projectMoreIcon(){return '<svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>';}
+function projectMoreIcon(){return projectUiIcon('mas-opciones');}
 function projectClientAvatar(p){
  if(!p.client)return '';
  const E=ModernoDaily.escape,initials=String(p.client).trim().split(/\s+/).slice(0,2).map(n=>n[0]).join('').toUpperCase();
@@ -30,9 +31,8 @@ function projectOpen(id){if(typeof ModernoProjectWorkspace==='object'&&ModernoPr
 function projectsArchivedToggle(){state.showArchived=!state.showArchived;render();projectsFadeRows();}
 function projectFinanceIcon(){return '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svgi" aria-hidden="true"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M17.1 8.648a.568 .568 0 0 1 -.761 .011a5.682 5.682 0 0 0 -3.659 -1.34c-1.102 0 -2.205 .363 -2.205 1.374c0 1.023 1.182 1.364 2.546 1.875c2.386 .796 4.363 1.796 4.363 4.137c0 2.545 -1.977 4.295 -5.204 4.488l-.295 1.364a.557 .557 0 0 1 -.546 .443h-2.034l-.102 -.011a.568 .568 0 0 1 -.432 -.67l.318 -1.444a7.432 7.432 0 0 1 -3.273 -1.784v-.011a.545 .545 0 0 1 0 -.773l1.137 -1.102c.214 -.2 .547 -.2 .761 0a5.495 5.495 0 0 0 3.852 1.5c1.478 0 2.466 -.625 2.466 -1.614c0 -.989 -1 -1.25 -2.886 -1.954c-2 -.716 -3.898 -1.728 -3.898 -4.091c0 -2.75 2.284 -4.091 4.989 -4.216l.284 -1.398a.545 .545 0 0 1 .545 -.432h2.023l.114 .012a.544 .544 0 0 1 .42 .647l-.307 1.557a8.528 8.528 0 0 1 2.818 1.58l.023 .022c.216 .228 .216 .569 0 .773l-1.057 1.057" /></svg>';}
 function shoppingRoomActions(pid,rid){
- const actions=[['settings','Ajustes de la lista',`roomMenu(${pid},${rid})`,'<path d="m9 3-.6 2.4-2.1 1.2L4 6l-2 3.5 1.7 1.8v2.4L2 15.5 4 19l2.3-.6 2.1 1.2L9 22h4l.6-2.4 2.1-1.2 2.3.6 2-3.5-1.7-1.8v-2.4L20 9.5 18 6l-2.3.6-2.1-1.2L13 3Z"/><circle cx="11" cy="12.5" r="3"/>'],['delete','Eliminar lista',`shoppingRoomDelete(${pid},${rid})`,'<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>']];
- actions.splice(1,0,['export','Exportar lista','exportRoomModal()','<path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/>']);
- return `<div class="shopping-actions" role="group" aria-label="Acciones de la lista">${actions.map(([key,label,action,svg])=>`<button type="button" class="shopping-action shopping-room-${key}" title="${label}" aria-label="${label}" onclick="${action}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg}</svg></button>`).join('')}</div>`;
+ const actions=[['settings','Ajustes de la lista',`roomMenu(${pid},${rid})`,'ajustes'],['export','Exportar lista','exportRoomModal()','exportar'],['delete','Eliminar lista',`shoppingRoomDelete(${pid},${rid})`,'eliminar']];
+ return `<div class="shopping-actions" role="group" aria-label="Acciones de la lista">${actions.map(([key,label,action,icon])=>`<button type="button" class="shopping-action shopping-room-${key}" title="${label}" aria-label="${label}" onclick="${action}">${projectUiIcon(icon,'shopping-action-icon')}</button>`).join('')}</div>`;
 }
 function shoppingRoomPickerHtml(project,current){
  const E=ModernoDaily.escape;
@@ -206,8 +206,8 @@ function shoppingRoomDropEnd(event){
  event.preventDefault();if(!dragIt)return;const {r}=getRoom(),source=dragIt.si;dropItemRow(event,source,r.sections[source].items.length);
 }
 function shoppingRoomToolIcon(name){
- const paths={sort:'<path d="M8 4v16m-4-4 4 4 4-4M14 4h7M14 9h5M14 14h3"/>',back:'<path d="m12 5-7 7 7 7M5 12h14"/>',filter:'<path d="M4 4h16l-6 7v8l-4 2V11Z"/>',search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',rows:'<rect x="3" y="4" width="4" height="6" rx="1"/><rect x="3" y="14" width="4" height="6" rx="1"/><path d="M11 5h10M11 9h7M11 15h10M11 19h7"/>',cards:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'};
- return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name]||''}</svg>`;
+ const icons={sort:'ordenar',back:'volver',filter:'filtrar',search:'buscar',rows:'vista-de-lista',cards:'vista-de-tarjetas'};
+ return icons[name]?projectUiIcon(icons[name]):'';
 }
 /* Presentation preference only; no product or project record is changed. */
 var shoppingRoomViewMode='cards';

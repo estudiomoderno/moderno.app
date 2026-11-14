@@ -17,22 +17,22 @@ html body .sidebar [data-view="integraciones"]{--menu-icon:url("/brand/menu-icon
 html body .sidebar [data-view="automatizaciones"]{--menu-icon:url("/brand/menu-icons/automatizaciones.svg")}
 html body .sidebar [data-view="plantillas"]{--menu-icon:url("/brand/menu-icons/plantillas.svg?v=200")}
 html body .sidebar [data-view="catalogo"]{--menu-icon:url("/brand/menu-icons/catalogo.svg?v=201")}
-html body .sidebar [data-view="biblioteca"]{--menu-icon:url("/brand/menu-icons/biblioteca.svg?v=201")}
+html body .sidebar [data-view="biblioteca"]{--menu-icon:url("/brand/icons/ui/biblioteca.svg?v=365154")}
 html body .sidebar [data-view="prevision"]{--menu-icon:url("/brand/menu-icons/prevision.svg")}
-html body .sidebar [data-view="facturas"]{--menu-icon:url("/brand/menu-icons/facturas.svg")}
-html body .sidebar [data-view="presupuestos"]{--menu-icon:url("/brand/menu-icons/presupuestos.svg")}
+html body .sidebar [data-view="facturas"]{--menu-icon:url("/brand/icons/ui/factura.svg?v=365154")}
+html body .sidebar [data-view="presupuestos"]{--menu-icon:url("/brand/icons/ui/presupuesto.svg?v=365154")}
 html body .sidebar [data-view="contabilidad"]{--menu-icon:url("/brand/menu-icons/contabilidad.svg?v=200")}
 html body .sidebar [data-view="informes"]{--menu-icon:url("/brand/menu-icons/informes.svg")}
-html body .sidebar [data-view="conversaciones"]{--menu-icon:url("/brand/menu-icons/conversaciones.svg")}
-html body .sidebar [data-view="agenda"]{--menu-icon:url("/brand/menu-icons/agenda.svg?v=200")}
-html body .sidebar [data-view="calendario"]{--menu-icon:url("/brand/menu-icons/calendario.svg")}
-html body .sidebar [data-view="proyectos"]{--menu-icon:url("/brand/menu-icons/proyectos.svg?v=200")}
+html body .sidebar [data-view="conversaciones"]{--menu-icon:url("/brand/icons/ui/conversacion.svg?v=365154")}
+html body .sidebar [data-view="agenda"]{--menu-icon:url("/brand/icons/ui/contactos.svg?v=365154")}
+html body .sidebar [data-view="calendario"]{--menu-icon:url("/brand/icons/ui/calendario.svg?v=365154")}
+html body .sidebar [data-view="proyectos"]{--menu-icon:url("/brand/icons/ui/proyecto.svg?v=365154")}
 
 @media screen{html body:not(.portalmode) .sidebar .nav-sub{margin-left:0}html body:not(.portalmode) .sidebar .nav-sub .nav-item{margin-left:0;width:100%;box-sizing:border-box}html body:not(.portalmode) .sidebar .nav-item{padding-left:14px;padding-right:14px}}
 
 html body .sidebar [data-view="home"]{--menu-icon:url("/brand/menu-icons/home.svg?v=200")}
 
-html body .sidebar [data-view="mail"]{--menu-icon:url("/brand/menu-icons/mail.svg?v=200")}
+html body .sidebar [data-view="mail"]{--menu-icon:url("/brand/icons/ui/correo.svg?v=365154")}
 
 html body .sidebar [data-view="tutoriales"]{--menu-icon:url("/brand/menu-icons/tutoriales.svg?v=200")}
 

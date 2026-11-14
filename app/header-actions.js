@@ -4,10 +4,9 @@ var ModernoHeaderActions=(()=>{
  let enabled=true,standalone=null,host=null,group=null,observer=null,component=null,nativeProfile=null,useOriginal=true,notificationHost=null,notificationComponent=null,nativeNotification=null,projectActions=null;
  const $=selector=>document.querySelector(selector);
  const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls;if(text!==undefined)el.textContent=text;return el;};
- const svg=paths=>'<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
- const bell=svg('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>');
- const team=svg('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/><circle cx="9" cy="7" r="4"/>');
- const more=svg('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>');
+ const bell=uiIcon('notificaciones');
+ const team=uiIcon('equipo');
+ const more=uiIcon('mas-opciones');
  const allowed=()=>enabled&&!_accessLoading&&['admin','colaborador','miembro'].includes(_accessRole)&&!!state.sessionUser&&!['portalcli','portalobra'].includes(state.view)&&!document.body.classList.contains('portalmode')&&$('#loginScreen')?.style.display!=='grid';
  function notifications(){
   const n=(state.notifs||[]).filter(item=>!item.read).length;
