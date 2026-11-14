@@ -1,14 +1,16 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';import vm from 'node:vm';import fs from 'node:fs';import {createRequire}from'node:module';
 const C=createRequire(import.meta.url)('../app/settings-core.js');
 const source=fs.readFileSync(new URL('../app/settings-ui.js',import.meta.url),'utf8');
+const appSource=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 function harness(role='admin'){
  const listeners={},nodes=new Map(),make=()=>({dataset:{},className:'',innerHTML:'',textContent:'',classList:{remove(){},toggle(){}},contains(){return false;},setAttribute(){},after(){},querySelectorAll(){return[];},reportValidity(){return true;},querySelector(){return {focus(){}};}});
+ const createElement=tag=>tag==='canvas'?{...make(),width:0,height:0,getContext:()=>({drawImage(){}}),toDataURL:()=> 'data:image/webp;base64,AAAA'}:make();
  const node=id=>{if(!nodes.has(id))nodes.set(id,make());return nodes.get(id);};
  const state={view:'home',account:{name:'Ensayo',vat:0,irpf:'',country:'España',currency:'EUR',taxName:'IVA',iban:'BANCO'},emitter:{name:'Emisor original'},irpf:false,defMargin:0,series:{fc:'FC',ps:'PS'},sessionUser:{mail:'test@example.invalid',name:'Persona Ficticia'},users:[],projects:[],entries:[{id:1,total:33.25}],quotes:[{id:2,total:99.23}]};
  let savedMeta={},update,fail=false,confirm;
- const ctx={state,TeamSettings:{view:()=>"Equipo",load(){}},ModernoDaily:{escape:x=>String(x??'')},ModernoSettingsCore:C,ModernoSettingsIcons:{},ModernoPhone:{field:()=>''},_accessRole:role,_accessLoading:false,ESTUDIO_ID:'ficticio',meMail:()=>state.sessionUser.mail,visibleWsOrder:()=>[],BRAND:{},PAISES:['España'],PAIS_ISO:{},CURR:{EUR:{}},ROLES:{},serie:b=>state.series[b?'fc':'ps'],fileImageAttrs:()=>'',ico:()=>'',render(){},go(v){state.view=v;},vAdmin(){},vAjustes(){},themeToggle(){},prepareAppReload:async()=>true,localStorage:{getItem(){return null},setItem(){}},document:{body:make(),getElementById:node,querySelector:()=>make(),createElement:make,addEventListener:(k,fn)=>(listeners[k]??=[]).push(fn)},addEventListener(){},toast(){},askConfirm(...args){confirm=args;},persistNow(){},_cloudBusy:false,_saveErr:false,_cloudHash:{},canon:JSON.stringify,CLOUD_BLOCKS:{config:{get:()=>({account:state.account,emitter:state.emitter,series:state.series,irpf:state.irpf,defMargin:state.defMargin})}},cloudFlush:async()=>{if(!fail)ctx._cloudHash.config=JSON.stringify(ctx.CLOUD_BLOCKS.config.get());},sb:{auth:{getUser:async()=>({data:{user:{email:'test@example.invalid',user_metadata:savedMeta}}}),updateUser:async u=>{update=u;if(fail)return {error:{message:'Fallo simulado'}};savedMeta=u.data;return {data:{user:{email:'test@example.invalid',user_metadata:savedMeta}}};}}},sbUserToSession:u=>({mail:u.email,name:u.user_metadata.full_name||'Persona Ficticia'}),applySessionUI(){},setTimeout,Intl};
+ const ctx={state,TeamSettings:{view:()=>"Equipo",load(){}},ModernoDaily:{escape:x=>String(x??'')},ModernoSettingsCore:C,ModernoSettingsIcons:{},ModernoPhone:{field:()=>''},_accessRole:role,_accessLoading:false,ESTUDIO_ID:'ficticio',meMail:()=>state.sessionUser.mail,visibleWsOrder:()=>[],BRAND:{},PAISES:['España'],PAIS_ISO:{},CURR:{EUR:{}},ROLES:{},serie:b=>state.series[b?'fc':'ps'],fileImageAttrs:()=>'',ico:()=>'',render(){},go(v){state.view=v;},vAdmin(){},vAjustes(){},themeToggle(){},prepareAppReload:async()=>true,localStorage:{getItem(){return null},setItem(){}},document:{body:make(),getElementById:node,querySelector:()=>make(),createElement,addEventListener:(k,fn)=>(listeners[k]??=[]).push(fn)},addEventListener(){},toast(){},askConfirm(...args){confirm=args;},persistNow(){},_cloudBusy:false,_saveErr:false,_cloudHash:{},canon:JSON.stringify,CLOUD_BLOCKS:{config:{get:()=>({account:state.account,emitter:state.emitter,series:state.series,irpf:state.irpf,defMargin:state.defMargin})}},cloudFlush:async()=>{if(!fail)ctx._cloudHash.config=JSON.stringify(ctx.CLOUD_BLOCKS.config.get());},sb:{auth:{getUser:async()=>({data:{user:{email:'test@example.invalid',user_metadata:savedMeta}}}),updateUser:async u=>{update=u;if(fail)return {error:{message:'Fallo simulado'}};savedMeta=u.data;return {data:{user:{email:'test@example.invalid',user_metadata:savedMeta}}};}}},sbUserToSession:u=>({mail:u.email,name:u.user_metadata.full_name||'Persona Ficticia',avatar:u.user_metadata.avatar_url||''}),applySessionUI(){},createImageBitmap:async()=>({width:64,height:64,close(){}}),setTimeout,Intl};
  ctx.window=ctx;vm.createContext(ctx);vm.runInContext(source,ctx);
- return {ctx,state,confirm:()=>confirm,fail:()=>{fail=true},update:()=>update,click:target=>listeners.click.forEach(fn=>fn({target})),field:(key,value)=>listeners.input.forEach(fn=>fn({target:{dataset:{setting:key},type:typeof value==='boolean'?'checkbox':'text',value,checked:value}})),open:async k=>{ctx.SettingsUI.open(k);ctx.SettingsUI.view();await new Promise(r=>setImmediate(r));},status:()=>node('settings-status').textContent};
+ return {ctx,state,confirm:()=>confirm,fail:()=>{fail=true},update:()=>update,click:target=>listeners.click.forEach(fn=>fn({target})),field:(key,value)=>listeners.input.forEach(fn=>fn({target:{dataset:{setting:key},type:typeof value==='boolean'?'checkbox':'text',value,checked:value}})),photo:async file=>{listeners.change.forEach(fn=>fn({target:{dataset:{photo:'avatar'},files:[file]}}));await new Promise(r=>setImmediate(r));},open:async k=>{ctx.SettingsUI.open(k);ctx.SettingsUI.view();await new Promise(r=>setImmediate(r));},status:()=>node('settings-status').textContent};
 }
 test('saving a study field preserves taxes, documents, files and unedited settings',async()=>{
  const h=harness();const before=JSON.stringify(h.state);await h.open('estudio');h.field('type','Interiorismo');await h.ctx.SettingsUI.save();
@@ -22,6 +24,11 @@ test('personal email confirmation does not alter the shared team or current logi
 });
 test('failed personal save retains entered values',async()=>{
  const h=harness();await h.open('cuenta');h.field('first','Nuevo');h.fail();await h.ctx.SettingsUI.save();assert.equal(h.ctx.SettingsUI.dirty(),true);assert.match(h.ctx.SettingsUI.view(),/Nuevo/);
+});
+test('a selected profile photo is prepared, persisted and returned to the current session',async()=>{
+ const h=harness();await h.open('cuenta');await h.photo({type:'image/png',size:1024});
+ assert.equal(h.ctx.SettingsUI.dirty(),true);assert.match(h.ctx.SettingsUI.view(),/settings-photo/);
+ assert.equal(await h.ctx.SettingsUI.save(),true);assert.equal(h.update().data.avatar_url,'data:image/webp;base64,AAAA');assert.equal(h.state.sessionUser.avatar,'data:image/webp;base64,AAAA');
 });
 test('collaborator cannot enter study or taxes through settings actions',async()=>{
  const h=harness('colaborador');await h.open('cuenta');h.ctx.SettingsUI.open('impuestos');assert.match(h.ctx.SettingsUI.view(),/Perfil personal/);h.ctx.SettingsUI.open('estudio');assert.match(h.ctx.SettingsUI.view(),/Perfil personal/);
@@ -99,4 +106,11 @@ test('upload cards do not navigate to settings when selecting files',()=>{
  const h=harness(),before=h.state.view;
  const upload={dataset:{section:'planos'},closest:selector=>selector.includes('[data-section]')?upload:null};
  h.click(upload);assert.equal(h.state.view,before);
+});
+test('every Mi perfil entry uses the real account editor instead of the obsolete fake upload',()=>{
+ const start=appSource.indexOf('function userModal(){'),end=appSource.indexOf('\nfunction inviteUserModal',start),profile=appSource.slice(start,end);
+ assert.match(profile,/SettingsUI\.open\('cuenta'\)/);
+ assert.doesNotMatch(profile,/En la app real tu foto|onchange=|accept="image\/\*"/);
+ assert.match(source,/data-settings-action="photo"/);
+ assert.match(source,/sb\.auth\.updateUser\(update\)/);
 });

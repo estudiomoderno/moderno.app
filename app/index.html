@@ -4569,7 +4569,7 @@ const ROLES = {
 };
 function uploadLogo(b,f){
   if(!f) return;
-  fileUp(f).then(__u=>{ if(__u==null) return; state.logos[b]=__u; closeModal(); userModal(); render(); toast("✓ Logo de "+BRAND[b].name+" subido"); });
+  fileUp(f).then(__u=>{ if(__u==null) return; state.logos[b]=__u; closeModal(); window.SettingsUI?.open?.('estudio'); render(); toast("✓ Logo de "+BRAND[b].name+" subido"); });
 }
 function profileMenu(){ go("ajustes"); }
 function vAjustes(){
@@ -4789,19 +4789,9 @@ function importDataModal(){
   <div class="modal-foot"><button class="btn btn-ghost" onclick="mb.classList.remove('wide');closeModal();profileMenu()">${ico("atras")} Atrás</button><button class="btn btn-dark" onclick="mb.classList.remove('wide');closeModal()">Cerrar</button></div>`);
 }
 function userModal(){
-  if(_accessRole==="gestoria"){modal('<h3>Gestoría · Solo lectura</h3><p>Consulta y descarga de PDF de Finanzas y Contabilidad.</p><button class="btn btn-dark" onclick="closeModal();sbLogout()">Cerrar sesión</button>');return;}
-  modal(`<h3>${ico("m_user")} Mi perfil</h3>
-  <div style="display:flex;align-items:center;gap:12px;margin:10px 0">
-    <span style="background:var(--gold);border-radius:14px;width:52px;height:52px;display:grid;place-items:center;font-weight:900;font-size:20px">${ModernoDaily.escape(meName().slice(0,1))}</span>
-    <div><b style="font-size:14px">${ModernoDaily.escape(meName())}</b><br><small style="color:var(--ink-faint)">${ModernoDaily.escape(meMail())}</small></div>
-    <label class="btn btn-ghost" style="margin-left:auto;cursor:pointer;font-size:11px">${ico("import")} Foto
-      <input type="file" accept="image/*" style="display:none" onchange="toast('En la app real tu foto sustituye a la inicial en toda la app')"></label>
-  </div>
-  <div class="entry" style="background:var(--card)">Espacios de trabajo<span class="amt" style="color:var(--ink)">${wsOrder.map(k=>BRAND[k].name).join(" · ")}</span></div>
-  <div class="entry" style="background:var(--card)">Rol<span class="amt" style="color:var(--ink)">${_accessRole==='admin'?'Administrador':_accessRole==='colaborador'?'Colaborador':'Miembro'}</span></div>
-  <div class="entry" style="background:var(--card)">Idioma<span class="amt" style="color:var(--ink)">Español (más idiomas en la app real)</span></div>
-  <p style="font-size:11.5px;color:var(--ink-faint);margin-top:10px">Los usuarios se gestionan en <b>Equipos</b> · los permisos de cada rol, en <b>Administración → Permisos</b> · los logos, en <b>Administración → Creación de marca</b>.</p>
-  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal();profileMenu()">${ico("atras")} Atrás</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>`);
+  closeModal();
+  if(window.SettingsUI?.open){SettingsUI.open('cuenta');return;}
+  profileMenu();
 }
 function inviteUserModal(i){
   const u = i>=0 ? state.users[i] : {name:"",email:"",role:"Colaborador"};
@@ -4856,7 +4846,8 @@ async function saveUser(i){
       toast("Miembro añadido — sin email no puedo preparar la invitación");
     }
   }
-  closeModal(); userModal();
+  closeModal();
+  if(window.SettingsUI?.open)SettingsUI.open('equipo');else profileMenu();
 }
 function notifModal(){
   const nuevas = state.notifs.filter(n=>!n.read), pasadas = state.notifs.filter(n=>n.read);
@@ -11410,7 +11401,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.65.157";
+const MODERNO_VER="v3.65.158";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
