@@ -1,0 +1,52 @@
+/* Agenda toolbar and contact import sheet, aligned with the approved ReUI desktop language. */
+body.desktop-shell #view>.contact-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;margin:0 0 18px;flex-wrap:nowrap}
+body.desktop-shell .contact-category-tabs{display:flex;align-items:center;gap:4px;min-width:0;margin:0;padding:0;border:0;background:transparent;overflow-x:auto;scrollbar-width:none}
+body.desktop-shell .contact-category-tabs::-webkit-scrollbar{display:none}
+body.desktop-shell .contact-category-tabs>button{display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:7px 11px;border:1px solid transparent;border-radius:8px;background:transparent;color:#404040;font:500 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif;white-space:nowrap;box-shadow:none}
+body.desktop-shell .contact-category-tabs>button:hover{background:#f3f3f3;color:#171717}
+body.desktop-shell .contact-category-tabs>button.on{border-color:#e1e1e1;background:#ededed;color:#171717}
+body.desktop-shell .contact-category-tabs>button:focus-visible{outline:2px solid #8b8b8b;outline-offset:2px}
+body.desktop-shell .contact-category-icon{width:15px;height:15px;flex:none;background:currentColor;mask:var(--contact-icon) center/contain no-repeat;-webkit-mask:var(--contact-icon) center/contain no-repeat}
+.contact-toolbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto;flex:none}
+body.desktop-shell .contact-toolbar-actions .contact-new{min-height:34px!important;height:34px;padding:0 12px!important;border-radius:8px!important;font:500 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif!important}
+.contact-settings{position:relative}
+.contact-settings>summary{list-style:none}.contact-settings>summary::-webkit-details-marker{display:none}
+.contact-settings-trigger{display:grid;place-items:center;width:34px;height:34px;padding:0;border:1px solid #dedede;border-radius:8px;background:#fff;color:#171717;box-shadow:0 1px 2px #0000000a;cursor:pointer}
+.contact-settings-trigger:hover,.contact-settings[open]>.contact-settings-trigger{background:#f3f3f3}
+.contact-settings-trigger:focus-visible{outline:2px solid #8b8b8b;outline-offset:2px}
+.agenda-settings-icon,.agenda-action-icon{display:block;width:17px;height:17px;flex:none;background:currentColor;mask:var(--agenda-icon) center/contain no-repeat;-webkit-mask:var(--agenda-icon) center/contain no-repeat}
+.agenda-settings-icon{--agenda-icon:url('/brand/sidebar-icons/ajustes.svg?v=36602')}
+.contact-settings-menu{position:absolute;z-index:120;top:calc(100% + 7px);right:0;display:grid;width:210px;padding:5px;border:1px solid #dedede;border-radius:10px;background:#fff;box-shadow:0 12px 32px #0000001a,0 2px 7px #0000000d;transform-origin:top right;animation:agendaMenuIn 140ms ease-out}
+.contact-settings:not([open])>.contact-settings-menu{display:none}
+.contact-settings-menu>button{display:flex;align-items:center;gap:10px;width:100%;min-height:36px;padding:8px 9px;border:0;border-radius:7px;background:transparent;color:#202020;font:500 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif;text-align:left;cursor:pointer}
+.contact-settings-menu>button:hover{background:#f1f1f1}.contact-settings-menu>button:focus-visible{outline:2px solid #8b8b8b;outline-offset:-2px}
+.contact-settings-separator{height:1px;margin:4px -5px;background:#e8e8e8}
+@keyframes agendaMenuIn{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}
+
+@media screen{
+ #overlay:has(#modalBox>.agenda-import-sheet){place-items:stretch end;padding:0;overflow:hidden}
+ html body:not(.portalmode) #modalBox:has(>.agenda-import-sheet){width:min(480px,100%);max-width:100%;height:100dvh;max-height:100dvh;border:0;border-left:1px solid var(--ui-line,#dedede);border-radius:0;padding:0;overflow:hidden;background:var(--app-surface,#fff);font-family:"Moderno ReUI Inter",Inter,Arial,sans-serif;animation:agendaSheetIn 180ms ease-out}
+ .agenda-import-sheet{display:flex;flex-direction:column;height:100%;min-height:0}
+ .agenda-import-sheet>header{position:relative;flex:none;padding:24px;border-bottom:1px solid var(--ui-line,#dedede)}
+ html body #modalBox .agenda-import-sheet h3{margin:0 36px 0 0!important;font:600 16px/1.4 "Moderno ReUI Inter",Inter,Arial,sans-serif!important}
+ .agenda-import-close{position:absolute;top:19px;right:19px;display:grid;place-items:center;width:30px;height:30px;padding:0;border:0;border-radius:8px;background:transparent;color:#555;font-size:20px;cursor:pointer}
+ .agenda-import-close:hover{background:#f1f1f1;color:#171717}
+ .agenda-import-body{flex:1;min-height:0;overflow:auto;padding:24px}
+ .agenda-import-body>p{margin:0 0 24px;color:#666;font-size:13px;line-height:1.55}
+ .agenda-import-body fieldset{margin:0;padding:0;border:0}
+ .agenda-import-body legend{margin:0 0 10px;font-size:13px;font-weight:500;color:#202020}
+ html body #modalBox .agenda-import-sheet #impT{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+ html body #modalBox .agenda-import-sheet #impT button{min-height:34px;padding:7px 10px;border:1px solid #dedede;border-radius:8px;background:#fff;color:#404040;font:500 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif}
+ html body #modalBox .agenda-import-sheet #impT button.on{border-color:#0666ff;background:#edf4ff;color:#0657d9;box-shadow:0 0 0 1px #0666ff}
+ html body #modalBox .agenda-import-file{display:flex;align-items:center;gap:12px;margin:24px 0 0;padding:14px;border:1px dashed #cfcfcf;border-radius:10px;background:#fafafa;color:#202020;cursor:pointer;text-transform:none;letter-spacing:normal}
+ .agenda-import-file:hover{border-color:#9f9f9f;background:#f6f6f6}.agenda-import-file .agenda-action-icon{width:21px;height:21px}
+ .agenda-import-file>span{display:flex;flex-direction:column;gap:2px}.agenda-import-file strong{font-size:13px;font-weight:500}.agenda-import-file small{color:#777;font-size:11px;font-weight:400}
+ .agenda-import-file input{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .agenda-import-preview{margin-top:18px}.agenda-import-preview:empty{display:none}
+ .agenda-import-sheet>footer{display:flex;justify-content:flex-end;gap:8px;flex:none;padding:20px 24px;border-top:1px solid var(--ui-line,#dedede)}
+ html body:not(.portalmode) #modalBox .agenda-import-sheet>footer .btn{min-height:36px!important;height:36px!important;padding:0 13px!important;border-radius:8px!important;font:500 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif!important}
+ html body:not(.portalmode) #modalBox .agenda-import-sheet>footer .btn-ghost{border:1px solid #dedede!important;background:#fff!important}
+ html body:not(.portalmode) #modalBox .agenda-import-sheet>footer .btn-dark{border-color:#0666ff!important;background:#0666ff!important;color:#fff!important}
+ @keyframes agendaSheetIn{from{opacity:.8;transform:translateX(24px)}to{opacity:1;transform:none}}
+}
+@media(prefers-reduced-motion:reduce){.contact-settings-menu,html body:not(.portalmode) #modalBox:has(>.agenda-import-sheet){animation:none}}

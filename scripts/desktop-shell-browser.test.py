@@ -130,7 +130,9 @@ with sync_playwright() as p:
   bell=page.locator('#desktop-header .desktop-actions>button').bounding_box()
   profile=page.locator('.desktop-profile>summary').bounding_box()
   assert page.locator('.desktop-account #topUserDot img').count()==1
-  assert page.locator('.desktop-account').evaluate('(e)=>e.nextElementSibling.classList.contains("desktop-support")')
+  assert page.locator('.desktop-account').evaluate('(e)=>e.nextElementSibling===null')
+  assert page.locator('.desktop-discover [data-desktop-view="soporte"]').count()==1
+  assert page.locator('.desktop-discover [data-desktop-view="soporte"] .desktop-mask').evaluate("e=>e.style.getPropertyValue('--desktop-icon').includes('/brand/sidebar-icons/soporte.svg')")
   assert page.locator('.desktop-toggle').evaluate('(e)=>e.closest(".desktop-inset-header")!==null')
   row=page.locator('.desktop-row').bounding_box()
   assert page.locator('.desktop-row').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgba(0, 0, 0, 0)'

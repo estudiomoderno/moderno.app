@@ -9,7 +9,7 @@ var ModernoDesktopShell=(()=>{
  const $=s=>document.querySelector(s);
  const finance=['informes','facturas','presupuestos','contabilidad','prevision'];
  const navigation=[['Finanzas',finance,'contabilidad'],'agenda','mail','calendario','workspace','biblioteca','catalogo'];
- const menuIcons={contabilidad:'finanzas',agenda:'agenda',mail:'mail',calendario:'calendario',workspace:'tareas',biblioteca:'productos',catalogo:'servicios',proyectos:'ver-todos'};
+ const menuIcons={contabilidad:'finanzas',agenda:'agenda',mail:'mail',calendario:'calendario',workspace:'tareas',biblioteca:'productos',catalogo:'servicios',proyectos:'ver-todos',soporte:'soporte'};
  const originals=()=>[...document.querySelectorAll('aside.sidebar .nav-item[data-view]')];
  const original=view=>originals().find(b=>b.dataset.view===view);
  const available=view=>!_accessLoading&&canView(view)&&!!original(view);
@@ -17,13 +17,13 @@ var ModernoDesktopShell=(()=>{
   const source=original(view);if(!source)return null;
   const icon=source.querySelector('.ico');if(icon){
    const copy=icon.cloneNode(true);copy.setAttribute('aria-hidden','true');
-   if(menuIcons[view]){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/sidebar-icons/${menuIcons[view]}.svg?v=36601')`);}
+   if(menuIcons[view]){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/sidebar-icons/${menuIcons[view]}.svg?v=36602')`);}
    else if(source.dataset.newIcon==='true'){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/menu-icons/${view}.svg?v=201')`);}
    return copy;
   }
   return null;
  }
- function assetIcon(name){const icon=document.createElement('span');icon.className='ico desktop-mask';icon.setAttribute('aria-hidden','true');icon.style.setProperty('--desktop-icon',`url('/brand/sidebar-icons/${name}.svg?v=36601')`);return icon;}
+ function assetIcon(name){const icon=document.createElement('span');icon.className='ico desktop-mask';icon.setAttribute('aria-hidden','true');icon.style.setProperty('--desktop-icon',`url('/brand/sidebar-icons/${name}.svg?v=36602')`);return icon;}
  function label(node,text){const span=document.createElement('span');span.className='desktop-label';span.textContent=text;node.append(span);node.setAttribute('aria-label',text);node.title=text;}
  function button(view,compact=false){
   const source=original(view);if(!source)return null;
@@ -153,7 +153,8 @@ var ModernoDesktopShell=(()=>{
   const discover=document.createElement('section');discover.className='desktop-discover';discover.setAttribute('aria-labelledby','desktop-discover-title');
   const title=document.createElement('h2');title.id='desktop-discover-title';title.textContent='Discover';discover.append(title);
   for(const view of ['plantillas','tutoriales']){const b=button(view,true);if(b)discover.append(b);}
-  const documentation=discoveryButton();if(documentation)discover.append(documentation);nav.append(discover);
+  const documentation=discoveryButton();if(documentation)discover.append(documentation);
+  const supportButton=button('soporte',true);if(supportButton)discover.append(supportButton);nav.append(discover);
   const toggle=action('',toggleFold);toggle.className='desktop-toggle desktop-icon-only';toggle.setAttribute('aria-controls','desktop-navigation');label(toggle,'Comprimir menú lateral');
   const panelIcon=document.createElementNS('http://www.w3.org/2000/svg','svg');panelIcon.setAttribute('viewBox','0 0 24 24');panelIcon.setAttribute('fill','none');panelIcon.setAttribute('stroke','currentColor');panelIcon.setAttribute('stroke-width','2');panelIcon.setAttribute('stroke-linecap','round');panelIcon.setAttribute('stroke-linejoin','round');panelIcon.setAttribute('aria-hidden','true');panelIcon.innerHTML='<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>';toggle.append(panelIcon);
   const profile=document.createElement('details');profile.className='desktop-profile desktop-account';const summary=document.createElement('summary');summary.setAttribute('aria-label','Cuenta');move($('#topUser'),summary);
@@ -164,7 +165,6 @@ var ModernoDesktopShell=(()=>{
   const accountSeparator=()=>{const line=document.createElement('span');line.className='desktop-menu-separator';line.setAttribute('role','separator');return line;};
   popup.append(accountSeparator(),action('Perfil',()=>userModal(),'perfil'),action('Facturación',()=>SettingsUI.open('facturacion'),'facturacion'),action('Notificaciones',()=>SettingsUI.open('notificaciones'),'notificacion'),accountSeparator(),action('Sign Out',()=>sbLogout(),'sign-out'));
   profile.append(popup);row.append(profile);
-  const support=document.createElement('div');support.className='desktop-support';const supportButton=button('soporte',true);if(supportButton)support.append(supportButton);row.append(support);
   const inset=document.createElement('div');inset.className='desktop-inset-header';header.append(inset);inset.append(toggle);
   const breadcrumb=document.createElement('div');breadcrumb.className='desktop-inset-breadcrumb';breadcrumb.setAttribute('aria-label','Ruta de navegación');
   const workspace=document.createElement('span');workspace.className='desktop-inset-workspace';const separator=document.createElement('span');separator.className='desktop-inset-separator';separator.textContent='›';separator.setAttribute('aria-hidden','true');const route=document.createElement('strong');route.className='desktop-inset-route';breadcrumb.append(workspace,separator,route);inset.append(breadcrumb);

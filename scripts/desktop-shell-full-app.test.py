@@ -341,6 +341,26 @@ try:
     page.locator('.desktop-inset-route').wait_for(state='visible')
     assert page.locator('.desktop-inset-route').inner_text()=='Agenda'
     assert page.locator('#page-route-bar').is_hidden()
+    assert page.locator('#view>h1.big').count()==0
+    expect(page.locator('.contact-category-tabs>button')).to_have_text(['Todos','Clientes','Proveedores','Contratistas','Técnicos','Team'])
+    assert page.locator('.contact-category-tabs>button').first.get_attribute('aria-pressed')=='true'
+    page.locator('.contact-settings-trigger').click()
+    expect(page.locator('.contact-settings-menu').get_by_role('menuitem')).to_have_text(['Exportar PDF','Exportar CSV','Importar contactos'])
+    with page.expect_download() as agenda_download:
+     page.get_by_role('menuitem',name='Exportar CSV',exact=True).click()
+    csv_path=agenda_download.value.path();csv_text=Path(csv_path).read_text(encoding='utf-8-sig')
+    assert agenda_download.value.suggested_filename=='agenda-moderno.csv'
+    assert '"ID";"Nombre";"Razón social";"Tipo"' in csv_text and 'Cliente ficticio' in csv_text
+    page.locator('.contact-settings-trigger').click()
+    page.get_by_role('menuitem',name='Importar contactos',exact=True).click()
+    expect(page.locator('.agenda-import-sheet')).to_be_visible()
+    expect(page.locator('#impT>button')).to_have_text(['Clientes','Proveedores','Contratistas','Técnicos','Team'])
+    assert page.locator('#modalBox').evaluate('(e)=>getComputedStyle(e).height')==str(page.viewport_size['height'])+'px'
+    page.locator('.agenda-import-file input').set_input_files({'name':'contactos-ficticios.csv','mimeType':'text/csv','buffer':b'nombre;email\nContacto Nuevo;nuevo@example.test'})
+    expect(page.locator('#impPreview')).to_contain_text('Contacto Nuevo')
+    expect(page.locator('#impGo')).to_be_visible()
+    if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'agenda-import-{width}.png',),full_page=True)
+    page.get_by_role('button',name='Cerrar',exact=True).click()
     page.evaluate('document.querySelector(".route-component-host").shadowRoot.querySelector("link").dispatchEvent(new Event("error"))')
     page.locator('.route-component-host').wait_for(state='detached')
     assert page.locator('.desktop-inset-route').inner_text()=='Agenda'

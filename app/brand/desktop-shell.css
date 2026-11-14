@@ -41,9 +41,11 @@
  #desktop-header summary{list-style:none}
  #desktop-header summary::-webkit-details-marker{display:none}
  #desktop-header .desktop-group{margin:0;padding:0;border:0}
- #desktop-header .desktop-finance{margin:0}
+ #desktop-header .desktop-finance{margin:0;justify-content:flex-start;text-align:left}
  #desktop-header .desktop-mail-badge{min-width:18px;margin-left:auto;padding:1px 4px;border-radius:999px;background:transparent;color:#171717;font-size:11px;text-align:center}
- #desktop-header .desktop-projects,#desktop-header .desktop-discover{display:flex;flex-direction:column;gap:2px;margin-top:12px;padding:0;border:0}
+ #desktop-header .desktop-projects,#desktop-header .desktop-discover{display:flex;flex-direction:column;gap:2px;padding:0;border:0}
+ #desktop-header .desktop-projects{margin-top:20px}
+ #desktop-header .desktop-discover{margin-top:12px}
  #desktop-header .desktop-projects-header{display:flex;align-items:center;justify-content:space-between;min-height:28px;padding:0 4px 0 0}
  #desktop-header .desktop-project-add{display:grid;place-items:center;width:26px;height:26px;padding:0;border:0;border-radius:7px;background:transparent;color:#171717;font-size:19px;line-height:1}
  #desktop-header .desktop-project-add:hover{background:#ededed}
@@ -65,8 +67,6 @@
  #desktop-header .desktop-account-copy strong{font-size:14px;font-weight:500}
  #desktop-header .desktop-account-copy small{margin-top:2px;color:#737373;font-size:12px;font-weight:400}
  #desktop-header .desktop-account-more{flex:none;align-self:center;margin-left:auto;color:#737373;font-size:17px;line-height:1;letter-spacing:1px;transform:translateY(-1px)}
- #desktop-header .desktop-support{flex:none;margin:0;padding:0;border:0}
- #desktop-header .desktop-support .desktop-link{width:100%;justify-content:flex-start;background:transparent}
  #desktop-header .desktop-menu{position:fixed;top:64px;left:calc(var(--desktop-sidebar-width) + 8px);z-index:90;min-width:210px;max-width:280px;max-height:calc(100dvh - 24px);overflow:auto;padding:7px;border:1px solid #e5e5e5;border-radius:10px;background:#fff;color:#171717;box-shadow:0 8px 24px #00000012}
  #desktop-header .desktop-menu button{display:flex;align-items:center;gap:9px;width:100%;min-height:36px;padding:8px 10px;border:0;border-radius:7px;background:transparent;text-align:left}
  #desktop-header .desktop-menu button:hover{background:#ededed}
@@ -87,7 +87,7 @@
  body.project-windows #desktop-header .desktop-inset-breadcrumb{visibility:hidden}
  #desktop-header .is-collapsed .desktop-brand-copy,#desktop-header .is-collapsed .desktop-section-label,#desktop-header .is-collapsed .desktop-projects-header,#desktop-header .is-collapsed .desktop-recent-title,#desktop-header .is-collapsed .desktop-recent-projects,#desktop-header .is-collapsed .desktop-discover h2,#desktop-header .is-collapsed .desktop-account-copy,#desktop-header .is-collapsed .desktop-account-more{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);padding:0}
  #desktop-header .is-collapsed .desktop-brand{justify-content:center;padding-inline:6px}
- #desktop-header .is-collapsed .desktop-nav .desktop-icon-only,#desktop-header .is-collapsed .desktop-support .desktop-link{width:40px;justify-content:center;align-self:center;padding-inline:0}
+ #desktop-header .is-collapsed .desktop-nav .desktop-icon-only{width:40px;justify-content:center;align-self:center;padding-inline:0}
  #desktop-header .is-collapsed .desktop-icon-only>.desktop-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
  #desktop-header .is-collapsed .desktop-projects,#desktop-header .is-collapsed .desktop-discover{align-items:center;margin-top:8px}
  #desktop-header .is-collapsed .desktop-account{display:flex;justify-content:center}
