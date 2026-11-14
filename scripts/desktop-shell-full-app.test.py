@@ -337,13 +337,15 @@ try:
     assert page.locator('#page-route-bar').count()==0
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
     assert page.locator('#page-route-bar').count()==0
-    page.evaluate("go('agenda')")
+    page.locator('aside.sidebar .nav-item[data-view="agenda"]').evaluate('(button)=>button.click()')
     page.locator('.desktop-inset-route').wait_for(state='visible')
     assert page.locator('.desktop-inset-route').inner_text()=='Agenda'
     assert page.locator('#page-route-bar').is_hidden()
     assert page.locator('#view>h1.big').count()==0
     expect(page.locator('.contact-category-tabs>button')).to_have_text(['Todos','Clientes','Proveedores','Contratistas','Técnicos','Team'])
-    assert page.locator('.contact-category-tabs>button').first.get_attribute('aria-pressed')=='true'
+    assert page.evaluate('state.agendaTab')=='Clientes'
+    assert page.locator('.contact-category-tabs>button').nth(1).get_attribute('aria-pressed')=='true'
+    assert page.locator('.contact-category-tabs>button').first.get_attribute('aria-pressed')=='false'
     filter_boxes=page.locator('.contact-category-tabs>button').evaluate_all('(bs)=>bs.map(b=>{const r=b.getBoundingClientRect();return {x:r.x,right:r.right,y:r.y,height:r.height}})')
     assert all(abs(filter_boxes[i]['right']-filter_boxes[i+1]['x']-1)<=1 for i in range(len(filter_boxes)-1)),filter_boxes
     assert len({round(box['y'],1) for box in filter_boxes})==1 and len({round(box['height'],1) for box in filter_boxes})==1
@@ -365,8 +367,10 @@ try:
     new_contact_box=page.locator('.contact-new').bounding_box()
     assert search_group['x']>=filter_group['x']+filter_group['width']-1 and search_group['x']+search_group['width']<=new_contact_box['x']+1,search_group
     assert page.locator('.contact-toolbar #agQBox').evaluate('(e)=>getComputedStyle(e).borderRadius')=='0px 8px 8px 0px'
+    assert page.locator('#agQBox').get_attribute('autocomplete')=='off'
     page.locator('.contact-toolbar').get_by_role('button',name='Buscar',exact=True).click()
     assert page.locator('#agQBox').evaluate('(e)=>e===document.activeElement')
+    assert page.locator('#agQBox').evaluate('(e)=>getComputedStyle(e).outlineStyle')=='none'
     assert page.locator('.agenda-contact-table').count()==1
     assert page.locator('.agenda-contact-table tbody tr').first.locator('td').nth(3).inner_text().strip()=='—'
     assert page.locator('.agenda-contact-badge').first.evaluate('(e)=>getComputedStyle(e).borderRadius')=='6px'
@@ -422,7 +426,7 @@ try:
     with page.expect_download() as agenda_download:
      page.get_by_role('menuitem',name='Exportar CSV',exact=True).click()
     csv_path=agenda_download.value.path();csv_text=Path(csv_path).read_text(encoding='utf-8-sig')
-    assert agenda_download.value.suggested_filename=='agenda-moderno.csv'
+    assert agenda_download.value.suggested_filename=='agenda-moderno-clientes.csv'
     assert '"ID";"Nombre";"Razón social";"Tipo"' in csv_text and 'Cliente ficticio' in csv_text
     page.locator('.contact-settings-trigger').click()
     page.get_by_role('menuitem',name='Importar contactos',exact=True).click()

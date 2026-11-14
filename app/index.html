@@ -4519,7 +4519,7 @@ function go(view, arg){
   if(view==="portalcli"||view==="portalobra") setTimeout(portalBootDone,0);
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active", b.dataset.view===view || ((view==="proyecto"||view==="estancia")&&b.dataset.view==="proyectos")));
   render(); V.parentElement.scrollTop=0; }
-document.querySelectorAll(".nav-item[data-view]").forEach(b=>b.onclick=()=>{_wantProject=null;if(b.dataset.view==='biblioteca'){state.libQ='';state.libF={cat:'',sup:'',min:'',max:''};ModernoBrands.reset();}if(b.dataset.view==='agenda'){state.agendaTab='Todos';state.agQ='';}go(b.dataset.view);});
+document.querySelectorAll(".nav-item[data-view]").forEach(b=>b.onclick=()=>{_wantProject=null;if(b.dataset.view==='biblioteca'){state.libQ='';state.libF={cat:'',sup:'',min:'',max:''};ModernoBrands.reset();}if(b.dataset.view==='agenda'){state.agendaTab='Clientes';state.agQ='';}go(b.dataset.view);});
 drawBrandSwitch();
 
 function render(){
@@ -6263,7 +6263,7 @@ function vAgenda(){
   ensureClientNums();
   const rows = byBrand(state.clients.map((c,i)=>({...c,__i:i})));
   const tabs=["Todos","Clientes","Proveedores","Contratistas","Técnicos","Team"];
-  const tab = tabs.includes(state.agendaTab)?state.agendaTab:"Todos";
+  const tab = tabs.includes(state.agendaTab)?state.agendaTab:"Clientes";
   const typeMap = TYPE_TAB;
   const q=(state.agQ||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
   let shown = rows.filter(c=>tab==="Todos"||c.type===typeMap[tab]);
@@ -6275,7 +6275,7 @@ function vAgenda(){
     <div class="pill-tabs contact-category-tabs" aria-label="Filtrar contactos">${tabs.map(x=>`<button class="${tab===x?'on':''}" aria-pressed="${tab===x}" onclick="WorkflowPolish.contact('${x}')">${contactCategoryIcon(x)}${x}</button>`).join("")}</div>
     <div class="agenda-search-group" role="search" aria-label="Buscar contactos">
       <button type="button" class="agenda-search-label" onclick="document.getElementById('agQBox')?.focus()">Buscar</button>
-      <input id="agQBox" type="search" value="${(state.agQ||"").replace(/"/g,"&quot;")}" placeholder="Nombre, ID o email" aria-label="Buscar contactos"
+      <input id="agQBox" type="search" autocomplete="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" value="${(state.agQ||"").replace(/"/g,"&quot;")}" placeholder="Nombre, ID o email" aria-label="Buscar contactos"
         oninput="state.agQ=this.value; renderKeep(this)">
     </div>
     <div class="contact-toolbar-actions">
@@ -10913,7 +10913,7 @@ async function printDoc(){
   z.style.display="block"; await printAs((isF?"Factura ":"Presupuesto ")+ref); z.style.display="none";
 }
 async function agendaExportPDF(){
-  const tab = TYPE_TAB[state.agendaTab]?state.agendaTab:"Todos";
+  const tab = state.agendaTab==="Todos"||TYPE_TAB[state.agendaTab]?state.agendaTab:"Clientes";
   const typeMap = TYPE_TAB;
   const rows = byBrand(state.clients).filter(c=>tab==="Todos"||c.type===typeMap[tab]);
   const bk = state.brandFilter!=="all" ? state.brandFilter : wsOrder[0];
@@ -10944,7 +10944,7 @@ async function agendaExportPDF(){
   await printAs(document.title);
 }
 function agendaExportCSV(){
-  const tab=TYPE_TAB[state.agendaTab]?state.agendaTab:"Todos",type=TYPE_TAB[tab];
+  const tab=state.agendaTab==="Todos"||TYPE_TAB[state.agendaTab]?state.agendaTab:"Clientes",type=TYPE_TAB[tab];
   const rows=byBrand(state.clients).filter(c=>tab==="Todos"||c.type===type);
   const csvCell=value=>'"'+String(value??'').replace(/"/g,'""')+'"';
   const columns=[['ID','num'],['Nombre','name'],['Razón social','fiscal'],['Tipo','type'],['Especialidad','trade'],['Teléfono','phone'],['Email','email'],['NIF/CIF','nif'],['Dirección','addr'],['Código postal','cp'],['Ciudad','city'],['País','country'],['Notas','notes']];
@@ -11436,7 +11436,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.8";
+const MODERNO_VER="v3.66.9";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13594,7 +13594,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 }
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=208">
-<link rel="stylesheet" href="/brand/agenda-ui.css?v=36608">
+<link rel="stylesheet" href="/brand/agenda-ui.css?v=36609">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>
