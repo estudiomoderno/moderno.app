@@ -3,7 +3,7 @@ import {Avatar,AvatarFallback,AvatarGroup,AvatarImage} from './vendor/reui/avata
 import {Button} from './vendor/reui/button';
 import {ButtonGroup,ButtonGroupText} from './vendor/reui/button-group';
 import {DropdownMenu,DropdownMenuContent,DropdownMenuGroup,DropdownMenuItem,DropdownMenuLabel,DropdownMenuSeparator,DropdownMenuTrigger} from './vendor/reui/dropdown-menu';
-import {MoreHorizontalIcon,SettingsIcon,UserIcon,UsersIcon} from 'lucide-react';
+import {MoreHorizontalIcon,UsersIcon} from 'lucide-react';
 
 /* Owner's c-button-group-5: original components/classes. Only the requested
    actions, translated labels and live data replace the demonstration content. */
@@ -26,13 +26,13 @@ export function Pattern({members,status,items,onOpenChange,container}:any){
    </div>
   </ButtonGroupText>
   <DropdownMenu onOpenChange={onOpenChange}>
-   <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label="Perfil y ajustes" data-profile-trigger="true"><MoreHorizontalIcon aria-hidden="true"/></Button>}/>
+   <DropdownMenuTrigger render={<Button variant="outline" size="icon" aria-label="Ajustes" data-profile-trigger="true"><MoreHorizontalIcon aria-hidden="true"/></Button>}/>
    <DropdownMenuContent align="end" className="w-48" container={container}>
     <DropdownMenuGroup>
      <DropdownMenuLabel>Ajustes</DropdownMenuLabel>
      <DropdownMenuSeparator/>
-     {items.map((item:any,index:number)=><DropdownMenuItem key={item.label} onClick={item.run}>
-      {index===0?<UserIcon aria-hidden="true"/>:<SettingsIcon aria-hidden="true"/>}<span>{item.label}</span>
+     {items.map((item:any)=><DropdownMenuItem key={item.label} onClick={item.run}>
+      <span className="ha-menu-icon" style={{'--ha-menu-icon':`url('${item.icon}')`} as React.CSSProperties} aria-hidden="true"/><span>{item.label}</span>
      </DropdownMenuItem>)}
     </DropdownMenuGroup>
    </DropdownMenuContent>

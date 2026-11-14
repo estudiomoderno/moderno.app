@@ -135,10 +135,14 @@ def check_header_actions(page,width):
  page.locator('[data-profile-trigger]').focus()
  page.wait_for_function('(()=>{const s=document.querySelector(".ha-component-host").shadowRoot;return s.activeElement===s.querySelector("[data-profile-trigger]");})()')
  page.locator('[data-profile-trigger]').press('ArrowDown')
- page.get_by_role('menuitem',name='Mi perfil',exact=True).wait_for(state='visible')
+ settings_menu=page.locator('.ha-component-host')
+ settings_menu.get_by_role('menuitem',name='Ajustes',exact=True).wait_for(state='visible')
+ assert settings_menu.get_by_role('menuitem').all_inner_texts()==['Ajustes','Automatizaciones','Plugins','Integraciones']
+ assert settings_menu.locator('.ha-menu-icon').count()==4
+ assert settings_menu.get_by_role('menuitem',name='Perfil',exact=True).count()==0
  assert page.get_by_role('menuitem',name='Cambiar estudio',exact=True).count()==0
  page.keyboard.press('Escape')
- page.get_by_role('menuitem',name='Mi perfil',exact=True).wait_for(state='hidden')
+ settings_menu.get_by_role('menuitem',name='Ajustes',exact=True).wait_for(state='hidden')
  page.wait_for_function("(()=>{const s=document.querySelector('.ha-component-host').shadowRoot;return s.activeElement===s.querySelector('[data-profile-trigger]');})()")
 def check_finances(page,width):
  # Exercise both original ReUI and native recovery without touching stored records.

@@ -9,6 +9,7 @@ var ModernoDesktopShell=(()=>{
  const $=s=>document.querySelector(s);
  const finance=['informes','facturas','presupuestos','contabilidad','prevision'];
  const navigation=[['Finanzas',finance,'contabilidad'],'agenda','mail','calendario','workspace','biblioteca','catalogo'];
+ const menuIcons={contabilidad:'finanzas',agenda:'agenda',mail:'mail',calendario:'calendario',workspace:'tareas',biblioteca:'productos',catalogo:'servicios',proyectos:'ver-todos'};
  const originals=()=>[...document.querySelectorAll('aside.sidebar .nav-item[data-view]')];
  const original=view=>originals().find(b=>b.dataset.view===view);
  const available=view=>!_accessLoading&&canView(view)&&!!original(view);
@@ -16,11 +17,13 @@ var ModernoDesktopShell=(()=>{
   const source=original(view);if(!source)return null;
   const icon=source.querySelector('.ico');if(icon){
    const copy=icon.cloneNode(true);copy.setAttribute('aria-hidden','true');
-   if(source.dataset.newIcon==='true'){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/menu-icons/${view}.svg?v=201')`);}
+   if(menuIcons[view]){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/sidebar-icons/${menuIcons[view]}.svg?v=36601')`);}
+   else if(source.dataset.newIcon==='true'){copy.classList.add('desktop-mask');copy.style.setProperty('--desktop-icon',`url('/brand/menu-icons/${view}.svg?v=201')`);}
    return copy;
   }
   return null;
  }
+ function assetIcon(name){const icon=document.createElement('span');icon.className='ico desktop-mask';icon.setAttribute('aria-hidden','true');icon.style.setProperty('--desktop-icon',`url('/brand/sidebar-icons/${name}.svg?v=36601')`);return icon;}
  function label(node,text){const span=document.createElement('span');span.className='desktop-label';span.textContent=text;node.append(span);node.setAttribute('aria-label',text);node.title=text;}
  function button(view,compact=false){
   const source=original(view);if(!source)return null;
@@ -56,7 +59,7 @@ var ModernoDesktopShell=(()=>{
  }
  function projectButton(project){
   const b=document.createElement('button');b.type='button';b.className='desktop-link desktop-icon-only desktop-recent-project';b.dataset.projectId=String(project.id);
-  const copy=icon('proyectos');if(copy)b.append(copy);
+  b.append(assetIcon('proyectos-recientes'));
   const text=document.createElement('span');text.className='desktop-label desktop-project-copy';
   const name=document.createElement('strong');name.textContent=project.name||project.num||'Proyecto';text.append(name);
   b.append(text);b.setAttribute('aria-label',project.name||'Proyecto');b.title=b.getAttribute('aria-label');
@@ -72,6 +75,7 @@ var ModernoDesktopShell=(()=>{
   const user=state.sessionUser||{},name=user.name||'Usuario',mail=user.mail||user.email||'';
   const nameNode=header.querySelector('.desktop-account-name'),mailNode=header.querySelector('.desktop-account-mail');
   if(nameNode)nameNode.textContent=name;if(mailNode)mailNode.textContent=mail;
+  const menuLabel=header.querySelector('.desktop-account-menu-label');if(menuLabel)menuLabel.textContent=name;
   const summary=header.querySelector('.desktop-profile>summary');if(summary)summary.setAttribute('aria-label',`Cuenta de ${name}`);
   const dot=header.querySelector('#topUserDot'),photo=window.ModernoHeaderPresence?.photo?.(user.avatar)||'';
   if(dot&&photo){
@@ -88,7 +92,7 @@ var ModernoDesktopShell=(()=>{
   const marker=document.createComment('desktop-shell: original position');node.before(marker);moved.push({node,marker});target.append(node);
  }
  function closeMenus(except){header?.querySelectorAll('details[open]').forEach(d=>{if(d!==except&&!(except&&d.contains(except)))d.open=false;});}
- function action(label,fn){const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',()=>{closeMenus();fn();});return b;}
+ function action(label,fn,iconName=''){const b=document.createElement('button');b.type='button';if(iconName)b.append(assetIcon(iconName));const text=document.createElement('span');text.textContent=label;b.append(text);b.addEventListener('click',()=>{closeMenus();fn();});return b;}
  function syncNavigation(){
   const trigger=$('#desktop-header .desktop-finance');
   trigger.hidden=!finance.some(available);
@@ -122,7 +126,6 @@ var ModernoDesktopShell=(()=>{
   const row=document.createElement('div');row.className='desktop-row';row.classList.toggle('is-collapsed',collapsed);header.append(row);
   const brand=document.createElement('div');brand.className='desktop-brand';row.append(brand);move($('aside.sidebar .sb-head'),brand);
   const brandCopy=document.createElement('span');brandCopy.className='desktop-brand-copy';brandCopy.innerHTML='<strong>Moderno.app</strong><small class="desktop-brand-plan"></small>';brand.append(brandCopy);
-  const brandChevron=document.createElement('span');brandChevron.className='desktop-brand-chevron';brandChevron.textContent='⌃\n⌄';brandChevron.setAttribute('aria-hidden','true');brand.append(brandChevron);
   const clip=document.createElement('div');clip.className='desktop-nav-clip';row.append(clip);
   const nav=document.createElement('nav');nav.id='desktop-navigation';nav.className='desktop-nav';nav.setAttribute('aria-label','Navegación general');clip.append(nav);
   clip.addEventListener('scroll',positionMenus);
@@ -152,13 +155,15 @@ var ModernoDesktopShell=(()=>{
   for(const view of ['plantillas','tutoriales']){const b=button(view,true);if(b)discover.append(b);}
   const documentation=discoveryButton();if(documentation)discover.append(documentation);nav.append(discover);
   const toggle=action('',toggleFold);toggle.className='desktop-toggle desktop-icon-only';toggle.setAttribute('aria-controls','desktop-navigation');label(toggle,'Comprimir menú lateral');
-  for(const name of ['collapse','expand']){const arrow=$('.sidebar .sb-arrow-'+name).cloneNode(true);arrow.setAttribute('class','desktop-arrow-'+name);toggle.append(arrow);}
-  const profile=document.createElement('details');profile.className='desktop-profile desktop-account';const summary=document.createElement('summary');summary.setAttribute('aria-label','Perfil y ajustes');move($('#topUser'),summary);
+  const panelIcon=document.createElementNS('http://www.w3.org/2000/svg','svg');panelIcon.setAttribute('viewBox','0 0 24 24');panelIcon.setAttribute('fill','none');panelIcon.setAttribute('stroke','currentColor');panelIcon.setAttribute('stroke-width','2');panelIcon.setAttribute('stroke-linecap','round');panelIcon.setAttribute('stroke-linejoin','round');panelIcon.setAttribute('aria-hidden','true');panelIcon.innerHTML='<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>';toggle.append(panelIcon);
+  const profile=document.createElement('details');profile.className='desktop-profile desktop-account';const summary=document.createElement('summary');summary.setAttribute('aria-label','Cuenta');move($('#topUser'),summary);
   const accountCopy=document.createElement('span');accountCopy.className='desktop-account-copy';const accountName=document.createElement('strong');accountName.className='desktop-account-name';const accountMail=document.createElement('small');accountMail.className='desktop-account-mail';accountCopy.append(accountName,accountMail);summary.append(accountCopy);
   const more=document.createElement('span');more.className='desktop-account-more';more.textContent='…';more.setAttribute('aria-hidden','true');summary.append(more);profile.append(summary);
-  const popup=document.createElement('div');popup.className='desktop-menu';popup.append(action('Mi perfil',()=>userModal()),action('Ajustes',()=>SettingsUI.open('cuenta')));
-  for(const view of ['automatizaciones','plugins','integraciones']){const b=button(view);if(b)popup.append(b);}
-  move($('#sidebarStudy'),popup);profile.append(popup);row.append(profile);
+  const popup=document.createElement('div');popup.className='desktop-menu desktop-account-menu';
+  const accountLabel=document.createElement('strong');accountLabel.className='desktop-account-menu-label';popup.append(accountLabel);
+  const accountSeparator=()=>{const line=document.createElement('span');line.className='desktop-menu-separator';line.setAttribute('role','separator');return line;};
+  popup.append(accountSeparator(),action('Perfil',()=>userModal(),'perfil'),action('Facturación',()=>SettingsUI.open('facturacion'),'facturacion'),action('Notificaciones',()=>SettingsUI.open('notificaciones'),'notificacion'),accountSeparator(),action('Sign Out',()=>sbLogout(),'sign-out'));
+  profile.append(popup);row.append(profile);
   const support=document.createElement('div');support.className='desktop-support';const supportButton=button('soporte',true);if(supportButton)support.append(supportButton);row.append(support);
   const inset=document.createElement('div');inset.className='desktop-inset-header';header.append(inset);inset.append(toggle);
   const breadcrumb=document.createElement('div');breadcrumb.className='desktop-inset-breadcrumb';breadcrumb.setAttribute('aria-label','Ruta de navegación');

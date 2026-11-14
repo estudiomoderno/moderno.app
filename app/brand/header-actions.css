@@ -37,6 +37,8 @@
  .ha-standalone .desktop-profile {position:relative}
  .ha-standalone .desktop-menu {position:absolute;top:calc(100% + 8px);right:0;display:grid;min-width:210px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 84px);overflow:auto;padding:7px;border:1px solid var(--ui-line);border-radius:12px;background:var(--app-surface);color:var(--ink);box-shadow:var(--shadow)}
  .ha-standalone .desktop-menu button {min-height:40px;padding:10px 12px;border:0;border-radius:8px;background:transparent;color:inherit;text-align:left;font:inherit;cursor:pointer}
+ .ha-standalone .desktop-menu button {display:flex;align-items:center;gap:9px;width:100%}
+ .ha-menu-icon {display:inline-block;width:17px;height:17px;flex:0 0 17px;background:currentColor;mask:var(--ha-menu-icon) center/contain no-repeat;-webkit-mask:var(--ha-menu-icon) center/contain no-repeat}
  body.has-header-actions .main>.topbar {display:none!important}
  body.has-header-actions:not(.desktop-shell):not(.editing):not(.portalmode) .main {padding-top:80px!important}
  body.has-header-actions :is(#desktop-header .desktop-actions,.ha-standalone) details[open]>.desktop-menu {animation:headerMenuIn 140ms ease-out}

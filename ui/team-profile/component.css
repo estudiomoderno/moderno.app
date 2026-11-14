@@ -31,6 +31,7 @@
 :host {display:inline-block;font-family:"Moderno ReUI Inter",sans-serif;font-size:16px;line-height:1.5;color:var(--foreground);text-size-adjust:100%;-webkit-text-size-adjust:100%}
 .style-nova {font:inherit;color:inherit}
 .reui-portals {position:relative;z-index:100}
+.ha-menu-icon {display:inline-block;width:16px;height:16px;flex:0 0 16px;background:currentColor;mask:var(--ha-menu-icon) center/contain no-repeat;-webkit-mask:var(--ha-menu-icon) center/contain no-repeat}
 /* Layout only: retain original Badge typography/height and size-3 close Button. */
 .pw-window-controls {min-width:0}
 .pw-tabs {min-width:0;overflow-x:auto;scrollbar-width:none;padding:2px}

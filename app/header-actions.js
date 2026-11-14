@@ -16,13 +16,16 @@ var ModernoHeaderActions=(()=>{
   }
   if(notificationComponent)try{notificationComponent.update({count:n,onOpen:()=>nativeNotification?.click()});}catch(error){recover();}
  }
- function action(caption,fn){const b=node('button','desktop-link',caption);b.type='button';b.addEventListener('click',()=>{standalone?.querySelectorAll('details[open]').forEach(d=>d.open=false);fn();});return b;}
+ function action(caption,fn,icon){const b=node('button','desktop-link');b.type='button';if(icon){const glyph=node('span','ha-menu-icon');glyph.style.setProperty('--ha-menu-icon',`url('/brand/sidebar-icons/${icon}.svg?v=36601')`);glyph.setAttribute('aria-hidden','true');b.append(glyph);}b.append(node('span','',caption));b.addEventListener('click',()=>{standalone?.querySelectorAll('details[open]').forEach(d=>d.open=false);fn();});return b;}
+ function settingsItems(){return [
+  {label:'Ajustes',icon:'/brand/sidebar-icons/ajustes.svg?v=36601',run:()=>SettingsUI.open('cuenta')},
+  ...[['automatizaciones','Automatizaciones','automatizacion'],['plugins','Plugins','plugins'],['integraciones','Integraciones','integraciones']].filter(([view])=>canView(view)).map(([view,label,icon])=>({label,icon:'/brand/sidebar-icons/'+icon+'.svg?v=36601',run:()=>go(view)}))
+ ];}
  function fallback(){
   const box=node('div','ha-standalone desktop-actions');box.id='app-header-actions';box.setAttribute('aria-label','Equipo y ajustes');
   const notification=node('button','ha-notifications');notification.type='button';notification.innerHTML=bell;notification.append(node('span','ha-badge'));notification.addEventListener('click',()=>notifModal());box.append(notification);
-  const profile=node('details','desktop-profile');const summary=node('summary','ha-more');summary.setAttribute('aria-label','Perfil y ajustes');summary.title='Perfil y ajustes';const dots=node('span','ha-dots');dots.innerHTML=more;summary.append(dots);profile.append(summary);
-  const menu=node('div','desktop-menu');menu.append(action('Mi perfil',()=>userModal()),action('Ajustes',()=>SettingsUI.open('cuenta')));
-  for(const [view,caption] of [['automatizaciones','Automatizaciones'],['plugins','Plugins'],['integraciones','Integraciones']])if(canView(view))menu.append(action(caption,()=>go(view)));
+  const profile=node('details','desktop-profile');const summary=node('summary','ha-more');summary.setAttribute('aria-label','Ajustes');summary.title='Ajustes';const dots=node('span','ha-dots');dots.innerHTML=more;summary.append(dots);profile.append(summary);
+  const menu=node('div','desktop-menu');for(const item of settingsItems())menu.append(action(item.label,item.run,item.icon.split('/').pop().split('.')[0]));
   profile.append(menu);box.append(profile);document.body.append(box);return box;
  }
  function projectTools(){
@@ -61,7 +64,7 @@ var ModernoHeaderActions=(()=>{
   const online=snapshot.status==='online',me=state.sessionUser||{};
   const members=online?snapshot.members:[{name:me.name||'Tú',avatar:me.avatar||''}];
   if(component){
-   const items=[...nativeProfile.querySelectorAll('.desktop-menu>button')].filter(b=>!b.hidden).map(b=>({label:b.textContent.trim(),run:()=>b.click()}));
+   const items=settingsItems();
    try{component.update({members:members.map(m=>({...m,avatar:ModernoHeaderPresence.photo(m.avatar),fallback:String(m.name||'?').trim().split(/\s+/).map(p=>p[0]).slice(0,2).join('').toUpperCase()})),status:snapshot.status,items,onOpenChange:open=>{if(open&&nativeProfile)nativeProfile.open=false;}});}catch(error){recover();}
    notifications();measure();return;
   }

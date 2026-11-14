@@ -15,6 +15,7 @@ window.state={view:'proyecto',myRole:'admin',currentProject:1,projTab:'archivos'
 window.baseline=JSON.stringify({projects:state.projects,invoices:state.invoices,quotes:state.quotes,entries:state.entries,history:state.history});
 window.dirty=false;window.draftEditing=()=>dirty;window.draftDirty=()=>dirty;window.draftExitModal=(...args)=>calls.push(['draft',...args]);
 window.SettingsUI={open:s=>{calls.push(['settings',s]);go('ajustes');}};window.userModal=()=>calls.push(['profile']);window.notifModal=()=>calls.push(['notifications']);
+window.sbLogout=()=>calls.push(['logout']);
 window.sb={};window.ESTUDIO_ID='fictional-study';
 window.meMail=()=> 'persona@example.invalid';
 window.byBrand=items=>items;window.homeRecent=()=>[1];window.newProject=()=>calls.push(['new-project']);
@@ -56,6 +57,9 @@ with sync_playwright() as p:
    if pathname.startswith('brand/acorn/') and '..' not in pathname:
     f=repo/'app'/pathname
     if f.is_file():r.fulfill(body=f.read_bytes(),content_type='font/ttf');return
+   if pathname.startswith('brand/sidebar-icons/') and '..' not in pathname:
+    f=repo/'app'/pathname
+    if f.is_file():r.fulfill(body=f.read_bytes(),content_type='image/svg+xml');return
    r.abort()
   page.route('**/*',route)
   page.set_content('<meta name="viewport" content="width=device-width"><base href="http://offline.invalid/"><style>'+inline+'</style>'+shell+'<button id="syncTag">Guardado ficticio</button>')
@@ -99,6 +103,7 @@ with sync_playwright() as p:
   assert page.locator('.desktop-section-label').inner_text()=='Workspace'
   assert page.locator('.desktop-brand-copy strong').inner_text()=='Moderno.app'
   assert page.locator('.desktop-brand-plan').inner_text()=='Free plan'
+  assert page.locator('.desktop-brand-chevron').count()==0
   assert page.locator('.desktop-inset-workspace').inner_text()=='Estudio ficticio'
   assert page.locator('.desktop-projects h2').inner_text()=='Proyectos'
   assert page.locator('.desktop-recent-title').inner_text()=='Recientes'
@@ -143,7 +148,11 @@ with sync_playwright() as p:
   assert page.locator('#desktop-header [data-desktop-view=conversaciones]').count()==0
   assert page.locator('#desktop-header .desktop-discover [data-desktop-view=plantillas]').count()==1,'Templates stay in the dedicated discovery section'
   assert page.locator('.desktop-nav [data-desktop-view]:is([data-desktop-view=automatizaciones],[data-desktop-view=plugins],[data-desktop-view=integraciones])').count()==0
-  assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)')==['automatizaciones','plugins','integraciones']
+  assert page.locator('.desktop-profile [data-desktop-view]').count()==0
+  assert page.locator('.desktop-account-menu>button').evaluate_all('(bs)=>bs.map(b=>b.textContent.trim())')==['Perfil','Facturación','Notificaciones','Sign Out']
+  assert page.locator('.desktop-account-menu>button .ico').count()==4
+  assert page.locator('.desktop-account-more').inner_text()=='…'
+  assert page.locator('.desktop-toggle svg').count()==1 and page.locator('.desktop-toggle svg rect').count()==1 and page.locator('.desktop-toggle svg path').count()==1
   assert page.locator('#desktop-header [data-desktop-view=proyectos]').get_attribute('aria-current')=='page'
   assert page.locator('.project-tabs').bounding_box()['y']>900,'Project tools should float at the bottom'
   keys=['tareas','listas','ai','conversaciones','planos','obra','diario','calobra','pres','utilidades','fin','cliente','archivos']
@@ -195,7 +204,7 @@ with sync_playwright() as p:
   assert page.evaluate('document.querySelector("#view input")===originalDraft')
   assert page.get_by_role('textbox',name='Borrador ficticio').input_value()=='Cambios sin guardar'
   page.locator('.desktop-profile>summary').click()
-  assert page.get_by_role('button',name='Ajustes',exact=True).is_visible()
+  assert page.get_by_role('button',name='Perfil',exact=True).is_visible()
   page.locator('.desktop-profile>summary').press('Escape')
   page.get_by_role('button',name='Desplegar menú lateral',exact=True).press('Enter')
   settle_header(page)
@@ -246,13 +255,13 @@ with sync_playwright() as p:
   for view in page.locator('#desktop-header [data-desktop-view]').evaluate_all('(bs)=>bs.map(b=>b.dataset.desktopView)'):
    reveal_route(page,view).click()
    assert page.evaluate('state.view')==view,view
-  # Profile uses original actions; settings fall back to the unchanged sidebar UI.
-  page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Mi perfil',exact=True).click();assert page.evaluate('calls.pop()')==['profile']
-  page.locator('.desktop-profile>summary').click();page.locator('#settings-switch>summary').click()
-  assert page.locator('.desktop-profile').get_attribute('open') is not None
-  assert page.locator('#settings-switch').get_attribute('open') is not None
-  page.locator('#settings-switch>summary').press('Escape')
-  page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Ajustes',exact=True).click();assert page.evaluate('state.view')=='ajustes';assert page.locator('#desktop-header.desktop-settings-active').count()==1
+  # The account menu follows the ReUI account anatomy and keeps the existing handlers.
+  page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Perfil',exact=True).click();assert page.evaluate('calls.pop()')==['profile']
+  page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Facturación',exact=True).click();assert page.evaluate('calls.pop()')==['settings','facturacion']
+  page.evaluate("go('proyecto',1)")
+  page.locator('.desktop-profile>summary').click();page.locator('.desktop-account-menu').get_by_role('button',name='Notificaciones',exact=True).click();assert page.evaluate('calls.pop()')==['settings','notificaciones']
+  page.evaluate("go('proyecto',1)")
+  page.locator('.desktop-profile>summary').click();page.get_by_role('button',name='Sign Out',exact=True).click();assert page.evaluate('calls.pop()')==['logout']
   page.evaluate("go('proyecto',1)")
   products.click();assert page.evaluate('state.view')=='biblioteca'
   services.click();assert page.evaluate('state.view')=='catalogo'
@@ -263,7 +272,7 @@ with sync_playwright() as p:
   assert page.locator('#project-tab-fin').count()==0
   assert page.locator('#project-tab-utilidades').count()==0
   assert page.locator('#project-tab-conversaciones').count()==0
-  assert page.locator('.desktop-profile [data-desktop-view]').evaluate_all('(bs)=>bs.every(b=>b.hidden)')
+  assert page.locator('.desktop-profile [data-desktop-view]').count()==0
   page.evaluate("_accessRole='miembro';state.myRole='miembro';render()")
   page.get_by_role('button',name='Finanzas',exact=True).click()
   assert page.evaluate('state.view')=='presupuestos','Finance must open the first authorized section'
