@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {passwordConnection,safeErrorCode,safeErrorMessage,serializeSecret,studyId} from '../supabase/functions/mail-connect/core.mjs';
 import {imapFolderMap,parseImapBody,parseImapMessages} from '../supabase/functions/mail-connect/network.ts';
+import {buildPlainMessage,mimeAttachment,parseMimeMessage} from '../supabase/functions/mail-connect/mime.mjs';
 
 test('iCloud uses Apple secure endpoints and never the ordinary Apple password label',()=>{
  const account=passwordConnection({provider:'icloud',email:'Persona@icloud.com',password:'abcd-efgh-ijkl-mnop'});
@@ -43,6 +44,12 @@ test('IMAP maps Apple special folders and parses bounded message headers',()=>{
  assert.equal(parseImapBody('Content-Type: text/html; charset=utf-8\r\n\r\n<p>Hola <strong>Javi</strong></p>'),'Hola  Javi');
 });
 
+test('MIME reader keeps HTML signatures, inline images and downloadable attachments',()=>{
+ const raw=['From: Cliente <cliente@example.com>','To: hola@estudiomoderno.es','Subject: Propuesta','Content-Type: multipart/related; boundary="demo"','','--demo','Content-Type: text/html; charset=utf-8','','<p>Hola</p><img src="cid:logo">','--demo','Content-Type: image/png; name="logo.png"','Content-Disposition: inline; filename="logo.png"','Content-ID: <logo>','Content-Transfer-Encoding: base64','','aW1hZ2Vu','--demo','Content-Type: application/pdf; name="propuesta.pdf"','Content-Disposition: attachment; filename="propuesta.pdf"','Content-Transfer-Encoding: base64','','cGRm','--demo--'].join('\r\n');
+ const parsed=parseMimeMessage(raw);assert.match(parsed.bodyHtml,/data:image\/png;base64,aW1hZ2Vu/);assert.equal(parsed.attachments.length,1);assert.equal(parsed.attachments[0].name,'propuesta.pdf');assert.equal(mimeAttachment(raw,parsed.attachments[0].id).data,'cGRm');
+ const outgoing=buildPlainMessage({from:'hola@estudiomoderno.es',to:['cliente@example.com'],cc:[],subject:'Re: Propuesta',body:'Gracias',inReplyTo:'<original@example.com>',references:'<original@example.com>'});assert.match(outgoing,/In-Reply-To: <original@example.com>/);assert.match(outgoing,/R3JhY2lhcw==/);
+});
+
 test('mail UI replaces the preparatory placeholder and reuses one connection module',()=>{
  const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
  const ui=readFileSync(new URL('../app/mail-connections.js',import.meta.url),'utf8');
@@ -50,7 +57,7 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(html,/mail-connections\.js/);assert.match(html,/ModernoMail\.renderMail\(\)/);assert.match(html,/ModernoMail\.integrationCards\(\)/);
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
- assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder=state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36714/);
+ assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder=state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36715/);
  for(const label of ['Recibidos','Enviados','Borradores','Spam','Papelera','Redactar','Ajustes'])assert.match(ui,new RegExp(label));
  assert.match(ui,/mail-icons\/compose\.svg/);for(const icon of ['inbox','sent','drafts','spam','trash'])assert.match(ui,new RegExp(`icon:'${icon}\\.svg'`));
  assert.match(ui,/mail-icons\/refresh\.svg/);assert.match(ui,/mail-icons\/settings\.svg/);assert.doesNotMatch(ui,/>Actualizar<|>Ajustes</);
@@ -60,6 +67,7 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(ui,/connectedAccounts/);assert.match(ui,/selectedConnection/);assert.match(ui,/mark\(account\.provider\)/);assert.match(ui,/ModernoMail\.selectAccount/);assert.doesNotMatch(ui,/mail-account-identity">\$\{mark\('gmail'\)\}/);
  assert.match(css,/\.mail-account-menu\{display:grid[^}]*max-height:264px/);assert.match(css,/\.mail-account-option\{display:grid/);
  assert.match(ui,/action:'message'/);assert.match(ui,/action:'trash_messages'/);assert.match(ui,/mail-message-select/);assert.match(ui,/mail-reader-subject/);assert.match(ui,/trash\.svg[\s\S]*refresh\.svg/);assert.match(css,/\.mail-reader\{/);assert.match(css,/\.mail-message-select input:checked\+span/);
+ assert.match(ui,/action:'attachment'/);assert.match(ui,/action:'send'/);for(const action of ['Responder','Responder a todos','Reenviar','Imprimir','Eliminar'])assert.match(ui,new RegExp(action));for(const icon of ['reply.svg','reply-all.svg','forward.svg','print.svg','delete.svg'])assert.match(ui,new RegExp(icon.replace('.','\\.')));assert.match(ui,/sanitizedEmailHtml/);assert.match(ui,/downloadAttachment/);assert.match(css,/\.mail-reader-html/);assert.match(css,/\.mail-reader-attachments/);assert.match(css,/\.mail-composer/);
  assert.doesNotMatch(ui,/Gestionar conexión/);assert.match(ui,/Conectado · \$\{escape\(row\.email\)\}/);
  assert.match(html,/MAIL_FUNCTION_URL = "https:\/\/cgqtylvaapwbuwqvpjtb\.supabase\.co\/functions\/v1\/mail-connect"/);
  assert.match(html,/MAIL_FUNCTION_ANON_KEY = "eyJ[^"]+"/);
@@ -72,8 +80,8 @@ test('mail Edge Function preflight allows every header sent by supabase-js',()=>
  const allowHeaders=fn.match(/'Access-Control-Allow-Headers':'([^']+)'/)?.[1]?.split(',').map(value=>value.trim());
  assert.deepEqual(allowHeaders,['authorization','x-client-info','apikey','content-type']);
  assert.match(fn,/if\(req\.method==='OPTIONS'\)/);
- assert.match(fn,/const body=await req\.json\(\);const subject=await actor\(req,body\?\.authToken\)/);
+ assert.match(fn,/const body=await req\.json\(\);action=String\(body\?\.action\|\|''\);const subject=await actor\(req,body\?\.authToken\)/);
  assert.doesNotMatch(fn,/include_granted_scopes/);
  assert.match(fn,/https:\/\/auth\.moderno\.app\/functions\/v1\/mail-connect/);
- assert.match(fn,/body\.action==='inbox'/);assert.match(fn,/body\.action==='message'/);assert.match(fn,/body\.action==='trash_messages'/);assert.match(fn,/gmail\/v1\/users\/me\/messages/);assert.match(fn,/const gmailFolders=\{inbox:'INBOX',sent:'SENT',drafts:'DRAFT',spam:'SPAM',trash:'TRASH'\}/);assert.match(fn,/includeSpamTrash/);assert.match(fn,/readImapMailbox/);assert.match(fn,/trashImapMessages/);assert.match(fn,/folderCounts/);
+ assert.match(fn,/body\.action==='inbox'/);assert.match(fn,/body\.action==='message'/);assert.match(fn,/body\.action==='attachment'/);assert.match(fn,/body\.action==='send'/);assert.match(fn,/body\.action==='trash_messages'/);assert.match(fn,/gmail\/v1\/users\/me\/messages/);assert.match(fn,/const gmailFolders=\{inbox:'INBOX',sent:'SENT',drafts:'DRAFT',spam:'SPAM',trash:'TRASH'\}/);assert.match(fn,/includeSpamTrash/);assert.match(fn,/readImapMailbox/);assert.match(fn,/readImapAttachment/);assert.match(fn,/sendSmtpMessage/);assert.match(fn,/trashImapMessages/);assert.match(fn,/folderCounts/);
 });

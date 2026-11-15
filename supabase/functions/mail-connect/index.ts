@@ -1,6 +1,7 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.57.4';
 import {MailInputError,connectionId,passwordConnection,publicConnection,safeErrorCode,safeErrorMessage,serializeSecret,studyId} from './core.mjs';
-import {readImapMailbox,readImapMessage,trashImapMessages,verifyPasswordAccount} from './network.ts';
+import {readImapAttachment,readImapMailbox,readImapMessage,sendSmtpMessage,trashImapMessages,verifyPasswordAccount} from './network.ts';
+import {buildPlainMessage} from './mime.mjs';
 
 const url=Deno.env.get('SUPABASE_URL')!,anon=Deno.env.get('SUPABASE_ANON_KEY')!,service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -13,7 +14,7 @@ const appReturn=()=>Deno.env.get('MAIL_APP_RETURN_URL')||'https://app.moderno.ap
 function headers(origin:string|null){return {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin',...(origin&&origins.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};}
 function json(origin:string|null,body:unknown,status=200){return new Response(JSON.stringify(body),{status,headers:headers(origin)});}
 function redirect(status:string){const target=new URL(appReturn());target.searchParams.set('mail_oauth',status);target.hash='/mail';return Response.redirect(target.toString(),303);}
-function base64url(bytes:Uint8Array){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function base64url(bytes:Uint8Array){let binary='';for(let at=0;at<bytes.length;at+=32768)binary+=String.fromCharCode(...bytes.subarray(at,at+32768));return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
 async function sha256(value:string){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value));return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');}
 async function challenge(value:string){return base64url(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))));}
 function randomToken(size=48){const bytes=new Uint8Array(size);crypto.getRandomValues(bytes);return base64url(bytes);}
@@ -35,14 +36,19 @@ async function googleAccess(refreshToken:string){
 }
 async function gmailProfile(accessToken:string){const response=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile',{headers:{Authorization:'Bearer '+accessToken}});const body=await response.json().catch(()=>({}));if(!response.ok||!body.emailAddress)throw Object.assign(new Error('gmail profile'),{code:'gmail_auth'});return {email:String(body.emailAddress).toLowerCase(),messages:Number(body.messagesTotal)||0};}
 function gmailHeader(message:any,name:string){return String((message?.payload?.headers||[]).find((item:any)=>String(item?.name||'').toLowerCase()===name.toLowerCase())?.value||'');}
+function gmailPartHeader(part:any,name:string){return String((part?.headers||[]).find((item:any)=>String(item?.name||'').toLowerCase()===name.toLowerCase())?.value||'');}
 function requestedMessageId(value:unknown){const id=String(value||'');if(!/^[A-Za-z0-9_-]{1,128}$/.test(id))throw new MailInputError('Correo no válido');return id;}
 function requestedMessageIds(value:unknown){if(!Array.isArray(value)||!value.length||value.length>30)throw new MailInputError('Selecciona entre 1 y 30 correos');return [...new Set(value.map(requestedMessageId))];}
-function gmailDecode(value:unknown){try{const raw=String(value||'').replace(/-/g,'+').replace(/_/g,'/'),encoded=raw.padEnd(Math.ceil(raw.length/4)*4,'=');return new TextDecoder().decode(Uint8Array.from(atob(encoded),char=>char.charCodeAt(0)));}catch{return '';}}
-function gmailPlainText(part:any):{plain:string;html:string}{
- const own=gmailDecode(part?.body?.data),type=String(part?.mimeType||'').toLowerCase();let plain=type==='text/plain'?own:'',html=type==='text/html'?own:'';
- for(const child of Array.isArray(part?.parts)?part.parts:[]){const nested=gmailPlainText(child);if(!plain&&nested.plain)plain=nested.plain;if(!html&&nested.html)html=nested.html;}return {plain,html};
-}
+function requestedAttachmentId(value:unknown){const id=String(value||'');if(!/^[A-Za-z0-9_.-]{1,80}$/.test(id))throw new MailInputError('Adjunto no válido');return id;}
+function gmailBytes(value:unknown){try{const raw=String(value||'').replace(/-/g,'+').replace(/_/g,'/'),encoded=raw.padEnd(Math.ceil(raw.length/4)*4,'='),binary=atob(encoded),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return bytes;}catch{return new Uint8Array();}}
+function standardBase64(value:unknown){const raw=String(value||'').replace(/-/g,'+').replace(/_/g,'/');return raw.padEnd(Math.ceil(raw.length/4)*4,'=');}
+function gmailParts(part:any):any[]{return [part,...(Array.isArray(part?.parts)?part.parts.flatMap(gmailParts):[])];}
+async function gmailPartData(token:string,messageId:string,part:any){if(part?.body?.data)return String(part.body.data);const attachmentId=String(part?.body?.attachmentId||'');if(!attachmentId)return '';const response=await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,{headers:{Authorization:'Bearer '+token}}),body=await response.json().catch(()=>({}));if(!response.ok||!body.data)throw Object.assign(new Error('gmail attachment'),{code:'gmail_auth'});return String(body.data);}
+function gmailText(value:unknown){return new TextDecoder().decode(gmailBytes(value));}
 function htmlText(value:string){return value.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<br\s*\/?\s*>/gi,'\n').replace(/<\/p\s*>/gi,'\n\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#39;/gi,"'").replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();}
+const EMAIL=/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
+function requestedAddresses(value:unknown,label:string){if(!Array.isArray(value)||value.length>50)throw new MailInputError(`Revisa ${label}`);const rows=[...new Set(value.map(item=>String(item||'').trim().toLowerCase()).filter(Boolean))];if(rows.some(item=>!EMAIL.test(item)))throw new MailInputError(`Revisa ${label}`);return rows;}
+function requestedDraft(body:any){const to=requestedAddresses(body?.to,'los destinatarios'),cc=requestedAddresses(body?.cc||[],'las copias'),subject=String(body?.subject||'').replace(/[\r\n]+/g,' ').trim().slice(0,500),text=String(body?.body||'').slice(0,524288);if(!to.length)throw new MailInputError('Añade al menos un destinatario');if(!subject)throw new MailInputError('Escribe un asunto');if(!text.trim())throw new MailInputError('Escribe el mensaje');const header=(value:unknown)=>String(value||'').replace(/[\r\n]+/g,' ').trim().slice(0,1000);return {to,cc,subject,body:text,inReplyTo:header(body?.inReplyTo),references:header(body?.references),threadId:body?.threadId?requestedMessageId(body.threadId):''};}
 const gmailFolders={inbox:'INBOX',sent:'SENT',drafts:'DRAFT',spam:'SPAM',trash:'TRASH'} as const;
 type GmailFolder=keyof typeof gmailFolders;
 function gmailFolder(value:unknown):GmailFolder{return typeof value==='string'&&value in gmailFolders?value as GmailFolder:'inbox';}
@@ -62,8 +68,12 @@ async function gmailInbox(refreshToken:string,folderValue:unknown){
 }
 async function gmailMessage(refreshToken:string,messageId:unknown){
  const token=await googleAccess(refreshToken),id=requestedMessageId(messageId),response=await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=full`,{headers:{Authorization:'Bearer '+token.access_token}}),message=await response.json().catch(()=>({}));if(!response.ok)throw Object.assign(new Error('gmail message'),{code:'gmail_auth'});
- const content=gmailPlainText(message.payload),bodyText=(content.plain||htmlText(content.html)||String(message.snippet||'')).slice(0,131072);return {id,threadId:String(message.threadId||''),from:gmailHeader(message,'From'),to:gmailHeader(message,'To'),subject:gmailHeader(message,'Subject')||'(Sin asunto)',date:gmailHeader(message,'Date'),timestamp:Number(message.internalDate)||0,bodyText};
+ const parts=gmailParts(message.payload),plainPart=parts.find(part=>String(part?.mimeType||'').toLowerCase()==='text/plain'&&!part.filename),htmlPart=parts.find(part=>String(part?.mimeType||'').toLowerCase()==='text/html'&&!part.filename),plain=plainPart?gmailText(await gmailPartData(token.access_token,id,plainPart)):'',rawHtml=htmlPart?gmailText(await gmailPartData(token.access_token,id,htmlPart)):'',attachmentParts=parts.filter(part=>part!==message.payload&&!gmailPartHeader(part,'Content-ID')&&!/^inline/i.test(gmailPartHeader(part,'Content-Disposition'))&&(String(part?.filename||'')||/attachment/i.test(gmailPartHeader(part,'Content-Disposition'))));
+ let bodyHtml=rawHtml;const inlineParts=parts.filter(part=>String(part?.mimeType||'').toLowerCase().startsWith('image/')&&gmailPartHeader(part,'Content-ID')&&Number(part?.body?.size||0)<=2097152);for(const part of inlineParts.slice(0,20)){const cid=gmailPartHeader(part,'Content-ID').replace(/^<|>$/g,''),data=await gmailPartData(token.access_token,id,part);if(data)bodyHtml=bodyHtml.replace(new RegExp(`cid:${cid.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}`,'gi'),`data:${part.mimeType};base64,${standardBase64(data)}`);}
+ const bodyText=(plain||htmlText(rawHtml)||String(message.snippet||'')).slice(0,524288),attachments=attachmentParts.map(part=>({id:String(part.partId||''),name:String(part.filename||'archivo'),type:String(part.mimeType||'application/octet-stream'),size:Math.max(0,Number(part?.body?.size)||0)})).filter(item=>item.id);return {id,threadId:String(message.threadId||''),from:gmailHeader(message,'From'),to:gmailHeader(message,'To'),cc:gmailHeader(message,'Cc'),replyTo:gmailHeader(message,'Reply-To'),messageId:gmailHeader(message,'Message-ID'),references:gmailHeader(message,'References'),subject:gmailHeader(message,'Subject')||'(Sin asunto)',date:gmailHeader(message,'Date'),timestamp:Number(message.internalDate)||0,bodyText,bodyHtml,attachments};
 }
+async function gmailAttachment(refreshToken:string,messageId:unknown,attachmentId:unknown){const token=await googleAccess(refreshToken),id=requestedMessageId(messageId),partId=requestedAttachmentId(attachmentId),response=await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}?format=full`,{headers:{Authorization:'Bearer '+token.access_token}}),message=await response.json().catch(()=>({}));if(!response.ok)throw Object.assign(new Error('gmail message'),{code:'gmail_auth'});const part=gmailParts(message.payload).find(item=>String(item?.partId||'')===partId);if(!part)throw new MailInputError('No se ha encontrado el adjunto');if(Number(part?.body?.size||0)>10485760)throw new MailInputError('El adjunto supera el límite de descarga de 10 MB');const data=await gmailPartData(token.access_token,id,part);return {name:String(part.filename||'archivo'),type:String(part.mimeType||'application/octet-stream'),size:Math.max(0,Number(part?.body?.size)||gmailBytes(data).length),data:standardBase64(data)};}
+async function gmailSend(refreshToken:string,from:string,draft:ReturnType<typeof requestedDraft>){const token=await googleAccess(refreshToken),raw=buildPlainMessage({from,to:draft.to,cc:draft.cc,subject:draft.subject,body:draft.body,inReplyTo:draft.inReplyTo,references:draft.references}),payload:any={raw:base64url(new TextEncoder().encode(raw))};if(draft.threadId)payload.threadId=draft.threadId;const response=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:'Bearer '+token.access_token,'Content-Type':'application/json'},body:JSON.stringify(payload)}),result=await response.json().catch(()=>({}));if(!response.ok||!result.id)throw Object.assign(new Error('gmail send'),{code:'gmail_auth'});return {sent:true,id:String(result.id)};}
 async function gmailTrash(refreshToken:string,messageIds:unknown){
  const token=await googleAccess(refreshToken),ids=requestedMessageIds(messageIds),responses=await Promise.all(ids.map(id=>fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(id)}/trash`,{method:'POST',headers:{Authorization:'Bearer '+token.access_token}})));if(responses.some(response=>!response.ok))throw Object.assign(new Error('gmail trash'),{code:'gmail_auth'});return {moved:ids.length};
 }
@@ -88,8 +98,8 @@ Deno.serve(async(req:Request)=>{
  if(req.method==='GET')return callback(req);
  if(req.method==='OPTIONS')return origins.includes(origin||'')?new Response(null,{status:204,headers:headers(origin)}):new Response(null,{status:403});
  if(req.method!=='POST'||(origin&&!origins.includes(origin)))return json(origin,{ok:false,error:'Solicitud no permitida'},403);
- try{
-  const body=await req.json();const subject=await actor(req,body?.authToken);const study=studyId(body?.studyId);await requireAdmin(subject,study);
+ let action='';try{
+  const body=await req.json();action=String(body?.action||'');const subject=await actor(req,body?.authToken);const study=studyId(body?.studyId);await requireAdmin(subject,study);
   if(body.action==='status'){const {data,error}=await subject.client.rpc('mail_connection_status',{p_estudio:study});if(error)throw error;return json(origin,{ok:true,connections:(data||[]).map(publicConnection)});}
   if(body.action==='inbox'){
    const id=connectionId(body.connectionId),{data,error}=await admin.rpc('mail_connection_admin_get',{p_user:subject.user.id,p_estudio:study,p_connection:id});if(error||!data)throw error||Error('missing');
@@ -97,6 +107,12 @@ Deno.serve(async(req:Request)=>{
   }
   if(body.action==='message'){
    const id=connectionId(body.connectionId),{data,error}=await admin.rpc('mail_connection_admin_get',{p_user:subject.user.id,p_estudio:study,p_connection:id});if(error||!data)throw error||Error('missing');const secretData=JSON.parse(data.secret),message=data.provider==='gmail'?await gmailMessage(secretData.refreshToken,body.messageId):await readImapMessage(secretData,body.folder,body.messageId);return json(origin,{ok:true,message});
+  }
+  if(body.action==='attachment'){
+   const id=connectionId(body.connectionId),{data,error}=await admin.rpc('mail_connection_admin_get',{p_user:subject.user.id,p_estudio:study,p_connection:id});if(error||!data)throw error||Error('missing');const secretData=JSON.parse(data.secret),attachment=data.provider==='gmail'?await gmailAttachment(secretData.refreshToken,body.messageId,body.attachmentId):await readImapAttachment(secretData,body.folder,body.messageId,body.attachmentId);if(Number(attachment.size)>10485760)throw new MailInputError('El adjunto supera el límite de descarga de 10 MB');return json(origin,{ok:true,attachment});
+  }
+  if(body.action==='send'){
+   const id=connectionId(body.connectionId),draft=requestedDraft(body),{data,error}=await admin.rpc('mail_connection_admin_get',{p_user:subject.user.id,p_estudio:study,p_connection:id});if(error||!data)throw error||Error('missing');const secretData=JSON.parse(data.secret),result=data.provider==='gmail'?await gmailSend(secretData.refreshToken,String(data.email),draft):await sendSmtpMessage(secretData,String(data.email),draft);return json(origin,{ok:true,...result});
   }
   if(body.action==='trash_messages'){
    if(body.folder==='trash')throw new MailInputError('Estos correos ya están en la papelera');const id=connectionId(body.connectionId),{data,error}=await admin.rpc('mail_connection_admin_get',{p_user:subject.user.id,p_estudio:study,p_connection:id});if(error||!data)throw error||Error('missing');const secretData=JSON.parse(data.secret),result=data.provider==='gmail'?await gmailTrash(secretData.refreshToken,body.messageIds):await trashImapMessages(secretData,body.folder,requestedMessageIds(body.messageIds));return json(origin,{ok:true,...result});
@@ -118,5 +134,5 @@ Deno.serve(async(req:Request)=>{
    return json(origin,{ok:true});
   }
   throw new MailInputError('Acción no válida');
- }catch(error){const code=safeErrorCode(error),status=error instanceof MailInputError?400:Number((error as any)?.status)||((error as any)?.code==='42501'?403:502);return json(origin,{ok:false,code,error:error instanceof MailInputError?error.message:safeErrorMessage(code)},status);}
+ }catch(error){const code=safeErrorCode(error),status=error instanceof MailInputError?400:Number((error as any)?.status)||((error as any)?.code==='42501'?403:502),fallback=action==='send'?'No se ha podido enviar el correo.':action==='attachment'?'No se ha podido descargar el adjunto.':action==='message'?'No se ha podido abrir el correo.':safeErrorMessage(code);return json(origin,{ok:false,code,error:error instanceof MailInputError?error.message:fallback},status);}
 });

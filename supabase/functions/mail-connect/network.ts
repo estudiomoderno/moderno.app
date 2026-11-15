@@ -1,6 +1,7 @@
 import * as net from 'node:net';
 import * as tls from 'node:tls';
 import {lookup} from 'node:dns/promises';
+import {buildPlainMessage,mimeAttachment,parseMimeMessage} from './mime.mjs';
 
 type Security='tls'|'starttls';
 type Endpoint={host:string;port:number;security:Security;user:string};
@@ -30,7 +31,7 @@ async function tlsSocket(address:string,host:string,port:number,socket?:net.Sock
 
 class Lines{
  socket:net.Socket|tls.TLSSocket;buffer='';queue:string[]=[];waiters:Array<(line:string)=>void>=[];size=0;onData:(chunk:string)=>void;
- constructor(socket:net.Socket|tls.TLSSocket){this.socket=socket;socket.setEncoding('utf8');this.onData=(chunk:string)=>{this.size+=Buffer.byteLength(chunk);if(this.size>2097152){socket.destroy(new Error('response too large'));return;}this.buffer+=chunk;let pos;while((pos=this.buffer.indexOf('\n'))>=0){const line=this.buffer.slice(0,pos+1).replace(/\r?\n$/,'');this.buffer=this.buffer.slice(pos+1);const waiter=this.waiters.shift();waiter?waiter(line):this.queue.push(line);}};socket.on('data',this.onData);}
+ constructor(socket:net.Socket|tls.TLSSocket){this.socket=socket;socket.setEncoding('utf8');this.onData=(chunk:string)=>{this.size+=Buffer.byteLength(chunk);if(this.size>12582912){socket.destroy(new Error('response too large'));return;}this.buffer+=chunk;let pos;while((pos=this.buffer.indexOf('\n'))>=0){const line=this.buffer.slice(0,pos+1).replace(/\r?\n$/,'');this.buffer=this.buffer.slice(pos+1);const waiter=this.waiters.shift();waiter?waiter(line):this.queue.push(line);}};socket.on('data',this.onData);}
  line(timeout=12000){if(this.queue.length)return Promise.resolve(this.queue.shift()!);return new Promise<string>((resolve,reject)=>{const timer=setTimeout(()=>reject(new MailNetworkError('timeout','timeout')),timeout);this.waiters.push(line=>{clearTimeout(timer);resolve(line);});});}
  write(value:string){this.socket.write(value+'\r\n');}
  detach(){this.socket.off('data',this.onData);}
@@ -99,14 +100,19 @@ export async function readImapMailbox(account:Account,folderValue:unknown){
  }finally{try{lines.write(`m${tag} LOGOUT`);}catch{}socket.end();socket.destroy();}
 }
 export async function readImapMessage(account:Account,folderValue:unknown,messageId:unknown){
+ const {uid,first,raw}=await readImapRaw(account,folderValue,messageId),parsed=parseMimeMessage(raw);
+ return {id:`imap-${uid}`,from:headerValue(raw,'From'),to:headerValue(raw,'To'),cc:headerValue(raw,'Cc'),replyTo:headerValue(raw,'Reply-To'),messageId:headerValue(raw,'Message-ID'),references:headerValue(raw,'References'),subject:headerValue(raw,'Subject')||'(Sin asunto)',date:headerValue(raw,'Date')||first.match(/\bINTERNALDATE "([^"]+)"/i)?.[1]||'',bodyText:parsed.bodyText,bodyHtml:parsed.bodyHtml,attachments:parsed.attachments};
+}
+async function readImapRaw(account:Account,folderValue:unknown,messageId:unknown){
  const folder=folderKey(folderValue),uid=messageUid(messageId),{socket,lines}=await loginImap(account.imap,account.password);let tag=2;
  try{
   const paths=imapFolderMap(await imapCommand(lines,`m${tag++}`,'LIST "" "*"')),path=paths[folder];if(!path)throw new MailNetworkError('connection_failed','folder');
-  await imapCommand(lines,`m${tag++}`,`EXAMINE ${imapQuoted(path)}`);const rows=await imapCommand(lines,`m${tag++}`,`UID FETCH ${uid} (UID FLAGS INTERNALDATE BODY.PEEK[]<0.131072>)`),start=rows.findIndex(row=>/^\* \d+ FETCH\b/i.test(row));if(start<0)throw new MailNetworkError('connection_failed','message');
+  await imapCommand(lines,`m${tag++}`,`EXAMINE ${imapQuoted(path)}`);const rows=await imapCommand(lines,`m${tag++}`,`UID FETCH ${uid} (UID FLAGS INTERNALDATE BODY.PEEK[]<0.8388608>)`),start=rows.findIndex(row=>/^\* \d+ FETCH\b/i.test(row));if(start<0)throw new MailNetworkError('connection_failed','message');
   const first=rows[start],raw=rows.slice(start+1).filter((row,index,all)=>!(index===all.length-1&&row.trim()===')')).join('\r\n');
-  return {id:`imap-${uid}`,from:headerValue(raw,'From'),to:headerValue(raw,'To'),subject:headerValue(raw,'Subject')||'(Sin asunto)',date:headerValue(raw,'Date')||first.match(/\bINTERNALDATE "([^"]+)"/i)?.[1]||'',bodyText:parseImapBody(raw)};
+  return {uid,first,raw};
  }finally{try{lines.write(`m${tag} LOGOUT`);}catch{}socket.end();socket.destroy();}
 }
+export async function readImapAttachment(account:Account,folderValue:unknown,messageId:unknown,attachmentId:unknown){const id=String(attachmentId||'');if(!/^imap-part-[0-9.]{1,60}$/.test(id))throw new MailNetworkError('connection_failed','attachment id');const {raw}=await readImapRaw(account,folderValue,messageId);return mimeAttachment(raw,id);}
 export async function trashImapMessages(account:Account,folderValue:unknown,messageIds:unknown[]){
  const folder=folderKey(folderValue);if(folder==='trash')throw new MailNetworkError('connection_failed','already trash');const uids=messageIds.map(messageUid),{socket,lines}=await loginImap(account.imap,account.password);let tag=2;
  try{
@@ -124,6 +130,18 @@ async function verifySmtp(endpoint:Endpoint,password:string){
   const auth=Buffer.from(`\0${endpoint.user}\0${password}`,'utf8').toString('base64');lines.write('AUTH PLAIN '+auth);let response=await smtpResponse(lines);if(response.code===334){lines.write(auth);response=await smtpResponse(lines);}
   if(response.code!==235){lines.write('AUTH LOGIN');response=await smtpResponse(lines);if(response.code!==334)throw new MailNetworkError('smtp_auth','auth');lines.write(Buffer.from(endpoint.user,'utf8').toString('base64'));response=await smtpResponse(lines);if(response.code!==334)throw new MailNetworkError('smtp_auth','user');lines.write(Buffer.from(password,'utf8').toString('base64'));response=await smtpResponse(lines);if(response.code!==235)throw new MailNetworkError('smtp_auth','password');}
   lines.write('QUIT');
+ }finally{socket.end();socket.destroy();}
+}
+function smtpAddress(value:string){const email=String(value||'').trim().toLowerCase();if(!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email))throw new MailNetworkError('connection_failed','recipient');return email;}
+export async function sendSmtpMessage(account:Account,fromValue:string,draft:{to:string[];cc:string[];subject:string;body:string;inReplyTo?:string;references?:string}){
+ const from=smtpAddress(fromValue),recipients=[...new Set([...draft.to,...draft.cc].map(smtpAddress))],address=await resolvePublic(account.smtp.host);if(!recipients.length)throw new MailNetworkError('connection_failed','recipient');
+ let socket=account.smtp.security==='tls'?await tlsSocket(address,account.smtp.host,account.smtp.port):await plainSocket(address,account.smtp.port),lines=new Lines(socket);
+ try{
+  if((await smtpResponse(lines)).code!==220)throw new MailNetworkError('connection_failed','smtp greeting');lines.write('EHLO app.moderno.app');if((await smtpResponse(lines)).code!==250)throw new MailNetworkError('connection_failed','smtp ehlo');
+  if(account.smtp.security==='starttls'){lines.write('STARTTLS');if((await smtpResponse(lines)).code!==220)throw new MailNetworkError('tls','starttls');lines.detach();socket=await tlsSocket(address,account.smtp.host,account.smtp.port,socket as net.Socket);lines=new Lines(socket);lines.write('EHLO app.moderno.app');if((await smtpResponse(lines)).code!==250)throw new MailNetworkError('connection_failed','smtp ehlo tls');}
+  const auth=Buffer.from(`\0${account.smtp.user}\0${account.password}`,'utf8').toString('base64');lines.write('AUTH PLAIN '+auth);let response=await smtpResponse(lines);if(response.code===334){lines.write(auth);response=await smtpResponse(lines);}if(response.code!==235){lines.write('AUTH LOGIN');response=await smtpResponse(lines);if(response.code!==334)throw new MailNetworkError('smtp_auth','auth');lines.write(Buffer.from(account.smtp.user,'utf8').toString('base64'));if((await smtpResponse(lines)).code!==334)throw new MailNetworkError('smtp_auth','user');lines.write(Buffer.from(account.password,'utf8').toString('base64'));if((await smtpResponse(lines)).code!==235)throw new MailNetworkError('smtp_auth','password');}
+  lines.write(`MAIL FROM:<${from}>`);if((await smtpResponse(lines)).code!==250)throw new MailNetworkError('connection_failed','mail from');for(const recipient of recipients){lines.write(`RCPT TO:<${recipient}>`);const code=(await smtpResponse(lines)).code;if(code!==250&&code!==251)throw new MailNetworkError('connection_failed','recipient rejected');}
+  lines.write('DATA');if((await smtpResponse(lines)).code!==354)throw new MailNetworkError('connection_failed','data');const message=buildPlainMessage({from,to:draft.to,cc:draft.cc,subject:draft.subject,body:draft.body,inReplyTo:draft.inReplyTo||'',references:draft.references||''}).replace(/^\./gm,'..');lines.write(message+'\r\n.');if((await smtpResponse(lines)).code!==250)throw new MailNetworkError('connection_failed','send');lines.write('QUIT');return {sent:true};
  }finally{socket.end();socket.destroy();}
 }
 export async function verifyPasswordAccount(account:Account){await verifyImap(account.imap,account.password);await verifySmtp(account.smtp,account.password);}
