@@ -34,7 +34,9 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(html,/mail-connections\.js/);assert.match(html,/ModernoMail\.renderMail\(\)/);assert.match(html,/ModernoMail\.integrationCards\(\)/);
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
- assert.match(ui,/Bandeja de entrada/);assert.match(ui,/action:'inbox'/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36708/);
+ assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder:state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36709/);
+ for(const label of ['Recibidos','Enviados','Borradores','Spam','Papelera','Redactar','Ajustes'])assert.match(ui,new RegExp(label));
+ assert.match(ui,/mail-icons\/compose\.svg/);for(const icon of ['inbox','sent','drafts','spam','trash'])assert.match(ui,new RegExp(`icon:'${icon}\\.svg'`));
  assert.doesNotMatch(ui,/Gestionar conexión/);assert.match(ui,/Conectado · \$\{escape\(row\.email\)\}/);
  assert.match(html,/MAIL_FUNCTION_URL = "https:\/\/cgqtylvaapwbuwqvpjtb\.supabase\.co\/functions\/v1\/mail-connect"/);
  assert.match(html,/MAIL_FUNCTION_ANON_KEY = "eyJ[^"]+"/);
@@ -50,5 +52,5 @@ test('mail Edge Function preflight allows every header sent by supabase-js',()=>
  assert.match(fn,/const body=await req\.json\(\);const subject=await actor\(req,body\?\.authToken\)/);
  assert.doesNotMatch(fn,/include_granted_scopes/);
  assert.match(fn,/https:\/\/auth\.moderno\.app\/functions\/v1\/mail-connect/);
- assert.match(fn,/body\.action==='inbox'/);assert.match(fn,/gmail\/v1\/users\/me\/messages/);assert.match(fn,/labels\/INBOX/);
+ assert.match(fn,/body\.action==='inbox'/);assert.match(fn,/gmail\/v1\/users\/me\/messages/);assert.match(fn,/const gmailFolders=\{inbox:'INBOX',sent:'SENT',drafts:'DRAFT',spam:'SPAM',trash:'TRASH'\}/);assert.match(fn,/includeSpamTrash/);assert.match(fn,/folderCounts/);
 });
