@@ -34,6 +34,7 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(html,/mail-connections\.js/);assert.match(html,/ModernoMail\.renderMail\(\)/);assert.match(html,/ModernoMail\.integrationCards\(\)/);
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
+ assert.match(ui,/Cuentas de correo/);assert.match(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36707/);
  assert.match(html,/MAIL_FUNCTION_URL = "https:\/\/cgqtylvaapwbuwqvpjtb\.supabase\.co\/functions\/v1\/mail-connect"/);
  assert.match(html,/MAIL_FUNCTION_ANON_KEY = "eyJ[^"]+"/);
  assert.match(ui,/fetch\(c\.mailFunctionUrl/);assert.match(ui,/'apikey':c\.mailFunctionAnonKey/);assert.match(ui,/authToken:accessToken/);assert.doesNotMatch(ui,/X-Moderno-Session/);assert.doesNotMatch(ui,/'Authorization':'Bearer '\+accessToken/);assert.doesNotMatch(ui,/\.functions\.invoke\(/);
@@ -46,4 +47,5 @@ test('mail Edge Function preflight allows every header sent by supabase-js',()=>
  assert.deepEqual(allowHeaders,['authorization','x-client-info','apikey','content-type']);
  assert.match(fn,/if\(req\.method==='OPTIONS'\)/);
  assert.match(fn,/const body=await req\.json\(\);const subject=await actor\(req,body\?\.authToken\)/);
+ assert.doesNotMatch(fn,/include_granted_scopes/);
 });

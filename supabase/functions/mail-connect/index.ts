@@ -61,7 +61,7 @@ Deno.serve(async(req:Request)=>{
   if(body.action==='gmail_begin'){
    if(!googleClientId()||!googleClientSecret()||!googleRedirect())throw Object.assign(new Error('gmail not configured'),{code:'not_configured'});
    const state=randomToken(),verifier=randomToken();const {error}=await admin.rpc('mail_oauth_admin_begin',{p_user:subject.user.id,p_estudio:study,p_state_hash:await sha256(state),p_code_verifier:verifier});if(error)throw error;
-   const params=new URLSearchParams({client_id:googleClientId(),redirect_uri:googleRedirect(),response_type:'code',scope:'openid email https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send',access_type:'offline',prompt:'consent',include_granted_scopes:'true',state,code_challenge:await challenge(verifier),code_challenge_method:'S256'});if(subject.user.email)params.set('login_hint',subject.user.email);
+   const params=new URLSearchParams({client_id:googleClientId(),redirect_uri:googleRedirect(),response_type:'code',scope:'openid email https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send',access_type:'offline',prompt:'consent',state,code_challenge:await challenge(verifier),code_challenge_method:'S256'});if(subject.user.email)params.set('login_hint',subject.user.email);
    return json(origin,{ok:true,url:'https://accounts.google.com/o/oauth2/v2/auth?'+params});
   }
   if(body.action==='connect_password'){
