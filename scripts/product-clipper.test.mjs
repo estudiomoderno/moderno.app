@@ -34,6 +34,16 @@ test('aggregate prices and unverified variants never become exact prices',()=>{
  const r=extractProduct(page(product),product.url+'?variant=other');assert.equal(r.variant.verified,false);assert.equal(r.fields.price.value,null);
  assert.throws(()=>extractProduct(page([product,{...product,url:'https://shop.example.com/p/2'}]),'https://shop.example.com/collection'));
 });
+test('a price shared exactly by every published variant is safe without choosing one',()=>{
+ const variants=[
+  {'@type':'Offer',sku:'one-red',price:'89.95',priceCurrency:'EUR',url:product.url+'?id_c=red'},
+  {'@type':'Offer',sku:'one-blue',price:'89.95',priceCurrency:'EUR',url:product.url+'?id_c=blue'}
+ ];
+ const r=extractProduct(page({...product,offers:variants}),product.url);
+ assert.equal(r.fields.price.value,'89.95');assert.equal(r.fields.currency.value,'EUR');assert.equal(r.fields.sku.value,'one');assert.equal(r.variant.sku,'one');assert.ok(r.warnings.includes('price_shared_by_variants'));
+ const different=extractProduct(page({...product,offers:[variants[0],{...variants[1],price:'99.95'}]}),product.url);assert.equal(different.fields.price.value,null);assert.ok(different.warnings.includes('price_not_unambiguous'));
+ const requested=extractProduct(page({...product,offers:variants}),product.url+'?id_c=missing');assert.equal(requested.fields.price.value,null);assert.equal(requested.variant.verified,false);
+});
 test('only declared axes/units are converted and unknown fields remain empty',()=>{
  const r=extractProduct(page({...product,width:{value:'1.25',unitCode:'MTR'},height:{value:'110 - 123',unitCode:'cm'}}),product.url);
  assert.equal(r.dimensions[0].cm,'125.00');assert.equal(r.dimensions[1].cm,null);assert.equal(r.fields.finish.value,null);assert.equal(r.fields.brand.value,null);

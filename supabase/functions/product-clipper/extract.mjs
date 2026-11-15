@@ -58,6 +58,7 @@ export function extractProduct(html,url,now=new Date().toISOString()){
   dimensions.push({axis,value,unit,cm:cm(value,unit),source:'json_ld',raw});
  }
  let offers=arr(product?.offers);let offer=offers.length===1?offers[0]:offers.find(o=>sameURL(o.url,requested.href));
+ const offerDetails=o=>{if(!o||typeof o!=='object'||types(o).includes('AggregateOffer'))return null;const specs=arr(o.priceSpecification),current=specs.find(x=>!x.priceType||/SalePrice$/.test(x.priceType));const price=decimal(o.price??current?.price),currency=text(o.priceCurrency||current?.priceCurrency);return price&&/^[A-Z]{3}$/.test(currency)?{offer:o,specs,current,price,currency}:null;};
  const variantQuery=relevantQuery(requested),queryMatched=offer?.url&&sameURL(offer.url,requested.href);
  // SKLUM exposes the selected combination in the offer SKU: productId-combinationId-locale.
  const sklumMatched=adapter?.id==='sklum-1'&&requested.searchParams.has('id_c')&&new RegExp('^[0-9]+-'+requested.searchParams.get('id_c')+'-[a-z]{2}$').test(String(offer?.sku||''));
@@ -65,16 +66,20 @@ export function extractProduct(html,url,now=new Date().toISOString()){
  if(!variantVerified)warnings.push('variant_not_verified');
  if(variantVerified&&offer?.sku)fields.sku=field(text(offer.sku),'json_ld.Offer.sku');
  let tax={status:'unknown',rate:null,evidence:null,conversion:null};
- if(offer&&typeof offer==='object'&&variantVerified&&!types(offer).includes('AggregateOffer')){
-  const specs=arr(offer.priceSpecification),current=specs.find(x=>!x.priceType||/SalePrice$/.test(x.priceType));
-  const price=decimal(offer.price??current?.price);fields.price=field(price,'json_ld.Offer.price',offer.price??current?.price);
-  const currency=text(offer.priceCurrency||current?.priceCurrency);fields.currency=field(/^[A-Z]{3}$/.test(currency)?currency:null,'json_ld.Offer.priceCurrency');
+ const exact=variantVerified?offerDetails(offer):null;
+ if(exact){
+  const {specs,current,price,currency}=exact;fields.price=field(price,'json_ld.Offer.price',offer.price??current?.price);
+  fields.currency=field(currency,'json_ld.Offer.priceCurrency');
   const list=specs.find(x=>/ListPrice|StrikethroughPrice$/.test(x.priceType));fields.originalPrice=field(decimal(list?.price),'json_ld.Offer.priceSpecification.ListPrice');
   fields.availability=field(text(offer.availability),'json_ld.Offer.availability');
   fields.unit=field(text(offer.eligibleQuantity?.unitText||offer.eligibleQuantity?.unitCode||current?.unitText||current?.unitCode),'json_ld.Offer.unit');
   if(current?.valueAddedTaxIncluded===true||offer.valueAddedTaxIncluded===true)tax={...tax,status:'included',evidence:'json_ld.valueAddedTaxIncluded=true'};
   if(current?.valueAddedTaxIncluded===false||offer.valueAddedTaxIncluded===false)tax={...tax,status:'excluded',evidence:'json_ld.valueAddedTaxIncluded=false'};
- }else if(offers.length)warnings.push(types(offer).includes('AggregateOffer')?'price_range_not_exact':'price_not_unambiguous');
+ }else if(offers.length){
+  const details=!variantQuery.length?offers.map(offerDetails):[],shared=details.length===offers.length&&details.every(x=>x&&x.price===details[0].price&&x.currency===details[0].currency)?details[0]:null;
+  if(shared){fields.price=field(shared.price,'json_ld.Offer[].price.common');fields.currency=field(shared.currency,'json_ld.Offer[].priceCurrency.common');warnings.push('price_shared_by_variants');}
+  else warnings.push(types(offer).includes('AggregateOffer')?'price_range_not_exact':'price_not_unambiguous');
+ }
  if(!offers.length&&variantVerified){
   const value=microValue('price')||meta('product:price:amount'),currency=microValue('priceCurrency')||meta('product:price:currency');
   if(decimal(value)&&/^[A-Z]{3}$/.test(currency)){fields.price=field(decimal(value),microValue('price')?'microdata.price':'open_graph.product:price:amount');fields.currency=field(currency,'microdata_or_open_graph.priceCurrency');}
