@@ -35,12 +35,13 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(html,/mail-connections\.js/);assert.match(html,/ModernoMail\.renderMail\(\)/);assert.match(html,/ModernoMail\.integrationCards\(\)/);
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
- assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder:state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36711/);
+ assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder:state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36712/);
  for(const label of ['Recibidos','Enviados','Borradores','Spam','Papelera','Redactar','Ajustes'])assert.match(ui,new RegExp(label));
  assert.match(ui,/mail-icons\/compose\.svg/);for(const icon of ['inbox','sent','drafts','spam','trash'])assert.match(ui,new RegExp(`icon:'${icon}\\.svg'`));
  assert.match(ui,/mail-icons\/refresh\.svg/);assert.match(ui,/mail-icons\/settings\.svg/);assert.doesNotMatch(ui,/>Actualizar<|>Ajustes</);
  assert.match(ui,/refresh\.svg[\s\S]*settings\.svg/);assert.match(css,/grid-template-columns:196px/);assert.match(css,/mail-folder-button\{justify-content:space-between;gap:8px/);assert.match(css,/mail-folder-badge\{[^}]*border:1px solid #bdbdbd[^}]*color:#646464/);assert.match(css,/width:min\(320px,100%\)/);assert.match(css,/\.mail-toolbar-actions/);
  assert.doesNotMatch(ui,/mail-inbox-heading|sin leer/);assert.match(ui,/class="mail-inbox-content"/);assert.match(css,/inset:64px 16px 0/);
+ assert.match(css,/mail-account-identity \.mail-provider-mark\{display:flex!important[^}]*align-items:center!important[^}]*justify-content:center!important/);assert.match(css,/mail-account-identity \.mail-provider-mark img\{[^}]*width:22px!important[^}]*height:auto!important/);
  assert.doesNotMatch(ui,/Gestionar conexión/);assert.match(ui,/Conectado · \$\{escape\(row\.email\)\}/);
  assert.match(html,/MAIL_FUNCTION_URL = "https:\/\/cgqtylvaapwbuwqvpjtb\.supabase\.co\/functions\/v1\/mail-connect"/);
  assert.match(html,/MAIL_FUNCTION_ANON_KEY = "eyJ[^"]+"/);
