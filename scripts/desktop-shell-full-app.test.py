@@ -321,6 +321,7 @@ try:
      assert page.locator('.mail-setup-grid').count()==0
      assert page.locator('.mail-provider-mark img').get_attribute('src').startswith('/brand/mail-icons/gmail.svg')
      assert page.locator('.mail-setup-back img').get_attribute('src').startswith('/brand/mail-icons/back.svg')
+     assert page.locator('.mail-provider-mark img').evaluate('(img)=>{const i=img.getBoundingClientRect(),p=img.parentElement.getBoundingClientRect();return i.width<=24&&i.height<=24&&i.left>=p.left&&i.right<=p.right&&i.top>=p.top&&i.bottom<=p.bottom}')
      title_gap=page.locator('.mail-setup-header h2').evaluate('(title)=>title.nextElementSibling.getBoundingClientRect().top-title.getBoundingClientRect().bottom')
      assert title_gap<=2,title_gap
      if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-gmail-{width}.png'),full_page=True)
@@ -330,6 +331,7 @@ try:
      page.get_by_role('button',name='Conectar iCloud Mail',exact=True).click()
      expect(page.locator('.mail-setup-grid input')).to_have_count(2)
      assert page.locator('.mail-provider-mark img').get_attribute('src').startswith('/brand/mail-icons/icloud.svg')
+     assert page.locator('.mail-provider-mark img').evaluate('(img)=>{const i=img.getBoundingClientRect(),p=img.parentElement.getBoundingClientRect();return i.width<=24&&i.height<=24&&i.left>=p.left&&i.right<=p.right&&i.top>=p.top&&i.bottom<=p.bottom}')
      assert page.locator('.mail-setup-card').get_attribute('autocomplete')=='off'
      if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-icloud-{width}.png'),full_page=True)
      page.get_by_role('button',name='Cancelar',exact=True).click()

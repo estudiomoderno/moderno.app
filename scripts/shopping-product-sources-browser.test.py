@@ -144,19 +144,20 @@ try:
     _cloudBusy=false;_cloudHash.proyectos=canon(CLOUD_BLOCKS.proyectos.get());
     cloudReadBlock=async()=>({data:{contenido:window.coverServer,updated_at:'version-ficticia'}});
     cloudApplyRemote=(block,data)=>{state.projects=data;};
-    window.mockClipperSb={functions:{invoke:async(name,{body})=>{
+    window.mockClipperFetch=async(url,{body:requestBody})=>{const body=JSON.parse(requestBody);
      urlCalls.push(body.action);
      if(body.action==='capture'){
       captureIds.push(body.id);
-      if(captureIds.length===1)return {error:{context:{status:429,json:async()=>({code:'PT429',error:'Capturas ocupadas'})}}};
+      if(captureIds.length===1)return {ok:false,status:429,json:async()=>({code:'PT429',error:'Capturas ocupadas'})};
       const root='estudio-ficticio/clipper/'+body.id;
       fakeCapture={id:body.id,estado:'preparado',destino:body.destination,destino_snapshot:{kind:'lista',projectName:'Proyecto ficticio',roomName:'Salón ficticio',sectionName:'General'},
        captura:{fields:{name:{value:'Lámpara importada ficticia'},price:{value:'80'},currency:{value:'EUR'},unit:{value:'ud'}},tax:{status:'included'},variant:{verified:true},dimensions:[],domain:'tienda.example.invalid',capturedAt:'2026-10-20T12:00:00Z',suggestions:{category:'Iluminación'},
         images:[{storagePath:root+'/front.webp',previewUrl:origin+'/brand/illustrations/nuevo-producto.webp'},{storagePath:root+'/side.webp',previewUrl:origin+'/brand/illustrations/nueva-estancia.webp'}]}};
-      return {data:{id:body.id}};
+      return {ok:true,status:200,json:async()=>({id:body.id})};
      }
-     return {data:fakeCapture};
-    }},rpc:async(name,args)=>{
+     return {ok:true,status:200,json:async()=>fakeCapture};
+    };
+    window.mockClipperSb={auth:{getSession:async()=>({data:{session:{access_token:'token-ficticio'}}})},rpc:async(name,args)=>{
      if(name!=='clipper_absorber')throw Error('Unexpected RPC');coverRevisions.push(args.p_revision);
      if(failCoverSave)return {error:{message:'Error ficticio de guardado'}};
      coverServer=structuredClone(CLOUD_BLOCKS.proyectos.get());const dest=fakeCapture.destino;
@@ -167,7 +168,7 @@ try:
     window.beforeCapture=records();
    }""",origin)
    # Inject only the importer transport. The actual application's SDK stays null.
-   page.evaluate("source=>{window.originalClipperOpen=ProductClipper.open;const fixtureClipper=new Function('sb',source+';return ProductClipper;')(mockClipperSb);ProductClipper.open=fixtureClipper.open;}",(repo/'app/product-clipper.js').read_text())
+   page.evaluate("source=>{window.originalClipperOpen=ProductClipper.open;const fixtureClipper=new Function('sb','fetch','SUPABASE_ANON_KEY',source+';return ProductClipper;')(mockClipperSb,mockClipperFetch,'sb_publishable_fixture_key');ProductClipper.open=fixtureClipper.open;}",(repo/'app/product-clipper.js').read_text())
    add.click();box.locator('[data-product-method=url]').click()
    dialog=page.get_by_role('dialog',name='Importar producto desde una tienda',exact=True)
    expect(dialog).to_be_visible();assert box.is_hidden()

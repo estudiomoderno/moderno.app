@@ -1,5 +1,6 @@
 /* URL capture is staged on the server; this module never inserts directly into study blocks. */
 const ProductClipper=(()=>{
+ const endpoint='https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/product-clipper';
  const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const labels={name:'Nombre',brand:'Marca',manufacturer:'Fabricante',sku:'SKU',ean:'EAN',description:'Descripción',material:'Material',color:'Color',finish:'Acabado',unit:'Unidad de venta',availability:'Disponibilidad',leadTime:'Plazo',price:'Precio de origen',originalPrice:'Precio anterior',currency:'Moneda',dimensions:'Medidas',tax:'IVA',images:'Imágenes',review:'Revisión de la captura'};
  const availability={InStock:'Disponible',OutOfStock:'Agotado',PreOrder:'Reserva previa',BackOrder:'Bajo pedido',LimitedAvailability:'Disponibilidad limitada',SoldOut:'Agotado',Discontinued:'Descatalogado',OnlineOnly:'Solo en línea',InStoreOnly:'Solo en tienda'};
@@ -42,7 +43,14 @@ const ProductClipper=(()=>{
   }else if(typeof libEdit==='function'){const index=state.library.findIndex(it=>String(it.id)===String(ctx.savedId));if(index>=0)libEdit(index);}
   toast('Producto añadido. Puedes ajustar sus datos en la ficha.');
  }
- async function invoke(body){const {data,error}=await sb.functions.invoke('product-clipper',{body});if(error){let detail;try{detail=await error.context?.json();}catch{}throw Object.assign(Error(detail?.error||'No se pudo consultar el importador. Conserva esta ventana y comprueba el estado.'),{code:detail?.code,status:error.context?.status});}return data;}
+ async function invoke(body){
+  const {data:auth,error:authError}=await sb.auth.getSession(),token=auth?.session?.access_token;
+  if(authError||!token)throw Error('La sesión ha caducado. Vuelve a iniciar sesión para importar productos.');
+  let response;try{response=await fetch(endpoint,{method:'POST',headers:{Authorization:`Bearer ${token}`,apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json','x-client-info':'moderno-product-clipper/1.0'},body:JSON.stringify(body)});}catch{throw Error('No se pudo conectar con el importador. Conserva esta ventana y vuelve a intentarlo.');}
+  let detail;try{detail=await response.json();}catch{}
+  if(!response.ok)throw Object.assign(Error(detail?.error||'No se pudo consultar el importador. Conserva esta ventana y comprueba el estado.'),{code:detail?.code,status:response.status});
+  return detail;
+ }
  function open(kind,sectionIndex){
   if(!sb||!ESTUDIO_ID||!['admin','colaborador'].includes(_accessRole)){toast('Necesitas acceso al estudio para importar productos.');return;}
   if(active?.dialog.isConnected){active.dialog.focus();return;}

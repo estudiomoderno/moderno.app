@@ -9,10 +9,10 @@ function setup({kind='biblioteca',missing='',rpcError=false,readError=false,loca
  const dialog={isConnected:true,querySelector:s=>nodes[s]||null,querySelectorAll:()=>messages,close(){closed=true;this.isConnected=false;}};
  const ctx={dialog,owner:'study|user',study:'study',id,row:{destino:dest},busy:false};
  const CLOUD_BLOCKS={compras:{get:()=>state.library},proyectos:{get:()=>state.projects}};
- const c={state,ESTUDIO_ID:'study',_accessRole:'admin',CLOUD_BLOCKS,_cloudBusy:false,_cloudHash:{[block]:JSON.stringify(CLOUD_BLOCKS[block].get())},canon:JSON.stringify,
+ const c={state,ESTUDIO_ID:'study',SUPABASE_ANON_KEY:'sb_publishable_fixture_key',_accessRole:'admin',CLOUD_BLOCKS,_cloudBusy:false,_cloudHash:{[block]:JSON.stringify(CLOUD_BLOCKS[block].get())},canon:JSON.stringify,
   cloudFlush:async()=>{},cloudReadBlock:async()=>failRead?{error:Error('Sin conexión al consultar')}:{data:{contenido:server,updated_at:'version'}},
   cloudApplyRemote(){if(!localConflict){if(kind==='biblioteca')state.library=server;else state.projects=server;}},persistNow(){confirmed=true;},closeModal(){},render(){},toast(){},
-  localStorage:{removeItem(){removed=true;},getItem:()=>id},sb:{rpc:async(name,args)=>{lastRevision=args?.p_revision;calls++;return rpcError?{error:{message:'Guardado denegado'}}:{data:{status:calls===1?'absorbed':'already_absorbed',itemId:item.id}};},functions:{invoke:async()=>({data:{estado:'absorbido',item_id:item.id,destino:dest}})}}};
+  localStorage:{removeItem(){removed=true;},getItem:()=>id},fetch:async()=>({ok:true,status:200,json:async()=>({estado:'absorbido',item_id:item.id,destino:dest})}),sb:{auth:{getSession:async()=>({data:{session:{access_token:'fixture-token'}}})},rpc:async(name,args)=>{lastRevision=args?.p_revision;calls++;return rpcError?{error:{message:'Guardado denegado'}}:{data:{status:calls===1?'absorbed':'already_absorbed',itemId:item.id}};}}};
  vm.createContext(c);vm.runInContext(source,c);c.clipper.activate(ctx);
  return {c,ctx,nodes,messages,state,save:()=>c.clipper.save(ctx),read:()=>c.clipper.read(ctx),recover:()=>failRead=false,revision:()=>lastRevision,status:()=>({closed,calls,removed,focus,confirmed})};
 }
@@ -37,15 +37,19 @@ function captureSetup({failures=1,code='PT429',status=429}={}){
  f.ctx.id='previous-capture';f.ctx.destination=f.ctx.row.destino;
  let counter=0;
  Object.assign(f.c,{URL,crypto:{randomUUID:()=>`request-${++counter}`},setTimeout(fn){const id=timers.size+1;timers.set(id,fn);return id;},clearTimeout(id){timers.delete(id);},localStorage:{getItem:k=>cache.get(k)||null,setItem:(k,v)=>cache.set(k,v),removeItem:k=>cache.delete(k)}});
- f.c.sb.functions.invoke=async(name,{body})=>{
+ f.c.fetch=async(url,options)=>{
+  assert.equal(url,'https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/product-clipper');
+  assert.equal(options.headers.Authorization,'Bearer fixture-token');
+  assert.equal(options.headers.apikey,'sb_publishable_fixture_key');
+  const body=JSON.parse(options.body);
   if(body.action==='capture'){
    requests.push(body);
-   if(requests.length<=failures)return {error:{context:{status,json:async()=>({code,error:'Capturas ocupadas'})}}};
-   return {data:{}};
+   if(requests.length<=failures)return {ok:false,status,json:async()=>({code,error:'Capturas ocupadas'})};
+   return {ok:true,status:200,json:async()=>({})};
   }
-  return {data:{estado:'error',error_code:'fixture_failure'}};
+  return {ok:true,status:200,json:async()=>({estado:'error',error_code:'fixture_failure'})};
  };
- return {...f,cache,timers,requests,capture:()=>f.c.clipper.capture(f.ctx),retry:async()=>{const [id,fn]=timers.entries().next().value;timers.delete(id);fn();for(let i=0;i<15;i++)await Promise.resolve();}};
+ return {...f,cache,timers,requests,capture:()=>f.c.clipper.capture(f.ctx),retry:async()=>{const [id,fn]=timers.entries().next().value;timers.delete(id);fn();for(let i=0;i<40;i++)await Promise.resolve();}};
 }
 test('busy captures wait automatically with a stable ID and preserve the prior recoverable capture',async()=>{
  const f=captureSetup({failures:2});await f.capture();

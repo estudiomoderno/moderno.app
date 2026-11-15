@@ -1277,7 +1277,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=196.6"></script>
+<script src="/project-ui.js?v=36617"></script>
 <script src="/places.js?v=365135"></script>
 <script src="/home-map.js?v=365135"></script>
 <script src="/new-project.js?v=365133"></script>
@@ -1311,8 +1311,8 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/contact-controls.css?v=353">
 <script src="/phone-vendor.js?v=1.13.13"></script>
 <script src="/phone-controls.js?v=3492"></script>
-<link rel="stylesheet" href="/product-clipper.css?v=36575">
-<script src="/product-clipper.js?v=36575"></script>
+<link rel="stylesheet" href="/product-clipper.css?v=36617">
+<script src="/product-clipper.js?v=36617"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -6976,7 +6976,7 @@ function mailSetupSubmit(event){event.preventDefault();toast("La conexión se ac
 function mailProviderMark(provider){
   const data=MAIL_SETUP_PROVIDERS[provider];
   const file={gmail:"gmail.svg",icloud:"icloud.svg",server:"external-mail.svg"}[provider];
-  return `<span class="mail-provider-mark mail-provider-mark--${data.kind}" aria-hidden="true"><img src="/brand/mail-icons/${file}?v=36616" alt=""></span>`;
+  return `<span class="mail-provider-mark mail-provider-mark--${data.kind}" aria-hidden="true"><img src="/brand/mail-icons/${file}?v=36617" width="24" height="24" alt=""></span>`;
 }
 function vMailProviderSetup(provider){
   const data=MAIL_SETUP_PROVIDERS[provider];
@@ -6985,7 +6985,7 @@ function vMailProviderSetup(provider){
   if(provider==="gmail") body=`${note}<div class="mail-google-permissions"><h3>Continuar con Google</h3><p>En el siguiente paso se abrirá la autorización segura de Google. Moderno.app solicitará únicamente los permisos necesarios para mostrar y enviar correo.</p><ul><li>Leer y organizar mensajes</li><li>Enviar correo desde tu cuenta</li><li>Sincronizar remitentes y destinatarios</li></ul></div>`;
   if(provider==="icloud") body=`${note}<div class="mail-setup-grid mail-setup-grid--single"><label>Correo de iCloud<input type="email" name="icloud-email" autocomplete="off" placeholder="nombre@icloud.com" required></label><label>Contraseña específica para aplicaciones<input type="password" name="icloud-password" autocomplete="new-password" placeholder="xxxx-xxxx-xxxx-xxxx" required></label></div><p class="mail-setup-help">La contraseña específica se crea desde la cuenta de Apple y es distinta de la contraseña habitual.</p>`;
   if(provider==="server") body=`${note}<div class="mail-setup-grid"><label class="mail-setup-span">Nombre del remitente<input type="text" name="sender-name" autocomplete="off" placeholder="Estudio Moderno" required></label><label class="mail-setup-span">Dirección de correo<input type="email" name="server-email" autocomplete="off" placeholder="hola@tuestudio.com" required></label><label class="mail-setup-host">Servidor IMAP<input type="text" name="imap-host" autocomplete="off" placeholder="imap.tuservidor.com" required></label><label class="mail-setup-port">Puerto IMAP<input type="number" name="imap-port" inputmode="numeric" value="993" min="1" max="65535" required></label><label class="mail-setup-host">Servidor SMTP<input type="text" name="smtp-host" autocomplete="off" placeholder="smtp.tuservidor.com" required></label><label class="mail-setup-port">Puerto SMTP<input type="number" name="smtp-port" inputmode="numeric" value="465" min="1" max="65535" required></label><label class="mail-setup-half">Usuario<input type="text" name="server-user" autocomplete="off" placeholder="hola@tuestudio.com" required></label><label class="mail-setup-half">Contraseña<input type="password" name="server-password" autocomplete="new-password" placeholder="Contraseña del correo" required></label><label class="mail-setup-span">Seguridad<select name="server-security"><option>SSL / TLS</option><option>STARTTLS</option><option>Sin cifrado</option></select></label></div>`;
-  return `<section class="mail-connect-page mail-connect-page--setup" aria-labelledby="mail-setup-title"><form class="mail-setup-card" onsubmit="mailSetupSubmit(event)" autocomplete="off"><header class="mail-setup-header"><button type="button" class="mail-setup-back" onclick="mailSetupBack()" aria-label="Volver a servicios de correo"><img src="/brand/mail-icons/back.svg?v=36616" alt=""></button>${mailProviderMark(provider)}<div><h2 id="mail-setup-title">${data.title}</h2><p>${data.description}</p></div></header><div class="mail-setup-body">${body}</div><footer class="mail-setup-footer"><button type="button" class="mail-connect-button" onclick="mailSetupBack()">Cancelar</button><button type="submit" class="mail-connect-button mail-connect-button--primary">${provider==="gmail"?"Continuar con Google":"Comprobar y conectar"}</button></footer></form></section>`;
+  return `<section class="mail-connect-page mail-connect-page--setup" aria-labelledby="mail-setup-title"><form class="mail-setup-card" onsubmit="mailSetupSubmit(event)" autocomplete="off"><header class="mail-setup-header"><button type="button" class="mail-setup-back" onclick="mailSetupBack()" aria-label="Volver a servicios de correo"><img src="/brand/mail-icons/back.svg?v=36617" width="18" height="18" alt=""></button>${mailProviderMark(provider)}<div><h2 id="mail-setup-title">${data.title}</h2><p>${data.description}</p></div></header><div class="mail-setup-body">${body}</div><footer class="mail-setup-footer"><button type="button" class="mail-connect-button" onclick="mailSetupBack()">Cancelar</button><button type="submit" class="mail-connect-button mail-connect-button--primary">${provider==="gmail"?"Continuar con Google":"Comprobar y conectar"}</button></footer></form></section>`;
 }
 function vMailSetup(){
   if(_mailSetupProvider)return vMailProviderSetup(_mailSetupProvider);
@@ -11492,7 +11492,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.16";
+const MODERNO_VER="v3.66.17";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13651,7 +13651,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=210">
 <link rel="stylesheet" href="/brand/agenda-ui.css?v=36612">
-<link rel="stylesheet" href="/brand/mail-ui.css?v=36615">
+<link rel="stylesheet" href="/brand/mail-ui.css?v=36617">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>
