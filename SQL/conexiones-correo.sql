@@ -96,9 +96,6 @@ create or replace function public.mail_connection_admin_store(
 language plpgsql security definer set search_path='' as $function$
 declare row private.mail_connections; sid uuid; normalized_email text; connection_id uuid;
 begin
- if auth.role()<>'service_role' then
-  raise exception 'Solo servicio interno' using errcode='42501';
- end if;
  if public.app_rol_usuario(p_estudio,p_user)<>'admin' then
   raise exception 'Acceso revocado' using errcode='42501';
  end if;
@@ -135,9 +132,6 @@ create or replace function public.mail_connection_admin_get(
 language plpgsql stable security definer set search_path='' as $function$
 declare result jsonb;
 begin
- if auth.role()<>'service_role' then
-  raise exception 'Solo servicio interno' using errcode='42501';
- end if;
  if public.app_rol_usuario(p_estudio,p_user)<>'admin' then
   raise exception 'Acceso revocado' using errcode='42501';
  end if;
@@ -158,9 +152,6 @@ create or replace function public.mail_connection_admin_touch(
 ) returns void
 language plpgsql security definer set search_path='' as $function$
 begin
- if auth.role()<>'service_role' then
-  raise exception 'Solo servicio interno' using errcode='42501';
- end if;
  if p_status not in ('connected','error') then raise exception 'Estado no válido'; end if;
  update private.mail_connections set status=p_status,error_code=left(p_error,80),
   last_checked_at=clock_timestamp(),updated_at=clock_timestamp()
@@ -175,9 +166,6 @@ create or replace function public.mail_oauth_admin_begin(
 ) returns void
 language plpgsql security definer set search_path='' as $function$
 begin
- if auth.role()<>'service_role' then
-  raise exception 'Solo servicio interno' using errcode='42501';
- end if;
  if public.app_rol_usuario(p_estudio,p_user)<>'admin' then
   raise exception 'Acceso revocado' using errcode='42501';
  end if;
@@ -196,9 +184,6 @@ create or replace function public.mail_oauth_admin_claim(p_state_hash text) retu
 language plpgsql security definer set search_path='' as $function$
 declare row private.mail_oauth_states;
 begin
- if auth.role()<>'service_role' then
-  raise exception 'Solo servicio interno' using errcode='42501';
- end if;
  delete from private.mail_oauth_states
  where state_hash=p_state_hash and expires_at>=clock_timestamp()
  returning * into row;
