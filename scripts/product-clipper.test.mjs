@@ -32,11 +32,19 @@ test('SVG and arbitrary HTML are rejected as product images',()=>{
  assert.throws(()=>verifyImage(Buffer.from('<html>captcha</html>'),'image/jpeg'));
 });
 const request=body=>new Request('https://api.example.com',{method:'POST',headers:{Authorization:'Bearer fixture'},body:JSON.stringify(body)});
+const privateHeaderRequest=body=>new Request('https://api.example.com',{method:'POST',headers:{'X-Moderno-Session':'Bearer private-fixture'},body:JSON.stringify(body)});
 const captureBody={action:'capture',id:'11111111-1111-4111-8111-111111111111',studyId:'22222222-2222-4222-8222-222222222222',url:product.url,destination:{kind:'biblioteca',brand:'cm'}};
 test('handler authenticates before any capture and idempotent retries never fetch again',async()=>{
  let started=0,fetched=0;const deps={authenticate:async()=>null,start:async()=>{started++;return {start:false,estado:'procesando'};},fetchPage:async()=>{fetched++;}};
  assert.equal((await createHandler(deps)(request(captureBody))).status,401);assert.equal(started,0);
  deps.authenticate=async()=>({id:'fixture'});assert.equal((await createHandler(deps)(request(captureBody))).status,200);assert.equal(started,1);assert.equal(fetched,0);
+});
+test('handler authenticates the first-party session header before any operation',async()=>{
+ let received;const deps={authenticate:async value=>{received=value;return {id:'fixture'};},start:async()=>({start:false,estado:'procesando'})};
+ const response=await createHandler(deps)(privateHeaderRequest(captureBody));
+ assert.equal(response.status,200);assert.equal(received,'Bearer private-fixture');
+ const preflight=await createHandler(deps)(new Request('https://api.example.com',{method:'OPTIONS',headers:{Origin:'https://app.moderno.app'}}));
+ assert.match(preflight.headers.get('access-control-allow-headers'),/x-moderno-session/);
 });
 test('failed image download stores no hotlink and leaves incomplete capture',async()=>{
  let saved,uploads=0;const deps={authenticate:async()=>({id:'fixture'}),start:async()=>({start:true}),finish:async(_actor,_id,c)=>{saved=c;},upload:async()=>{uploads++;},fetchPage:async url=>{
