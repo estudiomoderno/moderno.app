@@ -1,5 +1,6 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.57.4';
 import {createHandler} from './core.mjs';
+import {uploadCaptureImage} from './storage.mjs';
 const url=Deno.env.get('SUPABASE_URL')!,anon=Deno.env.get('SUPABASE_ANON_KEY')!;
 const server=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const origins=['https://app.moderno.app',...(Deno.env.get('CLIPPER_TEST_ORIGINS')||'').split(',').filter(Boolean)];
@@ -23,9 +24,7 @@ Deno.serve(createHandler({allowedOrigins:origins,
  async finish(actor:any,id:string,capture:any,errorCode:string|null){const {error}=await server.rpc('clipper_finalizar',{p_id:id,p_actor:actor.id,p_captura:capture,p_error:errorCode});if(error)throw error;},
  async read(actor:any,id:string){const {data,error}=await actor.client.from('productos_entrantes').select('*').eq('id',id).maybeSingle();if(error)throw error;return data;},
  async upload(actor:any,path:string,bytes:Uint8Array,contentType:string){
-  // User-scoped client enforces current membership and Storage RLS even if access was revoked mid-capture.
-  const {error}=await actor.client.storage.from('archivos').upload(path,bytes,{contentType,upsert:false,cacheControl:'31536000'});if(error)throw error;
-  return actor.client.storage.from('archivos').getPublicUrl(path).data.publicUrl;
+  return uploadCaptureImage({actor,server,path,bytes,contentType});
  },
  async sign(actor:any,path:string){const {data,error}=await actor.client.storage.from('archivos').createSignedUrl(path,60);if(error)throw error;return data.signedUrl;},
  // No API key configured => manual categorization. No request leaves the server.
