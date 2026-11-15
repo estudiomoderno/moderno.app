@@ -23,11 +23,22 @@ La conexión pertenece al usuario administrador y al estudio activo. Se pueden c
 - `SQL/conexiones-correo.sql`: tablas privadas y RPC con permisos mínimos.
 - `SQL/conexiones-correo-rollback.sql`: retirada del contrato de backend.
 
-## Activación productiva pendiente de autorización
+## Estado de activación productiva
+
+Autorización recibida y backend aplicado el 15/11/2026:
+
+- migración `mail_connections_v1` aplicada en producción;
+- tablas privadas creadas vacías, sin conexiones ni estados OAuth;
+- Edge Function `mail-connect` versión 1 activa;
+- RPC administrativas inaccesibles para `anon` y `authenticated`, disponibles únicamente para `service_role`;
+- frontend todavía sin fusionar ni publicar;
+- Gmail pendiente de cliente OAuth y secretos de Google.
+
+## Configuración pendiente antes de publicar
 
 1. Verificar copia recuperable de la base de datos antes de la migración.
-2. Aplicar `SQL/conexiones-correo.sql` en producción.
-3. Desplegar la Edge Function `mail-connect` con `verify_jwt=false`; el callback OAuth es público, pero la función valida por sí misma JWT, permisos y `state` para todas las operaciones protegidas.
+2. Confirmar que la migración `mail_connections_v1` y la Edge Function `mail-connect` continúan activas.
+3. Mantener `verify_jwt=false`; el callback OAuth es público, pero la función valida por sí misma JWT, permisos y `state` para todas las operaciones protegidas.
 4. Crear un cliente OAuth web de Google y configurar el URI de retorno exacto de la función.
 5. Guardar como secretos de la Edge Function, nunca en Git:
    - `GOOGLE_MAIL_CLIENT_ID`
