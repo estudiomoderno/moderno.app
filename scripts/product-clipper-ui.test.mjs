@@ -40,7 +40,9 @@ function captureSetup({failures=1,code='PT429',status=429}={}){
  f.c.fetch=async(url,options)=>{
   assert.equal(url,'https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/product-clipper');
   assert.equal(options.headers.Authorization,'Bearer fixture-token');
-  assert.equal(options.headers.apikey,'sb_publishable_fixture_key');
+  assert.equal(options.headers.apikey,undefined);
+  assert.equal(options.headers['x-client-info'],undefined);
+  assert.equal(options.credentials,'omit');
   const body=JSON.parse(options.body);
   if(body.action==='capture'){
    requests.push(body);
