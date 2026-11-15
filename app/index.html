@@ -1313,7 +1313,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/phone-controls.js?v=3492"></script>
 <link rel="stylesheet" href="/product-clipper.css?v=36617">
 <script src="/product-clipper.js?v=36622"></script>
-<script src="/mail-connections.js?v=36702"></script>
+<script src="/mail-connections.js?v=36703"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -11442,7 +11442,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.2";
+const MODERNO_VER="v3.67.3";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11454,7 +11454,7 @@ const sb = (SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("PEGA_
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 if(!sb)_accessLoading=false;
 ModernoMail.configure({
- context:()=>({sb,studyId:ESTUDIO_ID,userId:state.sessionUser?.mail||'',role:_accessRole,mailFunctionUrl:MAIL_FUNCTION_URL,publicKey:SUPABASE_ANON_KEY}),
+ context:()=>({sb,studyId:ESTUDIO_ID,userId:state.sessionUser?.mail||'',role:_accessRole,mailFunctionUrl:MAIL_FUNCTION_URL}),
  render,toast,confirm:(message,label,action)=>askConfirm(message,label,action)
 });
 
