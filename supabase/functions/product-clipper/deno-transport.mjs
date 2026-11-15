@@ -27,13 +27,13 @@ export function parseHttpResponse(bytes,maxBytes){
 }
 // Supabase's Node HTTP shim does not implement custom lookup. Connect to the
 // already checked IP directly, then verify TLS against the original hostname.
-export async function denoRequestPinned(u,ip,{maxBytes,signal},runtime=globalThis.Deno){
+export async function denoRequestPinned(u,ip,{maxBytes,signal,referer},runtime=globalThis.Deno){
  let conn;const close=()=>{try{conn?.close();}catch{}};
  let stop;const aborted=new Promise((_,reject)=>{stop=()=>{close();reject(signal.reason||fail('timeout'));};if(signal.aborted)stop();else signal.addEventListener('abort',stop,{once:true});});
  const work=(async()=>{
   conn=await runtime.connect({hostname:ip.address,port:Number(u.port)||(u.protocol==='https:'?443:80)});signal.throwIfAborted();
   if(u.protocol==='https:'){conn=await runtime.startTls(conn,{hostname:u.hostname.replace(/^\[|\]$/g,''),alpnProtocols:['http/1.1']});signal.throwIfAborted();}
-  const request=Buffer.from(`GET ${u.pathname}${u.search} HTTP/1.1\r\nHost: ${u.host}\r\nUser-Agent: ModernoApp-ProductImporter/1.0\r\nAccept: text/html,application/xhtml+xml,image/avif,image/webp,image/png,image/jpeg;q=0.9\r\nAccept-Encoding: identity\r\nConnection: close\r\n\r\n`);
+  const request=Buffer.from(`GET ${u.pathname}${u.search} HTTP/1.1\r\nHost: ${u.host}\r\nUser-Agent: ModernoApp-ProductImporter/1.0\r\nAccept: text/html,application/xhtml+xml,image/avif,image/webp,image/png,image/jpeg;q=0.9\r\nAccept-Language: es-ES,es;q=0.9\r\nAccept-Encoding: identity\r\n${referer?'Referer: '+referer+'\r\n':''}Connection: close\r\n\r\n`);
   for(let written=0;written<request.length;){signal.throwIfAborted();const n=await conn.write(request.subarray(written));if(!n)throw fail('http_write');written+=n;}
   const chunks=[];let length=0,headerChecked=false;const buffer=new Uint8Array(65536);
   while(true){signal.throwIfAborted();const n=await conn.read(buffer);if(n===null)break;if(!n)continue;length+=n;if(length>maxBytes+131072)throw fail('too_large');chunks.push(Buffer.from(buffer.subarray(0,n)));

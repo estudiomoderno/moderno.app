@@ -50,10 +50,10 @@ export function createHandler({authenticate,start,finish,read,upload,sign,sugges
      try{
       let chosen=null;
       for(const imageUrl of [candidate.url,...(candidate.alternatives||[])].slice(0,3)){
-       try{const r=await fetchPage(imageUrl,{maxBytes:4*1024*1024,timeoutMs:10000,signal});const info=verifyImage(r.bytes,r.headers['content-type']);totalBytes+=r.bytes.length;
+       try{const r=await fetchPage(imageUrl,{maxBytes:4*1024*1024,timeoutMs:10000,signal,referer:page.url});const info=verifyImage(r.bytes,r.headers['content-type']);totalBytes+=r.bytes.length;
         if(totalBytes>20*1024*1024){capture.warnings.push('image_total_limit');break;}
         if(!chosen||info.width*info.height>chosen.info.width*chosen.info.height)chosen={r,info,imageUrl};
-       }catch{capture.warnings.push('image_resolution_unavailable');}
+       }catch(error){capture.warnings.push('image_resolution_'+String(error?.code||'unavailable').replace(/[^a-z0-9_]/gi,'_').toLowerCase());}
       }
       if(!chosen)throw new CaptureError('image_unavailable','Imagen no disponible');
       const {r,info,imageUrl}=chosen;

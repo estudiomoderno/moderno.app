@@ -23,7 +23,7 @@ function srcset(raw){return String(raw||'').split(',').map(x=>{const [url,size]=
 
 // Only observed product-gallery selectors; never select all page images/recommendations.
 export const adapters={
- 'sklum.com':{id:'sklum-1',gallery:'.c-product-gallery__list img.c-product-gallery__image',scope:'#productcore'},
+ 'sklum.com':{id:'sklum-1',gallery:'.c-product-gallery__list img.c-product-gallery__image',scope:'#productcore',taxScope:'main'},
  'ikea.com':{id:'ikea-1',gallery:'[class*="product-gallery"] img[src*="/images/products/"]',scope:'main'},
  'westwing.es':{id:'westwing-1',gallery:null,scope:'[data-testid="product-price-container"]'},
  'amazon.es':{id:'amazon-1',gallery:'#landingImage',title:'#productTitle',scope:'#corePriceDisplay_desktop_feature_div'},
@@ -87,7 +87,7 @@ export function extractProduct(html,url,now=new Date().toISOString()){
   }
  }
  // Scoped explicit VAT labels only; no assumed rate from country or currency.
- const taxScope=adapter?.scope?d.querySelector(adapter.scope):micro;
+ const taxScope=adapter?.taxScope?d.querySelector(adapter.taxScope):adapter?.scope?d.querySelector(adapter.scope):micro;
  const taxText=taxScope?.textContent.replace(/\s+/g,' ')||'';
  const taxMatch=taxText.match(/IVA\s+(incluido|no incluido)|incluye\s+IVA|VAT\s+included/i);
  if(tax.status==='unknown'&&taxMatch)tax={...tax,status:/no incluido/i.test(taxMatch[0])?'excluded':'included',evidence:taxMatch[0]};

@@ -10,6 +10,6 @@ test('Deno connection pins IP while TLS verifies original host and sends safe pa
  let connect,tls,wire='',read=false,closed=0;const bytes=Buffer.from('HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok');
  const conn={close(){closed++;},async write(b){wire+=Buffer.from(b).toString();return b.length;},async read(b){if(read)return null;read=true;b.set(bytes);return bytes.length;}};
  const runtime={async connect(v){connect=v;return conn;},async startTls(c,v){assert.equal(c,conn);tls=v;return conn;}};
- const result=await denoRequestPinned(new URL('https://shop.example.com/item?v=2'),{address:'93.184.216.34',family:4},{maxBytes:100,signal:new AbortController().signal},runtime);
- assert.equal(connect.hostname,'93.184.216.34');assert.equal(tls.hostname,'shop.example.com');assert.deepEqual(tls.alpnProtocols,['http/1.1']);assert.match(wire,/GET \/item\?v=2 HTTP\/1.1/);assert.match(wire,/Host: shop.example.com/);assert.equal(result.bytes.toString(),'ok');assert.ok(closed>0);
+ const result=await denoRequestPinned(new URL('https://shop.example.com/item?v=2'),{address:'93.184.216.34',family:4},{maxBytes:100,signal:new AbortController().signal,referer:'https://shop.example.com/'},runtime);
+ assert.equal(connect.hostname,'93.184.216.34');assert.equal(tls.hostname,'shop.example.com');assert.deepEqual(tls.alpnProtocols,['http/1.1']);assert.match(wire,/GET \/item\?v=2 HTTP\/1.1/);assert.match(wire,/Host: shop.example.com/);assert.match(wire,/Accept-Language: es-ES,es;q=0.9/);assert.match(wire,/Referer: https:\/\/shop.example.com\//);assert.equal(result.bytes.toString(),'ok');assert.ok(closed>0);
 });

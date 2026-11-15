@@ -26,14 +26,14 @@ export async function resolvePublic(host,resolver=lookup){
  if(!result.length||result.some(x=>!publicAddress(x.address)))throw new CaptureError('blocked_address','La dirección no es pública.');
  return result[0];
 }
-async function requestPinned(u,ip,{maxBytes,signal}){
- if(globalThis.Deno?.connect&&globalThis.Deno?.startTls)return denoRequestPinned(u,ip,{maxBytes,signal});
+async function requestPinned(u,ip,{maxBytes,signal,referer}){
+ if(globalThis.Deno?.connect&&globalThis.Deno?.startTls)return denoRequestPinned(u,ip,{maxBytes,signal,referer});
  return new Promise((resolve,reject)=>{
  const transport=u.protocol==='https:'?https:http;
  // Lookup returns the checked address, eliminating a second DNS lookup/rebinding window.
  const req=transport.request(u,{method:'GET',agent:false,signal,
  lookup:(_host,options,cb)=>options?.all?cb(null,[ip]):cb(null,ip.address,ip.family),
- headers:{'User-Agent':'ModernoApp-ProductImporter/1.0','Accept':'text/html,application/xhtml+xml,image/avif,image/webp,image/png,image/jpeg;q=0.9','Accept-Encoding':'identity'}},res=>{
+ headers:{'User-Agent':'ModernoApp-ProductImporter/1.0','Accept':'text/html,application/xhtml+xml,image/avif,image/webp,image/png,image/jpeg;q=0.9','Accept-Language':'es-ES,es;q=0.9','Accept-Encoding':'identity',...(referer?{Referer:referer}:{})}},res=>{
  if(Number(res.headers['content-length']||0)>maxBytes){res.destroy();reject(new CaptureError('too_large','El archivo supera el límite permitido.'));return;}
  if(res.headers['content-encoding']&&!['identity'].includes(res.headers['content-encoding'])){res.destroy();reject(new CaptureError('encoding','La tienda usa una respuesta comprimida no admitida.'));return;}
  let size=0;const parts=[];res.on('data',chunk=>{size+=chunk.length;if(size>maxBytes){res.destroy(new CaptureError('too_large','El archivo supera el límite permitido.'));return;}parts.push(chunk);});
@@ -41,11 +41,11 @@ async function requestPinned(u,ip,{maxBytes,signal}){
  });req.on('error',reject);req.end();
  });
 }
-export async function safeFetch(raw,{maxBytes=3*1024*1024,timeoutMs=15000,resolver=lookup,request=requestPinned,signal}={}){
- let u=publicURL(raw);const timeout=AbortSignal.timeout(timeoutMs);const combined=signal?AbortSignal.any([signal,timeout]):timeout;
+export async function safeFetch(raw,{maxBytes=3*1024*1024,timeoutMs=15000,resolver=lookup,request=requestPinned,signal,referer}={}){
+ let u=publicURL(raw),safeReferer=referer?publicURL(referer).origin+'/':null;const timeout=AbortSignal.timeout(timeoutMs);const combined=signal?AbortSignal.any([signal,timeout]):timeout;
  for(let hop=0;hop<5;hop++){
  combined.throwIfAborted();const ip=await Promise.race([resolvePublic(u.hostname,resolver),new Promise((_,reject)=>{if(combined.aborted)reject(combined.reason);else combined.addEventListener('abort',()=>reject(combined.reason),{once:true});})]);
- const response=await request(u,ip,{maxBytes,signal:combined});
+ const response=await request(u,ip,{maxBytes,signal:combined,referer:safeReferer});
  if([301,302,303,307,308].includes(response.status)){if(!response.headers.location)throw new CaptureError('redirect','Redirección incompleta.');u=publicURL(new URL(response.headers.location,u).href);continue;}
  if(response.status!==200)throw new CaptureError('store_http_'+response.status,'La tienda no permite consultar esta ficha (HTTP '+response.status+'). Puedes añadirla manualmente.');
  return {...response,url:u.href};

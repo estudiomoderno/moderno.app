@@ -14,9 +14,20 @@ test('DNS private/mixed answers and redirects cannot reach the network',async()=
  await assert.rejects(safeFetch('https://shop.example.com',{resolver:async()=>[{address:'8.8.8.8',family:4},{address:'127.0.0.1',family:4}],request}));assert.equal(requests,0);
  await assert.rejects(safeFetch('https://shop.example.com',{resolver:async()=>[{address:'8.8.8.8',family:4}],request}));assert.equal(requests,1);
 });
+test('image referer is reduced to a safe public origin',async()=>{
+ let options;const request=async(_url,_ip,value)=>{options=value;return {status:200,headers:{},bytes:Buffer.from('ok')};};
+ await safeFetch('https://cdn.example.com/image.jpg',{referer:'https://shop.example.com/product/1?private=selection',resolver:async()=>[{address:'8.8.8.8',family:4}],request});
+ assert.equal(options.referer,'https://shop.example.com/');
+ await assert.rejects(safeFetch('https://cdn.example.com/image.jpg',{referer:'http://user:secret@shop.example.com/product',resolver:async()=>[{address:'8.8.8.8',family:4}],request}));
+});
 test('returns exact decimal source, unknown VAT and never recommendations',()=>{
  const r=extractProduct(page(product),'https://shop.example.com/p/1');assert.equal(r.fields.price.value,'129.123456');assert.equal(r.tax.status,'unknown');assert.equal(r.fields.currency.value,'EUR');assert.equal(r.images.length,1);assert.equal(r.gallery.complete,false);
  assert.equal(preciseJSON('{"price":123.1234567890123}').price,'123.1234567890123');assert.equal(multiplyDecimal('12.345','1.21'),'14.93745');
+});
+test('SKLUM accepts an explicit VAT label in the current main product area',()=>{
+ const url='https://www.sklum.com/es/comprar-sillas/1-silla.html',sklum={...product,url,image:'https://cdn.sklum.com/es/1/silla.jpg'};
+ const html=`<html><head><script type="application/ld+json">${JSON.stringify(sklum)}</script></head><body><main><div id="productcore"><h1>Silla</h1></div><p>Precio con IVA incluido</p></main></body></html>`;
+ const r=extractProduct(html,url);assert.equal(r.tax.status,'included');assert.equal(r.tax.evidence,'IVA incluido');assert.equal(r.fields.price.value,'129.123456');
 });
 test('aggregate prices and unverified variants never become exact prices',()=>{
  assert.equal(extractProduct(page({...product,offers:{'@type':'AggregateOffer',lowPrice:'10',highPrice:'20',priceCurrency:'EUR'}}),product.url).fields.price.value,null);
@@ -53,8 +64,9 @@ test('handler authenticates a large session from the bounded proxy envelope',asy
  assert.equal(response.status,200);assert.equal(received,'Bearer '+token);
 });
 test('failed image download stores no hotlink and leaves incomplete capture',async()=>{
- let saved,uploads=0;const deps={authenticate:async()=>({id:'fixture'}),start:async()=>({start:true}),finish:async(_actor,_id,c)=>{saved=c;},upload:async()=>{uploads++;},fetchPage:async url=>{
- if(url!==product.url)throw Error('blocked');return {url,bytes:Buffer.from(page(product)),headers:{'content-type':'text/html'}};
+ let saved,uploads=0,imageOptions;const deps={authenticate:async()=>({id:'fixture'}),start:async()=>({start:true}),finish:async(_actor,_id,c)=>{saved=c;},upload:async()=>{uploads++;},fetchPage:async (url,options)=>{
+ if(url!==product.url){imageOptions=options;throw Object.assign(Error('blocked'),{code:'store_http_403'});}return {url,bytes:Buffer.from(page(product)),headers:{'content-type':'text/html'}};
  }};
  const r=await createHandler(deps)(request(captureBody));assert.equal(r.status,200);assert.equal(uploads,0);assert.deepEqual(saved.images,[]);assert.ok(saved.missing.includes('images'));assert.equal(saved.status,'incomplete');
+ assert.equal(imageOptions.referer,product.url);assert.ok(saved.warnings.includes('image_resolution_store_http_403'));
 });
