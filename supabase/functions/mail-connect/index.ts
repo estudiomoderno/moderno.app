@@ -1,6 +1,6 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.57.4';
 import {MailInputError,connectionId,passwordConnection,publicConnection,safeErrorCode,safeErrorMessage,serializeSecret,studyId} from './core.mjs';
-import {verifyPasswordAccount} from './network.ts';
+import {readImapMailbox,verifyPasswordAccount} from './network.ts';
 
 const url=Deno.env.get('SUPABASE_URL')!,anon=Deno.env.get('SUPABASE_ANON_KEY')!,service=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -77,8 +77,8 @@ Deno.serve(async(req:Request)=>{
   const body=await req.json();const subject=await actor(req,body?.authToken);const study=studyId(body?.studyId);await requireAdmin(subject,study);
   if(body.action==='status'){const {data,error}=await subject.client.rpc('mail_connection_status',{p_estudio:study});if(error)throw error;return json(origin,{ok:true,connections:(data||[]).map(publicConnection)});}
   if(body.action==='inbox'){
-   const id=connectionId(body.connectionId),{data,error}=await admin.rpc('mail_connection_admin_get',{p_user:subject.user.id,p_estudio:study,p_connection:id});if(error||!data)throw error||Error('missing');if(data.provider!=='gmail')throw new MailInputError('Esta bandeja todavía no está disponible');
-   const secretData=JSON.parse(data.secret),inbox=await gmailInbox(secretData.refreshToken,body.folder);await admin.rpc('mail_connection_admin_touch',{p_user:subject.user.id,p_estudio:study,p_connection:id,p_status:'connected',p_error:null});return json(origin,{ok:true,...inbox});
+   const id=connectionId(body.connectionId),{data,error}=await admin.rpc('mail_connection_admin_get',{p_user:subject.user.id,p_estudio:study,p_connection:id});if(error||!data)throw error||Error('missing');
+   const secretData=JSON.parse(data.secret),inbox=data.provider==='gmail'?await gmailInbox(secretData.refreshToken,body.folder):await readImapMailbox(secretData,body.folder);await admin.rpc('mail_connection_admin_touch',{p_user:subject.user.id,p_estudio:study,p_connection:id,p_status:'connected',p_error:null});return json(origin,{ok:true,...inbox});
   }
   if(body.action==='gmail_begin'){
    if(!googleClientId()||!googleClientSecret()||!googleRedirect())throw Object.assign(new Error('gmail not configured'),{code:'not_configured'});

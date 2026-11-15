@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {passwordConnection,safeErrorCode,safeErrorMessage,serializeSecret,studyId} from '../supabase/functions/mail-connect/core.mjs';
+import {imapFolderMap,parseImapMessages} from '../supabase/functions/mail-connect/network.ts';
 
 test('iCloud uses Apple secure endpoints and never the ordinary Apple password label',()=>{
  const account=passwordConnection({provider:'icloud',email:'Persona@icloud.com',password:'abcd-efgh-ijkl-mnop'});
@@ -28,6 +29,18 @@ test('public errors do not expose low-level server responses',()=>{
  assert.throws(()=>studyId('not-a-uuid'));
 });
 
+test('IMAP maps Apple special folders and parses bounded message headers',()=>{
+ const folders=imapFolderMap([
+  '* LIST (\\HasNoChildren \\Sent) "/" "Sent Messages"',
+  '* LIST (\\HasNoChildren \\Drafts) "/" Drafts',
+  '* LIST (\\HasNoChildren \\Junk) "/" Junk',
+  '* LIST (\\HasNoChildren \\Trash) "/" "Deleted Messages"'
+ ]);
+ assert.deepEqual(folders,{inbox:'INBOX',sent:'Sent Messages',drafts:'Drafts',spam:'Junk',trash:'Deleted Messages'});
+ const messages=parseImapMessages(['* 42 FETCH (UID 99 FLAGS (\\Seen) INTERNALDATE "15-Nov-2026 12:34:56 +0000" BODY[HEADER.FIELDS (FROM TO SUBJECT DATE)] {128}','From: =?UTF-8?B?SmF2aQ==?= <javi@example.com>','To: hola@example.com','Subject: Cuenta Apple','Date: Sun, 15 Nov 2026 12:34:56 +0000','',')']);
+ assert.equal(messages[0].id,'imap-99');assert.equal(messages[0].from,'Javi <javi@example.com>');assert.equal(messages[0].subject,'Cuenta Apple');assert.equal(messages[0].unread,false);
+});
+
 test('mail UI replaces the preparatory placeholder and reuses one connection module',()=>{
  const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
  const ui=readFileSync(new URL('../app/mail-connections.js',import.meta.url),'utf8');
@@ -35,13 +48,15 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(html,/mail-connections\.js/);assert.match(html,/ModernoMail\.renderMail\(\)/);assert.match(html,/ModernoMail\.integrationCards\(\)/);
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
- assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder:state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36712/);
+ assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder=state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36713/);
  for(const label of ['Recibidos','Enviados','Borradores','Spam','Papelera','Redactar','Ajustes'])assert.match(ui,new RegExp(label));
  assert.match(ui,/mail-icons\/compose\.svg/);for(const icon of ['inbox','sent','drafts','spam','trash'])assert.match(ui,new RegExp(`icon:'${icon}\\.svg'`));
  assert.match(ui,/mail-icons\/refresh\.svg/);assert.match(ui,/mail-icons\/settings\.svg/);assert.doesNotMatch(ui,/>Actualizar<|>Ajustes</);
  assert.match(ui,/refresh\.svg[\s\S]*settings\.svg/);assert.match(css,/grid-template-columns:196px/);assert.match(css,/mail-folder-button\{justify-content:space-between;gap:8px/);assert.match(css,/mail-folder-badge\{[^}]*border:1px solid #bdbdbd[^}]*color:#646464/);assert.match(css,/width:min\(320px,100%\)/);assert.match(css,/\.mail-toolbar-actions/);
  assert.doesNotMatch(ui,/mail-inbox-heading|sin leer/);assert.match(ui,/class="mail-inbox-content"/);assert.match(css,/inset:64px 16px 0/);
- assert.match(css,/mail-account-identity \.mail-provider-mark\{display:flex!important[^}]*align-items:center!important[^}]*justify-content:center!important/);assert.match(css,/mail-account-identity \.mail-provider-mark img\{[^}]*width:22px!important[^}]*height:auto!important/);
+ assert.match(css,/mail-account-identity \.mail-provider-mark\{display:flex!important[^}]*align-items:center!important[^}]*justify-content:center!important/);assert.match(css,/mail-account-identity \.mail-provider-mark img\{[^}]*width:22px!important[^}]*height:22px!important/);
+ assert.match(ui,/connectedAccounts/);assert.match(ui,/selectedConnection/);assert.match(ui,/mark\(account\.provider\)/);assert.match(ui,/ModernoMail\.selectAccount/);assert.doesNotMatch(ui,/mail-account-identity">\$\{mark\('gmail'\)\}/);
+ assert.match(css,/\.mail-account-menu\{display:grid[^}]*max-height:264px/);assert.match(css,/\.mail-account-option\{display:grid/);
  assert.doesNotMatch(ui,/Gestionar conexión/);assert.match(ui,/Conectado · \$\{escape\(row\.email\)\}/);
  assert.match(html,/MAIL_FUNCTION_URL = "https:\/\/cgqtylvaapwbuwqvpjtb\.supabase\.co\/functions\/v1\/mail-connect"/);
  assert.match(html,/MAIL_FUNCTION_ANON_KEY = "eyJ[^"]+"/);
@@ -57,5 +72,5 @@ test('mail Edge Function preflight allows every header sent by supabase-js',()=>
  assert.match(fn,/const body=await req\.json\(\);const subject=await actor\(req,body\?\.authToken\)/);
  assert.doesNotMatch(fn,/include_granted_scopes/);
  assert.match(fn,/https:\/\/auth\.moderno\.app\/functions\/v1\/mail-connect/);
- assert.match(fn,/body\.action==='inbox'/);assert.match(fn,/gmail\/v1\/users\/me\/messages/);assert.match(fn,/const gmailFolders=\{inbox:'INBOX',sent:'SENT',drafts:'DRAFT',spam:'SPAM',trash:'TRASH'\}/);assert.match(fn,/includeSpamTrash/);assert.match(fn,/folderCounts/);
+ assert.match(fn,/body\.action==='inbox'/);assert.match(fn,/gmail\/v1\/users\/me\/messages/);assert.match(fn,/const gmailFolders=\{inbox:'INBOX',sent:'SENT',drafts:'DRAFT',spam:'SPAM',trash:'TRASH'\}/);assert.match(fn,/includeSpamTrash/);assert.match(fn,/readImapMailbox/);assert.match(fn,/folderCounts/);
 });
