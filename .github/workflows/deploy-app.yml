@@ -49,6 +49,8 @@ jobs:
             python3 -m pip install --disable-pip-version-check playwright==1.56.0
             python3 scripts/places-live-smoke.py
           fi
+      - name: Comprobar pasarela de correo sin una sesión real
+        run: node scripts/check-mail-gateway.mjs
       - name: Separar recursos de la entrada
         run: |
           mkdir -p release-assets release-entry
