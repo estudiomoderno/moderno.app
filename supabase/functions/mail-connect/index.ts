@@ -7,7 +7,7 @@ const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToke
 const origins=['https://app.moderno.app',...(Deno.env.get('MAIL_TEST_ORIGINS')||'').split(',').map(x=>x.trim()).filter(Boolean)];
 const googleClientId=()=>Deno.env.get('GOOGLE_MAIL_CLIENT_ID')||'';
 const googleClientSecret=()=>Deno.env.get('GOOGLE_MAIL_CLIENT_SECRET')||'';
-const googleRedirect=()=>Deno.env.get('GOOGLE_MAIL_REDIRECT_URI')||'';
+const googleRedirect=()=>'https://auth.moderno.app/functions/v1/mail-connect';
 const appReturn=()=>Deno.env.get('MAIL_APP_RETURN_URL')||'https://app.moderno.app/';
 
 function headers(origin:string|null){return {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin',...(origin&&origins.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};}
@@ -34,6 +34,19 @@ async function googleAccess(refreshToken:string){
  const body=await response.json().catch(()=>({}));if(!response.ok||!body.access_token)throw Object.assign(new Error('gmail refresh'),{code:'gmail_auth'});return body;
 }
 async function gmailProfile(accessToken:string){const response=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile',{headers:{Authorization:'Bearer '+accessToken}});const body=await response.json().catch(()=>({}));if(!response.ok||!body.emailAddress)throw Object.assign(new Error('gmail profile'),{code:'gmail_auth'});return {email:String(body.emailAddress).toLowerCase(),messages:Number(body.messagesTotal)||0};}
+function gmailHeader(message:any,name:string){return String((message?.payload?.headers||[]).find((item:any)=>String(item?.name||'').toLowerCase()===name.toLowerCase())?.value||'');}
+async function gmailInbox(refreshToken:string){
+ const token=await googleAccess(refreshToken),authorization={Authorization:'Bearer '+token.access_token};
+ const listUrl=new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages');listUrl.searchParams.set('maxResults','30');listUrl.searchParams.append('labelIds','INBOX');
+ const [listResponse,labelResponse]=await Promise.all([fetch(listUrl,{headers:authorization}),fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels/INBOX',{headers:authorization})]);
+ const list=await listResponse.json().catch(()=>({})),label=await labelResponse.json().catch(()=>({}));if(!listResponse.ok||!labelResponse.ok)throw Object.assign(new Error('gmail inbox'),{code:'gmail_auth'});
+ const rows=await Promise.all((Array.isArray(list.messages)?list.messages:[]).slice(0,30).map(async(item:any)=>{
+  const detailUrl=new URL(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${encodeURIComponent(String(item.id||''))}`);detailUrl.searchParams.set('format','metadata');for(const header of ['From','To','Subject','Date'])detailUrl.searchParams.append('metadataHeaders',header);
+  const response=await fetch(detailUrl,{headers:authorization});const message=await response.json().catch(()=>({}));if(!response.ok)return null;
+  return {id:String(message.id||''),threadId:String(message.threadId||''),from:gmailHeader(message,'From'),to:gmailHeader(message,'To'),subject:gmailHeader(message,'Subject')||'(Sin asunto)',date:gmailHeader(message,'Date'),timestamp:Number(message.internalDate)||0,snippet:String(message.snippet||'').slice(0,500),unread:Array.isArray(message.labelIds)&&message.labelIds.includes('UNREAD')};
+ }));
+ return {messages:rows.filter(Boolean),unreadCount:Math.max(0,Number(label.messagesUnread)||0),nextPageToken:String(list.nextPageToken||'')};
+}
 async function store(userId:string,study:string,provider:string,email:string,displayName:string,secretValue:string){const {data,error}=await admin.rpc('mail_connection_admin_store',{p_user:userId,p_estudio:study,p_provider:provider,p_email:email,p_display_name:displayName,p_secret:secretValue});if(error)throw error;return data;}
 
 async function callback(req:Request){
@@ -58,6 +71,10 @@ Deno.serve(async(req:Request)=>{
  try{
   const body=await req.json();const subject=await actor(req,body?.authToken);const study=studyId(body?.studyId);await requireAdmin(subject,study);
   if(body.action==='status'){const {data,error}=await subject.client.rpc('mail_connection_status',{p_estudio:study});if(error)throw error;return json(origin,{ok:true,connections:(data||[]).map(publicConnection)});}
+  if(body.action==='inbox'){
+   const id=connectionId(body.connectionId),{data,error}=await admin.rpc('mail_connection_admin_get',{p_user:subject.user.id,p_estudio:study,p_connection:id});if(error||!data)throw error||Error('missing');if(data.provider!=='gmail')throw new MailInputError('Esta bandeja todavía no está disponible');
+   const secretData=JSON.parse(data.secret),inbox=await gmailInbox(secretData.refreshToken);await admin.rpc('mail_connection_admin_touch',{p_user:subject.user.id,p_estudio:study,p_connection:id,p_status:'connected',p_error:null});return json(origin,{ok:true,...inbox});
+  }
   if(body.action==='gmail_begin'){
    if(!googleClientId()||!googleClientSecret()||!googleRedirect())throw Object.assign(new Error('gmail not configured'),{code:'not_configured'});
    const state=randomToken(),verifier=randomToken();const {error}=await admin.rpc('mail_oauth_admin_begin',{p_user:subject.user.id,p_estudio:study,p_state_hash:await sha256(state),p_code_verifier:verifier});if(error)throw error;

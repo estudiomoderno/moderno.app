@@ -20,3 +20,10 @@ if(response.status!==401||!type.includes('application/json')||body?.ok!==false||
  throw Error(`La pasarela de correo no alcanzó la función: HTTP ${response.status}, ${type||'sin content-type'}`);
 }
 console.log('Pasarela de correo verificada: la petición alcanza la función y una sesión inválida se rechaza en JSON.');
+
+const callback=await fetch('https://auth.moderno.app/functions/v1/mail-connect?state=invalid',{redirect:'manual',signal:AbortSignal.timeout(20000)});
+const location=callback.headers.get('location')||'';
+if(callback.status!==303||!location.startsWith('https://app.moderno.app/')||!location.includes('mail_oauth=invalid_state')){
+ throw Error(`El retorno personalizado de correo no está disponible: HTTP ${callback.status}`);
+}
+console.log('Retorno OAuth verificado en el dominio personalizado de Moderno.app.');
