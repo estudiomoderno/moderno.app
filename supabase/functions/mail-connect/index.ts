@@ -10,7 +10,7 @@ const googleClientSecret=()=>Deno.env.get('GOOGLE_MAIL_CLIENT_SECRET')||'';
 const googleRedirect=()=>Deno.env.get('GOOGLE_MAIL_REDIRECT_URI')||'';
 const appReturn=()=>Deno.env.get('MAIL_APP_RETURN_URL')||'https://app.moderno.app/';
 
-function headers(origin:string|null){return {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin',...(origin&&origins.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};}
+function headers(origin:string|null){return {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin',...(origin&&origins.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-moderno-session','Access-Control-Allow-Methods':'POST, OPTIONS'};}
 function json(origin:string|null,body:unknown,status=200){return new Response(JSON.stringify(body),{status,headers:headers(origin)});}
 function redirect(status:string){const target=new URL(appReturn());target.searchParams.set('mail_oauth',status);target.hash='/mail';return Response.redirect(target.toString(),303);}
 function base64url(bytes:Uint8Array){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
@@ -19,9 +19,12 @@ async function challenge(value:string){return base64url(new Uint8Array(await cry
 function randomToken(size=48){const bytes=new Uint8Array(size);crypto.getRandomValues(bytes);return base64url(bytes);}
 
 async function actor(req:Request){
- const authorization=req.headers.get('Authorization')||'';if(!authorization.startsWith('Bearer '))throw Object.assign(new Error('Inicia sesión de nuevo'),{status:401});
- const client=createClient(url,anon,{global:{headers:{Authorization:authorization}},auth:{persistSession:false,autoRefreshToken:false}});
- const {data,error}=await client.auth.getUser(authorization.slice(7));if(error||!data.user)throw Object.assign(new Error('Inicia sesión de nuevo'),{status:401});
+ const privateToken=req.headers.get('X-Moderno-Session')||'';
+ const authorization=req.headers.get('Authorization')||'';
+ const token=privateToken||(authorization.startsWith('Bearer ')?authorization.slice(7):'');if(!token)throw Object.assign(new Error('Inicia sesión de nuevo'),{status:401});
+ const bearer='Bearer '+token;
+ const client=createClient(url,anon,{global:{headers:{Authorization:bearer}},auth:{persistSession:false,autoRefreshToken:false}});
+ const {data,error}=await client.auth.getUser(token);if(error||!data.user)throw Object.assign(new Error('Inicia sesión de nuevo'),{status:401});
  return {user:data.user,client};
 }
 async function requireAdmin(subject:Awaited<ReturnType<typeof actor>>,study:string){const {data,error}=await subject.client.rpc('app_rol',{p_estudio:study});if(error||data!=='admin')throw Object.assign(new Error('Solo un administrador puede conectar el correo'),{status:403});}

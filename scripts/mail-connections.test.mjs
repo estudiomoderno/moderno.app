@@ -35,12 +35,13 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
  assert.match(html,/MAIL_FUNCTION_URL = "https:\/\/cgqtylvaapwbuwqvpjtb\.supabase\.co\/functions\/v1\/mail-connect"/);
- assert.match(ui,/fetch\(c\.mailFunctionUrl/);assert.match(ui,/'Authorization':'Bearer '\+accessToken/);assert.doesNotMatch(ui,/['"]apikey['"]\s*:/);assert.doesNotMatch(ui,/\.functions\.invoke\(/);
+ assert.match(ui,/fetch\(c\.mailFunctionUrl/);assert.match(ui,/'X-Moderno-Session':accessToken/);assert.doesNotMatch(ui,/['"]apikey['"]\s*:/);assert.doesNotMatch(ui,/'Authorization':'Bearer '\+accessToken/);assert.doesNotMatch(ui,/\.functions\.invoke\(/);
+ assert.doesNotMatch(ui,/Comprobando tus cuentas de correo/);
 });
 
 test('mail Edge Function preflight allows every header sent by supabase-js',()=>{
  const fn=readFileSync(new URL('../supabase/functions/mail-connect/index.ts',import.meta.url),'utf8');
  const allowHeaders=fn.match(/'Access-Control-Allow-Headers':'([^']+)'/)?.[1]?.split(',').map(value=>value.trim());
- assert.deepEqual(allowHeaders,['authorization','x-client-info','apikey','content-type']);
+ assert.deepEqual(allowHeaders,['authorization','x-client-info','apikey','content-type','x-moderno-session']);
  assert.match(fn,/if\(req\.method==='OPTIONS'\)/);
 });
