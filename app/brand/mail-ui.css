@@ -1,6 +1,4 @@
-/* Mail connection preparation based on the supplied ReUI Empty composition.
-   Semantic structure and token fallbacks remain ready for the later
-   tablet/mobile and dark-theme pass. No provider request is made here. */
+/* Mail connections based on the supplied ReUI Empty composition. */
 .mail-connect-page{
   display:grid;
   place-items:center;
@@ -30,6 +28,7 @@
 .mail-connect-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:24px}
 .mail-connect-button{height:36px;padding:0 13px;border:1px solid var(--ui-line,#dedede);border-radius:8px;background:var(--app-surface,#fff);color:var(--ink,#202020);box-shadow:0 1px 2px #00000008;font:500 13px/1 "Moderno ReUI Inter",Inter,Arial,sans-serif;opacity:1;cursor:pointer}
 .mail-connect-button--primary{border-color:#171717;background:#171717;color:#fff}
+.mail-connect-button:disabled{cursor:wait;opacity:.58}
 .mail-connect-note{margin:12px 0 0;color:var(--ink-faint,#8a8a8a);font-size:11px;line-height:1.4}
 .mail-connect-page--setup{align-items:center}
 .mail-setup-card{width:min(720px,100%);max-height:100%;overflow:auto;border:1px solid var(--ui-line,#dedede);border-radius:12px;background:var(--app-surface,#fff);box-shadow:0 1px 3px #0000000d}
@@ -44,6 +43,7 @@
 .mail-setup-body{padding:22px}
 .mail-setup-notice{display:flex;align-items:flex-start;gap:4px;flex-direction:column;margin-bottom:20px;padding:11px 12px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;color:#1e3a5f;text-align:left}
 .mail-setup-notice strong{font-size:12px;font-weight:600}.mail-setup-notice span{font-size:11.5px;line-height:1.4}
+.mail-setup-notice--secure{border-color:#bbdfc9;background:#f1faf4;color:#174b2c}
 .mail-google-permissions{padding:18px;border:1px solid var(--ui-line,#dedede);border-radius:10px;background:#fafafa;text-align:left}
 .mail-google-permissions h3{margin:0;color:#202020;font-size:14px;font-weight:600}.mail-google-permissions p{margin:7px 0 0;color:#686868;font-size:12.5px;line-height:1.5}
 .mail-google-permissions ul{display:grid;gap:7px;margin:15px 0 0;padding:0;list-style:none;color:#404040;font-size:12.5px}.mail-google-permissions li::before{content:"✓";margin-right:8px;color:#16794a;font-weight:600}
@@ -53,6 +53,20 @@
 .mail-setup-grid :is(input,select):focus{border-color:#858585;box-shadow:0 0 0 1px #858585}.mail-setup-grid input::placeholder{color:#969696}
 .mail-setup-help{margin:10px 0 0;color:#737373;font-size:11px;line-height:1.45;text-align:left}
 .mail-setup-footer{display:flex;justify-content:flex-end;gap:8px;padding:16px 22px;border-top:1px solid var(--ui-line,#dedede)}
+.mail-setup-error{max-width:720px;margin:14px 0 0;padding:10px 12px;border:1px solid #efc2bb;border-radius:8px;background:#fff4f2;color:#8e3023;font-size:12px;line-height:1.45;text-align:left}
+.mail-connect-loading{display:flex;align-items:center;gap:9px;color:var(--ink-soft,#686868);font-size:12.5px}
+.mail-connect-loading p{margin:0}
+.mail-accounts-page{width:100%;max-width:980px;margin:0 auto;padding:12px 0 32px;font-family:"Moderno ReUI Inter",Inter,Arial,sans-serif}
+.mail-accounts-page>header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:24px}
+.mail-accounts-page>header h1{margin:0;color:var(--ink,#202020);font-size:23px;font-weight:600;line-height:1.3}
+.mail-accounts-page>header p{margin:5px 0 0;color:var(--ink-soft,#686868);font-size:12.5px}
+.mail-connect-actions--left{justify-content:flex-end;margin-top:0}
+.mail-account-list{display:grid;gap:10px}
+.mail-account-card{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:13px;padding:15px;border:1px solid var(--ui-line,#dedede);border-radius:11px;background:var(--app-surface,#fff);box-shadow:0 1px 2px #00000008}
+.mail-account-copy{min-width:0}.mail-account-copy>div{display:flex;align-items:center;gap:8px}.mail-account-copy h3{margin:0;color:var(--ink,#202020);font-size:14px;font-weight:600}.mail-account-copy p{margin:3px 0 0;overflow:hidden;color:var(--ink-soft,#686868);font-size:12.5px;text-overflow:ellipsis;white-space:nowrap}.mail-account-copy small{display:block;margin-top:4px;color:var(--ink-faint,#8a8a8a);font-size:10.5px}
+.mail-status{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;font-size:10px;font-weight:600}.mail-status--connected{background:#e8f5ec;color:#27623e}.mail-status--error{background:#fff0ed;color:#9c382b}
+.mail-account-actions{display:flex;gap:7px}.mail-connect-button--danger{color:#a3392b}
+.connection-card--mail{display:flex;flex-direction:column;align-items:flex-start}.connection-card-provider{display:flex;align-items:flex-start;gap:12px}.connection-card-provider h3{margin:2px 0 0}.connection-card-provider p{margin-top:4px}.connection-card--mail>.chip{margin-top:14px}.connection-card--mail>.btn{margin-top:12px}
 @media screen and (min-width:1100px){
  body.desktop-shell:not(.portalmode) .main:has(.mail-connect-page){overflow:hidden}
  body.desktop-shell:not(.portalmode) .main>#view:has(.mail-connect-page){height:auto;min-height:0}

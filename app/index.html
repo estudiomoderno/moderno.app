@@ -1313,6 +1313,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/phone-controls.js?v=3492"></script>
 <link rel="stylesheet" href="/product-clipper.css?v=36617">
 <script src="/product-clipper.js?v=36622"></script>
+<script src="/mail-connections.js?v=36701"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -4507,7 +4508,7 @@ function go(view, arg){
   if(view!=="proyectos")state.showArchived=false;
   if(!canView(view)){ toast("No tienes acceso a esta sección"); view="home"; arg=undefined; }
   if(view==="proyectos" && state.view!=="proyectos") state.projQ="";
-  if(view!=="mail") _mailSetupProvider="";
+  ModernoMail.onNavigate(view);
   if(draftEditing() && draftDirty() && view!==state.view){ draftExitModal(view, arg); return; }
   setTimeout(()=>{ try{ presenceTrack(); }catch(e){} }, 0); if(view!=="presupuestos") state.qView=null; if(view!=="facturas") state.fView=null;
   if(view==="proyecto" && state.view!=="proyecto" && state.view!=="estancia" && state.view!=="presedit") state.projTab="tareas";
@@ -6964,65 +6965,14 @@ const INTEGRS = [
 function integrToggle(){ toast("Esta conexión todavía no está disponible"); }
 function vAutomatizaciones(){return `<section class="connections-page automations-page"><h1>Automatizaciones</h1>${FolderAutomations.render()}</section>`;}
 function vOfficeSoon(title){return `<section class="connections-page"><h1>${title}</h1><article class="connection-card"><span class="chip">Próximamente</span><p>Esta sección todavía no está disponible.</p></article></section>`;}
-let _mailSetupProvider="";
-const MAIL_SETUP_PROVIDERS={
-  gmail:{title:"Conectar Gmail",description:"Autoriza Moderno.app desde Google para consultar y enviar correo con tu cuenta.",kind:"gmail"},
-  icloud:{title:"Conectar iCloud Mail",description:"Utiliza tu dirección de iCloud y una contraseña específica para aplicaciones.",kind:"icloud"},
-  server:{title:"Configurar servidor externo",description:"Añade una cuenta mediante los datos IMAP y SMTP de tu proveedor de correo.",kind:"server"}
-};
-function mailSetupOpen(provider){if(!MAIL_SETUP_PROVIDERS[provider])return;_mailSetupProvider=provider;render();queueMicrotask(()=>document.querySelector(".mail-setup-back")?.focus());}
-function mailSetupBack(){_mailSetupProvider="";render();}
-function mailSetupSubmit(event){event.preventDefault();toast("La conexión se activará en el siguiente paso");}
-function mailProviderMark(provider){
-  const data=MAIL_SETUP_PROVIDERS[provider];
-  const file={gmail:"gmail.svg",icloud:"icloud.svg",server:"external-mail.svg"}[provider];
-  return `<span class="mail-provider-mark mail-provider-mark--${data.kind}" aria-hidden="true"><img src="/brand/mail-icons/${file}?v=36617" width="24" height="24" alt=""></span>`;
-}
-function vMailProviderSetup(provider){
-  const data=MAIL_SETUP_PROVIDERS[provider];
-  const note=`<div class="mail-setup-notice" role="note"><strong>Configuración preparatoria</strong><span>Estos datos todavía no se guardan ni se envían a ningún servicio.</span></div>`;
-  let body="";
-  if(provider==="gmail") body=`${note}<div class="mail-google-permissions"><h3>Continuar con Google</h3><p>En el siguiente paso se abrirá la autorización segura de Google. Moderno.app solicitará únicamente los permisos necesarios para mostrar y enviar correo.</p><ul><li>Leer y organizar mensajes</li><li>Enviar correo desde tu cuenta</li><li>Sincronizar remitentes y destinatarios</li></ul></div>`;
-  if(provider==="icloud") body=`${note}<div class="mail-setup-grid mail-setup-grid--single"><label>Correo de iCloud<input type="email" name="icloud-email" autocomplete="off" placeholder="nombre@icloud.com" required></label><label>Contraseña específica para aplicaciones<input type="password" name="icloud-password" autocomplete="new-password" placeholder="xxxx-xxxx-xxxx-xxxx" required></label></div><p class="mail-setup-help">La contraseña específica se crea desde la cuenta de Apple y es distinta de la contraseña habitual.</p>`;
-  if(provider==="server") body=`${note}<div class="mail-setup-grid"><label class="mail-setup-span">Nombre del remitente<input type="text" name="sender-name" autocomplete="off" placeholder="Estudio Moderno" required></label><label class="mail-setup-span">Dirección de correo<input type="email" name="server-email" autocomplete="off" placeholder="hola@tuestudio.com" required></label><label class="mail-setup-host">Servidor IMAP<input type="text" name="imap-host" autocomplete="off" placeholder="imap.tuservidor.com" required></label><label class="mail-setup-port">Puerto IMAP<input type="number" name="imap-port" inputmode="numeric" value="993" min="1" max="65535" required></label><label class="mail-setup-host">Servidor SMTP<input type="text" name="smtp-host" autocomplete="off" placeholder="smtp.tuservidor.com" required></label><label class="mail-setup-port">Puerto SMTP<input type="number" name="smtp-port" inputmode="numeric" value="465" min="1" max="65535" required></label><label class="mail-setup-half">Usuario<input type="text" name="server-user" autocomplete="off" placeholder="hola@tuestudio.com" required></label><label class="mail-setup-half">Contraseña<input type="password" name="server-password" autocomplete="new-password" placeholder="Contraseña del correo" required></label><label class="mail-setup-span">Seguridad<select name="server-security"><option>SSL / TLS</option><option>STARTTLS</option><option>Sin cifrado</option></select></label></div>`;
-  return `<section class="mail-connect-page mail-connect-page--setup" aria-labelledby="mail-setup-title"><form class="mail-setup-card" onsubmit="mailSetupSubmit(event)" autocomplete="off"><header class="mail-setup-header"><button type="button" class="mail-setup-back" onclick="mailSetupBack()" aria-label="Volver a servicios de correo"><img src="/brand/mail-icons/back.svg?v=36617" width="18" height="18" alt=""></button>${mailProviderMark(provider)}<div><h2 id="mail-setup-title">${data.title}</h2><p>${data.description}</p></div></header><div class="mail-setup-body">${body}</div><footer class="mail-setup-footer"><button type="button" class="mail-connect-button" onclick="mailSetupBack()">Cancelar</button><button type="submit" class="mail-connect-button mail-connect-button--primary">${provider==="gmail"?"Continuar con Google":"Comprobar y conectar"}</button></footer></form></section>`;
-}
-function vMailSetup(){
-  if(_mailSetupProvider)return vMailProviderSetup(_mailSetupProvider);
-  return `<section class="mail-connect-page" aria-labelledby="mail-connect-title">
-    <div class="mail-connect-empty">
-      <header class="mail-connect-header">
-        <div class="mail-connect-media" aria-hidden="true">
-          <svg width="200" height="120" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <g class="mail-node-lines" stroke-width="1.5" stroke-dasharray="4 3">
-              <line x1="100" y1="60" x2="44" y2="30"></line><line x1="100" y1="60" x2="44" y2="90"></line>
-              <line x1="100" y1="60" x2="156" y2="30"></line><line x1="100" y1="60" x2="156" y2="90"></line>
-            </g>
-            <circle cx="100" cy="60" r="18" class="mail-node-center" stroke-width="1.5"></circle>
-            <circle cx="100" cy="60" r="6" class="mail-node-center-ring"></circle><circle cx="100" cy="60" r="2.5" class="mail-node-center-dot"></circle>
-            ${[[44,30],[44,90],[156,30],[156,90]].map(([x,y])=>`<g class="mail-node-remote"><circle cx="${x}" cy="${y}" r="14" stroke-width="1.5"></circle><rect x="${x-7}" y="${y-4}" width="14" height="3" rx="1.5"></rect><rect x="${x-4}" y="${y+2}" width="8" height="2" rx="1"></rect></g>`).join("")}
-            <circle cx="72" cy="40" r="2" class="mail-node-float-primary"></circle><circle cx="128" cy="80" r="2" class="mail-node-float-primary"></circle>
-            <circle cx="72" cy="80" r="1.5" class="mail-node-float-muted"></circle><circle cx="128" cy="40" r="1.5" class="mail-node-float-muted"></circle>
-          </svg>
-        </div>
-        <h2 id="mail-connect-title">Conecta tu correo</h2>
-        <p>Aún no hay ninguna cuenta conectada. Elige el servicio que quieras preparar para gestionar el correo desde Moderno.app.</p>
-      </header>
-      <div class="mail-connect-actions" aria-label="Servicios de correo">
-        <button type="button" class="mail-connect-button mail-connect-button--primary" onclick="mailSetupOpen('gmail')">Conectar Gmail</button>
-        <button type="button" class="mail-connect-button" onclick="mailSetupOpen('icloud')">Conectar iCloud Mail</button>
-        <button type="button" class="mail-connect-button" onclick="mailSetupOpen('server')">Configurar servidor externo</button>
-      </div>
-      <p class="mail-connect-note">Elige un servicio para preparar la conexión.</p>
-    </div>
-  </section>`;
-}
+function vMailSetup(){return ModernoMail.renderMail();}
 function vIntegraciones(onlyPlugins=false){
+ const mailSetup=!onlyPlugins&&ModernoMail.setupFor('integrations');if(mailSetup)return mailSetup;
  const E=ModernoDaily.escape;
  const plugins=[['Chrome Product Clipper','Captura de productos desde el navegador.'],['SketchUp','Modelos y componentes vinculados al proyecto.'],['Revit','Elementos y espacios del modelo.'],['Rayon Design','Enlaces y exportaciones del proyecto. Conexión nativa pendiente de verificar.']];
- const integrations=[['Google Calendar','Citas y fechas del proyecto.'],['Gmail','Envío de documentos desde tu cuenta.'],['Apple Calendar','Suscripción y exportación de calendario.'],['Google Drive','Archivos y carpetas del proyecto.'],['Dropbox','Archivos y carpetas del proyecto.'],['OneDrive','Archivos y carpetas del proyecto.'],['ChatGPT','Asistencia sobre información autorizada.'],['Claude','Asistencia sobre información autorizada.'],['Zoom','Reuniones vinculadas al proyecto.'],['Notion','Resumen y tareas del proyecto.'],['WhatsApp','Compartir enlaces y documentos.']];
+ const integrations=[['Google Calendar','Citas y fechas del proyecto.'],['Apple Calendar','Suscripción y exportación de calendario.'],['Google Drive','Archivos y carpetas del proyecto.'],['Dropbox','Archivos y carpetas del proyecto.'],['OneDrive','Archivos y carpetas del proyecto.'],['ChatGPT','Asistencia sobre información autorizada.'],['Claude','Asistencia sobre información autorizada.'],['Zoom','Reuniones vinculadas al proyecto.'],['Notion','Resumen y tareas del proyecto.'],['WhatsApp','Compartir enlaces y documentos.']];
  const cards=rows=>rows.map(([name,desc])=>`<article class="connection-card"><h3>${E(name)}</h3><p>${E(desc)}</p>${name==='Google Calendar'&&_gcal.on?`<span class="chip">Conectado</span><button class="btn btn-ghost" onclick="gcalMenu()">Gestionar conexión</button>`:'<span class="chip">Próximamente</span>'}</article>`).join('');
- return `<section class="connections-page"><h1>${onlyPlugins?'Plugins':'Integraciones'}</h1><p>Conecta tus herramientas con Moderno. Las nuevas conexiones se habilitarán cuando estén listas.</p><div class="connections-grid">${cards(onlyPlugins?plugins:integrations)}</div></section>`;
+ return `<section class="connections-page"><h1>${onlyPlugins?'Plugins':'Integraciones'}</h1><p>Conecta tus herramientas con Moderno. Las conexiones activas muestran su estado real.</p><div class="connections-grid">${onlyPlugins?cards(plugins):ModernoMail.integrationCards()+cards(integrations)}</div></section>`;
 }
 function vAdmin(){
   const A = state.account, sec = state.adminSec==="conex"?"perfil":(state.adminSec||"perfil");
@@ -11492,7 +11442,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.22";
+const MODERNO_VER="v3.67.1";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11502,6 +11452,10 @@ const SUPABASE_ANON_KEY = "sb_publishable_MfUr7rezJhqiX1ujS295aA_aDF-YbLu";
 const sb = (SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("PEGA_AQUI") && SUPABASE_ANON_KEY.length>40 && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 if(!sb)_accessLoading=false;
+ModernoMail.configure({
+ context:()=>({sb,studyId:ESTUDIO_ID,userId:state.sessionUser?.mail||'',role:_accessRole}),
+ render,toast,confirm:(message,label,action)=>askConfirm(message,label,action)
+});
 
 function sbUserToSession(u){
   const md = u.user_metadata || {};

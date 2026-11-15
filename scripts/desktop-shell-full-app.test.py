@@ -325,9 +325,8 @@ try:
      title_gap=page.locator('.mail-setup-header h2').evaluate('(title)=>title.nextElementSibling.getBoundingClientRect().top-title.getBoundingClientRect().bottom')
      assert title_gap<=2,title_gap
      if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-gmail-{width}.png'),full_page=True)
-     page.get_by_role('button',name='Continuar con Google',exact=True).click()
-     expect(page.locator('#toast')).to_contain_text('La conexión se activará en el siguiente paso')
-     page.get_by_role('button',name='Volver a servicios de correo',exact=True).click()
+     expect(page.locator('.mail-setup-notice')).to_contain_text('Los tokens y contraseñas se cifran en el servidor')
+     page.get_by_role('button',name='Volver',exact=True).click()
      page.get_by_role('button',name='Conectar iCloud Mail',exact=True).click()
      expect(page.locator('.mail-setup-grid input')).to_have_count(2)
      assert page.locator('.mail-provider-mark img').get_attribute('src').startswith('/brand/mail-icons/icloud.svg')
@@ -338,7 +337,7 @@ try:
      page.get_by_role('button',name='Configurar servidor externo',exact=True).click()
      expect(page.locator('.mail-setup-grid input')).to_have_count(8)
      assert page.locator('.mail-provider-mark img').get_attribute('src').startswith('/brand/mail-icons/external-mail.svg')
-     expect(page.locator('.mail-setup-grid select')).to_have_count(1)
+     expect(page.locator('.mail-setup-grid select')).to_have_count(2)
      assert page.locator('.mail-setup-card input[type=password]').evaluate_all('(inputs)=>inputs.every(input=>input.value==="")')
      if width>=1100:
       setup_page=page.locator('.mail-connect-page').bounding_box();setup_card=page.locator('.mail-setup-card').bounding_box()
@@ -374,6 +373,18 @@ try:
     if len(sys.argv)>1 and view in ['home','proyectos','workspace','contabilidad']:
      page.wait_for_timeout(250)
      page.screenshot(path=str(Path(sys.argv[1])/f'neutral-{view}-{width}.png'),full_page=True)
+   if width>=1100:
+    page.evaluate("go('integraciones')")
+    cards=page.locator('.connection-card--mail')
+    expect(cards).to_have_count(2)
+    expect(cards.locator('h3')).to_have_text(['Gmail','iCloud Mail'])
+    cards.nth(0).get_by_role('button',name='Conectar',exact=True).click()
+    expect(page.locator('#mail-setup-title')).to_have_text('Conectar Gmail')
+    page.get_by_role('button',name='Volver',exact=True).click()
+    cards=page.locator('.connection-card--mail')
+    cards.nth(1).get_by_role('button',name='Conectar',exact=True).click()
+    expect(page.locator('#mail-setup-title')).to_have_text('Conectar iCloud Mail')
+    page.get_by_role('button',name='Volver',exact=True).click()
    check_finances(page,width)
    if width>=1100:
     page.evaluate("go('contabilidad')")
