@@ -6,12 +6,20 @@ function product_clipper_proxy_request(array $server,string $raw): array {
     if (($server['REQUEST_METHOD'] ?? '') !== 'POST') throw new ProductClipperProxyError('Solo POST',405);
     $origin=$server['HTTP_ORIGIN'] ?? '';
     if ($origin !== '' && $origin !== 'https://app.moderno.app') throw new ProductClipperProxyError('Origen no permitido',403);
-    if (strlen($raw)>10000) throw new ProductClipperProxyError('Solicitud demasiado grande',413);
-    $session=$server['HTTP_X_MODERNO_SESSION'] ?? '';
+    if (strlen($raw)>20000) throw new ProductClipperProxyError('Solicitud demasiado grande',413);
+    $decoded=json_decode($raw,true);
+    if (!is_array($decoded)) throw new ProductClipperProxyError('Solicitud no válida',400);
+    if (isset($decoded['session64'],$decoded['payload'])&&is_string($decoded['session64'])&&is_array($decoded['payload'])) {
+        $session=base64_decode($decoded['session64'],true);
+        if ($session===false) throw new ProductClipperProxyError('Inicia sesión de nuevo',401);
+        $body=$decoded['payload'];$raw=json_encode($body,JSON_UNESCAPED_SLASHES);
+        if ($raw===false||strlen($raw)>10000) throw new ProductClipperProxyError('Solicitud demasiado grande',413);
+    } else {
+        $session=$server['HTTP_AUTHORIZATION'] ?? $server['REDIRECT_HTTP_AUTHORIZATION'] ?? $server['HTTP_X_MODERNO_SESSION'] ?? '';
+        $body=$decoded;
+    }
     if (strncmp($session,'Bearer ',7)===0) $session=substr($session,7);
     if (!preg_match('/^[A-Za-z0-9._-]{20,8192}$/D',$session)) throw new ProductClipperProxyError('Inicia sesión de nuevo',401);
-    $body=json_decode($raw,true);
-    if (!is_array($body)) throw new ProductClipperProxyError('Solicitud no válida',400);
     $uuid='/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iD';
     if (!is_string($body['id'] ?? null)||!preg_match($uuid,$body['id'])) throw new ProductClipperProxyError('Solicitud no válida',400);
     if (($body['action'] ?? '')==='read') return ['token'=>$session,'raw'=>$raw];

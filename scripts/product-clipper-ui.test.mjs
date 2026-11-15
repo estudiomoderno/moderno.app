@@ -9,7 +9,7 @@ function setup({kind='biblioteca',missing='',rpcError=false,readError=false,loca
  const dialog={isConnected:true,querySelector:s=>nodes[s]||null,querySelectorAll:()=>messages,close(){closed=true;this.isConnected=false;}};
  const ctx={dialog,owner:'study|user',study:'study',id,row:{destino:dest},busy:false};
  const CLOUD_BLOCKS={compras:{get:()=>state.library},proyectos:{get:()=>state.projects}};
- const c={state,ESTUDIO_ID:'study',SUPABASE_ANON_KEY:'sb_publishable_fixture_key',_accessRole:'admin',CLOUD_BLOCKS,_cloudBusy:false,_cloudHash:{[block]:JSON.stringify(CLOUD_BLOCKS[block].get())},canon:JSON.stringify,
+ const c={state,ESTUDIO_ID:'study',SUPABASE_ANON_KEY:'sb_publishable_fixture_key',_accessRole:'admin',CLOUD_BLOCKS,_cloudBusy:false,_cloudHash:{[block]:JSON.stringify(CLOUD_BLOCKS[block].get())},canon:JSON.stringify,btoa:s=>Buffer.from(s).toString('base64'),
   cloudFlush:async()=>{},cloudReadBlock:async()=>failRead?{error:Error('Sin conexión al consultar')}:{data:{contenido:server,updated_at:'version'}},
   cloudApplyRemote(){if(!localConflict){if(kind==='biblioteca')state.library=server;else state.projects=server;}},persistNow(){confirmed=true;},closeModal(){},render(){},toast(){},
   localStorage:{removeItem(){removed=true;},getItem:()=>id},fetch:async()=>({ok:true,status:200,json:async()=>({estado:'absorbido',item_id:item.id,destino:dest})}),sb:{auth:{getSession:async()=>({data:{session:{access_token:'fixture-token'}}})},rpc:async(name,args)=>{lastRevision=args?.p_revision;calls++;return rpcError?{error:{message:'Guardado denegado'}}:{data:{status:calls===1?'absorbed':'already_absorbed',itemId:item.id}};}}};
@@ -40,11 +40,11 @@ function captureSetup({failures=1,code='PT429',status=429}={}){
  f.c.fetch=async(url,options)=>{
   assert.equal(url,'/api/product-clipper.php');
   assert.equal(options.headers.Authorization,undefined);
-  assert.equal(options.headers['X-Moderno-Session'],'fixture-token');
+  assert.equal(options.headers['X-Moderno-Session'],undefined);
   assert.equal(options.headers.apikey,undefined);
   assert.equal(options.headers['x-client-info'],undefined);
   assert.equal(options.credentials,'same-origin');
-  const body=JSON.parse(options.body);
+  const envelope=JSON.parse(options.body);assert.equal(Buffer.from(envelope.session64,'base64').toString(),'fixture-token');const body=envelope.payload;
   if(body.action==='capture'){
    requests.push(body);
    if(requests.length<=failures)return {ok:false,status,json:async()=>({code,error:'Capturas ocupadas'})};

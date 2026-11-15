@@ -46,7 +46,7 @@ const ProductClipper=(()=>{
  async function invoke(body){
   const {data:auth,error:authError}=await sb.auth.getSession(),token=auth?.session?.access_token;
   if(authError||!token)throw Error('La sesión ha caducado. Vuelve a iniciar sesión para importar productos.');
-  let response;try{response=await fetch(endpoint,{method:'POST',headers:{'X-Moderno-Session':token,'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'same-origin',cache:'no-store'});}catch{throw Error('No se pudo conectar con el importador. Conserva esta ventana y vuelve a intentarlo.');}
+  let response;try{response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session64:btoa(token),payload:body}),credentials:'same-origin',cache:'no-store'});}catch{throw Error('No se pudo conectar con el importador. Conserva esta ventana y vuelve a intentarlo.');}
   let detail;try{detail=await response.json();}catch{}
   if(!response.ok)throw Object.assign(Error(detail?.error||'No se pudo consultar el importador. Conserva esta ventana y comprueba el estado.'),{code:detail?.code,status:response.status});
   return detail;
