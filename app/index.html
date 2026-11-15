@@ -4507,6 +4507,7 @@ function go(view, arg){
   if(view!=="proyectos")state.showArchived=false;
   if(!canView(view)){ toast("No tienes acceso a esta sección"); view="home"; arg=undefined; }
   if(view==="proyectos" && state.view!=="proyectos") state.projQ="";
+  if(view!=="mail") _mailSetupProvider="";
   if(draftEditing() && draftDirty() && view!==state.view){ draftExitModal(view, arg); return; }
   setTimeout(()=>{ try{ presenceTrack(); }catch(e){} }, 0); if(view!=="presupuestos") state.qView=null; if(view!=="facturas") state.fView=null;
   if(view==="proyecto" && state.view!=="proyecto" && state.view!=="estancia" && state.view!=="presedit") state.projTab="tareas";
@@ -6963,7 +6964,31 @@ const INTEGRS = [
 function integrToggle(){ toast("Esta conexión todavía no está disponible"); }
 function vAutomatizaciones(){return `<section class="connections-page automations-page"><h1>Automatizaciones</h1>${FolderAutomations.render()}</section>`;}
 function vOfficeSoon(title){return `<section class="connections-page"><h1>${title}</h1><article class="connection-card"><span class="chip">Próximamente</span><p>Esta sección todavía no está disponible.</p></article></section>`;}
+let _mailSetupProvider="";
+const MAIL_SETUP_PROVIDERS={
+  gmail:{title:"Conectar Gmail",description:"Autoriza Moderno.app desde Google para consultar y enviar correo con tu cuenta.",mark:"G",kind:"gmail"},
+  icloud:{title:"Conectar iCloud Mail",description:"Utiliza tu dirección de iCloud y una contraseña específica para aplicaciones.",mark:"☁",kind:"icloud"},
+  server:{title:"Configurar servidor externo",description:"Añade una cuenta mediante los datos IMAP y SMTP de tu proveedor de correo.",mark:"",kind:"server"}
+};
+function mailSetupOpen(provider){if(!MAIL_SETUP_PROVIDERS[provider])return;_mailSetupProvider=provider;render();queueMicrotask(()=>document.querySelector(".mail-setup-back")?.focus());}
+function mailSetupBack(){_mailSetupProvider="";render();}
+function mailSetupSubmit(event){event.preventDefault();toast("La conexión se activará en el siguiente paso");}
+function mailProviderMark(provider){
+  const data=MAIL_SETUP_PROVIDERS[provider];
+  if(provider==="server")return `<span class="mail-provider-mark mail-provider-mark--server" aria-hidden="true"><span></span><span></span><span></span></span>`;
+  return `<span class="mail-provider-mark mail-provider-mark--${data.kind}" aria-hidden="true">${data.mark}</span>`;
+}
+function vMailProviderSetup(provider){
+  const data=MAIL_SETUP_PROVIDERS[provider];
+  const note=`<div class="mail-setup-notice" role="note"><strong>Configuración preparatoria</strong><span>Estos datos todavía no se guardan ni se envían a ningún servicio.</span></div>`;
+  let body="";
+  if(provider==="gmail") body=`${note}<div class="mail-google-permissions"><h3>Continuar con Google</h3><p>En el siguiente paso se abrirá la autorización segura de Google. Moderno.app solicitará únicamente los permisos necesarios para mostrar y enviar correo.</p><ul><li>Leer y organizar mensajes</li><li>Enviar correo desde tu cuenta</li><li>Sincronizar remitentes y destinatarios</li></ul></div>`;
+  if(provider==="icloud") body=`${note}<div class="mail-setup-grid mail-setup-grid--single"><label>Correo de iCloud<input type="email" name="icloud-email" autocomplete="off" placeholder="nombre@icloud.com" required></label><label>Contraseña específica para aplicaciones<input type="password" name="icloud-password" autocomplete="new-password" placeholder="xxxx-xxxx-xxxx-xxxx" required></label></div><p class="mail-setup-help">La contraseña específica se crea desde la cuenta de Apple y es distinta de la contraseña habitual.</p>`;
+  if(provider==="server") body=`${note}<div class="mail-setup-grid"><label class="mail-setup-span">Nombre del remitente<input type="text" name="sender-name" autocomplete="off" placeholder="Estudio Moderno" required></label><label class="mail-setup-span">Dirección de correo<input type="email" name="server-email" autocomplete="off" placeholder="hola@tuestudio.com" required></label><label class="mail-setup-host">Servidor IMAP<input type="text" name="imap-host" autocomplete="off" placeholder="imap.tuservidor.com" required></label><label class="mail-setup-port">Puerto IMAP<input type="number" name="imap-port" inputmode="numeric" value="993" min="1" max="65535" required></label><label class="mail-setup-host">Servidor SMTP<input type="text" name="smtp-host" autocomplete="off" placeholder="smtp.tuservidor.com" required></label><label class="mail-setup-port">Puerto SMTP<input type="number" name="smtp-port" inputmode="numeric" value="465" min="1" max="65535" required></label><label class="mail-setup-half">Usuario<input type="text" name="server-user" autocomplete="off" placeholder="hola@tuestudio.com" required></label><label class="mail-setup-half">Contraseña<input type="password" name="server-password" autocomplete="new-password" placeholder="Contraseña del correo" required></label><label class="mail-setup-span">Seguridad<select name="server-security"><option>SSL / TLS</option><option>STARTTLS</option><option>Sin cifrado</option></select></label></div>`;
+  return `<section class="mail-connect-page mail-connect-page--setup" aria-labelledby="mail-setup-title"><form class="mail-setup-card" onsubmit="mailSetupSubmit(event)" autocomplete="off"><header class="mail-setup-header"><button type="button" class="mail-setup-back" onclick="mailSetupBack()" aria-label="Volver a servicios de correo">←</button>${mailProviderMark(provider)}<div><h2 id="mail-setup-title">${data.title}</h2><p>${data.description}</p></div></header><div class="mail-setup-body">${body}</div><footer class="mail-setup-footer"><button type="button" class="mail-connect-button" onclick="mailSetupBack()">Cancelar</button><button type="submit" class="mail-connect-button mail-connect-button--primary">${provider==="gmail"?"Continuar con Google":"Comprobar y conectar"}</button></footer></form></section>`;
+}
 function vMailSetup(){
+  if(_mailSetupProvider)return vMailProviderSetup(_mailSetupProvider);
   return `<section class="mail-connect-page" aria-labelledby="mail-connect-title">
     <div class="mail-connect-empty">
       <header class="mail-connect-header">
@@ -6983,12 +7008,12 @@ function vMailSetup(){
         <h2 id="mail-connect-title">Conecta tu correo</h2>
         <p>Aún no hay ninguna cuenta conectada. Elige el servicio que quieras preparar para gestionar el correo desde Moderno.app.</p>
       </header>
-      <div class="mail-connect-actions" aria-label="Servicios de correo disponibles próximamente">
-        <button type="button" class="mail-connect-button mail-connect-button--primary" aria-disabled="true">Conectar Gmail</button>
-        <button type="button" class="mail-connect-button" aria-disabled="true">Conectar iCloud Mail</button>
-        <button type="button" class="mail-connect-button" aria-disabled="true">Configurar servidor externo</button>
+      <div class="mail-connect-actions" aria-label="Servicios de correo">
+        <button type="button" class="mail-connect-button mail-connect-button--primary" onclick="mailSetupOpen('gmail')">Conectar Gmail</button>
+        <button type="button" class="mail-connect-button" onclick="mailSetupOpen('icloud')">Conectar iCloud Mail</button>
+        <button type="button" class="mail-connect-button" onclick="mailSetupOpen('server')">Configurar servidor externo</button>
       </div>
-      <p class="mail-connect-note">La configuración se habilitará en el siguiente paso.</p>
+      <p class="mail-connect-note">Elige un servicio para preparar la conexión.</p>
     </div>
   </section>`;
 }
@@ -11467,7 +11492,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.14";
+const MODERNO_VER="v3.66.15";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13626,7 +13651,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=210">
 <link rel="stylesheet" href="/brand/agenda-ui.css?v=36612">
-<link rel="stylesheet" href="/brand/mail-ui.css?v=36614">
+<link rel="stylesheet" href="/brand/mail-ui.css?v=36615">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>

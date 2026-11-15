@@ -306,11 +306,38 @@ try:
      assert page.locator('#view>h1,.mail-connect-page h1').count()==0
      assert 'Próximamente' not in page.locator('#view').inner_text()
      expect(page.locator('.mail-connect-actions>button')).to_have_text(['Conectar Gmail','Conectar iCloud Mail','Configurar servidor externo'])
-     assert page.locator('.mail-connect-actions>button').evaluate_all('(buttons)=>buttons.every(button=>button.getAttribute("aria-disabled")==="true"&&!button.hasAttribute("onclick"))')
      assert page.locator('.mail-connect-media svg').get_attribute('viewBox')=='0 0 200 120'
      page.locator('.mail-connect-page').evaluate('(e)=>Promise.all(e.closest("#view").getAnimations({subtree:true}).map(animation=>animation.finished.catch(()=>{})))')
      assert page.locator('.mail-connect-button--primary').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(23, 23, 23)'
+     if width>=1100:
+      page_box=page.locator('.mail-connect-page').bounding_box();empty_box=page.locator('.mail-connect-empty').bounding_box()
+      assert abs((page_box['x']+page_box['width']/2)-(empty_box['x']+empty_box['width']/2))<=1,(page_box,empty_box)
+      assert abs((page_box['y']+page_box['height']/2)-(empty_box['y']+empty_box['height']/2))<=1,(page_box,empty_box)
+      mail_scroll=page.locator('.main').evaluate('(e)=>({client:e.clientHeight,scroll:e.scrollHeight})')
+      assert mail_scroll['scroll']==mail_scroll['client'],mail_scroll
      if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-empty-{width}.png'),full_page=True)
+     page.get_by_role('button',name='Conectar Gmail',exact=True).click()
+     expect(page.locator('#mail-setup-title')).to_have_text('Conectar Gmail')
+     assert page.locator('.mail-setup-grid').count()==0
+     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-gmail-{width}.png'),full_page=True)
+     page.get_by_role('button',name='Continuar con Google',exact=True).click()
+     expect(page.locator('#toast')).to_contain_text('La conexión se activará en el siguiente paso')
+     page.get_by_role('button',name='Volver a servicios de correo',exact=True).click()
+     page.get_by_role('button',name='Conectar iCloud Mail',exact=True).click()
+     expect(page.locator('.mail-setup-grid input')).to_have_count(2)
+     assert page.locator('.mail-setup-card').get_attribute('autocomplete')=='off'
+     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-icloud-{width}.png'),full_page=True)
+     page.get_by_role('button',name='Cancelar',exact=True).click()
+     page.get_by_role('button',name='Configurar servidor externo',exact=True).click()
+     expect(page.locator('.mail-setup-grid input')).to_have_count(8)
+     expect(page.locator('.mail-setup-grid select')).to_have_count(1)
+     assert page.locator('.mail-setup-card input[type=password]').evaluate_all('(inputs)=>inputs.every(input=>input.value==="")')
+     if width>=1100:
+      setup_page=page.locator('.mail-connect-page').bounding_box();setup_card=page.locator('.mail-setup-card').bounding_box()
+      assert setup_card['y']>=setup_page['y'] and setup_card['y']+setup_card['height']<=setup_page['y']+setup_page['height'],(setup_page,setup_card)
+      assert page.locator('.main').evaluate('(e)=>e.scrollHeight===e.clientHeight')
+     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-server-{width}.png'),full_page=True)
+     page.get_by_role('button',name='Cancelar',exact=True).click()
     neutral_canvas(page)
     if width>=1100:
      if view in ['home','proyectos']:

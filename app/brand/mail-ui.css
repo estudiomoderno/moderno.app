@@ -1,15 +1,18 @@
-/* Mail empty state based on the supplied ReUI Empty composition.
-   It intentionally contains no provider flow yet. The semantic structure and
-   token fallbacks are retained for the later tablet/mobile and dark-theme pass. */
+/* Mail connection preparation based on the supplied ReUI Empty composition.
+   Semantic structure and token fallbacks remain ready for the later
+   tablet/mobile and dark-theme pass. No provider request is made here. */
 .mail-connect-page{
   display:grid;
   place-items:center;
-  min-height:calc(100dvh - 104px);
-  padding:24px;
+  width:100%;
+  height:100%;
+  min-height:0;
+  padding:0 24px;
+  box-sizing:border-box;
   color:var(--ink,#202020);
   font-family:"Moderno ReUI Inter",Inter,Arial,sans-serif;
 }
-.mail-connect-empty{display:flex;width:100%;max-width:620px;flex-direction:column;align-items:center;padding:48px 24px;text-align:center}
+.mail-connect-empty{display:flex;width:100%;max-width:620px;flex-direction:column;align-items:center;padding:24px;text-align:center}
 .mail-connect-header{display:flex;flex-direction:column;align-items:center;gap:0}
 .mail-connect-media{display:grid;place-items:center;width:200px;height:120px;margin-bottom:18px}
 .mail-connect-media svg{display:block;width:200px;height:120px;overflow:visible}
@@ -25,9 +28,35 @@
 .mail-connect-header h2{margin:0;color:var(--ink,#202020);font-size:20px;font-weight:600;line-height:1.35;letter-spacing:-.01em}
 .mail-connect-header p{max-width:470px;margin:9px 0 0;color:var(--ink-soft,#686868);font-size:13px;font-weight:400;line-height:1.55}
 .mail-connect-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:24px}
-.mail-connect-button{height:36px;padding:0 13px;border:1px solid var(--ui-line,#dedede);border-radius:8px;background:var(--app-surface,#fff);color:var(--ink,#202020);box-shadow:0 1px 2px #00000008;font:500 13px/1 "Moderno ReUI Inter",Inter,Arial,sans-serif;opacity:1;cursor:default}
+.mail-connect-button{height:36px;padding:0 13px;border:1px solid var(--ui-line,#dedede);border-radius:8px;background:var(--app-surface,#fff);color:var(--ink,#202020);box-shadow:0 1px 2px #00000008;font:500 13px/1 "Moderno ReUI Inter",Inter,Arial,sans-serif;opacity:1;cursor:pointer}
 .mail-connect-button--primary{border-color:#171717;background:#171717;color:#fff}
-.mail-connect-button[aria-disabled="true"]{opacity:1;color:var(--ink,#202020);cursor:default}
-.mail-connect-button--primary[aria-disabled="true"]{color:#fff}
 .mail-connect-note{margin:12px 0 0;color:var(--ink-faint,#8a8a8a);font-size:11px;line-height:1.4}
+.mail-connect-page--setup{align-items:center}
+.mail-setup-card{width:min(720px,100%);max-height:100%;overflow:auto;border:1px solid var(--ui-line,#dedede);border-radius:12px;background:var(--app-surface,#fff);box-shadow:0 1px 3px #0000000d}
+.mail-setup-header{display:grid;grid-template-columns:32px 42px minmax(0,1fr);align-items:center;gap:12px;padding:20px 22px;border-bottom:1px solid var(--ui-line,#dedede);text-align:left}
+.mail-setup-back{display:grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid var(--ui-line,#dedede);border-radius:8px;background:#fff;color:#202020;font-size:17px;line-height:1;cursor:pointer}
+.mail-setup-back:hover,.mail-connect-button:not(.mail-connect-button--primary):hover{background:#f5f5f5}
+.mail-setup-header h2{margin:0;color:#202020;font-size:17px;font-weight:600;line-height:1.35}
+.mail-setup-header p{max-width:520px;margin:4px 0 0;color:#686868;font-size:12.5px;line-height:1.45}
+.mail-provider-mark{display:grid;place-items:center;width:42px;height:42px;border:1px solid var(--ui-line,#dedede);border-radius:10px;background:#fff;color:#202020;font-size:20px;font-weight:600;line-height:1}
+.mail-provider-mark--gmail{color:#4285f4}.mail-provider-mark--icloud{color:#5b8def;font-size:22px}
+.mail-provider-mark--server{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:8px}
+.mail-provider-mark--server>span{display:block;width:100%;height:5px;border:1px solid #737373;border-radius:2px;background:#f1f1f1}
+.mail-setup-body{padding:22px}
+.mail-setup-notice{display:flex;align-items:flex-start;gap:4px;flex-direction:column;margin-bottom:20px;padding:11px 12px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;color:#1e3a5f;text-align:left}
+.mail-setup-notice strong{font-size:12px;font-weight:600}.mail-setup-notice span{font-size:11.5px;line-height:1.4}
+.mail-google-permissions{padding:18px;border:1px solid var(--ui-line,#dedede);border-radius:10px;background:#fafafa;text-align:left}
+.mail-google-permissions h3{margin:0;color:#202020;font-size:14px;font-weight:600}.mail-google-permissions p{margin:7px 0 0;color:#686868;font-size:12.5px;line-height:1.5}
+.mail-google-permissions ul{display:grid;gap:7px;margin:15px 0 0;padding:0;list-style:none;color:#404040;font-size:12.5px}.mail-google-permissions li::before{content:"✓";margin-right:8px;color:#16794a;font-weight:600}
+.mail-setup-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.mail-setup-grid--single{grid-template-columns:1fr}.mail-setup-span{grid-column:1/-1}.mail-setup-host{grid-column:span 3}.mail-setup-port{grid-column:span 1}.mail-setup-half{grid-column:span 2}
+.mail-setup-grid label{display:flex;min-width:0;flex-direction:column;gap:6px;color:#404040;font-size:12px;font-weight:500;text-align:left}
+.mail-setup-grid :is(input,select){width:100%;height:38px;min-height:38px;padding:0 10px;border:1px solid var(--ui-line,#dedede);border-radius:8px;background:#fff;color:#202020;font:400 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif;outline:0;box-shadow:none}
+.mail-setup-grid :is(input,select):focus{border-color:#858585;box-shadow:0 0 0 1px #858585}.mail-setup-grid input::placeholder{color:#969696}
+.mail-setup-help{margin:10px 0 0;color:#737373;font-size:11px;line-height:1.45;text-align:left}
+.mail-setup-footer{display:flex;justify-content:flex-end;gap:8px;padding:16px 22px;border-top:1px solid var(--ui-line,#dedede)}
+@media screen and (min-width:1100px){
+ body.desktop-shell:not(.portalmode) .main:has(.mail-connect-page){overflow:hidden}
+ body.desktop-shell:not(.portalmode) .main>#view:has(.mail-connect-page){height:auto;min-height:0}
+ body.desktop-shell:not(.portalmode) .main>#view>.mail-connect-page{position:absolute;inset:64px 16px 40px;width:auto;height:auto}
+}
 @media(prefers-reduced-motion:reduce){.mail-connect-page *{scroll-behavior:auto!important}}
