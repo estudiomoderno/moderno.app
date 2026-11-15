@@ -50,4 +50,3 @@ export function safeErrorMessage(code){
 export function serializeSecret(connection){
  return JSON.stringify({version:1,provider:connection.provider,password:connection.password,imap:connection.imap,smtp:connection.smtp});
 }
-
