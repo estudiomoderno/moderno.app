@@ -34,6 +34,8 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(html,/mail-connections\.js/);assert.match(html,/ModernoMail\.renderMail\(\)/);assert.match(html,/ModernoMail\.integrationCards\(\)/);
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
+ assert.match(html,/MAIL_FUNCTION_URL = "https:\/\/cgqtylvaapwbuwqvpjtb\.supabase\.co\/functions\/v1\/mail-connect"/);
+ assert.match(ui,/fetch\(c\.mailFunctionUrl/);assert.match(ui,/'apikey':c\.publicKey/);assert.doesNotMatch(ui,/\.functions\.invoke\(/);
 });
 
 test('mail Edge Function preflight allows every header sent by supabase-js',()=>{
