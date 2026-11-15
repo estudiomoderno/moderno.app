@@ -9,8 +9,8 @@ if(!anonKey.startsWith('eyJ'))throw Error('Clave pública heredada de correo no 
 
 const response=await fetch(endpoint,{
  method:'POST',
- headers:{Origin:'https://app.moderno.app','Content-Type':'application/json',apikey:anonKey,'X-Moderno-Session':'invalid-deployment-probe'},
- body:JSON.stringify({action:'status',studyId:'00000000-0000-0000-0000-000000000000'}),
+ headers:{Origin:'https://app.moderno.app','Content-Type':'application/json',apikey:anonKey},
+ body:JSON.stringify({action:'status',studyId:'00000000-0000-0000-0000-000000000000',authToken:`invalid.${'x'.repeat(1800)}.deployment-probe`}),
  signal:AbortSignal.timeout(20000)
 });
 const type=response.headers.get('content-type')||'';

@@ -10,7 +10,7 @@ const googleClientSecret=()=>Deno.env.get('GOOGLE_MAIL_CLIENT_SECRET')||'';
 const googleRedirect=()=>Deno.env.get('GOOGLE_MAIL_REDIRECT_URI')||'';
 const appReturn=()=>Deno.env.get('MAIL_APP_RETURN_URL')||'https://app.moderno.app/';
 
-function headers(origin:string|null){return {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin',...(origin&&origins.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type, x-moderno-session','Access-Control-Allow-Methods':'POST, OPTIONS'};}
+function headers(origin:string|null){return {'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin',...(origin&&origins.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'POST, OPTIONS'};}
 function json(origin:string|null,body:unknown,status=200){return new Response(JSON.stringify(body),{status,headers:headers(origin)});}
 function redirect(status:string){const target=new URL(appReturn());target.searchParams.set('mail_oauth',status);target.hash='/mail';return Response.redirect(target.toString(),303);}
 function base64url(bytes:Uint8Array){return btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
@@ -18,8 +18,8 @@ async function sha256(value:string){const bytes=await crypto.subtle.digest('SHA-
 async function challenge(value:string){return base64url(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))));}
 function randomToken(size=48){const bytes=new Uint8Array(size);crypto.getRandomValues(bytes);return base64url(bytes);}
 
-async function actor(req:Request){
- const privateToken=req.headers.get('X-Moderno-Session')||'';
+async function actor(req:Request,bodyToken:unknown){
+ const privateToken=typeof bodyToken==='string'?bodyToken:'';
  const authorization=req.headers.get('Authorization')||'';
  const token=privateToken||(authorization.startsWith('Bearer ')?authorization.slice(7):'');if(!token)throw Object.assign(new Error('Inicia sesión de nuevo'),{status:401});
  const bearer='Bearer '+token;
@@ -56,7 +56,7 @@ Deno.serve(async(req:Request)=>{
  if(req.method==='OPTIONS')return origins.includes(origin||'')?new Response(null,{status:204,headers:headers(origin)}):new Response(null,{status:403});
  if(req.method!=='POST'||(origin&&!origins.includes(origin)))return json(origin,{ok:false,error:'Solicitud no permitida'},403);
  try{
-  const subject=await actor(req);const body=await req.json();const study=studyId(body?.studyId);await requireAdmin(subject,study);
+  const body=await req.json();const subject=await actor(req,body?.authToken);const study=studyId(body?.studyId);await requireAdmin(subject,study);
   if(body.action==='status'){const {data,error}=await subject.client.rpc('mail_connection_status',{p_estudio:study});if(error)throw error;return json(origin,{ok:true,connections:(data||[]).map(publicConnection)});}
   if(body.action==='gmail_begin'){
    if(!googleClientId()||!googleClientSecret()||!googleRedirect())throw Object.assign(new Error('gmail not configured'),{code:'not_configured'});
