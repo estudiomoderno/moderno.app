@@ -31,8 +31,9 @@ test('SVG and arbitrary HTML are rejected as product images',()=>{
  assert.throws(()=>verifyImage(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'),'image/svg+xml'));
  assert.throws(()=>verifyImage(Buffer.from('<html>captcha</html>'),'image/jpeg'));
 });
-const request=body=>new Request('https://api.example.com',{method:'POST',headers:{Authorization:'Bearer fixture'},body:JSON.stringify(body)});
+const request=body=>new Request('https://api.example.com',{method:'POST',headers:{Authorization:'Bearer fixture-token-1234567890'},body:JSON.stringify(body)});
 const privateHeaderRequest=body=>new Request('https://api.example.com',{method:'POST',headers:{'X-Moderno-Session':'private-fixture-token-1234567890'},body:JSON.stringify(body)});
+const envelopeRequest=(body,token='x'.repeat(16000))=>new Request('https://api.example.com',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session64:btoa(token),payload:body})});
 const captureBody={action:'capture',id:'11111111-1111-4111-8111-111111111111',studyId:'22222222-2222-4222-8222-222222222222',url:product.url,destination:{kind:'biblioteca',brand:'cm'}};
 test('handler authenticates before any capture and idempotent retries never fetch again',async()=>{
  let started=0,fetched=0;const deps={authenticate:async()=>null,start:async()=>{started++;return {start:false,estado:'procesando'};},fetchPage:async()=>{fetched++;}};
@@ -45,6 +46,11 @@ test('handler authenticates the first-party session header before any operation'
  assert.equal(response.status,200);assert.equal(received,'Bearer private-fixture-token-1234567890');
  const preflight=await createHandler(deps)(new Request('https://api.example.com',{method:'OPTIONS',headers:{Origin:'https://app.moderno.app'}}));
  assert.match(preflight.headers.get('access-control-allow-headers'),/x-moderno-session/);
+});
+test('handler authenticates a large session from the bounded proxy envelope',async()=>{
+ let received;const token='x'.repeat(16000),deps={authenticate:async value=>{received=value;return {id:'fixture'};},start:async()=>({start:false,estado:'procesando'})};
+ const response=await createHandler(deps)(envelopeRequest(captureBody,token));
+ assert.equal(response.status,200);assert.equal(received,'Bearer '+token);
 });
 test('failed image download stores no hotlink and leaves incomplete capture',async()=>{
  let saved,uploads=0;const deps={authenticate:async()=>({id:'fixture'}),start:async()=>({start:true}),finish:async(_actor,_id,c)=>{saved=c;},upload:async()=>{uploads++;},fetchPage:async url=>{

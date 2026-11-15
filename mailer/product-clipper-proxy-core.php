@@ -6,7 +6,7 @@ function product_clipper_proxy_request(array $server,string $raw): array {
     if (($server['REQUEST_METHOD'] ?? '') !== 'POST') throw new ProductClipperProxyError('Solo POST',405);
     $origin=$server['HTTP_ORIGIN'] ?? '';
     if ($origin !== '' && $origin !== 'https://app.moderno.app') throw new ProductClipperProxyError('Origen no permitido',403);
-    if (strlen($raw)>20000) throw new ProductClipperProxyError('Solicitud demasiado grande',413);
+    if (strlen($raw)>65536) throw new ProductClipperProxyError('Solicitud demasiado grande',413);
     $decoded=json_decode($raw,true);
     if (!is_array($decoded)) throw new ProductClipperProxyError('Solicitud no válida',400);
     if (isset($decoded['session64'],$decoded['payload'])&&is_string($decoded['session64'])&&is_array($decoded['payload'])) {
@@ -19,7 +19,7 @@ function product_clipper_proxy_request(array $server,string $raw): array {
         $body=$decoded;
     }
     if (strncmp($session,'Bearer ',7)===0) $session=substr($session,7);
-    if (!preg_match('/^[A-Za-z0-9._-]{20,8192}$/D',$session)) throw new ProductClipperProxyError('Inicia sesión de nuevo',401);
+    if (!preg_match('/^[A-Za-z0-9._-]{20,32768}$/D',$session)) throw new ProductClipperProxyError('Inicia sesión de nuevo',401);
     $uuid='/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iD';
     if (!is_string($body['id'] ?? null)||!preg_match($uuid,$body['id'])) throw new ProductClipperProxyError('Solicitud no válida',400);
     if (($body['action'] ?? '')==='read') return ['token'=>$session,'raw'=>$raw];
@@ -30,13 +30,22 @@ function product_clipper_proxy_request(array $server,string $raw): array {
 }
 
 function product_clipper_proxy_http(string $token,string $raw): array {
-    $headers="X-Moderno-Session: ".$token."\r\nContent-Type: application/json\r\nAccept: application/json\r\nUser-Agent: Moderno-product-clipper-proxy/1.0\r\nConnection: close\r\n";
-    $context=stream_context_create(['http'=>['method'=>'POST','header'=>$headers,'content'=>$raw,'timeout'=>75,'ignore_errors'=>true,'follow_location'=>0,'protocol_version'=>1.1],'ssl'=>['verify_peer'=>true,'verify_peer_name'=>true]]);
+    $headers="Content-Type: application/json\r\nAccept: application/json\r\nUser-Agent: Moderno-product-clipper-proxy/1.0\r\nConnection: close\r\n";
+    $wire=product_clipper_proxy_wire($token,$raw);
+    $context=stream_context_create(['http'=>['method'=>'POST','header'=>$headers,'content'=>$wire,'timeout'=>75,'ignore_errors'=>true,'follow_location'=>0,'protocol_version'=>1.1],'ssl'=>['verify_peer'=>true,'verify_peer_name'=>true]]);
     $data=@file_get_contents('https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/product-clipper',false,$context);
     $responseHeaders=$http_response_header ?? [];$status=0;
     foreach($responseHeaders as $header) if(preg_match('/^HTTP\/\S+\s+(\d{3})\b/',$header,$match))$status=(int)$match[1];
     if ($status<200||$status>599) throw new ProductClipperProxyError('No se pudo conectar con el importador',502);
     return ['status'=>$status,'body'=>$data===false?'':$data];
+}
+
+function product_clipper_proxy_wire(string $token,string $raw): string {
+    $payload=json_decode($raw,true);
+    if(!is_array($payload))throw new ProductClipperProxyError('Solicitud no válida',400);
+    $wire=json_encode(['session64'=>base64_encode($token),'payload'=>$payload],JSON_UNESCAPED_SLASHES);
+    if($wire===false||strlen($wire)>65536)throw new ProductClipperProxyError('Solicitud demasiado grande',413);
+    return $wire;
 }
 
 function product_clipper_proxy_forward(string $token,string $raw,?callable $transport=null): array {

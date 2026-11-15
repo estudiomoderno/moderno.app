@@ -11,17 +11,22 @@ export function createHandler({authenticate,start,finish,read,upload,sign,sugges
   if(req.method!=='POST')return response({error:'Método no permitido'},405);
   let actor,id;
   try{
-   // Supabase's gateway can reject current user JWTs before this function runs.
-   // The first-party client therefore uses a private CORS header; authentication
-   // still happens here with Auth.getUser before any capture or read operation.
-   const privateSession=(req.headers.get('x-moderno-session')||'').trim();
-   const authorization=req.headers.get('authorization')||(privateSession?(privateSession.startsWith('Bearer ')?privateSession:'Bearer '+privateSession):'');if(!authorization.startsWith('Bearer '))return response({error:'Inicia sesión'},401);
-   actor=await authenticate(authorization);if(!actor)return response({error:'La sesión ha caducado'},401);
-   if(Number(req.headers.get('content-length')||0)>10000)throw new CaptureError('request_size','Solicitud demasiado grande.');
+   // Current user JWTs can exceed intermediary header limits. The same-origin
+   // proxy may therefore carry the token inside a bounded JSON envelope.
+   if(Number(req.headers.get('content-length')||0)>65536)throw new CaptureError('request_size','Solicitud demasiado grande.');
    const reader=req.body?.getReader(),chunks=[];let length=0;
-   if(reader)try{while(true){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>10000){await reader.cancel();throw new CaptureError('request_size','Solicitud demasiado grande.');}chunks.push(value);}}finally{reader.releaseLock();}
+   if(reader)try{while(true){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>65536){await reader.cancel();throw new CaptureError('request_size','Solicitud demasiado grande.');}chunks.push(value);}}finally{reader.releaseLock();}
    const joined=new Uint8Array(length);let offset=0;for(const chunk of chunks){joined.set(chunk,offset);offset+=chunk.length;}const bodyText=new TextDecoder().decode(joined);
-   const body=JSON.parse(bodyText);id=body.id;if(!uuid(id))throw new CaptureError('invalid_id','Identificador de solicitud no válido.');
+   const envelope=JSON.parse(bodyText);let body=envelope,privateSession=(req.headers.get('x-moderno-session')||'').trim();
+   if(envelope&&typeof envelope==='object'&&typeof envelope.session64==='string'&&envelope.payload&&typeof envelope.payload==='object'){
+    if(envelope.session64.length>50000)throw new CaptureError('request_size','Solicitud demasiado grande.');
+    try{privateSession=atob(envelope.session64);}catch{privateSession='';}
+    body=envelope.payload;
+   }else if(length>10000)throw new CaptureError('request_size','Solicitud demasiado grande.');
+   if(new TextEncoder().encode(JSON.stringify(body)).length>10000)throw new CaptureError('request_size','Solicitud demasiado grande.');
+   const authorization=req.headers.get('authorization')||(privateSession?(privateSession.startsWith('Bearer ')?privateSession:'Bearer '+privateSession):'');if(!/^Bearer [A-Za-z0-9._-]{20,32768}$/.test(authorization))return response({error:'Inicia sesión'},401);
+   actor=await authenticate(authorization);if(!actor)return response({error:'La sesión ha caducado'},401);
+   id=body.id;if(!uuid(id))throw new CaptureError('invalid_id','Identificador de solicitud no válido.');
    if(body.action==='read'){
     const row=await read(actor,id);if(!row)return response({error:'Captura no disponible'},404);
     const data=structuredClone(row);if(data.captura)for(const image of data.captura.images||[])if(image.storagePath)image.previewUrl=await sign(actor,image.storagePath);

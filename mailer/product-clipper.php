@@ -5,7 +5,7 @@ header('X-Content-Type-Options: nosniff');
 require_once __DIR__.'/product-clipper-proxy-core.php';
 try {
     @set_time_limit(90);
-    $raw=file_get_contents('php://input',false,null,0,20001);
+    $raw=file_get_contents('php://input',false,null,0,65537);
     $request=product_clipper_proxy_request($_SERVER,$raw===false?'':$raw);
     $result=product_clipper_proxy_forward($request['token'],$request['raw']);
     http_response_code($result['status']);
