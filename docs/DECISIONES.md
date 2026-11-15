@@ -292,3 +292,7 @@ Por petición expresa del propietario se eliminan los límites de 15 intentos/ho
 
 ## 2026-10-22 — Secciones independientes dentro del proyecto
 El propietario solicita separar Planos de Documentos y añadir junto a Obra un Diario de obra (fecha, notas y fotos, confirmado expresamente) y un acceso independiente al calendario que estaba dentro de Obra. Esta decisión actualiza la organización anterior de Planos como subsección de Documentos; no autoriza migrar o eliminar archivos existentes. Implementación y pruebas: [PROYECTO-SECCIONES-2026-10-22.md](PROYECTO-SECCIONES-2026-10-22.md).
+
+## 2026-11-15 — Bloqueo obligatorio antes del lanzamiento público
+
+El propietario pide conservar como recordatorio obligatorio la revisión de escala, sesiones, archivos e infraestructura antes de dar Moderno.app a conocer al público. La aplicación continúa preparándose con el estudio como entorno de uso interno; no se decide ahora una migración de servidores. Antes de comercializar o abrir el producto se debe evaluar capacidad para hasta 1.000 usuarios de pago, eliminar imágenes Base64 de los JWT, ensayar recorridos completos, carga, observabilidad, recuperación, seguridad y una posible migración de infraestructura. El lanzamiento queda bloqueado hasta presentar esta revisión al propietario. Lista completa: [BLOQUEO-PRELANZAMIENTO-ESCALA.md](BLOQUEO-PRELANZAMIENTO-ESCALA.md).
