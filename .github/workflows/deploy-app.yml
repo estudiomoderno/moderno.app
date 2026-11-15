@@ -32,7 +32,10 @@ jobs:
             sudo apt-get install -y php-cli
           fi
           php -l mailer/enviar-invitacion.php
+          php -l mailer/product-clipper-proxy-core.php
+          php -l mailer/product-clipper.php
           php scripts/invitation-auth.test.php
+          php scripts/product-clipper-proxy.test.php
       - name: Configurar buscador opcional de direcciones
         env:
           GOOGLE_MAPS_BROWSER_KEY: ${{ secrets.GOOGLE_MAPS_BROWSER_KEY }}
@@ -53,7 +56,9 @@ jobs:
           mv release-assets/index.html release-entry/index.html
           mkdir -p release-mail-support/api release-mail-entry/api
           cp mailer/autorizar-invitacion.php release-mail-support/api/
+          cp mailer/product-clipper-proxy-core.php release-mail-support/api/
           cp mailer/enviar-invitacion.php release-mail-entry/api/
+          cp mailer/product-clipper.php release-mail-entry/api/
 
       - name: Publicar comprobación de permisos del correo
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -79,6 +84,9 @@ jobs:
           server-dir: ${{ secrets.FTP_SERVER_DIR }}
           exclude: |
             **/config.php
+
+      - name: Verificar puente del importador sin crear capturas
+        run: node scripts/verify-product-clipper-proxy.mjs
 
       - name: Subir recursos antes del HTML
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

@@ -38,12 +38,12 @@ function captureSetup({failures=1,code='PT429',status=429}={}){
  let counter=0;
  Object.assign(f.c,{URL,crypto:{randomUUID:()=>`request-${++counter}`},setTimeout(fn){const id=timers.size+1;timers.set(id,fn);return id;},clearTimeout(id){timers.delete(id);},localStorage:{getItem:k=>cache.get(k)||null,setItem:(k,v)=>cache.set(k,v),removeItem:k=>cache.delete(k)}});
  f.c.fetch=async(url,options)=>{
-  assert.equal(url,'https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/product-clipper');
+  assert.equal(url,'/api/product-clipper.php');
   assert.equal(options.headers.Authorization,undefined);
-  assert.equal(options.headers['X-Moderno-Session'],'Bearer fixture-token');
+  assert.equal(options.headers['X-Moderno-Session'],'fixture-token');
   assert.equal(options.headers.apikey,undefined);
   assert.equal(options.headers['x-client-info'],undefined);
-  assert.equal(options.credentials,'omit');
+  assert.equal(options.credentials,'same-origin');
   const body=JSON.parse(options.body);
   if(body.action==='capture'){
    requests.push(body);

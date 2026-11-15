@@ -4,6 +4,8 @@
 
 La configuración SMTP permanece en `api/config.php` del alojamiento, fuera de Git. Actions sube primero el comprobador, luego el endpoint y después la interfaz; usa inventarios independientes y excluye config.php. La cabecera Authorization se transmite a PHP mediante la regla de Apache en app/.htaccess.
 
+`product-clipper.php` es un puente de mismo origen para el importador de productos. Solo acepta POST desde la app, limita y valida la forma de la solicitud y reenvía la sesión del usuario a la Edge Function mediante una cabecera privada. La función vuelve a validar la sesión con Auth.getUser y conserva RLS; el puente no contiene claves administrativas ni puede elegir otro destino remoto.
+
 Límite: 20 intentos por estudio/hora y uno por destinatario/minuto, con bloqueo en directorio temporal privado. Un error incierto de SMTP consume el intento y no activa un segundo transporte: comprobar recepción antes de reenviar. Este límite depende del almacenamiento temporal del alojamiento y no es una cola persistente.
 
 Pruebas: `php scripts/invitation-auth.test.php` (sin red ni correo) y `node --test scripts/access-mail.test.mjs`. No poner claves SMTP en variables del navegador ni publicar config.php. Si falla la verificación, el servicio no envía. Retirar la interfaz nueva no justifica restaurar el endpoint anterior sin autenticación.

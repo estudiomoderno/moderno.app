@@ -14,7 +14,8 @@ export function createHandler({authenticate,start,finish,read,upload,sign,sugges
    // Supabase's gateway can reject current user JWTs before this function runs.
    // The first-party client therefore uses a private CORS header; authentication
    // still happens here with Auth.getUser before any capture or read operation.
-   const authorization=req.headers.get('authorization')||req.headers.get('x-moderno-session')||'';if(!authorization.startsWith('Bearer '))return response({error:'Inicia sesión'},401);
+   const privateSession=(req.headers.get('x-moderno-session')||'').trim();
+   const authorization=req.headers.get('authorization')||(privateSession?(privateSession.startsWith('Bearer ')?privateSession:'Bearer '+privateSession):'');if(!authorization.startsWith('Bearer '))return response({error:'Inicia sesión'},401);
    actor=await authenticate(authorization);if(!actor)return response({error:'La sesión ha caducado'},401);
    if(Number(req.headers.get('content-length')||0)>10000)throw new CaptureError('request_size','Solicitud demasiado grande.');
    const reader=req.body?.getReader(),chunks=[];let length=0;
