@@ -10,3 +10,8 @@ verify_jwt = false
 # Supports current signing keys instead of the legacy-secret-only gateway.
 [functions.product-clipper]
 verify_jwt = false
+
+# Mail validates every caller with Auth.getUser and verifies the administrator
+# membership inside the handler, so it also supports current signing keys.
+[functions.mail-connect]
+verify_jwt = false

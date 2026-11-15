@@ -13,14 +13,16 @@
   trash:{label:'Papelera',icon:'trash.svg'}
  };
  const emptyFolderCounts=()=>({inbox:0,sent:0,drafts:0,spam:0,trash:0});
- const state={surface:'',provider:'',connections:[],messages:[],unreadCount:0,folderCounts:emptyFolderCounts(),activeFolder:'inbox',mailboxLoaded:false,identity:'',loading:false,loaded:false,busy:false,error:''};
+ const state={surface:'',provider:'',connections:[],activeConnectionId:'',messages:[],unreadCount:0,folderCounts:emptyFolderCounts(),activeFolder:'inbox',mailboxLoaded:false,identity:'',loading:false,loaded:false,busy:false,error:''};
  let context=()=>({}),rerender=()=>{},notify=()=>{},confirmAction=(_m,_l,action)=>action();
  const escape=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
  const ctx=()=>context()||{};
  const identity=()=>{const c=ctx();return [c.studyId,c.userId,c.role].join('|');};
  const mark=provider=>{const data=providers[provider];return `<span class="mail-provider-mark mail-provider-mark--${data.kind}" aria-hidden="true"><img src="/brand/mail-icons/${data.file}?v=36706" width="24" height="24" alt=""></span>`;};
  function configure(options){context=options.context;rerender=options.render;notify=options.toast;confirmAction=options.confirm||confirmAction;handleOAuthResult();if(!document.documentElement.dataset.mailSearchReady){document.documentElement.dataset.mailSearchReady='1';document.addEventListener('pointerdown',event=>{if(!event.target.closest('.mail-search-combobox'))closeSearch();});}}
- function resetIfChanged(){const next=identity();if(state.identity===next)return;state.identity=next;state.connections=[];state.messages=[];state.unreadCount=0;state.folderCounts=emptyFolderCounts();state.activeFolder='inbox';state.mailboxLoaded=false;state.loaded=false;state.loading=false;state.error='';}
+ function resetIfChanged(){const next=identity();if(state.identity===next)return;state.identity=next;state.connections=[];state.activeConnectionId='';state.messages=[];state.unreadCount=0;state.folderCounts=emptyFolderCounts();state.activeFolder='inbox';state.mailboxLoaded=false;state.loaded=false;state.loading=false;state.error='';}
+ const connectedAccounts=()=>state.connections.filter(row=>row.status==='connected');
+ function selectedConnection(){const rows=connectedAccounts();return rows.find(row=>row.id===state.activeConnectionId)||rows[0]||null;}
  async function invoke(body){
   const c=ctx();if(!c.sb||!c.studyId||!c.mailFunctionUrl||!c.mailFunctionAnonKey)throw Error('Disponible con una cuenta del estudio');
   const {data:sessionData,error:sessionError}=await c.sb.auth.getSession();
@@ -39,8 +41,8 @@
   ctx().setMailUnread?.(state.unreadCount);
  }
  async function loadMailbox(connection){
-  const mailbox=await invoke({action:'inbox',connectionId:connection.id,folder:state.activeFolder});
-  if(identity()!==state.identity)return;
+  const connectionId=connection.id,folder=state.activeFolder,mailbox=await invoke({action:'inbox',connectionId,folder});
+  if(identity()!==state.identity||state.activeConnectionId!==connectionId||state.activeFolder!==folder)return;
   applyMailbox(mailbox);
  }
  async function load(force=false){
@@ -49,8 +51,8 @@
   try{
    const data=await invoke({action:'status'});if(identity()!==state.identity)return;
    state.connections=Array.isArray(data.connections)?data.connections:[];state.loaded=true;
-   const gmail=state.connections.find(row=>row.provider==='gmail'&&row.status==='connected');
-   if(gmail){rerender();await loadMailbox(gmail);}
+   const connection=selectedConnection()||connectedAccounts()[0];state.activeConnectionId=connection?.id||'';
+   if(connection){rerender();await loadMailbox(connection);}
    else{state.messages=[];state.unreadCount=0;state.folderCounts=emptyFolderCounts();state.mailboxLoaded=true;ctx().setMailUnread?.(0);}
   }catch(error){state.error=error.message;state.loaded=true;state.mailboxLoaded=true;}finally{state.loading=false;rerender();}
  }
@@ -76,14 +78,20 @@
  }
  async function recheck(id){if(state.busy)return;state.busy=true;state.error='';rerender();try{await invoke({action:'recheck',connectionId:id});await load(true);notify('✓ Conexión comprobada');}catch(error){state.error=error.message;await load(true);}finally{state.busy=false;rerender();}}
  async function refreshInbox(){
-  if(state.loading)return;const connection=state.connections.find(row=>row.provider==='gmail'&&row.status==='connected');if(!connection)return;
+  if(state.loading)return;const connection=selectedConnection();if(!connection)return;
   state.loading=true;state.mailboxLoaded=false;state.error='';rerender();
   try{await loadMailbox(connection);}catch(error){state.error=error.message;state.mailboxLoaded=true;}finally{state.loading=false;rerender();}
  }
  async function switchFolder(folder){
   if(!folders[folder]||folder===state.activeFolder||state.loading)return;
-  const connection=state.connections.find(row=>row.provider==='gmail'&&row.status==='connected');if(!connection)return;
+  const connection=selectedConnection();if(!connection)return;
   state.activeFolder=folder;state.messages=[];state.mailboxLoaded=false;state.error='';state.loading=true;rerender();
+  try{await loadMailbox(connection);}catch(error){state.error=error.message;state.mailboxLoaded=true;}finally{state.loading=false;rerender();}
+ }
+ async function selectAccount(id){
+  if(state.loading)return;const connection=connectedAccounts().find(row=>row.id===id);if(!connection)return;
+  if(connection.id===state.activeConnectionId)return;
+  state.activeConnectionId=connection.id;state.activeFolder='inbox';state.messages=[];state.unreadCount=0;state.folderCounts=emptyFolderCounts();state.mailboxLoaded=false;state.error='';state.loading=true;ctx().setMailUnread?.(0);rerender();
   try{await loadMailbox(connection);}catch(error){state.error=error.message;state.mailboxLoaded=true;}finally{state.loading=false;rerender();}
  }
  function closeSearch(){document.querySelector('.mail-search-combobox')?.classList.remove('is-open');}
@@ -118,17 +126,24 @@
  }
  function folderButton(key){const item=folders[key],count=Math.max(0,Number(state.folderCounts[key])||0),active=key===state.activeFolder;return `<button type="button" class="mail-folder-button${active?' is-active':''}" aria-current="${active?'page':'false'}" aria-label="${escape(item.label)} (${count})" onclick="ModernoMail.switchFolder('${key}')" ${state.loading?'disabled':''}><span><img src="/brand/mail-icons/${item.icon}?v=36711" width="18" height="18" alt="">${escape(item.label)}</span><span class="mail-folder-badge" aria-hidden="true">${count}</span></button>`;}
  function searchBox(){return `<div class="mail-search-combobox"><label class="mail-search-field">${searchIcon}<input type="search" placeholder="Buscar correo" aria-label="Buscar correo" aria-autocomplete="list" aria-controls="mail-search-options" oninput="ModernoMail.filterMessages(this.value)" onkeydown="ModernoMail.searchKey(event)"></label><div class="mail-search-options" id="mail-search-options" role="listbox"></div></div>`;}
+ function accountSwitcher(){
+  const rows=connectedAccounts(),account=selectedConnection();if(!account)return '';
+  const identity=`${mark(account.provider)}<span class="mail-account-details"><strong>${escape(account.email)}</strong><small>${escape((providers[account.provider]||providers.server).name)}</small></span>`;
+  if(rows.length<2)return `<div class="mail-account-switcher"><div class="mail-account-identity">${identity}</div></div>`;
+  const options=rows.filter(row=>row.id!==account.id).map(row=>{const data=providers[row.provider]||providers.server;return `<button type="button" class="mail-account-option" onclick="ModernoMail.selectAccount('${escape(row.id)}')">${mark(row.provider)}<span><strong>${escape(row.email)}</strong><small>${escape(data.name)}</small></span></button>`;}).join('');
+  return `<div class="mail-account-switcher"><div class="mail-account-menu" aria-label="Otras cuentas de correo">${options}</div><div class="mail-account-identity" aria-label="Cuenta seleccionada: ${escape(account.email)}">${identity}<span class="mail-account-current" aria-hidden="true">✓</span></div></div>`;
+ }
  function inboxView(){
-  const account=state.connections.find(row=>row.provider==='gmail')||state.connections[0],folder=folders[state.activeFolder]||folders.inbox;
+  const folder=folders[state.activeFolder]||folders.inbox;
   const body=!state.mailboxLoaded?'<div class="mail-inbox-skeleton" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>':state.messages.length?state.messages.map(messageRow).join(''):`<div class="mail-inbox-empty"><strong>No hay correos en ${escape(folder.label.toLowerCase())}</strong><span>Los mensajes de esta carpeta aparecerán aquí.</span></div>`;
-  return `<section class="mail-workspace" aria-label="Bandeja de ${escape(folder.label.toLowerCase())}"><aside class="mail-folders"><button type="button" class="mail-compose-button" onclick="ModernoMail.compose()"><span><img src="/brand/mail-icons/compose.svg?v=36711" width="18" height="18" alt="">Redactar</span>${arrowIcon}</button><nav aria-label="Carpetas de correo">${Object.keys(folders).map(folderButton).join('')}</nav><div class="mail-account-identity">${mark('gmail')}<div><strong>${escape(account?.email||'Gmail')}</strong><span>Cuenta conectada</span></div></div></aside><main class="mail-inbox-panel"><header class="mail-inbox-toolbar">${searchBox()}<div class="mail-toolbar-actions"><button type="button" class="mail-icon-button" onclick="ModernoMail.refreshInbox()" ${state.loading?'disabled':''} aria-label="Actualizar ${escape(folder.label.toLowerCase())}" title="Actualizar"><img src="/brand/mail-icons/refresh.svg?v=36711" width="18" height="18" alt=""></button><button type="button" class="mail-icon-button" onclick="ModernoMail.openSettings()" aria-label="Ajustes" title="Ajustes"><img src="/brand/mail-icons/settings.svg?v=36711" width="18" height="18" alt=""></button></div></header><div class="mail-inbox-content">${state.error?`<p class="mail-setup-error" role="alert">${escape(state.error)}</p>`:''}<div class="mail-message-list">${body}</div></div></main></section>`;
+  return `<section class="mail-workspace" aria-label="Bandeja de ${escape(folder.label.toLowerCase())}"><aside class="mail-folders"><button type="button" class="mail-compose-button" onclick="ModernoMail.compose()"><span><img src="/brand/mail-icons/compose.svg?v=36711" width="18" height="18" alt="">Redactar</span>${arrowIcon}</button><nav aria-label="Carpetas de correo">${Object.keys(folders).map(folderButton).join('')}</nav>${accountSwitcher()}</aside><main class="mail-inbox-panel"><header class="mail-inbox-toolbar">${searchBox()}<div class="mail-toolbar-actions"><button type="button" class="mail-icon-button" onclick="ModernoMail.refreshInbox()" ${state.loading?'disabled':''} aria-label="Actualizar ${escape(folder.label.toLowerCase())}" title="Actualizar"><img src="/brand/mail-icons/refresh.svg?v=36711" width="18" height="18" alt=""></button><button type="button" class="mail-icon-button" onclick="ModernoMail.openSettings()" aria-label="Ajustes" title="Ajustes"><img src="/brand/mail-icons/settings.svg?v=36711" width="18" height="18" alt=""></button></div></header><div class="mail-inbox-content">${state.error?`<p class="mail-setup-error" role="alert">${escape(state.error)}</p>`:''}<div class="mail-message-list">${body}</div></div></main></section>`;
  }
  function renderMail(){
   ensure();if(state.provider&&state.surface==='mail')return renderSetup(state.provider);
-  if(state.connections.length)return inboxView();
+  if(connectedAccounts().length)return inboxView();
   if(!state.loaded)return '<section class="mail-connect-page" aria-busy="true"><span class="mail-visually-hidden">Cargando correo</span></section>';
   return `<section class="mail-connect-page" aria-labelledby="mail-connect-title"><div class="mail-connect-empty"><header class="mail-connect-header"><div class="mail-connect-media" aria-hidden="true"><svg width="200" height="120" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg"><g class="mail-node-lines" stroke-width="1.5" stroke-dasharray="4 3"><line x1="100" y1="60" x2="44" y2="30"></line><line x1="100" y1="60" x2="44" y2="90"></line><line x1="100" y1="60" x2="156" y2="30"></line><line x1="100" y1="60" x2="156" y2="90"></line></g><circle cx="100" cy="60" r="18" class="mail-node-center" stroke-width="1.5"></circle><circle cx="100" cy="60" r="6" class="mail-node-center-ring"></circle><circle cx="100" cy="60" r="2.5" class="mail-node-center-dot"></circle>${[[44,30],[44,90],[156,30],[156,90]].map(([x,y])=>`<g class="mail-node-remote"><circle cx="${x}" cy="${y}" r="14" stroke-width="1.5"></circle><rect x="${x-7}" y="${y-4}" width="14" height="3" rx="1.5"></rect><rect x="${x-4}" y="${y+2}" width="8" height="2" rx="1"></rect></g>`).join('')}<circle cx="72" cy="40" r="2" class="mail-node-float-primary"></circle><circle cx="128" cy="80" r="2" class="mail-node-float-primary"></circle><circle cx="72" cy="80" r="1.5" class="mail-node-float-muted"></circle><circle cx="128" cy="40" r="1.5" class="mail-node-float-muted"></circle></svg></div><h2 id="mail-connect-title">Conecta tu correo</h2><p>Aún no hay ninguna cuenta conectada. Elige un servicio para comprobarlo y empezar a usarlo en Moderno.app.</p></header>${chooser()}${state.error?`<p class="mail-setup-error" role="alert">${escape(state.error)}</p>`:'<p class="mail-connect-note">Puedes conectar más de una cuenta y desconectarla cuando quieras.</p>'}</div></section>`;
  }
  function integrationCards(){ensure();return ['gmail','icloud'].map(provider=>{const data=providers[provider],rows=state.connections.filter(row=>row.provider===provider),row=rows[0];return `<article class="connection-card connection-card--mail"><div class="connection-card-provider">${mark(provider)}<div><h3>${data.name}</h3><p>${provider==='gmail'?'Consulta, organiza y envía correo con Google.':'Consulta y envía correo mediante tu cuenta de iCloud.'}</p></div></div>${row?`<span class="chip">Conectado · ${escape(row.email)}</span><div class="connection-card-actions"><button class="btn btn-ghost" onclick="ModernoMail.recheck('${escape(row.id)}')">Comprobar</button><button class="btn btn-ghost" onclick="ModernoMail.disconnect('${escape(row.id)}')">Desconectar</button></div>`:`<button class="btn btn-ghost" onclick="ModernoMail.open('${provider}','integrations')">Conectar</button>`}</article>`;}).join('');}
- global.ModernoMail={configure,load,open,back,onNavigate,submit,recheck,disconnect,refreshInbox,switchFolder,filterMessages,chooseSearch,searchKey,compose,openSettings,renderMail,setupFor,integrationCards,handleOAuthResult};
+ global.ModernoMail={configure,load,open,back,onNavigate,submit,recheck,disconnect,refreshInbox,switchFolder,selectAccount,filterMessages,chooseSearch,searchKey,compose,openSettings,renderMail,setupFor,integrationCards,handleOAuthResult};
 })(globalThis);
