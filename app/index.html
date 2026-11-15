@@ -4532,7 +4532,7 @@ function render(){
   if(_accessRole==="gestoria"&&state.view!=="ajustes"){ V.innerHTML=vGestoria();applyRoleNav();return; }
   if(!canView(state.view))state.view=canView('proyectos')?'proyectos':'home';
   if(_accessRole==='colaborador'&&['fin','resumen'].includes(state.projTab))state.projTab='tareas';
-  const r = {home:vHome, workspace:vWorkspace, biblioteca:vLibrary, proyectos:vProjects, proyecto:vProject, estancia:vRoom, agenda:vAgenda, calendario:vCalendar, contabilidad:vAccounting, prevision:vPrevision, facturas:()=>vInvoice("factura"), presupuestos:()=>vInvoice("presupuesto"), catalogo:vCatalog, compras:vCompras, informes:vInformes, plantillas:vDocs, tutoriales:()=>vOfficeSoon("Tutoriales"), soporte:()=>vOfficeSoon("Soporte"), utilidades:vUtils, automatizaciones:vAutomatizaciones, integraciones:vIntegraciones, plugins:()=>vIntegraciones(true), mail:()=>vOfficeSoon("Mail"), conversaciones:()=>vOfficeSoon("Conversaciones"), admin:vAdmin, ajustes:vAjustes, presedit:vPresEdit, portalcli:vPortalCli, portalobra:vPortalObra}[state.view];
+  const r = {home:vHome, workspace:vWorkspace, biblioteca:vLibrary, proyectos:vProjects, proyecto:vProject, estancia:vRoom, agenda:vAgenda, calendario:vCalendar, contabilidad:vAccounting, prevision:vPrevision, facturas:()=>vInvoice("factura"), presupuestos:()=>vInvoice("presupuesto"), catalogo:vCatalog, compras:vCompras, informes:vInformes, plantillas:vDocs, tutoriales:()=>vOfficeSoon("Tutoriales"), soporte:()=>vOfficeSoon("Soporte"), utilidades:vUtils, automatizaciones:vAutomatizaciones, integraciones:vIntegraciones, plugins:()=>vIntegraciones(true), mail:vMailSetup, conversaciones:()=>vOfficeSoon("Conversaciones"), admin:vAdmin, ajustes:vAjustes, presedit:vPresEdit, portalcli:vPortalCli, portalobra:vPortalObra}[state.view];
   const projectsEntering=state.view==='proyectos'&&!V.querySelector('.projects-identity');
   V.innerHTML = r();
   wire();
@@ -6963,6 +6963,35 @@ const INTEGRS = [
 function integrToggle(){ toast("Esta conexión todavía no está disponible"); }
 function vAutomatizaciones(){return `<section class="connections-page automations-page"><h1>Automatizaciones</h1>${FolderAutomations.render()}</section>`;}
 function vOfficeSoon(title){return `<section class="connections-page"><h1>${title}</h1><article class="connection-card"><span class="chip">Próximamente</span><p>Esta sección todavía no está disponible.</p></article></section>`;}
+function vMailSetup(){
+  return `<section class="mail-connect-page" aria-labelledby="mail-connect-title">
+    <div class="mail-connect-empty">
+      <header class="mail-connect-header">
+        <div class="mail-connect-media" aria-hidden="true">
+          <svg width="200" height="120" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g class="mail-node-lines" stroke-width="1.5" stroke-dasharray="4 3">
+              <line x1="100" y1="60" x2="44" y2="30"></line><line x1="100" y1="60" x2="44" y2="90"></line>
+              <line x1="100" y1="60" x2="156" y2="30"></line><line x1="100" y1="60" x2="156" y2="90"></line>
+            </g>
+            <circle cx="100" cy="60" r="18" class="mail-node-center" stroke-width="1.5"></circle>
+            <circle cx="100" cy="60" r="6" class="mail-node-center-ring"></circle><circle cx="100" cy="60" r="2.5" class="mail-node-center-dot"></circle>
+            ${[[44,30],[44,90],[156,30],[156,90]].map(([x,y])=>`<g class="mail-node-remote"><circle cx="${x}" cy="${y}" r="14" stroke-width="1.5"></circle><rect x="${x-7}" y="${y-4}" width="14" height="3" rx="1.5"></rect><rect x="${x-4}" y="${y+2}" width="8" height="2" rx="1"></rect></g>`).join("")}
+            <circle cx="72" cy="40" r="2" class="mail-node-float-primary"></circle><circle cx="128" cy="80" r="2" class="mail-node-float-primary"></circle>
+            <circle cx="72" cy="80" r="1.5" class="mail-node-float-muted"></circle><circle cx="128" cy="40" r="1.5" class="mail-node-float-muted"></circle>
+          </svg>
+        </div>
+        <h2 id="mail-connect-title">Conecta tu correo</h2>
+        <p>Aún no hay ninguna cuenta conectada. Elige el servicio que quieras preparar para gestionar el correo desde Moderno.app.</p>
+      </header>
+      <div class="mail-connect-actions" aria-label="Servicios de correo disponibles próximamente">
+        <button type="button" class="mail-connect-button mail-connect-button--primary" aria-disabled="true">Conectar Gmail</button>
+        <button type="button" class="mail-connect-button" aria-disabled="true">Conectar iCloud Mail</button>
+        <button type="button" class="mail-connect-button" aria-disabled="true">Configurar servidor externo</button>
+      </div>
+      <p class="mail-connect-note">La configuración se habilitará en el siguiente paso.</p>
+    </div>
+  </section>`;
+}
 function vIntegraciones(onlyPlugins=false){
  const E=ModernoDaily.escape;
  const plugins=[['Chrome Product Clipper','Captura de productos desde el navegador.'],['SketchUp','Modelos y componentes vinculados al proyecto.'],['Revit','Elementos y espacios del modelo.'],['Rayon Design','Enlaces y exportaciones del proyecto. Conexión nativa pendiente de verificar.']];
@@ -9948,7 +9977,7 @@ function clTypePicker(type){
 function clCurType(){ const b=document.querySelector("#clType .on"); return b?b.dataset.v:"Cliente"; }
 function clTradePicker(type,sel){
   const value=sel||"Seleccionar oficio";
-  return `<details class="agenda-cascader" id="clTrade"><summary aria-label="Oficio">${agendaContactTypeIcon(type)}<span class="agenda-cascader-value">${value}</span><span class="agenda-cascader-chevron" aria-hidden="true"></span></summary><div class="agenda-cascader-content agenda-trade-content" role="listbox" aria-label="Oficio">${tradeList(type).map(x=>`<button type="button" role="option" aria-selected="${x===sel}" class="agenda-cascader-option ${x===sel?'on':''}" data-t="${x}">${agendaContactTypeIcon(type)}<span>${x}</span></button>`).join("")}<span class="agenda-cascader-separator" role="separator"></span><button type="button" class="agenda-cascader-new" onclick="clTradeNewToggle(event)">＋ Nuevo oficio</button><div class="agenda-trade-new" hidden><input id="clTradeNew" placeholder="Escribe el nuevo oficio" onkeydown="if(event.key==='Enter'){event.preventDefault();addTradeGo()}"><button type="button" class="btn btn-dark" onclick="addTradeGo()">Añadir</button></div></div></details>`;
+  return `<details class="agenda-cascader" id="clTrade"><summary aria-label="Oficio"><span class="agenda-cascader-value">${value}</span><span class="agenda-cascader-chevron" aria-hidden="true"></span></summary><div class="agenda-cascader-content agenda-trade-content" role="listbox" aria-label="Oficio">${tradeList(type).map(x=>`<button type="button" role="option" aria-selected="${x===sel}" class="agenda-cascader-option ${x===sel?'on':''}" data-t="${x}"><span>${x}</span></button>`).join("")}<span class="agenda-cascader-separator" role="separator"></span><button type="button" class="agenda-cascader-new" onclick="clTradeNewToggle(event)">＋ Nuevo oficio</button><div class="agenda-trade-new" hidden><input id="clTradeNew" placeholder="Escribe el nuevo oficio" onkeydown="if(event.key==='Enter'){event.preventDefault();addTradeGo()}"><button type="button" class="btn btn-dark" onclick="addTradeGo()">Añadir</button></div></div></details>`;
 }
 function clTradeBind(){
   const box=document.getElementById("clTrade");if(!box)return;
@@ -9992,10 +10021,10 @@ async function contactAddressSelect(index){
   try{const value=await _contactPlaceSession.select(row);if(rev!==_contactPlaceRevision||!value)return;const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v||"";};set("clAddr",[value.street,value.number].filter(Boolean).join(" "));set("clCity",value.city);set("clCp",value.cp);set("clProvince",value.province);set("clPlaceId",value.placeId);const country=document.getElementById("clCountry");if(country&&[...country.options].some(o=>o.value===value.country))country.value=value.country;contactAddressDraw([],"Dirección seleccionada. Revisa los datos.");}catch(e){if(rev===_contactPlaceRevision)contactAddressDraw([],"No se pudo completar. Puedes escribir la dirección manualmente.");}
 }
 function _rxEsc(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }
-function nextClientNum(type){
+function nextClientNum(type, excludeIdx=-1){
   const pre=idPre(type);
   const usados=new Set();
-  state.clients.forEach(c=>{ const m=new RegExp("^"+_rxEsc(pre)+" - (\\d+)$").exec(c.num||""); if(m) usados.add(+m[1]); });
+  state.clients.forEach((c,i)=>{ if(i===excludeIdx)return;const m=new RegExp("^"+_rxEsc(pre)+" - (\\d+)$").exec(c.num||""); if(m) usados.add(+m[1]); });
   let n=1; while(usados.has(n)) n++;
   return pre+" - "+n;
 }
@@ -10038,19 +10067,20 @@ function clientModal(editIdx=-1, presetType){
   _obLock=true;                       // este modal solo se cierra con sus botones
   pills("clBrand");clTradeBind();
   document.querySelectorAll("#clType button").forEach(b=>b.addEventListener("click",()=>{
+    const previousType=clCurType();
     const typeBox=document.getElementById("clType");typeBox.querySelectorAll("[data-v]").forEach(x=>{x.classList.toggle("on",x===b);x.setAttribute("aria-selected",String(x===b));});const summary=typeBox.querySelector("summary");summary.innerHTML=agendaContactTypeIcon(b.dataset.v)+`<span class="agenda-cascader-value">${b.dataset.v}</span><span class="agenda-cascader-chevron" aria-hidden="true"></span>`;typeBox.open=false;
     document.getElementById("clBrandWrap").style.display = b.dataset.v==="Cliente"&&wsOrder.length>1?"block":"none";
     document.querySelectorAll(".cl-notteam").forEach(el=>el.style.display = b.dataset.v==="Team"?"none":(el.classList.contains("agenda-contact-fiscal-field")?"flex":"block"));   // un miembro del estudio no es otra empresa
-    setTimeout(()=>{ try{ clNumCheck(editIdx); }catch(e){} },0);
     const tw=document.getElementById("clTradeWrap");
     if(tw){ tw.style.display = (b.dataset.v==="Contratista"||b.dataset.v==="Técnico")?"block":"none"; clTradeDraw(b.dataset.v); }
     const pre=document.getElementById("clPre");
     if(pre) pre.textContent=idPre(b.dataset.v)+" -";
     const ni=document.getElementById("clNum");
-    if(ni && editIdx<0){
-      const m=/(\d+)$/.exec(nextClientNum(b.dataset.v));
+    if(ni && b.dataset.v!==previousType){
+      const m=/(\d+)$/.exec(nextClientNum(b.dataset.v,editIdx));
       ni.value=m?m[1]:1;
     }
+    setTimeout(()=>{ try{ clNumCheck(editIdx); }catch(e){} },0);
   }));
   contactAddressStart();
 }
@@ -11437,7 +11467,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.66.13";
+const MODERNO_VER="v3.66.14";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13596,6 +13626,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=210">
 <link rel="stylesheet" href="/brand/agenda-ui.css?v=36612">
+<link rel="stylesheet" href="/brand/mail-ui.css?v=36614">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>

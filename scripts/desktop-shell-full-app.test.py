@@ -300,6 +300,17 @@ try:
      expect(page.locator('aside.sidebar [data-view=catalogo]')).to_have_text('Servicios')
      expect(page.locator('.catalog-board')).to_be_visible()
      expect(page.locator('.catalog-board select[aria-label=Tipo]')).to_contain_text('Servicios')
+    if view=='mail':
+     expect(page.locator('.mail-connect-page')).to_be_visible()
+     expect(page.locator('#mail-connect-title')).to_have_text('Conecta tu correo')
+     assert page.locator('#view>h1,.mail-connect-page h1').count()==0
+     assert 'Próximamente' not in page.locator('#view').inner_text()
+     expect(page.locator('.mail-connect-actions>button')).to_have_text(['Conectar Gmail','Conectar iCloud Mail','Configurar servidor externo'])
+     assert page.locator('.mail-connect-actions>button').evaluate_all('(buttons)=>buttons.every(button=>button.getAttribute("aria-disabled")==="true"&&!button.hasAttribute("onclick"))')
+     assert page.locator('.mail-connect-media svg').get_attribute('viewBox')=='0 0 200 120'
+     page.locator('.mail-connect-page').evaluate('(e)=>Promise.all(e.closest("#view").getAnimations({subtree:true}).map(animation=>animation.finished.catch(()=>{})))')
+     assert page.locator('.mail-connect-button--primary').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(23, 23, 23)'
+     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-empty-{width}.png'),full_page=True)
     neutral_canvas(page)
     if width>=1100:
      if view in ['home','proyectos']:
@@ -427,8 +438,12 @@ try:
     page.locator('.agenda-contact-editor .product-editor-header h3').click();assert page.locator('#clType').get_attribute('open') is None
     page.locator('#clType summary').click();page.locator('#clType [data-v="Contratista"]').click()
     expect(page.locator('#clTradeWrap')).to_be_visible()
+    assert page.locator('#clNumWarn').inner_text()==''
+    expected_contractor=page.evaluate("(/(\\d+)$/.exec(nextClientNum('Contratista',0))||[])[1]")
+    assert page.locator('#clNum').input_value()==expected_contractor
     assert page.locator('#clTradeWrap').evaluate('(e)=>e.previousElementSibling.id')=='clType'
     page.locator('#clTrade summary').click()
+    assert page.locator('#clTrade .agenda-cascader-icon').count()==0
     assert page.locator('#clTrade .agenda-cascader-new').inner_text().strip()=='＋ Nuevo oficio'
     page.locator('#clTrade .agenda-cascader-new').click();expect(page.locator('#clTradeNew')).to_be_visible()
     page.locator('.agenda-contact-editor .product-editor-header h3').click();assert page.locator('#clTrade').get_attribute('open') is None
