@@ -319,17 +319,23 @@ try:
      page.get_by_role('button',name='Conectar Gmail',exact=True).click()
      expect(page.locator('#mail-setup-title')).to_have_text('Conectar Gmail')
      assert page.locator('.mail-setup-grid').count()==0
+     assert page.locator('.mail-provider-mark img').get_attribute('src').startswith('/brand/mail-icons/gmail.svg')
+     assert page.locator('.mail-setup-back img').get_attribute('src').startswith('/brand/mail-icons/back.svg')
+     title_gap=page.locator('.mail-setup-header h2').evaluate('(title)=>title.nextElementSibling.getBoundingClientRect().top-title.getBoundingClientRect().bottom')
+     assert title_gap<=2,title_gap
      if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-gmail-{width}.png'),full_page=True)
      page.get_by_role('button',name='Continuar con Google',exact=True).click()
      expect(page.locator('#toast')).to_contain_text('La conexión se activará en el siguiente paso')
      page.get_by_role('button',name='Volver a servicios de correo',exact=True).click()
      page.get_by_role('button',name='Conectar iCloud Mail',exact=True).click()
      expect(page.locator('.mail-setup-grid input')).to_have_count(2)
+     assert page.locator('.mail-provider-mark img').get_attribute('src').startswith('/brand/mail-icons/icloud.svg')
      assert page.locator('.mail-setup-card').get_attribute('autocomplete')=='off'
      if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'mail-icloud-{width}.png'),full_page=True)
      page.get_by_role('button',name='Cancelar',exact=True).click()
      page.get_by_role('button',name='Configurar servidor externo',exact=True).click()
      expect(page.locator('.mail-setup-grid input')).to_have_count(8)
+     assert page.locator('.mail-provider-mark img').get_attribute('src').startswith('/brand/mail-icons/external-mail.svg')
      expect(page.locator('.mail-setup-grid select')).to_have_count(1)
      assert page.locator('.mail-setup-card input[type=password]').evaluate_all('(inputs)=>inputs.every(input=>input.value==="")')
      if width>=1100:

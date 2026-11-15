@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {verifyPublication} from './verify-app-publication.mjs';
 
 const expectedAssets=[
- 'brand/agenda-ui.css','brand/mail-ui.css','brand/agenda-icons/exportar-csv.svg','brand/agenda-icons/exportar-pdf.svg','brand/agenda-icons/importar-contactos.svg','brand/agenda-icons/menu-importar-exportar.svg','contact-todos.svg','contact-proovedores.svg','contact-contratistas.svg','contact-arquitectos.svg','contact-team.svg','brand/sidebar-icons/soporte.svg',
+ 'brand/agenda-ui.css','brand/mail-ui.css','brand/mail-icons/gmail.svg','brand/mail-icons/back.svg','brand/mail-icons/icloud.svg','brand/mail-icons/external-mail.svg','brand/agenda-icons/exportar-csv.svg','brand/agenda-icons/exportar-pdf.svg','brand/agenda-icons/importar-contactos.svg','brand/agenda-icons/menu-importar-exportar.svg','contact-todos.svg','contact-proovedores.svg','contact-contratistas.svg','contact-arquitectos.svg','contact-team.svg','brand/sidebar-icons/soporte.svg',
  ...['sizeall-20','crosshair-20','person-20','ibeam-20','hand-20','nwpen-20'].map(name=>'brand/icons/plan-viewer/cursors/dusk/'+name+'.png'),
  'brand/menu-finish.css',
  ...['home','proyectos','workspace','agenda','contabilidad','mail','catalogo','biblioteca','plantillas','tutoriales','documentation'].map(name=>'brand/menu-icons/'+name+'.svg'),
@@ -17,7 +17,7 @@ test('publication checks every public entry/module with no credentials and a fix
   assert.equal(url.hostname,'app.moderno.app');assert.equal(options.credentials,'omit');assert.equal(options.redirect,'error');assert.equal(url.searchParams.get('publication'),'fictional-revision');
   const name=url.pathname==='/'?'index.html':url.pathname.slice(1);seen.push(name);return new Response(name);
  }});
- assert.equal(seen.length,117);assert.ok(expectedAssets.every(name=>seen.includes(name)));
+ assert.equal(seen.length,121);assert.ok(expectedAssets.every(name=>seen.includes(name)));
 });
 
 test('HTTP success cannot disguise an old entry, login proxy, or changed asset',async()=>{
