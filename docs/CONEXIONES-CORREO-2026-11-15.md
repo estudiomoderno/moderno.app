@@ -4,7 +4,16 @@
 
 La pantalla **Mail** permite conectar cuentas de Gmail, iCloud Mail y servidores externos IMAP/SMTP. Gmail e iCloud reutilizan exactamente el mismo módulo desde **Ajustes → Integraciones**; no existen conexiones ni credenciales duplicadas.
 
-La conexión pertenece al usuario administrador y al estudio activo. Se pueden conectar varias cuentas. Esta entrega comprueba y conserva las conexiones; la bandeja de entrada y la redacción de mensajes se desarrollarán sobre este contrato, no forman parte de este cambio.
+La conexión pertenece al usuario administrador y al estudio activo. Se pueden conectar varias cuentas. Gmail muestra el correo real conectado y permite consultar Recibidos, Enviados, Borradores, Spam y Papelera desde la misma interfaz.
+
+## Interfaz de correo de escritorio
+
+- Navegación interna con los iconos aportados por el propietario y contadores reales de Gmail.
+- Recibidos conserva el total sin leer para el indicador global de Mail.
+- El buscador filtra la carpeta cargada y ofrece coincidencias sin salir de la pantalla.
+- Ajustes abre la gestión compartida de Integraciones; una cuenta conectada no vuelve a mostrar el alta en Mail.
+- Redactar queda visible como entrada a la siguiente fase. El editor y el envío no forman parte todavía de esta entrega.
+- La composición móvil/tablet queda deliberadamente aplazada. Se conservan la estructura semántica, los SVG y los tokens de color para adaptarla después, sin publicar ahora un diseño responsive nuevo.
 
 ## Seguridad
 
