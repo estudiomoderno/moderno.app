@@ -63,7 +63,8 @@
  #desktop-header .desktop-project-search input:focus{border-color:#8b8b8b;box-shadow:0 0 0 1px #8b8b8b}
  #desktop-header .desktop-project-search-clear{position:absolute;top:50%;right:5px;display:grid;place-items:center;width:24px;height:24px;padding:0;transform:translateY(-50%);border:0;border-radius:6px;background:transparent;color:#737373;font-size:18px;line-height:1}
  #desktop-header .desktop-project-search-clear:hover{background:#ededed;color:#171717}
- #desktop-header .desktop-project-search-content{position:absolute;top:calc(100% + 6px);right:0;left:0;display:none;max-height:244px;overflow:auto;padding:5px;box-sizing:border-box;border:1px solid #dedede;border-radius:10px;background:#fff;box-shadow:0 12px 32px #0000001a,0 2px 7px #0000000d}
+ #desktop-header .desktop-project-search-content{position:absolute;top:calc(100% + 6px);right:0;left:0;display:none;max-height:244px;overflow-x:hidden;overflow-y:auto;padding:5px;box-sizing:border-box;border:1px solid #dedede;border-radius:10px;background:#fff;box-shadow:0 12px 32px #0000001a,0 2px 7px #0000000d;scrollbar-width:none;-ms-overflow-style:none}
+ #desktop-header .desktop-project-search-content::-webkit-scrollbar{display:none;width:0;height:0}
  #desktop-header .desktop-project-search.is-open .desktop-project-search-content{display:block}
  #desktop-header .desktop-project-search-list{display:grid;gap:2px}
  #desktop-header .desktop-project-search-option{display:flex;align-items:center;gap:9px;width:100%;min-height:42px;padding:6px 8px;border:0;border-radius:7px;background:transparent;color:#202020;text-align:left}

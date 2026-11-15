@@ -121,7 +121,18 @@ with sync_playwright() as p:
   search_box=project_search.bounding_box();projects_box=page.locator('.desktop-projects').bounding_box()
   assert abs(search_box['x']-projects_box['x'])<=1 and abs(search_box['width']-projects_box['width'])<=1,(search_box,projects_box)
   project_search.click()
+  assert project_search.get_attribute('aria-expanded')=='false'
+  assert page.get_by_role('option').count()==0
+  assert page.locator('.desktop-project-search-content').is_hidden()
+  page.evaluate("for(let i=2;i<=12;i++)state.projects.push({id:i,num:'PR-'+i,name:'Proyecto adicional '+i,client:'Cliente '+i})")
+  project_search.fill('proyecto')
+  assert page.get_by_role('option').count()==8
+  result_scroller=page.locator('.desktop-project-search-content')
+  assert result_scroller.evaluate('(e)=>e.scrollHeight>e.clientHeight&&e.scrollWidth<=e.clientWidth')
+  project_search.fill('ficticio')
   assert page.get_by_role('option').count()==1 and 'Proyecto ficticio' in page.get_by_role('option').inner_text()
+  scroll_style=result_scroller.evaluate('(e)=>({x:getComputedStyle(e).overflowX,y:getComputedStyle(e).overflowY,width:getComputedStyle(e).scrollbarWidth,webkit:getComputedStyle(e,"::-webkit-scrollbar").display})')
+  assert scroll_style=={'x':'hidden','y':'auto','width':'none','webkit':'none'},scroll_style
   project_search.press('Escape');assert project_search.get_attribute('aria-expanded')=='false'
   project_search.press('ArrowDown');assert project_search.get_attribute('aria-expanded')=='true'
   assert page.get_by_role('option').get_attribute('aria-selected')=='true'
@@ -129,10 +140,12 @@ with sync_playwright() as p:
   assert page.get_by_text('No se encontraron proyectos.',exact=True).is_visible()
   page.get_by_role('button',name='Borrar búsqueda de proyectos').click()
   assert project_search.input_value()==''
+  assert project_search.get_attribute('aria-expanded')=='false' and page.get_by_role('option').count()==0
   project_search.fill('ficticio')
   project_search.press('ArrowDown');project_search.press('Enter')
   assert page.evaluate('[state.view,state.currentProject]')==['proyecto',1]
   assert project_search.get_attribute('aria-expanded')=='false'
+  page.evaluate('state.projects.splice(1)')
   assert page.locator('#desktop-primary .desktop-icon-only>.desktop-label').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).clip==="auto")')
   brand=page.locator('.desktop-brand');background=brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')
   brand.hover();assert brand.evaluate('(e)=>getComputedStyle(e).backgroundColor')==background
