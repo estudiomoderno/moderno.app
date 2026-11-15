@@ -1,6 +1,6 @@
 import {createClient} from 'npm:@supabase/supabase-js@2.57.4';
 import {createHandler} from './core.mjs';
-import {uploadCaptureImage} from './storage.mjs';
+import {signCaptureImage,uploadCaptureImage} from './storage.mjs';
 const url=Deno.env.get('SUPABASE_URL')!,anon=Deno.env.get('SUPABASE_ANON_KEY')!;
 const server=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
 const origins=['https://app.moderno.app',...(Deno.env.get('CLIPPER_TEST_ORIGINS')||'').split(',').filter(Boolean)];
@@ -26,7 +26,7 @@ Deno.serve(createHandler({allowedOrigins:origins,
  async upload(actor:any,path:string,bytes:Uint8Array,contentType:string){
   return uploadCaptureImage({actor,server,path,bytes,contentType});
  },
- async sign(actor:any,path:string){const {data,error}=await actor.client.storage.from('archivos').createSignedUrl(path,60);if(error)throw error;return data.signedUrl;},
+ async sign(actor:any,path:string){return signCaptureImage({actor,server,path,expiresIn:60});},
  // No API key configured => manual categorization. No request leaves the server.
  suggest:Deno.env.get('ANTHROPIC_API_KEY')?async(capture:any,signal:AbortSignal)=>{
   const categories=['Mobiliario','Iluminación','Textiles','Decoración','Baño','Cocina','Otros'];
