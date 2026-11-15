@@ -57,7 +57,7 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(html,/mail-connections\.js/);assert.match(html,/ModernoMail\.renderMail\(\)/);assert.match(html,/ModernoMail\.integrationCards\(\)/);
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
- assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder=state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36715/);
+ assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder=state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36716/);assert.match(html,/mail-connections\.js\?v=36716/);assert.match(html,/MODERNO_VER="v3\.67\.16"/);
  for(const label of ['Recibidos','Enviados','Borradores','Spam','Papelera','Redactar','Ajustes'])assert.match(ui,new RegExp(label));
  assert.match(ui,/mail-icons\/compose\.svg/);for(const icon of ['inbox','sent','drafts','spam','trash'])assert.match(ui,new RegExp(`icon:'${icon}\\.svg'`));
  assert.match(ui,/mail-icons\/refresh\.svg/);assert.match(ui,/mail-icons\/settings\.svg/);assert.doesNotMatch(ui,/>Actualizar<|>Ajustes</);
@@ -68,6 +68,8 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(css,/\.mail-account-menu\{display:grid[^}]*max-height:264px/);assert.match(css,/\.mail-account-option\{display:grid/);
  assert.match(ui,/action:'message'/);assert.match(ui,/action:'trash_messages'/);assert.match(ui,/mail-message-select/);assert.match(ui,/mail-reader-subject/);assert.match(ui,/trash\.svg[\s\S]*refresh\.svg/);assert.match(css,/\.mail-reader\{/);assert.match(css,/\.mail-message-select input:checked\+span/);
  assert.match(ui,/action:'attachment'/);assert.match(ui,/action:'send'/);for(const action of ['Responder','Responder a todos','Reenviar','Imprimir','Eliminar'])assert.match(ui,new RegExp(action));for(const icon of ['reply.svg','reply-all.svg','forward.svg','print.svg','delete.svg'])assert.match(ui,new RegExp(icon.replace('.','\\.')));assert.match(ui,/sanitizedEmailHtml/);assert.match(ui,/downloadAttachment/);assert.match(css,/\.mail-reader-html/);assert.match(css,/\.mail-reader-attachments/);assert.match(css,/\.mail-composer/);
+ assert.match(ui,/pageSize:20/);assert.match(ui,/\[20,30,50,100\]/);assert.match(ui,/Correos por página/);assert.match(ui,/ModernoMail\.changePageSize/);assert.match(ui,/ModernoMail\.goPage\('first'\)/);assert.match(ui,/ModernoMail\.goPage\('last'\)/);assert.match(ui,/Cargando correos…/);
+ assert.match(css,/\.mail-inbox-panel\{[^}]*display:flex[^}]*flex-direction:column[^}]*overflow:hidden/);assert.match(css,/\.mail-inbox-content\{[^}]*flex:1 1 auto[^}]*overflow:auto/);assert.match(css,/\.mail-reader\{[^}]*max-width:none/);assert.match(css,/\.mail-reader-html\{[^}]*width:90\.91%[^}]*zoom:1\.1/);assert.match(css,/\.mail-pagination\{[^}]*position:sticky[^}]*bottom:0/);assert.match(css,/\.mail-inbox-panel \.mail-loading-state\{[^}]*inset:0/);
  assert.doesNotMatch(ui,/Gestionar conexión/);assert.match(ui,/Conectado · \$\{escape\(row\.email\)\}/);
  assert.match(html,/MAIL_FUNCTION_URL = "https:\/\/cgqtylvaapwbuwqvpjtb\.supabase\.co\/functions\/v1\/mail-connect"/);
  assert.match(html,/MAIL_FUNCTION_ANON_KEY = "eyJ[^"]+"/);
@@ -84,4 +86,5 @@ test('mail Edge Function preflight allows every header sent by supabase-js',()=>
  assert.doesNotMatch(fn,/include_granted_scopes/);
  assert.match(fn,/https:\/\/auth\.moderno\.app\/functions\/v1\/mail-connect/);
  assert.match(fn,/body\.action==='inbox'/);assert.match(fn,/body\.action==='message'/);assert.match(fn,/body\.action==='attachment'/);assert.match(fn,/body\.action==='send'/);assert.match(fn,/body\.action==='trash_messages'/);assert.match(fn,/gmail\/v1\/users\/me\/messages/);assert.match(fn,/const gmailFolders=\{inbox:'INBOX',sent:'SENT',drafts:'DRAFT',spam:'SPAM',trash:'TRASH'\}/);assert.match(fn,/includeSpamTrash/);assert.match(fn,/readImapMailbox/);assert.match(fn,/readImapAttachment/);assert.match(fn,/sendSmtpMessage/);assert.match(fn,/trashImapMessages/);assert.match(fn,/folderCounts/);
+ assert.match(fn,/function requestedPaging/);assert.match(fn,/\[20,30,50,100\]\.includes/);assert.match(fn,/pageToken/);assert.match(fn,/direction:body\.direction/);assert.match(fn,/nextPageToken/);
 });

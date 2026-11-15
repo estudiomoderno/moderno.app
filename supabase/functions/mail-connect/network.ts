@@ -84,19 +84,20 @@ export function parseImapMessages(rows:string[]){
  return groups.map(group=>{const first=group[0],uid=first.match(/\bUID (\d+)\b/i)?.[1]||'',flags=first.match(/\bFLAGS \(([^)]*)\)/i)?.[1]||'',internal=first.match(/\bINTERNALDATE "([^"]+)"/i)?.[1]||'',headers=group.slice(1).join('\r\n');return {id:`imap-${uid}`,threadId:'',from:headerValue(headers,'From'),to:headerValue(headers,'To'),subject:headerValue(headers,'Subject')||'(Sin asunto)',date:headerValue(headers,'Date')||internal,timestamp:Date.parse(internal)||Date.parse(headerValue(headers,'Date'))||0,snippet:'',unread:!/(^|\s)\\Seen(\s|$)/i.test(flags)};}).filter(row=>row.id!=='imap-').sort((a,b)=>b.timestamp-a.timestamp);
 }
 function folderKey(value:unknown):FolderKey{return typeof value==='string'&&['inbox','sent','drafts','spam','trash'].includes(value)?value as FolderKey:'inbox';}
+function paging(value:unknown){const input=value&&typeof value==='object'?value as Record<string,unknown>:{},size=[20,30,50,100].includes(Number(input.pageSize))?Number(input.pageSize):20,index=Math.max(0,Math.min(5000,Number.isInteger(Number(input.pageIndex))?Number(input.pageIndex):0));return {size,index,direction:input.direction==='last'?'last':''};}
 function messageUid(value:unknown){const match=String(value||'').match(/^imap-(\d{1,20})$/);if(!match)throw new MailNetworkError('connection_failed','message id');return match[1];}
 function statusCounts(rows:string[]){const line=rows.find(row=>/^\* STATUS\b/i.test(row))||'';return {total:Math.max(0,Number(line.match(/\bMESSAGES (\d+)/i)?.[1])||0),unread:Math.max(0,Number(line.match(/\bUNSEEN (\d+)/i)?.[1])||0)};}
-export async function readImapMailbox(account:Account,folderValue:unknown){
- const folder=folderKey(folderValue);
+export async function readImapMailbox(account:Account,folderValue:unknown,pageValue?:unknown){
+ const folder=folderKey(folderValue),page=paging(pageValue);
  const {socket,lines}=await loginImap(account.imap,account.password);let tag=2;
  try{
   const paths=imapFolderMap(await imapCommand(lines,`m${tag++}`,'LIST "" "*"')),folderCounts={inbox:0,sent:0,drafts:0,spam:0,trash:0},unreadCounts={...folderCounts};
   for(const key of Object.keys(folderCounts) as FolderKey[]){const path=paths[key];if(!path)continue;const counts=statusCounts(await imapCommand(lines,`m${tag++}`,`STATUS ${imapQuoted(path)} (MESSAGES UNSEEN)`));folderCounts[key]=counts.total;unreadCounts[key]=counts.unread;}
-  const path=paths[folder];if(!path)return {folder,messages:[],folderCounts,unreadCount:unreadCounts.inbox,nextPageToken:''};
+  const path=paths[folder];if(!path)return {folder,messages:[],folderCounts,unreadCount:unreadCounts.inbox,nextPageToken:'',pageIndex:0,total:0};
   const selected=await imapCommand(lines,`m${tag++}`,`EXAMINE ${imapQuoted(path)}`),exists=Math.max(0,Number(selected.find(row=>/^\* \d+ EXISTS$/i.test(row))?.match(/^\* (\d+)/)?.[1])||0);
-  if(!exists)return {folder,messages:[],folderCounts,unreadCount:unreadCounts.inbox,nextPageToken:''};
-  const first=Math.max(1,exists-29),rows=await imapCommand(lines,`m${tag++}`,`FETCH ${first}:* (UID FLAGS INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)])`);
-  return {folder,messages:parseImapMessages(rows),folderCounts,unreadCount:unreadCounts.inbox,nextPageToken:first>1?String(first-1):''};
+  if(!exists)return {folder,messages:[],folderCounts,unreadCount:unreadCounts.inbox,nextPageToken:'',pageIndex:0,total:0};
+  const lastPage=Math.max(0,Math.ceil(exists/page.size)-1),pageIndex=page.direction==='last'?lastPage:Math.min(page.index,lastPage),upper=Math.max(1,exists-pageIndex*page.size),first=Math.max(1,upper-page.size+1),rows=await imapCommand(lines,`m${tag++}`,`FETCH ${first}:${upper} (UID FLAGS INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)])`);
+  return {folder,messages:parseImapMessages(rows),folderCounts,unreadCount:unreadCounts.inbox,nextPageToken:first>1?String(pageIndex+1):'',pageIndex,total:exists};
  }finally{try{lines.write(`m${tag} LOGOUT`);}catch{}socket.end();socket.destroy();}
 }
 export async function readImapMessage(account:Account,folderValue:unknown,messageId:unknown){
