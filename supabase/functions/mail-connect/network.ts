@@ -57,4 +57,3 @@ async function verifySmtp(endpoint:Endpoint,password:string){
  }finally{socket.end();socket.destroy();}
 }
 export async function verifyPasswordAccount(account:Account){await verifyImap(account.imap,account.password);await verifySmtp(account.smtp,account.password);}
-

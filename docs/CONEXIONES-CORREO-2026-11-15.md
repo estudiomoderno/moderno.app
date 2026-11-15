@@ -53,4 +53,3 @@ No se han probado credenciales reales de Gmail, iCloud o un servidor externo por
 1. Retirar/inhabilitar la Edge Function y el acceso UI.
 2. Revocar el cliente OAuth de Google y sus secretos.
 3. Ejecutar `SQL/conexiones-correo-rollback.sql` solamente tras confirmar que las cuentas pueden borrarse. La reversión elimina las credenciales de Vault asociadas a este módulo.
-

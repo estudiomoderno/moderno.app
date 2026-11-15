@@ -33,7 +33,6 @@ export function passwordConnection(body){
   smtp:{host:host(body.smtpHost),port:port(body.smtpPort,[465,587],'SMTP'),security:security(body.smtpSecurity,'SMTP'),user:text(body.user,254)}
  };
 }
-
 export function publicConnection(row){
  return {id:String(row.id),provider:String(row.provider),email:String(row.email),displayName:String(row.displayName||''),status:row.status==='error'?'error':'connected',errorCode:row.errorCode||null,lastCheckedAt:row.lastCheckedAt||null,createdAt:row.createdAt||null,updatedAt:row.updatedAt||null};
 }

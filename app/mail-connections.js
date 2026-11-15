@@ -66,4 +66,3 @@
  function integrationCards(){ensure();return ['gmail','icloud'].map(provider=>{const data=providers[provider],rows=state.connections.filter(row=>row.provider===provider);return `<article class="connection-card connection-card--mail"><div class="connection-card-provider">${mark(provider)}<div><h3>${data.name}</h3><p>${provider==='gmail'?'Consulta, organiza y envía correo con Google.':'Consulta y envía correo mediante tu cuenta de iCloud.'}</p></div></div>${rows.length?`<span class="chip">Conectado${rows.length>1?' · '+rows.length+' cuentas':''}</span><button class="btn btn-ghost" onclick="go('mail')">Gestionar conexión</button>`:`<button class="btn btn-ghost" onclick="ModernoMail.open('${provider}','integrations')">Conectar</button>`}</article>`;}).join('');}
  global.ModernoMail={configure,load,open,back,onNavigate,submit,recheck,disconnect,renderMail,setupFor,integrationCards,handleOAuthResult};
 })(globalThis);
-

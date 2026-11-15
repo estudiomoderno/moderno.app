@@ -74,4 +74,3 @@ Deno.serve(async(req:Request)=>{
   throw new MailInputError('Acción no válida');
  }catch(error){const code=safeErrorCode(error),status=error instanceof MailInputError?400:Number((error as any)?.status)||((error as any)?.code==='42501'?403:502);return json(origin,{ok:false,code,error:error instanceof MailInputError?error.message:safeErrorMessage(code)},status);}
 });
-
