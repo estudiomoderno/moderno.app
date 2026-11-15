@@ -35,3 +35,10 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
 });
+
+test('mail Edge Function preflight allows every header sent by supabase-js',()=>{
+ const fn=readFileSync(new URL('../supabase/functions/mail-connect/index.ts',import.meta.url),'utf8');
+ const allowHeaders=fn.match(/'Access-Control-Allow-Headers':'([^']+)'/)?.[1]?.split(',').map(value=>value.trim());
+ assert.deepEqual(allowHeaders,['authorization','x-client-info','apikey','content-type']);
+ assert.match(fn,/if\(req\.method==='OPTIONS'\)/);
+});
