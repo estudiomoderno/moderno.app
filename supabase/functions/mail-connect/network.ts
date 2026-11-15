@@ -70,13 +70,23 @@ function decodeHeader(value:string){
  return value.replace(/=\?([^?]+)\?([bq])\?([^?]*)\?=/gi,(_all,charset,mode,data)=>{try{const bytes=mode.toLowerCase()==='b'?Buffer.from(data,'base64'):Buffer.from(data.replace(/_/g,' ').replace(/=([0-9a-f]{2})/gi,(_m:string,hex:string)=>String.fromCharCode(parseInt(hex,16))),'binary');return new TextDecoder(String(charset).toLowerCase()).decode(bytes);}catch{return data;}}).trim();
 }
 function headerValue(text:string,name:string){const unfolded=text.replace(/\r?\n[ \t]+/g,' '),match=unfolded.match(new RegExp(`(?:^|\\n)${name}:\\s*([^\\r\\n]*)`,'i'));return decodeHeader(match?.[1]||'');}
+function decodeBody(value:string,encoding:string){try{if(/base64/i.test(encoding))return Buffer.from(value.replace(/\s+/g,''),'base64').toString('utf8');if(/quoted-printable/i.test(encoding))return value.replace(/=\r?\n/g,'').replace(/=([0-9a-f]{2})/gi,(_m,hex)=>String.fromCharCode(parseInt(hex,16)));}catch{}return value;}
+function textFromHtml(value:string){return value.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<br\s*\/?\s*>/gi,'\n').replace(/<\/p\s*>/gi,'\n\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/gi,' ').replace(/&amp;/gi,'&').replace(/&lt;/gi,'<').replace(/&gt;/gi,'>').replace(/&quot;/gi,'"').replace(/&#39;/gi,"'").replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();}
+export function parseImapBody(raw:string):string{
+ const split=raw.search(/\r?\n\r?\n/),headers=split>=0?raw.slice(0,split):'',body=split>=0?raw.slice(split).replace(/^\r?\n\r?\n/,''):raw,contentType=headerValue(headers,'Content-Type'),encoding=headerValue(headers,'Content-Transfer-Encoding');
+ const boundary=contentType.match(/boundary=(?:"([^"]+)"|([^;\s]+))/i)?.slice(1).find(Boolean);
+ if(boundary){const parts=body.split(`--${boundary}`).filter(part=>part.trim()&&part.trim()!=='--'),plain=parts.find(part=>/^Content-Type:\s*text\/plain\b/im.test(part)),html=parts.find(part=>/^Content-Type:\s*text\/html\b/im.test(part)),chosen=plain||html;if(chosen)return parseImapBody(chosen.replace(/^\r?\n/,''));}
+ const decoded=decodeBody(body,encoding).slice(0,131072);return /^text\/html\b/i.test(contentType)?textFromHtml(decoded):decoded.replace(/\r\n/g,'\n').trim();
+}
 export function parseImapMessages(rows:string[]){
  const groups:string[][]=[];for(const line of rows){if(/^\* \d+ FETCH\b/i.test(line))groups.push([line]);else if(groups.length)groups[groups.length-1].push(line);}
  return groups.map(group=>{const first=group[0],uid=first.match(/\bUID (\d+)\b/i)?.[1]||'',flags=first.match(/\bFLAGS \(([^)]*)\)/i)?.[1]||'',internal=first.match(/\bINTERNALDATE "([^"]+)"/i)?.[1]||'',headers=group.slice(1).join('\r\n');return {id:`imap-${uid}`,threadId:'',from:headerValue(headers,'From'),to:headerValue(headers,'To'),subject:headerValue(headers,'Subject')||'(Sin asunto)',date:headerValue(headers,'Date')||internal,timestamp:Date.parse(internal)||Date.parse(headerValue(headers,'Date'))||0,snippet:'',unread:!/(^|\s)\\Seen(\s|$)/i.test(flags)};}).filter(row=>row.id!=='imap-').sort((a,b)=>b.timestamp-a.timestamp);
 }
+function folderKey(value:unknown):FolderKey{return typeof value==='string'&&['inbox','sent','drafts','spam','trash'].includes(value)?value as FolderKey:'inbox';}
+function messageUid(value:unknown){const match=String(value||'').match(/^imap-(\d{1,20})$/);if(!match)throw new MailNetworkError('connection_failed','message id');return match[1];}
 function statusCounts(rows:string[]){const line=rows.find(row=>/^\* STATUS\b/i.test(row))||'';return {total:Math.max(0,Number(line.match(/\bMESSAGES (\d+)/i)?.[1])||0),unread:Math.max(0,Number(line.match(/\bUNSEEN (\d+)/i)?.[1])||0)};}
 export async function readImapMailbox(account:Account,folderValue:unknown){
- const folder:FolderKey=typeof folderValue==='string'&&['inbox','sent','drafts','spam','trash'].includes(folderValue)?folderValue as FolderKey:'inbox';
+ const folder=folderKey(folderValue);
  const {socket,lines}=await loginImap(account.imap,account.password);let tag=2;
  try{
   const paths=imapFolderMap(await imapCommand(lines,`m${tag++}`,'LIST "" "*"')),folderCounts={inbox:0,sent:0,drafts:0,spam:0,trash:0},unreadCounts={...folderCounts};
@@ -86,6 +96,22 @@ export async function readImapMailbox(account:Account,folderValue:unknown){
   if(!exists)return {folder,messages:[],folderCounts,unreadCount:unreadCounts.inbox,nextPageToken:''};
   const first=Math.max(1,exists-29),rows=await imapCommand(lines,`m${tag++}`,`FETCH ${first}:* (UID FLAGS INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM TO SUBJECT DATE)])`);
   return {folder,messages:parseImapMessages(rows),folderCounts,unreadCount:unreadCounts.inbox,nextPageToken:first>1?String(first-1):''};
+ }finally{try{lines.write(`m${tag} LOGOUT`);}catch{}socket.end();socket.destroy();}
+}
+export async function readImapMessage(account:Account,folderValue:unknown,messageId:unknown){
+ const folder=folderKey(folderValue),uid=messageUid(messageId),{socket,lines}=await loginImap(account.imap,account.password);let tag=2;
+ try{
+  const paths=imapFolderMap(await imapCommand(lines,`m${tag++}`,'LIST "" "*"')),path=paths[folder];if(!path)throw new MailNetworkError('connection_failed','folder');
+  await imapCommand(lines,`m${tag++}`,`EXAMINE ${imapQuoted(path)}`);const rows=await imapCommand(lines,`m${tag++}`,`UID FETCH ${uid} (UID FLAGS INTERNALDATE BODY.PEEK[]<0.131072>)`),start=rows.findIndex(row=>/^\* \d+ FETCH\b/i.test(row));if(start<0)throw new MailNetworkError('connection_failed','message');
+  const first=rows[start],raw=rows.slice(start+1).filter((row,index,all)=>!(index===all.length-1&&row.trim()===')')).join('\r\n');
+  return {id:`imap-${uid}`,from:headerValue(raw,'From'),to:headerValue(raw,'To'),subject:headerValue(raw,'Subject')||'(Sin asunto)',date:headerValue(raw,'Date')||first.match(/\bINTERNALDATE "([^"]+)"/i)?.[1]||'',bodyText:parseImapBody(raw)};
+ }finally{try{lines.write(`m${tag} LOGOUT`);}catch{}socket.end();socket.destroy();}
+}
+export async function trashImapMessages(account:Account,folderValue:unknown,messageIds:unknown[]){
+ const folder=folderKey(folderValue);if(folder==='trash')throw new MailNetworkError('connection_failed','already trash');const uids=messageIds.map(messageUid),{socket,lines}=await loginImap(account.imap,account.password);let tag=2;
+ try{
+  const paths=imapFolderMap(await imapCommand(lines,`m${tag++}`,'LIST "" "*"')),source=paths[folder],trash=paths.trash;if(!source||!trash)throw new MailNetworkError('connection_failed','trash folder');
+  await imapCommand(lines,`m${tag++}`,`SELECT ${imapQuoted(source)}`);await imapCommand(lines,`m${tag++}`,`UID MOVE ${uids.join(',')} ${imapQuoted(trash)}`);return {moved:uids.length};
  }finally{try{lines.write(`m${tag} LOGOUT`);}catch{}socket.end();socket.destroy();}
 }
 async function smtpResponse(lines:Lines){let line=await lines.line();const code=line.slice(0,3);if(!/^\d{3}$/.test(code))throw new MailNetworkError('connection_failed','smtp response');while(line[3]==='-')line=await lines.line();return {code:Number(code),line};}
