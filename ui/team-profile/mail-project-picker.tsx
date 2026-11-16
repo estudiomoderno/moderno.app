@@ -26,13 +26,14 @@ interface ProjectFile {
   name: string
   type?: string
   size?: number
+  source?: string
   modified?: string
-  owner?: string
 }
 
 interface MailProject {
   id: string
   name: string
+  status?: string
   recentRank?: number
   files?: ProjectFile[]
 }
@@ -45,7 +46,7 @@ interface MailProjectPickerProps {
   onSelect: (projectId: string, fileIndex: number) => void
 }
 
-type SortKey = "name" | "type" | "size" | "modified" | "owner"
+type SortKey = "name" | "type" | "size" | "modified"
 
 const FAMILY_LABELS: Record<FileTypeCategory, string> = {
   archive: "Archivo comprimido",
@@ -65,7 +66,10 @@ const FAMILY_LABELS: Record<FileTypeCategory, string> = {
 }
 
 const collator = new Intl.Collator("es", { numeric: true, sensitivity: "base" })
-const sizeNumber = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 1 })
+const sizeNumber = new Intl.NumberFormat("es-ES", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
 const dateFormat = new Intl.DateTimeFormat("es-ES", {
   day: "2-digit",
   month: "short",
@@ -91,15 +95,10 @@ function BoardIllustration() {
   )
 }
 
-function formatBytes(bytes = 0) {
-  const units = ["B", "KB", "MB", "GB"]
-  let value = Math.max(0, Number(bytes) || 0)
-  let unit = 0
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024
-    unit += 1
-  }
-  return `${sizeNumber.format(value)} ${units[unit]}`
+function formatMegabytes(bytes?: number) {
+  const value = Number(bytes)
+  if (!Number.isFinite(value) || value <= 0) return "—"
+  return `${sizeNumber.format(Math.max(value / 1024 / 1024, 0.01))} MB`
 }
 
 function formatDate(value?: string) {
@@ -131,6 +130,7 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
   const [query, setQuery] = useState("")
   const [activeId, setActiveId] = useState(String(initialProjectId ?? projects[0]?.id ?? ""))
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "name", desc: false })
+  const [remoteSizes, setRemoteSizes] = useState<Record<string, number>>({})
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && onClose()
@@ -138,13 +138,17 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [onClose])
 
-  const allProjects = useMemo(() => [...projects].sort((a, b) => collator.compare(a.name, b.name)), [projects])
+  const activeProjects = useMemo(
+    () => projects.filter((project) => project.status !== "Archivado"),
+    [projects]
+  )
+  const allProjects = useMemo(() => [...activeProjects].sort((a, b) => collator.compare(a.name, b.name)), [activeProjects])
   const recentProjects = useMemo(() => {
-    const ranked = projects
+    const ranked = activeProjects
       .filter((project) => Number(project.recentRank) >= 0 && Number(project.recentRank) < 4)
       .sort((a, b) => Number(a.recentRank) - Number(b.recentRank))
-    return (ranked.length ? ranked : projects).slice(0, 4)
-  }, [projects])
+    return (ranked.length ? ranked : activeProjects).slice(0, 4)
+  }, [activeProjects])
   const navigationProjects = showAll ? allProjects : recentProjects
   const searchResults = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("es")
@@ -152,13 +156,35 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
     return allProjects.filter((project) => project.name.toLocaleLowerCase("es").includes(normalized)).slice(0, 8)
   }, [allProjects, query])
 
-  const activeProject = projects.find((project) => String(project.id) === activeId) ?? recentProjects[0] ?? projects[0]
+  const activeProject = activeProjects.find((project) => String(project.id) === activeId) ?? recentProjects[0] ?? activeProjects[0]
   const rows = useMemo(() => compatibleFiles(activeProject, kind).sort((a, b) => compareFiles(a, b, sort.key) * (sort.desc ? -1 : 1)), [activeProject, kind, sort])
   const title = kind === "image" ? "Insertar imagen desde un proyecto" : "Adjuntar archivo desde un proyecto"
 
   function updateSort(key: SortKey) {
     setSort((current) => ({ key, desc: current.key === key ? !current.desc : false }))
   }
+
+  useEffect(() => {
+    const missing = rows.filter((file) => {
+      const key = `${activeProject?.id ?? ""}:${file.index}`
+      return !(Number(file.size) > 0) && remoteSizes[key] === undefined && /^https?:\/\//i.test(file.source ?? "")
+    })
+    if (!missing.length) return
+    let cancelled = false
+    Promise.all(missing.map(async (file) => {
+      const key = `${activeProject?.id ?? ""}:${file.index}`
+      try {
+        const response = await fetch(file.source as string, { method: "HEAD" })
+        const size = Number(response.headers.get("content-length"))
+        return [key, Number.isFinite(size) && size > 0 ? size : -1] as const
+      } catch {
+        return [key, -1] as const
+      }
+    })).then((sizes) => {
+      if (!cancelled) setRemoteSizes((current) => ({ ...current, ...Object.fromEntries(sizes) }))
+    })
+    return () => { cancelled = true }
+  }, [activeProject?.id, remoteSizes, rows])
 
   return (
     <div className="fixed inset-0 z-[40002] grid place-items-center bg-black/35 p-6 backdrop-blur-sm" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
@@ -176,7 +202,7 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
         <div className="grid min-h-0 flex-1 grid-cols-[256px_minmax(0,1fr)]">
           <aside className="mail-project-nav" aria-label="Navegación de proyectos">
             <div className="mail-project-nav-header"><h2>Proyectos</h2></div>
-            <button type="button" className={`mail-project-nav-link${showAll ? " is-active" : ""}`} onClick={() => setShowAll(true)} aria-label="Ver todos los proyectos">
+            <button type="button" className={`mail-project-nav-link${showAll ? " is-active" : ""}`} onClick={() => setShowAll((current) => !current)} aria-expanded={showAll} aria-label="Ver todos los proyectos">
               <img src="/brand/sidebar-icons/ver-todos.svg?v=36602" alt="" aria-hidden="true" />
               <span>Ver todos</span>
             </button>
@@ -217,7 +243,7 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
                 <table className="w-full table-fixed border-collapse text-sm" data-slot="data-grid-table">
                   <thead className="sticky top-0 z-10 bg-muted/60 backdrop-blur">
                     <tr className="border-b">
-                      {([['name','Nombre','w-[38%]'],['type','Tipo','w-[16%]'],['size','Tamaño','w-[13%]'],['modified','Modificado','w-[18%]'],['owner','Propietario','w-[15%]']] as Array<[SortKey,string,string]>).map(([key, label, width]) => (
+                      {([['name','Nombre','w-[45%]'],['type','Tipo','w-[20%]'],['size','Tamaño','w-[15%]'],['modified','Modificado','w-[20%]']] as Array<[SortKey,string,string]>).map(([key, label, width]) => (
                         <th key={key} className={`${width} px-4 py-3 text-left text-xs font-medium text-muted-foreground`}>
                           <button type="button" className="inline-flex items-center gap-1 hover:text-foreground" onClick={() => updateSort(key)}>
                             {label}{sort.key === key && (sort.desc ? <ArrowDownIcon className="size-3" /> : <ArrowUpIcon className="size-3" />)}
@@ -236,9 +262,8 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
                           </button>
                         </td>
                         <td className="truncate px-4 py-2.5 text-muted-foreground">{fileKind(file)}</td>
-                        <td className="px-4 py-2.5 tabular-nums text-muted-foreground">{formatBytes(file.size)}</td>
+                        <td className="px-4 py-2.5 tabular-nums text-muted-foreground">{formatMegabytes(Number(file.size) > 0 ? file.size : remoteSizes[`${activeProject?.id ?? ""}:${file.index}`])}</td>
                         <td className="px-4 py-2.5 text-muted-foreground">{formatDate(file.modified)}</td>
-                        <td className="truncate px-4 py-2.5 text-muted-foreground">{file.owner || "Tú"}</td>
                       </tr>
                     ))}
                   </tbody>

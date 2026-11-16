@@ -35,6 +35,11 @@
       "git_blob": "aa6f8c5cd6b772867434a17d1d57492c173a45c5",
       "adaptation": "Unchanged source."
     },
+    "file-type.tsx": {
+      "path": "registry-reui/bases/base/reui/file-type.tsx",
+      "git_blob": "a1f31276d539c56dcf4b8db296d381d7db32bb52",
+      "adaptation": "Unchanged source."
+    },
     "autocomplete.tsx": {
       "path": "registry-reui/bases/base/reui/autocomplete.tsx",
       "git_blob": "9f16b1036d7a07aca917ab3db3130b0f03a7543d",
@@ -181,7 +186,7 @@
       "adaptation": "Portal container adaptation for Shadow DOM; all component behavior retained."
     }
   },
-  "css": "Original Avatar, Button, Button Group Dropdown Menu Scroll Area, Breadcrumb and Card sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css. Original Calendar, Popover, Tooltip, Select, Switch, Tabs and Label sections from the same Nova source. Original Field, Input and Sheet sections from the same Nova source.",
+  "css": "Original Avatar, Button, Button Group Dropdown Menu Scroll Area, Breadcrumb and Card sections of registry/styles/style-nova.css, in layer(base). Theme from styles/globals.css. Original Calendar, Popover, Tooltip, Select, Switch, Tabs and Label sections from the same Nova source. Original Field, Input and Sheet sections from the same Nova source. File Type utility classes are compiled directly from the original ReUI component source.",
   "license": "MIT; see LICENSE.md",
   "notifications": "Owner-provided Button/BellIcon/Badge pattern. The ReUI badge is original, not the shadcn UI badge.",
   "calendar": "Owner-provided c-event-calendar-1 composition adapted to existing application data and native handlers. Original engine in registry-reui/bases/base/reui/event-calendar; demo data are not instantiated."
