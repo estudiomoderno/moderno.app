@@ -1313,7 +1313,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/phone-controls.js?v=3492"></script>
 <link rel="stylesheet" href="/product-clipper.css?v=36617">
 <script src="/product-clipper.js?v=36622"></script>
-<script src="/mail-connections.js?v=36726"></script>
+<script src="/mail-connections.js?v=36727"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
 //
@@ -11442,7 +11442,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.26";
+const MODERNO_VER="v3.67.27";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11454,7 +11454,8 @@ const MAIL_FUNCTION_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ
 const sb = (SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("PEGA_AQUI") && SUPABASE_ANON_KEY.length>40 && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 if(!sb)_accessLoading=false;
-function mailProjectRows(){return (state.projects||[]).map(project=>({id:project.id,name:[project.num,project.name||project.title||project.client].filter(Boolean).join(' · ')||'Proyecto',files:(project.files||[]).map((stored,index)=>{const file=typeof stored==='string'?{name:stored}:stored||{};return {index,name:file.name||'Archivo',type:file.type||'',size:Number(file.size)||0,available:Boolean(file.url||file.data||file.body)};}).filter(file=>file.available)})).filter(project=>project.files.length);}
+function mailProjectMime(name,type){if(String(type||'').includes('/'))return String(type).toLowerCase();const ext=String(name||'').split('.').pop().toLowerCase(),images={avif:'image/avif',bmp:'image/bmp',gif:'image/gif',heic:'image/heic',heif:'image/heif',ico:'image/x-icon',jfif:'image/jpeg',jpeg:'image/jpeg',jpg:'image/jpeg',png:'image/png',svg:'image/svg+xml',tif:'image/tiff',tiff:'image/tiff',webp:'image/webp'};if(images[ext])return images[ext];const files={pdf:'application/pdf',txt:'text/plain',csv:'text/csv',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',zip:'application/zip'};return files[ext]||'application/octet-stream';}
+function mailProjectRows(){return (state.projects||[]).map(project=>({id:project.id,name:[project.num,project.name||project.title||project.client].filter(Boolean).join(' · ')||'Proyecto',files:(project.files||[]).map((stored,index)=>{const file=typeof stored==='string'?{name:stored}:stored||{};return {index,name:file.name||'Archivo',type:mailProjectMime(file.name,file.type),size:Number(file.size)||0,available:Boolean(file.url||file.data||file.body)};}).filter(file=>file.available)})).filter(project=>project.files.length);}
 async function mailProjectFile(projectId,index){const project=(state.projects||[]).find(item=>String(item.id)===String(projectId)),stored=project?.files?.[Number(index)],file=typeof stored==='string'?{name:stored}:stored||{};if(!project||!stored)throw Error('No se ha encontrado el archivo del proyecto');if(file.body!=null)return new File([String(file.body)],file.name||'Documento.txt',{type:file.type||'text/plain'});const source=await fileResolveForView(file);if(!source)throw Error('Este archivo no tiene contenido disponible');const response=await fetch(source);if(!response.ok)throw Error('No se ha podido descargar el archivo del proyecto');const blob=await response.blob();return new File([blob],file.name||'Archivo',{type:file.type||blob.type||'application/octet-stream'});}
 ModernoMail.configure({
  context:()=>({sb,studyId:ESTUDIO_ID,userId:state.sessionUser?.mail||'',role:_accessRole,mailFunctionUrl:MAIL_FUNCTION_URL,mailFunctionAnonKey:MAIL_FUNCTION_ANON_KEY,setMailUnread:value=>{state.mailUnread=Math.max(0,Number(value)||0)},mailProjects:mailProjectRows,readMailProjectFile:mailProjectFile}),
@@ -13609,7 +13610,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 </style>
 <link rel="stylesheet" href="/brand/desktop-shell.css?v=210">
 <link rel="stylesheet" href="/brand/agenda-ui.css?v=36612">
-<link rel="stylesheet" href="/brand/mail-ui.css?v=36726">
+<link rel="stylesheet" href="/brand/mail-ui.css?v=36727">
 <link rel="stylesheet" href="/brand/project-dock.css?v=196.3">
 <link rel="stylesheet" href="/brand/desktop-project-overview.css?v=196.3">
 <script src="/header-presence.js?v=365100"></script>

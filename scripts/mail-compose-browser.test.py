@@ -28,7 +28,7 @@ try:
     request.fulfill(status=200,content_type='application/json',body=json.dumps(payload));return
    request.continue_() if request.request.url.startswith(origin+'/') else request.abort()
   page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.wait_for_function('!!window.ModernoMail')
-  page.evaluate("""()=>{const root=document.createElement('div');root.id='mail-compose-fixture';root.style.cssText='position:fixed;inset:0;background:white;z-index:40000';document.body.append(root);window.mailToasts=[];const renderFixture=()=>root.innerHTML=ModernoMail.renderMail();ModernoMail.configure({context:()=>({sb:{auth:{getSession:async()=>({data:{session:{access_token:'fixture-token'}},error:null})}},studyId:'study-fixture',userId:'persona@example.invalid',role:'admin',mailFunctionUrl:'/fake-mail',mailFunctionAnonKey:'fixture-anon',setMailUnread:()=>{},mailProjects:()=>[{id:'project-fixture',name:'Casa de prueba',files:[{index:0,name:'plano.txt',type:'text/plain',size:5,available:true}]}],readMailProjectFile:async()=>new File(['plano'],'plano.txt',{type:'text/plain'})}),render:renderFixture,toast:value=>mailToasts.push(value),confirm:()=>{}});renderFixture();ModernoMail.load(true);}""")
+  page.evaluate("""()=>{const root=document.createElement('div');root.id='mail-compose-fixture';root.style.cssText='position:fixed;inset:0;background:white;z-index:40000';document.body.append(root);window.mailToasts=[];const renderFixture=()=>root.innerHTML=ModernoMail.renderMail();ModernoMail.configure({context:()=>({sb:{auth:{getSession:async()=>({data:{session:{access_token:'fixture-token'}},error:null})}},studyId:'study-fixture',userId:'persona@example.invalid',role:'admin',mailFunctionUrl:'/fake-mail',mailFunctionAnonKey:'fixture-anon',setMailUnread:()=>{},mailProjects:()=>[{id:'project-fixture',name:'Casa de prueba',files:[{index:0,name:'plano.txt',type:'text/plain',size:5,available:true},{index:1,name:'foto-proyecto.png',type:'image/png',size:6,available:true}]}],readMailProjectFile:async(_project,index)=>Number(index)===1?new File(['imagen'],'foto-proyecto.png',{type:'image/png'}):new File(['plano'],'plano.txt',{type:'text/plain'})}),render:renderFixture,toast:value=>mailToasts.push(value),confirm:()=>{}});renderFixture();ModernoMail.load(true);}""")
   page.wait_for_function("document.querySelector('.mail-message-row')")
   page.get_by_role('button',name='Redactar',exact=True).click()
   composer=page.get_by_role('form',name='Mensaje nuevo');expect(composer).to_be_visible();expect(page.locator('.mail-message-row')).to_be_visible()
@@ -44,11 +44,12 @@ try:
   with page.expect_file_chooser() as chooser_info:composer.get_by_role('menuitem',name='Desde el ordenador').click()
   chooser_info.value.set_files({'name':'presupuesto.txt','mimeType':'text/plain','buffer':b'contenido'})
   expect(composer.get_by_text('presupuesto.txt',exact=True)).to_be_visible()
-  composer.get_by_role('button',name='Adjuntar archivo').click();composer.get_by_role('menuitem',name='Desde un proyecto').click();expect(composer.get_by_role('dialog',name='Adjuntar archivo desde un proyecto')).to_be_visible();composer.get_by_role('button',name='plano.txt').click();expect(composer.get_by_text('plano.txt',exact=True)).to_be_visible()
+  composer.get_by_role('button',name='Adjuntar archivo').click();composer.get_by_role('menuitem',name='Desde un proyecto').click();project_dialog=composer.get_by_role('dialog',name='Adjuntar archivo desde un proyecto');expect(project_dialog).to_be_visible();assert project_dialog.evaluate("e=>getComputedStyle(e.parentElement).position")=='fixed';picker_box=project_dialog.bounding_box();assert picker_box['width']>=970 and picker_box['height']>=710,picker_box;expect(project_dialog.get_by_text('foto-proyecto.png',exact=True)).to_have_count(0);project_dialog.get_by_role('button',name='plano.txt').click();expect(composer.get_by_text('plano.txt',exact=True)).to_be_visible()
   composer.get_by_role('button',name='Insertar imagen').click()
   with page.expect_file_chooser() as image_chooser:composer.get_by_role('menuitem',name='Desde el ordenador').click()
   image_chooser.value.set_files({'name':'foto.png','mimeType':'image/png','buffer':b'imagen'})
   expect(composer.get_by_text('foto.png',exact=True)).to_be_visible();expect(body.locator('img')).to_have_count(1)
+  composer.get_by_role('button',name='Insertar imagen').click();composer.get_by_role('menuitem',name='Desde un proyecto').click();image_dialog=composer.get_by_role('dialog',name='Insertar imagen desde un proyecto');expect(image_dialog.get_by_text('plano.txt',exact=True)).to_have_count(0);image_dialog.get_by_role('button',name='foto-proyecto.png').click();expect(composer.get_by_text('foto-proyecto.png',exact=True)).to_be_visible();expect(body.locator('img')).to_have_count(2)
   composer.get_by_role('button',name='Plantillas').click();composer.get_by_role('menuitem',name='Guardar como plantilla').click();assert page.evaluate("mailToasts.includes('Plantilla guardada')")
   composer.get_by_role('button',name='Insertar emoji').click();composer.get_by_role('button',name='Insertar 😀').click();assert '😀' in body.text_content()
   assert composer.get_by_role('button',name='Enviar',exact=True).evaluate("e=>getComputedStyle(e).backgroundColor")=='rgb(6, 102, 255)'
@@ -60,7 +61,7 @@ try:
   composer.get_by_role('button',name='Restaurar mensaje').click();expect(body).to_be_visible();assert 'Texto que debe conservarse' in body.text_content()
   composer.get_by_role('button',name='Enviar',exact=True).click();expect(composer).to_have_count(0)
   sent=[call for call in mail_calls if call.get('action')=='send'];assert len(sent)==1
-  assert sent[0]['to']==['destino@example.invalid'] and sent[0]['bcc']==['oculta@example.invalid'] and sent[0]['subject']=='Asunto ficticio' and 'Texto que debe conservarse' in sent[0]['body'] and len(sent[0]['attachments'])==3 and 'cid:' in sent[0]['bodyHtml']
+  assert sent[0]['to']==['destino@example.invalid'] and sent[0]['bcc']==['oculta@example.invalid'] and sent[0]['subject']=='Asunto ficticio' and 'Texto que debe conservarse' in sent[0]['body'] and len(sent[0]['attachments'])==4 and sent[0]['bodyHtml'].count('cid:')==2
   assert page.evaluate("mailToasts.includes('✓ Correo enviado')") and not errors,errors
   browser.close()
 finally:
