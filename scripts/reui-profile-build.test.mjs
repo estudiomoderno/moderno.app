@@ -30,4 +30,8 @@ test('the published profile artifacts match the checked-in sources and local fon
  for(const name of ['app/profile-component.js','app/calendar-component.js'])new vm.Script(await readFile(new URL(name,root),'utf8'));
  const html=await readFile(new URL('app/index.html',root),'utf8');
  const profile=html.indexOf('/profile-component.js?');assert.ok(profile>=0&&profile<html.indexOf('/header-actions.js?'));
+ const mailDelete=await readFile(new URL('mail-delete.tsx',base),'utf8');
+ assert.match(mailDelete,/AlertDialogContent size="sm"/);assert.match(mailDelete,/variant="ghost"/);assert.match(mailDelete,/variant="destructive"/);assert.match(mailDelete,/Trash2Icon/);assert.match(mailDelete,/bg-destructive\/10 text-destructive dark:bg-destructive\/20 dark:text-destructive/);
+ const profileBundle=await readFile(new URL('app/profile-component.js',root),'utf8');assert.match(profileBundle,/mountMailDelete/);
+ assert.match(html,/profile-component\.js\?v=365135/);
 });

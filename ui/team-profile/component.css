@@ -6,6 +6,7 @@
 @source "./notifications.tsx";
 @source "./project-settings.tsx";
 @source "./shopping-delete.tsx";
+@source "./mail-delete.tsx";
 @source "./shopping-add.tsx";
 @source "./new-project.tsx";
 @source "./project-windows.tsx";
