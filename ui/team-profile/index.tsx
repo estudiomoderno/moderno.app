@@ -13,10 +13,11 @@ import {NewProject} from './new-project';
 import {EditProject} from './edit-project';
 import {MailEmoji} from './mail-emoji';
 import {MailProjectPicker} from './mail-project-picker';
+import {MailSettings} from './mail-settings';
 
 export function mountComponent(host:HTMLElement,Component:React.ComponentType<any>,onError?:()=>void,onReady?:()=>void){
  const shadow=host.attachShadow({mode:'open'});
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=365139';
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=365140';
  const frame=document.createElement('div');frame.className='style-nova';
  const content=document.createElement('div'),portals=document.createElement('div');portals.className='reui-portals';frame.append(content,portals);
  shadow.append(sheet,frame);host.style.visibility='hidden';sheet.addEventListener('load',()=>{host.style.visibility='';host.dataset.reuiReady='true';onReady?.();});
@@ -36,6 +37,7 @@ export function mountShoppingDelete(host:HTMLElement,onError?:()=>void,onReady?:
 export function mountMailDelete(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailDelete,onError,onReady);}
 export function mountMailEmoji(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailEmoji,onError,onReady);}
 export function mountMailProjectPicker(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailProjectPicker,onError,onReady);}
+export function mountMailSettings(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailSettings,onError,onReady);}
 export function mountShoppingAdd(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,ShoppingAdd,onError,onReady);}
 
 export function mountNewProject(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,NewProject,onError,onReady);}
