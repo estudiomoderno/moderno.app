@@ -81,7 +81,7 @@ export function MailSettings({ email, onDisconnect, container }: any) {
       <div className="flex items-center justify-center">
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={<Button variant="outline" size="icon" aria-label="Ajustes" title="Ajustes" className="w-fit" />}
+            render={<Button variant="outline" size="icon" aria-label="Ajustes" title="Ajustes" className="mail-settings-trigger" />}
           >
             <img src="/brand/mail-icons/settings.svg?v=36711" width="18" height="18" alt="" aria-hidden="true" />
           </DropdownMenuTrigger>
