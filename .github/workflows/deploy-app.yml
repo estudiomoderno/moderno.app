@@ -63,6 +63,21 @@ jobs:
           cp mailer/product-clipper.php release-mail-entry/api/
 
       - name: Publicar comprobación de permisos del correo
+        id: deploy_mail_support
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./release-mail-support/
+          state-name: .ftp-mail-support-state.json
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/config.php
+      - name: Reintentar comprobación de permisos del correo
+        if: steps.deploy_mail_support.outcome == 'failure'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -75,6 +90,21 @@ jobs:
           exclude: |
             **/config.php
       - name: Publicar servicio de invitaciones protegido
+        id: deploy_mail_entry
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./release-mail-entry/
+          state-name: .ftp-mail-entry-state.json
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/config.php
+      - name: Reintentar servicio de invitaciones protegido
+        if: steps.deploy_mail_entry.outcome == 'failure'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -91,6 +121,8 @@ jobs:
         run: node scripts/verify-product-clipper-proxy.mjs
 
       - name: Subir recursos antes del HTML
+        id: deploy_assets
+        continue-on-error: true
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
@@ -105,7 +137,36 @@ jobs:
             **/.git*/**
             **/api/**
             index.html
+      - name: Reintentar recursos antes del HTML
+        if: steps.deploy_assets.outcome == 'failure'
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./release-assets/
+          state-name: .ftp-assets-state.json
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/api/**
+            index.html
       - name: Publicar entrada una vez disponibles los recursos
+        id: deploy_entry
+        continue-on-error: true
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./release-entry/
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          state-name: .ftp-entry-state.json
+      - name: Reintentar entrada una vez disponibles los recursos
+        if: steps.deploy_entry.outcome == 'failure'
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
