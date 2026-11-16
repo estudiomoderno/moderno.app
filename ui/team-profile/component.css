@@ -114,8 +114,8 @@
 .mail-project-nav-link img{width:16px;height:16px;flex:0 0 16px}
 .mail-project-nav-link strong,.mail-project-nav-link span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:inherit}
 .mail-project-nav>h3{margin:7px 0 0;padding:4px 8px 2px;color:#737373;font:500 12px/1.35 "Moderno ReUI Inter",Inter,sans-serif}
-.mail-project-nav-list{display:flex;flex:none;flex-direction:column;gap:2px}
-.mail-project-nav-list.is-all{min-height:0;flex:1;overflow-y:auto;scrollbar-width:none}
+.mail-project-nav-list{display:flex;min-height:0;max-height:134px;flex:0 1 auto;flex-direction:column;gap:2px;overflow:hidden;transition:max-height 320ms cubic-bezier(.4,0,.2,1)}
+.mail-project-nav-list.is-all{max-height:calc(100dvh - 300px);flex:1 1 auto;overflow-y:auto;scrollbar-width:none}
 .mail-project-nav-list.is-all::-webkit-scrollbar{display:none}
 .mail-project-nav-search{position:relative;width:100%;margin-top:7px;box-sizing:border-box;z-index:4}
 .mail-project-nav-search>div:first-child{position:relative;width:100%}

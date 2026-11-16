@@ -206,8 +206,8 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
               <img src="/brand/sidebar-icons/ver-todos.svg?v=36602" alt="" aria-hidden="true" />
               <span>Ver todos</span>
             </button>
-            <h3>{showAll ? "Todos los proyectos" : "Recientes"}</h3>
-            <div className={`mail-project-nav-list${showAll ? " is-all" : ""}`} aria-label={showAll ? "Todos los proyectos" : "Proyectos recientes"}>
+            <h3 aria-live="polite">{showAll ? "Todos los proyectos activos" : "Recientes"}</h3>
+            <div className={`mail-project-nav-list${showAll ? " is-all" : ""}`} aria-label={showAll ? "Todos los proyectos activos" : "Proyectos recientes"}>
               {navigationProjects.map((project) => {
                 const selected = String(project.id) === String(activeProject?.id)
                 return <button key={project.id} type="button" className={`mail-project-nav-link${selected ? " is-active" : ""}`} onClick={() => setActiveId(String(project.id))} title={project.name}>
