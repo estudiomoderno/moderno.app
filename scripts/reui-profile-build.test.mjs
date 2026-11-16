@@ -32,6 +32,8 @@ test('the published profile artifacts match the checked-in sources and local fon
  const profile=html.indexOf('/profile-component.js?');assert.ok(profile>=0&&profile<html.indexOf('/header-actions.js?'));
  const mailDelete=await readFile(new URL('mail-delete.tsx',base),'utf8');
  assert.match(mailDelete,/AlertDialogContent size="sm"/);assert.match(mailDelete,/variant="ghost"/);assert.match(mailDelete,/variant="destructive"/);assert.match(mailDelete,/Trash2Icon/);assert.match(mailDelete,/bg-destructive\/10 text-destructive dark:bg-destructive\/20 dark:text-destructive/);
- const profileBundle=await readFile(new URL('app/profile-component.js',root),'utf8');assert.match(profileBundle,/mountMailDelete/);
- assert.match(html,/profile-component\.js\?v=365135/);
+ const mailEmoji=await readFile(new URL('mail-emoji.tsx',base),'utf8');assert.match(mailEmoji,/useState<string \| null>\(null\)/);assert.match(mailEmoji,/EmojiPicker value=\{value\}/);assert.match(mailEmoji,/EmojiPickerPanel/);assert.match(mailEmoji,/Card className="w-fit py-0"/);
+ const mailPicker=await readFile(new URL('mail-project-picker.tsx',base),'utf8');assert.match(mailPicker,/BoardIllustration/);assert.match(mailPicker,/No hay archivos/);assert.match(mailPicker,/4 recientes/);assert.match(mailPicker,/Buscar proyecto/);assert.match(mailPicker,/data-slot="data-grid-table"/);assert.match(mailPicker,/variant="outline"/);for(const column of ['Nombre','Tipo','Tamaño','Modificado','Propietario'])assert.match(mailPicker,new RegExp(column));
+ const profileBundle=await readFile(new URL('app/profile-component.js',root),'utf8');assert.match(profileBundle,/mountMailDelete/);assert.match(profileBundle,/mountMailEmoji/);assert.match(profileBundle,/mountMailProjectPicker/);
+ assert.match(html,/profile-component\.js\?v=365136/);
 });

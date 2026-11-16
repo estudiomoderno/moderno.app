@@ -7,6 +7,8 @@
 @source "./project-settings.tsx";
 @source "./shopping-delete.tsx";
 @source "./mail-delete.tsx";
+@source "./mail-emoji.tsx";
+@source "./mail-project-picker.tsx";
 @source "./shopping-add.tsx";
 @source "./new-project.tsx";
 @source "./project-windows.tsx";

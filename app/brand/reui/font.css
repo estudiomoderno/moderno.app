@@ -27,10 +27,12 @@
 @property --tw-rotate-z{syntax:"*";inherits:false}
 @property --tw-skew-x{syntax:"*";inherits:false}
 @property --tw-skew-y{syntax:"*";inherits:false}
+@property --tw-space-y-reverse{syntax:"*";inherits:false;initial-value:0}
 @property --tw-space-x-reverse{syntax:"*";inherits:false;initial-value:0}
 @property --tw-border-style{syntax:"*";inherits:false;initial-value:solid}
 @property --tw-leading{syntax:"*";inherits:false}
 @property --tw-font-weight{syntax:"*";inherits:false}
+@property --tw-tracking{syntax:"*";inherits:false}
 @property --tw-ordinal{syntax:"*";inherits:false}
 @property --tw-slashed-zero{syntax:"*";inherits:false}
 @property --tw-numeric-figure{syntax:"*";inherits:false}
@@ -64,9 +66,6 @@
 @property --tw-drop-shadow-color{syntax:"*";inherits:false}
 @property --tw-drop-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}
 @property --tw-drop-shadow-size{syntax:"*";inherits:false}
-@property --tw-duration{syntax:"*";inherits:false}
-@property --tw-content{syntax:"*";inherits:false;initial-value:""}
-@property --tw-tracking{syntax:"*";inherits:false}
 @property --tw-backdrop-blur{syntax:"*";inherits:false}
 @property --tw-backdrop-brightness{syntax:"*";inherits:false}
 @property --tw-backdrop-contrast{syntax:"*";inherits:false}
@@ -76,4 +75,6 @@
 @property --tw-backdrop-opacity{syntax:"*";inherits:false}
 @property --tw-backdrop-saturate{syntax:"*";inherits:false}
 @property --tw-backdrop-sepia{syntax:"*";inherits:false}
+@property --tw-duration{syntax:"*";inherits:false}
+@property --tw-content{syntax:"*";inherits:false;initial-value:""}
 @property --tw-ease{syntax:"*";inherits:false}
