@@ -10,6 +10,7 @@
 @source "./mail-emoji.tsx";
 @source "./mail-project-picker.tsx";
 @source "./mail-settings.tsx";
+@source "./mail-signature.tsx";
 @source "./shopping-add.tsx";
 @source "./new-project.tsx";
 @source "./project-windows.tsx";
@@ -38,6 +39,8 @@
 .mail-settings-trigger{width:36px!important;height:36px!important;min-width:36px!important;padding:0!important;border:1px solid var(--border)!important;border-radius:8px!important;background:var(--background)!important;box-shadow:0 1px 2px #00000008!important}
 .mail-settings-trigger:hover{background:var(--muted)!important}
 .mail-settings-trigger img{width:18px!important;height:18px!important}
+.mail-signature-save{background:#0666ff!important;color:#fff!important;border-color:#0666ff!important}
+.mail-signature-save:hover{background:#0055dc!important}
 .ha-menu-icon {display:inline-block;width:16px;height:16px;flex:0 0 16px;background:currentColor;mask:var(--ha-menu-icon) center/contain no-repeat;-webkit-mask:var(--ha-menu-icon) center/contain no-repeat}
 /* Layout only: retain original Badge typography/height and size-3 close Button. */
 .pw-window-controls {min-width:0}

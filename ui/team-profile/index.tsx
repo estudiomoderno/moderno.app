@@ -14,14 +14,15 @@ import {EditProject} from './edit-project';
 import {MailEmoji} from './mail-emoji';
 import {MailProjectPicker} from './mail-project-picker';
 import {MailSettings} from './mail-settings';
+import {MailSignature} from './mail-signature';
 
 export function mountComponent(host:HTMLElement,Component:React.ComponentType<any>,onError?:()=>void,onReady?:()=>void){
  const shadow=host.attachShadow({mode:'open'});
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=365141';
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=365142';
  const frame=document.createElement('div');frame.className='style-nova';
  const content=document.createElement('div'),portals=document.createElement('div');portals.className='reui-portals';frame.append(content,portals);
- shadow.append(sheet,frame);host.style.visibility='hidden';sheet.addEventListener('load',()=>{host.style.visibility='';host.dataset.reuiReady='true';onReady?.();});
- sheet.addEventListener('error',()=>onError?.());
+ host.style.visibility='hidden';let revealed=false;const reveal=()=>{if(revealed)return;revealed=true;host.style.visibility='';host.dataset.reuiReady='true';onReady?.();};
+ sheet.addEventListener('load',reveal);sheet.addEventListener('error',()=>onError?.());shadow.append(sheet,frame);queueMicrotask(()=>{if(sheet.sheet)reveal();});
  const root=createRoot(content,{onUncaughtError:()=>{console.warn('Perfil ReUI no disponible; se recupera el menú anterior.');onError?.();}});
  const theme=()=>{const dark=document.body.classList.contains('dark');host.classList.toggle('dark',dark);frame.classList.toggle('dark',dark);};
  const observer=new MutationObserver(theme);observer.observe(document.body,{attributes:true,attributeFilter:['class']});theme();
@@ -38,6 +39,7 @@ export function mountMailDelete(host:HTMLElement,onError?:()=>void,onReady?:()=>
 export function mountMailEmoji(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailEmoji,onError,onReady);}
 export function mountMailProjectPicker(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailProjectPicker,onError,onReady);}
 export function mountMailSettings(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailSettings,onError,onReady);}
+export function mountMailSignature(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailSignature,onError,onReady);}
 export function mountShoppingAdd(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,ShoppingAdd,onError,onReady);}
 
 export function mountNewProject(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,NewProject,onError,onReady);}

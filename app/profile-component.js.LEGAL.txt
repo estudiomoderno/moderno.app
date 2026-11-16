@@ -100,6 +100,7 @@ lucide-react/dist/esm/icons/copy.mjs:
 lucide-react/dist/esm/icons/ellipsis-vertical.mjs:
 lucide-react/dist/esm/icons/ellipsis.mjs:
 lucide-react/dist/esm/icons/house.mjs:
+lucide-react/dist/esm/icons/image-plus.mjs:
 lucide-react/dist/esm/icons/log-out.mjs:
 lucide-react/dist/esm/icons/palette.mjs:
 lucide-react/dist/esm/icons/pencil-line.mjs:
