@@ -34,6 +34,15 @@ export function mimeAttachment(raw,id){const parsed=parseMimeMessage(raw),part=p
 
 export function encodeMimeHeader(value){const clean=String(value||'').replace(/[\r\n]+/g,' ').trim();return /^[\x20-\x7e]*$/.test(clean)?clean:`=?UTF-8?B?${base64(new TextEncoder().encode(clean))}?=`;}
 
-export function buildPlainMessage({from,to,cc,bcc=[],includeBcc=false,subject,body,inReplyTo,references}){
- const headers=[`From: ${String(from).replace(/[\r\n]+/g,' ')}`,`To: ${to.join(', ')}`];if(cc.length)headers.push(`Cc: ${cc.join(', ')}`);if(includeBcc&&bcc.length)headers.push(`Bcc: ${bcc.join(', ')}`);headers.push(`Subject: ${encodeMimeHeader(subject)}`,'MIME-Version: 1.0','Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64');if(inReplyTo)headers.push(`In-Reply-To: ${String(inReplyTo).replace(/[\r\n]+/g,' ')}`);if(references)headers.push(`References: ${String(references).replace(/[\r\n]+/g,' ')}`);return headers.join('\r\n')+'\r\n\r\n'+base64(new TextEncoder().encode(body)).replace(/.{1,76}/g,'$&\r\n');
+function mimeBase64(value){return String(value||'').replace(/\s+/g,'').match(/.{1,76}/g)?.join('\r\n')||'';}
+function mimeBoundary(prefix){return '----moderno-'+prefix+'-'+crypto.randomUUID().replace(/-/g,'');}
+function textPart(type,value){return ['Content-Type: '+type+'; charset=UTF-8','Content-Transfer-Encoding: base64','',mimeBase64(base64(new TextEncoder().encode(value||'')))].join('\r\n');}
+
+export function buildPlainMessage({from,to,cc,bcc=[],includeBcc=false,subject,body,bodyHtml='',attachments=[],inReplyTo,references}){
+ const headers=['From: '+String(from).replace(/[\r\n]+/g,' '),'To: '+to.join(', ')];if(cc.length)headers.push('Cc: '+cc.join(', '));if(includeBcc&&bcc.length)headers.push('Bcc: '+bcc.join(', '));headers.push('Subject: '+encodeMimeHeader(subject),'MIME-Version: 1.0');if(inReplyTo)headers.push('In-Reply-To: '+String(inReplyTo).replace(/[\r\n]+/g,' '));if(references)headers.push('References: '+String(references).replace(/[\r\n]+/g,' '));
+ if(!bodyHtml&&!attachments.length){headers.push('Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64');return headers.join('\r\n')+'\r\n\r\n'+mimeBase64(base64(new TextEncoder().encode(body)));}
+ const mixed=mimeBoundary('mixed'),lines=[];headers.push('Content-Type: multipart/mixed; boundary="'+mixed+'"');lines.push(headers.join('\r\n'),'');
+ if(bodyHtml){const alternative=mimeBoundary('alternative');lines.push('--'+mixed,'Content-Type: multipart/alternative; boundary="'+alternative+'"','','--'+alternative,textPart('text/plain',body),'--'+alternative,textPart('text/html',bodyHtml),'--'+alternative+'--');}else lines.push('--'+mixed,textPart('text/plain',body));
+ for(const file of attachments){const name=encodeMimeHeader(file.name||'archivo'),disposition=file.inline?'inline':'attachment';lines.push('--'+mixed,'Content-Type: '+(file.type||'application/octet-stream')+'; name="'+name+'"','Content-Transfer-Encoding: base64','Content-Disposition: '+disposition+'; filename="'+name+'"',...(file.inline&&file.contentId?['Content-ID: <'+file.contentId+'>']:[]),'',mimeBase64(file.data));}
+ lines.push('--'+mixed+'--');return lines.join('\r\n');
 }

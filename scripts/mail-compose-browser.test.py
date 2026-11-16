@@ -28,7 +28,7 @@ try:
     request.fulfill(status=200,content_type='application/json',body=json.dumps(payload));return
    request.continue_() if request.request.url.startswith(origin+'/') else request.abort()
   page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.wait_for_function('!!window.ModernoMail')
-  page.evaluate("""()=>{const root=document.createElement('div');root.id='mail-compose-fixture';root.style.cssText='position:fixed;inset:0;background:white;z-index:40000';document.body.append(root);window.mailToasts=[];const renderFixture=()=>root.innerHTML=ModernoMail.renderMail();ModernoMail.configure({context:()=>({sb:{auth:{getSession:async()=>({data:{session:{access_token:'fixture-token'}},error:null})}},studyId:'study-fixture',userId:'persona@example.invalid',role:'admin',mailFunctionUrl:'/fake-mail',mailFunctionAnonKey:'fixture-anon',setMailUnread:()=>{}}),render:renderFixture,toast:value=>mailToasts.push(value),confirm:()=>{}});renderFixture();ModernoMail.load(true);}""")
+  page.evaluate("""()=>{const root=document.createElement('div');root.id='mail-compose-fixture';root.style.cssText='position:fixed;inset:0;background:white;z-index:40000';document.body.append(root);window.mailToasts=[];const renderFixture=()=>root.innerHTML=ModernoMail.renderMail();ModernoMail.configure({context:()=>({sb:{auth:{getSession:async()=>({data:{session:{access_token:'fixture-token'}},error:null})}},studyId:'study-fixture',userId:'persona@example.invalid',role:'admin',mailFunctionUrl:'/fake-mail',mailFunctionAnonKey:'fixture-anon',setMailUnread:()=>{},mailProjects:()=>[{id:'project-fixture',name:'Casa de prueba',files:[{index:0,name:'plano.txt',type:'text/plain',size:5,available:true}]}],readMailProjectFile:async()=>new File(['plano'],'plano.txt',{type:'text/plain'})}),render:renderFixture,toast:value=>mailToasts.push(value),confirm:()=>{}});renderFixture();ModernoMail.load(true);}""")
   page.wait_for_function("document.querySelector('.mail-message-row')")
   page.get_by_role('button',name='Redactar',exact=True).click()
   composer=page.get_by_role('form',name='Mensaje nuevo');expect(composer).to_be_visible();expect(page.locator('.mail-message-row')).to_be_visible()
@@ -37,17 +37,30 @@ try:
   assert composer.evaluate('(e)=>getComputedStyle(e).right')=='22px'
   to=composer.get_by_role('textbox',name='Para');subject=composer.get_by_role('textbox',name='Asunto');body=composer.get_by_role('textbox',name='Mensaje')
   to.fill('destino@example.invalid');composer.get_by_role('button',name='Cco',exact=True).click();bcc=composer.get_by_role('textbox',name='Cco',exact=True);bcc.fill('oculta@example.invalid');subject.fill('Asunto ficticio');body.fill('Texto que debe conservarse')
-  expect(composer.get_by_role('button',name='Formato de texto')).to_be_visible();expect(composer.get_by_role('button',name='Adjuntar archivo')).to_be_visible();expect(composer.get_by_role('button',name='Insertar imagen')).to_be_visible();expect(composer.get_by_role('button',name='Insertar plantilla')).to_be_visible()
+  expect(composer.get_by_role('button',name='Negrita')).to_be_visible();expect(composer.get_by_role('button',name='Cursiva')).to_be_visible();expect(composer.get_by_role('button',name='Subrayado')).to_be_visible();expect(composer.get_by_role('button',name='Adjuntar archivo')).to_be_visible();expect(composer.get_by_role('button',name='Insertar imagen')).to_be_visible();expect(composer.get_by_role('button',name='Plantillas')).to_be_visible();expect(composer.get_by_role('button',name='Insertar emoji')).to_be_visible()
+  composer.get_by_role('button',name='Adjuntar archivo').click();expect(composer.get_by_role('menu',name='Adjuntar archivo')).to_be_visible();body.click();expect(composer.get_by_role('menu',name='Adjuntar archivo')).to_have_count(0)
+  body.evaluate("e=>{const range=document.createRange();range.selectNodeContents(e);const selection=getSelection();selection.removeAllRanges();selection.addRange(range)}");composer.get_by_role('button',name='Negrita').click();assert '<b>' in body.inner_html().lower() or '<strong>' in body.inner_html().lower()
+  composer.get_by_role('button',name='Adjuntar archivo').click()
+  with page.expect_file_chooser() as chooser_info:composer.get_by_role('menuitem',name='Desde el ordenador').click()
+  chooser_info.value.set_files({'name':'presupuesto.txt','mimeType':'text/plain','buffer':b'contenido'})
+  expect(composer.get_by_text('presupuesto.txt',exact=True)).to_be_visible()
+  composer.get_by_role('button',name='Adjuntar archivo').click();composer.get_by_role('menuitem',name='Desde un proyecto').click();expect(composer.get_by_role('dialog',name='Adjuntar archivo desde un proyecto')).to_be_visible();composer.get_by_role('button',name='plano.txt').click();expect(composer.get_by_text('plano.txt',exact=True)).to_be_visible()
+  composer.get_by_role('button',name='Insertar imagen').click()
+  with page.expect_file_chooser() as image_chooser:composer.get_by_role('menuitem',name='Desde el ordenador').click()
+  image_chooser.value.set_files({'name':'foto.png','mimeType':'image/png','buffer':b'imagen'})
+  expect(composer.get_by_text('foto.png',exact=True)).to_be_visible();expect(body.locator('img')).to_have_count(1)
+  composer.get_by_role('button',name='Plantillas').click();composer.get_by_role('menuitem',name='Guardar como plantilla').click();assert page.evaluate("mailToasts.includes('Plantilla guardada')")
+  composer.get_by_role('button',name='Insertar emoji').click();composer.get_by_role('button',name='Insertar 😀').click();assert '😀' in body.text_content()
   assert composer.get_by_role('button',name='Enviar',exact=True).evaluate("e=>getComputedStyle(e).backgroundColor")=='rgb(6, 102, 255)'
   composer.get_by_role('button',name='Expandir mensaje').click();assert composer.evaluate("e=>e.classList.contains('is-expanded')");expect(page.locator('.mail-composer-backdrop')).to_be_visible()
   expanded_box=composer.bounding_box();assert abs(expanded_box['x']-18)<1 and abs(expanded_box['y']-12)<1 and expanded_box['width']>1380 and abs(expanded_box['height']-876)<1,expanded_box
-  assert to.input_value()=='destino@example.invalid' and bcc.input_value()=='oculta@example.invalid' and subject.input_value()=='Asunto ficticio' and body.input_value()=='Texto que debe conservarse'
+  assert to.input_value()=='destino@example.invalid' and bcc.input_value()=='oculta@example.invalid' and subject.input_value()=='Asunto ficticio' and 'Texto que debe conservarse' in body.text_content()
   composer.get_by_role('button',name='Restaurar tamaño').click();expect(page.locator('.mail-composer-backdrop')).to_have_count(0)
   composer.get_by_role('button',name='Minimizar mensaje').click();assert composer.evaluate("e=>e.classList.contains('is-minimized')");assert abs(composer.bounding_box()['height']-44)<1
-  composer.get_by_role('button',name='Restaurar mensaje').click();expect(body).to_be_visible();assert body.input_value()=='Texto que debe conservarse'
+  composer.get_by_role('button',name='Restaurar mensaje').click();expect(body).to_be_visible();assert 'Texto que debe conservarse' in body.text_content()
   composer.get_by_role('button',name='Enviar',exact=True).click();expect(composer).to_have_count(0)
   sent=[call for call in mail_calls if call.get('action')=='send'];assert len(sent)==1
-  assert sent[0]['to']==['destino@example.invalid'] and sent[0]['bcc']==['oculta@example.invalid'] and sent[0]['subject']=='Asunto ficticio' and sent[0]['body']=='Texto que debe conservarse'
+  assert sent[0]['to']==['destino@example.invalid'] and sent[0]['bcc']==['oculta@example.invalid'] and sent[0]['subject']=='Asunto ficticio' and 'Texto que debe conservarse' in sent[0]['body'] and len(sent[0]['attachments'])==3 and 'cid:' in sent[0]['bodyHtml']
   assert page.evaluate("mailToasts.includes('✓ Correo enviado')") and not errors,errors
   browser.close()
 finally:
