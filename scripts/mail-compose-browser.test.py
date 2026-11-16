@@ -33,18 +33,21 @@ try:
   page.get_by_role('button',name='Redactar',exact=True).click()
   composer=page.get_by_role('form',name='Mensaje nuevo');expect(composer).to_be_visible();expect(page.locator('.mail-message-row')).to_be_visible()
   assert composer.evaluate('(e)=>getComputedStyle(e).position')=='fixed'
-  box=composer.bounding_box();assert abs(box['width']-560)<1 and abs((900-box['y']-box['height'])-18)<1,box
+  box=composer.bounding_box();assert abs(box['width']-620)<1 and abs((900-box['y']-box['height'])-18)<1,box
   assert composer.evaluate('(e)=>getComputedStyle(e).right')=='22px'
   to=composer.get_by_role('textbox',name='Para');subject=composer.get_by_role('textbox',name='Asunto');body=composer.get_by_role('textbox',name='Mensaje')
-  to.fill('destino@example.invalid');subject.fill('Asunto ficticio');body.fill('Texto que debe conservarse')
+  to.fill('destino@example.invalid');composer.get_by_role('button',name='Cco',exact=True).click();bcc=composer.get_by_role('textbox',name='Cco',exact=True);bcc.fill('oculta@example.invalid');subject.fill('Asunto ficticio');body.fill('Texto que debe conservarse')
+  expect(composer.get_by_role('button',name='Formato de texto')).to_be_visible();expect(composer.get_by_role('button',name='Adjuntar archivo')).to_be_visible();expect(composer.get_by_role('button',name='Insertar imagen')).to_be_visible();expect(composer.get_by_role('button',name='Insertar plantilla')).to_be_visible()
+  assert composer.get_by_role('button',name='Enviar',exact=True).evaluate("e=>getComputedStyle(e).backgroundColor")=='rgb(6, 102, 255)'
   composer.get_by_role('button',name='Expandir mensaje').click();assert composer.evaluate("e=>e.classList.contains('is-expanded')");expect(page.locator('.mail-composer-backdrop')).to_be_visible()
-  assert to.input_value()=='destino@example.invalid' and subject.input_value()=='Asunto ficticio' and body.input_value()=='Texto que debe conservarse'
+  expanded_box=composer.bounding_box();assert abs(expanded_box['x']-18)<1 and abs(expanded_box['y']-12)<1 and expanded_box['width']>1380 and abs(expanded_box['height']-876)<1,expanded_box
+  assert to.input_value()=='destino@example.invalid' and bcc.input_value()=='oculta@example.invalid' and subject.input_value()=='Asunto ficticio' and body.input_value()=='Texto que debe conservarse'
   composer.get_by_role('button',name='Restaurar tamaño').click();expect(page.locator('.mail-composer-backdrop')).to_have_count(0)
   composer.get_by_role('button',name='Minimizar mensaje').click();assert composer.evaluate("e=>e.classList.contains('is-minimized')");assert abs(composer.bounding_box()['height']-44)<1
   composer.get_by_role('button',name='Restaurar mensaje').click();expect(body).to_be_visible();assert body.input_value()=='Texto que debe conservarse'
   composer.get_by_role('button',name='Enviar',exact=True).click();expect(composer).to_have_count(0)
   sent=[call for call in mail_calls if call.get('action')=='send'];assert len(sent)==1
-  assert sent[0]['to']==['destino@example.invalid'] and sent[0]['subject']=='Asunto ficticio' and sent[0]['body']=='Texto que debe conservarse'
+  assert sent[0]['to']==['destino@example.invalid'] and sent[0]['bcc']==['oculta@example.invalid'] and sent[0]['subject']=='Asunto ficticio' and sent[0]['body']=='Texto que debe conservarse'
   assert page.evaluate("mailToasts.includes('✓ Correo enviado')") and not errors,errors
   browser.close()
 finally:

@@ -34,6 +34,6 @@ export function mimeAttachment(raw,id){const parsed=parseMimeMessage(raw),part=p
 
 export function encodeMimeHeader(value){const clean=String(value||'').replace(/[\r\n]+/g,' ').trim();return /^[\x20-\x7e]*$/.test(clean)?clean:`=?UTF-8?B?${base64(new TextEncoder().encode(clean))}?=`;}
 
-export function buildPlainMessage({from,to,cc,subject,body,inReplyTo,references}){
- const headers=[`From: ${String(from).replace(/[\r\n]+/g,' ')}`,`To: ${to.join(', ')}`];if(cc.length)headers.push(`Cc: ${cc.join(', ')}`);headers.push(`Subject: ${encodeMimeHeader(subject)}`,'MIME-Version: 1.0','Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64');if(inReplyTo)headers.push(`In-Reply-To: ${String(inReplyTo).replace(/[\r\n]+/g,' ')}`);if(references)headers.push(`References: ${String(references).replace(/[\r\n]+/g,' ')}`);return headers.join('\r\n')+'\r\n\r\n'+base64(new TextEncoder().encode(body)).replace(/.{1,76}/g,'$&\r\n');
+export function buildPlainMessage({from,to,cc,bcc=[],includeBcc=false,subject,body,inReplyTo,references}){
+ const headers=[`From: ${String(from).replace(/[\r\n]+/g,' ')}`,`To: ${to.join(', ')}`];if(cc.length)headers.push(`Cc: ${cc.join(', ')}`);if(includeBcc&&bcc.length)headers.push(`Bcc: ${bcc.join(', ')}`);headers.push(`Subject: ${encodeMimeHeader(subject)}`,'MIME-Version: 1.0','Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64');if(inReplyTo)headers.push(`In-Reply-To: ${String(inReplyTo).replace(/[\r\n]+/g,' ')}`);if(references)headers.push(`References: ${String(references).replace(/[\r\n]+/g,' ')}`);return headers.join('\r\n')+'\r\n\r\n'+base64(new TextEncoder().encode(body)).replace(/.{1,76}/g,'$&\r\n');
 }
