@@ -1,12 +1,24 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { ImagePlusIcon, Trash2Icon, XIcon } from "lucide-react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { BoldIcon, ItalicIcon, UnderlineIcon, XIcon } from "lucide-react"
 
+import { FileUploadCompact } from "./file-upload-compact"
+import type { FileMetadata, FileWithPreview } from "./hooks/use-file-upload"
 import { Button } from "./vendor/reui/button"
+import { Toggle } from "./vendor/reui/toggle"
+
+interface SignatureImage {
+  dataUrl: string
+  name: string
+  type: string
+  size: number
+}
 
 interface SignatureValue {
   text?: string
+  html?: string
+  images?: SignatureImage[]
   imageDataUrl?: string
   imageName?: string
   imageType?: string
@@ -22,52 +34,128 @@ interface MailSignatureProps {
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!)
+}
+
+function textHtml(value: string) {
+  return escapeHtml(value).replace(/\n/g, "<br>")
+}
+
+function sanitizeSignatureHtml(value: string) {
+  if (!value || typeof DOMParser === "undefined") return ""
+  const documentValue = new DOMParser().parseFromString(value, "text/html")
+  const allowed = new Set(["B", "STRONG", "I", "EM", "U", "BR", "DIV", "P", "SPAN"])
+  documentValue.body.querySelectorAll("*").forEach((node) => {
+    if (!allowed.has(node.tagName)) {
+      node.replaceWith(...Array.from(node.childNodes))
+      return
+    }
+    for (const attribute of Array.from(node.attributes)) node.removeAttribute(attribute.name)
+  })
+  return documentValue.body.innerHTML
+}
+
+function fileDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result ?? ""))
+    reader.onerror = () => reject(new Error("No se ha podido leer la imagen."))
+    reader.readAsDataURL(file)
+  })
+}
+
 export function MailSignature({ email, initialValue, onClose, onSave }: MailSignatureProps) {
+  const initialHtml = useMemo(
+    () => sanitizeSignatureHtml(initialValue?.html ?? textHtml(initialValue?.text ?? "")),
+    [initialValue]
+  )
+  const initialImages = useMemo<FileWithPreview[]>(() => {
+    const images = initialValue?.images?.length
+      ? initialValue.images
+      : initialValue?.imageDataUrl
+        ? [{
+            dataUrl: initialValue.imageDataUrl,
+            name: initialValue.imageName ?? "firma.png",
+            type: initialValue.imageType ?? "image/png",
+            size: Number(initialValue.imageSize) || 0,
+          }]
+        : []
+    return images.slice(0, 1).map((image, index) => ({
+      id: `signature-image-${index}`,
+      file: { name: image.name, size: image.size, type: image.type, url: image.dataUrl } satisfies FileMetadata,
+      preview: image.dataUrl,
+    }))
+  }, [initialValue])
+  const [html, setHtml] = useState(initialHtml)
   const [text, setText] = useState(initialValue?.text ?? "")
-  const [imageDataUrl, setImageDataUrl] = useState(initialValue?.imageDataUrl ?? "")
-  const [imageName, setImageName] = useState(initialValue?.imageName ?? "")
-  const [imageType, setImageType] = useState(initialValue?.imageType ?? "")
-  const [imageSize, setImageSize] = useState(Number(initialValue?.imageSize) || 0)
+  const [files, setFiles] = useState<FileWithPreview[]>(initialImages)
+  const [formats, setFormats] = useState({ bold: false, italic: false, underline: false })
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const close = useRef<HTMLButtonElement>(null)
-  const fileInput = useRef<HTMLInputElement>(null)
+  const editor = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     close.current?.focus()
+    if (editor.current) editor.current.innerHTML = initialHtml
     const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && onClose()
     document.addEventListener("keydown", onKeyDown)
     return () => document.removeEventListener("keydown", onKeyDown)
-  }, [onClose])
+  }, [initialHtml, onClose])
 
-  function chooseImage(file?: File) {
-    if (!file) return
-    if (!file.type.startsWith("image/")) {
-      setError("Selecciona un archivo de imagen.")
-      return
-    }
-    if (file.size > MAX_IMAGE_SIZE) {
-      setError("La imagen no puede superar 2 MB.")
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = () => {
-      setImageDataUrl(String(reader.result ?? ""))
-      setImageName(file.name)
-      setImageType(file.type)
-      setImageSize(file.size)
-      setError("")
-    }
-    reader.onerror = () => setError("No se ha podido leer la imagen.")
-    reader.readAsDataURL(file)
+  function refreshFormats() {
+    const selection = document.getSelection()
+    if (!selection?.anchorNode || !editor.current?.contains(selection.anchorNode)) return
+    setFormats({
+      bold: document.queryCommandState("bold"),
+      italic: document.queryCommandState("italic"),
+      underline: document.queryCommandState("underline"),
+    })
   }
 
-  function removeImage() {
-    setImageDataUrl("")
-    setImageName("")
-    setImageType("")
-    setImageSize(0)
+  function syncEditor() {
+    if (!editor.current) return
+    const safeHtml = sanitizeSignatureHtml(editor.current.innerHTML)
+    setHtml(safeHtml)
+    setText(editor.current.innerText.replace(/\u00a0/g, " "))
+    refreshFormats()
+  }
+
+  function format(command: "bold" | "italic" | "underline") {
+    if (!editor.current) return
+    const selection = document.getSelection()
+    if (!selection?.anchorNode || !editor.current.contains(selection.anchorNode)) editor.current.focus()
+    document.execCommand(command, false)
+    syncEditor()
+  }
+
+  async function saveSignature() {
+    if (saving) return
+    setSaving(true)
     setError("")
-    if (fileInput.current) fileInput.current.value = ""
+    try {
+      const images = await Promise.all(files.slice(0, 1).map(async (item) => {
+        const metadata = item.file instanceof File
+          ? { name: item.file.name, type: item.file.type, size: item.file.size }
+          : item.file
+        const dataUrl = item.file instanceof File ? await fileDataUrl(item.file) : String(item.preview ?? metadata.url ?? "")
+        return { dataUrl, name: metadata.name, type: metadata.type, size: metadata.size }
+      }))
+      const first = images[0]
+      onSave({
+        text: text.trim(),
+        html: sanitizeSignatureHtml(html),
+        images,
+        imageDataUrl: first?.dataUrl ?? "",
+        imageName: first?.name ?? "",
+        imageType: first?.type ?? "",
+        imageSize: first?.size ?? 0,
+      })
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "No se ha podido guardar la firma.")
+      setSaving(false)
+    }
   }
 
   return (
@@ -83,7 +171,7 @@ export function MailSignature({ email, initialValue, onClose, onSave }: MailSign
         aria-labelledby="mail-signature-title"
         onSubmit={(event) => {
           event.preventDefault()
-          onSave({ text: text.trim(), imageDataUrl, imageName, imageType, imageSize })
+          void saveSignature()
         }}
       >
         <header className="flex h-[76px] shrink-0 items-center justify-between border-b px-6">
@@ -100,58 +188,69 @@ export function MailSignature({ email, initialValue, onClose, onSave }: MailSign
           <aside className="border-r bg-muted/20 p-5">
             <p className="text-xs font-medium text-muted-foreground">CUENTA</p>
             <p className="mt-2 truncate text-sm font-medium" title={email}>{email}</p>
-            <p className="mt-5 text-xs leading-5 text-muted-foreground">La firma se añadirá automáticamente al redactar correos desde esta cuenta.</p>
           </aside>
 
           <main className="min-h-0 overflow-y-auto p-6">
             <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
               <section>
-                <label htmlFor="mail-signature-text" className="text-sm font-semibold">Texto de la firma</label>
-                <p className="mt-1 text-xs text-muted-foreground">Escribe el nombre, cargo, teléfono, web o cualquier información que quieras incluir.</p>
-                <textarea
-                  id="mail-signature-text"
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <label id="mail-signature-text-label" className="text-sm font-semibold">Texto de la firma</label>
+                    <p className="mt-1 text-xs text-muted-foreground">Escribe el nombre, cargo, teléfono, web o cualquier información que quieras incluir.</p>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2" role="toolbar" aria-label="Formato de la firma">
+                    <Toggle aria-label="Toggle bold" pressed={formats.bold} onMouseDown={(event) => event.preventDefault()} onPressedChange={() => format("bold")}>
+                      <BoldIcon />
+                    </Toggle>
+                    <Toggle aria-label="Toggle italic" pressed={formats.italic} onMouseDown={(event) => event.preventDefault()} onPressedChange={() => format("italic")}>
+                      <ItalicIcon />
+                    </Toggle>
+                    <Toggle aria-label="Toggle underline" pressed={formats.underline} onMouseDown={(event) => event.preventDefault()} onPressedChange={() => format("underline")}>
+                      <UnderlineIcon />
+                    </Toggle>
+                  </div>
+                </div>
+                <div
+                  ref={editor}
+                  contentEditable
+                  suppressContentEditableWarning
+                  role="textbox"
+                  aria-labelledby="mail-signature-text-label"
                   aria-label="Texto de la firma"
-                  className="mt-3 min-h-40 w-full resize-y rounded-xl border bg-background p-4 text-sm leading-6 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                  value={text}
-                  onChange={(event) => setText(event.target.value)}
-                  placeholder="Nombre y apellidos&#10;Cargo o estudio&#10;Teléfono · Sitio web"
+                  data-placeholder="Nombre y apellidos · Cargo o estudio · Teléfono · Sitio web"
+                  className="mail-signature-editor mt-3 min-h-40 w-full rounded-xl border bg-background p-4 text-sm leading-6 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                  onInput={syncEditor}
+                  onKeyUp={refreshFormats}
+                  onMouseUp={refreshFormats}
+                  onPaste={(event) => {
+                    event.preventDefault()
+                    document.execCommand("insertText", false, event.clipboardData.getData("text/plain"))
+                  }}
                 />
               </section>
 
               <section>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-semibold">Foto o logotipo</h3>
-                    <p className="mt-1 text-xs text-muted-foreground">PNG, JPG, WEBP u otro formato de imagen. Máximo 2 MB.</p>
-                  </div>
-                  <input ref={fileInput} type="file" accept="image/*" className="hidden" onChange={(event) => chooseImage(event.target.files?.[0])} />
-                  <Button type="button" variant="outline" onClick={() => fileInput.current?.click()}>
-                    <ImagePlusIcon aria-hidden="true" />
-                    Adjuntar foto
-                  </Button>
+                <div className="mb-3">
+                  <h3 className="text-sm font-semibold">Foto o logotipo</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">PNG, JPG, WEBP u otro formato de imagen. Máximo 2 MB.</p>
                 </div>
-                {imageDataUrl && (
-                  <div className="mt-3 flex items-center gap-4 rounded-xl border p-3">
-                    <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted">
-                      <img src={imageDataUrl} alt="Vista previa de la foto de firma" className="max-h-full max-w-full object-contain" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium" title={imageName}>{imageName}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{Math.max(imageSize / 1024, 0.1).toLocaleString("es-ES", { maximumFractionDigits: 1 })} KB</p>
-                    </div>
-                    <Button type="button" variant="ghost" size="icon" aria-label="Eliminar foto de la firma" onClick={removeImage}>
-                      <Trash2Icon aria-hidden="true" />
-                    </Button>
-                  </div>
-                )}
+                <FileUploadCompact
+                  maxFiles={1}
+                  maxSize={MAX_IMAGE_SIZE}
+                  accept="image/*"
+                  multiple={false}
+                  initialFiles={initialImages}
+                  onFilesChange={setFiles}
+                  className="max-w-none"
+                />
                 {error && <p className="mt-2 text-sm text-destructive" role="alert">{error}</p>}
               </section>
 
               <section className="rounded-xl border bg-muted/20 p-5" aria-label="Vista previa de la firma">
                 <p className="text-xs font-medium text-muted-foreground">VISTA PREVIA</p>
                 <div className="mt-4 min-h-28 rounded-lg bg-background p-4 text-sm shadow-sm">
-                  {text ? <p className="whitespace-pre-wrap leading-6">{text}</p> : <p className="text-muted-foreground">Tu firma aparecerá aquí.</p>}
-                  {imageDataUrl && <img src={imageDataUrl} alt="" className="mt-4 max-h-28 max-w-64 object-contain" />}
+                  {html ? <div className="leading-6" dangerouslySetInnerHTML={{ __html: sanitizeSignatureHtml(html) }} /> : <p className="text-muted-foreground">Tu firma aparecerá aquí.</p>}
+                  {files[0]?.preview && <img src={files[0].preview} alt="Vista previa de la foto de firma" className="mt-4 max-h-28 max-w-64 object-contain" />}
                 </div>
               </section>
             </div>
@@ -160,7 +259,7 @@ export function MailSignature({ email, initialValue, onClose, onSave }: MailSign
 
         <footer className="flex h-[72px] shrink-0 items-center justify-end gap-2 border-t px-6">
           <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" className="mail-signature-save">Guardar firma</Button>
+          <Button type="submit" className="mail-signature-save" disabled={saving}>{saving ? "Guardando…" : "Guardar firma"}</Button>
         </footer>
       </form>
     </div>

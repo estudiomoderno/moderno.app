@@ -18,7 +18,7 @@ import {MailSignature} from './mail-signature';
 
 export function mountComponent(host:HTMLElement,Component:React.ComponentType<any>,onError?:()=>void,onReady?:()=>void){
  const shadow=host.attachShadow({mode:'open'});
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=365142';
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=365143';
  const frame=document.createElement('div');frame.className='style-nova';
  const content=document.createElement('div'),portals=document.createElement('div');portals.className='reui-portals';frame.append(content,portals);
  host.style.visibility='hidden';let revealed=false;const reveal=()=>{if(revealed)return;revealed=true;host.style.visibility='';host.dataset.reuiReady='true';onReady?.();};

@@ -89,6 +89,7 @@ lucide-react/dist/esm/createLucideIcon.mjs:
 lucide-react/dist/esm/icons/arrow-down.mjs:
 lucide-react/dist/esm/icons/arrow-up.mjs:
 lucide-react/dist/esm/icons/bell.mjs:
+lucide-react/dist/esm/icons/bold.mjs:
 lucide-react/dist/esm/icons/calendar.mjs:
 lucide-react/dist/esm/icons/check.mjs:
 lucide-react/dist/esm/icons/chevron-down.mjs:
@@ -96,11 +97,13 @@ lucide-react/dist/esm/icons/chevron-left.mjs:
 lucide-react/dist/esm/icons/chevron-right.mjs:
 lucide-react/dist/esm/icons/chevron-up.mjs:
 lucide-react/dist/esm/icons/chevrons-up-down.mjs:
+lucide-react/dist/esm/icons/circle-alert.mjs:
 lucide-react/dist/esm/icons/copy.mjs:
 lucide-react/dist/esm/icons/ellipsis-vertical.mjs:
 lucide-react/dist/esm/icons/ellipsis.mjs:
+lucide-react/dist/esm/icons/file.mjs:
 lucide-react/dist/esm/icons/house.mjs:
-lucide-react/dist/esm/icons/image-plus.mjs:
+lucide-react/dist/esm/icons/italic.mjs:
 lucide-react/dist/esm/icons/log-out.mjs:
 lucide-react/dist/esm/icons/palette.mjs:
 lucide-react/dist/esm/icons/pencil-line.mjs:
@@ -111,6 +114,7 @@ lucide-react/dist/esm/icons/search.mjs:
 lucide-react/dist/esm/icons/share-2.mjs:
 lucide-react/dist/esm/icons/trash-2.mjs:
 lucide-react/dist/esm/icons/trash.mjs:
+lucide-react/dist/esm/icons/underline.mjs:
 lucide-react/dist/esm/icons/users.mjs:
 lucide-react/dist/esm/icons/x.mjs:
 lucide-react/dist/esm/lucide-react.mjs:
