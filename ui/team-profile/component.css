@@ -103,3 +103,27 @@
 .new-project-form .edit-project-sheet-header{min-height:64px}
 
 .new-project-form .edit-project-address{display:block;height:auto;min-height:84px;padding:8px 12px;line-height:20px;resize:vertical}
+
+/* Exact project rail reused from the main desktop navigation, without its + action. */
+.mail-project-nav{display:flex;min-height:0;flex-direction:column;gap:2px;padding:8px 10px;border-right:1px solid var(--border);background:#fff;color:#202020}
+.mail-project-nav-header{display:flex;min-height:28px;align-items:center;justify-content:space-between;padding-right:4px}
+.mail-project-nav-header h2{margin:0;padding:7px 8px 5px;color:#737373;font:500 12px/1.35 "Moderno ReUI Inter",Inter,sans-serif;letter-spacing:0}
+.mail-project-nav-link{display:flex;width:100%;height:32px;min-height:32px;align-items:center;gap:10px;padding:6px 8px;box-sizing:border-box;border:0;border-radius:7px;background:transparent;color:#202020;font:400 14px/1.3 "Moderno ReUI Inter",Inter,sans-serif;white-space:nowrap;text-align:left;cursor:pointer}
+.mail-project-nav-link:hover,.mail-project-nav-link.is-active{background:#ededed;color:#171717}
+.mail-project-nav-link:focus-visible{outline:2px solid #8b8b8b;outline-offset:-2px}
+.mail-project-nav-link img{width:16px;height:16px;flex:0 0 16px}
+.mail-project-nav-link strong,.mail-project-nav-link span{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:inherit}
+.mail-project-nav>h3{margin:7px 0 0;padding:4px 8px 2px;color:#737373;font:500 12px/1.35 "Moderno ReUI Inter",Inter,sans-serif}
+.mail-project-nav-list{display:flex;flex:none;flex-direction:column;gap:2px}
+.mail-project-nav-list.is-all{min-height:0;flex:1;overflow-y:auto;scrollbar-width:none}
+.mail-project-nav-list.is-all::-webkit-scrollbar{display:none}
+.mail-project-nav-search{position:relative;width:100%;margin-top:7px;box-sizing:border-box;z-index:4}
+.mail-project-nav-search>div:first-child{position:relative;width:100%}
+.mail-project-nav-search input{display:block;width:100%;height:34px;min-height:34px;margin:0;padding:7px 31px 7px 10px;box-sizing:border-box;border:1px solid #dedede;border-radius:8px;background:#fff;color:#202020;font:400 13px/1.3 "Moderno ReUI Inter",Inter,sans-serif;outline:0;box-shadow:0 1px 2px #00000005}
+.mail-project-nav-search input::placeholder{color:#8a8a8a}
+.mail-project-nav-search input:focus{border-color:#8b8b8b;box-shadow:0 0 0 1px #8b8b8b}
+.mail-project-nav-search>div:first-child>button{position:absolute;top:50%;right:5px;display:grid;width:24px;height:24px;place-items:center;padding:0;transform:translateY(-50%);border:0;border-radius:6px;background:transparent;color:#737373;font-size:18px;line-height:1;cursor:pointer}
+.mail-project-nav-search>div:first-child>button:hover{background:#ededed;color:#171717}
+.mail-project-nav-results{position:absolute;top:calc(100% + 6px);right:0;left:0;max-height:244px;overflow-y:auto;padding:5px;box-sizing:border-box;border:1px solid #dedede;border-radius:10px;background:#fff;box-shadow:0 12px 32px #0000001a,0 2px 7px #0000000d}
+.mail-project-nav-results button{display:flex;width:100%;min-height:42px;align-items:center;gap:9px;padding:6px 8px;border:0;border-radius:7px;background:transparent;color:#202020;text-align:left;cursor:pointer}
+.mail-project-nav-results button:hover{background:#ededed}.mail-project-nav-results button img{width:16px;height:16px}.mail-project-nav-results button span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.mail-project-nav-results p{margin:0;padding:9px 8px;color:#737373;font-size:12px}

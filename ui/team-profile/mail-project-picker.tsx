@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react"
 import {
   ArrowDownIcon,
   ArrowUpIcon,
-  SearchIcon,
   XIcon,
 } from "lucide-react"
 
@@ -128,7 +127,7 @@ function compareFiles(a: ProjectFile, b: ProjectFile, key: SortKey) {
 }
 
 export function MailProjectPicker({ kind, projects, initialProjectId, onClose, onSelect }: MailProjectPickerProps) {
-  const [scope, setScope] = useState<"all" | "recent">("all")
+  const [showAll, setShowAll] = useState(false)
   const [query, setQuery] = useState("")
   const [activeId, setActiveId] = useState(String(initialProjectId ?? projects[0]?.id ?? ""))
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "name", desc: false })
@@ -139,15 +138,21 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [onClose])
 
-  const visibleProjects = useMemo(() => {
+  const allProjects = useMemo(() => [...projects].sort((a, b) => collator.compare(a.name, b.name)), [projects])
+  const recentProjects = useMemo(() => {
+    const ranked = projects
+      .filter((project) => Number(project.recentRank) >= 0 && Number(project.recentRank) < 4)
+      .sort((a, b) => Number(a.recentRank) - Number(b.recentRank))
+    return (ranked.length ? ranked : projects).slice(0, 4)
+  }, [projects])
+  const navigationProjects = showAll ? allProjects : recentProjects
+  const searchResults = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("es")
-    return projects
-      .filter((project) => scope === "all" || (Number(project.recentRank) >= 0 && Number(project.recentRank) < 4))
-      .filter((project) => !normalized || project.name.toLocaleLowerCase("es").includes(normalized))
-      .sort((a, b) => scope === "recent" ? (Number(a.recentRank) || 0) - (Number(b.recentRank) || 0) : collator.compare(a.name, b.name))
-  }, [projects, query, scope])
+    if (!normalized) return []
+    return allProjects.filter((project) => project.name.toLocaleLowerCase("es").includes(normalized)).slice(0, 8)
+  }, [allProjects, query])
 
-  const activeProject = visibleProjects.find((project) => String(project.id) === activeId) ?? visibleProjects[0] ?? (!query ? projects[0] : undefined)
+  const activeProject = projects.find((project) => String(project.id) === activeId) ?? recentProjects[0] ?? projects[0]
   const rows = useMemo(() => compatibleFiles(activeProject, kind).sort((a, b) => compareFiles(a, b, sort.key) * (sort.desc ? -1 : 1)), [activeProject, kind, sort])
   const title = kind === "image" ? "Insertar imagen desde un proyecto" : "Adjuntar archivo desde un proyecto"
 
@@ -168,33 +173,35 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
           </button>
         </header>
 
-        <div className="grid min-h-0 flex-1 grid-cols-[272px_minmax(0,1fr)]">
-          <aside className="flex min-h-0 flex-col border-r bg-muted/20 p-4" aria-label="Navegación de proyectos">
-            <nav className="space-y-1" aria-label="Vistas de proyectos">
-              <button type="button" className={`flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm ${scope === "all" ? "bg-accent font-medium" : "hover:bg-accent/70"}`} onClick={() => setScope("all")}>
-                <img src="/brand/sidebar-icons/ver-todos.svg?v=36602" className="size-4" alt="" aria-hidden="true" /> Todos
-              </button>
-              <button type="button" className={`flex h-9 w-full items-center gap-2 rounded-lg px-3 text-sm ${scope === "recent" ? "bg-accent font-medium" : "hover:bg-accent/70"}`} onClick={() => setScope("recent")}>
-                <img src="/brand/sidebar-icons/proyectos-recientes.svg?v=36602" className="size-4" alt="" aria-hidden="true" /> 4 recientes
-              </button>
-            </nav>
-            <label className="mt-4 flex h-9 items-center gap-2 rounded-lg border bg-background px-3 text-sm shadow-xs">
-              <SearchIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-              <input className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar proyecto" aria-label="Buscar proyecto" />
-            </label>
-            <div className="mt-3 min-h-0 flex-1 overflow-y-auto" aria-label="Proyectos">
-              {visibleProjects.map((project) => {
-                const count = compatibleFiles(project, kind).length
+        <div className="grid min-h-0 flex-1 grid-cols-[256px_minmax(0,1fr)]">
+          <aside className="mail-project-nav" aria-label="Navegación de proyectos">
+            <div className="mail-project-nav-header"><h2>Proyectos</h2></div>
+            <button type="button" className={`mail-project-nav-link${showAll ? " is-active" : ""}`} onClick={() => setShowAll(true)} aria-label="Ver todos los proyectos">
+              <img src="/brand/sidebar-icons/ver-todos.svg?v=36602" alt="" aria-hidden="true" />
+              <span>Ver todos</span>
+            </button>
+            <h3>{showAll ? "Todos los proyectos" : "Recientes"}</h3>
+            <div className={`mail-project-nav-list${showAll ? " is-all" : ""}`} aria-label={showAll ? "Todos los proyectos" : "Proyectos recientes"}>
+              {navigationProjects.map((project) => {
                 const selected = String(project.id) === String(activeProject?.id)
-                return <button key={project.id} type="button" className={`mb-1 flex w-full items-start gap-2 rounded-lg px-3 py-2.5 text-left ${selected ? "bg-background shadow-sm ring-1 ring-border" : "hover:bg-accent/70"}`} onClick={() => setActiveId(String(project.id))}>
-                  <img src="/brand/sidebar-icons/proyectos-recientes.svg?v=36602" className="mt-0.5 size-4 shrink-0" alt="" aria-hidden="true" />
-                  <span className="min-w-0 flex-1">
-                    <strong className="block truncate text-sm font-medium">{project.name}</strong>
-                    <small className="mt-0.5 block text-xs text-muted-foreground">{count} {kind === "image" ? (count === 1 ? "imagen" : "imágenes") : (count === 1 ? "archivo" : "archivos")}</small>
-                  </span>
+                return <button key={project.id} type="button" className={`mail-project-nav-link${selected ? " is-active" : ""}`} onClick={() => setActiveId(String(project.id))} title={project.name}>
+                  <img src="/brand/sidebar-icons/proyectos-recientes.svg?v=36602" alt="" aria-hidden="true" />
+                  <strong>{project.name}</strong>
                 </button>
               })}
-              {!visibleProjects.length && <p className="px-3 py-6 text-center text-sm text-muted-foreground">No se han encontrado proyectos.</p>}
+            </div>
+            <div className={`mail-project-nav-search${query ? " is-open" : ""}`}>
+              <div>
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar proyecto" aria-label="Buscar proyecto" autoComplete="off" />
+                {query && <button type="button" onClick={() => setQuery("")} aria-label="Borrar búsqueda de proyectos">×</button>}
+              </div>
+              {query && <div className="mail-project-nav-results" role="listbox" aria-label="Proyectos encontrados">
+                {searchResults.map((project) => <button key={project.id} type="button" role="option" aria-selected={String(project.id) === String(activeProject?.id)} onClick={() => { setActiveId(String(project.id)); setQuery("") }}>
+                  <img src="/brand/sidebar-icons/proyectos-recientes.svg?v=36602" alt="" aria-hidden="true" />
+                  <span>{project.name}</span>
+                </button>)}
+                {!searchResults.length && <p>No se encontraron proyectos.</p>}
+              </div>}
             </div>
           </aside>
 
