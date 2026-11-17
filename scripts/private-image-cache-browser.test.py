@@ -57,6 +57,10 @@ try:
    # Printing explicitly loads images even when a hidden print zone never intersects the viewport.
    page.evaluate("window.printed=0;window.print=()=>printed++;const printImage=document.createElement('img');printImage.width=100;printImage.height=100;printImage.dataset.privateFile='storage://archivos/'+ESTUDIO_ID+'/print.png';document.getElementById('printZone').replaceChildren(printImage);")
    assert page.evaluate("printAs('Ficticio')");assert page.evaluate('printed===1')
+   # An obsolete optional document logo falls back to the study name without blocking the PDF.
+   page.evaluate("denySigning=true;document.getElementById('printZone').innerHTML='<div><img data-private-file=\"storage://archivos/'+ESTUDIO_ID+'/missing-logo.png\" data-document-brand=\"Estudio ficticio\" data-document-brand-size=\"22\"></div>'")
+   assert page.evaluate("printAs('Presupuesto ficticio')");assert page.evaluate("printed===2&&document.querySelector('#printZone .document-brand-fallback')?.textContent==='Estudio ficticio'&&!document.querySelector('#printZone img')")
+   page.evaluate('denySigning=false')
    # A role change rejects reuse of the old signed capabilities and cannot fall back to a public URL.
    page.evaluate("_accessRole='colaborador';denySigning=true;drawImages(true)")
    page.wait_for_function("!!document.querySelector('#fixture-images img.image-failed')")

@@ -544,6 +544,7 @@ body.dark .pill-tabs button.on{background:#FFFFFF;color:#141414}
 .switch.on::after{left:18px}
 .inv-paper{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);padding:34px 38px;aspect-ratio:210/297;max-width:660px;margin:0 auto}
 .inv-paper .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid #ECECEA;padding-bottom:20px}
+.document-brand-fallback{display:inline-flex;max-width:200px;min-height:34px;align-items:center;font-weight:900;line-height:1.05;letter-spacing:-.3px;color:#141414;overflow-wrap:anywhere}
 #paper .head{position:sticky;top:0;z-index:4;background:var(--white);padding-top:6px;margin-top:-6px;box-shadow:0 8px 12px -10px rgba(0,0,0,.18)}
 @media print{ #printZone .head{position:static;box-shadow:none} }
 .inv-paper .logo-inv{width:150px}
@@ -6645,7 +6646,7 @@ function vInvoice(kind){
       ${capGroups(d.lines).some(g=>g.cap!==CAP_OTROS)?`<div class="noprint" style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:6px;max-width:660px;margin-left:auto;margin-right:auto"><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="capToggleAll(false)">▸ Encoger capítulos</button><button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="capToggleAll(true)">▾ Desplegar todo</button></div>`:""}
       <div class="inv-paper" id="paper">
         <div class="head">
-          <div>${state.logos[d.brand]?`<img ${fileImageAttrs(state.logos[d.brand])} style="max-height:44px;max-width:180px">`:legacyDocumentLogo().replace('class="logo"','class="logo-inv"')}
+          <div>${state.logos[d.brand]?`<img ${documentBrandImageAttrs(state.logos[d.brand],d.brand,44)} style="max-height:44px;max-width:180px">`:legacyDocumentLogo().replace('class="logo"','class="logo-inv"')}
           <div style="margin-top:6px"><span class="chip ${b.chip}">${isF?"FACTURA":"PRESUPUESTO"} · ${b.name}</span></div></div>
           <div class="inv-meta">Número<br><b>${serie(isF)}-${String(d.num).padStart(4,"0")}</b>Fecha de emisión<br><b>${today}</b>${!isF&&d.validUntil?`Válido hasta<br><b>${d.validUntil.split("-").reverse().join("/")}</b>`:""}</div>
         </div>
@@ -10805,7 +10806,12 @@ async function printAs(title){
   const children=Array.from(z.childNodes), owner=fileViewIdentity();
   try{
     await Promise.all(Array.from(z.querySelectorAll("img")).map(async img=>{
-      await Promise.race([fileLoadImage(img,true),new Promise((_,reject)=>setTimeout(()=>reject(Error("Tiempo de carga agotado")),15000))]);
+      try{
+        await Promise.race([fileLoadImage(img,true),new Promise((_,reject)=>setTimeout(()=>reject(Error("Tiempo de carga agotado")),15000))]);
+      }catch(error){
+        if(img.hasAttribute("data-document-brand")){documentBrandFallback(img);return;}
+        throw error;
+      }
     }));
     if(owner!==fileViewIdentity()||children.length!==z.childNodes.length||children.some((n,i)=>n!==z.childNodes[i]))throw Error("El documento cambió");
     const t0=document.title,display=z.style.display;
@@ -10817,7 +10823,7 @@ async function printAs(title){
 function pdfBrandLogo(bk, h){
   h=h||44;
   const lg=state.logos&&state.logos[bk];
-  if(lg) return `<img ${fileImageAttrs(lg)} style="max-height:${h}px;max-width:200px;object-fit:contain">`;
+  if(lg) return `<img ${documentBrandImageAttrs(lg,bk,h)} style="max-height:${h}px;max-width:200px;object-fit:contain">`;
   const n=(BRAND[bk]&&BRAND[bk].name)||state.emitter.name||state.account.name||"";
   return `<div style="font-weight:900;font-size:${Math.round(h/2)}px;letter-spacing:-.3px">${n}</div>`;
 }
@@ -11074,6 +11080,19 @@ function fileImageAttrs(source){
     return 'src="'+escape(source)+'"';
   }catch{return 'alt="Imagen no disponible"';}
 }
+function documentBrandImageAttrs(source,bk,height){
+  const escape=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const label=(BRAND[bk]&&BRAND[bk].name)||state.emitter.name||state.account.name||'Estudio';
+  const imageAttrs=fileImageAttrs(source).replace(/\s+alt="[^"]*"/,'');
+  return imageAttrs+' data-document-brand="'+escape(label)+'" data-document-brand-size="'+Math.max(14,Math.round((height||44)/2))+'" alt="'+escape(label)+'"';
+}
+function documentBrandFallback(img){
+  if(!img||!img.isConnected)return null;
+  const fallback=document.createElement('div');
+  fallback.className='document-brand-fallback';fallback.textContent=img.dataset.documentBrand||'Estudio';
+  fallback.style.fontSize=(+img.dataset.documentBrandSize||22)+'px';fallback.setAttribute('role','img');fallback.setAttribute('aria-label',fallback.textContent);
+  img.replaceWith(fallback);return fallback;
+}
 function fileViewIdentity(){return [ESTUDIO_ID,state.portalAnon,state.sessionUser&&state.sessionUser.id,typeof _accessRole==='undefined'?'':_accessRole,typeof _accessAttempt==='undefined'?'':_accessAttempt].join('|');}
 const _imageLoads=new WeakMap();
 function fileLoadImage(img,refresh=false){
@@ -11095,9 +11114,9 @@ function fileLoadImage(img,refresh=false){
 }
 document.addEventListener('DOMContentLoaded',()=>{
   const observed=new WeakSet();
-  const start=img=>{if(!_imageLoads.has(img))fileLoadImage(img).catch(()=>{if(img.hasAttribute('data-client-brand')){ClientPortalSite.brandFallback(img);return;}img.alt='Imagen no disponible';img.classList.add('image-failed');window.ModernoShoppingFeedback?.imageState(img,'failed');});};
+  const start=img=>{if(!_imageLoads.has(img))fileLoadImage(img).catch(()=>{if(img.hasAttribute('data-client-brand')){ClientPortalSite.brandFallback(img);return;}if(img.hasAttribute('data-document-brand')){documentBrandFallback(img);return;}img.alt='Imagen no disponible';img.classList.add('image-failed');window.ModernoShoppingFeedback?.imageState(img,'failed');});};
   const lazy=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){lazy.unobserve(entry.target);start(entry.target);}},{rootMargin:'300px'}):null;
-  const scan=()=>document.querySelectorAll('img[data-private-file],.shopping-product-photo img,.shopping-image-frame img,.project-card-cover img').forEach(img=>{
+  const scan=()=>document.querySelectorAll('img[data-private-file],img[data-document-brand],.shopping-product-photo img,.shopping-image-frame img,.project-card-cover img').forEach(img=>{
     if(_imageLoads.has(img)||observed.has(img))return;
     observed.add(img);
     if(lazy&&img.loading==='lazy')lazy.observe(img);else start(img);
@@ -11442,7 +11461,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.36";
+const MODERNO_VER="v3.67.37";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

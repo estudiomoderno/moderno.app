@@ -4,12 +4,12 @@ import vm from 'node:vm';
 import fs from 'node:fs';
 const html=fs.readFileSync(new URL('../app/index.html',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const section=(a,b)=>html.slice(html.indexOf(a),html.indexOf(b,html.indexOf(a)));
-function setup({sign,decode}={}){
-  const img={classList:{add(){},remove(){}},dataset:{privateFile:'storage://archivos/ficticio/plano.png'},isConnected:true,naturalWidth:50,src:'',getAttribute(){return this.src;},decode:decode||async function(){}};
+function setup({sign,decode,optionalBrand=false}={}){
+  const img={classList:{add(){},remove(){}},dataset:{privateFile:'storage://archivos/ficticio/plano.png',...(optionalBrand?{documentBrand:'Estudio ficticio',documentBrandSize:'22'}:{})},isConnected:true,naturalWidth:50,src:'',style:{},getAttribute(){return this.src;},hasAttribute(name){return name==='data-document-brand'&&optionalBrand;},replaceWith(node){this.isConnected=false;this.replacement=node;},decode:decode||async function(){}};
   const zone={childNodes:[{}],style:{display:'none'},querySelectorAll(){return [img];}};
   let prints=0,notices=0,signs=0;
-  const c={ESTUDIO_ID:'ficticio',state:{},WeakMap,Promise,Array,Error,String,setTimeout(){},fileResolveForView:async()=>{signs++;return sign?await sign():'https://example.invalid/signed';},document:{title:'Original',getElementById(){return zone;}},window:{print(){prints++;assert.equal(zone.style.display,'block');}},toast(){notices++;}};
-  vm.createContext(c);vm.runInContext(section('function fileViewIdentity(){',"document.addEventListener('DOMContentLoaded',()=>{")+section('async function printAs(title){','function pdfBrandLogo('),c);
+  const c={ESTUDIO_ID:'ficticio',state:{emitter:{},account:{}},BRAND:{},WeakMap,Promise,Array,Error,String,Math,setTimeout(){},fileResolveForView:async()=>{signs++;return sign?await sign():'https://example.invalid/signed';},document:{title:'Original',getElementById(){return zone;},createElement(){return {className:'',textContent:'',style:{},setAttribute(){}};}},window:{print(){prints++;assert.equal(zone.style.display,'block');}},toast(){notices++;}};
+  vm.createContext(c);vm.runInContext(section('function documentBrandFallback(img){',"document.addEventListener('DOMContentLoaded',()=>{")+section('async function printAs(title){','function pdfBrandLogo('),c);
   return {c,img,zone,get prints(){return prints;},get notices(){return notices;},get signs(){return signs;}};
 }
 test('private print waits for signed image decoding and restores document',async()=>{
@@ -18,6 +18,7 @@ test('private print waits for signed image decoding and restores document',async
 });
 test('denied private image cancels printing rather than outputting missing content',async()=>{const f=setup({sign:async()=>false});assert.equal(await f.c.printAs('Plano'),false);assert.equal(f.prints,0);assert.equal(f.notices,1);});
 test('broken image decoding cancels printing',async()=>{const f=setup({decode:async()=>{throw Error('broken');}});assert.equal(await f.c.printAs('Plano'),false);assert.equal(f.prints,0);});
+test('unavailable optional document logo falls back to study name and still prints',async()=>{const f=setup({sign:async()=>false,optionalBrand:true});assert.equal(await f.c.printAs('Presupuesto'),true);assert.equal(f.prints,1);assert.equal(f.img.replacement.textContent,'Estudio ficticio');assert.equal(f.notices,0);});
 test('identity change during image loading cancels printing',async()=>{let release;const f=setup({decode:()=>new Promise(r=>release=r)});const pending=f.c.printAs('Plano');await new Promise(r=>setImmediate(r));f.c.ESTUDIO_ID='otro';release();assert.equal(await pending,false);assert.equal(f.prints,0);});
 test('replacement of print document while loading cancels old print request',async()=>{let release;const f=setup({decode:()=>new Promise(r=>release=r)});const pending=f.c.printAs('Plano');await new Promise(r=>setImmediate(r));f.zone.childNodes=[{}];release();assert.equal(await pending,false);assert.equal(f.prints,0);});
 test('reprinting signs again rather than reusing an expired signature',async()=>{const f=setup();assert.equal(await f.c.printAs('Plano'),true);assert.equal(await f.c.printAs('Plano'),true);assert.equal(f.signs,2);});
