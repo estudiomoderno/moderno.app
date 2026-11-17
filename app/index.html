@@ -11061,12 +11061,28 @@ function subeAdjunto(f, obj){
 }
 function fileSrc(fo){ return (fo && (fo.url || fo.data)) || null; }
 let _fileRequestCache=null;
+function fileStorageOrigin(){
+  const current=new URL(SUPABASE_URL).origin;
+  return current==='https://auth.moderno.app'?'https://cgqtylvaapwbuwqvpjtb.supabase.co':current;
+}
+async function fileSignMember(path,ttl=60,{client=sb,fetcher=fetch}={}){
+  const {data,error}=await client.auth.getSession();if(error)throw error;
+  const token=data?.session?.access_token;if(!token){const failure=new Error('La sesión ha caducado');failure.status=401;throw failure;}
+  const origin=fileStorageOrigin(),encoded=path.split('/').map(encodeURIComponent).join('/');
+  const response=await fetcher(origin+'/storage/v1/object/sign/archivos/'+encoded,{method:'POST',headers:{apikey:SUPABASE_ANON_KEY,authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify({expiresIn:ttl})});
+  if(!response.ok){const failure=new Error('No se pudo autorizar el archivo');failure.status=response.status;throw failure;}
+  const payload=await response.json(),signed=payload?.signedURL||payload?.signedUrl||payload?.signed_url;
+  if(typeof signed!=='string'||!signed){const failure=new Error('Respuesta de archivo no válida');failure.status=502;throw failure;}
+  if(/^https?:\/\//i.test(signed))return signed;
+  const signedPath=signed.startsWith('/storage/v1/')?signed:'/storage/v1/'+signed.replace(/^\/+/, '');
+  return new URL(signedPath,origin).href;
+}
 async function fileResolveForView(fo,{refresh=false}={}){
   const source=fileSrc(fo); if(!source)return null;
   try{
     const origins=[new URL(SUPABASE_URL).origin,'https://auth.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co'];
     if(!_fileRequestCache){const resolve=ModernoFiles.createResolver({origins,
-      signMember:async path=>{const {data,error}=await sb.storage.from('archivos').createSignedUrl(path,60);if(error)throw error;return data.signedUrl;},
+      signMember:fileSignMember,
       signPortal:async ({path,token,type})=>{const {data,error}=await sb.functions.invoke('portal-archivo',{body:{path,token,type}});if(error)throw error;return data.url;}
     });
     _fileRequestCache=ModernoFiles.createRequestCache(resolve);}
@@ -11462,7 +11478,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.38";
+const MODERNO_VER="v3.67.39";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

@@ -12,7 +12,7 @@ opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
 fixture_setup="()=>{\n    if(sb!==null)throw Error('Backend must be disabled');\n    state.sessionUser={name:'Persona ficticia',mail:'persona@example.invalid',id:'fixture'};\n    state.onboarded=true;state.myRole='admin';_accessRole='admin';_accessLoading=false;\n    state.account.name='Estudio ficticio';state.account.apiToken='';state.account.billContacts=[];\n    BRAND.cm.name='Estudio ficticio';state.brandFilter='all';\n    const project=structuredClone(state.projects[0]);\n    Object.assign(project,{id:9001,num:'PR-9001',name:'Proyecto ficticio',brand:'cm',tpl:false,client:'Cliente ficticio',tasks:[],files:[],rooms:[\n     {id:8001,kind:'estancia',name:'Salón ficticio',icon:'sofa'},\n     {id:8002,kind:'estancia',name:'Dormitorio ficticio',icon:'bed'},\n     {id:8003,kind:'pav',name:'Pavimentos ficticios',icon:'wall'},\n     {id:8004,kind:'otra',name:'Otras compras ficticias',icon:'bulb'}\n    ].map((room,i)=>({...room,created:'2026-10-19',sections:[{id:'section-'+i,name:'General',items:[{name:'Producto ficticio '+i,price:25+i,qty:2,unit:'ud',status:'Pendiente',supplier:'Proveedor ficticio',sku:'FIC-'+i}]}]}))});\n    state.projects=[project];state.clients=[{name:'Cliente ficticio',type:'Cliente',brand:'cm',email:'cliente@example.invalid'}];\n    state.entries=[];state.invoices=[];state.quotes=[];state.docs=[];state.library=[];state.catalog=[];state.notifs=[];\n    state.collapsed={'g-9001-estancia':false,'g-9001-pav':false,'g-9001-otra':false,'unrelated':true};\n    applySessionUI();drawBrandSwitch();showLogin(false);go('proyecto',9001);projTab('listas');\n    window.records=()=>JSON.stringify({projects:state.projects,clients:state.clients,invoices:state.invoices,quotes:state.quotes,entries:state.entries,collapsed:state.collapsed});\n    window.baseline=records();window.printCount=0;window.print=()=>{printCount++;window.printHTML=document.getElementById('printZone').innerHTML;};\n   }"
 import base64
 png=base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jzS0AAAAASUVORK5CYII=')
-html=(repo/'app/index.html').read_text();resolver=html[html.index('async function fileResolveForView('):html.index('function fileImageAttrs(')]
+html=(repo/'app/index.html').read_text();resolver=html[html.index('function fileStorageOrigin('):html.index('function fileImageAttrs(')]
 try:
  for attempt in range(100):
   try:
@@ -34,12 +34,15 @@ try:
    page.evaluate("""({source,origin})=>{
     ESTUDIO_ID='00000000-0000-4000-8000-000000000001';_accessRole='admin';clearTimeout(_saveT);
     window.signCalls=0;window.signActive=0;window.signPeak=0;window.denySigning=false;
-    const client={storage:{from(bucket){if(bucket!=='archivos')throw Error('Wrong bucket');return {createSignedUrl:async(path,ttl)=>{
-      if(ttl!==60)throw Error('Changed expiry');signCalls++;signActive++;signPeak=Math.max(signPeak,signActive);
-      await new Promise(r=>setTimeout(r,20));signActive--;
-      return denySigning?{error:{status:403,message:'Denegado ficticio'}}:{data:{signedUrl:origin+'/storage/v1/object/sign/archivos/'+path+'?token=fictional-'+signCalls}};
-    }};}}};
-    fileResolveForView=new Function('sb','SUPABASE_URL',source+';return fileResolveForView;')(client,origin);
+    const client={auth:{getSession:async()=>({data:{session:{access_token:'fictional-session'}}})}};
+    const fakeFetch=async(url,options)=>{
+      if(options?.method!=='POST'||options?.headers?.authorization!=='Bearer fictional-session'||JSON.parse(options.body).expiresIn!==60)throw Error('Invalid signed request');
+      signCalls++;signActive++;signPeak=Math.max(signPeak,signActive);await new Promise(r=>setTimeout(r,20));signActive--;
+      if(denySigning)return new Response('{}',{status:403,headers:{'content-type':'application/json'}});
+      const path=new URL(url).pathname.replace('/storage/v1/object/sign/archivos/','');
+      return new Response(JSON.stringify({signedURL:'/object/sign/archivos/'+path+'?token=fictional-'+signCalls}),{status:200,headers:{'content-type':'application/json'}});
+    };
+    fileResolveForView=new Function('sb','SUPABASE_URL','SUPABASE_ANON_KEY','fetch',source+';return fileResolveForView;')(client,origin,'sb_publishable_offline_fixture_only_no_credentials_49',fakeFetch);
     window.drawImages=(same=false)=>{
       document.querySelector('.main').scrollTop=0;
       document.getElementById('view').innerHTML='<div id="fixture-images" style="display:flex;flex-direction:column;gap:20px">'+Array.from({length:50},(_,i)=>'<img data-private-file="storage://archivos/'+ESTUDIO_ID+'/'+(same?'same':i)+'.png" loading="lazy" width="100" height="100" alt="Ficticia">').join('')+'</div>';
