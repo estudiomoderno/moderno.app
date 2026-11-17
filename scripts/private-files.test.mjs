@@ -18,6 +18,15 @@ test('member access checks study and preserves reference',async()=>{
  await assert.rejects(resolve(old,{study:'22222222-2222-4222-8222-222222222222'}));assert.equal(calls,1);
  assert.equal(old,host+'/storage/v1/object/public/archivos/'+path);
 });
+test('member authenticated downloads accept only same-viewer object URLs',async()=>{
+ const objectUrl='blob:https://app.example/11111111-1111-4111-8111-111111111111';
+ const resolve=files.createResolver({origins:[host],viewerOrigin:'https://app.example',signMember:async()=>({kind:'object-url',url:objectUrl})});
+ assert.equal(await resolve(old,{study}),objectUrl);
+ for(const url of ['blob:https://evil.example/fake','https://app.example/fake']){
+  const denied=files.createResolver({origins:[host],viewerOrigin:'https://app.example',signMember:async()=>({kind:'object-url',url})});
+  await assert.rejects(denied(old,{study}));
+ }
+});
 test('portal access uses its token and never member authority',async()=>{
  let member=0;const resolve=files.createResolver({origins:[host],signMember:async()=>{member++;},signPortal:async req=>{assert.deepEqual(req,{path,token:'ficticio',type:'obra'});return signed;}});
  assert.equal(await resolve(old,{study,portalToken:'ficticio',portalType:'obra'}),signed);assert.equal(member,0);

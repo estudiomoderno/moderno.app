@@ -36,11 +36,10 @@ try:
     window.signCalls=0;window.signActive=0;window.signPeak=0;window.denySigning=false;
     const client={auth:{getSession:async()=>({data:{session:{access_token:'fictional-session'}}})}};
     const fakeFetch=async(url,options)=>{
-      if(options?.method!=='POST'||options?.headers?.authorization!=='Bearer fictional-session'||JSON.parse(options.body).expiresIn!==60)throw Error('Invalid signed request');
+      if(options?.method!=='GET'||options?.headers?.authorization!=='Bearer fictional-session'||!new URL(url).pathname.startsWith('/storage/v1/object/authenticated/archivos/'))throw Error('Invalid authenticated request');
       signCalls++;signActive++;signPeak=Math.max(signPeak,signActive);await new Promise(r=>setTimeout(r,20));signActive--;
       if(denySigning)return new Response('{}',{status:403,headers:{'content-type':'application/json'}});
-      const path=new URL(url).pathname.replace('/storage/v1/object/sign/archivos/','');
-      return new Response(JSON.stringify({signedURL:'/object/sign/archivos/'+path+'?token=fictional-'+signCalls}),{status:200,headers:{'content-type':'application/json'}});
+      return new Response(new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,4,0,0,0,181,28,12,2,0,0,0,11,73,68,65,84,120,218,99,252,255,31,0,3,3,2,0,239,163,205,45,0,0,0,0,73,69,78,68,174,66,96,130]),{status:200,headers:{'content-type':'image/png'}});
     };
     fileResolveForView=new Function('sb','SUPABASE_URL','SUPABASE_ANON_KEY','fetch',source+';return fileResolveForView;')(client,origin,'sb_publishable_offline_fixture_only_no_credentials_49',fakeFetch);
     window.drawImages=(same=false)=>{
@@ -77,7 +76,7 @@ try:
    assert page.evaluate("!document.querySelector('#fixture-images img[src]')&&signPeak<=4&&sb===null")
    if output:page.screenshot(path=str(output/f'image-permissions-{width}.png'),full_page=True)
    assert not errors,errors;assert not writes,writes
-   print(width,'PASS duplicate images sign once across DOM recreation; true lazy signing; four requests maximum; scroll loads further images; private print waits for decoding; changed role cannot reuse capabilities or public fallback; no real writes',flush=True)
+   print(width,'PASS duplicate images download once across DOM recreation; true lazy authenticated loading; four requests maximum; scroll loads further images; private print waits for decoding; changed role cannot reuse capabilities or public fallback; no real writes',flush=True)
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)
