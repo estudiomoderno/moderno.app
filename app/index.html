@@ -955,8 +955,8 @@ body.dark .mdp{background:#23232A;color:#F2F1EE}
   html,body{margin:0!important;padding:0!important;background:#fff!important}
   body *{visibility:hidden}
   body> :not(#printZone){display:none!important}
-  #printZone,#printZone *{visibility:visible}
-  #printZone{position:absolute;left:0;top:0;width:100%;margin:0;padding:0;background:#fff;box-shadow:none;border:none}
+  #printZone,#printZone *{visibility:visible!important}
+  #printZone{display:block!important;position:absolute;left:0;top:0;width:100%;margin:0;padding:0;background:#fff;box-shadow:none;border:none}
   #printZone .pdf-page{min-height:262mm}
   #printZone, #printZone *{
     -webkit-print-color-adjust:exact !important;
@@ -11461,7 +11461,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.37";
+const MODERNO_VER="v3.67.38";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).

@@ -61,7 +61,7 @@ test('mail UI replaces the preparatory placeholder and reuses one connection mod
  assert.match(html,/mail-connections\.js/);assert.match(html,/ModernoMail\.renderMail\(\)/);assert.match(html,/ModernoMail\.integrationCards\(\)/);
  assert.doesNotMatch(html,/La conexión se activará en el siguiente paso|Configuración preparatoria/);
  assert.match(ui,/action:'gmail_begin'/);assert.match(ui,/action:'connect_password'/);assert.match(ui,/Los tokens y contraseñas se cifran en el servidor/);
-assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder=state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36734/);assert.match(html,/mail-connections\.js\?v=36734/);assert.match(html,/MODERNO_VER="v3\.67\.37"/);
+assert.match(ui,/Recibidos/);assert.match(ui,/action:'inbox'/);assert.match(ui,/folder=state\.activeFolder/);assert.doesNotMatch(ui,/Añadir otra cuenta/);assert.match(html,/mail-ui\.css\?v=36734/);assert.match(html,/mail-connections\.js\?v=36734/);assert.match(html,/MODERNO_VER="v3\.67\.38"/);
  for(const label of ['Recibidos','Enviados','Borradores','Spam','Papelera','Redactar'])assert.match(ui,new RegExp(label));assert.match(settings,/aria-label="Ajustes"/);
  assert.match(ui,/mail-icons\/compose\.svg/);for(const icon of ['inbox','sent','drafts','spam','trash'])assert.match(ui,new RegExp(`icon:'${icon}\\.svg'`));
  assert.match(ui,/mail-icons\/refresh\.svg/);assert.match(settings,/mail-icons\/settings\.svg/);assert.doesNotMatch(ui,/>Actualizar<|>Ajustes</);

@@ -60,6 +60,13 @@ try:
    # An obsolete optional document logo falls back to the study name without blocking the PDF.
    page.evaluate("denySigning=true;document.getElementById('printZone').innerHTML='<div><img data-private-file=\"storage://archivos/'+ESTUDIO_ID+'/missing-logo.png\" data-document-brand=\"Estudio ficticio\" data-document-brand-size=\"22\"></div>'")
    assert page.evaluate("printAs('Presupuesto ficticio')");assert page.evaluate("printed===2&&document.querySelector('#printZone .document-brand-fallback')?.textContent==='Estudio ficticio'&&!document.querySelector('#printZone img')")
+   # The application may restore the inline hidden state before Chromium snapshots print media.
+   # Print CSS must still expose the prepared pages, otherwise the dialog contains blank sheets.
+   page.evaluate("document.getElementById('printZone').style.display='none'")
+   page.emulate_media(media='print')
+   print_state=page.evaluate("()=>{const zone=document.getElementById('printZone'),content=zone.querySelector('.document-brand-fallback');return {display:getComputedStyle(zone).display,visibility:content&&getComputedStyle(content).visibility,text:content&&content.textContent}}")
+   assert print_state=={'display':'block','visibility':'visible','text':'Estudio ficticio'},(width,print_state)
+   page.emulate_media(media='screen')
    page.evaluate('denySigning=false')
    # A role change rejects reuse of the old signed capabilities and cannot fall back to a public URL.
    page.evaluate("_accessRole='colaborador';denySigning=true;drawImages(true)")
