@@ -63,7 +63,7 @@
  function ensure(){resetIfChanged();if(!state.loaded&&!state.loading)queueMicrotask(()=>load());}
  function open(provider,surface){if(!providers[provider])return;state.provider=provider;state.surface=surface||'mail';state.error='';rerender();queueMicrotask(()=>document.querySelector('.mail-setup-back')?.focus());}
  function back(){state.provider='';state.error='';rerender();}
- function onNavigate(view){if((state.surface==='mail'&&view!=='mail')||(state.surface==='integrations'&&view!=='integraciones')){cleanupDeleteDialog();cleanupMailSettings();cleanupMailSignature();cleanupComposerPortal();state.deletePrompt=null;state.composer=null;state.provider='';state.error='';}}
+ function onNavigate(view){const leavingComposer=view!=='mail'&&!!state.composer,leavingSurface=(state.surface==='mail'&&view!=='mail')||(state.surface==='integrations'&&view!=='integraciones');if(leavingComposer||leavingSurface){cleanupDeleteDialog();cleanupMailSettings();cleanupMailSignature();cleanupComposerPortal();state.deletePrompt=null;state.composer=null;state.provider='';state.error='';}}
  function setupFor(surface){return state.provider&&state.surface===surface?renderSetup(state.provider):'';}
  async function submit(event){
   event.preventDefault();if(state.busy)return;const provider=state.provider,form=event.currentTarget;state.busy=true;state.error='';rerender();
