@@ -136,3 +136,4 @@
 .mail-project-nav-results{position:absolute;top:calc(100% + 6px);right:0;left:0;max-height:244px;overflow-y:auto;padding:5px;box-sizing:border-box;border:1px solid #dedede;border-radius:10px;background:#fff;box-shadow:0 12px 32px #0000001a,0 2px 7px #0000000d}
 .mail-project-nav-results button{display:flex;width:100%;min-height:42px;align-items:center;gap:9px;padding:6px 8px;border:0;border-radius:7px;background:transparent;color:#202020;text-align:left;cursor:pointer}
 .mail-project-nav-results button:hover{background:#ededed}.mail-project-nav-results button img{width:16px;height:16px}.mail-project-nav-results button span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.mail-project-nav-results p{margin:0;padding:9px 8px;color:#737373;font-size:12px}
+.mail-project-nav-archive{margin-top:auto}

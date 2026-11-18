@@ -47,6 +47,7 @@ interface MailProjectPickerProps {
 }
 
 type SortKey = "name" | "type" | "size" | "modified"
+type ProjectView = "recent" | "all" | "archived"
 
 const FAMILY_LABELS: Record<FileTypeCategory, string> = {
   archive: "Archivo comprimido",
@@ -126,7 +127,7 @@ function compareFiles(a: ProjectFile, b: ProjectFile, key: SortKey) {
 }
 
 export function MailProjectPicker({ kind, projects, initialProjectId, onClose, onSelect }: MailProjectPickerProps) {
-  const [showAll, setShowAll] = useState(false)
+  const [projectView, setProjectView] = useState<ProjectView>("recent")
   const [query, setQuery] = useState("")
   const [activeId, setActiveId] = useState(String(initialProjectId ?? projects[0]?.id ?? ""))
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: "name", desc: false })
@@ -142,6 +143,10 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
     () => projects.filter((project) => project.status !== "Archivado"),
     [projects]
   )
+  const archivedProjects = useMemo(
+    () => projects.filter((project) => project.status === "Archivado").sort((a, b) => collator.compare(a.name, b.name)),
+    [projects]
+  )
   const allProjects = useMemo(() => [...activeProjects].sort((a, b) => collator.compare(a.name, b.name)), [activeProjects])
   const recentProjects = useMemo(() => {
     const ranked = activeProjects
@@ -149,16 +154,29 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
       .sort((a, b) => Number(a.recentRank) - Number(b.recentRank))
     return (ranked.length ? ranked : activeProjects).slice(0, 4)
   }, [activeProjects])
-  const navigationProjects = showAll ? allProjects : recentProjects
+  const navigationProjects = projectView === "archived" ? archivedProjects : projectView === "all" ? allProjects : recentProjects
+  const searchableProjects = projectView === "archived" ? archivedProjects : allProjects
   const searchResults = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("es")
     if (!normalized) return []
-    return allProjects.filter((project) => project.name.toLocaleLowerCase("es").includes(normalized)).slice(0, 8)
-  }, [allProjects, query])
+    return searchableProjects.filter((project) => project.name.toLocaleLowerCase("es").includes(normalized)).slice(0, 8)
+  }, [query, searchableProjects])
 
-  const activeProject = activeProjects.find((project) => String(project.id) === activeId) ?? recentProjects[0] ?? activeProjects[0]
+  const visibleProjects = projectView === "archived" ? archivedProjects : activeProjects
+  const activeProject = visibleProjects.find((project) => String(project.id) === activeId) ?? navigationProjects[0] ?? visibleProjects[0]
   const rows = useMemo(() => compatibleFiles(activeProject, kind).sort((a, b) => compareFiles(a, b, sort.key) * (sort.desc ? -1 : 1)), [activeProject, kind, sort])
   const title = kind === "image" ? "Insertar imagen desde un proyecto" : "Adjuntar archivo desde un proyecto"
+  const navigationTitle = projectView === "archived" ? "Proyectos archivados" : projectView === "all" ? "Todos los proyectos activos" : "Recientes"
+
+  useEffect(() => {
+    if (visibleProjects.some((project) => String(project.id) === activeId)) return
+    setActiveId(String(navigationProjects[0]?.id ?? visibleProjects[0]?.id ?? ""))
+  }, [activeId, navigationProjects, visibleProjects])
+
+  function toggleProjectView(view: Exclude<ProjectView, "recent">) {
+    setProjectView((current) => current === view ? "recent" : view)
+    setQuery("")
+  }
 
   function updateSort(key: SortKey) {
     setSort((current) => ({ key, desc: current.key === key ? !current.desc : false }))
@@ -202,12 +220,12 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
         <div className="grid min-h-0 flex-1 grid-cols-[256px_minmax(0,1fr)]">
           <aside className="mail-project-nav" aria-label="Navegación de proyectos">
             <div className="mail-project-nav-header"><h2>Proyectos</h2></div>
-            <button type="button" className={`mail-project-nav-link${showAll ? " is-active" : ""}`} onClick={() => setShowAll((current) => !current)} aria-expanded={showAll} aria-label="Ver todos los proyectos">
+            <button type="button" className={`mail-project-nav-link${projectView === "all" ? " is-active" : ""}`} onClick={() => toggleProjectView("all")} aria-expanded={projectView === "all"} aria-label="Ver todos los proyectos">
               <img src="/brand/sidebar-icons/ver-todos.svg?v=36602" alt="" aria-hidden="true" />
               <span>Ver todos</span>
             </button>
-            <h3 aria-live="polite">{showAll ? "Todos los proyectos activos" : "Recientes"}</h3>
-            <div className={`mail-project-nav-list${showAll ? " is-all" : ""}`} aria-label={showAll ? "Todos los proyectos activos" : "Proyectos recientes"}>
+            <h3 aria-live="polite">{navigationTitle}</h3>
+            <div className={`mail-project-nav-list${projectView !== "recent" ? " is-all" : ""}`} aria-label={navigationTitle}>
               {navigationProjects.map((project) => {
                 const selected = String(project.id) === String(activeProject?.id)
                 return <button key={project.id} type="button" className={`mail-project-nav-link${selected ? " is-active" : ""}`} onClick={() => setActiveId(String(project.id))} title={project.name}>
@@ -229,13 +247,17 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
                 {!searchResults.length && <p>No se encontraron proyectos.</p>}
               </div>}
             </div>
+            <button type="button" className={`mail-project-nav-link mail-project-nav-archive${projectView === "archived" ? " is-active" : ""}`} onClick={() => toggleProjectView("archived")} aria-expanded={projectView === "archived"} aria-label="Ver proyectos archivados">
+              <img src="/brand/sidebar-icons/archive-light.svg?v=36742" alt="" aria-hidden="true" />
+              <span>Archivados</span>
+            </button>
           </aside>
 
           <main className="flex min-h-0 min-w-0 flex-col">
             <div className="flex h-16 shrink-0 items-center border-b px-5">
               <div className="min-w-0">
-                <h3 className="truncate text-sm font-semibold">{activeProject?.name ?? "Proyecto"}</h3>
-                <p className="mt-0.5 text-xs text-muted-foreground">{kind === "image" ? "Selecciona una imagen para insertarla" : "Selecciona un archivo para adjuntarlo"}</p>
+                <h3 className="truncate text-sm font-semibold">{activeProject?.name ?? (projectView === "archived" ? "Proyectos archivados" : "Proyecto")}</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">{activeProject ? (kind === "image" ? "Selecciona una imagen para insertarla" : "Selecciona un archivo para adjuntarlo") : "No hay proyectos en esta sección"}</p>
               </div>
             </div>
             {rows.length ? (
@@ -274,8 +296,8 @@ export function MailProjectPicker({ kind, projects, initialProjectId, onClose, o
                 <Empty className="py-12">
                   <EmptyHeader>
                     <EmptyMedia><BoardIllustration /></EmptyMedia>
-                    <EmptyTitle>{kind === "image" ? "No hay imágenes" : "No hay archivos"}</EmptyTitle>
-                    <EmptyDescription>{kind === "image" ? "Este proyecto no tiene imágenes disponibles para insertar." : "Este proyecto no tiene archivos disponibles para adjuntar."}</EmptyDescription>
+                    <EmptyTitle>{activeProject ? (kind === "image" ? "No hay imágenes" : "No hay archivos") : "No hay proyectos archivados"}</EmptyTitle>
+                    <EmptyDescription>{activeProject ? (kind === "image" ? "Este proyecto no tiene imágenes disponibles para insertar." : "Este proyecto no tiene archivos disponibles para adjuntar.") : "Cuando archives un proyecto aparecerá aquí."}</EmptyDescription>
                   </EmptyHeader>
                 </Empty>
               </div>
