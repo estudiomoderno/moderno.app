@@ -6,8 +6,15 @@ const server=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{
 const origins=['https://app.moderno.app',...(Deno.env.get('CLIPPER_TEST_ORIGINS')||'').split(',').filter(Boolean)];
 Deno.serve(createHandler({allowedOrigins:origins,
  async authenticate(authorization:string){
-  const client=createClient(url,anon,{global:{headers:{Authorization:authorization}},auth:{persistSession:false,autoRefreshToken:false}});
-  const {data,error}=await client.auth.getUser(authorization.slice(7));if(error||!data.user)return null;return {id:data.user.id,client};
+  const token=authorization.slice(7);
+  // ES256 sessions are verified locally against the project's cached JWKS.
+  // Sending this account's unusually large JWT to Auth/Storage as a header
+  // exceeds their header limits before either service can authorize it.
+  const verifier=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data,error}=await verifier.auth.getClaims(token);const claims=data?.claims;
+  if(error||!claims||claims.role!=='authenticated'||typeof claims.sub!=='string')return null;
+  const client=createClient(url,anon,{accessToken:async()=>token,auth:{persistSession:false,autoRefreshToken:false}});
+  return {id:claims.sub,client};
  },
  async start(actor:any,input:any){
   const {data,error}=await actor.client.rpc('clipper_iniciar',{p_id:input.id,p_estudio:input.studyId,p_url:input.url,p_destino:input.destination});if(error)throw error;
