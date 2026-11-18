@@ -15,6 +15,7 @@ import {
 import { cn } from "cn"
 import { Button } from "./vendor/reui/button"
 import { CircleAlertIcon, FileIcon, PlusIcon, XIcon } from "lucide-react"
+import type { ReactNode } from "react"
 
 interface FileUploadCompactProps {
   maxFiles?: number
@@ -24,6 +25,10 @@ interface FileUploadCompactProps {
   className?: string
   initialFiles?: FileWithPreview[]
   onFilesChange?: (files: FileWithPreview[]) => void
+  buttonLabel?: string
+  emptyLabel?: string
+  showCount?: boolean
+  controls?: ReactNode
 }
 
 export function FileUploadCompact({
@@ -34,6 +39,10 @@ export function FileUploadCompact({
   className,
   initialFiles,
   onFilesChange,
+  buttonLabel = "Add files",
+  emptyLabel,
+  showCount = true,
+  controls,
 }: FileUploadCompactProps) {
   const [
     { files, isDragging, errors },
@@ -83,13 +92,13 @@ export function FileUploadCompact({
           className={cn(isDragging && "animate-bounce")}
         >
           <PlusIcon className="h-4 w-4" />
-          Add files
+          {buttonLabel}
         </Button>
 
         <div className="flex flex-1 items-center gap-2">
           {files.length === 0 ? (
             <p className="text-muted-foreground text-sm">
-              Drop files here or click to browse (max {maxFiles} files)
+              {emptyLabel ?? `Drop files here or click to browse (max ${maxFiles} files)`}
             </p>
           ) : (
             files.map((fileItem) => (
@@ -125,7 +134,9 @@ export function FileUploadCompact({
           )}
         </div>
 
-        {files.length > 0 && (
+        {controls}
+
+        {showCount && files.length > 0 && (
           <div className="text-muted-foreground shrink-0 text-xs">
             {files.length}/{maxFiles}
           </div>

@@ -6,6 +6,7 @@ import { BoldIcon, ItalicIcon, UnderlineIcon, XIcon } from "lucide-react"
 import { FileUploadCompact } from "./file-upload-compact"
 import type { FileMetadata, FileWithPreview } from "./hooks/use-file-upload"
 import { Button } from "./vendor/reui/button"
+import { Slider } from "./slider"
 import { Toggle } from "./vendor/reui/toggle"
 
 interface SignatureImage {
@@ -41,6 +42,14 @@ const DEFAULT_IMAGE_WIDTH = 320
 
 function normalizedImageWidth(value: unknown) {
   return Math.min(MAX_IMAGE_WIDTH, Math.max(MIN_IMAGE_WIDTH, Number(value) || DEFAULT_IMAGE_WIDTH))
+}
+
+function imageWidthToPercent(width: number) {
+  return Math.round((normalizedImageWidth(width) - MIN_IMAGE_WIDTH) / (MAX_IMAGE_WIDTH - MIN_IMAGE_WIDTH) * 100)
+}
+
+function imagePercentToWidth(percent: number) {
+  return Math.round(MIN_IMAGE_WIDTH + Math.min(100, Math.max(0, percent)) / 100 * (MAX_IMAGE_WIDTH - MIN_IMAGE_WIDTH))
 }
 
 function escapeHtml(value: string) {
@@ -253,30 +262,28 @@ export function MailSignature({ email, initialValue, onClose, onSave }: MailSign
                   initialFiles={initialImages}
                   onFilesChange={setFiles}
                   className="max-w-none"
+                  buttonLabel="Añadir imagen"
+                  emptyLabel="Arrastra una imagen aquí o pulsa para buscarla"
+                  showCount={false}
+                  controls={files.length > 0 ? (
+                    <div className="ml-auto flex min-w-[280px] flex-1 items-center justify-end gap-4 border-l pl-4">
+                      <div className="flex shrink-0 items-center gap-2">
+                        <label className="text-sm font-medium">Tamaño de la imagen</label>
+                        <span className="text-xs tabular-nums text-muted-foreground">{imageWidthToPercent(imageWidth)}%</span>
+                      </div>
+                      <div className="flex w-full max-w-xs items-center justify-center">
+                        <Slider
+                          defaultValue={50}
+                          max={100}
+                          step={1}
+                          value={imageWidthToPercent(imageWidth)}
+                          onValueChange={(value) => setImageWidth(imagePercentToWidth(value))}
+                          aria-label="Tamaño de la imagen"
+                        />
+                      </div>
+                    </div>
+                  ) : undefined}
                 />
-                {files.length > 0 && (
-                  <div className="mt-4 rounded-xl border bg-muted/20 px-4 py-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <label htmlFor="mail-signature-image-size" className="text-sm font-medium">Tamaño de la imagen</label>
-                      <span className="text-xs tabular-nums text-muted-foreground">{imageWidth} px</span>
-                    </div>
-                    <input
-                      id="mail-signature-image-size"
-                      type="range"
-                      min={MIN_IMAGE_WIDTH}
-                      max={MAX_IMAGE_WIDTH}
-                      step={10}
-                      value={imageWidth}
-                      onChange={(event) => setImageWidth(normalizedImageWidth(event.currentTarget.value))}
-                      aria-label="Tamaño de la imagen"
-                      className="mt-3 h-2 w-full cursor-pointer accent-[#0666ff]"
-                    />
-                    <div className="mt-1 flex justify-between text-[11px] text-muted-foreground" aria-hidden="true">
-                      <span>Pequeña</span>
-                      <span>Grande</span>
-                    </div>
-                  </div>
-                )}
                 {error && <p className="mt-2 text-sm text-destructive" role="alert">{error}</p>}
               </section>
 

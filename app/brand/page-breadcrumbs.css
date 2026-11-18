@@ -19,6 +19,17 @@
  #page-route-bar .finance-fallback button {height:32px;flex:none;padding:0 12px;border:0;border-radius:6px;background:transparent;color:var(--ink);font:inherit;cursor:pointer}
  #page-route-bar .finance-fallback button[aria-current=page],#page-route-bar .finance-fallback button:hover {background:var(--app-control)}
  #page-route-bar .finance-fallback button:focus-visible {outline:2px solid var(--app-outline);outline-offset:-2px}
+ #page-route-bar .finance-fallback-toolbar{display:flex;align-items:center;gap:12px;width:100%;height:36px;font:500 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif}
+ #page-route-bar .finance-fallback-toolbar .finance-fallback{flex:none;height:36px;gap:0;border:1px solid #dedede;border-radius:8px;background:#fff;overflow:hidden}
+ #page-route-bar .finance-fallback-toolbar .finance-fallback button{height:34px;margin:0;padding:0 12px;border-right:1px solid #dedede;border-radius:0;font-size:13px}
+ #page-route-bar .finance-fallback-toolbar .finance-fallback button:last-child{border-right:0}
+ #page-route-bar .finance-fallback-search{display:flex;flex:1;max-width:576px;min-width:220px;height:36px}
+ #page-route-bar .finance-fallback-search button,#page-route-bar .finance-fallback-search input{height:36px;box-sizing:border-box;border:1px solid #dedede;background:#fff;color:#202020;font:inherit}
+ #page-route-bar .finance-fallback-search button{padding:0 13px;border-radius:8px 0 0 8px;cursor:pointer}
+ #page-route-bar .finance-fallback-search input{flex:1;min-width:0;margin-left:-1px;padding:0 11px;border-radius:0 8px 8px 0;outline:0}
+ #page-route-bar .finance-fallback-new,#page-route-bar .finance-fallback-share{flex:none;height:36px;border-radius:8px;font:inherit;cursor:pointer}
+ #page-route-bar .finance-fallback-new{margin-left:auto;padding:0 13px;border:1px solid #0666ff;background:#0666ff;color:#fff}
+ #page-route-bar .finance-fallback-share{display:grid;place-items:center;width:36px;padding:0;border:1px solid #dedede;background:#fff;color:#171717;font-size:18px}
  #page-route-bar.is-finance>.route-component-host {width:100%}
 }
 @media screen and (min-width:1100px){#page-route-bar.is-finance>.route-fallback {flex:none}}

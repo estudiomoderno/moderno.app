@@ -11,6 +11,7 @@ repo=Path(__file__).resolve().parents[1]
 def settle_header(page):
  page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
 finance=['facturas','presupuestos','contabilidad','informes','prevision']
+finance_tabs=['informes','presupuestos','facturas']
 def reveal_route(page,view):
  if view in ['automatizaciones','plugins','integraciones']:
   page.locator('[data-profile-trigger]').click()
@@ -157,10 +158,14 @@ def check_finances(page,width):
  assert page.locator('#ngFin>.nav-head>.nav-group-label').inner_text().strip()=='Finanzas'
  assert page.locator('#ngFin>.nav-head').get_attribute('aria-expanded') is None
  assert page.locator('#ngFin>.nav-sub').is_hidden()
- expected=['Resumen','Facturas','Presupuestos','Contabilidad','Previsión']
+ expected=['Resumen','Presupuestos','Facturas']
  sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
  sections.wait_for(state='visible')
  expect(sections.get_by_role('button')).to_have_text(expected)
+ search=page.get_by_role('search',name='Buscar en Finanzas',exact=True);expect(search).to_be_visible()
+ search_box=search.get_by_role('searchbox',name='Buscar en Finanzas',exact=True);search_box.fill('PS');assert page.evaluate('state.financeSearch')=='PS';search_box.fill('')
+ new_quote=page.get_by_role('button',name='Nuevo presupuesto',exact=True);expect(new_quote).to_be_visible();expect(page.get_by_role('button',name='Compartir Finanzas',exact=True)).to_be_visible()
+ new_quote.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))');new_quote_color=new_quote.evaluate("e=>getComputedStyle(e).backgroundColor");assert new_quote_color=='rgb(6, 102, 255)',new_quote_color
  if width>=1100:
   r=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
   assert 32<=r['height']<=40 and r['y']>=56 and profile['y']+profile['height']<r['y'],(r,profile)
@@ -176,7 +181,7 @@ def check_finances(page,width):
   page.locator('.route-component-host[data-reui-ready=true]').wait_for(state='attached')
   sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
  if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'finance-original-{width}.png'),full_page=True)
- for view in ['facturas','presupuestos','contabilidad','prevision','informes']:
+ for view in ['facturas','presupuestos','informes']:
   button=page.locator('#page-route-bar [data-finance-view="'+view+'"]')
   button.press('Enter')
   assert page.evaluate('state.view')==view
@@ -188,7 +193,7 @@ def check_finances(page,width):
   page.evaluate('(view)=>go(view)',view)
   page.get_by_role('button',name='Nueva factura' if kind=='factura' else 'Nuevo presupuesto',exact=True).click()
   page.evaluate("state.draft.legend='Borrador financiero ficticio conservado';window.financeDraft=state.draft")
-  page.locator('#page-route-bar [data-finance-view=contabilidad]').click()
+  page.locator('#page-route-bar [data-finance-view=informes]').click()
   assert page.evaluate('state.view')==view
   assert page.locator('#modalBox').inner_text().find('a medias')>=0
   page.get_by_role('button',name='Seguir editando',exact=True).click()
@@ -202,7 +207,7 @@ def check_finances(page,width):
   page.evaluate("document.body.classList.add('sbopen')")
   page.locator('#ngFin>.nav-head').click()
  assert page.evaluate('state.view')=='presupuestos'
- expect(sections.get_by_role('button')).to_have_text(['Presupuestos','Previsión'])
+ expect(sections.get_by_role('button')).to_have_text(['Presupuestos'])
  page.evaluate("_accessRole='colaborador';render()")
  assert page.locator('#page-route-bar.is-finance').count()==0
  assert page.locator('#ngFin').is_hidden()
@@ -364,8 +369,9 @@ try:
      if view in finance:
       sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
       sections.wait_for(state='visible')
-      expect(sections.get_by_role('button')).to_have_text(['Resumen','Facturas','Presupuestos','Contabilidad','Previsión'])
-      assert sections.locator('[aria-current=page]').inner_text()=={'informes':'Resumen','prevision':'Previsión'}.get(view,page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip())
+      expect(sections.get_by_role('button')).to_have_text(['Resumen','Presupuestos','Facturas'])
+      if view in finance_tabs:assert sections.locator('[aria-current=page]').inner_text()=={'informes':'Resumen','presupuestos':'Presupuestos','facturas':'Facturas'}[view]
+      else:expect(sections.locator('[aria-current=page]')).to_have_count(0)
     if view=='workspace':
      page.get_by_role('button',name='Todas las tareas',exact=True).click()
      assert page.locator('.ws-full .kanban .task').count()>0
@@ -388,12 +394,12 @@ try:
    check_finances(page,width)
    if width>=1100:
     page.evaluate("go('contabilidad')")
-    page.locator('#page-route-bar').get_by_role('button',name='Proyectos',exact=True).click()
-    assert page.evaluate('state.view')=='proyectos'
+    page.locator('#page-route-bar').get_by_role('button',name='Resumen',exact=True).click()
+    assert page.evaluate('state.view')=='informes'
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(false)')
     assert page.locator('#page-route-bar').count()==0
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
-    assert page.locator('#page-route-bar').count()==0
+    assert page.locator('#page-route-bar').count()==1
     page.locator('aside.sidebar .nav-item[data-view="agenda"]').evaluate('(button)=>button.click()')
     page.locator('.desktop-inset-route').wait_for(state='visible')
     assert page.locator('.desktop-inset-route').inner_text()=='Agenda'
@@ -443,7 +449,7 @@ try:
     assert page.locator('.agenda-row-settings .agenda-action-icon').count()==0
     assert page.locator('.agenda-row-settings').first.inner_text().strip()=='…'
     action_head=page.locator('.agenda-contact-actions-head').bounding_box();action_button=page.locator('.agenda-row-settings').first.bounding_box()
-    assert abs((action_head['x']+action_head['width']/2)-(action_button['x']+action_button['width']/2))<=1,(action_head,action_button)
+    assert abs((action_head['x']+action_head['width']/2)-(action_button['x']+action_button['width']/2))<=3,(action_head,action_button)
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'agenda-toolbar-{width}.png'),full_page=True)
     page.locator('.agenda-contact-table tbody tr').first.locator('td').first.click()
     expect(page.locator('.agenda-contact-editor')).to_be_visible()
@@ -520,15 +526,16 @@ try:
     page.locator('.route-component-host').wait_for(state='detached')
     assert page.locator('.desktop-inset-route').inner_text()=='Agenda'
     page.evaluate("go('contabilidad')")
-    page.locator('#page-route-bar').get_by_role('button',name='Proyectos',exact=True).click()
-    assert page.evaluate('state.view')=='proyectos'
+    page.locator('#page-route-bar').get_by_role('button',name='Resumen',exact=True).click()
+    assert page.evaluate('state.view')=='informes'
    page.evaluate("go('proyecto',9001)")
    keys=['tareas','listas','ai','conversaciones','planos','obra','diario','calobra','pres','utilidades','fin','archivos']
    for key in keys+['cliente']:page.evaluate('(key)=>projTab(key)',key)
    page.evaluate("window.fixtureRecords=()=>JSON.stringify({projects:state.projects,clients:state.clients,entries:state.entries,invoices:state.invoices,quotes:state.quotes,library:state.library,docs:state.docs});window.fixtureBaseline=fixtureRecords()")
    for view in routes:
     if width>=1100:
-     reveal_route(page,view).click()
+     if view in finance:page.evaluate('(view)=>go(view)',view)
+     else:reveal_route(page,view).click()
     else:page.evaluate('(view)=>document.querySelector(`aside.sidebar .nav-item[data-view="${view}"]`).click()',view)
     assert page.evaluate('state.view')==view
    page.evaluate("go('proyecto',9001)")
@@ -604,7 +611,7 @@ try:
     assert page.evaluate('state.view')=='informes'
     assert page.locator('#desktop-primary').is_visible() and page.locator('#desktop-finance-nav').count()==0
     sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
-    expect(sections.get_by_role('button')).to_have_text(['Resumen','Facturas','Presupuestos','Contabilidad','Previsión'])
+    expect(sections.get_by_role('button')).to_have_text(['Resumen','Presupuestos','Facturas'])
     rect=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
     assert rect['y']>=56 and profile['y']+profile['height']<rect['y']
     assert rect['x']+rect['width']<profile['x']

@@ -6505,6 +6505,12 @@ function invoiceLikeEntries(){
 function entryRef(e){ if(e.link) return e.link; const m=/^\s*(?:factura\s+)?([A-Za-z]{1,5}\s*-?\s*\d{2,}[\w\/-]*)/i.exec(e.concept||""); return m?m[1].replace(/\s+/g,""):e.concept.split(" · ")[0]; }
 function entryEst(e){ if(!e) return ["—","var(--card)"]; if(e.status==="cobr") return ["✓ Cobrada","#DDF0DC"]; if(cobrado(e)>0) return ["Parcial · falta "+fmt(pendienteCobro(e)),"#F5E8CE"]; return daysLate(e)>0?["⚠ Vencida · "+daysLate(e)+" d.","#F6DBD7"]:["Pendiente","#FBF3CE"]; }
 function entryStKey(e){ if(!e) return ""; if(e.status==="cobr") return "cobr"; if(cobrado(e)>0) return "parc"; return daysLate(e)>0?"venc":"pend"; }
+function financeSearchText(){ return String(state.financeSearch||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); }
+function financeSearchMatch(){
+  const term=financeSearchText();
+  if(!term)return true;
+  return Array.from(arguments).some(value=>String(value||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().includes(term));
+}
 function invoiceRows(){
   const docs=(state.invoices||[]).map((f,i)=>{ const e=state.entries.find(x=>x.link===f.ref); return {kind:"doc", f, i, e, ref:f.ref, date:f.date||"", client:f.client||"", brand:f.brand, total:f.total||0, pid:f.projectId||null}; });
   const ents=invoiceLikeEntries().map(e=>({kind:"ent", e, ref:entryRef(e), date:isoOf(e.date), client:e.client||e.sup||(e.concept||"").split(" · ").slice(1).join(" · ")||"", brand:e.brand, total:e.amount||0, pid:e.pid||null}));
@@ -6514,7 +6520,7 @@ function invoiceListHtml(){
   const all=invoiceRows();
   if(!all.length) return `<div class="empty">Todavía no has emitido ninguna factura.</div>`;
   const FF = (state.fFilter=state.fFilter||{from:"",to:"",client:"",status:""});
-  const rows = all.filter(x=> (!FF.from||x.date>=FF.from) && (!FF.to||x.date<=FF.to) && (!FF.client||x.client===FF.client) && (!FF.status||entryStKey(x.e)===FF.status));
+  const rows = all.filter(x=> (!FF.from||x.date>=FF.from) && (!FF.to||x.date<=FF.to) && (!FF.client||x.client===FF.client) && (!FF.status||entryStKey(x.e)===FF.status) && financeSearchMatch(x.ref,x.client,BRAND[x.brand]?.name,state.projects.find(p=>p.id===x.pid)?.name));
   const clientesF=[...new Set(all.map(x=>x.client).filter(Boolean))].sort();
   const activo = FF.from||FF.to||FF.client||FF.status;
   const nEnt=all.filter(x=>x.kind==="ent").length;
@@ -6754,7 +6760,20 @@ function vCompras(){
   </div>`).join("")}
   <p style="font-size:11px;color:var(--ink-faint)">Cambia el estado desde aquí mismo (Pedido → En tránsito → Instalado) y se actualiza en la lista del proyecto. Los instalados salen de la vista general — pulsa su tarjeta para verlos.</p></details>`;
 }
+function vFinanceSearchResults(){
+  const E=ModernoDaily.escape;
+  const query=state.financeSearch||"";
+  const quotes=byBrand(state.quotes||[]).filter(q=>financeSearchMatch(q.ref,q.client,BRAND[q.brand]?.name,state.projects.find(p=>p.id===q.projectId)?.name));
+  const invoices=byBrand(invoiceRows()).filter(x=>financeSearchMatch(x.ref,x.client,BRAND[x.brand]?.name,state.projects.find(p=>p.id===x.pid)?.name));
+  const row=(item,view)=>`<button type="button" class="entry" style="width:100%;border:0;background:var(--card);text-align:left;cursor:pointer" onclick="go('${view}')"><b>${E(item.ref||"—")}</b><span style="color:var(--ink-soft)">${E(item.client||"Sin cliente")}</span><span class="amt" style="color:var(--ink)">${fmt(item.total||0)}</span></button>`;
+  return `<section class="finance-search-results"><h1 class="big">Resultados de <span class="hl">búsqueda</span></h1><p class="sub">Coincidencias para «${E(query)}» en presupuestos y facturas.</p>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start">
+      <div class="widget"><div class="wh"><span>Presupuestos</span><i>${quotes.length} resultado${quotes.length===1?"":"s"}</i></div>${quotes.length?quotes.slice(0,12).map(item=>row(item,"presupuestos")).join(""):`<div class="empty" style="padding:16px">No hay presupuestos que coincidan.</div>`}</div>
+      <div class="widget"><div class="wh"><span>Facturas</span><i>${invoices.length} resultado${invoices.length===1?"":"s"}</i></div>${invoices.length?invoices.slice(0,12).map(item=>row(item,"facturas")).join(""):`<div class="empty" style="padding:16px">No hay facturas que coincidan.</div>`}</div>
+    </div></section>`;
+}
 function vInformes(){
+  if(financeSearchText())return vFinanceSearchResults();
   const ins = byBrand(state.entries).filter(e=>e.kind==="in");
   const outs = byBrand(state.entries).filter(e=>e.kind==="out");
   const yOf = e => +e.date.split("/")[2];
@@ -10659,7 +10678,7 @@ function renderQuoteTransition(){
 function vQuotesList(){
   const F = state.qFilter = state.qFilter || {from:"",to:"",client:"",status:""};
   const qs = byBrand(state.quotes);
-  const shown = qs.filter(q=> (!F.from||(q.date||"")>=F.from) && (!F.to||(q.date||"")<=F.to) && (!F.client||q.client===F.client) && (!F.status||(q.status||"pend")===F.status));
+  const shown = qs.filter(q=> (!F.from||(q.date||"")>=F.from) && (!F.to||(q.date||"")<=F.to) && (!F.client||q.client===F.client) && (!F.status||(q.status||"pend")===F.status) && financeSearchMatch(q.ref,q.client,BRAND[q.brand]?.name,state.projects.find(p=>p.id===q.projectId)?.name));
   const sum = st => shown.filter(q=>(q.status||"pend")===st).reduce((s,q)=>s+q.total,0);
   const clientes = [...new Set(qs.map(q=>q.client))].sort();
   return `
@@ -10672,8 +10691,6 @@ function vQuotesList(){
     <div><label>Estado</label><div class="pill-tabs" style="margin:0;height:44px;box-sizing:border-box;align-items:center">
       ${[["pend","Pendiente"],["acc","Aceptado"],["rej","Rechazado"]].map(([k,x])=>`<button class="${F.status===k?'on':''}" onclick="state.qFilter.status=state.qFilter.status==='${k}'?'':'${k}';renderQuoteTransition()">${x}</button>`).join("")}
     </div></div>
-    <span style="flex:1"></span>
-    <button class="btn btn-dark" onclick="state.qView='nuevo';state.draft=null;renderQuoteTransition()">${ico("mas")} Nuevo presupuesto</button>
   </div>
   <div class="fin-cards" style="grid-template-columns:repeat(3,1fr)">
     <div class="fin-card" style="background:var(--gold-soft)"><span class="lab" style="background:var(--white)">Pendientes</span><div class="val">${fmt(sum("pend"))}</div></div>
@@ -11472,7 +11489,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.45";
+const MODERNO_VER="v3.67.46";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13653,13 +13670,13 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36556">
 <link rel="stylesheet" href="/brand/reui/font.css?v=365133">
-<script src="/profile-component.js?v=36745"></script>
+<script src="/profile-component.js?v=36746"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=365157"></script>
-<link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=365144">
-<script src="/page-breadcrumbs.js?v=203"></script>
+<link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=365145">
+<script src="/page-breadcrumbs.js?v=204"></script>
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=365112">
-<script src="/calendar-ui.js?v=36745"></script>
+<script src="/calendar-ui.js?v=36746"></script>
 <script>
 ModernoAppLoading.setProbe(()=>(_localResumeFailed||!_localResumePending&&!document.documentElement.classList.contains('portalboot'))&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
 if(!sb)ModernoAppLoading.sessionReady();
