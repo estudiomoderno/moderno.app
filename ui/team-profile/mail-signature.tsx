@@ -13,6 +13,7 @@ interface SignatureImage {
   name: string
   type: string
   size: number
+  width?: number
 }
 
 interface SignatureValue {
@@ -23,6 +24,7 @@ interface SignatureValue {
   imageName?: string
   imageType?: string
   imageSize?: number
+  imageWidth?: number
 }
 
 interface MailSignatureProps {
@@ -33,6 +35,13 @@ interface MailSignatureProps {
 }
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024
+const MIN_IMAGE_WIDTH = 80
+const MAX_IMAGE_WIDTH = 600
+const DEFAULT_IMAGE_WIDTH = 320
+
+function normalizedImageWidth(value: unknown) {
+  return Math.min(MAX_IMAGE_WIDTH, Math.max(MIN_IMAGE_WIDTH, Number(value) || DEFAULT_IMAGE_WIDTH))
+}
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!)
@@ -90,6 +99,7 @@ export function MailSignature({ email, initialValue, onClose, onSave }: MailSign
   const [html, setHtml] = useState(initialHtml)
   const [text, setText] = useState(initialValue?.text ?? "")
   const [files, setFiles] = useState<FileWithPreview[]>(initialImages)
+  const [imageWidth, setImageWidth] = useState(() => normalizedImageWidth(initialValue?.images?.[0]?.width ?? initialValue?.imageWidth))
   const [formats, setFormats] = useState({ bold: false, italic: false, underline: false })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -140,7 +150,7 @@ export function MailSignature({ email, initialValue, onClose, onSave }: MailSign
           ? { name: item.file.name, type: item.file.type, size: item.file.size }
           : item.file
         const dataUrl = item.file instanceof File ? await fileDataUrl(item.file) : String(item.preview ?? metadata.url ?? "")
-        return { dataUrl, name: metadata.name, type: metadata.type, size: metadata.size }
+        return { dataUrl, name: metadata.name, type: metadata.type, size: metadata.size, width: imageWidth }
       }))
       const first = images[0]
       onSave({
@@ -151,6 +161,7 @@ export function MailSignature({ email, initialValue, onClose, onSave }: MailSign
         imageName: first?.name ?? "",
         imageType: first?.type ?? "",
         imageSize: first?.size ?? 0,
+        imageWidth: first?.width ?? imageWidth,
       })
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : "No se ha podido guardar la firma.")
@@ -243,6 +254,29 @@ export function MailSignature({ email, initialValue, onClose, onSave }: MailSign
                   onFilesChange={setFiles}
                   className="max-w-none"
                 />
+                {files.length > 0 && (
+                  <div className="mt-4 rounded-xl border bg-muted/20 px-4 py-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <label htmlFor="mail-signature-image-size" className="text-sm font-medium">Tamaño de la imagen</label>
+                      <span className="text-xs tabular-nums text-muted-foreground">{imageWidth} px</span>
+                    </div>
+                    <input
+                      id="mail-signature-image-size"
+                      type="range"
+                      min={MIN_IMAGE_WIDTH}
+                      max={MAX_IMAGE_WIDTH}
+                      step={10}
+                      value={imageWidth}
+                      onChange={(event) => setImageWidth(normalizedImageWidth(event.currentTarget.value))}
+                      aria-label="Tamaño de la imagen"
+                      className="mt-3 h-2 w-full cursor-pointer accent-[#0666ff]"
+                    />
+                    <div className="mt-1 flex justify-between text-[11px] text-muted-foreground" aria-hidden="true">
+                      <span>Pequeña</span>
+                      <span>Grande</span>
+                    </div>
+                  </div>
+                )}
                 {error && <p className="mt-2 text-sm text-destructive" role="alert">{error}</p>}
               </section>
 
@@ -250,7 +284,7 @@ export function MailSignature({ email, initialValue, onClose, onSave }: MailSign
                 <p className="text-xs font-medium text-muted-foreground">VISTA PREVIA</p>
                 <div className="mt-4 min-h-28 rounded-lg bg-background p-4 text-sm shadow-sm">
                   {html ? <div className="leading-6" dangerouslySetInnerHTML={{ __html: sanitizeSignatureHtml(html) }} /> : <p className="text-muted-foreground">Tu firma aparecerá aquí.</p>}
-                  {files[0]?.preview && <img src={files[0].preview} alt="Vista previa de la foto de firma" className="mt-4 max-h-28 max-w-64 object-contain" />}
+                  {files[0]?.preview && <img src={files[0].preview} alt="Vista previa de la foto de firma" className="mt-4 object-contain" style={{ width: `${imageWidth}px`, maxWidth: "100%", height: "auto" }} />}
                 </div>
               </section>
             </div>
