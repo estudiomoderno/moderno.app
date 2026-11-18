@@ -13,7 +13,7 @@ var ModernoFiles = (() => {
     if (!/^[a-f0-9-]{36}\//i.test(path) || path.includes('\\') || /[\x00-\x1f?#%]/.test(path) || path.split('/').some(p=>!p||p==='.'||p==='..')) throw new Error('Ruta de archivo no válida');
     return path;
   }
-  function createResolver({origins, signMember, signPortal, viewerOrigin}) {
+  function createResolver({origins, signMember, signPortal}) {
     return async function resolve(source, context) {
       const path=storagePath(source,origins);
       if (!path) {
@@ -21,17 +21,11 @@ var ModernoFiles = (() => {
         if (typeof source==='string' && (/^https:\/\//.test(source) || /^data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[a-z0-9+/=\r\n]*$/i.test(source))) return source;
         throw new Error('Archivo no disponible');
       }
-      let result,localObject=false;
+      let result;
       if(context?.portalToken) result=await signPortal({path,token:context.portalToken,type:context.portalType});
       else {
         if(!context?.study || path.split('/')[0]!==context.study) throw new Error('Archivo de otro estudio');
         result=await signMember(path);
-        localObject=result?.kind==='object-url';
-      }
-      if(localObject){
-        const url=new URL(result.url);
-        if(url.protocol!=='blob:' || !viewerOrigin || url.origin!==viewerOrigin) throw new Error('Enlace de descarga no válido');
-        return url.href;
       }
       const url=new URL(result);
       if(!origins.includes(url.origin) || !url.pathname.startsWith('/storage/v1/object/sign/archivos/') || url.username || url.password) throw new Error('Enlace de descarga no válido');

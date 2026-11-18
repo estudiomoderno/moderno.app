@@ -73,6 +73,13 @@ test('handler authenticates a large session from the bounded proxy envelope',asy
  const response=await createHandler(deps)(envelopeRequest(captureBody,token));
  assert.equal(response.status,200);assert.equal(received,'Bearer '+token);
 });
+test('member file signing uses the bounded session and refuses invalid paths',async()=>{
+ let signed=0,received;const token='x'.repeat(16000),path='22222222-2222-4222-8222-222222222222/clipper/11111111-1111-4111-8111-111111111111/image.jpg';
+ const deps={authenticate:async value=>{received=value;return {id:'fixture'};},file:async(_actor,value)=>{assert.equal(value,path);signed++;return 'https://clone.example/storage/v1/object/sign/archivos/'+path+'?token=ficticio';}};
+ const response=await createHandler(deps)(envelopeRequest({action:'file',path},token));assert.equal(response.status,200);assert.equal(received,'Bearer '+token);assert.equal(signed,1);
+ for(const invalid of ['other/no.jpg','22222222-2222-4222-8222-222222222222/../secret.jpg','22222222-2222-4222-8222-222222222222//secret.jpg'])assert.ok((await createHandler(deps)(envelopeRequest({action:'file',path:invalid},token))).status>=400);
+ assert.equal(signed,1);
+});
 test('failed image download stores no hotlink and leaves incomplete capture',async()=>{
  let saved,uploads=0,imageOptions;const deps={authenticate:async()=>({id:'fixture'}),start:async()=>({start:true}),finish:async(_actor,_id,c)=>{saved=c;},upload:async()=>{uploads++;},fetchPage:async (url,options)=>{
  if(url!==product.url){imageOptions=options;throw Object.assign(Error('blocked'),{code:'store_http_403'});}return {url,bytes:Buffer.from(page(product)),headers:{'content-type':'text/html'}};

@@ -27,6 +27,12 @@ Deno.serve(createHandler({allowedOrigins:origins,
   return uploadCaptureImage({actor,server,path,bytes,contentType});
  },
  async sign(actor:any,path:string){return signCaptureImage({actor,server,path,expiresIn:60});},
+ async file(actor:any,path:string){
+  const {data:allowed,error:accessError}=await actor.client.rpc('app_archivo_roles',{nombre:path,operacion:'leer'});
+  if(accessError||allowed!==true)throw Object.assign(new Error('Archivo no autorizado'),{code:'42501'});
+  const {data,error}=await server.storage.from('archivos').createSignedUrl(path,60);
+  if(error||!data?.signedUrl)throw error||new Error('Archivo no disponible');return data.signedUrl;
+ },
  // No API key configured => manual categorization. No request leaves the server.
  suggest:Deno.env.get('ANTHROPIC_API_KEY')?async(capture:any,signal:AbortSignal)=>{
   const categories=['Mobiliario','Iluminación','Textiles','Decoración','Baño','Cocina','Otros'];

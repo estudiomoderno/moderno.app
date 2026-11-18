@@ -1,7 +1,7 @@
 import {safeFetch,publicURL,verifyImage,CaptureError} from './network.mjs';
 import {extractProduct} from './extract.mjs';
 const uuid=s=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
-export function createHandler({authenticate,start,finish,read,upload,sign,suggest,fetchPage=safeFetch,allowedOrigins=['https://app.moderno.app']}){
+export function createHandler({authenticate,start,finish,read,upload,sign,file,suggest,fetchPage=safeFetch,allowedOrigins=['https://app.moderno.app']}){
  return async req=>{
   const origin=req.headers.get('origin'),headers={'Content-Type':'application/json','Cache-Control':'no-store','Vary':'Origin'};
   if(origin&&allowedOrigins.includes(origin))headers['Access-Control-Allow-Origin']=origin;
@@ -26,6 +26,11 @@ export function createHandler({authenticate,start,finish,read,upload,sign,sugges
    if(new TextEncoder().encode(JSON.stringify(body)).length>10000)throw new CaptureError('request_size','Solicitud demasiado grande.');
    const authorization=req.headers.get('authorization')||(privateSession?(privateSession.startsWith('Bearer ')?privateSession:'Bearer '+privateSession):'');if(!/^Bearer [A-Za-z0-9._-]{20,32768}$/.test(authorization))return response({error:'Inicia sesión'},401);
    actor=await authenticate(authorization);if(!actor)return response({error:'La sesión ha caducado'},401);
+   if(body.action==='file'){
+    const path=body.path;
+    if(typeof path!=='string'||path.length>1024||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//i.test(path)||path.includes('\\')||/[\x00-\x1f?#%]/.test(path)||path.split('/').some(part=>!part||part==='.'||part==='..'))throw new CaptureError('invalid_storage_path','Ruta de archivo no válida.');
+    const url=await file(actor,path);return response({url,expiresIn:60});
+   }
    id=body.id;if(!uuid(id))throw new CaptureError('invalid_id','Identificador de solicitud no válido.');
    if(body.action==='read'){
     const row=await read(actor,id);if(!row)return response({error:'Captura no disponible'},404);

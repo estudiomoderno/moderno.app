@@ -21,6 +21,11 @@ function product_clipper_proxy_request(array $server,string $raw): array {
     if (strncmp($session,'Bearer ',7)===0) $session=substr($session,7);
     if (!preg_match('/^[A-Za-z0-9._-]{20,32768}$/D',$session)) throw new ProductClipperProxyError('Inicia sesión de nuevo',401);
     $uuid='/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iD';
+    if (($body['action'] ?? '')==='file') {
+        $path=$body['path'] ?? null;$parts=is_string($path)?explode('/',$path):[];
+        if (!is_string($path)||strlen($path)>1024||!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//iD',$path)||preg_match('/[\\\\\x00-\x1f?#%]/',$path)||in_array('', $parts,true)||in_array('.', $parts,true)||in_array('..', $parts,true)) throw new ProductClipperProxyError('Solicitud no válida',400);
+        return ['token'=>$session,'raw'=>$raw];
+    }
     if (!is_string($body['id'] ?? null)||!preg_match($uuid,$body['id'])) throw new ProductClipperProxyError('Solicitud no válida',400);
     if (($body['action'] ?? '')==='read') return ['token'=>$session,'raw'=>$raw];
     if (($body['action'] ?? '')!=='capture'||!is_string($body['studyId'] ?? null)||!preg_match($uuid,$body['studyId'])||!is_array($body['destination'] ?? null)) throw new ProductClipperProxyError('Solicitud no válida',400);
