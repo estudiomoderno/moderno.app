@@ -1,48 +1,37 @@
-/* Same center and reserved profile space as the project window row. */
+/* Shared top route and the Finance toolbar. */
 #page-route-bar{display:none}
-@media screen and (min-width:1100px){
- body.desktop-shell #page-route-bar{position:fixed;top:16px;left:var(--desktop-content-left,112px);right:max(148px,calc(var(--header-actions-width,104px) + 40px));height:36px;transition:left 240ms cubic-bezier(.22,.61,.36,1);z-index:71;display:flex;align-items:center;min-width:0}
- #page-route-bar .route-component-host{display:block;min-width:0;max-width:100%;line-height:0}
- #page-route-bar>.route-fallback{height:32px;box-sizing:border-box;display:flex;align-items:center;padding:0 12px;border:1px solid var(--ui-line);border-radius:12px;background:var(--app-surface);color:var(--ink);font:500 12px/16px Inter,Segoe UI,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- #page-route-bar>.route-fallback button{border:0;background:transparent;color:var(--ink-soft);font:inherit;cursor:pointer;padding:0}
- #page-route-bar>.route-fallback button:focus-visible{outline:2px solid var(--app-outline);outline-offset:2px}
- #page-route-bar>.route-fallback [aria-current=page]{font-weight:500}
- body:has(dialog[open]) #page-route-bar{visibility:hidden}
-}
+#desktop-header .desktop-inset-breadcrumb>.route-component-host{display:block;min-width:0;max-width:100%;line-height:0}
+#desktop-header .desktop-inset-breadcrumb>.route-fallback{display:flex;align-items:center;gap:4px;min-width:0;font:500 13px/1 Inter,Segoe UI,sans-serif;white-space:nowrap}
+#desktop-header .route-fallback-link,#desktop-header .route-fallback-current{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#404040;font:inherit}
+#desktop-header .route-fallback-link{cursor:pointer}
+#desktop-header .route-fallback-link:hover,#desktop-header .route-fallback-current{background:#f0f0f0;color:#171717}
+#desktop-header .route-fallback-link:focus-visible{outline:2px solid var(--app-outline);outline-offset:1px}
+#desktop-header .route-fallback-separator{color:#a3a3a3;font-size:18px}
 @media print{#page-route-bar{display:none!important}}
+
 /* One Finance entry; retain the original buttons as reversible router sources. */
 @media screen {
- body.finance-navigation #ngFin>.nav-sub {display:none!important}
- body.finance-navigation #ngFin>.nav-head>.chev {display:none!important}
- #page-route-bar.is-finance {gap:12px}
- #page-route-bar .finance-fallback {display:flex;align-items:center;gap:2px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;white-space:nowrap;height:32px;font:500 12px/16px Inter,Segoe UI,sans-serif}
- #page-route-bar .finance-fallback button {height:32px;flex:none;padding:0 12px;border:0;border-radius:6px;background:transparent;color:var(--ink);font:inherit;cursor:pointer}
- #page-route-bar .finance-fallback button[aria-current=page],#page-route-bar .finance-fallback button:hover {background:var(--app-control)}
- #page-route-bar .finance-fallback button:focus-visible {outline:2px solid var(--app-outline);outline-offset:-2px}
- #page-route-bar .finance-fallback-toolbar{display:flex;align-items:center;gap:12px;width:100%;height:36px;font:500 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif}
- #page-route-bar .finance-fallback-toolbar .finance-fallback{flex:none;height:36px;gap:0;border:1px solid #dedede;border-radius:8px;background:#fff;overflow:hidden}
- #page-route-bar .finance-fallback-toolbar .finance-fallback button{height:34px;margin:0;padding:0 12px;border-right:1px solid #dedede;border-radius:0;font-size:13px}
- #page-route-bar .finance-fallback-toolbar .finance-fallback button:last-child{border-right:0}
- #page-route-bar .finance-fallback-search{display:flex;flex:1;max-width:576px;min-width:220px;height:36px}
- #page-route-bar .finance-fallback-search button,#page-route-bar .finance-fallback-search input{height:36px;box-sizing:border-box;border:1px solid #dedede;background:#fff;color:#202020;font:inherit}
+ body.finance-navigation #ngFin>.nav-sub{display:none!important}
+ body.finance-navigation #ngFin>.nav-head>.chev{display:none!important}
+ html body.desktop-shell:not(.portalmode) #view>.contact-toolbar{margin:-6px 0 14px}
+ #page-route-bar.is-finance{display:flex;align-items:center;width:100%;height:34px;min-width:0;margin:-6px 0 14px;font:500 13px/1.3 "Moderno ReUI Inter",Inter,Arial,sans-serif}
+ #page-route-bar.is-finance>.route-component-host{display:block;width:100%;min-width:0;line-height:0}
+ #page-route-bar .finance-fallback-toolbar{display:flex;align-items:center;gap:12px;width:100%;height:34px}
+ #page-route-bar .finance-fallback{display:flex;flex:none;align-items:center;height:34px;gap:0;border:1px solid #dedede;border-radius:8px;background:#fff;overflow:hidden;white-space:nowrap}
+ #page-route-bar .finance-fallback button{display:flex;align-items:center;gap:7px;height:32px;margin:0;padding:0 12px;border:0;border-right:1px solid #dedede;border-radius:0;background:transparent;color:var(--ink);font:inherit;cursor:pointer}
+ #page-route-bar .finance-fallback button:last-child{border-right:0}
+ #page-route-bar .finance-fallback button[aria-current=page],#page-route-bar .finance-fallback button:hover{background:var(--app-control)}
+ #page-route-bar .finance-fallback button:focus-visible{outline:2px solid var(--app-outline);outline-offset:-2px}
+ #page-route-bar .finance-fallback-icon{font-size:14px;line-height:1}
+ #page-route-bar .finance-fallback-search{display:flex;flex:1;max-width:576px;min-width:220px;height:34px}
+ #page-route-bar .finance-fallback-search button,#page-route-bar .finance-fallback-search input{height:34px;box-sizing:border-box;border:1px solid #dedede;background:#fff;color:#202020;font:inherit}
  #page-route-bar .finance-fallback-search button{padding:0 13px;border-radius:8px 0 0 8px;cursor:pointer}
  #page-route-bar .finance-fallback-search input{flex:1;min-width:0;margin-left:-1px;padding:0 11px;border-radius:0 8px 8px 0;outline:0}
- #page-route-bar .finance-fallback-new,#page-route-bar .finance-fallback-share{flex:none;height:36px;border-radius:8px;font:inherit;cursor:pointer}
+ #page-route-bar .finance-fallback-new,#page-route-bar .finance-fallback-share{flex:none;height:34px;border-radius:8px;font:inherit;cursor:pointer}
  #page-route-bar .finance-fallback-new{margin-left:auto;padding:0 13px;border:1px solid #0666ff;background:#0666ff;color:#fff}
- #page-route-bar .finance-fallback-share{display:grid;place-items:center;width:36px;padding:0;border:1px solid #dedede;background:#fff;color:#171717;font-size:18px}
- #page-route-bar.is-finance>.route-component-host {width:100%}
+ #page-route-bar .finance-fallback-share{display:grid;place-items:center;width:34px;padding:0;border:1px solid #dedede;background:#fff;color:#171717;font-size:18px}
+ body:has(dialog[open]) #page-route-bar{visibility:hidden}
 }
-@media screen and (min-width:1100px){#page-route-bar.is-finance>.route-fallback {flex:none}}
 @media screen and (max-width:1099px){
- body.finance-navigation #page-route-bar.is-finance {display:flex;align-items:center;min-width:0;max-width:100%;min-height:36px;margin-bottom:16px}
- #page-route-bar.is-finance>.route-fallback {display:none}
-}
-
-@media screen{#page-route-bar .finance-fallback::-webkit-scrollbar{display:none}}
-
-/* Section routes and finance controls sit below the permanent project row. */
-@media screen and (min-width:1100px){
- html body.desktop-shell #page-route-bar:not(.is-finance){display:none!important}
- html body.desktop-shell #page-route-bar.is-finance,html body.desktop-shell.global-project-header #page-route-bar.is-finance{top:64px;left:calc(var(--desktop-content-left) + 16px);right:24px;height:36px;background:#fff;box-shadow:none}
- html body.desktop-shell.finance-navigation .main{padding-top:112px!important}
+ body.finance-navigation #page-route-bar.is-finance{min-height:34px;margin:0 0 16px}
 }

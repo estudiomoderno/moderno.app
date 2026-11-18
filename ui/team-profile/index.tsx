@@ -5,7 +5,7 @@ import {Pattern} from './pattern';
 import {Notifications} from './notifications';
 import {ProjectSettings} from './project-settings';
 import {ProjectWindows} from './project-windows';
-import {PageBreadcrumbs} from './page-breadcrumbs';
+import {FinanceToolbar,PageBreadcrumbs} from './page-breadcrumbs';
 import {ShoppingDelete} from './shopping-delete';
 import {MailDelete} from './mail-delete';
 import {ShoppingAdd} from './shopping-add';
@@ -18,7 +18,7 @@ import {MailSignature} from './mail-signature';
 
 export function mountComponent(host:HTMLElement,Component:React.ComponentType<any>,onError?:()=>void,onReady?:()=>void){
  const shadow=host.attachShadow({mode:'open'});
- const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=36746';
+ const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='/brand/reui/team-profile.css?v=36748';
  const frame=document.createElement('div');frame.className='style-nova';
  const content=document.createElement('div'),portals=document.createElement('div');portals.className='reui-portals';frame.append(content,portals);
  host.style.visibility='hidden';let revealed=false;const reveal=()=>{if(revealed)return;revealed=true;host.style.visibility='';host.dataset.reuiReady='true';onReady?.();};
@@ -34,6 +34,7 @@ export function mountProjectSettings(host:HTMLElement,onError?:()=>void){return 
 export function mountProjectWindows(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,ProjectWindows,onError,onReady);}
 
 export function mountBreadcrumbs(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,PageBreadcrumbs,onError,onReady);}
+export function mountFinanceToolbar(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,FinanceToolbar,onError,onReady);}
 export function mountShoppingDelete(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,ShoppingDelete,onError,onReady);}
 export function mountMailDelete(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailDelete,onError,onReady);}
 export function mountMailEmoji(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailEmoji,onError,onReady);}

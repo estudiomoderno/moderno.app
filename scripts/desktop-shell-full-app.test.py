@@ -147,6 +147,10 @@ def check_header_actions(page,width):
  page.wait_for_function("(()=>{const s=document.querySelector('.ha-component-host').shadowRoot;return s.activeElement===s.querySelector('[data-profile-trigger]');})()")
 def check_finances(page,width):
  # Exercise both original ReUI and native recovery without touching stored records.
+ if width>=1100:
+  page.evaluate("go('agenda')")
+  page.locator('.contact-toolbar').wait_for(state='visible')
+  page.evaluate('(y)=>window.agendaToolbarY=y',page.locator('.contact-toolbar').bounding_box()['y'])
  page.evaluate("go('home')")
  if width>=1100:
   page.get_by_role('button',name='Finanzas',exact=True).click()
@@ -162,15 +166,17 @@ def check_finances(page,width):
  sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
  sections.wait_for(state='visible')
  expect(sections.get_by_role('button')).to_have_text(expected)
+ expect(sections.locator('svg')).to_have_count(3)
  search=page.get_by_role('search',name='Buscar en Finanzas',exact=True);expect(search).to_be_visible()
  search_box=search.get_by_role('searchbox',name='Buscar en Finanzas',exact=True);search_box.fill('PS');assert page.evaluate('state.financeSearch')=='PS';search_box.fill('')
  new_quote=page.get_by_role('button',name='Nuevo presupuesto',exact=True);expect(new_quote).to_be_visible();expect(page.get_by_role('button',name='Compartir Finanzas',exact=True)).to_be_visible()
  new_quote.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))');new_quote_color=new_quote.evaluate("e=>getComputedStyle(e).backgroundColor");assert new_quote_color=='rgb(6, 102, 255)',new_quote_color
  if width>=1100:
   r=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
-  assert 32<=r['height']<=40 and r['y']>=56 and profile['y']+profile['height']<r['y'],(r,profile)
+  assert 32<=r['height']<=40,(r,profile)
   assert r['x']+r['width']<profile['x'],(r,profile)
- page.locator('.route-component-host[data-reui-ready=true]').wait_for(state='attached')
+  assert abs(r['y']-page.evaluate('window.agendaToolbarY'))<=1,(r['y'],page.evaluate('window.agendaToolbarY'))
+ page.locator('#page-route-bar .route-component-host[data-reui-ready=true]').wait_for(state='attached')
  sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
  if width<1100:
   # The navigation row must not change the widths of the existing finance content.
@@ -178,7 +184,7 @@ def check_finances(page,width):
   page.evaluate('ModernoPageBreadcrumbs.setEnabled(false)')
   assert page.locator('#view .fin-card').evaluate_all('(els)=>els.map(e=>e.getBoundingClientRect().width)')==original_widths
   page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
-  page.locator('.route-component-host[data-reui-ready=true]').wait_for(state='attached')
+  page.locator('#page-route-bar .route-component-host[data-reui-ready=true]').wait_for(state='attached')
   sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
  if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'finance-original-{width}.png'),full_page=True)
  for view in ['facturas','presupuestos','informes']:
@@ -187,11 +193,11 @@ def check_finances(page,width):
   assert page.evaluate('state.view')==view
   active=page.locator('#page-route-bar [data-finance-view="'+view+'"][aria-current=page]')
   active.wait_for(state='visible')
-  page.wait_for_function("""(view)=>{const host=document.querySelector('#page-route-bar .route-component-host');const root=host?.shadowRoot||document.querySelector('#page-route-bar');return root.activeElement?.dataset.financeView===view||document.activeElement?.dataset.financeView===view;}""",arg=view)
+  expect(page.locator('#page-route-bar').get_by_role('button',name='Nueva factura' if view=='facturas' else 'Nuevo presupuesto',exact=True)).to_be_visible()
  # Both invoice/quote drafts retain the native warning; cancel keeps the same data and selected tab.
  for view,kind in [('facturas','factura'),('presupuestos','presupuesto')]:
   page.evaluate('(view)=>go(view)',view)
-  page.get_by_role('button',name='Nueva factura' if kind=='factura' else 'Nuevo presupuesto',exact=True).click()
+  page.locator('#page-route-bar').get_by_role('button',name='Nueva factura' if kind=='factura' else 'Nuevo presupuesto',exact=True).click()
   page.evaluate("state.draft.legend='Borrador financiero ficticio conservado';window.financeDraft=state.draft")
   page.locator('#page-route-bar [data-finance-view=informes]').click()
   assert page.evaluate('state.view')==view
@@ -353,17 +359,18 @@ try:
     neutral_canvas(page)
     if width>=1100:
      if view in ['home','proyectos']:
-      page.locator('#project-window-bar').wait_for(state='visible');assert page.locator('.desktop-inset-route').is_hidden()
+      page.locator('#project-window-bar').wait_for(state='visible')
      else:
       assert page.locator('#project-window-bar').count()==0,'Las pestañas de proyecto solo deben existir dentro de Proyectos'
-      route=page.locator('.desktop-inset-route');route.wait_for(state='visible')
-      expected={'workspace':'Tareas','agenda':'Agenda','mail':'Mail','calendario':'Calendario','biblioteca':'Productos','catalogo':'Servicios','informes':'Finanzas','prevision':'Previsión'}.get(view,page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip())
-      assert route.inner_text()==expected,(view,route.inner_text(),expected)
-      assert 'Moderno ReUI Inter' in route.evaluate('(e)=>getComputedStyle(e).fontFamily')
-      if view in finance:
-       sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True);sections.wait_for(state='visible')
-       assert sections.bounding_box()['y']>=56
-      else:assert page.locator('#page-route-bar:visible').count()==0
+     route=page.locator('.desktop-inset-breadcrumb [aria-current=page]');route.wait_for(state='visible')
+     expected={'home':'Inicio','proyectos':'Proyectos','workspace':'Tareas','agenda':'Agenda','mail':'Mail','calendario':'Calendario','biblioteca':'Productos','catalogo':'Servicios','informes':'Finanzas','prevision':'Previsión'}.get(view,page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip())
+     assert route.inner_text()==expected,(view,route.inner_text(),expected)
+     assert 'Moderno ReUI Inter' in route.evaluate('(e)=>getComputedStyle(e).fontFamily')
+     expect(page.get_by_role('navigation',name='breadcrumb',exact=True).get_by_role('button')).to_have_count(3)
+     if view in finance:
+      sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True);sections.wait_for(state='visible')
+      assert sections.bounding_box()['height']==34
+     else:assert page.locator('#page-route-bar:visible').count()==0
     else:
      assert page.locator('#page-route-bar').count()==(1 if view in finance else 0)
      if view in finance:
@@ -401,8 +408,8 @@ try:
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
     assert page.locator('#page-route-bar').count()==1
     page.locator('aside.sidebar .nav-item[data-view="agenda"]').evaluate('(button)=>button.click()')
-    page.locator('.desktop-inset-route').wait_for(state='visible')
-    assert page.locator('.desktop-inset-route').inner_text()=='Agenda'
+    page.locator('.desktop-inset-breadcrumb [aria-current=page]').wait_for(state='visible')
+    assert page.locator('.desktop-inset-breadcrumb [aria-current=page]').inner_text()=='Agenda'
     assert page.locator('#page-route-bar').is_hidden()
     assert page.locator('#view>h1.big').count()==0
     expect(page.locator('.contact-category-tabs>button')).to_have_text(['Todos','Clientes','Proveedores','Contratistas','Técnicos','Team'])
@@ -416,6 +423,7 @@ try:
     assert 8<=filter_boxes[0]['y']-header_bottom<=32,(header_bottom,filter_boxes[0]['y'])
     toolbar_controls=page.locator('.agenda-search-group,.contact-settings-trigger,.contact-new').evaluate_all('(bs)=>bs.map(b=>{const r=b.getBoundingClientRect();return {y:r.y,height:r.height}})')
     assert len({round(box['y'],1) for box in toolbar_controls+filter_boxes})==1
+    page.evaluate('(y)=>window.agendaToolbarY=y',filter_boxes[0]['y'])
     assert page.locator('.contact-toolbar').evaluate('(e)=>[...e.children].map(c=>c.className)')==['pill-tabs contact-category-tabs','agenda-search-group','contact-toolbar-actions']
     assert page.locator('.contact-new').count()==1
     assert page.locator('.contact-toolbar-actions').evaluate('(e)=>[...e.children].map(c=>c.tagName)')==['BUTTON','DETAILS']
@@ -524,7 +532,7 @@ try:
     page.get_by_role('button',name='Cerrar',exact=True).click()
     page.evaluate('document.querySelector(".route-component-host").shadowRoot.querySelector("link").dispatchEvent(new Event("error"))')
     page.locator('.route-component-host').wait_for(state='detached')
-    assert page.locator('.desktop-inset-route').inner_text()=='Agenda'
+    assert page.locator('.route-fallback-current').inner_text().endswith('Agenda')
     page.evaluate("go('contabilidad')")
     page.locator('#page-route-bar').get_by_role('button',name='Resumen',exact=True).click()
     assert page.evaluate('state.view')=='informes'

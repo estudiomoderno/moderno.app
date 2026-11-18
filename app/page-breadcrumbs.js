@@ -1,16 +1,23 @@
-/* Route presentation only. Existing router, permissions and draft guards remain authoritative. */
+/* Shared route and Finance toolbar presentation. Existing router, permissions and draft guards remain authoritative. */
 var ModernoPageBreadcrumbs=(()=>{
  'use strict';
- let enabled=true,bar=null,component=null,original=true,nativeFinance=null,pendingFocus=false;
+ let enabled=true,routeHost=null,routeMount=null,routeComponent=null,financeBar=null,financeComponent=null,originalRoute=true,originalFinance=true,nativeFinance=null,pendingFocus=false;
  const media=window.matchMedia('(min-width:1100px)');
  const finance=[{view:'informes',label:'Resumen'},{view:'presupuestos',label:'Presupuestos'},{view:'facturas',label:'Facturas'}];
  const financeViews=['informes','presupuestos','facturas','contabilidad','prevision'];
+ const labels={home:'Inicio',proyectos:'Proyectos',informes:'Finanzas',facturas:'Facturas',presupuestos:'Presupuestos',contabilidad:'Contabilidad',prevision:'Previsión',workspace:'Tareas',agenda:'Agenda',mail:'Mail',calendario:'Calendario',biblioteca:'Productos',catalogo:'Servicios',plantillas:'Plantillas',tutoriales:'Tutoriales',soporte:'Soporte',ajustes:'Ajustes',admin:'Administración'};
  const allowed=()=>finance.filter(item=>canView(item.view)&&document.querySelector('aside.sidebar .nav-item[data-view="'+item.view+'"]'));
  const financial=()=>financeViews.includes(state.view);
- function clear(){component?.unmount();component=null;bar?.remove();bar=null;}
+ function routeName(){
+  if(['proyecto','estancia'].includes(state.view))return state.projects?.find(project=>String(project.id)===String(state.currentProject))?.name||'Proyecto';
+  return labels[state.view]||document.querySelector('aside.sidebar .nav-item[data-view="'+state.view+'"]')?.textContent.trim()||'Moderno.app';
+ }
+ function routeItems(){return [{label:'Home',view:'proyectos'},{label:'Workspace',view:canView('workspace')?'workspace':'proyectos'},{label:routeName()}];}
+ function clearRoute(){routeComponent?.unmount();routeComponent=null;routeMount?.remove();routeMount=null;routeHost=null;}
+ function clearFinance(){financeComponent?.unmount();financeComponent=null;financeBar?.remove();financeBar=null;}
  function navigate(view){
   if(document.querySelector('.overlay.open,dialog[open]')){toast('Guarda o cancela la edición antes de cambiar de sección.');return false;}
-  if(canView(view)){pendingFocus=!!bar?.contains(document.activeElement);go(view);pendingFocus=false;setTimeout(safeRefresh,0);return state.view===view;}
+  if(canView(view)){pendingFocus=!!financeBar?.contains(document.activeElement);go(view);pendingFocus=false;setTimeout(safeRefresh,0);return state.view===view;}
   return false;
  }
  function search(value){state.financeSearch=String(value||'');render();setTimeout(safeRefresh,0);}
@@ -21,6 +28,14 @@ var ModernoPageBreadcrumbs=(()=>{
   state.qView='nuevo';state.draft=null;
   if(state.view==='presupuestos')render();else go('presupuestos');setTimeout(safeRefresh,0);return state.view==='presupuestos';
  }
+ function newInvoice(){
+  if(document.querySelector('.overlay.open,dialog[open]')){toast('Guarda o cancela la edición antes de crear una factura.');return false;}
+  if(draftEditing()&&draftDirty()){draftExitModal('facturas');return false;}
+  if(state.view==='facturas'&&state.fView==='nuevo')return true;
+  state.fView='nuevo';state.draft=null;
+  if(state.view==='facturas')render();else go('facturas');setTimeout(safeRefresh,0);return state.view==='facturas';
+ }
+ function createDocument(){return state.view==='facturas'?newInvoice():newQuote();}
  async function share(){
   const data={title:'Finanzas · Moderno.app',text:'Finanzas de Moderno.app',url:location.href};
   if(navigator.share){try{await navigator.share(data);return;}catch(error){if(error?.name==='AbortError')return;}}
@@ -39,50 +54,64 @@ var ModernoPageBreadcrumbs=(()=>{
   }
   document.body.classList.toggle('finance-navigation',active);
  }
- function fallback(items,sections){
-  bar.replaceChildren();
-  if(sections){
-   const toolbar=document.createElement('div');toolbar.className='finance-fallback-toolbar';
-   const tabs=document.createElement('nav');tabs.className='finance-fallback';tabs.setAttribute('aria-label','Secciones de Finanzas');toolbar.append(tabs);
-   sections.forEach(item=>{const b=document.createElement('button');b.type='button';b.dataset.financeView=item.view;b.textContent=item.label;if(state.view===item.view)b.setAttribute('aria-current','page');b.addEventListener('click',()=>navigate(item.view));tabs.append(b);});
-   const finder=document.createElement('div');finder.className='finance-fallback-search';finder.setAttribute('role','search');finder.setAttribute('aria-label','Buscar en Finanzas');
-   const label=document.createElement('button');label.type='button';label.textContent='Buscar';
-   const input=document.createElement('input');input.type='search';input.value=state.financeSearch||'';input.placeholder='Presupuesto, factura o cliente';input.setAttribute('aria-label','Buscar en Finanzas');label.addEventListener('click',()=>input.focus());input.addEventListener('input',()=>search(input.value));finder.append(label,input);toolbar.append(finder);
-   const create=document.createElement('button');create.type='button';create.className='finance-fallback-new';create.textContent='+ Nuevo presupuesto';create.addEventListener('click',newQuote);toolbar.append(create);
-   const send=document.createElement('button');send.type='button';send.className='finance-fallback-share';send.setAttribute('aria-label','Compartir Finanzas');send.title='Compartir';send.textContent='↗';send.addEventListener('click',share);toolbar.append(send);bar.append(toolbar);return;
-  }
-  const nav=document.createElement('nav');nav.className='route-fallback';nav.setAttribute('aria-label','Ruta de navegación');bar.append(nav);
+ function fallbackRoute(items){
+  routeHost.replaceChildren();
+  const nav=document.createElement('nav');nav.className='route-fallback';nav.setAttribute('aria-label','Ruta de navegación');routeHost.append(nav);
+  const symbols=['⌂','▦','⚙'];
   items.forEach((item,index)=>{
-   if(index){const separator=document.createElement('span');separator.textContent=' › ';separator.setAttribute('aria-hidden','true');nav.append(separator);}
-   const el=document.createElement(item.view?'button':'span');el.textContent=item.label;
-   if(item.view){el.type='button';el.addEventListener('click',()=>navigate(item.view));}else if(index===items.length-1)el.setAttribute('aria-current','page');nav.append(el);
+   if(index){const separator=document.createElement('span');separator.className='route-fallback-separator';separator.textContent='›';separator.setAttribute('aria-hidden','true');nav.append(separator);}
+   const el=document.createElement(index===items.length-1?'span':'button');el.className=index===items.length-1?'route-fallback-current':'route-fallback-link';
+   const icon=document.createElement('span');icon.setAttribute('aria-hidden','true');icon.textContent=symbols[index]||'•';el.append(icon,document.createTextNode(item.label));
+   if(item.view&&el instanceof HTMLButtonElement){el.type='button';el.addEventListener('click',()=>navigate(item.view));}else if(index===items.length-1)el.setAttribute('aria-current','page');nav.append(el);
   });
  }
- const props=(items,sections)=>({items,finance:sections,current:state.view,search:state.financeSearch||'',onNavigate:navigate,onSearch:search,onNewQuote:newQuote,onShare:share});
- function refresh(){
-  const restoreFocus=pendingFocus||bar?.contains(document.activeElement);
-  const active=enabled&&(!media.matches||document.body.classList.contains('desktop-shell'))&&!_accessLoading&&['admin','miembro','colaborador'].includes(_accessRole)&&!['ajustes','admin','presedit','portalcli','portalobra'].includes(state.view);
-  syncNative(active);
-  if(!active||!canView(state.view)||['home','proyectos','proyecto','estancia'].includes(state.view)){clear();return;}
-  const sections=financial()?allowed():null;
-  if(!sections&&(!media.matches||!document.body.classList.contains('desktop-shell'))){clear();return;}
-  const source=document.querySelector('aside.sidebar .nav-item[data-view="'+state.view+'"]');if(!source){clear();return;}
-  const name=state.view==='agenda'?'Agenda':source.textContent.trim();
-  const items=sections?[{label:'Proyectos',view:'proyectos'},{label:'Finanzas'}]:[{label:'Proyectos',view:'proyectos'},{label:name}];
-  if(sections&&bar?.classList.contains('is-finance')&&component&&original){
-   if(media.matches){if(bar.parentElement!==document.body)document.body.append(bar);}else if(bar.nextElementSibling!==document.querySelector('#view'))document.querySelector('#view').before(bar);
-   component.update(props(items,sections));return;
-  }
-  clear();
-  bar=document.createElement('div');bar.id='page-route-bar';if(sections)bar.classList.add('is-finance');
-  if(media.matches)document.body.append(bar);else document.querySelector('#view').before(bar);
-  const focus=()=>{if(restoreFocus&&sections)bar?.querySelector('.route-component-host')?.shadowRoot?.querySelector('[data-finance-view="'+state.view+'"]')?.focus();};
-  if(original&&window.ModernoProfileComponent?.mountBreadcrumbs){
-   const host=document.createElement('span');host.className='route-component-host';bar.append(host);
-   component=ModernoProfileComponent.mountBreadcrumbs(host,()=>{original=false;queueMicrotask(safeRefresh);},focus);component.update(props(items,sections));
-  }else{fallback(items,sections);if(restoreFocus&&sections)bar.querySelector('[data-finance-view="'+state.view+'"]').focus();}
+ function fallbackFinance(sections){
+  financeBar.replaceChildren();
+  const toolbar=document.createElement('div');toolbar.className='finance-fallback-toolbar';
+  const tabs=document.createElement('nav');tabs.className='finance-fallback';tabs.setAttribute('aria-label','Secciones de Finanzas');toolbar.append(tabs);
+  const symbols={informes:'▦',presupuestos:'▤',facturas:'▧'};
+  sections.forEach(item=>{const b=document.createElement('button');b.type='button';b.dataset.financeView=item.view;const icon=document.createElement('span');icon.className='finance-fallback-icon';icon.setAttribute('aria-hidden','true');icon.textContent=symbols[item.view]||'•';b.append(icon,document.createTextNode(item.label));if(state.view===item.view)b.setAttribute('aria-current','page');b.addEventListener('click',()=>navigate(item.view));tabs.append(b);});
+  const finder=document.createElement('div');finder.className='finance-fallback-search';finder.setAttribute('role','search');finder.setAttribute('aria-label','Buscar en Finanzas');
+  const label=document.createElement('button');label.type='button';label.textContent='Buscar';
+  const input=document.createElement('input');input.type='search';input.value=state.financeSearch||'';input.placeholder='Presupuesto, factura o cliente';input.setAttribute('aria-label','Buscar en Finanzas');label.addEventListener('click',()=>input.focus());input.addEventListener('input',()=>search(input.value));finder.append(label,input);toolbar.append(finder);
+  const create=document.createElement('button');create.type='button';create.className='finance-fallback-new';create.textContent=state.view==='facturas'?'+ Nueva factura':'+ Nuevo presupuesto';create.addEventListener('click',createDocument);toolbar.append(create);
+  const send=document.createElement('button');send.type='button';send.className='finance-fallback-share';send.setAttribute('aria-label','Compartir Finanzas');send.title='Compartir';send.textContent='↗';send.addEventListener('click',share);toolbar.append(send);financeBar.append(toolbar);
  }
- function safeRefresh(){try{refresh();}catch(error){clear();syncNative(false);enabled=false;if(document.body.classList.contains('desktop-shell'))ModernoDesktopShell.setEnabled(false);console.warn('Ruta superior desactivada; se conserva la navegación original.',error);}}
+ function refreshRoute(){
+  const host=document.querySelector('#desktop-header .desktop-inset-breadcrumb');
+  const active=enabled&&media.matches&&document.body.classList.contains('desktop-shell')&&!_accessLoading&&!['portalcli','portalobra'].includes(state.view);
+  if(!active||!host){clearRoute();return;}
+  const items=routeItems();
+  if(host!==routeHost||!routeMount?.isConnected){
+   clearRoute();routeHost=host;routeHost.replaceChildren();
+   if(originalRoute&&window.ModernoProfileComponent?.mountBreadcrumbs){
+    routeMount=document.createElement('span');routeMount.className='route-component-host';routeHost.append(routeMount);
+    routeComponent=ModernoProfileComponent.mountBreadcrumbs(routeMount,()=>{originalRoute=false;clearRoute();queueMicrotask(safeRefresh);});
+   }
+  }
+  if(routeComponent)routeComponent.update({items,onNavigate:navigate});else fallbackRoute(items);
+ }
+ function refreshFinance(){
+  const availableSections=allowed();
+  const navActive=enabled&&availableSections.length>0&&!_accessLoading&&!['portalcli','portalobra'].includes(state.view);
+  const sections=navActive&&financial()&&canView(state.view)?availableSections:null;
+  syncNative(navActive);
+  if(!sections?.length){clearFinance();return;}
+  const view=document.querySelector('#view');if(!view){clearFinance();return;}
+  const restoreFocus=pendingFocus||financeBar?.contains(document.activeElement);
+  if(!financeBar?.isConnected){
+   clearFinance();financeBar=document.createElement('div');financeBar.id='page-route-bar';financeBar.className='is-finance';view.prepend(financeBar);
+   if(originalFinance&&window.ModernoProfileComponent?.mountFinanceToolbar){
+    const host=document.createElement('span');host.className='route-component-host';financeBar.append(host);
+    financeComponent=ModernoProfileComponent.mountFinanceToolbar(host,()=>{originalFinance=false;clearFinance();queueMicrotask(safeRefresh);},()=>{if(restoreFocus)host.shadowRoot?.querySelector('[data-finance-view="'+state.view+'"]')?.focus();});
+   }
+  }else if(financeBar.parentElement!==view)view.prepend(financeBar);
+  const props={finance:sections,current:state.view,search:state.financeSearch||'',onNavigate:navigate,onSearch:search,onCreate:createDocument,onShare:share};
+  if(financeComponent)financeComponent.update(props);else{fallbackFinance(sections);if(restoreFocus)financeBar.querySelector('[data-finance-view="'+state.view+'"]')?.focus();}
+  if(restoreFocus)queueMicrotask(()=>{const host=financeBar?.querySelector('.route-component-host');(host?.shadowRoot||financeBar)?.querySelector('[data-finance-view="'+state.view+'"]')?.focus();});
+ }
+ function refresh(){refreshRoute();refreshFinance();}
+ function safeRefresh(){try{refresh();}catch(error){clearRoute();clearFinance();syncNative(false);enabled=false;if(document.body.classList.contains('desktop-shell'))ModernoDesktopShell.setEnabled(false);console.warn('Ruta superior desactivada; se conserva la navegación original.',error);}}
  const originalRender=render;render=function(){const result=originalRender.apply(this,arguments);safeRefresh();return result;};
  const originalEnable=ModernoDesktopShell.setEnabled;ModernoDesktopShell.setEnabled=function(){const result=originalEnable.apply(this,arguments);safeRefresh();return result;};
  media.addEventListener('change',safeRefresh);safeRefresh();
