@@ -16,6 +16,7 @@ window.baseline=JSON.stringify({projects:state.projects,invoices:state.invoices,
 window.dirty=false;window.draftEditing=()=>dirty;window.draftDirty=()=>dirty;window.draftExitModal=(...args)=>calls.push(['draft',...args]);
 window.SettingsUI={open:s=>{calls.push(['settings',s]);go('ajustes');}};window.userModal=()=>calls.push(['profile']);window.notifModal=()=>calls.push(['notifications']);
 window.sbLogout=()=>calls.push(['logout']);
+window.ModernoMail={onNavigate:()=>{}};
 window.sb={};window.ESTUDIO_ID='fictional-study';
 window.meMail=()=> 'persona@example.invalid';
 window.byBrand=items=>items;window.homeRecent=()=>[1];window.newProject=()=>calls.push(['new-project']);
@@ -57,7 +58,7 @@ with sync_playwright() as p:
    if pathname.startswith('brand/acorn/') and '..' not in pathname:
     f=repo/'app'/pathname
     if f.is_file():r.fulfill(body=f.read_bytes(),content_type='font/ttf');return
-   if pathname.startswith('brand/sidebar-icons/') and '..' not in pathname:
+   if (pathname.startswith('brand/sidebar-icons/') or pathname=='brand/moderno_app_simbolo_negro.svg') and '..' not in pathname:
     f=repo/'app'/pathname
     if f.is_file():r.fulfill(body=f.read_bytes(),content_type='image/svg+xml');return
    r.abort()
@@ -92,8 +93,8 @@ with sync_playwright() as p:
    print(width,'PASS: unchanged tablet/mobile navigation, inactive desktop shell')
    assert not errors,errors;page.close();continue
   assert page.locator('#desktop-header .sb-head').evaluate('(el)=>el.innerHTML')==logos
-  assert page.locator('#desktop-header .logo').is_hidden()
-  assert page.locator('#desktop-header .logo-mini').is_visible()
+  assert page.locator('#desktop-header .sb-head').is_hidden()
+  assert page.locator('#desktop-header .desktop-brand-symbol').is_visible()
   assert page.locator('.main>.topbar').is_hidden()
   assert page.locator('#themeBtn').is_hidden()
   assert page.locator('#brandSwitch').is_hidden()
@@ -231,7 +232,7 @@ with sync_playwright() as p:
   assert not page.locator('#desktop-navigation').evaluate('(e)=>e.inert')
   assert page.locator('.desktop-row [data-desktop-view]:visible').count()>0
   assert page.locator('.desktop-projects-all').get_attribute('title')=='Ver todos los proyectos'
-  assert page.locator('.desktop-brand .logo-mini').is_visible()
+  assert page.locator('.desktop-brand .desktop-brand-symbol').is_visible()
   assert page.locator('.desktop-row').bounding_box()['width']<100
   assert page.locator('.desktop-row').bounding_box()['height']==row['height']
   assert page.get_by_role('button',name='Desplegar menú lateral',exact=True).get_attribute('aria-expanded')=='false'
@@ -334,7 +335,10 @@ with sync_playwright() as p:
   page.evaluate("_accessRole='admin';state.myRole='admin';state.projTab='archivos';render()")
   if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'desktop-shell-light-{width}.png'),full_page=True)
   page.evaluate("document.body.classList.add('dark')")
-  assert page.locator('#desktop-header .logo-mini svg').evaluate('(el)=>getComputedStyle(el).filter')=='invert(1)'
+  symbol=page.locator('#desktop-header .desktop-brand-symbol')
+  assert symbol.is_visible()
+  assert symbol.get_attribute('src')=='/brand/moderno_app_simbolo_negro.svg?v=36747'
+  assert symbol.evaluate('(el)=>getComputedStyle(el).filter')=='none'
   # Check accessible header bounds and the project content remains above the dock.
   assert page.locator('.desktop-profile').bounding_box()['x']+page.locator('.desktop-profile').bounding_box()['width']<=width
   assert page.locator('.desktop-nav').bounding_box()['y']>=page.locator('.desktop-brand').bounding_box()['y']+page.locator('.desktop-brand').bounding_box()['height']

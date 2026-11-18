@@ -591,8 +591,8 @@ try:
    assert page.locator('.project-tabs [role=tab][tabindex="0"]').count()==1,'Portal must keep dock reachable by keyboard'
    assert page.evaluate('fixtureRecords()===fixtureBaseline'),'Navigation changed stored records'
    if width>=1100:
-    assert page.locator('#desktop-header .logo').is_hidden()
-    expect(page.locator('#desktop-header .logo-mini')).to_be_visible()
+    assert page.locator('#desktop-header .sb-head').is_hidden()
+    expect(page.locator('#desktop-header .desktop-brand-symbol')).to_be_visible()
     assert page.locator('[data-profile-trigger]').evaluate('(e)=>e.scrollHeight<=e.clientHeight')
     assert page.locator('#themeBtn').is_hidden() and page.locator('#brandSwitch').is_hidden()
     page.evaluate("state.notifs=[{txt:'Aviso ficticio',when:'Hoy',read:false}];notifBadge()")

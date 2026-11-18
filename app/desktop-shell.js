@@ -172,6 +172,8 @@ var ModernoDesktopShell=(()=>{
   header=document.createElement('header');header.id='desktop-header';header.setAttribute('aria-label','Moderno.app');
   const row=document.createElement('div');row.className='desktop-row';row.classList.toggle('is-collapsed',collapsed);header.append(row);
   const brand=document.createElement('div');brand.className='desktop-brand';row.append(brand);move($('aside.sidebar .sb-head'),brand);
+  const brandSymbol=document.createElement('img');brandSymbol.className='desktop-brand-symbol';brandSymbol.src='/brand/moderno_app_simbolo_negro.svg?v=36747';brandSymbol.alt='';brandSymbol.width=32;brandSymbol.height=32;
+  brand.append(brandSymbol);
   const brandCopy=document.createElement('span');brandCopy.className='desktop-brand-copy';brandCopy.innerHTML='<strong>Moderno.app</strong><small class="desktop-brand-plan"></small>';brand.append(brandCopy);
   const clip=document.createElement('div');clip.className='desktop-nav-clip';row.append(clip);
   const nav=document.createElement('nav');nav.id='desktop-navigation';nav.className='desktop-nav';nav.setAttribute('aria-label','Navegación general');clip.append(nav);
