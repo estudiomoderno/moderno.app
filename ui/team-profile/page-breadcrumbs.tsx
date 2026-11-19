@@ -2,24 +2,36 @@ import * as React from 'react';
 import {
  Breadcrumb,
  BreadcrumbItem,
- BreadcrumbLink,
  BreadcrumbList,
  BreadcrumbPage,
- BreadcrumbSeparator,
 } from './vendor/reui/breadcrumb';
 import {Button} from './vendor/reui/button';
 import {
- ChevronRightIcon,
+ CalculatorIcon,
+ CalendarDaysIcon,
  ChartNoAxesCombinedIcon,
+ CirclePlayIcon,
+ ContactRoundIcon,
  FileTextIcon,
- HouseIcon,
+ FolderKanbanIcon,
  LandmarkIcon,
+ LayoutTemplateIcon,
  LayoutDashboardIcon,
  LayoutGridIcon,
+ LifeBuoyIcon,
+ ListTodoIcon,
+ MailIcon,
+ MessageSquareIcon,
+ PackageIcon,
+ PlugIcon,
  PlusIcon,
+ PuzzleIcon,
  ReceiptTextIcon,
  SettingsIcon,
  Share2Icon,
+ ShieldCheckIcon,
+ WrenchIcon,
+ ZapIcon,
 } from 'lucide-react';
 
 type Crumb={label:string;view?:string};
@@ -37,25 +49,16 @@ type PageBreadcrumbProps={
 
 export function PageBreadcrumbs({items,onNavigate,finance,current,search,onSearch,onNewQuote,onShare}:PageBreadcrumbProps){
  if(finance?.length)return <FinanceToolbar finance={finance} current={current} search={search} onNavigate={onNavigate} onSearch={onSearch} onCreate={onNewQuote} onShare={onShare} />;
- const icons=[HouseIcon,LayoutGridIcon,SettingsIcon];
+ const item=items.at(-1)??{label:'Moderno.app'};
+ const Icon=routeIcons[item.view as keyof typeof routeIcons]??LayoutGridIcon;
  return <Breadcrumb>
-  <BreadcrumbList className="sm:gap-1">
-   {items.map((item,index)=>{
-    const Icon=icons[Math.min(index,icons.length-1)];
-    const current=index===items.length-1;
-    return <React.Fragment key={`${item.label}-${index}`}>
-     {index>0&&<BreadcrumbSeparator><ChevronRightIcon /></BreadcrumbSeparator>}
-     <BreadcrumbItem>
-      {current?<BreadcrumbPage>
-       <Button variant="secondary" size="sm"><Icon />{item.label}</Button>
-      </BreadcrumbPage>:<BreadcrumbLink
-       render={<Button variant="ghost" size="sm" />}
-       href="#"
-       onClick={event=>{event.preventDefault();if(item.view)onNavigate(item.view)}}
-      ><Icon />{item.label}</BreadcrumbLink>}
-     </BreadcrumbItem>
-    </React.Fragment>;
-   })}
+  <BreadcrumbList>
+   <BreadcrumbItem>
+    <BreadcrumbPage className="flex min-w-0 items-center gap-2 text-[13px] font-medium">
+     <Icon className="size-4 shrink-0" aria-hidden="true" />
+     <span className="truncate">{item.label}</span>
+    </BreadcrumbPage>
+   </BreadcrumbItem>
   </BreadcrumbList>
  </Breadcrumb>;
 }
@@ -72,6 +75,13 @@ type FinanceToolbarProps={
 };
 
 const financeIcons={informes:LayoutDashboardIcon,facturas:ReceiptTextIcon,presupuestos:FileTextIcon,contabilidad:LandmarkIcon,prevision:ChartNoAxesCombinedIcon};
+const routeIcons={
+ home:LayoutDashboardIcon,proyectos:FolderKanbanIcon,proyecto:FolderKanbanIcon,estancia:FolderKanbanIcon,
+ informes:LayoutDashboardIcon,facturas:ReceiptTextIcon,presupuestos:FileTextIcon,contabilidad:LandmarkIcon,prevision:ChartNoAxesCombinedIcon,
+ workspace:ListTodoIcon,agenda:ContactRoundIcon,mail:MailIcon,calendario:CalendarDaysIcon,conversaciones:MessageSquareIcon,
+ biblioteca:PackageIcon,catalogo:WrenchIcon,automatizaciones:ZapIcon,utilidades:CalculatorIcon,integraciones:PlugIcon,plugins:PuzzleIcon,
+ plantillas:LayoutTemplateIcon,tutoriales:CirclePlayIcon,soporte:LifeBuoyIcon,ajustes:SettingsIcon,admin:ShieldCheckIcon,
+};
 
 export function FinanceToolbar({finance,current,search='',actionLabel='',onNavigate,onSearch,onCreate,onShare}:FinanceToolbarProps){
  const searchRef=React.useRef<HTMLInputElement>(null);

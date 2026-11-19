@@ -112,7 +112,13 @@ try:
             page.evaluate(fixture_setup)
             page.evaluate(finance_setup)
 
-            expect(page.locator("#desktop-header .desktop-inset-breadcrumb")).to_be_hidden()
+            route = page.locator("#desktop-header .desktop-inset-breadcrumb")
+            if width >= 1100:
+                expect(route).to_be_visible()
+                expect(route.get_by_role("navigation", name="breadcrumb", exact=True)).to_be_visible()
+                expect(route.get_by_text("Resumen", exact=True)).to_be_visible()
+                expect(route.locator("svg")).to_have_count(1)
+                expect(route.locator('[data-slot="breadcrumb-separator"]')).to_have_count(0)
             sections = page.get_by_role("navigation", name="Secciones de Finanzas", exact=True)
             expect(sections.get_by_role("button")).to_have_text(
                 ["Resumen", "Facturas", "Presupuestos", "Contabilidad", "Previsión"]

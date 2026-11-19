@@ -25,4 +25,9 @@ test('a Finance UI failure restores the original sidebar so all five Finance pag
  assert.equal(vm.runInContext('render("draft",42)',context),'native-render');
  assert.deepEqual(calls.at(-1),['render','draft',42]);
 });
-test('the top route is not mounted on any page',()=>assert.doesNotMatch(code,/\.mountBreadcrumbs\(/));
+test('the top route mounts one current-page crumb without hierarchy',()=>{
+ assert.match(code,/function routeItems\(\)\{return \[\{label:routeName\(\),view:state\.view\}\];\}/);
+ assert.match(code,/\.mountBreadcrumbs\(/);
+ assert.doesNotMatch(code,/label:'Home'/);
+ assert.doesNotMatch(code,/label:'Workspace'/);
+});

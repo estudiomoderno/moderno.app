@@ -12,7 +12,7 @@ test('Finance exposes exactly the five existing sections in the approved order',
  assert.ok(match);
  assert.deepEqual([...match[1].matchAll(/view:'([^']+)'/g)].map(item=>item[1]),['informes','facturas','presupuestos','contabilidad','prevision']);
  assert.match(navigation,/if\(state\.view==='facturas'\)return 'Nueva factura'/);
- assert.match(navigation,/\['informes','presupuestos'\]\.includes\(state\.view\).*'Nuevo presupuesto'/s);
+ assert.match(navigation,/\['informes','presupuestos','contabilidad','prevision'\]\.includes\(state\.view\).*'Nuevo presupuesto'/s);
 });
 
 test('summary period helpers normalize legacy dates without mutating records',()=>{

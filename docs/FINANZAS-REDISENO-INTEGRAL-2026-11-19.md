@@ -1,10 +1,12 @@
-# Rediseño integral de Finanzas — v3.67.51
+# Rediseño integral de Finanzas — v3.67.52
 
 Fecha: 19/11/2026. Alcance autorizado: interfaz web de `app.moderno.app`, sin migraciones ni cambios de registros.
 
 ## Arquitectura final
 
-Finanzas conserva una sola entrada en el menú principal y organiza el trabajo en cinco secciones internas, en este orden: **Resumen, Facturas, Presupuestos, Contabilidad y Previsión**. Las rutas superiores generales permanecen retiradas; esta barra es navegación funcional de Finanzas, no una ruta de migas.
+Finanzas conserva una sola entrada en el menú principal y organiza el trabajo en cinco secciones internas, en este orden: **Resumen, Facturas, Presupuestos, Contabilidad y Previsión**. La barra es navegación funcional de Finanzas. La cabecera de escritorio muestra aparte solo la pantalla actual, con su icono y al lado del botón de contraer, sin Home, jerarquías intermedias ni separadores.
+
+El botón azul muestra **Nuevo presupuesto** en Resumen, Presupuestos, Contabilidad y Previsión; en Facturas muestra **Nueva factura**.
 
 - **Resumen** separa actividad real y proyección: facturado, cobrado, pendiente de cobro, gastos, resultado, evolución mensual, presupuestos aceptados o pendientes, venta estimada, previsión por facturar y desglose trazable por proyecto. El selector permite año, últimos doce meses o histórico. IVA e IRPF no se muestran en esta pantalla, pero sus reglas y datos siguen intactos en documentos y Contabilidad.
 - **Facturas** incorpora subnavegación de emitidas y recibidas. Emitidas conserva documentos, filtros, proyectos, cobros parciales, vencimientos y acciones. Recibidas reutiliza los gastos registrados y sus acciones de documento, edición, estado y eliminación; no crea una fuente de datos paralela.

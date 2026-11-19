@@ -1,10 +1,11 @@
 /* Shared top route and the Finance toolbar. */
 #page-route-bar{display:none}
+#desktop-header .desktop-inset-breadcrumb{display:flex!important;align-items:center;min-width:0;max-width:min(40vw,420px);margin-left:8px;overflow:hidden}
 #desktop-header .desktop-inset-breadcrumb>.route-component-host{display:block;min-width:0;max-width:100%;line-height:0}
 #desktop-header .desktop-inset-breadcrumb>.route-fallback{display:flex;align-items:center;gap:4px;min-width:0;font:500 13px/1 Inter,Segoe UI,sans-serif;white-space:nowrap}
-#desktop-header .route-fallback-link,#desktop-header .route-fallback-current{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#404040;font:inherit}
+#desktop-header .route-fallback-link,#desktop-header .route-fallback-current{display:inline-flex;min-width:0;align-items:center;gap:8px;height:32px;padding:0;border:0;border-radius:0;background:transparent;color:#404040;font:inherit;overflow:hidden;text-overflow:ellipsis}
 #desktop-header .route-fallback-link{cursor:pointer}
-#desktop-header .route-fallback-link:hover,#desktop-header .route-fallback-current{background:#f0f0f0;color:#171717}
+#desktop-header .route-fallback-link:hover,#desktop-header .route-fallback-current{background:transparent;color:#171717}
 #desktop-header .route-fallback-link:focus-visible{outline:2px solid var(--app-outline);outline-offset:1px}
 #desktop-header .route-fallback-separator{color:#a3a3a3;font-size:18px}
 @media print{#page-route-bar{display:none!important}}

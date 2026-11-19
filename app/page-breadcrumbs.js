@@ -11,14 +11,14 @@ var ModernoPageBreadcrumbs=(()=>{
   {view:'prevision',label:'Previsión'}
  ];
  const financeViews=['informes','presupuestos','facturas','contabilidad','prevision'];
- const labels={home:'Inicio',proyectos:'Proyectos',informes:'Finanzas',facturas:'Facturas',presupuestos:'Presupuestos',contabilidad:'Contabilidad',prevision:'Previsión',workspace:'Tareas',agenda:'Agenda',mail:'Mail',calendario:'Calendario',biblioteca:'Productos',catalogo:'Servicios',plantillas:'Plantillas',tutoriales:'Tutoriales',soporte:'Soporte',ajustes:'Ajustes',admin:'Administración'};
+ const labels={home:'Inicio',proyectos:'Proyectos',proyecto:'Proyecto',estancia:'Estancia',informes:'Resumen',facturas:'Facturas',presupuestos:'Presupuestos',contabilidad:'Contabilidad',prevision:'Previsión',workspace:'Tareas',agenda:'Agenda',mail:'Mail',calendario:'Calendario',conversaciones:'Conversaciones',biblioteca:'Productos',catalogo:'Servicios',automatizaciones:'Automatizaciones',utilidades:'Utilidades',integraciones:'Integraciones',plugins:'Plugins',plantillas:'Plantillas',tutoriales:'Tutoriales',soporte:'Soporte',ajustes:'Ajustes',admin:'Administración'};
  const allowed=()=>finance.filter(item=>canView(item.view)&&document.querySelector('aside.sidebar .nav-item[data-view="'+item.view+'"]'));
  const financial=()=>financeViews.includes(state.view);
  function routeName(){
   if(['proyecto','estancia'].includes(state.view))return state.projects?.find(project=>String(project.id)===String(state.currentProject))?.name||'Proyecto';
   return labels[state.view]||document.querySelector('aside.sidebar .nav-item[data-view="'+state.view+'"]')?.textContent.trim()||'Moderno.app';
  }
- function routeItems(){return [{label:'Home',view:'proyectos'},{label:'Workspace',view:canView('workspace')?'workspace':'proyectos'},{label:routeName()}];}
+ function routeItems(){return [{label:routeName(),view:state.view}];}
  function clearRoute(){routeComponent?.unmount();routeComponent=null;routeMount?.remove();routeMount=null;routeHost=null;}
  function clearFinance(){financeComponent?.unmount();financeComponent=null;financeBar?.remove();financeBar=null;}
  function navigate(view){
@@ -43,12 +43,12 @@ var ModernoPageBreadcrumbs=(()=>{
  }
  function createDocument(){
   if(state.view==='facturas')return newInvoice();
-  if(['informes','presupuestos'].includes(state.view))return newQuote();
+  if(['informes','presupuestos','contabilidad','prevision'].includes(state.view))return newQuote();
   return false;
  }
  function createLabel(){
   if(state.view==='facturas')return 'Nueva factura';
-  if(['informes','presupuestos'].includes(state.view))return 'Nuevo presupuesto';
+  if(['informes','presupuestos','contabilidad','prevision'].includes(state.view))return 'Nuevo presupuesto';
   return '';
  }
  async function share(){
@@ -72,11 +72,11 @@ var ModernoPageBreadcrumbs=(()=>{
  function fallbackRoute(items){
   routeHost.replaceChildren();
   const nav=document.createElement('nav');nav.className='route-fallback';nav.setAttribute('aria-label','Ruta de navegación');routeHost.append(nav);
-  const symbols=['⌂','▦','⚙'];
+  const symbols={home:'⌂',proyectos:'▦',proyecto:'▦',estancia:'▦',informes:'▦',facturas:'▧',presupuestos:'▤',contabilidad:'▥',prevision:'◷',workspace:'☷',agenda:'♙',mail:'✉',calendario:'□',biblioteca:'▣',catalogo:'◇',plantillas:'▤',tutoriales:'▷',soporte:'○',ajustes:'⚙'};
   items.forEach((item,index)=>{
    if(index){const separator=document.createElement('span');separator.className='route-fallback-separator';separator.textContent='›';separator.setAttribute('aria-hidden','true');nav.append(separator);}
    const el=document.createElement(index===items.length-1?'span':'button');el.className=index===items.length-1?'route-fallback-current':'route-fallback-link';
-   const icon=document.createElement('span');icon.setAttribute('aria-hidden','true');icon.textContent=symbols[index]||'•';el.append(icon,document.createTextNode(item.label));
+   const icon=document.createElement('span');icon.setAttribute('aria-hidden','true');icon.textContent=symbols[item.view]||'•';el.append(icon,document.createTextNode(item.label));
    if(item.view&&el instanceof HTMLButtonElement){el.type='button';el.addEventListener('click',()=>navigate(item.view));}else if(index===items.length-1)el.setAttribute('aria-current','page');nav.append(el);
   });
  }
@@ -95,8 +95,18 @@ var ModernoPageBreadcrumbs=(()=>{
  }
  function refreshRoute(){
   const host=document.querySelector('#desktop-header .desktop-inset-breadcrumb');
-  clearRoute();
-  if(host){host.replaceChildren();host.hidden=true;host.setAttribute('aria-hidden','true');}
+  const active=enabled&&media.matches&&document.body.classList.contains('desktop-shell')&&!_accessLoading&&!['portalcli','portalobra'].includes(state.view);
+  if(!active||!host){clearRoute();if(host){host.replaceChildren();host.hidden=true;host.setAttribute('aria-hidden','true');}return;}
+  const items=routeItems();
+  host.hidden=false;host.setAttribute('aria-hidden','false');
+  if(host!==routeHost||!routeMount?.isConnected){
+   clearRoute();routeHost=host;routeHost.replaceChildren();
+   if(originalRoute&&window.ModernoProfileComponent?.mountBreadcrumbs){
+    routeMount=document.createElement('span');routeMount.className='route-component-host';routeHost.append(routeMount);
+    routeComponent=ModernoProfileComponent.mountBreadcrumbs(routeMount,()=>{originalRoute=false;clearRoute();queueMicrotask(safeRefresh);});
+   }
+  }
+  if(routeComponent)routeComponent.update({items,onNavigate:navigate});else fallbackRoute(items);
  }
  function refreshFinance(){
   const availableSections=allowed();

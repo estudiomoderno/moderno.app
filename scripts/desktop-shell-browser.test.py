@@ -109,6 +109,8 @@ with sync_playwright() as p:
   assert page.locator('.desktop-brand-copy strong').inner_text()=='Moderno.app'
   assert page.locator('.desktop-brand-plan').inner_text()=='Free plan'
   assert page.locator('.desktop-brand-chevron').count()==0
+  # This isolated shell fixture does not mount page-breadcrumbs.js; the full-app
+  # regression verifies the current-page crumb in the assembled application.
   assert page.locator('.desktop-inset-breadcrumb').is_hidden()
   assert page.locator('.desktop-projects h2').inner_text()=='Proyectos'
   assert page.locator('.desktop-recent-title').inner_text()=='Recientes'

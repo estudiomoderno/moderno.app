@@ -200,10 +200,8 @@ def check_finances(page,width):
   assert page.evaluate('state.view')==view
   active=page.locator('#page-route-bar [data-finance-view="'+view+'"][aria-current=page]')
   active.wait_for(state='visible')
-  if view in ['informes','presupuestos','facturas']:
+  if view in ['informes','presupuestos','facturas','contabilidad','prevision']:
    expect(page.locator('#page-route-bar').get_by_role('button',name='Nueva factura' if view=='facturas' else 'Nuevo presupuesto',exact=True)).to_be_visible()
-  else:
-   expect(page.locator('#page-route-bar').get_by_role('button',name=re.compile('Nueva factura|Nuevo presupuesto'),exact=True)).to_have_count(0)
  # Both invoice/quote drafts retain the native warning; cancel keeps the same data and selected tab.
  for view,kind in [('facturas','factura'),('presupuestos','presupuesto')]:
   page.evaluate('(view)=>go(view)',view)
@@ -372,8 +370,13 @@ try:
       page.locator('#project-window-bar').wait_for(state='visible')
      else:
       assert page.locator('#project-window-bar').count()==0,'Las pestañas de proyecto solo deben existir dentro de Proyectos'
-     assert page.locator('.desktop-inset-breadcrumb').is_hidden()
-     expect(page.get_by_role('navigation',name='breadcrumb',exact=True)).to_have_count(0)
+     route=page.locator('.desktop-inset-breadcrumb')
+     assert route.is_visible()
+     crumb=route.get_by_role('navigation',name='breadcrumb',exact=True)
+     expect(crumb).to_be_visible()
+     expect(crumb.locator('[aria-current=page]')).to_have_count(1)
+     expect(crumb.locator('svg')).to_have_count(1)
+     expect(crumb.locator('[data-slot=breadcrumb-separator]')).to_have_count(0)
      if view in finance:
       sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True);sections.wait_for(state='visible')
       assert sections.bounding_box()['height']==34
@@ -414,7 +417,9 @@ try:
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
     assert page.locator('#page-route-bar').count()==1
     page.locator('aside.sidebar .nav-item[data-view="agenda"]').evaluate('(button)=>button.click()')
-    assert page.locator('.desktop-inset-breadcrumb').is_hidden()
+    route=page.locator('.desktop-inset-breadcrumb')
+    assert route.is_visible()
+    expect(route.get_by_role('navigation',name='breadcrumb',exact=True)).to_be_visible()
     assert page.locator('#page-route-bar').is_hidden()
     assert page.locator('#view>h1.big').count()==0
     expect(page.locator('.contact-category-tabs>button')).to_have_text(['Todos','Clientes','Proveedores','Contratistas','Técnicos','Team'])
