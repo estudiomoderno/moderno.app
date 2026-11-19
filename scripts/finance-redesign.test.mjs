@@ -8,6 +8,7 @@ const navigation=await readFile(new URL('../app/page-breadcrumbs.js',import.meta
 const css=await readFile(new URL('../app/brand/finance-ui.css',import.meta.url),'utf8');
 const component=await readFile(new URL('../ui/team-profile/finance-grid.tsx',import.meta.url),'utf8');
 const bridge=await readFile(new URL('../app/finance-grid.js',import.meta.url),'utf8');
+const iconPlaceholder=await readFile(new URL('../ui/team-profile/icon-placeholder.tsx',import.meta.url),'utf8');
 
 test('Finance exposes exactly the five existing sections in the approved order',()=>{
  const match=navigation.match(/const finance=\[([\s\S]*?)\];/);
@@ -71,4 +72,10 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/CardContent className="border-y px-0"/);
  assert.match(component,/CardFooter className="border-t-0 px-4 py-2\.5"/);
  assert.match(component,/sizes=\{\[5, 10, 25\]\}/);
+});
+
+test('the exact ReUI filters render their requested Lucide icons',()=>{
+ assert.match(iconPlaceholder,/ListFilterIcon/);
+ assert.match(iconPlaceholder,/ListFilterPlusIcon/);
+ assert.doesNotMatch(iconPlaceholder,/\|\|\s*CheckIcon/);
 });

@@ -1,3 +1,96 @@
-import {CheckIcon,ChevronRightIcon,ChevronsUpDownIcon,XIcon,ChevronLeftIcon,ChevronDownIcon,ChevronUpIcon,CalendarIcon,RepeatIcon,PlusIcon} from 'lucide-react';
-// The original registry supports several icon libraries. This example selects Lucide.
-export function IconPlaceholder({lucide,className}:any){const Icon=({CheckIcon,ChevronRightIcon,ChevronsUpDownIcon,XIcon,ChevronLeftIcon,ChevronDownIcon,ChevronUpIcon,CalendarIcon,RepeatIcon,PlusIcon} as any)[lucide]||CheckIcon;return <Icon aria-hidden="true" className={className}/>;}
+import {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowLeftRightIcon,
+  ArrowLeftToLineIcon,
+  ArrowRightIcon,
+  ArrowRightToLineIcon,
+  ArrowUpIcon,
+  CalendarIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+  ChevronsUpDownIcon,
+  CircleAlertIcon,
+  CirclePlusIcon,
+  CopyIcon,
+  CornerDownRightIcon,
+  EllipsisVerticalIcon,
+  FolderPlusIcon,
+  GripHorizontalIcon,
+  GripVerticalIcon,
+  LayersIcon,
+  ListFilterIcon,
+  ListFilterPlusIcon,
+  Loader2Icon,
+  LoaderCircleIcon,
+  MinusIcon,
+  MoreHorizontalIcon,
+  PinOffIcon,
+  PlusIcon,
+  RefreshCwIcon,
+  RepeatIcon,
+  RotateCwIcon,
+  Settings2Icon,
+  SlidersHorizontalIcon,
+  Trash2Icon,
+  UngroupIcon,
+  XIcon,
+} from "lucide-react"
+
+const LUCIDE_ICONS = {
+  ArrowDownIcon,
+  ArrowLeftIcon,
+  ArrowLeftRightIcon,
+  ArrowLeftToLineIcon,
+  ArrowRightIcon,
+  ArrowRightToLineIcon,
+  ArrowUpIcon,
+  CalendarIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronUpIcon,
+  ChevronsUpDownIcon,
+  CircleAlertIcon,
+  CirclePlusIcon,
+  CopyIcon,
+  CornerDownRightIcon,
+  EllipsisVerticalIcon,
+  FolderPlusIcon,
+  GripHorizontalIcon,
+  GripVerticalIcon,
+  LayersIcon,
+  ListFilterIcon,
+  ListFilterPlusIcon,
+  Loader2Icon,
+  LoaderCircleIcon,
+  MinusIcon,
+  MoreHorizontalIcon,
+  PinOffIcon,
+  PlusIcon,
+  RefreshCwIcon,
+  RepeatIcon,
+  RotateCwIcon,
+  Settings2Icon,
+  SlidersHorizontalIcon,
+  Trash2Icon,
+  UngroupIcon,
+  XIcon,
+}
+
+// ReUI's registry supports several icon libraries. This bundle selects Lucide
+// and keeps every icon requested by the exact DataGrid/Filters composition.
+export function IconPlaceholder({
+  lucide,
+  className,
+}: {
+  lucide: keyof typeof LUCIDE_ICONS
+  className?: string
+}) {
+  const Icon = LUCIDE_ICONS[lucide]
+  return <Icon aria-hidden="true" className={className} />
+}
