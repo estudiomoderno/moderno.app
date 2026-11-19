@@ -21,9 +21,20 @@ import {
 } from 'lucide-react';
 
 type Crumb={label:string;view?:string};
-type PageBreadcrumbProps={items:Crumb[];onNavigate:(view:string)=>boolean|void};
+type PageBreadcrumbProps={
+ items:Crumb[];
+ onNavigate:(view:string)=>boolean|void;
+ /* Compatibility with the previous loader while open tabs renew their cache. */
+ finance?:Crumb[];
+ current?:string;
+ search?:string;
+ onSearch?:(value:string)=>void;
+ onNewQuote?:()=>boolean|void;
+ onShare?:()=>void;
+};
 
-export function PageBreadcrumbs({items,onNavigate}:PageBreadcrumbProps){
+export function PageBreadcrumbs({items,onNavigate,finance,current,search,onSearch,onNewQuote,onShare}:PageBreadcrumbProps){
+ if(finance?.length)return <FinanceToolbar finance={finance} current={current} search={search} onNavigate={onNavigate} onSearch={onSearch} onCreate={onNewQuote} onShare={onShare} />;
  const icons=[HouseIcon,LayoutGridIcon,SettingsIcon];
  return <Breadcrumb>
   <BreadcrumbList className="sm:gap-1">

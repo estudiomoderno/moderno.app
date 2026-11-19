@@ -167,6 +167,13 @@ def check_finances(page,width):
  sections.wait_for(state='visible')
  expect(sections.get_by_role('button')).to_have_text(expected)
  expect(sections.locator('svg')).to_have_count(3)
+ if width>=1100:
+  # An already-open tab can still call the former mountBreadcrumbs finance API.
+  page.evaluate("""()=>{const host=document.createElement('div');host.id='legacy-finance-host';document.body.append(host);window.legacyFinanceComponent=ModernoProfileComponent.mountBreadcrumbs(host);legacyFinanceComponent.update({items:[{label:'Proyectos',view:'proyectos'},{label:'Finanzas'}],finance:[{view:'informes',label:'Resumen'},{view:'presupuestos',label:'Presupuestos'},{view:'facturas',label:'Facturas'}],current:'informes',search:'',onNavigate:()=>true,onSearch:()=>{},onNewQuote:()=>true,onShare:()=>{}});}""")
+  legacy_sections=page.locator('#legacy-finance-host').get_by_role('navigation',name='Secciones de Finanzas',exact=True)
+  legacy_sections.wait_for(state='attached')
+  expect(legacy_sections.get_by_role('button')).to_have_text(expected)
+  page.evaluate("""()=>{legacyFinanceComponent.unmount();document.querySelector('#legacy-finance-host')?.remove();delete window.legacyFinanceComponent;}""")
  search=page.get_by_role('search',name='Buscar en Finanzas',exact=True);expect(search).to_be_visible()
  search_box=search.get_by_role('searchbox',name='Buscar en Finanzas',exact=True);search_box.fill('PS');assert page.evaluate('state.financeSearch')=='PS';search_box.fill('')
  new_quote=page.get_by_role('button',name='Nuevo presupuesto',exact=True);expect(new_quote).to_be_visible();expect(page.get_by_role('button',name='Compartir Finanzas',exact=True)).to_be_visible()
