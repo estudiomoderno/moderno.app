@@ -4,23 +4,25 @@ import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
 
 const code=await readFile(new URL('../app/page-breadcrumbs.js',import.meta.url),'utf8');
-test('a route UI failure restores the original sidebar so all five Finance pages remain reachable',()=>{
+test('a Finance UI failure restores the original sidebar so all five Finance pages remain reachable',()=>{
  let desktop=true;
  const calls=[];
- const breadcrumb={replaceChildren(){}};
+ const breadcrumb={replaceChildren(){},setAttribute(){},hidden:false};
  const context=vm.createContext({
   window:{matchMedia:()=>({matches:true,addEventListener(){}})},
   document:{body:{classList:{contains:()=>desktop}},
-   querySelector:selector=>selector==='#desktop-header .desktop-inset-breadcrumb'?breadcrumb:selector.startsWith('aside.sidebar')?{textContent:'Agenda'}:null,
+   querySelector:selector=>selector==='#desktop-header .desktop-inset-breadcrumb'?breadcrumb:selector==='#view'?{}:selector.startsWith('aside.sidebar')?{textContent:'Finanzas'}:null,
    createElement(){throw Error('Synthetic presentation failure');}},
-  state:{view:'agenda'},_accessLoading:false,_accessRole:'admin',canView:()=>true,
+  state:{view:'informes'},_accessLoading:false,_accessRole:'admin',canView:()=>true,
   ModernoDesktopShell:{setEnabled(value){desktop=value;calls.push(['desktop',value]);}},
   console:{warn(){calls.push(['warning']);}},
   render(...args){calls.push(['render',...args]);return 'native-render';}
  });
  vm.runInContext(code,context);
+ assert.equal(breadcrumb.hidden,true);
  assert.equal(desktop,false);
  assert.deepEqual(calls,[['desktop',false],['warning']]);
  assert.equal(vm.runInContext('render("draft",42)',context),'native-render');
  assert.deepEqual(calls.at(-1),['render','draft',42]);
 });
+test('the top route is not mounted on any page',()=>assert.doesNotMatch(code,/\.mountBreadcrumbs\(/));

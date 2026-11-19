@@ -79,17 +79,8 @@ var ModernoPageBreadcrumbs=(()=>{
  }
  function refreshRoute(){
   const host=document.querySelector('#desktop-header .desktop-inset-breadcrumb');
-  const active=enabled&&media.matches&&document.body.classList.contains('desktop-shell')&&!_accessLoading&&!['portalcli','portalobra'].includes(state.view);
-  if(!active||!host){clearRoute();return;}
-  const items=routeItems();
-  if(host!==routeHost||!routeMount?.isConnected){
-   clearRoute();routeHost=host;routeHost.replaceChildren();
-   if(originalRoute&&window.ModernoProfileComponent?.mountBreadcrumbs){
-    routeMount=document.createElement('span');routeMount.className='route-component-host';routeHost.append(routeMount);
-    routeComponent=ModernoProfileComponent.mountBreadcrumbs(routeMount,()=>{originalRoute=false;clearRoute();queueMicrotask(safeRefresh);});
-   }
-  }
-  if(routeComponent)routeComponent.update({items,onNavigate:navigate});else fallbackRoute(items);
+  clearRoute();
+  if(host){host.replaceChildren();host.hidden=true;host.setAttribute('aria-hidden','true');}
  }
  function refreshFinance(){
   const availableSections=allowed();

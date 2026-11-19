@@ -109,7 +109,7 @@ with sync_playwright() as p:
   assert page.locator('.desktop-brand-copy strong').inner_text()=='Moderno.app'
   assert page.locator('.desktop-brand-plan').inner_text()=='Free plan'
   assert page.locator('.desktop-brand-chevron').count()==0
-  assert page.locator('.desktop-inset-workspace').inner_text()=='Estudio ficticio'
+  assert page.locator('.desktop-inset-breadcrumb').is_hidden()
   assert page.locator('.desktop-projects h2').inner_text()=='Proyectos'
   assert page.locator('.desktop-recent-title').inner_text()=='Recientes'
   assert page.get_by_role('button',name='Crear proyecto',exact=True).count()==1

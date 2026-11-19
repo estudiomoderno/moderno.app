@@ -369,11 +369,8 @@ try:
       page.locator('#project-window-bar').wait_for(state='visible')
      else:
       assert page.locator('#project-window-bar').count()==0,'Las pestañas de proyecto solo deben existir dentro de Proyectos'
-     route=page.locator('.desktop-inset-breadcrumb [aria-current=page]');route.wait_for(state='visible')
-     expected={'home':'Inicio','proyectos':'Proyectos','workspace':'Tareas','agenda':'Agenda','mail':'Mail','calendario':'Calendario','biblioteca':'Productos','catalogo':'Servicios','informes':'Finanzas','prevision':'Previsión'}.get(view,page.locator('aside.sidebar [data-view="'+view+'"]').inner_text().strip())
-     assert route.inner_text()==expected,(view,route.inner_text(),expected)
-     assert 'Moderno ReUI Inter' in route.evaluate('(e)=>getComputedStyle(e).fontFamily')
-     expect(page.get_by_role('navigation',name='breadcrumb',exact=True).get_by_role('button')).to_have_count(3)
+     assert page.locator('.desktop-inset-breadcrumb').is_hidden()
+     expect(page.get_by_role('navigation',name='breadcrumb',exact=True)).to_have_count(0)
      if view in finance:
       sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True);sections.wait_for(state='visible')
       assert sections.bounding_box()['height']==34
@@ -415,8 +412,7 @@ try:
     page.evaluate('ModernoPageBreadcrumbs.setEnabled(true)')
     assert page.locator('#page-route-bar').count()==1
     page.locator('aside.sidebar .nav-item[data-view="agenda"]').evaluate('(button)=>button.click()')
-    page.locator('.desktop-inset-breadcrumb [aria-current=page]').wait_for(state='visible')
-    assert page.locator('.desktop-inset-breadcrumb [aria-current=page]').inner_text()=='Agenda'
+    assert page.locator('.desktop-inset-breadcrumb').is_hidden()
     assert page.locator('#page-route-bar').is_hidden()
     assert page.locator('#view>h1.big').count()==0
     expect(page.locator('.contact-category-tabs>button')).to_have_text(['Todos','Clientes','Proveedores','Contratistas','Técnicos','Team'])
@@ -537,9 +533,6 @@ try:
     expect(page.locator('#impGo')).to_be_visible()
     if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'agenda-import-{width}.png',),full_page=True)
     page.get_by_role('button',name='Cerrar',exact=True).click()
-    page.evaluate('document.querySelector(".route-component-host").shadowRoot.querySelector("link").dispatchEvent(new Event("error"))')
-    page.locator('.route-component-host').wait_for(state='detached')
-    assert page.locator('.route-fallback-current').inner_text().endswith('Agenda')
     page.evaluate("go('contabilidad')")
     page.locator('#page-route-bar').get_by_role('button',name='Resumen',exact=True).click()
     assert page.evaluate('state.view')=='informes'

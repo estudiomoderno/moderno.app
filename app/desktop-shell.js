@@ -216,8 +216,7 @@ var ModernoDesktopShell=(()=>{
   popup.append(accountSeparator(),action('Perfil',()=>userModal(),'perfil'),action('Facturación',()=>SettingsUI.open('facturacion'),'facturacion'),action('Notificaciones',()=>SettingsUI.open('notificaciones'),'notificacion'),accountSeparator(),action('Sign Out',()=>sbLogout(),'sign-out'));
   profile.append(popup);row.append(profile);
   const inset=document.createElement('div');inset.className='desktop-inset-header';header.append(inset);inset.append(toggle);
-  const breadcrumb=document.createElement('div');breadcrumb.className='desktop-inset-breadcrumb';breadcrumb.setAttribute('aria-label','Ruta de navegación');
-  const workspace=document.createElement('span');workspace.className='desktop-inset-workspace';const separator=document.createElement('span');separator.className='desktop-inset-separator';separator.textContent='›';separator.setAttribute('aria-hidden','true');const route=document.createElement('strong');route.className='desktop-inset-route';breadcrumb.append(workspace,separator,route);inset.append(breadcrumb);
+  const breadcrumb=document.createElement('div');breadcrumb.className='desktop-inset-breadcrumb';breadcrumb.hidden=true;breadcrumb.setAttribute('aria-hidden','true');inset.append(breadcrumb);
   const actions=document.createElement('div');actions.className='desktop-actions';inset.append(actions);
   const notifications=$('#nBadge')?.closest('button');move(notifications,actions);
   if(notifications){const label=notifications.getAttribute('aria-label');notifications.setAttribute('aria-label','Notificaciones');decorations.push(()=>{if(label===null)notifications.removeAttribute('aria-label');else notifications.setAttribute('aria-label',label);});}
