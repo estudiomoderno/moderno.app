@@ -57,3 +57,10 @@ test('Finance styles cover compact desktop, tablet, mobile, dark mode and reduce
  assert.match(css,/@media \(prefers-reduced-motion: reduce\)/);
  assert.match(css,/--finance-assistant-width:\s*0px/);
 });
+
+test('invoice grid header follows the supplied CardHeader typography and spacing exactly',()=>{
+ assert.match(css,/\.finance-data-header\s*\{[^}]*gap:\s*12px;[^}]*padding:\s*8px 16px;/s);
+ assert.match(css,/\.finance-data-header h2\s*\{[^}]*font-family:\s*"Moderno ReUI Inter",Inter,sans-serif\s*!important;[^}]*font-size:\s*14px;[^}]*font-style:\s*normal;[^}]*font-weight:\s*500\s*!important;[^}]*line-height:\s*20px;/s);
+ assert.match(css,/\.finance-data-header p\s*\{[^}]*font-family:\s*"Moderno ReUI Inter",Inter,sans-serif;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;[^}]*line-height:\s*16px;/s);
+ assert.match(css,/\.finance-data-footer\s*\{[^}]*padding:\s*10px 16px;/s);
+});

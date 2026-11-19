@@ -147,6 +147,18 @@ try:
             expect(page.locator(".finance-data-table").get_by_text("Cobrada en parte", exact=True)).to_be_visible()
             expect(page.locator(".finance-project-button").first).to_be_visible()
             expect(page.get_by_text("Pendiente de cobro", exact=True)).to_have_count(0)
+            title_style = page.locator(".finance-data-header h2").evaluate(
+                "element=>{const style=getComputedStyle(element);return {family:style.fontFamily,size:style.fontSize,weight:style.fontWeight,fontStyle:style.fontStyle,lineHeight:style.lineHeight}}"
+            )
+            assert "Moderno ReUI Inter" in title_style["family"], title_style
+            assert title_style["size"] == "14px", title_style
+            assert title_style["weight"] == "500", title_style
+            assert title_style["fontStyle"] == "normal", title_style
+            assert title_style["lineHeight"] == "20px", title_style
+            description_style = page.locator(".finance-data-header p").evaluate(
+                "element=>{const style=getComputedStyle(element);return {size:style.fontSize,weight:style.fontWeight,lineHeight:style.lineHeight}}"
+            )
+            assert description_style == {"size": "12px", "weight": "400", "lineHeight": "16px"}, description_style
             if width == 1440:
                 page.locator(".finance-grid-filters > summary").click()
                 expect(page.locator(".finance-filter-popover")).to_be_visible()
