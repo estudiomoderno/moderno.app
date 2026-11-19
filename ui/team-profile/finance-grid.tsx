@@ -17,7 +17,9 @@ import {
 import { Filters } from "./vendor/reui/filters/filters"
 import type { FilterOperatorLabels } from "./vendor/reui/filters/filters-operators"
 import {
+  createFilterGroup,
   createFilterQuery,
+  createFilterRule,
   isFilterRule,
 } from "./vendor/reui/filters/filters-query"
 import type {
@@ -75,82 +77,47 @@ interface FinanceGridProps {
   onProject?: (projectId: string) => void
 }
 
-const EMPTY_QUERY = createFilterQuery<unknown>([], "and")
+const SEED = createFilterQuery<unknown>(
+  [
+    createFilterRule({
+      id: "seed-1",
+      path: ["status"],
+      operator: "not_empty",
+    }),
+    createFilterGroup<unknown>({
+      id: "seed-group",
+      combinator: "or",
+      rules: [
+        createFilterRule({
+          id: "seed-2",
+          path: ["total"],
+          operator: "gte",
+          value: 0,
+        }),
+        createFilterRule({
+          id: "seed-3",
+          path: ["client"],
+          operator: "not_empty",
+        }),
+      ],
+    }),
+    createFilterRule({
+      id: "seed-4",
+      path: ["ref"],
+      operator: "not_empty",
+    }),
+  ],
+  "and"
+)
 const GUTTER_START = "ps-4"
 const GUTTER_END = "pe-4"
 
-const OPERATOR_LABELS: FilterOperatorLabels = {
-  contains: "contiene",
-  not_contains: "no contiene",
-  starts_with: "empieza por",
-  ends_with: "termina en",
-  is: "es",
-  is_not: "no es",
-  is_any_of: "es cualquiera de",
-  is_none_of: "no es ninguno de",
-  has_any_of: "contiene cualquiera de",
-  has_all_of: "contiene todos",
-  has_none_of: "no contiene ninguno",
-  eq: "es igual a",
-  neq: "no es igual a",
-  gt: "es mayor que",
-  gte: "es al menos",
-  lt: "es menor que",
-  lte: "es como máximo",
-  between: "está entre",
-  not_between: "no está entre",
-  empty: "está vacío",
-  not_empty: "no está vacío",
+const COMPACT_OPERATORS: FilterOperatorLabels = {
+  gt: "over",
+  gte: "at least",
+  lt: "under",
+  lte: "at most",
 }
-
-const FILTER_LABELS = {
-  addFilter: "Añadir filtro",
-  advancedFilter: "Filtro avanzado",
-  builderEmpty: "Todavía no hay filtros",
-  builderEmptyHint: "Añade un filtro para acotar las facturas.",
-  addCondition: "Añadir filtro",
-  addConditionGroup: "Añadir grupo",
-  addToGroup: "Añadir filtro a este grupo",
-  removeGroup: "Eliminar grupo",
-  wrapInGroup: "Agrupar",
-  ungroup: "Desagrupar",
-  moveToTopLevel: "Mover al nivel superior",
-  reorder: "Reordenar",
-  groupAll: "Se cumplen todas las condiciones...",
-  groupAny: "Se cumple alguna condición...",
-  groupPlaceholder: "Arrastra filtros aquí",
-  clearAll: "Borrar todo",
-  groupMenu: "Opciones del grupo",
-  searchFields: "Buscar atributos...",
-  searchOperators: "Buscar condiciones...",
-  searchOptions: "Buscar...",
-  back: "Volver",
-  clear: "Borrar",
-  apply: "Aplicar",
-  discard: "Descartar cambios",
-  empty: "Sin resultados",
-  where: "Donde",
-  and: "Y",
-  or: "O",
-  combinator: "Cambiar combinación",
-  duplicate: "Duplicar",
-  negate: "Negar",
-  remove: "Eliminar",
-  filtersLabel: "Filtros",
-  readOnly: "Estos filtros son de solo lectura.",
-  valuePlaceholder: "escribe un valor...",
-  selectPlaceholder: "Seleccionar...",
-  noValue: "sin valor",
-  selectCondition: "Seleccionar condición",
-  incomplete: "filtro incompleto",
-  fieldsLabel: "Atributos",
-  actionsLabel: "Acciones",
-  issueOperator: "Selecciona una condición",
-  issueValue: "Introduce un valor",
-  issueRange: "Introduce ambos límites",
-  issueRangeOrder: "El valor final es anterior al inicial",
-  issueEmptyGroup: "Este grupo no contiene condiciones",
-} as const
 
 function Dot({ tone }: { tone: FinanceGridRow["statusTone"] }) {
   const color = {
@@ -208,7 +175,7 @@ function FinanceGrid({
   locale = "es-ES",
   onProject,
 }: FinanceGridProps) {
-  const [query, setQuery] = useState<FilterQuery>(EMPTY_QUERY)
+  const [query, setQuery] = useState<FilterQuery>(SEED)
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 5,
@@ -378,7 +345,7 @@ function FinanceGrid({
   const footer = (
     <DataGridTableFootRow>
       <DataGridTableFootRowCell colSpan={4} className={GUTTER_START}>
-        <span className="text-muted-foreground">Total filtrado</span>
+        <span className="text-muted-foreground">Filtered total</span>
       </DataGridTableFootRowCell>
       <DataGridTableFootRowCell className={`text-right font-medium tabular-nums rtl:text-left ${GUTTER_END}`}>
         {formatter.format(total)}
@@ -390,7 +357,7 @@ function FinanceGrid({
     <DataGrid
       table={table}
       recordCount={rows.length}
-      emptyMessage="Ninguna factura coincide con estos filtros"
+      emptyMessage="No invoices match these filters"
       tableLayout={{ dense: true }}
     >
       <Card className="w-full gap-0 p-0">
@@ -398,7 +365,7 @@ function FinanceGrid({
           <div className="flex min-w-0 flex-col gap-0.5">
             <CardTitle className="truncate text-sm font-medium">Facturas</CardTitle>
             <CardDescription className="truncate text-xs tabular-nums">
-              {rows.length} de {sourceRows.length} facturas
+              {rows.length} of {sourceRows.length} facturas
             </CardDescription>
           </div>
           <CardAction className="flex shrink-0 items-center gap-2">
@@ -408,8 +375,7 @@ function FinanceGrid({
               advancedAlign="end"
               reorderable
               fields={fields}
-              labels={FILTER_LABELS}
-              operatorLabels={OPERATOR_LABELS}
+              operatorLabels={COMPACT_OPERATORS}
               pathCollapse="start"
               maxPathSegments={1}
               className="[--filter-field-width:9rem] [--filter-operator-width:6.5rem] [--filter-value-width:10.5rem]"
@@ -418,10 +384,10 @@ function FinanceGrid({
             />
             <Button
               variant="ghost"
-              disabled={query === EMPTY_QUERY}
-              onClick={() => applyQuery(EMPTY_QUERY)}
+              disabled={query === SEED}
+              onClick={() => applyQuery(SEED)}
             >
-              Restablecer
+              Reset
             </Button>
           </CardAction>
         </CardHeader>

@@ -163,7 +163,7 @@ try:
             )
             assert description_style == {"size": "12px", "weight": "400", "lineHeight": "16px"}, description_style
             if width == 1440:
-                page.get_by_role("button", name="Filtro avanzado", exact=True).click()
+                page.get_by_role("button", name="Advanced filter, 4 filters applied", exact=True).click()
                 expect(page.locator('[data-slot="filters-advanced"]')).to_be_visible()
                 if output:
                     page.screenshot(path=str(output / "finance-sales-filters-1440.png"), full_page=True)
