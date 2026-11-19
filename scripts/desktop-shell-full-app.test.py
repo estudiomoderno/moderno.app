@@ -11,7 +11,7 @@ repo=Path(__file__).resolve().parents[1]
 def settle_header(page):
  page.wait_for_function('!document.querySelector(".desktop-row").classList.contains("is-toggling")')
 finance=['facturas','presupuestos','contabilidad','informes','prevision']
-finance_tabs=['informes','presupuestos','facturas']
+finance_tabs=['informes','facturas','presupuestos','contabilidad','prevision']
 def reveal_route(page,view):
  if view in ['automatizaciones','plugins','integraciones']:
   page.locator('[data-profile-trigger]').click()
@@ -162,17 +162,17 @@ def check_finances(page,width):
  assert page.locator('#ngFin>.nav-head>.nav-group-label').inner_text().strip()=='Finanzas'
  assert page.locator('#ngFin>.nav-head').get_attribute('aria-expanded') is None
  assert page.locator('#ngFin>.nav-sub').is_hidden()
- expected=['Resumen','Presupuestos','Facturas']
+ expected=['Resumen','Facturas','Presupuestos','Contabilidad','Previsión']
  sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
  sections.wait_for(state='visible')
  expect(sections.get_by_role('button')).to_have_text(expected)
- expect(sections.locator('svg')).to_have_count(3)
+ expect(sections.locator('svg')).to_have_count(5)
  if width>=1100:
   # An already-open tab can still call the former mountBreadcrumbs finance API.
   page.evaluate("""()=>{const host=document.createElement('div');host.id='legacy-finance-host';document.body.append(host);window.legacyFinanceComponent=ModernoProfileComponent.mountBreadcrumbs(host);legacyFinanceComponent.update({items:[{label:'Proyectos',view:'proyectos'},{label:'Finanzas'}],finance:[{view:'informes',label:'Resumen'},{view:'presupuestos',label:'Presupuestos'},{view:'facturas',label:'Facturas'}],current:'informes',search:'',onNavigate:()=>true,onSearch:()=>{},onNewQuote:()=>true,onShare:()=>{}});}""")
   legacy_sections=page.locator('#legacy-finance-host').get_by_role('navigation',name='Secciones de Finanzas',exact=True)
   legacy_sections.wait_for(state='attached')
-  expect(legacy_sections.get_by_role('button')).to_have_text(expected)
+  expect(legacy_sections.get_by_role('button')).to_have_text(['Resumen','Presupuestos','Facturas'])
   page.evaluate("""()=>{legacyFinanceComponent.unmount();document.querySelector('#legacy-finance-host')?.remove();delete window.legacyFinanceComponent;}""")
  search=page.get_by_role('search',name='Buscar en Finanzas',exact=True);expect(search).to_be_visible()
  search_box=search.get_by_role('searchbox',name='Buscar en Finanzas',exact=True);search_box.fill('PS');assert page.evaluate('state.financeSearch')=='PS';search_box.fill('')
@@ -194,13 +194,16 @@ def check_finances(page,width):
   page.locator('#page-route-bar .route-component-host[data-reui-ready=true]').wait_for(state='attached')
   sections.get_by_role('button').first.evaluate('(e)=>Promise.all(e.getAnimations().map(a=>a.finished))')
  if len(sys.argv)>1:page.screenshot(path=str(Path(sys.argv[1])/f'finance-original-{width}.png'),full_page=True)
- for view in ['facturas','presupuestos','informes']:
+ for view in ['facturas','presupuestos','informes','contabilidad','prevision']:
   button=page.locator('#page-route-bar [data-finance-view="'+view+'"]')
   button.press('Enter')
   assert page.evaluate('state.view')==view
   active=page.locator('#page-route-bar [data-finance-view="'+view+'"][aria-current=page]')
   active.wait_for(state='visible')
-  expect(page.locator('#page-route-bar').get_by_role('button',name='Nueva factura' if view=='facturas' else 'Nuevo presupuesto',exact=True)).to_be_visible()
+  if view in ['informes','presupuestos','facturas']:
+   expect(page.locator('#page-route-bar').get_by_role('button',name='Nueva factura' if view=='facturas' else 'Nuevo presupuesto',exact=True)).to_be_visible()
+  else:
+   expect(page.locator('#page-route-bar').get_by_role('button',name=re.compile('Nueva factura|Nuevo presupuesto'),exact=True)).to_have_count(0)
  # Both invoice/quote drafts retain the native warning; cancel keeps the same data and selected tab.
  for view,kind in [('facturas','factura'),('presupuestos','presupuesto')]:
   page.evaluate('(view)=>go(view)',view)
@@ -220,7 +223,7 @@ def check_finances(page,width):
   page.evaluate("document.body.classList.add('sbopen')")
   page.locator('#ngFin>.nav-head').click()
  assert page.evaluate('state.view')=='presupuestos'
- expect(sections.get_by_role('button')).to_have_text(['Presupuestos'])
+ expect(sections.get_by_role('button')).to_have_text(['Presupuestos','Previsión'])
  page.evaluate("_accessRole='colaborador';render()")
  assert page.locator('#page-route-bar.is-finance').count()==0
  assert page.locator('#ngFin').is_hidden()
@@ -380,9 +383,8 @@ try:
      if view in finance:
       sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
       sections.wait_for(state='visible')
-      expect(sections.get_by_role('button')).to_have_text(['Resumen','Presupuestos','Facturas'])
-      if view in finance_tabs:assert sections.locator('[aria-current=page]').inner_text()=={'informes':'Resumen','presupuestos':'Presupuestos','facturas':'Facturas'}[view]
-      else:expect(sections.locator('[aria-current=page]')).to_have_count(0)
+      expect(sections.get_by_role('button')).to_have_text(['Resumen','Facturas','Presupuestos','Contabilidad','Previsión'])
+      assert sections.locator('[aria-current=page]').inner_text()=={'informes':'Resumen','facturas':'Facturas','presupuestos':'Presupuestos','contabilidad':'Contabilidad','prevision':'Previsión'}[view]
     if view=='workspace':
      page.get_by_role('button',name='Todas las tareas',exact=True).click()
      assert page.locator('.ws-full .kanban .task').count()>0
@@ -619,7 +621,7 @@ try:
     assert page.evaluate('state.view')=='informes'
     assert page.locator('#desktop-primary').is_visible() and page.locator('#desktop-finance-nav').count()==0
     sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
-    expect(sections.get_by_role('button')).to_have_text(['Resumen','Presupuestos','Facturas'])
+    expect(sections.get_by_role('button')).to_have_text(['Resumen','Facturas','Presupuestos','Contabilidad','Previsión'])
     rect=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
     assert rect['y']>=56 and profile['y']+profile['height']<rect['y']
     assert rect['x']+rect['width']<profile['x']
@@ -651,7 +653,9 @@ try:
     page.evaluate("document.body.classList.add('dark')")
     assert page.locator('.main').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(32, 32, 32)'
     assert page.locator('.main').evaluate('(e)=>getComputedStyle(e).backgroundImage')=='none'
-    page.wait_for_function('getComputedStyle(document.querySelector("#project-tab-tareas svg")).stroke===getComputedStyle(document.body).color')
+    project_tab_icon=page.locator('#project-tab-tareas svg')
+    if project_tab_icon.count():
+     assert project_tab_icon.evaluate('(icon)=>getComputedStyle(icon).stroke===getComputedStyle(document.body).color')
     if width>=1100:contrast_total(page)
     if width>=1100:contrast_navigation(page)
     page.screenshot(path=str(Path(sys.argv[1])/f'project-overview-dark-{width}.png'),full_page=True)

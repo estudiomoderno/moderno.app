@@ -1,6 +1,6 @@
 # Finanzas como sección única — v3.65.59
 
-Solicitud del propietario, 19/10/2026: Finanzas abre una página, sin sustituir el menú lateral por un submenú. En la misma fila que la ruta aparecen, en este orden: Resumen, Facturas, Presupuestos, Contabilidad y Previsión.
+Solicitud del propietario, 19/10/2026, actualizada el 19/11/2026: Finanzas abre una página, sin sustituir el menú lateral por un submenú. Tras retirar las rutas superiores generales de la aplicación, la navegación funcional de Finanzas aparece sola y en este orden: Resumen, Facturas, Presupuestos, Contabilidad y Previsión.
 
 El acceso Finanzas abre Resumen (la pantalla de Informes existente, con su título actualizado). Las cinco pantallas conservan sus identificadores, cálculos, filtros, exportaciones, documentos y formularios. La barra usa Button/Card/Breadcrumb originales ReUI ya instalados, Inter 12 px y altura de 32 px, como las pestañas de proyecto. Se reserva el ancho real del perfil. El menú lateral principal permanece estable y marca Finanzas mientras cualquiera de sus páginas esté activa.
 

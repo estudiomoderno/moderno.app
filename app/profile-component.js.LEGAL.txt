@@ -91,6 +91,7 @@ lucide-react/dist/esm/icons/arrow-up.mjs:
 lucide-react/dist/esm/icons/bell.mjs:
 lucide-react/dist/esm/icons/bold.mjs:
 lucide-react/dist/esm/icons/calendar.mjs:
+lucide-react/dist/esm/icons/chart-no-axes-combined.mjs:
 lucide-react/dist/esm/icons/check.mjs:
 lucide-react/dist/esm/icons/chevron-down.mjs:
 lucide-react/dist/esm/icons/chevron-left.mjs:
@@ -105,6 +106,7 @@ lucide-react/dist/esm/icons/file-text.mjs:
 lucide-react/dist/esm/icons/file.mjs:
 lucide-react/dist/esm/icons/house.mjs:
 lucide-react/dist/esm/icons/italic.mjs:
+lucide-react/dist/esm/icons/landmark.mjs:
 lucide-react/dist/esm/icons/layout-dashboard.mjs:
 lucide-react/dist/esm/icons/layout-grid.mjs:
 lucide-react/dist/esm/icons/log-out.mjs:

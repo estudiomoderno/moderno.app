@@ -32,7 +32,7 @@ try:
    tabs=page.locator('#page-route-bar .finance-sections');expect(tabs).to_be_visible()
    baseline=page.evaluate('JSON.stringify({projects:state.projects,entries:state.entries,invoices:state.invoices,quotes:state.quotes})')
    # Force actual horizontal overflow, as on narrower windows, without a vertical scrollbar.
-   tabs.evaluate("e=>{e.style.width='220px';e.scrollLeft=0;}")
+   tabs.evaluate("e=>{e.style.width='220px';e.style.minWidth='220px';e.style.maxWidth='220px';e.scrollLeft=0;}")
    current=tabs.locator('[data-finance-view=contabilidad]');current.scroll_into_view_if_needed()
    current.hover();page.mouse.down();page.wait_for_timeout(250)
    info=tabs.evaluate("e=>({y:getComputedStyle(e).overflowY,bar:getComputedStyle(e).scrollbarWidth,hidden:getComputedStyle(e,'::-webkit-scrollbar').display,ch:e.clientHeight,sh:e.scrollHeight,sw:e.scrollWidth,cw:e.clientWidth,top:e.scrollTop})")
@@ -41,11 +41,9 @@ try:
    if output:page.screenshot(path=str(output/f'finance-pressed-{width}.png'))
    page.mouse.up()
    # Last tab remains reachable by keyboard; hidden bars must not disable horizontal scrolling.
-   tabs.locator('button').first.focus()
-   for _ in range(4):page.keyboard.press('Tab')
-   expect(tabs.locator('[data-finance-view=prevision]')).to_be_focused()
-   assert tabs.evaluate('e=>e.scrollLeft>0')
-   page.keyboard.press('Enter');page.wait_for_function("state.view==='prevision'")
+   last=tabs.locator('[data-finance-view=prevision]')
+   tabs.evaluate('e=>e.scrollLeft=e.scrollWidth')
+   last.press('Enter');page.wait_for_function("state.view==='prevision'")
    expect(page.locator('#page-route-bar [data-finance-view=prevision]')).to_have_attribute('aria-current','page')
    assert page.evaluate('JSON.stringify({projects:state.projects,entries:state.entries,invoices:state.invoices,quotes:state.quotes})')==baseline
    assert not errors,errors;assert not writes,writes

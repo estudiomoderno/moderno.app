@@ -1,5 +1,12 @@
 # Decisiones de TALLER
 
+## 2026-11-19 — Rediseño integral y publicación de Finanzas
+
+El propietario solicita rediseñar por completo Finanzas como espacio profesional de control, manteniendo una única entrada principal y cinco secciones internas: **Resumen, Facturas, Presupuestos, Contabilidad y Previsión**. Se aprueba una interfaz compacta y trazable que distingue facturado, cobrado, pendiente, gasto y previsión; añade emitidas/recibidas sin duplicar registros; conserva documentos, cobros parciales, filtros, estados, proyectos, editores y exportaciones; y retira del Resumen los indicadores fiscales específicos de España sin eliminar sus datos ni reglas.
+
+El cambio es exclusivamente de presentación y composición sobre funciones existentes. No modifica Supabase, permisos, esquemas, numeraciones, divisas, registros, archivos o fiscalidad, y no inventa saldo bancario. Se reserva espacio técnico inactivo para un futuro panel derecho de IA, sin construirlo ni conectarlo. La orden incluye publicación tras pruebas aisladas y verificación. Detalle y recuperación en [FINANZAS-REDISENO-INTEGRAL-2026-11-19](FINANZAS-REDISENO-INTEGRAL-2026-11-19.md).
+
+
 ## 2026-11-05 — Herramientas del proyecto fijas arriba y lateral contraído al abrir
 
 El propietario marca en rojo la franja horizontal inmediatamente debajo de las pestañas globales de un proyecto (captura de «Planos») y solicita **mover allí, arriba y fija, la barra de herramientas que estaba abajo**. También establece que **la barra del menú lateral de escritorio debe empezar contraída al cargar Moderno.app**, con expansión manual disponible como hasta ahora.

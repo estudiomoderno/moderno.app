@@ -6339,9 +6339,9 @@ function vPrevision(){
   const meses=[]; displayed.forEach(r=>{ const k=r.h.due?r.h.due.slice(0,7):"sin"; let m=meses.find(x=>x.k===k); if(!m){ m={k,rows:[],sum:0}; meses.push(m); } m.rows.push(r); m.sum+=(+r.h.amount||0); });
   const mesLabel=k=>k==="sin"?"Sin fecha prevista":(MESES[+k.slice(5,7)-1]+" "+k.slice(0,4));
   const enMes=k=>k===hoy.slice(0,7);
-  return `
-  <h1 class="big">Previsión de <span class="hl">cobros</span></h1>
-  <p class="sub">Los hitos de los planes de pago que aún no has facturado, por fecha prevista. Es una lectura de los planes de cada proyecto, no una tabla contable: nada de esto está en Contabilidad hasta que emitas la factura.</p>
+  return `<section class="finance-page finance-forecast" data-ai-panel-ready="true">
+  <header class="finance-page-heading"><div><p class="finance-eyebrow">Tesorería prevista</p><h1 class="big">Previsión</h1>
+  <p class="sub">Cobros planificados todavía no facturados, ordenados por su fecha prevista.</p></div><p class="finance-heading-note">Esta vista proyecta hitos de proyectos. No representa un saldo bancario ni movimientos contables confirmados.</p></header>
   ${planMigrateBanner()}
   <h2 class="sec">Calendario de cobros previstos</h2>
   <div class="fin-cards" style="margin-bottom:16px">
@@ -6361,7 +6361,7 @@ function vPrevision(){
         <b style="text-align:right;white-space:nowrap">${fmt(h.amount||0)}</b>
         <span style="display:flex;gap:6px;align-items:center;justify-content:flex-end"><button class="btn btn-dark finance-invoice-action" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" onclick="hitoInvoiceDraft(${p.id},${h.id})">${ico("factura")} Emitir factura</button><button class="collbtn" title="Quitar este hito del plan" onclick="hitoDel(${p.id},${h.id})">✕</button></span>
       </div>`; }).join("")}
-    </div>`).join("") : `<div class="empty">No hay hitos previstos pendientes. Define planes de pago en Finanzas de cada proyecto y aparecerán aquí.</div>`}`;
+    </div>`).join("") : `<div class="finance-empty"><b>Sin cobros previstos pendientes</b><span>Define planes de pago en Finanzas de cada proyecto y aparecerán aquí.</span></div>`}</section>`;
 }
 function vAccounting(){
   const P = state.period || (state.period={mode:"todo", year:new Date().getFullYear(), month:new Date().getMonth()+1, quarter:Math.ceil((new Date().getMonth()+1)/3)});
@@ -6373,9 +6373,9 @@ function vAccounting(){
   const gas = es.filter(e=>e.kind==="out").reduce((s,e)=>s+e.amount,0);
   const ben = ing-gas;
   const total = ing+pen;
-  return `
+  return `<section class="finance-page finance-accounting" data-ai-panel-ready="true">
   ${planMigrateBanner()}
-  <h1 class="big">Llevas <span class="hl">${fmt(ben)}</span> de beneficio,<br>vamos a por más, <span class="hl">${meName().split(" ")[0]}</span>.</h1>
+  <header class="finance-page-heading"><div><p class="finance-eyebrow">Movimientos</p><h1 class="big">Contabilidad</h1><p class="sub">Ingresos y gastos registrados, con sus documentos, estados y proyectos relacionados.</p></div><p class="finance-heading-note">Resultado del periodo: <b>${fmt(ben)}</b></p></header>
   <div class="account-toolbar account-compact-toolbar"><div class="account-header-main"><div class="pill-tabs"><button class="${(state.accTab||'in')==='in'?'on':''}" onclick="WorkflowPolish.accountTab('in')">Ingresos</button><button class="${state.accTab==='out'?'on':''}" onclick="WorkflowPolish.accountTab('out')">Gastos</button></div><button class="btn btn-ghost account-icon-button ${P.mode!=='todo'?'is-filtered':''}" type="button" title="Filtrar por fechas" aria-label="Filtrar por fechas" aria-expanded="${!!state.accDateOpen}" aria-controls="account-date-filter" onclick="toggleAccountingDates(this)"><svg aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-filter-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 20l-3 1v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v3" /><path d="M16 19h6" /><path d="M19 16v6" /></svg></button></div>
   <form id="account-date-filter" class="account-date-filter" onkeydown="if(event.key==='Escape'){event.stopPropagation();const button=document.querySelector('[aria-controls=account-date-filter]');toggleAccountingDates(button);button.focus()}" ${state.accDateOpen?'':'hidden'} onsubmit="event.preventDefault();applyAccountingDates(this)">
     <label>Desde<input type="date" name="from" aria-label="Desde" required value="${P.mode==='rango'?(accountingISODate(P.from)||''):''}"></label>
@@ -6447,7 +6447,7 @@ function vAccounting(){
     <div class="account-export-actions"><button class="btn btn-ghost" onclick="accountingExport(this,'invoices')">${ico('download')} Facturas del periodo</button><button class="btn btn-ghost" onclick="accountingExport(this,'csv')">${ico('xlsx')} CSV</button><button class="btn btn-dark" onclick="accountingExport(this,'pdf')">${ico('pdf')} Exportar PDF</button></div>
   </div></div>
 
-`;
+</section>`;
 }
 
 /* ============ FACTURAS: LISTA AL ENTRAR + COBROS A CUENTA (v3.24) ============ */
@@ -6561,19 +6561,23 @@ function delInvoice(ref){
 function vInvoiceList(){
   let pend=0, cob=0, venc=0;
   byBrand(invoiceRows()).forEach(x=>{ const e=x.e; if(!e) return; if(e.status==="cobr"){ cob+=aCobrar(e); return; } cob+=cobrado(e); const p=pendienteCobro(e); if(daysLate(e)>0) venc+=p; else pend+=p; });
-  return `
-  <h1 class="big">Todas tus <span class="hl">facturas</span></h1>
-  ${draftsBox("factura")}
+  const book=state.invoiceBookTab||"emitidas";
+  const received=byBrand(state.entries||[]).filter(entry=>entry.kind==="out");
+  const receivedPaid=received.filter(entry=>entry.status==="cobr").reduce((sum,entry)=>sum+(+entry.amount||0),0);
+  const receivedPending=received.filter(entry=>entry.status!=="cobr").reduce((sum,entry)=>sum+(+entry.amount||0),0);
+  const receivedRows=received.filter(entry=>financeSearchMatch(entry.concept,entry.sup,entry.client,state.projects.find(project=>project.id===entry.pid)?.name));
+  return `<section class="finance-page finance-invoices" data-ai-panel-ready="true">
+  <header class="finance-page-heading"><div><p class="finance-eyebrow">Ventas</p><h1 class="big">Facturas</h1><p class="sub">Documentos emitidos, cobros y vencimientos en un solo lugar.</p></div></header>
+  <nav class="finance-subnav" aria-label="Tipo de factura"><button class="${book==="emitidas"?"is-active":""}" onclick="state.invoiceBookTab='emitidas';render()">Emitidas</button><button class="${book==="recibidas"?"is-active":""}" onclick="state.invoiceBookTab='recibidas';render()">Recibidas</button></nav>
+  ${book==="emitidas"?draftsBox("factura"):""}
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
     <span style="flex:1"></span>
-    <button class="btn btn-dark" onclick="state.fView='nuevo';state.draft=null;render()">${ico("mas")} Nueva factura</button>
+    ${book==="emitidas"?`<button class="btn btn-dark finance-inline-create" onclick="state.fView='nuevo';state.draft=null;render()">${ico("mas")} Nueva factura</button>`:`<button class="btn btn-dark" onclick="entryModal('out')">${ico("mas")} Registrar factura recibida</button>`}
   </div>
   <div class="fin-cards" style="grid-template-columns:repeat(3,1fr)">
-    <div class="fin-card" style="background:var(--gold-soft)"><span class="lab" style="background:var(--white)">Pendiente de cobro</span><div class="val">${fmt(pend)}</div></div>
-    <div class="fin-card" style="background:#F6DBD7"><span class="lab" style="background:var(--white)">Vencido</span><div class="val">${fmt(venc)}</div></div>
-    <div class="fin-card" style="background:#DDF0DC"><span class="lab" style="background:var(--white)">Cobrado</span><div class="val">${fmt(cob)}</div></div>
+    ${book==="emitidas"?`<div class="fin-card" style="background:var(--gold-soft)"><span class="lab" style="background:var(--white)">Pendiente de cobro</span><div class="val">${fmt(pend)}</div></div><div class="fin-card" style="background:#F6DBD7"><span class="lab" style="background:var(--white)">Vencido</span><div class="val">${fmt(venc)}</div></div><div class="fin-card" style="background:#DDF0DC"><span class="lab" style="background:var(--white)">Cobrado</span><div class="val">${fmt(cob)}</div></div>`:`<div class="fin-card"><span class="lab">Total recibido</span><div class="val">${fmt(receivedPaid+receivedPending)}</div></div><div class="fin-card"><span class="lab">Pagado</span><div class="val">${fmt(receivedPaid)}</div></div><div class="fin-card"><span class="lab">Pendiente de pago</span><div class="val">${fmt(receivedPending)}</div></div>`}
   </div>
-  ${invoiceListHtml()}`;
+  ${book==="emitidas"?invoiceListHtml():receivedRows.length?`<div class="finance-table-wrap"><table class="finance-table finance-received-table"><thead><tr><th>Concepto</th><th>Proveedor / proyecto</th><th>Fecha</th><th>Estado</th><th>Importe</th><th>Acciones</th></tr></thead><tbody>${receivedRows.map(entry=>{const project=entry.pid&&state.projects.find(item=>item.id===entry.pid);return `<tr><td><b>${entry.concept||"Factura recibida"}</b><small>${entry.file||entry.files?.length?"Con documento adjunto":"Sin documento adjunto"}</small></td><td>${entry.sup||entry.client||"Sin proveedor"}${project?`<small><button class="finance-project-link" onclick="go('proyecto',${project.id})">${project.num} · ${project.name}</button></small>`:""}</td><td>${entry.date||"—"}</td><td>${stSelect(entry.id)}</td><td><b>${fmt(entry.amount||0)}</b></td><td><div class="finance-row-actions"><button class="btn btn-ghost" onclick="gastoFile(${entry.id})">${ico("factura")} Documento</button><button class="btn btn-ghost" onclick="editEntry(${entry.id})">${ico("editar")} Editar</button><button class="btn btn-ghost" title="Eliminar" onclick="delEntry(${entry.id})">${ico("eliminar")}</button></div></td></tr>`;}).join("")}</tbody></table></div>`:`<div class="finance-empty"><b>Sin facturas recibidas</b><span>Registra un gasto y adjunta su factura o justificante para verlo aquí.</span></div>`}</section>`;
 }
 function vInvoice(kind){
   const isF = kind==="factura";
@@ -6600,7 +6604,7 @@ function vInvoice(kind){
   const total = base+iva-irpf;
   const today = d.date.split("-").reverse().join("/");
   const saved = isF? state.invoices : state.quotes;
-  return `
+  return `<section class="finance-page finance-document-editor" data-ai-panel-ready="true">
   ${!isF?`<button class="btn btn-ghost" style="margin-top:16px" onclick="if(draftDirty()){draftExitModal('presupuestos');}else{state.qView=null;state.draft=null;render();}">← Todos los presupuestos</button>`:`<button class="btn btn-ghost" style="margin-top:16px" onclick="if(draftDirty()){draftExitModal('facturas');}else{state.fView=null;state.draft=null;render();}">← Todas las facturas</button>`}
   <h1 class="big">Crea ${isF?"la factura":"el presupuesto"} de hoy${userFirst()?`, <span class="hl">${userFirst()}</span>`:""}</h1>
   ${isF && !draftDirty() ? draftsBox("factura") : ""}
@@ -6696,7 +6700,7 @@ function vInvoice(kind){
         </div>`; })()}
 
     </div>
-  </div>`;
+  </div></section>`;
 }
 
 function compProjSet(v){
@@ -6766,97 +6770,102 @@ function vFinanceSearchResults(){
   const quotes=byBrand(state.quotes||[]).filter(q=>financeSearchMatch(q.ref,q.client,BRAND[q.brand]?.name,state.projects.find(p=>p.id===q.projectId)?.name));
   const invoices=byBrand(invoiceRows()).filter(x=>financeSearchMatch(x.ref,x.client,BRAND[x.brand]?.name,state.projects.find(p=>p.id===x.pid)?.name));
   const row=(item,view)=>`<button type="button" class="entry" style="width:100%;border:0;background:var(--card);text-align:left;cursor:pointer" onclick="go('${view}')"><b>${E(item.ref||"—")}</b><span style="color:var(--ink-soft)">${E(item.client||"Sin cliente")}</span><span class="amt" style="color:var(--ink)">${fmt(item.total||0)}</span></button>`;
-  return `<section class="finance-search-results"><h1 class="big">Resultados de <span class="hl">búsqueda</span></h1><p class="sub">Coincidencias para «${E(query)}» en presupuestos y facturas.</p>
+  return `<section class="finance-search-results finance-page"><header class="finance-page-heading"><div><p class="finance-eyebrow">Búsqueda global</p><h1 class="big">Resultados</h1><p class="sub">Coincidencias para «${E(query)}» en presupuestos y facturas.</p></div></header>
     <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start">
       <div class="widget"><div class="wh"><span>Presupuestos</span><i>${quotes.length} resultado${quotes.length===1?"":"s"}</i></div>${quotes.length?quotes.slice(0,12).map(item=>row(item,"presupuestos")).join(""):`<div class="empty" style="padding:16px">No hay presupuestos que coincidan.</div>`}</div>
       <div class="widget"><div class="wh"><span>Facturas</span><i>${invoices.length} resultado${invoices.length===1?"":"s"}</i></div>${invoices.length?invoices.slice(0,12).map(item=>row(item,"facturas")).join(""):`<div class="empty" style="padding:16px">No hay facturas que coincidan.</div>`}</div>
     </div></section>`;
 }
+function financeDateISO(value){
+  const raw=String(value||"");
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw))return raw.slice(0,10);
+  const match=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(raw);
+  return match?match[3]+"-"+match[2].padStart(2,"0")+"-"+match[1].padStart(2,"0"):"";
+}
+function financeSummaryRange(){
+  const now=new Date(),year=now.getFullYear();
+  const mode=state.financeSummaryPeriod||("year:"+year);
+  if(mode==="all")return {mode,label:"Todo el histórico",from:"",to:""};
+  if(mode==="last12"){
+    const start=new Date(year,now.getMonth()-11,1);
+    return {mode,label:"Últimos 12 meses",from:start.toISOString().slice(0,10),to:now.toISOString().slice(0,10)};
+  }
+  const selected=+(mode.split(":")[1]||year);
+  return {mode:"year:"+selected,label:String(selected),from:selected+"-01-01",to:selected+"-12-31",year:selected};
+}
+function financeInRange(value,range){
+  const iso=financeDateISO(value);if(!range.from&&!range.to)return true;if(!iso)return false;
+  return (!range.from||iso>=range.from)&&(!range.to||iso<=range.to);
+}
+function financeMonthKeys(range){
+  if(range.year)return Array.from({length:12},(_,index)=>range.year+"-"+String(index+1).padStart(2,"0"));
+  const end=new Date(),keys=[];for(let index=11;index>=0;index--){const date=new Date(end.getFullYear(),end.getMonth()-index,1);keys.push(date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0"));}return keys;
+}
 function vInformes(){
   if(financeSearchText())return vFinanceSearchResults();
-  const ins = byBrand(state.entries).filter(e=>e.kind==="in");
-  const outs = byBrand(state.entries).filter(e=>e.kind==="out");
-  const yOf = e => +e.date.split("/")[2];
-  const mOf = e => +e.date.split("/")[1];
-  const years = [...new Set(ins.map(yOf))].filter(Boolean).sort();
-  const yTot = y => ins.filter(e=>yOf(e)===y).reduce((s,e)=>s+e.amount,0);
-  const retYear = y => state.entries.filter(e=>yOf(e)===y&&e.irpf>0).reduce((s,e)=>s+((e.base!=null?e.base:e.amount)*e.irpf/100),0)
-    + (state.invoices||[]).filter(f=>f.irpf&&f.irpf.on&&f.date&&+f.date.split("-")[0]===y).reduce((s,f)=>s+((f.sub||0)*(f.irpf.pct||0)/100),0);
-  const yBrand = (y,b) => ins.filter(e=>yOf(e)===y&&e.brand===b).reduce((s,e)=>s+e.amount,0);
-  const maxY = Math.max(...years.map(yTot),1);
-  const anyo = new Date().getFullYear();
-  const ingA = ins.filter(e=>yOf(e)===anyo).reduce((s,e)=>s+e.amount,0);
-  const gasA = outs.filter(e=>yOf(e)===anyo).reduce((s,e)=>s+e.amount,0);
-  const nFac = byBrand(state.invoices).length, nPres = byBrand(state.quotes).length;
-  const mes = m => ins.filter(e=>yOf(e)===anyo&&mOf(e)===m).reduce((s,e)=>s+e.amount,0);
-  const mesG = m => outs.filter(e=>yOf(e)===anyo&&mOf(e)===m).reduce((s,e)=>s+e.amount,0);
-  const maxM = Math.max(...Array.from({length:12},(_,i)=>Math.max(mes(i+1),mesG(i+1))),1);
-  const projs = byBrand(state.projects.filter(x=>!x.tpl&&(x.rooms||[]).length));
-  const pm = projs.map(p=>{
-    let cli=0, cost=0;
-    (p.rooms||[]).forEach(r=>r.sections.forEach(sec=>sec.items.forEach(it=>{ cli+=it.price*(it.qty||1); cost+=(it.cost||it.price)*(it.qty||1); })));
-    return {p, cli, cost, m:cli-cost, pct: cli? (cli-cost)/cli*100 : 0};
-  }).filter(x=>x.cli>0).sort((a,b)=>b.m-a.m);
-  const sup = {};
-  projs.forEach(p=>(p.rooms||[]).forEach(r=>r.sections.forEach(sec=>sec.items.forEach(it=>{ const k=it.supplier||"—"; sup[k]=sup[k]||{n:0,eur:0}; sup[k].n++; sup[k].eur+=it.price*(it.qty||1); }))));
-  const cli = {};
-  byBrand(state.invoices).forEach(v=>{ cli[v.client]=(cli[v.client]||0)+v.total; });
-  return `${state.irpf?`<div class="entry-col" style="margin-bottom:12px;padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><b style="font-size:13px">${retLabel()} acumulada</b>${[...new Set(years.concat(outs.filter(e=>e.irpf>0).map(yOf),(state.invoices||[]).filter(f=>f.irpf&&f.irpf.on&&f.date).map(f=>+f.date.split("-")[0])))].filter(Boolean).sort().map(y=>`<span class="chip cm" style="background:var(--card)">${y}: ${fmt(retYear(y))}</span>`).join("")||`<small style="color:var(--ink-faint)">Sin datos todavía</small>`}</div>`:""}
-  <h1 class="big">Resumen</h1>
-  <p class="sub">Los números de verdad de tus marcas, calculados con lo que ya hay en la app.</p>
-  <h2 class="sec">Venta estimada <span class="sec-note">Por proyecto activo: lo ya facturado (base) más lo previsto en su plan de pagos.</span></h2>
-  ${ventaEstimadaHtml(false)}
-  <h2 class="sec">Resultados</h2>
-  <div class="fin-cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
-    <div class="fin-card" style="background:var(--green)"><span class="lab" style="background:var(--white)">Ingresos ${anyo}</span><div class="val">${fmt(ingA)}</div></div>
-    <div class="fin-card" style="background:var(--red)"><span class="lab" style="background:var(--white)">Gastos ${anyo}</span><div class="val">−${fmt(gasA)}</div></div>
-    <div class="fin-card" style="background:var(--card)"><span class="lab" style="background:var(--white)">Beneficio ${anyo}</span><div class="val">${fmt(ingA-gasA)}</div></div>
-    <div class="fin-card" style="background:var(--gold-soft)"><span class="lab" style="background:var(--white)">Documentos</span><div class="val" style="font-size:20px">${nFac} fact. · ${nPres} pres.</div></div>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;align-items:start">
-    <div class="widget" style="grid-column:1/-1">
-      <div class="wh"><span>Evolución mensual ${anyo}</span><i>ingresos vs. gastos por mes</i></div>
-      <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:6px;align-items:end;height:120px">
-        ${Array.from({length:12},(_,i)=>`<div style="display:flex;gap:2px;align-items:end;height:100%" title="${MESES[i]}: +${fmt(mes(i+1))} / −${fmt(mesG(i+1))}">
-          <span style="flex:1;background:var(--gold);border-radius:4px 4px 0 0;height:${mes(i+1)/maxM*100}%"></span>
-          <span style="flex:1;background:#E8B7AE;border-radius:4px 4px 0 0;height:${mesG(i+1)/maxM*100}%"></span>
-        </div>`).join("")}
+  const range=financeSummaryRange();
+  const entries=byBrand(state.entries||[]),periodEntries=entries.filter(entry=>financeInRange(entry.date,range));
+  const incomes=periodEntries.filter(entry=>entry.kind==="in"),expenses=periodEntries.filter(entry=>entry.kind==="out");
+  const invoiced=incomes.reduce((sum,entry)=>sum+(+entry.amount||0),0);
+  const spent=expenses.reduce((sum,entry)=>sum+(+entry.amount||0),0);
+  const outstanding=incomes.reduce((sum,entry)=>sum+pendienteCobro(entry),0);
+  const collected=entries.filter(entry=>entry.kind==="in").reduce((sum,entry)=>{
+    const payments=(entry.cobros||[]).filter(payment=>financeInRange(payment.date,range));
+    if(payments.length)return sum+payments.reduce((total,payment)=>total+(+payment.amount||0),0);
+    return entry.status==="cobr"&&financeInRange(entry.date,range)?sum+aCobrar(entry):sum;
+  },0);
+  const quotes=byBrand(state.quotes||[]).filter(quote=>financeInRange(quote.date,range));
+  const accepted=quotes.filter(quote=>(quote.status||"pend")==="acc").reduce((sum,quote)=>sum+(+quote.total||0),0);
+  const pendingQuotes=quotes.filter(quote=>(quote.status||"pend")==="pend").reduce((sum,quote)=>sum+(+quote.total||0),0);
+  const V=ventaEstimada(),monthKeys=financeMonthKeys(range);
+  const monthValue=(kind,key)=>periodEntries.filter(entry=>entry.kind===kind&&financeDateISO(entry.date).slice(0,7)===key).reduce((sum,entry)=>sum+(+entry.amount||0),0);
+  const monthRows=monthKeys.map(key=>({key,income:monthValue("in",key),expense:monthValue("out",key)}));
+  const monthMax=Math.max(1,...monthRows.flatMap(row=>[row.income,row.expense]));
+  const years=[...new Set([...entries.map(entry=>+financeDateISO(entry.date).slice(0,4)).filter(Boolean),new Date().getFullYear()])].sort((a,b)=>b-a);
+  const projs=byBrand(state.projects.filter(project=>!project.tpl&&(project.rooms||[]).length));
+  const margins=projs.map(project=>{let sale=0,cost=0;(project.rooms||[]).forEach(room=>room.sections.forEach(section=>section.items.forEach(item=>{sale+=item.price*(item.qty||1);cost+=(item.cost||item.price)*(item.qty||1);})));return {project,sale,cost,margin:sale-cost,pct:sale?(sale-cost)/sale*100:0};}).filter(row=>row.sale>0).sort((a,b)=>b.margin-a.margin);
+  const suppliers={};projs.forEach(project=>(project.rooms||[]).forEach(room=>room.sections.forEach(section=>section.items.forEach(item=>{const key=item.supplier||"Sin proveedor";suppliers[key]=suppliers[key]||{count:0,total:0};suppliers[key].count++;suppliers[key].total+=item.price*(item.qty||1);}))))
+  const clients={};byBrand(state.invoices||[]).filter(invoice=>financeInRange(invoice.date,range)).forEach(invoice=>{clients[invoice.client||"Sin cliente"]=(clients[invoice.client||"Sin cliente"]||0)+(+invoice.total||0);});
+  const projectRows=state.financeProjectsExpanded?V.rows:V.rows.slice(0,6);
+  const sourceLabel=state.brandFilter&&state.brandFilter!=="all"?(BRAND[state.brandFilter]?.name||"Espacio seleccionado"):"Todos los espacios";
+  return `<section class="finance-page finance-overview" data-ai-panel-ready="true">
+    <header class="finance-page-heading">
+      <div><p class="finance-eyebrow">Finanzas</p><h1 class="big">Resumen</h1><p class="sub">Una lectura clara de lo facturado, cobrado, pendiente y previsto.</p></div>
+      <label class="finance-period"><span>Periodo</span><select aria-label="Periodo del resumen" onchange="state.financeSummaryPeriod=this.value;render()">
+        ${years.map(year=>`<option value="year:${year}" ${range.mode==="year:"+year?"selected":""}>${year}</option>`).join("")}
+        <option value="last12" ${range.mode==="last12"?"selected":""}>Últimos 12 meses</option><option value="all" ${range.mode==="all"?"selected":""}>Todo el histórico</option>
+      </select></label>
+    </header>
+    <div class="finance-context" aria-label="Contexto del informe"><span>${range.label}</span><span>${sourceLabel}</span><span>Datos actuales de Moderno.app</span></div>
+    <section aria-labelledby="finance-actual-title"><div class="finance-section-heading"><div><p class="finance-eyebrow">Actividad real</p><h2 id="finance-actual-title">Resultados del periodo</h2></div><p>Los importes proceden de facturas, cobros y movimientos ya registrados.</p></div>
+      <div class="finance-kpis">
+        <article class="finance-kpi finance-kpi--strong"><span>Facturado</span><strong>${fmt(invoiced)}</strong><small>${incomes.length} movimiento${incomes.length===1?"":"s"} de ingreso</small></article>
+        <article class="finance-kpi"><span>Cobrado</span><strong>${fmt(collected)}</strong><small>Cobros registrados en ${range.label.toLowerCase()}</small></article>
+        <article class="finance-kpi"><span>Pendiente de cobro</span><strong>${fmt(outstanding)}</strong><small>De facturas emitidas en el periodo</small></article>
+        <article class="finance-kpi"><span>Gastos</span><strong>${fmt(spent)}</strong><small>${expenses.length} movimiento${expenses.length===1?"":"s"} de gasto</small></article>
+        <article class="finance-kpi"><span>Resultado económico</span><strong class="${invoiced-spent<0?"is-negative":""}">${fmt(invoiced-spent)}</strong><small>Facturado menos gastos</small></article>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:6px;font-size:9.5px;color:var(--ink-faint);text-align:center;margin-top:4px">${MESES.map(m=>`<span>${m.slice(0,3)}</span>`).join("")}</div>
-      <div style="font-size:10.5px;color:var(--ink-faint);margin-top:6px"><span style="display:inline-block;width:9px;height:9px;background:var(--gold);border-radius:2px"></span> Ingresos &nbsp; <span style="display:inline-block;width:9px;height:9px;background:#E8B7AE;border-radius:2px"></span> Gastos</div>
-    </div>
-    <div class="widget">
-      <div class="wh"><span>Facturación por año</span><i>ingresos registrados</i></div>
-      ${years.map(y=>`<div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><b>${y}</b><b>${fmt(yTot(y))}</b></div>
-        <div style="background:var(--card);border-radius:99px;height:22px;overflow:hidden;display:flex">
-          <span style="width:${yBrand(y,"cm")/maxY*100}%;background:var(--gold)" title="${(BRAND.cm&&BRAND.cm.name)||"Espacio"} ${fmt(yBrand(y,'cm'))}"></span>
-          ${BRAND.em?`<span style="width:${yBrand(y,"em")/maxY*100}%;background:#CBBBF2" title="${BRAND.em.name} ${fmt(yBrand(y,'em'))}"></span>`:""}
+    </section>
+    <section class="finance-overview-grid" aria-labelledby="finance-evolution-title">
+      <article class="finance-panel finance-chart-panel"><div class="finance-panel-heading"><div><p class="finance-eyebrow">Evolución</p><h2 id="finance-evolution-title">Ingresos y gastos</h2></div><div class="finance-legend"><span class="is-income">Ingresos</span><span class="is-expense">Gastos</span></div></div>
+        <div class="finance-chart" role="img" aria-label="Comparación mensual de ingresos y gastos">
+          ${monthRows.map(row=>`<div class="finance-chart-column" title="${row.key}: ingresos ${fmt(row.income)}, gastos ${fmt(row.expense)}"><div class="finance-chart-bars"><i class="is-income" style="height:${Math.max(row.income?4:0,row.income/monthMax*100)}%"></i><i class="is-expense" style="height:${Math.max(row.expense?4:0,row.expense/monthMax*100)}%"></i></div><span>${MESES[+row.key.slice(5,7)-1].slice(0,3)}</span></div>`).join("")}
         </div>
-        ${BRAND.em?`<div style="font-size:10.5px;color:var(--ink-faint);margin-top:2px">${(BRAND.cm&&BRAND.cm.name)||"—"} ${fmt(yBrand(y,"cm"))} · ${BRAND.em.name} ${fmt(yBrand(y,"em"))}</div>`:""}
-      </div>`).join("")}
-      <div style="font-size:10.5px;color:var(--ink-faint)"><span style="display:inline-block;width:9px;height:9px;background:var(--gold);border-radius:2px"></span> ${(BRAND.cm&&BRAND.cm.name)||"Espacio"}${BRAND.em?` &nbsp; <span style="display:inline-block;width:9px;height:9px;background:#CBBBF2;border-radius:2px"></span> ${BRAND.em.name}`:""}</div>
-    </div>
-    <div class="widget">
-      <div class="wh"><span>Margen por proyecto</span><i>presupuesto cliente vs. coste</i></div>
-      ${pm.length?pm.map(x=>`<div class="entry" style="background:var(--card);flex-wrap:wrap">
-        <b style="cursor:pointer" onclick="openProject(${x.p.id})">${x.p.num} ${x.p.name}</b>
-        <span style="margin-left:auto;text-align:right">
-          <b style="color:var(--green-ink,#2E6B4F)">＋${fmt(x.m)}</b>
-          <small style="color:var(--ink-faint);display:block">${x.pct.toFixed(0)}% margen · vende ${fmt(x.cli)}</small>
-        </span>
-      </div>`).join(""):`<div class="empty" style="padding:14px">Añade costes propios a los productos para ver el margen</div>`}
-    </div>
-    <div class="widget">
-      <div class="wh"><span>Top proveedores</span><i>por importe especificado</i></div>
-      ${Object.entries(sup).sort((a,b)=>b[1].eur-a[1].eur).slice(0,6).map(([k,v])=>`<div class="entry" style="background:var(--card)">${k}<small style="color:var(--ink-faint);margin-left:6px">${v.n} producto${v.n===1?"":"s"}</small><span class="amt" style="color:var(--ink)">${fmt(v.eur)}</span></div>`).join("")||`<div class="empty" style="padding:14px">Sin productos aún</div>`}
-    </div>
-    <div class="widget">
-      <div class="wh"><span>Top clientes</span><i>por facturación emitida</i></div>
-      ${Object.entries(cli).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([k,v])=>`<div class="entry" style="background:var(--card)">${k}<span class="amt" style="color:var(--ink)">${fmt(v)}</span></div>`).join("")||`<div class="empty" style="padding:14px">Aún no hay facturas guardadas</div>`}
-    </div>
-  </div>
-  <p style="font-size:11px;color:var(--ink-faint);margin-top:12px">En la app real: exportar cada informe a PDF, comparar periodos y filtrar por marca desde arriba (el filtro global CM/EM ya afecta a estos números).</p>`;
+      </article>
+      <article class="finance-panel finance-pipeline"><div class="finance-panel-heading"><div><p class="finance-eyebrow">Pipeline</p><h2>Presupuestos y venta estimada</h2></div></div>
+        <dl><div><dt>Presupuestado aceptado</dt><dd>${fmt(accepted)}</dd></div><div><dt>Presupuestos pendientes</dt><dd>${fmt(pendingQuotes)}</dd></div><div><dt>Venta estimada actual</dt><dd>${fmt(V.total)}</dd></div><div><dt>Previsto por facturar</dt><dd>${fmt(V.previsto)}</dd></div></dl>
+        <p>La venta estimada es una proyección de proyectos activos; no se presenta como saldo bancario ni como ingreso cobrado.</p>
+      </article>
+    </section>
+    <section class="finance-panel finance-projects" aria-labelledby="finance-projects-title"><div class="finance-panel-heading"><div><p class="finance-eyebrow">Trazabilidad</p><h2 id="finance-projects-title">Desglose por proyecto activo</h2></div><p>${V.rows.length} proyecto${V.rows.length===1?"":"s"} con actividad financiera</p></div>
+      ${projectRows.length?`<div class="finance-table-wrap"><table class="finance-table"><thead><tr><th>Proyecto</th><th>Facturado</th><th>Previsto</th><th>Venta estimada</th></tr></thead><tbody>${projectRows.map(row=>`<tr tabindex="0" onclick="state.projTab='fin';go('proyecto',${row.p.id})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}"><td><b>${row.p.num} · ${row.p.name}</b><small>${row.p.client||"Sin cliente"}</small></td><td>${fmt(row.facturado)}</td><td>${fmt(row.previsto)}</td><td><b>${fmt(row.total)}</b></td></tr>`).join("")}</tbody></table></div>${V.rows.length>6?`<button type="button" class="finance-more" onclick="state.financeProjectsExpanded=!state.financeProjectsExpanded;render()">${state.financeProjectsExpanded?"Ver menos proyectos":"Ver todos los proyectos"}</button>`:""}`:`<div class="finance-empty"><b>Sin actividad estimada</b><span>Los proyectos con facturas o hitos previstos aparecerán aquí.</span></div>`}
+    </section>
+    <details class="finance-secondary"><summary>Más análisis</summary><div class="finance-secondary-grid">
+      <article class="finance-panel"><div class="finance-panel-heading"><div><p class="finance-eyebrow">Rentabilidad</p><h2>Margen por proyecto</h2></div></div>${margins.length?margins.slice(0,6).map(row=>`<button class="finance-ranking" onclick="openProject(${row.project.id})"><span><b>${row.project.num} · ${row.project.name}</b><small>${row.pct.toFixed(0)} % de margen</small></span><strong>${fmt(row.margin)}</strong></button>`).join(""):`<div class="finance-empty"><span>Añade costes propios para calcular el margen.</span></div>`}</article>
+      <article class="finance-panel"><div class="finance-panel-heading"><div><p class="finance-eyebrow">Relaciones</p><h2>Clientes del periodo</h2></div></div>${Object.entries(clients).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,total])=>`<div class="finance-ranking"><span><b>${name}</b><small>Facturación emitida</small></span><strong>${fmt(total)}</strong></div>`).join("")||`<div class="finance-empty"><span>Sin facturas para este periodo.</span></div>`}</article>
+      <article class="finance-panel"><div class="finance-panel-heading"><div><p class="finance-eyebrow">Compras</p><h2>Proveedores en proyectos activos</h2></div></div>${Object.entries(suppliers).sort((a,b)=>b[1].total-a[1].total).slice(0,6).map(([name,value])=>`<div class="finance-ranking"><span><b>${name}</b><small>${value.count} producto${value.count===1?"":"s"}</small></span><strong>${fmt(value.total)}</strong></div>`).join("")||`<div class="finance-empty"><span>Sin productos especificados.</span></div>`}</article>
+    </div></details>
+  </section>`;
 }
 function vDocs(){return `<h1 class="big">Plantillas y documentos</h1>${dgHome()}`;}
 function docModal(i){
@@ -10681,8 +10690,7 @@ function vQuotesList(){
   const shown = qs.filter(q=> (!F.from||(q.date||"")>=F.from) && (!F.to||(q.date||"")<=F.to) && (!F.client||q.client===F.client) && (!F.status||(q.status||"pend")===F.status) && financeSearchMatch(q.ref,q.client,BRAND[q.brand]?.name,state.projects.find(p=>p.id===q.projectId)?.name));
   const sum = st => shown.filter(q=>(q.status||"pend")===st).reduce((s,q)=>s+q.total,0);
   const clientes = [...new Set(qs.map(q=>q.client))].sort();
-  return `
-  <section class="quotes-page"><h1 class="big">Todos tus <span class="hl">presupuestos</span></h1>
+  return `<section class="quotes-page finance-page finance-quotes" data-ai-panel-ready="true"><header class="finance-page-heading"><div><p class="finance-eyebrow">Propuestas</p><h1 class="big">Presupuestos</h1><p class="sub">Seguimiento de propuestas, estados, proyectos y conversión a factura.</p></div></header>
   ${draftsBox("presupuesto")}
   <div class="flt" style="display:flex;align-items:flex-end;gap:12px;margin-bottom:14px;flex-wrap:wrap">
     <div><label>Desde</label><input id="qltFrom" type="date" value="${F.from}" onchange="state.qFilter.from=this.value;renderQuoteTransition()"></div>
@@ -11489,7 +11497,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.50";
+const MODERNO_VER="v3.67.51";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13670,11 +13678,12 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36556">
 <link rel="stylesheet" href="/brand/reui/font.css?v=365133">
-<script src="/profile-component.js?v=36749"></script>
+<script src="/profile-component.js?v=36751"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=365157"></script>
 <link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=365146">
-<script src="/page-breadcrumbs.js?v=206"></script>
+<script src="/page-breadcrumbs.js?v=207"></script>
+<link rel="stylesheet" href="/brand/finance-ui.css?v=36751">
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=365112">
 <script src="/calendar-ui.js?v=36748"></script>
 <script>

@@ -3,7 +3,13 @@ var ModernoPageBreadcrumbs=(()=>{
  'use strict';
  let enabled=true,routeHost=null,routeMount=null,routeComponent=null,financeBar=null,financeComponent=null,originalRoute=true,originalFinance=true,nativeFinance=null,pendingFocus=false;
  const media=window.matchMedia('(min-width:1100px)');
- const finance=[{view:'informes',label:'Resumen'},{view:'presupuestos',label:'Presupuestos'},{view:'facturas',label:'Facturas'}];
+ const finance=[
+  {view:'informes',label:'Resumen'},
+  {view:'facturas',label:'Facturas'},
+  {view:'presupuestos',label:'Presupuestos'},
+  {view:'contabilidad',label:'Contabilidad'},
+  {view:'prevision',label:'Previsión'}
+ ];
  const financeViews=['informes','presupuestos','facturas','contabilidad','prevision'];
  const labels={home:'Inicio',proyectos:'Proyectos',informes:'Finanzas',facturas:'Facturas',presupuestos:'Presupuestos',contabilidad:'Contabilidad',prevision:'Previsión',workspace:'Tareas',agenda:'Agenda',mail:'Mail',calendario:'Calendario',biblioteca:'Productos',catalogo:'Servicios',plantillas:'Plantillas',tutoriales:'Tutoriales',soporte:'Soporte',ajustes:'Ajustes',admin:'Administración'};
  const allowed=()=>finance.filter(item=>canView(item.view)&&document.querySelector('aside.sidebar .nav-item[data-view="'+item.view+'"]'));
@@ -35,7 +41,16 @@ var ModernoPageBreadcrumbs=(()=>{
   state.fView='nuevo';state.draft=null;
   if(state.view==='facturas')render();else go('facturas');setTimeout(safeRefresh,0);return state.view==='facturas';
  }
- function createDocument(){return state.view==='facturas'?newInvoice():newQuote();}
+ function createDocument(){
+  if(state.view==='facturas')return newInvoice();
+  if(['informes','presupuestos'].includes(state.view))return newQuote();
+  return false;
+ }
+ function createLabel(){
+  if(state.view==='facturas')return 'Nueva factura';
+  if(['informes','presupuestos'].includes(state.view))return 'Nuevo presupuesto';
+  return '';
+ }
  async function share(){
   const data={title:'Finanzas · Moderno.app',text:'Finanzas de Moderno.app',url:location.href};
   if(navigator.share){try{await navigator.share(data);return;}catch(error){if(error?.name==='AbortError')return;}}
@@ -69,12 +84,13 @@ var ModernoPageBreadcrumbs=(()=>{
   financeBar.replaceChildren();
   const toolbar=document.createElement('div');toolbar.className='finance-fallback-toolbar';
   const tabs=document.createElement('nav');tabs.className='finance-fallback';tabs.setAttribute('aria-label','Secciones de Finanzas');toolbar.append(tabs);
-  const symbols={informes:'▦',presupuestos:'▤',facturas:'▧'};
+  const symbols={informes:'▦',facturas:'▧',presupuestos:'▤',contabilidad:'▥',prevision:'◷'};
   sections.forEach(item=>{const b=document.createElement('button');b.type='button';b.dataset.financeView=item.view;const icon=document.createElement('span');icon.className='finance-fallback-icon';icon.setAttribute('aria-hidden','true');icon.textContent=symbols[item.view]||'•';b.append(icon,document.createTextNode(item.label));if(state.view===item.view)b.setAttribute('aria-current','page');b.addEventListener('click',()=>navigate(item.view));tabs.append(b);});
   const finder=document.createElement('div');finder.className='finance-fallback-search';finder.setAttribute('role','search');finder.setAttribute('aria-label','Buscar en Finanzas');
   const label=document.createElement('button');label.type='button';label.textContent='Buscar';
   const input=document.createElement('input');input.type='search';input.value=state.financeSearch||'';input.placeholder='Presupuesto, factura o cliente';input.setAttribute('aria-label','Buscar en Finanzas');label.addEventListener('click',()=>input.focus());input.addEventListener('input',()=>search(input.value));finder.append(label,input);toolbar.append(finder);
-  const create=document.createElement('button');create.type='button';create.className='finance-fallback-new';create.textContent=state.view==='facturas'?'+ Nueva factura':'+ Nuevo presupuesto';create.addEventListener('click',createDocument);toolbar.append(create);
+  const actionLabel=createLabel();
+  if(actionLabel){const create=document.createElement('button');create.type='button';create.className='finance-fallback-new';create.textContent='+ '+actionLabel;create.addEventListener('click',createDocument);toolbar.append(create);}
   const send=document.createElement('button');send.type='button';send.className='finance-fallback-share';send.setAttribute('aria-label','Compartir Finanzas');send.title='Compartir';send.textContent='↗';send.addEventListener('click',share);toolbar.append(send);financeBar.append(toolbar);
  }
  function refreshRoute(){
@@ -97,7 +113,7 @@ var ModernoPageBreadcrumbs=(()=>{
     financeComponent=ModernoProfileComponent.mountFinanceToolbar(host,()=>{originalFinance=false;clearFinance();queueMicrotask(safeRefresh);},()=>{if(restoreFocus)host.shadowRoot?.querySelector('[data-finance-view="'+state.view+'"]')?.focus();});
    }
   }else if(financeBar.parentElement!==view)view.prepend(financeBar);
-  const props={finance:sections,current:state.view,search:state.financeSearch||'',onNavigate:navigate,onSearch:search,onCreate:createDocument,onShare:share};
+  const props={finance:sections,current:state.view,search:state.financeSearch||'',actionLabel:createLabel(),onNavigate:navigate,onSearch:search,onCreate:createDocument,onShare:share};
   if(financeComponent)financeComponent.update(props);else{fallbackFinance(sections);if(restoreFocus)financeBar.querySelector('[data-finance-view="'+state.view+'"]')?.focus();}
   if(restoreFocus)queueMicrotask(()=>{const host=financeBar?.querySelector('.route-component-host');(host?.shadowRoot||financeBar)?.querySelector('[data-finance-view="'+state.view+'"]')?.focus();});
  }

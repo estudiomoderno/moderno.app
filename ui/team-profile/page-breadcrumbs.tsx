@@ -10,8 +10,10 @@ import {
 import {Button} from './vendor/reui/button';
 import {
  ChevronRightIcon,
+ ChartNoAxesCombinedIcon,
  FileTextIcon,
  HouseIcon,
+ LandmarkIcon,
  LayoutDashboardIcon,
  LayoutGridIcon,
  PlusIcon,
@@ -65,20 +67,20 @@ type FinanceToolbarProps={
  onNavigate:(view:string)=>boolean|void;
  onSearch?:(value:string)=>void;
  onCreate?:()=>boolean|void;
+ actionLabel?:string;
  onShare?:()=>void;
 };
 
-const financeIcons={informes:LayoutDashboardIcon,presupuestos:FileTextIcon,facturas:ReceiptTextIcon};
+const financeIcons={informes:LayoutDashboardIcon,facturas:ReceiptTextIcon,presupuestos:FileTextIcon,contabilidad:LandmarkIcon,prevision:ChartNoAxesCombinedIcon};
 
-export function FinanceToolbar({finance,current,search='',onNavigate,onSearch,onCreate,onShare}:FinanceToolbarProps){
+export function FinanceToolbar({finance,current,search='',actionLabel='',onNavigate,onSearch,onCreate,onShare}:FinanceToolbarProps){
  const searchRef=React.useRef<HTMLInputElement>(null);
  const [activeFinance,setActiveFinance]=React.useState(current);
  const [financeSearch,setFinanceSearch]=React.useState(search);
  React.useEffect(()=>setActiveFinance(current),[current]);
  React.useEffect(()=>setFinanceSearch(search),[search]);
- const invoice=current==='facturas';
  return <div className="flex h-[34px] w-full min-w-0 items-center gap-3 font-sans">
-  <nav aria-label="Secciones de Finanzas" className="flex h-[34px] shrink-0 overflow-hidden rounded-lg border bg-background shadow-xs">
+  <nav aria-label="Secciones de Finanzas" className="finance-sections flex h-[34px] shrink-0 overflow-hidden rounded-lg border bg-background shadow-xs">
    {finance.map(item=>{
     const Icon=financeIcons[item.view as keyof typeof financeIcons]??LayoutGridIcon;
     return <Button key={item.view} variant={activeFinance===item.view?'secondary':'ghost'} className="h-full rounded-none border-0 border-r px-3 text-[13px] font-medium leading-4 last:border-r-0" data-finance-view={item.view} aria-current={activeFinance===item.view?'page':undefined} onClick={()=>{const previous=activeFinance;setActiveFinance(item.view);if(onNavigate(item.view!)===false)setActiveFinance(previous)}}><Icon className="size-4" aria-hidden="true" />{item.label}</Button>;
@@ -89,7 +91,7 @@ export function FinanceToolbar({finance,current,search='',onNavigate,onSearch,on
    <input ref={searchRef} id="finance-search" type="search" autoComplete="off" value={financeSearch} onChange={event=>{setFinanceSearch(event.currentTarget.value);onSearch?.(event.currentTarget.value)}} placeholder="Presupuesto, factura o cliente" aria-label="Buscar en Finanzas" className="h-[34px] min-w-0 flex-1 -ms-px rounded-r-lg border bg-background px-3 text-[13px] outline-none focus-visible:z-10 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30" />
   </div>
   <div className="ml-auto flex shrink-0 items-center gap-2">
-   <Button type="button" className="h-[34px] !bg-[#0666ff] px-3 text-[13px] !text-white hover:!bg-[#0055dc]" onClick={onCreate}><PlusIcon className="size-4" aria-hidden="true" />{invoice?'Nueva factura':'Nuevo presupuesto'}</Button>
+   {actionLabel&&<Button type="button" className="h-[34px] !bg-[#0666ff] px-3 text-[13px] !text-white hover:!bg-[#0055dc]" onClick={onCreate}><PlusIcon className="size-4" aria-hidden="true" />{actionLabel}</Button>}
    <Button type="button" variant="outline" size="icon" className="size-[34px]" aria-label="Compartir Finanzas" title="Compartir" onClick={onShare}><Share2Icon className="size-4" aria-hidden="true" /></Button>
   </div>
  </div>;
