@@ -16,6 +16,8 @@
 @property --tw-exit-scale{syntax:"*";inherits:false;initial-value:1}
 @property --tw-exit-translate-x{syntax:"*";inherits:false;initial-value:0}
 @property --tw-exit-translate-y{syntax:"*";inherits:false;initial-value:0}
+@property --tw-border-spacing-x{syntax:"<length>";inherits:false;initial-value:0}
+@property --tw-border-spacing-y{syntax:"<length>";inherits:false;initial-value:0}
 @property --tw-translate-x{syntax:"*";inherits:false;initial-value:0}
 @property --tw-translate-y{syntax:"*";inherits:false;initial-value:0}
 @property --tw-translate-z{syntax:"*";inherits:false;initial-value:0}

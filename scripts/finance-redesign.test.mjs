@@ -6,6 +6,8 @@ import {readFile} from 'node:fs/promises';
 const html=await readFile(new URL('../app/index.html',import.meta.url),'utf8');
 const navigation=await readFile(new URL('../app/page-breadcrumbs.js',import.meta.url),'utf8');
 const css=await readFile(new URL('../app/brand/finance-ui.css',import.meta.url),'utf8');
+const component=await readFile(new URL('../ui/team-profile/finance-grid.tsx',import.meta.url),'utf8');
+const bridge=await readFile(new URL('../app/finance-grid.js',import.meta.url),'utf8');
 
 test('Finance exposes exactly the five existing sections in the approved order',()=>{
  const match=navigation.match(/const finance=\[([\s\S]*?)\];/);
@@ -38,15 +40,15 @@ test('summary separates actual, collected, outstanding, expenses and projected f
  assert.match(block,/data-ai-panel-ready="true"/);
 });
 
-test('sales and expenses use the shared filtered data grid and preserve actions',()=>{
- const block=html.slice(html.indexOf('function financeGridState('),html.indexOf('function vInvoice(kind)'));
+test('sales and expenses use the exact ReUI data grid and Filters composition without an actions column',()=>{
+ const block=html.slice(html.indexOf('function financeGridComponentData('),html.indexOf('function invoiceListHtml()'));
  assert.match(block,/entry\.kind==="out"/);
- assert.match(block,/gastoFile\(\$\{row\.e\.id\}\)/);
- assert.match(block,/editEntry\(\$\{row\.e\.id\}\)/);
- assert.match(block,/delEntry\(\$\{row\.e\.id\}\)/);
- for(const label of ['Factura','Estado','Cliente','Proyecto','Importe \\(con IVA\\)','Filtros','Total filtrado'])assert.match(block,new RegExp(label));
- assert.doesNotMatch(block,/>Estudio</);
- assert.match(block,/folder-simple-star-light\.svg/);
+ assert.match(block,/finance-reui-grid-host/);
+ for(const primitive of ['DataGrid','DataGridColumnHeader','DataGridPagination','DataGridScrollArea','DataGridTable','Filters','CardHeader','CardContent','CardFooter'])assert.match(component,new RegExp(primitive));
+ for(const label of ['Factura','Estado','Cliente','Proyecto','Importe \\(con IVA\\)','Filtros','Total filtrado'])assert.match(component,new RegExp(label));
+ assert.match(component,/folder-simple-star-light\.svg/);
+ assert.doesNotMatch(component,/title="Acciones"|>Acciones<|finance-grid-actions/);
+ assert.match(bridge,/mountFinanceGrid/);
 });
 
 test('Finance styles cover compact desktop, tablet, mobile, dark mode and reduced motion',()=>{
@@ -58,9 +60,15 @@ test('Finance styles cover compact desktop, tablet, mobile, dark mode and reduce
  assert.match(css,/--finance-assistant-width:\s*0px/);
 });
 
-test('invoice grid header follows the supplied CardHeader typography and spacing exactly',()=>{
- assert.match(css,/\.finance-data-header\s*\{[^}]*gap:\s*12px;[^}]*padding:\s*8px 16px;/s);
- assert.match(css,/\.finance-data-header h2\s*\{[^}]*font-family:\s*"Moderno ReUI Inter",Inter,sans-serif\s*!important;[^}]*font-size:\s*14px;[^}]*font-style:\s*normal;[^}]*font-weight:\s*500\s*!important;[^}]*line-height:\s*20px;/s);
- assert.match(css,/\.finance-data-header p\s*\{[^}]*font-family:\s*"Moderno ReUI Inter",Inter,sans-serif;[^}]*font-size:\s*12px;[^}]*font-weight:\s*400;[^}]*line-height:\s*16px;/s);
- assert.match(css,/\.finance-data-footer\s*\{[^}]*padding:\s*10px 16px;/s);
+test('invoice grid copies the supplied Card and filter composition classes exactly',()=>{
+ assert.match(component,/Card className="w-full gap-0 p-0"/);
+ assert.match(component,/CardHeader className="flex items-center justify-between gap-3 px-4 py-2"/);
+ assert.match(component,/CardTitle className="truncate text-sm font-medium"/);
+ assert.match(component,/CardDescription className="truncate text-xs tabular-nums"/);
+ assert.match(component,/CardAction className="flex shrink-0 items-center gap-2"/);
+ assert.match(component,/variant="advanced"[\s\S]*advancedMode="popover"[\s\S]*advancedAlign="end"[\s\S]*reorderable/);
+ assert.match(component,/Button[\s\S]*variant="ghost"[\s\S]*disabled=\{query === EMPTY_QUERY\}/);
+ assert.match(component,/CardContent className="border-y px-0"/);
+ assert.match(component,/CardFooter className="border-t-0 px-4 py-2\.5"/);
+ assert.match(component,/sizes=\{\[5, 10, 25\]\}/);
 });

@@ -16,6 +16,7 @@
 @source "./new-project.tsx";
 @source "./project-windows.tsx";
 @source "./page-breadcrumbs.tsx";
+@source "./finance-grid.tsx";
 @source "./vendor/reui/**/*.tsx";
 @source "./calendar-pattern.tsx";
 @custom-variant dark (&:is(.dark *));
@@ -37,6 +38,7 @@
 :host {display:inline-block;font-family:"Moderno ReUI Inter",sans-serif;font-size:16px;line-height:1.5;color:var(--foreground);text-size-adjust:100%;-webkit-text-size-adjust:100%}
 .style-nova {font:inherit;color:inherit}
 .reui-portals {position:relative;z-index:100}
+.finance-grid-pattern{width:100%}
 .mail-settings-trigger{width:36px!important;height:36px!important;min-width:36px!important;padding:0!important;border:1px solid var(--border)!important;border-radius:8px!important;background:var(--background)!important;box-shadow:0 1px 2px #00000008!important}
 .mail-settings-trigger:hover{background:var(--muted)!important}
 .mail-settings-trigger img{width:18px!important;height:18px!important}

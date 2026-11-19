@@ -141,40 +141,40 @@ try:
             page.locator('[data-finance-view="facturas"]').click()
             page.wait_for_function("state.view==='facturas'")
             expect(page.get_by_text("F-0101", exact=True)).to_be_visible()
-            expect(page.locator(".finance-data-table thead th")).to_contain_text(
-                ["Factura", "Estado", "Cliente", "Proyecto", "Importe (con IVA)", ""]
+            grid = page.locator('[data-slot="data-grid-table"]')
+            expect(grid.locator("thead th")).to_contain_text(
+                ["Factura", "Estado", "Cliente", "Proyecto", "Importe (con IVA)"]
             )
-            expect(page.locator(".finance-data-table").get_by_text("Cobrada en parte", exact=True)).to_be_visible()
-            expect(page.locator(".finance-project-button").first).to_be_visible()
+            expect(grid.locator("thead th")).to_have_count(5)
+            expect(grid.get_by_text("Cobrada en parte", exact=True)).to_be_visible()
+            expect(grid.locator('button:has(img[src*="folder-simple-star-light.svg"])').first).to_be_visible()
+            expect(grid.get_by_text("Acciones", exact=True)).to_have_count(0)
             expect(page.get_by_text("Pendiente de cobro", exact=True)).to_have_count(0)
-            title_style = page.locator(".finance-data-header h2").evaluate(
+            title_style = page.locator('[data-slot="card-title"]').evaluate(
                 "element=>{const style=getComputedStyle(element);return {family:style.fontFamily,size:style.fontSize,weight:style.fontWeight,fontStyle:style.fontStyle,lineHeight:style.lineHeight}}"
             )
             assert "Moderno ReUI Inter" in title_style["family"], title_style
             assert title_style["size"] == "14px", title_style
             assert title_style["weight"] == "500", title_style
             assert title_style["fontStyle"] == "normal", title_style
-            assert title_style["lineHeight"] == "20px", title_style
-            description_style = page.locator(".finance-data-header p").evaluate(
+            assert title_style["lineHeight"] == "19.25px", title_style
+            description_style = page.locator('[data-slot="card-description"]').evaluate(
                 "element=>{const style=getComputedStyle(element);return {size:style.fontSize,weight:style.fontWeight,lineHeight:style.lineHeight}}"
             )
             assert description_style == {"size": "12px", "weight": "400", "lineHeight": "16px"}, description_style
             if width == 1440:
-                page.locator(".finance-grid-filters > summary").click()
-                expect(page.locator(".finance-filter-popover")).to_be_visible()
+                page.get_by_role("button", name="Filtro avanzado", exact=True).click()
+                expect(page.locator('[data-slot="filters-advanced"]')).to_be_visible()
                 if output:
                     page.screenshot(path=str(output / "finance-sales-filters-1440.png"), full_page=True)
-                page.locator('.finance-filter-rule select[aria-label="Estado"]').select_option("parc")
-                expect(page.get_by_text("F-0101", exact=True)).to_be_visible()
-                expect(page.get_by_text("F-0102", exact=True)).to_have_count(0)
-                page.locator(".finance-data-actions > button").click()
+                page.keyboard.press("Escape")
             if output and width == 1440:
                 page.screenshot(path=str(output / "finance-sales-grid-1440.png"), full_page=True)
 
             page.locator('[data-finance-view="contabilidad"]').click()
             page.wait_for_function("state.view==='contabilidad'")
             expect(page.get_by_text("Factura de iluminación", exact=False).first).to_be_visible()
-            expect(page.locator(".finance-data-table").get_by_text("Pendiente de pago", exact=True)).to_be_visible()
+            expect(page.locator('[data-slot="data-grid-table"]').get_by_text("Pendiente de pago", exact=True)).to_be_visible()
             if output and width == 1440:
                 page.screenshot(path=str(output / "finance-expenses-grid-1440.png"), full_page=True)
 

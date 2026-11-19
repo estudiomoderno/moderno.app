@@ -15,6 +15,7 @@ import {MailEmoji} from './mail-emoji';
 import {MailProjectPicker} from './mail-project-picker';
 import {MailSettings} from './mail-settings';
 import {MailSignature} from './mail-signature';
+import {FinanceGridPattern} from './finance-grid';
 
 export function mountComponent(host:HTMLElement,Component:React.ComponentType<any>,onError?:()=>void,onReady?:()=>void){
  const shadow=host.attachShadow({mode:'open'});
@@ -35,6 +36,7 @@ export function mountProjectWindows(host:HTMLElement,onError?:()=>void,onReady?:
 
 export function mountBreadcrumbs(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,PageBreadcrumbs,onError,onReady);}
 export function mountFinanceToolbar(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,FinanceToolbar,onError,onReady);}
+export function mountFinanceGrid(host:HTMLElement,onError?:()=>void,onReady?:()=>void){host.style.display='block';host.style.width='100%';return mountComponent(host,FinanceGridPattern,onError,onReady);}
 export function mountShoppingDelete(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,ShoppingDelete,onError,onReady);}
 export function mountMailDelete(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailDelete,onError,onReady);}
 export function mountMailEmoji(host:HTMLElement,onError?:()=>void,onReady?:()=>void){return mountComponent(host,MailEmoji,onError,onReady);}
