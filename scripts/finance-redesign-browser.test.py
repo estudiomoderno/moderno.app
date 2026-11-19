@@ -121,7 +121,7 @@ try:
                 expect(route.locator('[data-slot="breadcrumb-separator"]')).to_have_count(0)
             sections = page.get_by_role("navigation", name="Secciones de Finanzas", exact=True)
             expect(sections.get_by_role("button")).to_have_text(
-                ["Resumen", "Facturas", "Presupuestos", "Contabilidad", "Previsión"]
+                ["Resumen", "Ventas", "Gastos", "Presupuestos", "Previsión"]
             )
 
             expect(page.locator(".finance-overview")).to_be_visible()
@@ -140,23 +140,36 @@ try:
 
             page.locator('[data-finance-view="facturas"]').click()
             page.wait_for_function("state.view==='facturas'")
-            expect(page.get_by_role("navigation", name="Tipo de factura")).to_be_visible()
             expect(page.get_by_text("F-0101", exact=True)).to_be_visible()
-            expect(page.get_by_text("Parcial · falta 4.050,00 €", exact=True)).to_be_visible()
-            page.get_by_role("button", name="Recibidas", exact=True).click()
+            expect(page.locator(".finance-data-table thead th")).to_contain_text(
+                ["Factura", "Estado", "Cliente", "Proyecto", "Importe (con IVA)", ""]
+            )
+            expect(page.locator(".finance-data-table").get_by_text("Cobrada en parte", exact=True)).to_be_visible()
+            expect(page.locator(".finance-project-button").first).to_be_visible()
+            expect(page.get_by_text("Pendiente de cobro", exact=True)).to_have_count(0)
+            if width == 1440:
+                page.locator(".finance-grid-filters > summary").click()
+                expect(page.locator(".finance-filter-popover")).to_be_visible()
+                if output:
+                    page.screenshot(path=str(output / "finance-sales-filters-1440.png"), full_page=True)
+                page.locator('.finance-filter-rule select[aria-label="Estado"]').select_option("parc")
+                expect(page.get_by_text("F-0101", exact=True)).to_be_visible()
+                expect(page.get_by_text("F-0102", exact=True)).to_have_count(0)
+                page.locator(".finance-data-actions > button").click()
+            if output and width == 1440:
+                page.screenshot(path=str(output / "finance-sales-grid-1440.png"), full_page=True)
+
+            page.locator('[data-finance-view="contabilidad"]').click()
+            page.wait_for_function("state.view==='contabilidad'")
             expect(page.get_by_text("Factura de iluminación", exact=False).first).to_be_visible()
-            expect(page.get_by_text("Pendiente de pago", exact=True)).to_be_visible()
+            expect(page.locator(".finance-data-table").get_by_text("Pendiente de pago", exact=True)).to_be_visible()
+            if output and width == 1440:
+                page.screenshot(path=str(output / "finance-expenses-grid-1440.png"), full_page=True)
 
             page.locator('[data-finance-view="presupuestos"]').click()
             page.wait_for_function("state.view==='presupuestos'")
             expect(page.get_by_text("PS-0201", exact=True)).to_be_visible()
             expect(page.get_by_text("Convertido en Factura", exact=True)).to_be_visible()
-
-            page.locator('[data-finance-view="contabilidad"]').click()
-            page.wait_for_function("state.view==='contabilidad'")
-            expect(page.get_by_text("Factura F-0101 · Cliente ficticio", exact=False).first).to_be_visible()
-            page.get_by_role("button", name="Gastos", exact=True).click()
-            expect(page.get_by_text("Factura de iluminación", exact=False).first).to_be_visible()
 
             page.locator('[data-finance-view="prevision"]').click()
             page.wait_for_function("state.view==='prevision'")

@@ -5,13 +5,13 @@ var ModernoPageBreadcrumbs=(()=>{
  const media=window.matchMedia('(min-width:1100px)');
  const finance=[
   {view:'informes',label:'Resumen'},
-  {view:'facturas',label:'Facturas'},
+  {view:'facturas',label:'Ventas'},
+  {view:'contabilidad',label:'Gastos'},
   {view:'presupuestos',label:'Presupuestos'},
-  {view:'contabilidad',label:'Contabilidad'},
   {view:'prevision',label:'Previsión'}
  ];
  const financeViews=['informes','presupuestos','facturas','contabilidad','prevision'];
- const labels={home:'Inicio',proyectos:'Proyectos',proyecto:'Proyecto',estancia:'Estancia',informes:'Resumen',facturas:'Facturas',presupuestos:'Presupuestos',contabilidad:'Contabilidad',prevision:'Previsión',workspace:'Tareas',agenda:'Agenda',mail:'Mail',calendario:'Calendario',conversaciones:'Conversaciones',biblioteca:'Productos',catalogo:'Servicios',automatizaciones:'Automatizaciones',utilidades:'Utilidades',integraciones:'Integraciones',plugins:'Plugins',plantillas:'Plantillas',tutoriales:'Tutoriales',soporte:'Soporte',ajustes:'Ajustes',admin:'Administración'};
+ const labels={home:'Inicio',proyectos:'Proyectos',proyecto:'Proyecto',estancia:'Estancia',informes:'Resumen',facturas:'Ventas',presupuestos:'Presupuestos',contabilidad:'Gastos',prevision:'Previsión',workspace:'Tareas',agenda:'Agenda',mail:'Mail',calendario:'Calendario',conversaciones:'Conversaciones',biblioteca:'Productos',catalogo:'Servicios',automatizaciones:'Automatizaciones',utilidades:'Utilidades',integraciones:'Integraciones',plugins:'Plugins',plantillas:'Plantillas',tutoriales:'Tutoriales',soporte:'Soporte',ajustes:'Ajustes',admin:'Administración'};
  const allowed=()=>finance.filter(item=>canView(item.view)&&document.querySelector('aside.sidebar .nav-item[data-view="'+item.view+'"]'));
  const financial=()=>financeViews.includes(state.view);
  function routeName(){
@@ -41,14 +41,20 @@ var ModernoPageBreadcrumbs=(()=>{
   state.fView='nuevo';state.draft=null;
   if(state.view==='facturas')render();else go('facturas');setTimeout(safeRefresh,0);return state.view==='facturas';
  }
+ function newExpense(){
+  if(document.querySelector('.overlay.open,dialog[open]')){toast('Guarda o cancela la edición antes de registrar una factura.');return false;}
+  entryModal('out');return true;
+ }
  function createDocument(){
   if(state.view==='facturas')return newInvoice();
-  if(['informes','presupuestos','contabilidad','prevision'].includes(state.view))return newQuote();
+  if(state.view==='contabilidad')return newExpense();
+  if(['informes','presupuestos','prevision'].includes(state.view))return newQuote();
   return false;
  }
  function createLabel(){
   if(state.view==='facturas')return 'Nueva factura';
-  if(['informes','presupuestos','contabilidad','prevision'].includes(state.view))return 'Nuevo presupuesto';
+  if(state.view==='contabilidad')return 'Nueva factura recibida';
+  if(['informes','presupuestos','prevision'].includes(state.view))return 'Nuevo presupuesto';
   return '';
  }
  async function share(){
@@ -88,7 +94,7 @@ var ModernoPageBreadcrumbs=(()=>{
   sections.forEach(item=>{const b=document.createElement('button');b.type='button';b.dataset.financeView=item.view;const icon=document.createElement('span');icon.className='finance-fallback-icon';icon.setAttribute('aria-hidden','true');icon.textContent=symbols[item.view]||'•';b.append(icon,document.createTextNode(item.label));if(state.view===item.view)b.setAttribute('aria-current','page');b.addEventListener('click',()=>navigate(item.view));tabs.append(b);});
   const finder=document.createElement('div');finder.className='finance-fallback-search';finder.setAttribute('role','search');finder.setAttribute('aria-label','Buscar en Finanzas');
   const label=document.createElement('button');label.type='button';label.textContent='Buscar';
-  const input=document.createElement('input');input.type='search';input.value=state.financeSearch||'';input.placeholder='Presupuesto, factura o cliente';input.setAttribute('aria-label','Buscar en Finanzas');label.addEventListener('click',()=>input.focus());input.addEventListener('input',()=>search(input.value));finder.append(label,input);toolbar.append(finder);
+  const input=document.createElement('input');input.type='search';input.value=state.financeSearch||'';input.placeholder='Factura, presupuesto, cliente o proyecto';input.setAttribute('aria-label','Buscar en Finanzas');label.addEventListener('click',()=>input.focus());input.addEventListener('input',()=>search(input.value));finder.append(label,input);toolbar.append(finder);
   const actionLabel=createLabel();
   if(actionLabel){const create=document.createElement('button');create.type='button';create.className='finance-fallback-new';create.textContent='+ '+actionLabel;create.addEventListener('click',createDocument);toolbar.append(create);}
   const send=document.createElement('button');send.type='button';send.className='finance-fallback-share';send.setAttribute('aria-label','Compartir Finanzas');send.title='Compartir';send.textContent='↗';send.addEventListener('click',share);toolbar.append(send);financeBar.append(toolbar);

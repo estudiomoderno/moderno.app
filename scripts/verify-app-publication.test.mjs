@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {verifyPublication} from './verify-app-publication.mjs';
 
 const expectedAssets=[
+ 'brand/finance-icons/folder-simple-star-light.svg',
  'mail-connections.js','brand/agenda-ui.css','brand/mail-ui.css','brand/mail-icons/gmail.svg','brand/mail-icons/back.svg','brand/mail-icons/icloud.svg','brand/mail-icons/external-mail.svg','brand/mail-icons/compose.svg','brand/mail-icons/inbox.svg','brand/mail-icons/sent.svg','brand/mail-icons/drafts.svg','brand/mail-icons/spam.svg','brand/mail-icons/trash.svg','brand/mail-icons/refresh.svg','brand/mail-icons/settings.svg','brand/agenda-icons/exportar-csv.svg','brand/agenda-icons/exportar-pdf.svg','brand/agenda-icons/importar-contactos.svg','brand/agenda-icons/menu-importar-exportar.svg','contact-todos.svg','contact-proovedores.svg','contact-contratistas.svg','contact-arquitectos.svg','contact-team.svg','brand/sidebar-icons/soporte.svg',
  ...['sizeall-20','crosshair-20','person-20','ibeam-20','hand-20','nwpen-20'].map(name=>'brand/icons/plan-viewer/cursors/dusk/'+name+'.png'),
  'brand/menu-finish.css',
@@ -17,7 +18,7 @@ test('publication checks every public entry/module with no credentials and a fix
   assert.equal(url.hostname,'app.moderno.app');assert.equal(options.credentials,'omit');assert.equal(options.redirect,'error');assert.equal(url.searchParams.get('publication'),'fictional-revision');
   const name=url.pathname==='/'?'index.html':url.pathname.slice(1);seen.push(name);return new Response(name);
  }});
- assert.equal(seen.length,132);assert.ok(expectedAssets.every(name=>seen.includes(name)));
+ assert.equal(seen.length,133);assert.ok(expectedAssets.every(name=>seen.includes(name)));
 });
 
 test('HTTP success cannot disguise an old entry, login proxy, or changed asset',async()=>{

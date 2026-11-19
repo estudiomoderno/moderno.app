@@ -162,7 +162,7 @@ def check_finances(page,width):
  assert page.locator('#ngFin>.nav-head>.nav-group-label').inner_text().strip()=='Finanzas'
  assert page.locator('#ngFin>.nav-head').get_attribute('aria-expanded') is None
  assert page.locator('#ngFin>.nav-sub').is_hidden()
- expected=['Resumen','Facturas','Presupuestos','Contabilidad','Previsión']
+ expected=['Resumen','Ventas','Gastos','Presupuestos','Previsión']
  sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
  sections.wait_for(state='visible')
  expect(sections.get_by_role('button')).to_have_text(expected)
@@ -201,7 +201,8 @@ def check_finances(page,width):
   active=page.locator('#page-route-bar [data-finance-view="'+view+'"][aria-current=page]')
   active.wait_for(state='visible')
   if view in ['informes','presupuestos','facturas','contabilidad','prevision']:
-   expect(page.locator('#page-route-bar').get_by_role('button',name='Nueva factura' if view=='facturas' else 'Nuevo presupuesto',exact=True)).to_be_visible()
+   action='Nueva factura' if view=='facturas' else ('Nueva factura recibida' if view=='contabilidad' else 'Nuevo presupuesto')
+   expect(page.locator('#page-route-bar').get_by_role('button',name=action,exact=True)).to_be_visible()
  # Both invoice/quote drafts retain the native warning; cancel keeps the same data and selected tab.
  for view,kind in [('facturas','factura'),('presupuestos','presupuesto')]:
   page.evaluate('(view)=>go(view)',view)
@@ -386,8 +387,8 @@ try:
      if view in finance:
       sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
       sections.wait_for(state='visible')
-      expect(sections.get_by_role('button')).to_have_text(['Resumen','Facturas','Presupuestos','Contabilidad','Previsión'])
-      assert sections.locator('[aria-current=page]').inner_text()=={'informes':'Resumen','facturas':'Facturas','presupuestos':'Presupuestos','contabilidad':'Contabilidad','prevision':'Previsión'}[view]
+      expect(sections.get_by_role('button')).to_have_text(['Resumen','Ventas','Gastos','Presupuestos','Previsión'])
+      assert sections.locator('[aria-current=page]').inner_text()=={'informes':'Resumen','facturas':'Ventas','presupuestos':'Presupuestos','contabilidad':'Gastos','prevision':'Previsión'}[view]
     if view=='workspace':
      page.get_by_role('button',name='Todas las tareas',exact=True).click()
      assert page.locator('.ws-full .kanban .task').count()>0
@@ -626,7 +627,7 @@ try:
     assert page.evaluate('state.view')=='informes'
     assert page.locator('#desktop-primary').is_visible() and page.locator('#desktop-finance-nav').count()==0
     sections=page.get_by_role('navigation',name='Secciones de Finanzas',exact=True)
-    expect(sections.get_by_role('button')).to_have_text(['Resumen','Facturas','Presupuestos','Contabilidad','Previsión'])
+    expect(sections.get_by_role('button')).to_have_text(['Resumen','Ventas','Gastos','Presupuestos','Previsión'])
     rect=sections.bounding_box();profile=page.locator('[data-profile-trigger]').bounding_box()
     assert rect['y']>=56 and profile['y']+profile['height']<rect['y']
     assert rect['x']+rect['width']<profile['x']

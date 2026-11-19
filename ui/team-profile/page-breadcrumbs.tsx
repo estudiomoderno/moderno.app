@@ -74,7 +74,7 @@ type FinanceToolbarProps={
  onShare?:()=>void;
 };
 
-const financeIcons={informes:LayoutDashboardIcon,facturas:ReceiptTextIcon,presupuestos:FileTextIcon,contabilidad:LandmarkIcon,prevision:ChartNoAxesCombinedIcon};
+const financeIcons={informes:LayoutDashboardIcon,facturas:ReceiptTextIcon,contabilidad:LandmarkIcon,presupuestos:FileTextIcon,prevision:ChartNoAxesCombinedIcon};
 const routeIcons={
  home:LayoutDashboardIcon,proyectos:FolderKanbanIcon,proyecto:FolderKanbanIcon,estancia:FolderKanbanIcon,
  informes:LayoutDashboardIcon,facturas:ReceiptTextIcon,presupuestos:FileTextIcon,contabilidad:LandmarkIcon,prevision:ChartNoAxesCombinedIcon,
@@ -98,7 +98,7 @@ export function FinanceToolbar({finance,current,search='',actionLabel='',onNavig
   </nav>
   <div className="flex h-[34px] min-w-[220px] max-w-xl flex-1 items-stretch" role="search" aria-label="Buscar en Finanzas">
    <Button type="button" variant="outline" className="h-[34px] shrink-0 rounded-r-none px-3 text-[13px]" onClick={()=>searchRef.current?.focus()}>Buscar</Button>
-   <input ref={searchRef} id="finance-search" type="search" autoComplete="off" value={financeSearch} onChange={event=>{setFinanceSearch(event.currentTarget.value);onSearch?.(event.currentTarget.value)}} placeholder="Presupuesto, factura o cliente" aria-label="Buscar en Finanzas" className="h-[34px] min-w-0 flex-1 -ms-px rounded-r-lg border bg-background px-3 text-[13px] outline-none focus-visible:z-10 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30" />
+   <input ref={searchRef} id="finance-search" type="search" autoComplete="off" value={financeSearch} onChange={event=>{setFinanceSearch(event.currentTarget.value);onSearch?.(event.currentTarget.value)}} placeholder="Factura, presupuesto, cliente o proyecto" aria-label="Buscar en Finanzas" className="h-[34px] min-w-0 flex-1 -ms-px rounded-r-lg border bg-background px-3 text-[13px] outline-none focus-visible:z-10 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30" />
   </div>
   <div className="ml-auto flex shrink-0 items-center gap-2">
    {actionLabel&&<Button type="button" className="h-[34px] !bg-[#0666ff] px-3 text-[13px] !text-white hover:!bg-[#0055dc]" onClick={onCreate}><PlusIcon className="size-4" aria-hidden="true" />{actionLabel}</Button>}

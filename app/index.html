@@ -4536,7 +4536,7 @@ function render(){
   if(_accessRole==="gestoria"&&state.view!=="ajustes"){ V.innerHTML=vGestoria();applyRoleNav();return; }
   if(!canView(state.view))state.view=canView('proyectos')?'proyectos':'home';
   if(_accessRole==='colaborador'&&['fin','resumen'].includes(state.projTab))state.projTab='tareas';
-  const r = {home:vHome, workspace:vWorkspace, biblioteca:vLibrary, proyectos:vProjects, proyecto:vProject, estancia:vRoom, agenda:vAgenda, calendario:vCalendar, contabilidad:vAccounting, prevision:vPrevision, facturas:()=>vInvoice("factura"), presupuestos:()=>vInvoice("presupuesto"), catalogo:vCatalog, compras:vCompras, informes:vInformes, plantillas:vDocs, tutoriales:()=>vOfficeSoon("Tutoriales"), soporte:()=>vOfficeSoon("Soporte"), utilidades:vUtils, automatizaciones:vAutomatizaciones, integraciones:vIntegraciones, plugins:()=>vIntegraciones(true), mail:vMailSetup, conversaciones:()=>vOfficeSoon("Conversaciones"), admin:vAdmin, ajustes:vAjustes, presedit:vPresEdit, portalcli:vPortalCli, portalobra:vPortalObra}[state.view];
+  const r = {home:vHome, workspace:vWorkspace, biblioteca:vLibrary, proyectos:vProjects, proyecto:vProject, estancia:vRoom, agenda:vAgenda, calendario:vCalendar, contabilidad:vExpenseList, prevision:vPrevision, facturas:()=>vInvoice("factura"), presupuestos:()=>vInvoice("presupuesto"), catalogo:vCatalog, compras:vCompras, informes:vInformes, plantillas:vDocs, tutoriales:()=>vOfficeSoon("Tutoriales"), soporte:()=>vOfficeSoon("Soporte"), utilidades:vUtils, automatizaciones:vAutomatizaciones, integraciones:vIntegraciones, plugins:()=>vIntegraciones(true), mail:vMailSetup, conversaciones:()=>vOfficeSoon("Conversaciones"), admin:vAdmin, ajustes:vAjustes, presedit:vPresEdit, portalcli:vPortalCli, portalobra:vPortalObra}[state.view];
   const projectsEntering=state.view==='proyectos'&&!V.querySelector('.projects-identity');
   V.innerHTML = r();
   wire();
@@ -6516,28 +6516,62 @@ function invoiceRows(){
   const ents=invoiceLikeEntries().map(e=>({kind:"ent", e, ref:entryRef(e), date:isoOf(e.date), client:e.client||e.sup||(e.concept||"").split(" · ").slice(1).join(" · ")||"", brand:e.brand, total:e.amount||0, pid:e.pid||null}));
   return docs.concat(ents).sort((x,y)=> (y.date||"").localeCompare(x.date||"") || String(y.ref).localeCompare(String(x.ref)));
 }
-function invoiceListHtml(){
-  const all=invoiceRows();
-  if(!all.length) return `<div class="empty">Todavía no has emitido ninguna factura.</div>`;
-  const FF = (state.fFilter=state.fFilter||{from:"",to:"",client:"",status:""});
-  const rows = all.filter(x=> (!FF.from||x.date>=FF.from) && (!FF.to||x.date<=FF.to) && (!FF.client||x.client===FF.client) && (!FF.status||entryStKey(x.e)===FF.status) && financeSearchMatch(x.ref,x.client,BRAND[x.brand]?.name,state.projects.find(p=>p.id===x.pid)?.name));
-  const clientesF=[...new Set(all.map(x=>x.client).filter(Boolean))].sort();
-  const activo = FF.from||FF.to||FF.client||FF.status;
-  const nEnt=all.filter(x=>x.kind==="ent").length;
-  return `<h2 class="sec">Facturas emitidas <span class="sec-note">${all.length} en total</span></h2>
-        <div class="flt" style="display:flex;align-items:flex-end;gap:12px;margin:0 0 10px;flex-wrap:wrap">
-          <div><label>Desde</label><input id="fltFrom" type="date" value="${FF.from}" onchange="state.fFilter.from=this.value;render()"></div>
-          <div><label>Hasta</label><input type="date" data-after="fltFrom" min="${FF.from||""}" value="${FF.to}" onchange="state.fFilter.to=this.value;render()"></div>
-          <div><label>Cliente</label><select onchange="state.fFilter.client=this.value;render()"><option value="">Todos</option>${clientesF.map(c=>`<option value="${c.replace(/"/g,"&quot;")}" ${FF.client===c?"selected":""}>${c}</option>`).join("")}</select></div>
-          <div><label>Estado</label><select onchange="state.fFilter.status=this.value;render()"><option value="">Todos</option><option value="pend" ${FF.status==="pend"?"selected":""}>Pendiente</option><option value="parc" ${FF.status==="parc"?"selected":""}>Cobrada en parte</option><option value="cobr" ${FF.status==="cobr"?"selected":""}>Cobrada</option><option value="venc" ${FF.status==="venc"?"selected":""}>Vencida</option></select></div>
-          ${activo?`<button class="btn btn-ghost" onclick="state.fFilter={from:'',to:'',client:'',status:''};render()">✕ Limpiar</button>`:""}
-        </div>
-        ${rows.length?`<div class="invoice-table-scroll"><table class="list invoice-table"><thead><tr><th>Factura</th><th>Fecha</th><th>Cliente / proyecto</th><th>Estudio</th><th>Estado</th><th>Importe</th><th>Acciones</th></tr></thead><tbody>${rows.slice(0,state.invN||10).map(x=>{ const pr=x.pid&&state.projects.find(p=>p.id===x.pid); const est=entryEst(x.e);
-          const rowIndex=all.indexOf(x);
-          const btns = `<div class="invoice-actions"><button class="btn btn-ghost" title="Ver el documento o adjuntar el original" onclick="invoiceRowAction(${rowIndex},'documento')">${ico("factura")} Documento</button><button class="btn btn-ghost" ${x.e?'':'disabled title="Sin ingreso asociado"'} onclick="invoiceRowAction(${rowIndex},'cobros')">€ Cobros</button><button class="btn btn-ghost" onclick="invoiceRowAction(${rowIndex},'editar')">✎ Editar</button><button class="btn btn-ghost" aria-label="Más opciones de ${x.ref}" onclick="invoiceRowAction(${rowIndex},'mas')">··· Más</button></div>`;
-          return `<tr><td><b>${x.ref}</b></td><td>${(x.date||"").split("-").reverse().join("/")}</td><td>${x.client}${pr?`<br><span class="chip neutral" style="font-size:10px;cursor:pointer" title="Abrir el proyecto" onclick="state.projTab='fin';go('proyecto',${pr.id})">📁 ${pr.num}</span>`:""}</td><td><span class="chip ${(BRAND[x.brand]||{}).chip||'cm'}">${(BRAND[x.brand]||{}).name||""}</span></td><td><span class="chip" style="background:${est[1]};white-space:nowrap">${est[0]}</span></td><td class="invoice-amount">${fmt(x.total)}</td>
-        <td style="text-align:right;white-space:nowrap">${btns}</td></tr>`; }).join("")}</tbody></table></div>${rows.length>(state.invN||10)?`<button class="addtask" style="margin-top:8px" onclick="state.invN=(state.invN||10)+10;render()">${ico("mas")} Cargar 10 más (${rows.length-(state.invN||10)} restantes)</button>`:""}`:`<div class="empty">Ninguna factura coincide con los filtros.</div>`}`;
+function financeGridState(book){
+  state.financeInvoiceGrid=state.financeInvoiceGrid||{};
+  return state.financeInvoiceGrid[book]||(state.financeInvoiceGrid[book]={page:0,pageSize:10,sort:"ref",dir:"desc"});
 }
+function financeGridFilter(book,key,value){
+  const target=book==="sales"?(state.fFilter=state.fFilter||{}):(state.expenseFilter=state.expenseFilter||{});
+  target[key]=value;financeGridState(book).page=0;render();
+}
+function financeGridReset(book){
+  if(book==="sales")state.fFilter={};else state.expenseFilter={};
+  financeGridState(book).page=0;render();
+}
+function financeGridPage(book,page){financeGridState(book).page=Math.max(0,page);render();}
+function financeGridPageSize(book,value){const grid=financeGridState(book);grid.pageSize=+value||10;grid.page=0;render();}
+function financeGridSort(book,key){const grid=financeGridState(book);grid.dir=grid.sort===key&&grid.dir==="asc"?"desc":"asc";grid.sort=key;grid.page=0;render();}
+function financeSortButton(book,key,label,grid){return `<button type="button" class="finance-grid-sort" onclick="financeGridSort('${book}','${key}')">${label}<span aria-hidden="true">${grid.sort===key?(grid.dir==="asc"?"↑":"↓"):"↕"}</span></button>`;}
+function financeGridStatus(key,book){
+  const values=book==="sales"?{cobr:["Cobrada","is-paid"],parc:["Cobrada en parte","is-partial"],venc:["Vencida","is-overdue"],pend:["Pendiente","is-pending"],none:["Sin estado","is-neutral"]}:{cobr:["Pagada","is-paid"],pend:["Pendiente de pago","is-pending"]};
+  const value=values[key]||values.none||values.pend;return `<span class="finance-grid-status ${value[1]}"><i aria-hidden="true"></i>${value[0]}</span>`;
+}
+function financeProjectButton(project){
+  if(!project)return `<span class="finance-grid-muted">Sin proyecto</span>`;
+  return `<button type="button" class="finance-project-button" title="Abrir ${String(project.num||"").replace(/"/g,"&quot;")} · ${String(project.name||"").replace(/"/g,"&quot;")}" onclick="event.stopPropagation();state.projTab='fin';go('proyecto',${project.id})"><img src="/brand/finance-icons/folder-simple-star-light.svg" alt=""><span>${project.num||project.name}</span></button>`;
+}
+function financeGridFilters(book,filter,rows){
+  const clients=[...new Set(rows.map(row=>row.client).filter(Boolean))].sort();
+  const projects=[...new Map(rows.map(row=>[row.pid,state.projects.find(project=>project.id===row.pid)]).filter(([,project])=>project).map(([id,project])=>[id,project])).values()];
+  const statuses=book==="sales"?[["pend","Pendiente"],["parc","Cobrada en parte"],["cobr","Cobrada"],["venc","Vencida"]]:[["pend","Pendiente de pago"],["cobr","Pagada"]];
+  const active=Object.values(filter).filter(value=>value!==""&&value!=null).length;
+  const select=(key,label,operator,options)=>`<div class="finance-filter-rule"><span class="finance-filter-grip" aria-hidden="true">⋮⋮</span><span class="finance-filter-field">${label}</span><span class="finance-filter-operator">${operator}</span><select aria-label="${label}" onchange="financeGridFilter('${book}','${key}',this.value)"><option value="">Cualquiera</option>${options.map(([value,text])=>`<option value="${String(value).replace(/"/g,"&quot;")}" ${String(filter[key]||"")===String(value)?"selected":""}>${text}</option>`).join("")}</select></div>`;
+  return `<details class="finance-grid-filters"><summary class="btn btn-ghost">${ico("menu3")} Filtros${active?`<span>${active}</span>`:""}</summary><div class="finance-filter-popover" role="group" aria-label="Filtros de facturas"><div class="finance-filter-head"><div><b>Filtros</b><small>Mostrar facturas que cumplan todas las condiciones</small></div>${active?`<button class="btn btn-ghost" onclick="event.preventDefault();financeGridReset('${book}')">Restablecer</button>`:""}</div><div class="finance-filter-query"><span>Donde</span><b>Todas</b><span>las condiciones coinciden</span></div>
+    ${select("status","Estado","es",statuses)}
+    ${select("client","Cliente","es",clients.map(value=>[value,value]))}
+    ${select("project","Proyecto","es",projects.map(project=>[project.id,`${project.num} · ${project.name}`]))}
+    <div class="finance-filter-rule"><span class="finance-filter-grip" aria-hidden="true">⋮⋮</span><span class="finance-filter-field">Importe</span><span class="finance-filter-operator">entre</span><div class="finance-filter-range"><input type="number" min="0" step="0.01" value="${filter.min||""}" placeholder="Mínimo" aria-label="Importe mínimo" onchange="financeGridFilter('${book}','min',this.value)"><input type="number" min="0" step="0.01" value="${filter.max||""}" placeholder="Máximo" aria-label="Importe máximo" onchange="financeGridFilter('${book}','max',this.value)"></div></div>
+    <div class="finance-filter-rule"><span class="finance-filter-grip" aria-hidden="true">⋮⋮</span><span class="finance-filter-field">Fecha</span><span class="finance-filter-operator">entre</span><div class="finance-filter-range"><input type="date" value="${filter.from||""}" aria-label="Desde" onchange="financeGridFilter('${book}','from',this.value)"><input type="date" value="${filter.to||""}" aria-label="Hasta" onchange="financeGridFilter('${book}','to',this.value)"></div></div>
+    <div class="finance-filter-foot"><span>${active||0} filtro${active===1?"":"s"} activo${active===1?"":"s"}</span><button type="button" class="btn btn-dark" onclick="this.closest('details').removeAttribute('open')">Hecho</button></div></div></details>`;
+}
+function financeInvoiceGrid(book){
+  const sales=book==="sales",all=sales?byBrand(invoiceRows()):byBrand(state.entries||[]).filter(entry=>entry.kind==="out").map(entry=>({kind:"expense",e:entry,ref:entry.concept||"Factura recibida",date:financeDateISO(entry.date),client:entry.sup||entry.client||"Sin proveedor",brand:entry.brand,total:+entry.amount||0,pid:entry.pid||null}));
+  if(!all.length)return `<div class="finance-empty"><b>Sin facturas</b><span>${sales?"Todavía no has emitido ninguna factura.":"Registra un gasto y adjunta su factura o justificante para verlo aquí."}</span></div>`;
+  const filter=sales?(state.fFilter=state.fFilter||{}):(state.expenseFilter=state.expenseFilter||{}),grid=financeGridState(book);
+  const status=row=>sales?(entryStKey(row.e)||"none"):(row.e?.status==="cobr"?"cobr":"pend");
+  let rows=all.filter(row=>(!filter.from||row.date>=filter.from)&&(!filter.to||row.date<=filter.to)&&(!filter.client||row.client===filter.client)&&(!filter.project||String(row.pid)===String(filter.project))&&(!filter.status||status(row)===filter.status)&&(!filter.min||row.total>=+filter.min)&&(!filter.max||row.total<=+filter.max)&&financeSearchMatch(row.ref,row.client,state.projects.find(project=>project.id===row.pid)?.name));
+  const dir=grid.dir==="asc"?1:-1,value=(row,key)=>key==="status"?status(row):key==="project"?(state.projects.find(project=>project.id===row.pid)?.name||""):key==="total"?row.total:key==="ref"?(row.date+" "+row.ref).toLocaleLowerCase():String(row[key]||"").toLocaleLowerCase();
+  rows=rows.slice().sort((a,b)=>{const av=value(a,grid.sort),bv=value(b,grid.sort);return (av>bv?1:av<bv?-1:0)*dir;});
+  const pageCount=Math.max(1,Math.ceil(rows.length/grid.pageSize));if(grid.page>=pageCount)grid.page=pageCount-1;
+  const start=grid.page*grid.pageSize,visible=rows.slice(start,start+grid.pageSize),total=rows.reduce((sum,row)=>sum+row.total,0);
+  const pages=Array.from({length:pageCount},(_,index)=>index).filter(index=>pageCount<=7||index===0||index===pageCount-1||Math.abs(index-grid.page)<=1);
+  let last=-2;const pagination=pages.map(index=>{const gap=index-last>1?`<span class="finance-page-ellipsis">…</span>`:"";last=index;return gap+`<button type="button" class="${index===grid.page?"is-active":""}" aria-label="Página ${index+1}" ${index===grid.page?'aria-current="page"':""} onclick="financeGridPage('${book}',${index})">${index+1}</button>`;}).join("");
+  const rowHtml=visible.map(row=>{const project=row.pid&&state.projects.find(item=>item.id===row.pid),rowIndex=sales?invoiceRows().findIndex(item=>item.kind===row.kind&&item.ref===row.ref):-1;
+    const actions=sales?`<div class="finance-grid-actions"><button title="Documento" aria-label="Documento de ${row.ref}" onclick="invoiceRowAction(${rowIndex},'documento')">${ico("factura")}</button><button title="Cobros" aria-label="Cobros de ${row.ref}" ${row.e?"":"disabled"} onclick="invoiceRowAction(${rowIndex},'cobros')">€</button><button title="Editar" aria-label="Editar ${row.ref}" onclick="invoiceRowAction(${rowIndex},'editar')">${ico("editar")}</button><button title="Más opciones" aria-label="Más opciones de ${row.ref}" onclick="invoiceRowAction(${rowIndex},'mas')">•••</button></div>`:`<div class="finance-grid-actions"><button title="Documento" aria-label="Documento de ${row.ref}" onclick="gastoFile(${row.e.id})">${ico("factura")}</button><button title="Editar" aria-label="Editar ${row.ref}" onclick="editEntry(${row.e.id})">${ico("editar")}</button><button title="Eliminar" aria-label="Eliminar ${row.ref}" onclick="delEntry(${row.e.id})">${ico("eliminar")}</button></div>`;
+    return `<tr><td><div class="finance-grid-primary"><b>${ModernoDaily.escape(row.ref||"—")}</b><small>${row.date?row.date.split("-").reverse().join("/"):"Sin fecha"}</small></div></td><td>${financeGridStatus(status(row),book)}</td><td><span class="finance-grid-client">${ModernoDaily.escape(row.client||"Sin cliente")}</span></td><td>${financeProjectButton(project)}</td><td class="finance-grid-amount"><b>${fmt(row.total)}</b></td><td>${actions}</td></tr>`;}).join("");
+  return `<div class="finance-data-card"><header class="finance-data-header"><div><h2>Facturas</h2><p>${rows.length} de ${all.length} facturas</p></div><div class="finance-data-actions">${financeGridFilters(book,filter,all)}<button class="btn btn-ghost" ${Object.values(filter).some(Boolean)?"":"disabled"} onclick="financeGridReset('${book}')">Restablecer</button></div></header><div class="finance-data-scroll"><table class="finance-data-table"><thead><tr><th>${financeSortButton(book,"ref","Factura",grid)}</th><th>${financeSortButton(book,"status","Estado",grid)}</th><th>${financeSortButton(book,"client","Cliente",grid)}</th><th>${financeSortButton(book,"project","Proyecto",grid)}</th><th>${financeSortButton(book,"total","Importe (con IVA)",grid)}</th><th><span class="sr-only">Acciones</span></th></tr></thead><tbody>${rowHtml||`<tr><td colspan="6"><div class="finance-empty"><b>Ninguna factura coincide con estos filtros</b><span>Prueba a cambiar o restablecer las condiciones.</span></div></td></tr>`}</tbody><tfoot><tr><td colspan="4">Total filtrado</td><td class="finance-grid-amount"><b>${fmt(total)}</b></td><td></td></tr></tfoot></table></div><footer class="finance-data-footer"><span>Página <b>${grid.page+1}</b> de <b>${pageCount}</b></span><nav aria-label="Paginación de facturas"><button type="button" aria-label="Página anterior" ${grid.page===0?"disabled":""} onclick="financeGridPage('${book}',${grid.page-1})">‹ Anterior</button>${pagination}<button type="button" aria-label="Página siguiente" ${grid.page>=pageCount-1?"disabled":""} onclick="financeGridPage('${book}',${grid.page+1})">Siguiente ›</button></nav><select aria-label="Facturas por página" onchange="financeGridPageSize('${book}',this.value)"><option value="5" ${grid.pageSize===5?"selected":""}>5 / página</option><option value="10" ${grid.pageSize===10?"selected":""}>10 / página</option><option value="25" ${grid.pageSize===25?"selected":""}>25 / página</option></select></footer></div>`;
+}
+function invoiceListHtml(){return financeInvoiceGrid("sales");}
 function invoiceRowAction(index,action){
   const x=invoiceRows()[index]; if(!x)return;
   if(action==="documento")return x.kind==="doc"?printSavedInvoice(x.ref):gastoFile(x.e.id);
@@ -6559,25 +6593,12 @@ function delInvoice(ref){
   });
 }
 function vInvoiceList(){
-  let pend=0, cob=0, venc=0;
-  byBrand(invoiceRows()).forEach(x=>{ const e=x.e; if(!e) return; if(e.status==="cobr"){ cob+=aCobrar(e); return; } cob+=cobrado(e); const p=pendienteCobro(e); if(daysLate(e)>0) venc+=p; else pend+=p; });
-  const book=state.invoiceBookTab||"emitidas";
-  const received=byBrand(state.entries||[]).filter(entry=>entry.kind==="out");
-  const receivedPaid=received.filter(entry=>entry.status==="cobr").reduce((sum,entry)=>sum+(+entry.amount||0),0);
-  const receivedPending=received.filter(entry=>entry.status!=="cobr").reduce((sum,entry)=>sum+(+entry.amount||0),0);
-  const receivedRows=received.filter(entry=>financeSearchMatch(entry.concept,entry.sup,entry.client,state.projects.find(project=>project.id===entry.pid)?.name));
   return `<section class="finance-page finance-invoices" data-ai-panel-ready="true">
-  <header class="finance-page-heading"><div><p class="finance-eyebrow">Ventas</p><h1 class="big">Facturas</h1><p class="sub">Documentos emitidos, cobros y vencimientos en un solo lugar.</p></div></header>
-  <nav class="finance-subnav" aria-label="Tipo de factura"><button class="${book==="emitidas"?"is-active":""}" onclick="state.invoiceBookTab='emitidas';render()">Emitidas</button><button class="${book==="recibidas"?"is-active":""}" onclick="state.invoiceBookTab='recibidas';render()">Recibidas</button></nav>
-  ${book==="emitidas"?draftsBox("factura"):""}
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-    <span style="flex:1"></span>
-    ${book==="emitidas"?`<button class="btn btn-dark finance-inline-create" onclick="state.fView='nuevo';state.draft=null;render()">${ico("mas")} Nueva factura</button>`:`<button class="btn btn-dark" onclick="entryModal('out')">${ico("mas")} Registrar factura recibida</button>`}
-  </div>
-  <div class="fin-cards" style="grid-template-columns:repeat(3,1fr)">
-    ${book==="emitidas"?`<div class="fin-card" style="background:var(--gold-soft)"><span class="lab" style="background:var(--white)">Pendiente de cobro</span><div class="val">${fmt(pend)}</div></div><div class="fin-card" style="background:#F6DBD7"><span class="lab" style="background:var(--white)">Vencido</span><div class="val">${fmt(venc)}</div></div><div class="fin-card" style="background:#DDF0DC"><span class="lab" style="background:var(--white)">Cobrado</span><div class="val">${fmt(cob)}</div></div>`:`<div class="fin-card"><span class="lab">Total recibido</span><div class="val">${fmt(receivedPaid+receivedPending)}</div></div><div class="fin-card"><span class="lab">Pagado</span><div class="val">${fmt(receivedPaid)}</div></div><div class="fin-card"><span class="lab">Pendiente de pago</span><div class="val">${fmt(receivedPending)}</div></div>`}
-  </div>
-  ${book==="emitidas"?invoiceListHtml():receivedRows.length?`<div class="finance-table-wrap"><table class="finance-table finance-received-table"><thead><tr><th>Concepto</th><th>Proveedor / proyecto</th><th>Fecha</th><th>Estado</th><th>Importe</th><th>Acciones</th></tr></thead><tbody>${receivedRows.map(entry=>{const project=entry.pid&&state.projects.find(item=>item.id===entry.pid);return `<tr><td><b>${entry.concept||"Factura recibida"}</b><small>${entry.file||entry.files?.length?"Con documento adjunto":"Sin documento adjunto"}</small></td><td>${entry.sup||entry.client||"Sin proveedor"}${project?`<small><button class="finance-project-link" onclick="go('proyecto',${project.id})">${project.num} · ${project.name}</button></small>`:""}</td><td>${entry.date||"—"}</td><td>${stSelect(entry.id)}</td><td><b>${fmt(entry.amount||0)}</b></td><td><div class="finance-row-actions"><button class="btn btn-ghost" onclick="gastoFile(${entry.id})">${ico("factura")} Documento</button><button class="btn btn-ghost" onclick="editEntry(${entry.id})">${ico("editar")} Editar</button><button class="btn btn-ghost" title="Eliminar" onclick="delEntry(${entry.id})">${ico("eliminar")}</button></div></td></tr>`;}).join("")}</tbody></table></div>`:`<div class="finance-empty"><b>Sin facturas recibidas</b><span>Registra un gasto y adjunta su factura o justificante para verlo aquí.</span></div>`}</section>`;
+  ${draftsBox("factura")}
+  ${invoiceListHtml()}</section>`;
+}
+function vExpenseList(){
+  return `<section class="finance-page finance-invoices finance-expenses" data-ai-panel-ready="true">${financeInvoiceGrid("expenses")}</section>`;
 }
 function vInvoice(kind){
   const isF = kind==="factura";
@@ -6829,8 +6850,7 @@ function vInformes(){
   const projectRows=state.financeProjectsExpanded?V.rows:V.rows.slice(0,6);
   const sourceLabel=state.brandFilter&&state.brandFilter!=="all"?(BRAND[state.brandFilter]?.name||"Espacio seleccionado"):"Todos los espacios";
   return `<section class="finance-page finance-overview" data-ai-panel-ready="true">
-    <header class="finance-page-heading">
-      <div><p class="finance-eyebrow">Finanzas</p><h1 class="big">Resumen</h1><p class="sub">Una lectura clara de lo facturado, cobrado, pendiente y previsto.</p></div>
+    <header class="finance-summary-toolbar" aria-label="Periodo del resumen contable">
       <label class="finance-period"><span>Periodo</span><select aria-label="Periodo del resumen" onchange="state.financeSummaryPeriod=this.value;render()">
         ${years.map(year=>`<option value="year:${year}" ${range.mode==="year:"+year?"selected":""}>${year}</option>`).join("")}
         <option value="last12" ${range.mode==="last12"?"selected":""}>Últimos 12 meses</option><option value="all" ${range.mode==="all"?"selected":""}>Todo el histórico</option>
@@ -11497,7 +11517,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.52";
+const MODERNO_VER="v3.67.53";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13678,12 +13698,12 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36556">
 <link rel="stylesheet" href="/brand/reui/font.css?v=365133">
-<script src="/profile-component.js?v=36752"></script>
+<script src="/profile-component.js?v=36753"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=365157"></script>
-<link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=36752">
-<script src="/page-breadcrumbs.js?v=208"></script>
-<link rel="stylesheet" href="/brand/finance-ui.css?v=36751">
+<link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=36753">
+<script src="/page-breadcrumbs.js?v=209"></script>
+<link rel="stylesheet" href="/brand/finance-ui.css?v=36753">
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=365112">
 <script src="/calendar-ui.js?v=36748"></script>
 <script>

@@ -10,9 +10,11 @@ const css=await readFile(new URL('../app/brand/finance-ui.css',import.meta.url),
 test('Finance exposes exactly the five existing sections in the approved order',()=>{
  const match=navigation.match(/const finance=\[([\s\S]*?)\];/);
  assert.ok(match);
- assert.deepEqual([...match[1].matchAll(/view:'([^']+)'/g)].map(item=>item[1]),['informes','facturas','presupuestos','contabilidad','prevision']);
+ assert.deepEqual([...match[1].matchAll(/view:'([^']+)'/g)].map(item=>item[1]),['informes','facturas','contabilidad','presupuestos','prevision']);
+ assert.deepEqual([...match[1].matchAll(/label:'([^']+)'/g)].map(item=>item[1]),['Resumen','Ventas','Gastos','Presupuestos','Previsión']);
  assert.match(navigation,/if\(state\.view==='facturas'\)return 'Nueva factura'/);
- assert.match(navigation,/\['informes','presupuestos','contabilidad','prevision'\]\.includes\(state\.view\).*'Nuevo presupuesto'/s);
+ assert.match(navigation,/if\(state\.view==='contabilidad'\)return 'Nueva factura recibida'/);
+ assert.match(navigation,/\['informes','presupuestos','prevision'\]\.includes\(state\.view\).*'Nuevo presupuesto'/s);
 });
 
 test('summary period helpers normalize legacy dates without mutating records',()=>{
@@ -36,14 +38,15 @@ test('summary separates actual, collected, outstanding, expenses and projected f
  assert.match(block,/data-ai-panel-ready="true"/);
 });
 
-test('received invoices reuse expense entries and existing document/edit/delete actions',()=>{
- const block=html.slice(html.indexOf('function vInvoiceList('),html.indexOf('function vInvoice(kind)'));
+test('sales and expenses use the shared filtered data grid and preserve actions',()=>{
+ const block=html.slice(html.indexOf('function financeGridState('),html.indexOf('function vInvoice(kind)'));
  assert.match(block,/entry\.kind==="out"/);
- assert.match(block,/gastoFile\(\$\{entry\.id\}\)/);
- assert.match(block,/editEntry\(\$\{entry\.id\}\)/);
- assert.match(block,/delEntry\(\$\{entry\.id\}\)/);
- assert.match(block,/Emitidas/);
- assert.match(block,/Recibidas/);
+ assert.match(block,/gastoFile\(\$\{row\.e\.id\}\)/);
+ assert.match(block,/editEntry\(\$\{row\.e\.id\}\)/);
+ assert.match(block,/delEntry\(\$\{row\.e\.id\}\)/);
+ for(const label of ['Factura','Estado','Cliente','Proyecto','Importe \\(con IVA\\)','Filtros','Total filtrado'])assert.match(block,new RegExp(label));
+ assert.doesNotMatch(block,/>Estudio</);
+ assert.match(block,/folder-simple-star-light\.svg/);
 });
 
 test('Finance styles cover compact desktop, tablet, mobile, dark mode and reduced motion',()=>{
