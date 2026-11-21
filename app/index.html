@@ -1270,7 +1270,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/private-files.js?v=36598"></script>
 <script src="/daily-work.js?v=36585"></script>
 <script src="/gestoria.js?v=20260909"></script>
-<script src="/pending-archive.js?v=36599"></script>
+<script src="/pending-archive.js?v=36758"></script>
 <script src="/save-efficiency.js?v=36599"></script>
 <script src="/pending-recovery.js?v=36598"></script>
 <script src="/flow-recovery.js?v=331"></script>
@@ -11530,7 +11530,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.57";
+const MODERNO_VER="v3.67.58";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -12173,6 +12173,7 @@ async function cloudLoad(){
     cloudPrepareFilteredCache(rows);
     _cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=verifiedUserId;
     _accessLoading=false;
+    if(_localResumeBypassed){_localResumeBypassed=false;_localResumeFailed=false;}
     if(rows && rows.length){
       _cloudApplying=true;
       try{ rows.forEach(r=>{ const io=CLOUD_BLOCKS[r.bloque]; if(io) io.set(r.contenido); _cloudSeen[r.bloque]=r.updated_at; }); }
@@ -12414,7 +12415,7 @@ function cloudStartBlank(){
 const LS_KEY="moderno_prod_v1";
 let _saveT=null, _lastSave=null, _saveErr=false, _saveErrDetail='', _localRepair=null, _localRepairAfter=0;
 let _verifiedLocalContent=null,_verifiedLocalReference=null;
-let _localWrite=null,_localRevision=0,_localResumePending=false,_localResumeFailed=false;
+let _localWrite=null,_localRevision=0,_localResumePending=false,_localResumeFailed=false,_localResumeBypassed=false;
 function localSnapshotSync(){
   if(typeof _cloudLoadedStudy==='undefined'||_cloudLoadedStudy!==ESTUDIO_ID||_accessLoading||!_cloudUserId||state.sessionUser?.id!==_cloudUserId)return undefined;
   return ModernoPendingRecovery.capture({study:ESTUDIO_ID,user:_cloudUserId,role:_accessRole,loaded:true,hashes:_cloudHash,versions:_cloudSeen,values:Object.fromEntries(Object.entries(CLOUD_BLOCKS).map(([b,io])=>[b,io.get()])),canonical:canon,conflicts:window._cloudConflicts||{}});
@@ -12448,7 +12449,7 @@ function repairLocalCopy(){
   return _localRepair;
 }
 function persistNow(){
-  if(_localResumePending)return;
+  if(_localResumePending||_localResumeBypassed&&(!_cloudLoadedStudy||_accessLoading))return;
   const revision=++_localRevision,owner=localCopyOwner(),started=Date.now();
   let raw,content;
   try{
@@ -12534,16 +12535,65 @@ let _localResumePointer=null;
     applyLocalSnapshot(raw);
   }catch(e){}
 })();
+async function resolveStoredLocalCopy(){
+  let lastError=new Error('No se ha podido leer la copia local');
+  for(let attempt=0;attempt<3;attempt++){
+    let timer;
+    try{
+      return await Promise.race([
+        ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore()),
+        new Promise((_,reject)=>{timer=setTimeout(()=>{const error=new Error('La lectura de la copia local tarda demasiado');error.name='LocalCopyReadTimeoutError';reject(error);},4000);})
+      ]);
+    }catch(error){
+      lastError=error;
+      try{_pendingArchiveStore?.reset?.();}catch(resetError){}
+      _pendingArchiveStore=null;
+      if(attempt<2)await new Promise(resolve=>setTimeout(resolve,150*(attempt+1)));
+    }finally{clearTimeout(timer);}
+  }
+  throw lastError;
+}
+function preserveUnreadableLocalCopy(){
+  const raw=localStorage.getItem(LS_KEY),target=ModernoPendingArchive.pointer(raw);
+  if(!raw||raw!==_localResumePointer||!target)throw new Error('La copia local pendiente ha cambiado');
+  const suffix=Date.now()+'.'+(globalThis.crypto?.randomUUID?.()||Math.random().toString(36).slice(2));
+  const key=LS_KEY+'_pendiente_recuperacion_'+suffix;
+  if(localStorage.getItem(key)!==null)throw new Error('Ya existe una copia con ese identificador');
+  localStorage.setItem(key,raw);
+  if(localStorage.getItem(key)!==raw||ModernoPendingArchive.pointer(localStorage.getItem(key))!==target){localStorage.removeItem(key);throw new Error('No se ha podido conservar el acceso a la copia local');}
+  return key;
+}
+function showLocalResumeFailure(){
+  _localResumeFailed=true;showLogin(false);
+  const main=document.getElementById('view');
+  if(!main)return;
+  main.replaceChildren();
+  const title=document.createElement('h2');title.textContent='No se ha podido leer la copia local';
+  const detail=document.createElement('p');detail.textContent='Tus copias se conservan. Reintenta sin borrar los datos de este navegador.';
+  const actions=document.createElement('div');actions.style.cssText='display:flex;flex-wrap:wrap;gap:8px;margin-top:16px';
+  const retry=document.createElement('button');retry.className='btn btn-ghost';retry.textContent='Reintentar';retry.onclick=resumeStoredApp;actions.append(retry);
+  if(sb){const cloud=document.createElement('button');cloud.className='btn btn-gold';cloud.textContent='Continuar con la copia de la nube';cloud.onclick=continueWithCloudCopy;actions.append(cloud);}
+  main.append(title,detail,actions);
+}
+function continueWithCloudCopy(){
+  if(!sb||!_localResumePending)return;
+  try{
+    preserveUnreadableLocalCopy();
+    _localResumeBypassed=true;_localResumePending=false;_localResumeFailed=false;_localResumePointer=null;_resumeRaw=null;
+    startRestoredApp();
+  }catch(error){
+    showLocalResumeFailure();
+    const main=document.getElementById('view'),notice=document.createElement('p');notice.style.cssText='margin-top:12px;color:var(--red-ink,#a5442f)';notice.textContent='No se ha podido conservar la referencia local. Reintenta sin cerrar esta pestaña.';main?.append(notice);
+  }
+}
 async function resumeStoredApp(){
   if(_localResumePending){
     try{
-      const raw=await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore());
+      const raw=await resolveStoredLocalCopy();
       if(localStorage.getItem(LS_KEY)!==_localResumePointer)throw new Error('La copia local ha cambiado en otra pestaña');
       applyLocalSnapshot(raw);_localResumePending=false;_localResumeFailed=false;
     }catch(e){
-      _localResumeFailed=true;showLogin(false);
-      const main=document.getElementById('view');
-      if(main){main.replaceChildren();const title=document.createElement('h2');title.textContent='No se ha podido leer la copia local';const detail=document.createElement('p');detail.textContent='Tus copias se conservan. Reintenta sin borrar los datos de este navegador.';const retry=document.createElement('button');retry.className='btn btn-ghost';retry.textContent='Reintentar';retry.onclick=resumeStoredApp;main.append(title,detail,retry);}
+      showLocalResumeFailure();
       globalThis.ModernoAppLoading?.sessionReady();return;
     }
   }

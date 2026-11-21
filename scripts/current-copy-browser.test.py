@@ -76,15 +76,23 @@ try:
    assert page.evaluate("""async()=>JSON.parse(await ModernoPendingArchive.resolve(localStorage,liveHistoryKey,pendingArchiveStore())).state.account.latestNote==='newest during write'""")
    assert page.evaluate("syncView().label!=='Guardado en nube'")
    # Test an interrupted startup read: show a retry screen, do not overwrite the pointer.
-   context.add_init_script("""if(sessionStorage.getItem('fixtureFailRead')==='1'){
-     sessionStorage.removeItem('fixtureFailRead');const native=indexedDB.open.bind(indexedDB);let first=true;
-     indexedDB.open=function(...args){if(!first)return native(...args);first=false;const request={error:new DOMException('Fictional read failure','UnknownError')};setTimeout(()=>request.onerror?.(),0);return request;};
+   context.add_init_script("""if(sessionStorage.getItem('fixtureFailReadOnce')==='1'){
+     sessionStorage.removeItem('fixtureFailReadOnce');const native=indexedDB.open.bind(indexedDB);let first=true;
+     indexedDB.open=function(...args){if(!first)return native(...args);first=false;const request={error:new DOMException('Fictional transient read failure','UnknownError')};setTimeout(()=>request.onerror?.(),0);return request;};
+   }else if(sessionStorage.getItem('fixtureFailRead')==='1'){
+     window.fixtureNativeIndexedDBOpen=indexedDB.open.bind(indexedDB);
+     indexedDB.open=function(){const request={error:new DOMException('Fictional persistent read failure','UnknownError')};setTimeout(()=>request.onerror?.(),0);return request;};
    }""")
+   page.evaluate("sessionStorage.setItem('fixtureFailReadOnce','1')")
+   page.reload(wait_until='networkidle');page.wait_for_function('_resumed&&!_localResumePending')
+   assert page.evaluate("state.account.latestNote==='unsaved failure'&&state.account.quotaFixture.length===6*1024*1024")
+   assert page.get_by_text('No se ha podido leer la copia local',exact=True).count()==0
    page.evaluate("sessionStorage.setItem('fixtureFailRead','1')")
    page.reload(wait_until='networkidle');expect(page.locator('#view')).to_contain_text('No se ha podido leer la copia local')
    page.wait_for_function("!document.documentElement.classList.contains('app-boot')")
    assert page.evaluate('_localResumePending&&!!ModernoPendingArchive.pointer(localStorage.getItem(LS_KEY))')
    if output:page.screenshot(path=str(output/f'large-copy-retry-{width}.png'),full_page=True)
+   page.evaluate("sessionStorage.removeItem('fixtureFailRead');indexedDB.open=fixtureNativeIndexedDBOpen")
    page.get_by_role('button',name='Reintentar',exact=True).click();page.wait_for_function('_resumed&&!_localResumePending')
    assert page.evaluate("state.account.latestNote==='unsaved failure'&&state.account.quotaFixture.length===6*1024*1024&&syncCopyKeys().length===56&&sb===null")
    # Full native startup pipeline: conserve the latest >6 MB pending snapshot before replacing the cache.

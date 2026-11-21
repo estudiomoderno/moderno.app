@@ -2,17 +2,22 @@
   const marker=key=>JSON.stringify({modernoPendingArchive:1,key});
   function pointer(raw){try{const value=JSON.parse(raw);return value?.modernoPendingArchive===1&&typeof value.key==='string'?value.key:null;}catch(e){return null;}}
   function createStore(idb){
-    let opened;
+    let opened,current;
+    function reset(){
+      const pending=opened;opened=null;
+      if(current){try{current.close();}catch(e){}current=null;}
+      if(pending)Promise.resolve(pending).then(database=>{try{database.close();}catch(e){}}).catch(()=>{});
+    }
     function db(){return opened||(opened=new Promise((resolve,reject)=>{
       if(!idb){reject(new Error('No hay almacenamiento de copias disponible'));return;}
       const req=idb.open('moderno-pending-copies',1);
       req.onupgradeneeded=()=>req.result.createObjectStore('copies');
-      req.onsuccess=()=>resolve(req.result);req.onerror=()=>{opened=null;reject(req.error);};req.onblocked=()=>{opened=null;reject(new Error('El almacenamiento está ocupado por otra pestaña'));};
+      req.onsuccess=()=>{current=req.result;current.onversionchange=reset;resolve(current);};req.onerror=()=>{opened=null;reject(req.error);};req.onblocked=()=>{opened=null;reject(new Error('El almacenamiento está ocupado por otra pestaña'));};
     }));}
-    async function read(key){const d=await db();return new Promise((resolve,reject)=>{const tx=d.transaction('copies','readonly'),r=tx.objectStore('copies').get(key);tx.oncomplete=()=>resolve(r.result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Lectura cancelada'));});}
-    async function write(key,raw){const d=await db();await new Promise((resolve,reject)=>{const tx=d.transaction('copies','readwrite');tx.objectStore('copies').put(raw,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Copia cancelada'));});if(await read(key)!==raw)throw new Error('No se pudo verificar la copia archivada');}
-    async function remove(key){const d=await db();await new Promise((resolve,reject)=>{const tx=d.transaction('copies','readwrite');tx.objectStore('copies').delete(key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Limpieza cancelada'));});}
-    return {read,write,remove};
+    async function read(key){try{const d=await db();return await new Promise((resolve,reject)=>{const tx=d.transaction('copies','readonly'),r=tx.objectStore('copies').get(key);tx.oncomplete=()=>resolve(r.result);tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Lectura cancelada'));});}catch(error){reset();throw error;}}
+    async function write(key,raw){try{const d=await db();await new Promise((resolve,reject)=>{const tx=d.transaction('copies','readwrite');tx.objectStore('copies').put(raw,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Copia cancelada'));});if(await read(key)!==raw)throw new Error('No se pudo verificar la copia archivada');}catch(error){reset();throw error;}}
+    async function remove(key){try{const d=await db();await new Promise((resolve,reject)=>{const tx=d.transaction('copies','readwrite');tx.objectStore('copies').delete(key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Limpieza cancelada'));});}catch(error){reset();throw error;}}
+    return {read,write,remove,reset};
   }
   async function migrate(storage,prefix,store){
     const keys=[];for(let i=0;i<storage.length;i++){const k=storage.key(i);if(k&&k.startsWith(prefix))keys.push(k);}
