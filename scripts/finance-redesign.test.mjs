@@ -70,7 +70,7 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/CardAction className="flex shrink-0 items-center gap-2"/);
  assert.match(component,/variant="advanced"[\s\S]*advancedMode="popover"[\s\S]*advancedAlign="end"[\s\S]*reorderable/);
  assert.match(component,/createFilterQuery<unknown>\(/);
- for(const id of ['initial-status','initial-client','initial-total','initial-invoice-ref','initial-invoice-date'])assert.match(component,new RegExp(id));
+ for(const id of ['initial-status','initial-date'])assert.match(component,new RegExp(id));
  assert.match(component,/useState<FilterQuery>\(SEED\)/);
  assert.match(component,/Button[\s\S]*variant="ghost"[\s\S]*disabled=\{query === SEED\}/);
  assert.match(component,/>\s*Restablecer\s*</);
@@ -83,15 +83,13 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/viewportBottom - cardRect\.top/);
  assert.match(component,/FilterValueDisplayContext/);
  assert.match(component,/function StackedTones/);
- assert.match(component,/function PatternValue/);
  assert.match(component,/function TermReach/);
  assert.match(component,/function isIncomplete/);
  assert.match(component,/function matches\(/);
  assert.match(component,/SPANISH_FILTER_LABELS/);
  assert.match(component,/SPANISH_OPERATORS/);
  assert.match(component,/FilterDateEditor/);
- for(const label of ['Fecha de emisión','Fecha de vencimiento','Sin proyecto'])assert.match(component,new RegExp(label));
- assert.match(component,/valueText: moneyText/);
+ assert.match(component,/label: "Fecha"/);
  for(const size of [125,110,134,79,104])assert.match(component,new RegExp(`size: ${size}`));
 });
 

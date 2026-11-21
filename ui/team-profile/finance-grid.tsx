@@ -38,12 +38,8 @@ import {
   useTable,
 } from "@tanstack/react-table"
 import {
-  BanknoteIcon,
   CalendarDaysIcon,
-  FileTextIcon,
-  FolderKanbanIcon,
   SignpostIcon,
-  UserIcon,
 } from "lucide-react"
 
 import { cn } from "cn"
@@ -93,23 +89,8 @@ const SEED = createFilterQuery<unknown>(
       operator: "not_empty",
     }),
     createFilterRule({
-      id: "initial-client",
-      path: ["client"],
-      operator: "not_empty",
-    }),
-    createFilterRule({
-      id: "initial-total",
-      path: ["total"],
-      operator: "not_empty",
-    }),
-    createFilterRule({
-      id: "initial-invoice-ref",
-      path: ["invoice", "ref"],
-      operator: "not_empty",
-    }),
-    createFilterRule({
-      id: "initial-invoice-date",
-      path: ["invoice", "date"],
+      id: "initial-date",
+      path: ["date"],
       operator: "not_empty",
     }),
   ],
@@ -415,20 +396,6 @@ function StackedTones({
   )
 }
 
-function StackedValues({ options, empty }: { options: FilterOption[]; empty: string }) {
-  if (options.length === 0) return <>{empty}</>
-  const shown = options.slice(0, 2)
-  const overflow = options.length - shown.length
-  return (
-    <span className="flex min-w-0 items-center gap-1.5">
-      <span className="truncate">{shown.map((option) => option.label).join(", ")}</span>
-      {overflow > 0 ? (
-        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">+{overflow}</span>
-      ) : null}
-    </span>
-  )
-}
-
 const list = (value: unknown) => (Array.isArray(value) ? value.map(String) : [])
 const text = (value: unknown) => String(value ?? "").toLocaleLowerCase("es")
 const isIsoDate = (value: unknown) => /^\d{4}-\d{2}-\d{2}$/.test(String(value ?? ""))
@@ -470,6 +437,7 @@ const TESTS: Record<string, (actual: unknown, value: unknown) => boolean> = {
 function filterRecord(row: FinanceGridRow) {
   return {
     status: row.status,
+    date: row.date,
     client: row.client,
     total: row.total,
     projectId: row.projectId || "__none__",
@@ -510,38 +478,6 @@ function matches(row: FinanceGridRow, node: FilterNode): boolean {
   return node.negated ? !result : result
 }
 
-function PatternEllipsis() {
-  return <span className="text-muted-foreground shrink-0">...</span>
-}
-
-function PatternValue({
-  value,
-  operator,
-  hits,
-  total,
-}: {
-  value: unknown
-  operator: string
-  hits: number | null
-  total: number
-}) {
-  const term = typeof value === "string" ? value.trim() : ""
-  if (!term) return <>cualquier factura</>
-  const loose = operator === "contains" || operator === "not_contains"
-  const lead = loose || operator === "ends_with"
-  const trail = loose || operator === "starts_with"
-  return (
-    <span className="flex min-w-0 items-center gap-1.5">
-      <span className="flex min-w-0 items-center">
-        {lead ? <PatternEllipsis /> : null}
-        <span className="truncate">{term}</span>
-        {trail ? <PatternEllipsis /> : null}
-      </span>
-      <TermReach hits={hits} total={total} />
-    </span>
-  )
-}
-
 function TermReach({ hits, total }: { hits: number | null; total: number }) {
   if (hits === null) return null
   return (
@@ -557,7 +493,6 @@ function TermReach({ hits, total }: { hits: number | null; total: number }) {
 }
 
 function FinanceGrid({
-  book,
   rows: sourceRows,
   currency = "EUR",
   locale = "es-ES",
@@ -633,32 +568,11 @@ function FinanceGrid({
 
   const fields = useMemo<FilterField[]>(() => {
     const statuses = Array.from(new Map(sourceRows.map((row) => [row.status, row])).values())
-    const clients = Array.from(new Set(sourceRows.map((row) => row.client))).sort()
-    const projects: FilterOption[] = Array.from(
-      new Map(
-        sourceRows
-          .filter((row) => row.projectId)
-          .map((row) => [row.projectId, { value: row.projectId, label: row.projectCode || row.projectName }])
-      ).values()
-    )
-    projects.push({ value: "__none__", label: "Sin proyecto", exclusive: true })
     const tones = new Map(statuses.map((row) => [row.status, toneClass(row.statusTone)]))
     const reach = (path: string[], context: FilterValueDisplayContext) => {
       const test = TESTS[context.operator.value]
       if (!test || isIncomplete(context.operator.value, context.value)) return null
       return sourceRows.filter((row) => test(read(row, path), context.value)).length
-    }
-    const moneyText = ({ value, labels }: FilterValueDisplayContext) => {
-      const bound = (entry: unknown) => {
-        if (entry === null || entry === "") return ""
-        const amount = Number(entry)
-        return Number.isFinite(amount) ? formatter.format(amount) : ""
-      }
-      const [from, to] = Array.isArray(value)
-        ? [bound(value[0]), bound(value[1])]
-        : [bound(value), ""]
-      if (from && to) return labels.valueRange(from, to)
-      return from || to || "cualquier importe"
     }
     const dateText = ({ value, labels }: FilterValueDisplayContext) => {
       const format = (entry: unknown) =>
@@ -671,9 +585,9 @@ function FinanceGrid({
       if (from && to) return labels.valueRange(from, to)
       return from || to || "cualquier fecha"
     }
-    const dateField = (id: string, label: string): FilterField => ({
-      id,
-      label,
+    const dateField: FilterField = {
+      id: "date",
+      label: "Fecha",
       type: "text",
       operators: DATE_OPERATORS,
       defaultOperator: "between",
@@ -681,13 +595,12 @@ function FinanceGrid({
       renderValue: (context) => (
         <span className="flex min-w-0 items-center gap-1.5">
           <span className="truncate tabular-nums">{dateText(context)}</span>
-          <TermReach hits={reach(["invoice", id], context)} total={sourceRows.length} />
+          <TermReach hits={reach(["date"], context)} total={sourceRows.length} />
         </span>
       ),
       valueText: dateText,
       icon: <CalendarDaysIcon />,
-    })
-    const partyLabel = book === "sales" ? "Cliente" : "Proveedor"
+    }
     return [
       {
         id: "status",
@@ -704,70 +617,9 @@ function FinanceGrid({
         ),
         icon: <SignpostIcon />,
       },
-      {
-        id: "client",
-        label: partyLabel,
-        type: "select",
-        defaultOperator: "is_any_of",
-        options: clients.map((client) => ({ value: client, label: client })),
-        pinSelected: true,
-        sortSelected: "label",
-        renderValue: ({ options }) => (
-          <StackedValues options={options} empty={`cualquier ${partyLabel.toLocaleLowerCase("es")}`} />
-        ),
-        icon: <UserIcon />,
-      },
-      {
-        id: "projectId",
-        label: "Proyecto",
-        type: "select",
-        defaultOperator: "is_any_of",
-        options: projects,
-        pinSelected: true,
-        sortSelected: "label",
-        renderValue: ({ options }) => (
-          <StackedValues options={options} empty="cualquier proyecto" />
-        ),
-        icon: <FolderKanbanIcon />,
-      },
-      {
-        id: "total",
-        label: "Importe",
-        type: "number",
-        defaultOperator: "gte",
-        renderValue: (context) => (
-          <span className="flex min-w-0 items-center gap-1.5">
-            <span className="truncate tabular-nums">{moneyText(context)}</span>
-            <TermReach hits={reach(["total"], context)} total={sourceRows.length} />
-          </span>
-        ),
-        valueText: moneyText,
-        icon: <BanknoteIcon />,
-      },
-      {
-        id: "invoice",
-        label: "Factura",
-        icon: <FileTextIcon />,
-        fields: [
-          {
-            id: "ref",
-            label: "Número",
-            type: "text",
-            renderValue: (context) => (
-              <PatternValue
-                value={context.value}
-                operator={context.operator.value}
-                hits={reach(["invoice", "ref"], context)}
-                total={sourceRows.length}
-              />
-            ),
-          },
-          dateField("date", "Fecha de emisión"),
-          dateField("dueDate", "Fecha de vencimiento"),
-        ],
-      },
+      dateField,
     ]
-  }, [book, dateFormatter, formatter, sourceRows])
+  }, [dateFormatter, sourceRows])
 
   const rows = useMemo(
     () => sourceRows.filter((row) => matches(row, query)),

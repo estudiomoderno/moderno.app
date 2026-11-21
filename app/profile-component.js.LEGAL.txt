@@ -93,7 +93,6 @@ lucide-react/dist/esm/icons/arrow-left.mjs:
 lucide-react/dist/esm/icons/arrow-right-to-line.mjs:
 lucide-react/dist/esm/icons/arrow-right.mjs:
 lucide-react/dist/esm/icons/arrow-up.mjs:
-lucide-react/dist/esm/icons/banknote.mjs:
 lucide-react/dist/esm/icons/bell.mjs:
 lucide-react/dist/esm/icons/bold.mjs:
 lucide-react/dist/esm/icons/calculator.mjs:
@@ -159,7 +158,6 @@ lucide-react/dist/esm/icons/trash-2.mjs:
 lucide-react/dist/esm/icons/trash.mjs:
 lucide-react/dist/esm/icons/underline.mjs:
 lucide-react/dist/esm/icons/ungroup.mjs:
-lucide-react/dist/esm/icons/user.mjs:
 lucide-react/dist/esm/icons/users.mjs:
 lucide-react/dist/esm/icons/wrench.mjs:
 lucide-react/dist/esm/icons/x.mjs:

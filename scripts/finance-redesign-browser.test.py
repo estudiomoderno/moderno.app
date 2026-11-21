@@ -168,9 +168,9 @@ try:
                 page.get_by_role("button", name="Filtro avanzado").click()
                 advanced_filters = page.locator('[data-slot="filters-advanced"]')
                 expect(advanced_filters).to_be_visible()
-                expect(advanced_filters.locator('[data-slot="filter-row"]')).to_have_count(5)
+                expect(advanced_filters.locator('[data-slot="filter-row"]')).to_have_count(2)
                 initial_filters = " ".join(advanced_filters.locator('[data-slot="filter-row"]').all_inner_texts())
-                for label in ["Estado", "Cliente", "Importe", "Número", "Fecha de emisión"]:
+                for label in ["Estado", "Fecha"]:
                     assert label in initial_filters, initial_filters
                 page.wait_for_timeout(250)
                 if output:
@@ -182,10 +182,9 @@ try:
                 field_picker = page.locator('[data-slot="cascader-panel"]')
                 expect(field_picker).to_be_visible()
                 field_options = field_picker.get_by_role("option")
-                expect(field_options).to_have_count(5)
+                expect(field_options).to_have_count(2)
                 field_labels = field_options.all_inner_texts()
-                assert field_labels[:4] == ["Estado", "Cliente", "Proyecto", "Importe"], field_labels
-                assert field_labels[4].startswith("Factura"), field_labels
+                assert field_labels == ["Estado", "Fecha"], field_labels
                 page.keyboard.press("Escape")
                 page.keyboard.press("Escape")
                 expect(page.locator('[data-slot="filters-advanced"]')).not_to_be_visible()
