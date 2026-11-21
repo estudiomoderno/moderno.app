@@ -162,11 +162,24 @@ try:
                 "element=>{const style=getComputedStyle(element);return {size:style.fontSize,weight:style.fontWeight,lineHeight:style.lineHeight}}"
             )
             assert description_style == {"size": "12px", "weight": "400", "lineHeight": "16px"}, description_style
-            adaptive_page_size = int(page.get_by_role("combobox", name="Rows per page").inner_text())
+            adaptive_page_size = int(page.get_by_role("combobox", name="Facturas por página").inner_text())
             assert adaptive_page_size > 5, adaptive_page_size
             if width == 1440:
-                page.get_by_role("button", name="Advanced filter, 4 filters applied", exact=True).click()
+                page.get_by_role("button", name="Filtro avanzado", exact=True).click()
                 expect(page.locator('[data-slot="filters-advanced"]')).to_be_visible()
+                expect(page.get_by_text("Todavía no hay filtros", exact=True)).to_be_visible()
+                add_filter = page.get_by_role("button", name="Añadir filtro", exact=True).first
+                expect(add_filter).to_be_visible()
+                expect(page.get_by_role("button", name="Añadir grupo", exact=True)).to_be_visible()
+                add_filter.click()
+                field_picker = page.locator('[data-slot="cascader-panel"]')
+                expect(field_picker).to_be_visible()
+                field_options = field_picker.get_by_role("option")
+                expect(field_options).to_have_count(5)
+                field_labels = field_options.all_inner_texts()
+                assert field_labels[:4] == ["Estado", "Cliente", "Proyecto", "Importe"], field_labels
+                assert field_labels[4].startswith("Factura"), field_labels
+                page.keyboard.press("Escape")
                 page.wait_for_timeout(250)
                 if output:
                     page.screenshot(path=str(output / "finance-sales-filters-1440.png"), full_page=True)

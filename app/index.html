@@ -6576,7 +6576,7 @@ function financeGridComponentData(book){
   const source=sales?byBrand(invoiceRows()):byBrand(state.entries||[]).filter(entry=>entry.kind==="out").map(entry=>({kind:"expense",e:entry,ref:entry.concept||"Factura recibida",date:financeDateISO(entry.date),client:entry.sup||entry.client||"Sin proveedor",brand:entry.brand,total:+entry.amount||0,pid:entry.pid||null}));
   const labels=sales?{cobr:["Cobrada","paid"],parc:["Cobrada en parte","partial"],venc:["Vencida","overdue"],pend:["Pendiente","pending"],none:["Sin estado","pending"]}:{cobr:["Pagada","paid"],pend:["Pendiente de pago","pending"]};
   const status=row=>sales?(entryStKey(row.e)||"none"):(row.e?.status==="cobr"?"cobr":"pend");
-  const rows=source.filter(row=>financeSearchMatch(row.ref,row.client,state.projects.find(project=>project.id===row.pid)?.name)).map((row,index)=>{const key=status(row),label=labels[key]||labels.none||labels.pend,project=row.pid&&state.projects.find(item=>item.id===row.pid);return {id:String(book)+":"+String(row.kind||"")+":"+String(row.ref||row.e?.id||index),ref:String(row.ref||"—"),date:String(row.date||""),status:key,statusLabel:label[0],statusTone:label[1],client:String(row.client||"Sin cliente"),projectId:project?String(project.id):"",projectCode:String(project?.num||""),projectName:String(project?.name||""),total:+row.total||0};});
+  const rows=source.filter(row=>financeSearchMatch(row.ref,row.client,state.projects.find(project=>project.id===row.pid)?.name)).map((row,index)=>{const key=status(row),label=labels[key]||labels.none||labels.pend,project=row.pid&&state.projects.find(item=>item.id===row.pid);return {id:String(book)+":"+String(row.kind||"")+":"+String(row.ref||row.e?.id||index),ref:String(row.ref||"—"),date:String(row.date||""),dueDate:String(financeDateISO(row.e?.due||"")),status:key,statusLabel:label[0],statusTone:label[1],client:String(row.client||"Sin cliente"),projectId:project?String(project.id):"",projectCode:String(project?.num||""),projectName:String(project?.name||""),total:+row.total||0};});
   return {book,rows,currency:state.account?.currency||"EUR",locale:APP_LOCALE()};
 }
 function financeInvoiceGrid(book){
@@ -11530,7 +11530,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.61";
+const MODERNO_VER="v3.67.62";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13788,7 +13788,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/neutral-theme.css?v=36574">
 <link rel="stylesheet" href="/brand/header-actions.css?v=36556">
 <link rel="stylesheet" href="/brand/reui/font.css?v=365133">
-<script src="/profile-component.js?v=36761"></script>
+<script src="/profile-component.js?v=36762"></script>
 <script>ModernoProjectSettings.refresh();ModernoProjectWorkspace.refresh();</script>
 <script src="/header-actions.js?v=365157"></script>
 <link rel="stylesheet" href="/brand/page-breadcrumbs.css?v=36753">

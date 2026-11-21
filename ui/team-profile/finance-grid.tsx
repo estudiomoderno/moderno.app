@@ -1,6 +1,6 @@
 "use client"
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
 import {
   DataGrid,
   dataGridFeatures,
@@ -17,15 +17,16 @@ import {
 import { Filters } from "./vendor/reui/filters/filters"
 import type { FilterOperatorLabels } from "./vendor/reui/filters/filters-operators"
 import {
-  createFilterGroup,
   createFilterQuery,
-  createFilterRule,
   isFilterRule,
 } from "./vendor/reui/filters/filters-query"
 import type {
+  FilterEditorProps,
   FilterField,
+  FilterLabels,
   FilterNode,
   FilterOption,
+  FilterOperator,
   FilterQuery,
   FilterValueDisplayContext,
 } from "./vendor/reui/filters/filters-types"
@@ -37,6 +38,7 @@ import {
 } from "@tanstack/react-table"
 import {
   BanknoteIcon,
+  CalendarDaysIcon,
   FileTextIcon,
   FolderKanbanIcon,
   SignpostIcon,
@@ -46,6 +48,7 @@ import {
 import { cn } from "cn"
 import { Badge } from "./vendor/reui/badge"
 import { Button } from "./vendor/reui/button"
+import { Input } from "./vendor/reui/input"
 import {
   Card,
   CardAction,
@@ -61,6 +64,7 @@ export interface FinanceGridRow {
   id: string
   ref: string
   date: string
+  dueDate?: string
   status: string
   statusLabel: string
   statusTone: "paid" | "partial" | "overdue" | "pending"
@@ -80,38 +84,7 @@ interface FinanceGridProps {
   onProject?: (projectId: string) => void
 }
 
-const SEED = createFilterQuery<unknown>(
-  [
-    createFilterRule({
-      id: "seed-1",
-      path: ["status"],
-      operator: "not_empty",
-    }),
-    createFilterGroup<unknown>({
-      id: "seed-group",
-      combinator: "or",
-      rules: [
-        createFilterRule({
-          id: "seed-2",
-          path: ["total"],
-          operator: "gte",
-          value: 0,
-        }),
-        createFilterRule({
-          id: "seed-3",
-          path: ["client"],
-          operator: "not_empty",
-        }),
-      ],
-    }),
-    createFilterRule({
-      id: "seed-4",
-      path: ["invoice", "ref"],
-      operator: "not_empty",
-    }),
-  ],
-  "and"
-)
+const SEED = createFilterQuery<unknown>([], "and")
 const GUTTER_START = "ps-4"
 const GUTTER_END = "pe-4"
 const MIN_PAGE_SIZE = 5
@@ -126,11 +99,173 @@ function fitRowsToViewport(available: number, chrome: number, rowHeight: number)
   )
 }
 
-const COMPACT_OPERATORS: FilterOperatorLabels = {
-  gt: "over",
-  gte: "at least",
-  lt: "under",
-  lte: "at most",
+const SPANISH_OPERATORS: FilterOperatorLabels = {
+  contains: "contiene",
+  not_contains: "no contiene",
+  starts_with: "empieza por",
+  ends_with: "termina en",
+  is: "es",
+  is_not: "no es",
+  is_any_of: "es cualquiera de",
+  is_none_of: "no es ninguno de",
+  has_any_of: "contiene cualquiera de",
+  has_all_of: "contiene todos",
+  has_none_of: "no contiene ninguno",
+  eq: "es igual a",
+  neq: "no es igual a",
+  gt: "es mayor que",
+  gte: "es igual o mayor que",
+  lt: "es menor que",
+  lte: "es igual o menor que",
+  between: "está entre",
+  not_between: "no está entre",
+  is_before: "es anterior a",
+  is_after: "es posterior a",
+  is_on_or_before: "es igual o anterior a",
+  is_on_or_after: "es igual o posterior a",
+  empty: "está vacío",
+  not_empty: "no está vacío",
+}
+
+const SPANISH_FILTER_LABELS: Partial<FilterLabels> = {
+  addFilter: "Añadir filtro",
+  advancedFilter: "Filtro avanzado",
+  showRecords: "Mostrar facturas",
+  builderEmpty: "Todavía no hay filtros",
+  builderEmptyHint: "Añade un filtro para concretar las facturas que quieres ver.",
+  addCondition: "Añadir filtro",
+  addConditionGroup: "Añadir grupo",
+  addToGroup: "Añadir filtro a este grupo",
+  removeGroup: "Eliminar grupo",
+  wrapInGroup: "Agrupar",
+  ungroup: "Desagrupar",
+  moveToTopLevel: "Mover al nivel principal",
+  moveToGroup: (position) => `Mover al grupo ${position}`,
+  reorder: "Reordenar",
+  reorderHint: "Pulsa Alt y las flechas arriba o abajo para reordenar",
+  groupAll: "Se cumplen todas las condiciones…",
+  groupAny: "Se cumple cualquiera de las condiciones…",
+  groupPlaceholder: "Arrastra filtros aquí",
+  rowLabel: (condition, depth) => `${condition}, nivel ${depth}`,
+  groupLabel: (description, depth) => `${description}, nivel ${depth}`,
+  groupAnnouncement: (added) => (added ? "Grupo añadido" : "Grupo eliminado"),
+  reorderAnnouncement: (label, position, total) =>
+    `${label} movido a la posición ${position} de ${total}`,
+  moveAnnouncement: (label, destination, position, total) =>
+    `${label} movido a ${destination}, posición ${position} de ${total}`,
+  clearAll: "Borrar todo",
+  groupMenu: "Opciones del grupo",
+  searchFields: "Buscar filtros…",
+  searchOperators: "Buscar condiciones…",
+  searchOptions: "Buscar…",
+  back: "Volver",
+  clear: "Borrar",
+  apply: "Aplicar",
+  discard: "Descartar cambios",
+  empty: "Sin resultados",
+  loading: "Cargando…",
+  loadingMore: "Cargando más…",
+  loadMore: "Cargar más",
+  error: "No se ha podido cargar",
+  retry: "Reintentar",
+  where: "Donde",
+  and: "Y",
+  or: "O",
+  combinator: "Cambiar combinación",
+  combinatorLabel: (word) => `${word}, cambiar combinación`,
+  duplicate: "Duplicar",
+  negate: "Negar",
+  convertToAdvanced: "Editor avanzado",
+  remove: "Eliminar",
+  chipMenu: (fieldLabel) => `Opciones del filtro ${fieldLabel}`,
+  filtersLabel: "Filtros",
+  filterLabel: (condition) => condition,
+  readOnly: "Solo lectura. Estos filtros no se pueden modificar.",
+  pathSeparator: " > ",
+  valuePlaceholder: "Escribe un valor…",
+  selectPlaceholder: "Seleccionar…",
+  noValue: "sin valor",
+  selectCondition: "Seleccionar condición",
+  incomplete: "filtro incompleto",
+  branchAffordance: "abre una lista",
+  exclusiveHint: "no se puede combinar con otras opciones",
+  exclusiveAnnouncement: (label, cleared) =>
+    `${label} seleccionado. ${cleared} ${cleared === 1 ? "selección eliminada" : "selecciones eliminadas"}.`,
+  itemCount: (count) => `${count} ${count === 1 ? "elemento" : "elementos"}`,
+  fieldsLabel: "Filtros disponibles",
+  resultsAnnouncement: (count) => `${count} ${count === 1 ? "resultado" : "resultados"}`,
+  actionsLabel: "Acciones",
+  stepAnnouncement: (step, label) =>
+    step === "field"
+      ? `Elige un filtro. ${label}`
+      : step === "operator"
+        ? `Elige una condición para ${label}`
+        : `Introduce un valor para ${label}`,
+  countAnnouncement: (count) =>
+    `${count} ${count === 1 ? "filtro aplicado" : "filtros aplicados"}`,
+  valueCount: (count) => `${count} ${count === 1 ? "seleccionado" : "seleccionados"}`,
+  valueDetail: (summary, values) => `${summary}: ${values.join(", ")}`,
+  valueRange: (from, to) => `${from} a ${to}`,
+  rangeFrom: (fieldLabel) => `${fieldLabel}, desde`,
+  rangeTo: (fieldLabel) => `${fieldLabel}, hasta`,
+  rangeSeparator: "a",
+  negated: (operatorLabel) => `no ${operatorLabel}`,
+  issueOperator: "Elige una condición",
+  issueValue: "Introduce un valor",
+  issueRange: "Completa los dos extremos del intervalo",
+  issueRangeOrder: "La fecha o cantidad final es anterior a la inicial",
+  issueEmptyGroup: "Este grupo todavía no tiene condiciones",
+  issueSummary: (count) =>
+    `${count} ${count === 1 ? "fila necesita" : "filas necesitan"} revisión`,
+}
+
+const DATE_OPERATORS: FilterOperator[] = [
+  { value: "is", label: SPANISH_OPERATORS.is, inverse: "is_not" },
+  { value: "is_not", label: SPANISH_OPERATORS.is_not, inverse: "is" },
+  { value: "is_before", label: SPANISH_OPERATORS.is_before },
+  { value: "is_after", label: SPANISH_OPERATORS.is_after },
+  { value: "is_on_or_before", label: SPANISH_OPERATORS.is_on_or_before },
+  { value: "is_on_or_after", label: SPANISH_OPERATORS.is_on_or_after },
+  { value: "between", label: SPANISH_OPERATORS.between, arity: "range", inverse: "not_between" },
+  { value: "not_between", label: SPANISH_OPERATORS.not_between, arity: "range", inverse: "between" },
+  { value: "empty", label: SPANISH_OPERATORS.empty, arity: "none", inverse: "not_empty" },
+  { value: "not_empty", label: SPANISH_OPERATORS.not_empty, arity: "none", inverse: "empty" },
+]
+
+const SPANISH_DATA_GRID_LABELS = {
+  sortAscending: "Ascendente",
+  sortDescending: "Descendente",
+  pinColumnStart: "Fijar a la izquierda",
+  pinColumnEnd: "Fijar a la derecha",
+  moveColumnStart: "Mover a la izquierda",
+  moveColumnEnd: "Mover a la derecha",
+  columnsMenu: "Columnas",
+  unpinColumn: (title: string) => `Dejar de fijar la columna ${title}`,
+  toggleColumns: "Mostrar u ocultar columnas",
+  rowCreate: "Añadir fila",
+  pinRow: "Fijar fila",
+  unpinRow: "Dejar de fijar fila",
+  selectRow: "Seleccionar fila",
+  selectAll: "Seleccionar todo",
+  expandRow: "Desplegar fila",
+  collapseRow: "Replegar fila",
+  dragToReorder: "Arrastrar para reordenar",
+  dragToReorderRow: "Arrastrar para reordenar la fila",
+  reorderingUnavailable: "No se puede reordenar",
+  loading: "Cargando…",
+  empty: "No hay datos disponibles",
+  allRowsLoaded: "Todos los registros están cargados",
+  rowsPerPage: "Facturas por página",
+  paginationInfo: ({ from, to, count }: { from: number; to: number; count: number }) =>
+    `${from} - ${to} de ${count}`,
+  previousPage: "Ir a la página anterior",
+  nextPage: "Ir a la página siguiente",
+  goToPage: (page: number) => `Ir a la página ${page}`,
+  paginationEllipsis: "…",
+  filterSelectedCount: (count: number) =>
+    `${count} ${count === 1 ? "seleccionado" : "seleccionados"}`,
+  filterNoResults: "No se han encontrado resultados.",
+  filterClear: "Borrar filtros",
 }
 
 function toneClass(tone: FinanceGridRow["statusTone"]) {
@@ -144,6 +279,71 @@ function toneClass(tone: FinanceGridRow["statusTone"]) {
 
 function Dot({ className }: { className: string }) {
   return <span className={cn("size-2 shrink-0 rounded-full", className)} />
+}
+
+function FilterDateEditor({
+  value,
+  onValueChange,
+  commit,
+  cancel,
+  autoFocusProps,
+  labels,
+  host,
+  field,
+  operator,
+}: FilterEditorProps) {
+  const range = operator.arity === "range"
+  const tuple = (Array.isArray(value) ? value : []) as unknown[]
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault()
+      commit()
+    } else if (event.key === "Escape") {
+      event.preventDefault()
+      event.stopPropagation()
+      cancel()
+    }
+  }
+  const input = (index: 0 | 1, autofocus = false) => (
+    <Input
+      {...(autofocus ? autoFocusProps : {})}
+      type="date"
+      value={String(tuple[index] ?? "")}
+      aria-label={index === 0 ? labels.rangeFrom(field.label) : labels.rangeTo(field.label)}
+      onChange={(event) => {
+        const next = [tuple[0], tuple[1]]
+        next[index] = event.target.value || undefined
+        onValueChange(next)
+      }}
+      onKeyDown={onKeyDown}
+    />
+  )
+  return (
+    <div data-slot="filter-editor" className="flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2 p-2">
+      {range ? (
+        <div className="flex items-center gap-1.5">
+          {input(0, true)}
+          <span className="text-muted-foreground text-xs">{labels.rangeSeparator}</span>
+          {input(1)}
+        </div>
+      ) : (
+        <Input
+          {...autoFocusProps}
+          type="date"
+          value={String(value ?? "")}
+          aria-label={field.label}
+          onChange={(event) => onValueChange(event.target.value || undefined)}
+          onKeyDown={onKeyDown}
+        />
+      )}
+      {host === "create" ? null : (
+        <div className="flex items-center justify-end gap-1.5 pt-1">
+          <Button variant="ghost" onClick={cancel}>{labels.discard}</Button>
+          <Button onClick={() => commit()}>{labels.apply}</Button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function StackedTones({
@@ -201,6 +401,11 @@ function StackedValues({ options, empty }: { options: FilterOption[]; empty: str
 
 const list = (value: unknown) => (Array.isArray(value) ? value.map(String) : [])
 const text = (value: unknown) => String(value ?? "").toLocaleLowerCase("es")
+const isIsoDate = (value: unknown) => /^\d{4}-\d{2}-\d{2}$/.test(String(value ?? ""))
+const compare = (actual: unknown, expected: unknown) =>
+  isIsoDate(actual) && isIsoDate(expected)
+    ? String(actual).localeCompare(String(expected))
+    : Number(actual) - Number(expected)
 const TESTS: Record<string, (actual: unknown, value: unknown) => boolean> = {
   is: (actual, value) => String(actual) === String(value),
   is_not: (actual, value) => String(actual) !== String(value),
@@ -212,17 +417,21 @@ const TESTS: Record<string, (actual: unknown, value: unknown) => boolean> = {
   ends_with: (actual, value) => text(actual).endsWith(text(value)),
   eq: (actual, value) => Number(actual) === Number(value),
   neq: (actual, value) => Number(actual) !== Number(value),
-  gt: (actual, value) => Number(actual) > Number(value),
-  gte: (actual, value) => Number(actual) >= Number(value),
-  lt: (actual, value) => Number(actual) < Number(value),
-  lte: (actual, value) => Number(actual) <= Number(value),
+  gt: (actual, value) => compare(actual, value) > 0,
+  gte: (actual, value) => compare(actual, value) >= 0,
+  lt: (actual, value) => compare(actual, value) < 0,
+  lte: (actual, value) => compare(actual, value) <= 0,
+  is_before: (actual, value) => compare(actual, value) < 0,
+  is_after: (actual, value) => compare(actual, value) > 0,
+  is_on_or_before: (actual, value) => compare(actual, value) <= 0,
+  is_on_or_after: (actual, value) => compare(actual, value) >= 0,
   between: (actual, value) => {
     const [from, to] = list(value)
-    return Number(actual) >= Number(from) && Number(actual) <= Number(to)
+    return compare(actual, from) >= 0 && compare(actual, to) <= 0
   },
   not_between: (actual, value) => {
     const [from, to] = list(value)
-    return !(Number(actual) >= Number(from) && Number(actual) <= Number(to))
+    return !(compare(actual, from) >= 0 && compare(actual, to) <= 0)
   },
   empty: (actual) => actual === undefined || actual === null || actual === "",
   not_empty: (actual) => !(actual === undefined || actual === null || actual === ""),
@@ -233,7 +442,8 @@ function filterRecord(row: FinanceGridRow) {
     status: row.status,
     client: row.client,
     total: row.total,
-    invoice: { ref: row.ref, date: row.date, projectId: row.projectId },
+    projectId: row.projectId || "__none__",
+    invoice: { ref: row.ref, date: row.date, dueDate: row.dueDate || "" },
   }
 }
 
@@ -249,7 +459,7 @@ function read(row: FinanceGridRow, path: string[]): unknown {
 
 function isIncomplete(operator: string, value: unknown): boolean {
   if (operator === "empty" || operator === "not_empty") return false
-  if (value === undefined) return true
+  if (value === undefined || value === null || value === "") return true
   if (!Array.isArray(value)) return false
   return (
     value.length === 0 ||
@@ -317,6 +527,7 @@ function TermReach({ hits, total }: { hits: number | null; total: number }) {
 }
 
 function FinanceGrid({
+  book,
   rows: sourceRows,
   currency = "EUR",
   locale = "es-ES",
@@ -335,6 +546,10 @@ function FinanceGrid({
   const formatter = useMemo(
     () => new Intl.NumberFormat(locale, { style: "currency", currency }),
     [locale, currency]
+  )
+  const dateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }),
+    [locale]
   )
 
   useLayoutEffect(() => {
@@ -389,13 +604,14 @@ function FinanceGrid({
   const fields = useMemo<FilterField[]>(() => {
     const statuses = Array.from(new Map(sourceRows.map((row) => [row.status, row])).values())
     const clients = Array.from(new Set(sourceRows.map((row) => row.client))).sort()
-    const projects = Array.from(
+    const projects: FilterOption[] = Array.from(
       new Map(
         sourceRows
           .filter((row) => row.projectId)
           .map((row) => [row.projectId, { value: row.projectId, label: row.projectCode || row.projectName }])
       ).values()
     )
+    projects.push({ value: "__none__", label: "Sin proyecto", exclusive: true })
     const tones = new Map(statuses.map((row) => [row.status, toneClass(row.statusTone)]))
     const reach = (path: string[], context: FilterValueDisplayContext) => {
       const test = TESTS[context.operator.value]
@@ -414,6 +630,34 @@ function FinanceGrid({
       if (from && to) return labels.valueRange(from, to)
       return from || to || "cualquier importe"
     }
+    const dateText = ({ value, labels }: FilterValueDisplayContext) => {
+      const format = (entry: unknown) =>
+        isIsoDate(entry)
+          ? dateFormatter.format(new Date(`${String(entry)}T00:00:00Z`))
+          : ""
+      const [from, to] = Array.isArray(value)
+        ? [format(value[0]), format(value[1])]
+        : [format(value), ""]
+      if (from && to) return labels.valueRange(from, to)
+      return from || to || "cualquier fecha"
+    }
+    const dateField = (id: string, label: string): FilterField => ({
+      id,
+      label,
+      type: "text",
+      operators: DATE_OPERATORS,
+      defaultOperator: "between",
+      editor: FilterDateEditor,
+      renderValue: (context) => (
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate tabular-nums">{dateText(context)}</span>
+          <TermReach hits={reach(["invoice", id], context)} total={sourceRows.length} />
+        </span>
+      ),
+      valueText: dateText,
+      icon: <CalendarDaysIcon />,
+    })
+    const partyLabel = book === "sales" ? "Cliente" : "Proveedor"
     return [
       {
         id: "status",
@@ -432,14 +676,29 @@ function FinanceGrid({
       },
       {
         id: "client",
-        label: "Cliente",
+        label: partyLabel,
         type: "select",
         defaultOperator: "is_any_of",
         options: clients.map((client) => ({ value: client, label: client })),
         pinSelected: true,
         sortSelected: "label",
-        renderValue: ({ options }) => <StackedValues options={options} empty="cualquier cliente" />,
+        renderValue: ({ options }) => (
+          <StackedValues options={options} empty={`cualquier ${partyLabel.toLocaleLowerCase("es")}`} />
+        ),
         icon: <UserIcon />,
+      },
+      {
+        id: "projectId",
+        label: "Proyecto",
+        type: "select",
+        defaultOperator: "is_any_of",
+        options: projects,
+        pinSelected: true,
+        sortSelected: "label",
+        renderValue: ({ options }) => (
+          <StackedValues options={options} empty="cualquier proyecto" />
+        ),
+        icon: <FolderKanbanIcon />,
       },
       {
         id: "total",
@@ -473,22 +732,12 @@ function FinanceGrid({
               />
             ),
           },
-          { id: "date", label: "Fecha", type: "text" },
-          {
-            id: "projectId",
-            label: "Proyecto",
-            type: "select",
-            defaultOperator: "is_any_of",
-            options: projects,
-            renderValue: ({ options }) => (
-              <StackedValues options={options} empty="cualquier proyecto" />
-            ),
-            icon: <FolderKanbanIcon />,
-          },
+          dateField("date", "Fecha de emisión"),
+          dateField("dueDate", "Fecha de vencimiento"),
         ],
       },
     ]
-  }, [formatter, sourceRows])
+  }, [book, dateFormatter, formatter, sourceRows])
 
   const rows = useMemo(
     () => sourceRows.filter((row) => matches(row, query)),
@@ -600,7 +849,7 @@ function FinanceGrid({
   const footer = (
     <DataGridTableFootRow>
       <DataGridTableFootRowCell colSpan={4} className={GUTTER_START}>
-        <span className="text-muted-foreground">Filtered total</span>
+        <span className="text-muted-foreground">Total filtrado</span>
       </DataGridTableFootRowCell>
       <DataGridTableFootRowCell className={`text-right font-medium tabular-nums rtl:text-left ${GUTTER_END}`}>
         {formatter.format(total)}
@@ -615,7 +864,8 @@ function FinanceGrid({
     <DataGrid
       table={table}
       recordCount={rows.length}
-      emptyMessage="No invoices match these filters"
+      i18n={{ labels: SPANISH_DATA_GRID_LABELS }}
+      emptyMessage="Ninguna factura coincide con estos filtros"
       tableLayout={{ dense: true }}
     >
       <Card className="w-full gap-0 p-0" ref={cardRef}>
@@ -623,7 +873,7 @@ function FinanceGrid({
           <div className="flex min-w-0 flex-col gap-0.5">
             <CardTitle className="truncate text-sm font-medium">Facturas</CardTitle>
             <CardDescription className="truncate text-xs tabular-nums">
-              {rows.length} of {sourceRows.length} facturas
+              {rows.length} de {sourceRows.length} facturas
             </CardDescription>
           </div>
           <CardAction className="flex shrink-0 items-center gap-2">
@@ -633,7 +883,8 @@ function FinanceGrid({
               advancedAlign="end"
               reorderable
               fields={fields}
-              operatorLabels={COMPACT_OPERATORS}
+              labels={SPANISH_FILTER_LABELS}
+              operatorLabels={SPANISH_OPERATORS}
               pathCollapse="start"
               maxPathSegments={1}
               className="[--filter-field-width:9rem] [--filter-operator-width:6.5rem] [--filter-value-width:10.5rem]"
@@ -642,10 +893,10 @@ function FinanceGrid({
             />
             <Button
               variant="ghost"
-              disabled={query === SEED}
+              disabled={query.rules.length === 0}
               onClick={() => applyQuery(SEED)}
             >
-              Reset
+              Restablecer
             </Button>
           </CardAction>
         </CardHeader>

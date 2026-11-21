@@ -46,7 +46,8 @@ test('sales and expenses use the exact ReUI data grid and Filters composition wi
  assert.match(block,/entry\.kind==="out"/);
  assert.match(block,/finance-reui-grid-host/);
  for(const primitive of ['DataGrid','DataGridColumnHeader','DataGridPagination','DataGridScrollArea','DataGridTable','Filters','CardHeader','CardContent','CardFooter'])assert.match(component,new RegExp(primitive));
- for(const label of ['Factura','Estado','Cliente','Proyecto','Importe \\(con IVA\\)','Filtered total'])assert.match(component,new RegExp(label));
+ for(const label of ['Factura','Estado','Cliente','Proyecto','Importe \\(con IVA\\)','Total filtrado'])assert.match(component,new RegExp(label));
+ assert.match(block,/dueDate:String\(financeDateISO\(row\.e\?\.due/);
  assert.match(component,/folder-simple-star-light\.svg/);
  assert.doesNotMatch(component,/title="Acciones"|>Acciones<|finance-grid-actions/);
  assert.match(bridge,/mountFinanceGrid/);
@@ -68,10 +69,10 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/CardDescription className="truncate text-xs tabular-nums"/);
  assert.match(component,/CardAction className="flex shrink-0 items-center gap-2"/);
  assert.match(component,/variant="advanced"[\s\S]*advancedMode="popover"[\s\S]*advancedAlign="end"[\s\S]*reorderable/);
- assert.match(component,/createFilterGroup<unknown>[\s\S]*seed-2[\s\S]*seed-3/);
+ assert.match(component,/createFilterQuery<unknown>\(\[\], "and"\)/);
  assert.match(component,/useState<FilterQuery>\(SEED\)/);
- assert.match(component,/Button[\s\S]*variant="ghost"[\s\S]*disabled=\{query === SEED\}/);
- assert.match(component,/>\s*Reset\s*</);
+ assert.match(component,/Button[\s\S]*variant="ghost"[\s\S]*disabled=\{query\.rules\.length === 0\}/);
+ assert.match(component,/>\s*Restablecer\s*</);
  assert.match(component,/CardContent className="border-y px-0"/);
  assert.match(component,/CardFooter className="border-t-0 px-4 py-2\.5"/);
  assert.match(component,/sizes=\{pageSizes\}/);
@@ -85,7 +86,10 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/function TermReach/);
  assert.match(component,/function isIncomplete/);
  assert.match(component,/function matches\(/);
- assert.match(component,/path: \["invoice", "ref"\]/);
+ assert.match(component,/SPANISH_FILTER_LABELS/);
+ assert.match(component,/SPANISH_OPERATORS/);
+ assert.match(component,/FilterDateEditor/);
+ for(const label of ['Fecha de emisión','Fecha de vencimiento','Sin proyecto'])assert.match(component,new RegExp(label));
  assert.match(component,/valueText: moneyText/);
  for(const size of [125,110,134,79,104])assert.match(component,new RegExp(`size: ${size}`));
 });
