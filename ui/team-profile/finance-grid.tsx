@@ -25,7 +25,9 @@ import {
 import type {
   FilterField,
   FilterNode,
+  FilterOption,
   FilterQuery,
+  FilterValueDisplayContext,
 } from "./vendor/reui/filters/filters-types"
 import {
   type ColumnDef,
@@ -41,6 +43,7 @@ import {
   UserIcon,
 } from "lucide-react"
 
+import { cn } from "cn"
 import { Badge } from "./vendor/reui/badge"
 import { Button } from "./vendor/reui/button"
 import {
@@ -103,7 +106,7 @@ const SEED = createFilterQuery<unknown>(
     }),
     createFilterRule({
       id: "seed-4",
-      path: ["ref"],
+      path: ["invoice", "ref"],
       operator: "not_empty",
     }),
   ],
@@ -119,54 +122,187 @@ const COMPACT_OPERATORS: FilterOperatorLabels = {
   lte: "at most",
 }
 
-function Dot({ tone }: { tone: FinanceGridRow["statusTone"] }) {
-  const color = {
+function toneClass(tone: FinanceGridRow["statusTone"]) {
+  return {
     paid: "bg-emerald-500",
     partial: "bg-amber-500",
     overdue: "bg-destructive",
     pending: "bg-zinc-400",
   }[tone]
-  return <span className={`size-2 shrink-0 rounded-full ${color}`} />
 }
 
-function valueAt(row: FinanceGridRow, path: string[]) {
-  const key = path[0] as keyof FinanceGridRow
-  return row[key]
+function Dot({ className }: { className: string }) {
+  return <span className={cn("size-2 shrink-0 rounded-full", className)} />
 }
 
-function matchRule(row: FinanceGridRow, node: FilterNode): boolean {
+function StackedTones({
+  options,
+  empty,
+  tones,
+}: {
+  options: FilterOption[]
+  empty: string
+  tones: Map<string, string>
+}) {
+  const tone = (value: string) => tones.get(value) ?? "bg-muted-foreground"
+  if (options.length === 0) return <>{empty}</>
+  if (options.length === 1) {
+    return (
+      <span className="flex min-w-0 items-center gap-1.5">
+        <Dot className={tone(options[0].value)} />
+        <span className="truncate">{options[0].label}</span>
+      </span>
+    )
+  }
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="flex items-center">
+        {options.slice(0, 4).map((option) => (
+          <span
+            key={option.value}
+            className={cn(
+              "ring-background -ml-1 size-2.5 rounded-full ring-2 first:ml-0",
+              tone(option.value)
+            )}
+          />
+        ))}
+      </span>
+      <span className="text-muted-foreground text-xs tabular-nums">
+        {options.length}
+      </span>
+    </span>
+  )
+}
+
+function StackedValues({ options, empty }: { options: FilterOption[]; empty: string }) {
+  if (options.length === 0) return <>{empty}</>
+  const shown = options.slice(0, 2)
+  const overflow = options.length - shown.length
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <span className="truncate">{shown.map((option) => option.label).join(", ")}</span>
+      {overflow > 0 ? (
+        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">+{overflow}</span>
+      ) : null}
+    </span>
+  )
+}
+
+const list = (value: unknown) => (Array.isArray(value) ? value.map(String) : [])
+const text = (value: unknown) => String(value ?? "").toLocaleLowerCase("es")
+const TESTS: Record<string, (actual: unknown, value: unknown) => boolean> = {
+  is: (actual, value) => String(actual) === String(value),
+  is_not: (actual, value) => String(actual) !== String(value),
+  is_any_of: (actual, value) => list(value).includes(String(actual)),
+  is_none_of: (actual, value) => !list(value).includes(String(actual)),
+  contains: (actual, value) => text(actual).includes(text(value)),
+  not_contains: (actual, value) => !text(actual).includes(text(value)),
+  starts_with: (actual, value) => text(actual).startsWith(text(value)),
+  ends_with: (actual, value) => text(actual).endsWith(text(value)),
+  eq: (actual, value) => Number(actual) === Number(value),
+  neq: (actual, value) => Number(actual) !== Number(value),
+  gt: (actual, value) => Number(actual) > Number(value),
+  gte: (actual, value) => Number(actual) >= Number(value),
+  lt: (actual, value) => Number(actual) < Number(value),
+  lte: (actual, value) => Number(actual) <= Number(value),
+  between: (actual, value) => {
+    const [from, to] = list(value)
+    return Number(actual) >= Number(from) && Number(actual) <= Number(to)
+  },
+  not_between: (actual, value) => {
+    const [from, to] = list(value)
+    return !(Number(actual) >= Number(from) && Number(actual) <= Number(to))
+  },
+  empty: (actual) => actual === undefined || actual === null || actual === "",
+  not_empty: (actual) => !(actual === undefined || actual === null || actual === ""),
+}
+
+function filterRecord(row: FinanceGridRow) {
+  return {
+    status: row.status,
+    client: row.client,
+    total: row.total,
+    invoice: { ref: row.ref, date: row.date, projectId: row.projectId },
+  }
+}
+
+function read(row: FinanceGridRow, path: string[]): unknown {
+  return path.reduce<unknown>(
+    (value, key) =>
+      typeof value === "object" && value !== null
+        ? (value as Record<string, unknown>)[key]
+        : undefined,
+    filterRecord(row)
+  )
+}
+
+function isIncomplete(operator: string, value: unknown): boolean {
+  if (operator === "empty" || operator === "not_empty") return false
+  if (value === undefined) return true
+  if (!Array.isArray(value)) return false
+  return (
+    value.length === 0 ||
+    value.some((entry) => entry === undefined || entry === null || entry === "")
+  )
+}
+
+function matches(row: FinanceGridRow, node: FilterNode): boolean {
   if (!isFilterRule(node)) {
-    const values = node.rules.map((child) => matchRule(row, child))
-    return node.combinator === "or" ? values.some(Boolean) : values.every(Boolean)
+    if (node.rules.length === 0) return true
+    return node.combinator === "and"
+      ? node.rules.every((child) => matches(row, child))
+      : node.rules.some((child) => matches(row, child))
   }
-  const current = valueAt(row, node.path)
-  const raw = node.value
-  const text = String(current ?? "").toLocaleLowerCase("es")
-  const needle = String(raw ?? "").toLocaleLowerCase("es")
-  const list = Array.isArray(raw) ? raw.map(String) : [String(raw ?? "")]
-  const number = Number(current)
-  const compare = Number(raw)
-  const range = Array.isArray(raw) ? raw.map(Number) : []
-  let result = true
-  switch (node.operator) {
-    case "contains": result = text.includes(needle); break
-    case "not_contains": result = !text.includes(needle); break
-    case "starts_with": result = text.startsWith(needle); break
-    case "ends_with": result = text.endsWith(needle); break
-    case "is": case "eq": result = String(current ?? "") === String(raw ?? ""); break
-    case "is_not": case "neq": result = String(current ?? "") !== String(raw ?? ""); break
-    case "is_any_of": result = list.includes(String(current ?? "")); break
-    case "is_none_of": result = !list.includes(String(current ?? "")); break
-    case "gt": result = number > compare; break
-    case "gte": result = number >= compare; break
-    case "lt": result = number < compare; break
-    case "lte": result = number <= compare; break
-    case "between": result = number >= range[0] && number <= range[1]; break
-    case "not_between": result = !(number >= range[0] && number <= range[1]); break
-    case "empty": result = current === null || current === undefined || current === ""; break
-    case "not_empty": result = current !== null && current !== undefined && current !== ""; break
-  }
+  const test = TESTS[node.operator]
+  if (!test || isIncomplete(node.operator, node.value)) return true
+  const result = test(read(row, node.path), node.value)
   return node.negated ? !result : result
+}
+
+function PatternEllipsis() {
+  return <span className="text-muted-foreground shrink-0">...</span>
+}
+
+function PatternValue({
+  value,
+  operator,
+  hits,
+  total,
+}: {
+  value: unknown
+  operator: string
+  hits: number | null
+  total: number
+}) {
+  const term = typeof value === "string" ? value.trim() : ""
+  if (!term) return <>cualquier factura</>
+  const loose = operator === "contains" || operator === "not_contains"
+  const lead = loose || operator === "ends_with"
+  const trail = loose || operator === "starts_with"
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <span className="flex min-w-0 items-center">
+        {lead ? <PatternEllipsis /> : null}
+        <span className="truncate">{term}</span>
+        {trail ? <PatternEllipsis /> : null}
+      </span>
+      <TermReach hits={hits} total={total} />
+    </span>
+  )
+}
+
+function TermReach({ hits, total }: { hits: number | null; total: number }) {
+  if (hits === null) return null
+  return (
+    <span
+      className={cn(
+        "shrink-0 text-xs tabular-nums @max-[7rem]/cell:hidden",
+        hits === 0 ? "text-destructive" : "text-muted-foreground"
+      )}
+    >
+      {hits}/{total}
+    </span>
+  )
 }
 
 function FinanceGrid({
@@ -183,6 +319,10 @@ function FinanceGrid({
   const [sorting, setSorting] = useState<SortingState>([
     { id: "amount", desc: true },
   ])
+  const formatter = useMemo(
+    () => new Intl.NumberFormat(locale, { style: "currency", currency }),
+    [locale, currency]
+  )
 
   const fields = useMemo<FilterField[]>(() => {
     const statuses = Array.from(new Map(sourceRows.map((row) => [row.status, row])).values())
@@ -194,8 +334,25 @@ function FinanceGrid({
           .map((row) => [row.projectId, { value: row.projectId, label: row.projectCode || row.projectName }])
       ).values()
     )
+    const tones = new Map(statuses.map((row) => [row.status, toneClass(row.statusTone)]))
+    const reach = (path: string[], context: FilterValueDisplayContext) => {
+      const test = TESTS[context.operator.value]
+      if (!test || isIncomplete(context.operator.value, context.value)) return null
+      return sourceRows.filter((row) => test(read(row, path), context.value)).length
+    }
+    const moneyText = ({ value, labels }: FilterValueDisplayContext) => {
+      const bound = (entry: unknown) => {
+        if (entry === null || entry === "") return ""
+        const amount = Number(entry)
+        return Number.isFinite(amount) ? formatter.format(amount) : ""
+      }
+      const [from, to] = Array.isArray(value)
+        ? [bound(value[0]), bound(value[1])]
+        : [bound(value), ""]
+      if (from && to) return labels.valueRange(from, to)
+      return from || to || "cualquier importe"
+    }
     return [
-      { id: "ref", label: "Factura", type: "text", icon: <FileTextIcon /> },
       {
         id: "status",
         label: "Estado",
@@ -204,8 +361,11 @@ function FinanceGrid({
         options: statuses.map((row) => ({
           value: row.status,
           label: row.statusLabel,
-          icon: <Dot tone={row.statusTone} />,
+          icon: <Dot className={toneClass(row.statusTone)} />,
         })),
+        renderValue: ({ options }) => (
+          <StackedTones options={options} empty="cualquier estado" tones={tones} />
+        ),
         icon: <SignpostIcon />,
       },
       {
@@ -214,33 +374,63 @@ function FinanceGrid({
         type: "select",
         defaultOperator: "is_any_of",
         options: clients.map((client) => ({ value: client, label: client })),
+        pinSelected: true,
+        sortSelected: "label",
+        renderValue: ({ options }) => <StackedValues options={options} empty="cualquier cliente" />,
         icon: <UserIcon />,
-      },
-      {
-        id: "projectId",
-        label: "Proyecto",
-        type: "select",
-        defaultOperator: "is_any_of",
-        options: projects,
-        icon: <FolderKanbanIcon />,
       },
       {
         id: "total",
         label: "Importe",
         type: "number",
         defaultOperator: "gte",
+        renderValue: (context) => (
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate tabular-nums">{moneyText(context)}</span>
+            <TermReach hits={reach(["total"], context)} total={sourceRows.length} />
+          </span>
+        ),
+        valueText: moneyText,
         icon: <BanknoteIcon />,
       },
+      {
+        id: "invoice",
+        label: "Factura",
+        icon: <FileTextIcon />,
+        fields: [
+          {
+            id: "ref",
+            label: "Número",
+            type: "text",
+            renderValue: (context) => (
+              <PatternValue
+                value={context.value}
+                operator={context.operator.value}
+                hits={reach(["invoice", "ref"], context)}
+                total={sourceRows.length}
+              />
+            ),
+          },
+          { id: "date", label: "Fecha", type: "text" },
+          {
+            id: "projectId",
+            label: "Proyecto",
+            type: "select",
+            defaultOperator: "is_any_of",
+            options: projects,
+            renderValue: ({ options }) => (
+              <StackedValues options={options} empty="cualquier proyecto" />
+            ),
+            icon: <FolderKanbanIcon />,
+          },
+        ],
+      },
     ]
-  }, [sourceRows])
+  }, [formatter, sourceRows])
 
   const rows = useMemo(
-    () => sourceRows.filter((row) => matchRule(row, query)),
+    () => sourceRows.filter((row) => matches(row, query)),
     [sourceRows, query]
-  )
-  const formatter = useMemo(
-    () => new Intl.NumberFormat(locale, { style: "currency", currency }),
-    [locale, currency]
   )
   const total = useMemo(
     () => rows.reduce((sum, row) => sum + row.total, 0),
@@ -265,7 +455,7 @@ function FinanceGrid({
             </div>
           </div>
         ),
-        size: 160,
+        size: 125,
         enableSorting: true,
         meta: { headerClassName: GUTTER_START, cellClassName: GUTTER_START },
       },
@@ -275,11 +465,11 @@ function FinanceGrid({
         header: ({ column }) => <DataGridColumnHeader title="Estado" column={column} />,
         cell: ({ row }) => (
           <Badge variant="outline" className="gap-1.5">
-            <Dot tone={row.original.statusTone} />
+            <Dot className={toneClass(row.original.statusTone)} />
             {row.original.statusLabel}
           </Badge>
         ),
-        size: 140,
+        size: 110,
         enableSorting: true,
       },
       {
@@ -287,7 +477,7 @@ function FinanceGrid({
         id: "client",
         header: ({ column }) => <DataGridColumnHeader title="Cliente" column={column} />,
         cell: ({ row }) => <span className="block min-w-0 truncate">{row.original.client}</span>,
-        size: 180,
+        size: 134,
         enableSorting: true,
       },
       {
@@ -304,7 +494,7 @@ function FinanceGrid({
             <span className="truncate">{row.original.projectCode || row.original.projectName}</span>
           </Button>
         ) : <span className="text-muted-foreground">—</span>,
-        size: 180,
+        size: 79,
         enableSorting: true,
       },
       {
@@ -320,7 +510,7 @@ function FinanceGrid({
         cell: ({ row }) => (
           <span className="font-medium tabular-nums">{formatter.format(row.original.total)}</span>
         ),
-        size: 150,
+        size: 104,
         enableSorting: true,
         meta: {
           headerClassName: `text-right rtl:text-left ${GUTTER_END}`,

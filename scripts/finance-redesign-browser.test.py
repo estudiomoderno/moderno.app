@@ -165,9 +165,11 @@ try:
             if width == 1440:
                 page.get_by_role("button", name="Advanced filter, 4 filters applied", exact=True).click()
                 expect(page.locator('[data-slot="filters-advanced"]')).to_be_visible()
+                page.wait_for_timeout(250)
                 if output:
                     page.screenshot(path=str(output / "finance-sales-filters-1440.png"), full_page=True)
                 page.keyboard.press("Escape")
+                expect(page.locator('[data-slot="filters-advanced"]')).not_to_be_visible()
             if output and width == 1440:
                 page.screenshot(path=str(output / "finance-sales-grid-1440.png"), full_page=True)
 

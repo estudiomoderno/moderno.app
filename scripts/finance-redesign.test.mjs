@@ -75,6 +75,15 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/CardContent className="border-y px-0"/);
  assert.match(component,/CardFooter className="border-t-0 px-4 py-2\.5"/);
  assert.match(component,/sizes=\{\[5, 10, 25\]\}/);
+ assert.match(component,/FilterValueDisplayContext/);
+ assert.match(component,/function StackedTones/);
+ assert.match(component,/function PatternValue/);
+ assert.match(component,/function TermReach/);
+ assert.match(component,/function isIncomplete/);
+ assert.match(component,/function matches\(/);
+ assert.match(component,/path: \["invoice", "ref"\]/);
+ assert.match(component,/valueText: moneyText/);
+ for(const size of [125,110,134,79,104])assert.match(component,new RegExp(`size: ${size}`));
 });
 
 test('the exact ReUI filters render their requested Lucide icons',()=>{
