@@ -68,7 +68,7 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/CardTitle className="truncate text-sm font-medium"/);
  assert.match(component,/CardDescription className="truncate text-xs tabular-nums"/);
  assert.match(component,/CardAction className="flex shrink-0 items-center gap-2"/);
- assert.match(component,/variant="advanced"[\s\S]*advancedMode="popover"[\s\S]*advancedAlign="end"[\s\S]*reorderable/);
+ assert.match(component,/variant="advanced"[\s\S]*advancedMode="popover"[\s\S]*advancedAlign="end"/);
  assert.match(component,/createFilterQuery<unknown>\(/);
  for(const id of ['initial-status','initial-date'])assert.match(component,new RegExp(id));
  assert.match(component,/useState<FilterQuery>\(SEED\)/);
@@ -89,6 +89,9 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/SPANISH_FILTER_LABELS/);
  assert.match(component,/SPANISH_OPERATORS/);
  assert.match(component,/FilterDateEditor/);
+ assert.match(component,/<Calendar[\s\S]*mode="single"[\s\S]*locale=\{es\}/);
+ assert.match(component,/data: \{ advancedStatic: true \}/);
+ assert.match(component,/filters-advanced-footer.*hidden/);
  assert.match(component,/label: "Fecha"/);
  for(const size of [125,110,134,79,104])assert.match(component,new RegExp(`size: ${size}`));
 });

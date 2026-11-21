@@ -169,22 +169,25 @@ try:
                 advanced_filters = page.locator('[data-slot="filters-advanced"]')
                 expect(advanced_filters).to_be_visible()
                 expect(advanced_filters.locator('[data-slot="filter-row"]')).to_have_count(2)
-                initial_filters = " ".join(advanced_filters.locator('[data-slot="filter-row"]').all_inner_texts())
-                for label in ["Estado", "Fecha"]:
-                    assert label in initial_filters, initial_filters
+                expect(advanced_filters.locator('[data-slot="filter-static-field"]')).to_have_text(
+                    ["Estado", "Fecha"]
+                )
+                expect(advanced_filters.get_by_role("button", name="Estado", exact=True)).to_have_count(0)
+                expect(advanced_filters.get_by_role("button", name="Fecha", exact=True)).to_have_count(0)
+                status_filter = advanced_filters.get_by_role("button", name="Seleccionar…", exact=True)
+                expect(status_filter).to_be_visible()
+                expect(advanced_filters.get_by_role("button", name="cualquier fecha", exact=True)).to_be_visible()
+                expect(advanced_filters.get_by_role("button", name="Añadir filtro", exact=True)).to_have_count(0)
+                expect(advanced_filters.get_by_role("button", name="Añadir grupo", exact=True)).to_have_count(0)
                 page.wait_for_timeout(250)
                 if output:
                     page.screenshot(path=str(output / "finance-sales-filters-1440.png"), full_page=True)
-                add_filter = page.get_by_role("button", name="Añadir filtro", exact=True).first
-                expect(add_filter).to_be_visible()
-                expect(page.get_by_role("button", name="Añadir grupo", exact=True)).to_be_visible()
-                add_filter.click()
-                field_picker = page.locator('[data-slot="cascader-panel"]')
-                expect(field_picker).to_be_visible()
-                field_options = field_picker.get_by_role("option")
-                expect(field_options).to_have_count(2)
-                field_labels = field_options.all_inner_texts()
-                assert field_labels == ["Estado", "Fecha"], field_labels
+                status_filter.click()
+                expect(page.get_by_text("Cobrada en parte", exact=True).last).to_be_visible()
+                expect(page.get_by_text("Cobrada", exact=True).last).to_be_visible()
+                page.keyboard.press("Escape")
+                advanced_filters.get_by_role("button", name="cualquier fecha", exact=True).click()
+                expect(page.locator('[data-slot="calendar"]')).to_be_visible()
                 page.keyboard.press("Escape")
                 page.keyboard.press("Escape")
                 expect(page.locator('[data-slot="filters-advanced"]')).not_to_be_visible()

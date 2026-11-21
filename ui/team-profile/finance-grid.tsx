@@ -1,6 +1,7 @@
 "use client"
 
-import { useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
+import { useLayoutEffect, useMemo, useRef, useState } from "react"
+import { es } from "date-fns/locale/es"
 import {
   DataGrid,
   dataGridFeatures,
@@ -27,7 +28,6 @@ import type {
   FilterLabels,
   FilterNode,
   FilterOption,
-  FilterOperator,
   FilterQuery,
   FilterValueDisplayContext,
 } from "./vendor/reui/filters/filters-types"
@@ -45,7 +45,7 @@ import {
 import { cn } from "cn"
 import { Badge } from "./vendor/reui/badge"
 import { Button } from "./vendor/reui/button"
-import { Input } from "./vendor/reui/input"
+import { Calendar } from "./vendor/reui/calendar"
 import {
   Card,
   CardAction,
@@ -86,12 +86,12 @@ const SEED = createFilterQuery<unknown>(
     createFilterRule({
       id: "initial-status",
       path: ["status"],
-      operator: "not_empty",
+      operator: "is_any_of",
     }),
     createFilterRule({
       id: "initial-date",
       path: ["date"],
-      operator: "not_empty",
+      operator: "is",
     }),
   ],
   "and"
@@ -230,19 +230,6 @@ const SPANISH_FILTER_LABELS: Partial<FilterLabels> = {
     `${count} ${count === 1 ? "fila necesita" : "filas necesitan"} revisión`,
 }
 
-const DATE_OPERATORS: FilterOperator[] = [
-  { value: "is", label: SPANISH_OPERATORS.is, inverse: "is_not" },
-  { value: "is_not", label: SPANISH_OPERATORS.is_not, inverse: "is" },
-  { value: "is_before", label: SPANISH_OPERATORS.is_before },
-  { value: "is_after", label: SPANISH_OPERATORS.is_after },
-  { value: "is_on_or_before", label: SPANISH_OPERATORS.is_on_or_before },
-  { value: "is_on_or_after", label: SPANISH_OPERATORS.is_on_or_after },
-  { value: "between", label: SPANISH_OPERATORS.between, arity: "range", inverse: "not_between" },
-  { value: "not_between", label: SPANISH_OPERATORS.not_between, arity: "range", inverse: "between" },
-  { value: "empty", label: SPANISH_OPERATORS.empty, arity: "none", inverse: "not_empty" },
-  { value: "not_empty", label: SPANISH_OPERATORS.not_empty, arity: "none", inverse: "empty" },
-]
-
 const SPANISH_DATA_GRID_LABELS = {
   sortAscending: "Ascendente",
   sortDescending: "Descendente",
@@ -297,60 +284,34 @@ function FilterDateEditor({
   onValueChange,
   commit,
   cancel,
-  autoFocusProps,
   labels,
   host,
-  field,
-  operator,
 }: FilterEditorProps) {
-  const range = operator.arity === "range"
-  const tuple = (Array.isArray(value) ? value : []) as unknown[]
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault()
-      commit()
-    } else if (event.key === "Escape") {
-      event.preventDefault()
-      event.stopPropagation()
-      cancel()
-    }
-  }
-  const input = (index: 0 | 1, autofocus = false) => (
-    <Input
-      {...(autofocus ? autoFocusProps : {})}
-      type="date"
-      value={String(tuple[index] ?? "")}
-      aria-label={index === 0 ? labels.rangeFrom(field.label) : labels.rangeTo(field.label)}
-      onChange={(event) => {
-        const next = [tuple[0], tuple[1]]
-        next[index] = event.target.value || undefined
-        onValueChange(next)
-      }}
-      onKeyDown={onKeyDown}
-    />
-  )
+  const selected = isIsoDate(value)
+    ? new Date(`${String(value)}T00:00:00`)
+    : undefined
+  const toIsoDate = (date: Date) =>
+    [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-")
   return (
-    <div data-slot="filter-editor" className="flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2 p-2">
-      {range ? (
-        <div className="flex items-center gap-1.5">
-          {input(0, true)}
-          <span className="text-muted-foreground text-xs">{labels.rangeSeparator}</span>
-          {input(1)}
-        </div>
-      ) : (
-        <Input
-          {...autoFocusProps}
-          type="date"
-          value={String(value ?? "")}
-          aria-label={field.label}
-          onChange={(event) => onValueChange(event.target.value || undefined)}
-          onKeyDown={onKeyDown}
-        />
-      )}
+    <div data-slot="filter-editor" className="flex w-fit max-w-[calc(100vw-2rem)] flex-col gap-2 p-2">
+      <Calendar
+        mode="single"
+        locale={es}
+        selected={selected}
+        defaultMonth={selected}
+        onSelect={(date) => onValueChange(date ? toIsoDate(date) : undefined)}
+      />
       {host === "create" ? null : (
-        <div className="flex items-center justify-end gap-1.5 pt-1">
-          <Button variant="ghost" onClick={cancel}>{labels.discard}</Button>
-          <Button onClick={() => commit()}>{labels.apply}</Button>
+        <div className="flex items-center justify-between gap-1.5 border-t pt-2">
+          <Button variant="ghost" onClick={() => onValueChange(undefined)}>{labels.clear}</Button>
+          <div className="flex items-center gap-1.5">
+            <Button variant="ghost" onClick={cancel}>{labels.discard}</Button>
+            <Button onClick={() => commit()}>{labels.apply}</Button>
+          </div>
         </div>
       )}
     </div>
@@ -589,8 +550,8 @@ function FinanceGrid({
       id: "date",
       label: "Fecha",
       type: "text",
-      operators: DATE_OPERATORS,
-      defaultOperator: "between",
+      operators: [{ value: "is", label: SPANISH_OPERATORS.is }],
+      defaultOperator: "is",
       editor: FilterDateEditor,
       renderValue: (context) => (
         <span className="flex min-w-0 items-center gap-1.5">
@@ -600,6 +561,7 @@ function FinanceGrid({
       ),
       valueText: dateText,
       icon: <CalendarDaysIcon />,
+      data: { advancedStatic: true },
     }
     return [
       {
@@ -616,6 +578,7 @@ function FinanceGrid({
           <StackedTones options={options} empty="cualquier estado" tones={tones} />
         ),
         icon: <SignpostIcon />,
+        data: { advancedStatic: true },
       },
       dateField,
     ]
@@ -763,13 +726,12 @@ function FinanceGrid({
               variant="advanced"
               advancedMode="popover"
               advancedAlign="end"
-              reorderable
               fields={fields}
               labels={SPANISH_FILTER_LABELS}
               operatorLabels={SPANISH_OPERATORS}
               pathCollapse="start"
               maxPathSegments={1}
-              className="[--filter-field-width:9rem] [--filter-operator-width:6.5rem] [--filter-value-width:10.5rem]"
+              className="w-[30rem] [--filter-field-width:8rem] [--filter-operator-width:13rem] [&_[data-slot=filters-advanced-footer]]:hidden"
               query={query}
               onQueryChange={applyQuery}
             />

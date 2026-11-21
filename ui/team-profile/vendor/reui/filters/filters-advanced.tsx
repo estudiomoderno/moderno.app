@@ -729,6 +729,9 @@ function FilterAdvancedRowImpl<V, O>({
   const { query } = useFilterState<V>()
 
   const field = getFilterField(actions.index, rule.path)
+  const staticField = Boolean(
+    (field?.data as { advancedStatic?: boolean } | undefined)?.advancedStatic
+  )
   const operators = field ? actions.resolveOperators(field) : []
   const operator = getFilterOperator(operators, rule.operator)
   const takesValue = Boolean(rule.operator) && operatorTakesValue(operator)
@@ -793,16 +796,20 @@ function FilterAdvancedRowImpl<V, O>({
   const columns = React.useMemo(() => {
     const list: FilterColumn[] = []
     if (slot === "toggle") list.push("combinator")
-    list.push("field")
+    if (!staticField) list.push("field")
     if (!pending) {
-      list.push("operator")
-      if (takesValue) list.push("value")
+      if (staticField) {
+        if (takesValue) list.push("value")
+      } else {
+        list.push("operator")
+        if (takesValue) list.push("value")
+      }
     }
     // The grip is only a tab stop when it is drawn.
-    if (canMove) list.push("drag")
-    list.push("menu")
+    if (!staticField && canMove) list.push("drag")
+    if (!staticField) list.push("menu")
     return list
-  }, [slot, takesValue, canMove, pending])
+  }, [slot, staticField, takesValue, canMove, pending])
 
   const active = useActiveColumn(
     rule.id,
@@ -849,6 +856,21 @@ function FilterAdvancedRowImpl<V, O>({
       {/* THE CONTENT BAND: sized to itself, not to a share of the row. */}
       <div className={CONTENT_BAND_CLASS}>
         <div className={cn(CELL_BOX_CLASS, FIELD_CELL_CLASS)}>
+          {staticField ? (
+            <div
+              data-slot="filter-static-field"
+              aria-label={pathText}
+              className={cn(
+                CELL_CLASS,
+                "flex h-full items-center px-3 text-sm font-medium"
+              )}
+            >
+              <span className="flex min-w-0 items-center gap-1.5 truncate">
+                {field.icon}
+                <span className="truncate">{pathLabel}</span>
+              </span>
+            </div>
+          ) : (
           <Popover
             open={pickerOpen}
             onOpenChange={(next) => {
@@ -924,39 +946,77 @@ function FilterAdvancedRowImpl<V, O>({
               />
             </PopoverContent>
           </Popover>
+          )}
         </div>
 
         {pending ? null : (
           <div className={cn(CELL_BOX_CLASS, OPERATOR_CELL_CLASS)}>
-            <FilterOperatorPopover
-              rule={rule}
-              field={field}
-              trigger={
-                <Button
-                  variant="outline"
-                  size={sizes.button}
-                  /* No `aria-label`: the label IS the name. */
-                  title={operatorLabel}
-                  className={cn(
-                    CELL_CLASS,
-                    CELL_INVALID_CLASS,
-                    "text-muted-foreground"
-                  )}
-                  {...cellProps("operator", active)}
-                  {...issueProps(issue, "operator", issueText)}
-                  onFocus={onCellFocus("operator")}
-                >
-                  <span className="truncate">{operatorLabel}</span>
-                  <IconPlaceholder
-                    lucide="ChevronDownIcon"
-                    tabler="IconChevronDown"
-                    hugeicons="ArrowDown01Icon"
-                    phosphor="CaretDownIcon"
-                    remixicon="RiArrowDownSLine"
-                  />
-                </Button>
-              }
-            />
+            {staticField && takesValue ? (
+              <FilterValuePopover
+                rule={rule}
+                field={field}
+                operator={operator}
+                trigger={
+                  <Button
+                    variant="outline"
+                    size={sizes.button}
+                    aria-label={valueText}
+                    title={valueFullText}
+                    className={cn(
+                      CELL_CLASS,
+                      CELL_INVALID_CLASS,
+                      "h-full",
+                      valueEmpty && "text-muted-foreground"
+                    )}
+                    {...cellProps("value", active)}
+                    {...issueProps(issue, "value", issueText)}
+                    onFocus={onCellFocus("value")}
+                  >
+                    <span className="min-w-0 flex-1 truncate text-start">
+                      {valueLabel}
+                    </span>
+                    <IconPlaceholder
+                      lucide="ChevronDownIcon"
+                      tabler="IconChevronDown"
+                      hugeicons="ArrowDown01Icon"
+                      phosphor="CaretDownIcon"
+                      remixicon="RiArrowDownSLine"
+                    />
+                    <RowIssueHint message={issueText} />
+                  </Button>
+                }
+              />
+            ) : staticField ? null : (
+              <FilterOperatorPopover
+                rule={rule}
+                field={field}
+                trigger={
+                  <Button
+                    variant="outline"
+                    size={sizes.button}
+                    /* No `aria-label`: the label IS the name. */
+                    title={operatorLabel}
+                    className={cn(
+                      CELL_CLASS,
+                      CELL_INVALID_CLASS,
+                      "text-muted-foreground"
+                    )}
+                    {...cellProps("operator", active)}
+                    {...issueProps(issue, "operator", issueText)}
+                    onFocus={onCellFocus("operator")}
+                  >
+                    <span className="truncate">{operatorLabel}</span>
+                    <IconPlaceholder
+                      lucide="ChevronDownIcon"
+                      tabler="IconChevronDown"
+                      hugeicons="ArrowDown01Icon"
+                      phosphor="CaretDownIcon"
+                      remixicon="RiArrowDownSLine"
+                    />
+                  </Button>
+                }
+              />
+            )}
           </div>
         )}
 
@@ -964,7 +1024,7 @@ function FilterAdvancedRowImpl<V, O>({
             trailing buttons into the value column on that row alone. It goes
             ENTIRELY while the row is PENDING, the one case that argument does
             not cover: a row choosing its attribute has no column count yet. */}
-        {pending ? null : (
+        {pending || staticField ? null : (
           <div
             className={cn(
               CELL_BOX_CLASS,
@@ -1026,7 +1086,7 @@ function FilterAdvancedRowImpl<V, O>({
 
       {/* The WEIGHT is on the CLUSTER: a `ghost` button names no colour, so
           the kebab took the full `--foreground`. */}
-      <div className={ACTION_BAND_CLASS}>
+      {staticField ? null : <div className={ACTION_BAND_CLASS}>
         {canMove ? (
           <RowHandle nodeId={rule.id} active={active} onFocus={onCellFocus} />
         ) : null}
@@ -1068,7 +1128,7 @@ function FilterAdvancedRowImpl<V, O>({
             <FilterRuleMenuItems ruleId={rule.id} allowGrouping />
           </DropdownMenuContent>
         </DropdownMenu>
-      </div>
+      </div>}
     </div>
   )
 }
