@@ -74,7 +74,11 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/>\s*Reset\s*</);
  assert.match(component,/CardContent className="border-y px-0"/);
  assert.match(component,/CardFooter className="border-t-0 px-4 py-2\.5"/);
- assert.match(component,/sizes=\{\[5, 10, 25\]\}/);
+ assert.match(component,/sizes=\{pageSizes\}/);
+ assert.match(component,/function fitRowsToViewport/);
+ assert.match(component,/useLayoutEffect/);
+ assert.match(component,/ResizeObserver/);
+ assert.match(component,/viewportBottom - cardRect\.top/);
  assert.match(component,/FilterValueDisplayContext/);
  assert.match(component,/function StackedTones/);
  assert.match(component,/function PatternValue/);

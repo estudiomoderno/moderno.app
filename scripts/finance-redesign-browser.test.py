@@ -162,6 +162,8 @@ try:
                 "element=>{const style=getComputedStyle(element);return {size:style.fontSize,weight:style.fontWeight,lineHeight:style.lineHeight}}"
             )
             assert description_style == {"size": "12px", "weight": "400", "lineHeight": "16px"}, description_style
+            adaptive_page_size = int(page.get_by_role("combobox", name="Rows per page").inner_text())
+            assert adaptive_page_size > 5, adaptive_page_size
             if width == 1440:
                 page.get_by_role("button", name="Advanced filter, 4 filters applied", exact=True).click()
                 expect(page.locator('[data-slot="filters-advanced"]')).to_be_visible()

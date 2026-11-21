@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   DataGrid,
   dataGridFeatures,
@@ -114,6 +114,17 @@ const SEED = createFilterQuery<unknown>(
 )
 const GUTTER_START = "ps-4"
 const GUTTER_END = "pe-4"
+const MIN_PAGE_SIZE = 5
+const MAX_PAGE_SIZE = 100
+const FALLBACK_ROW_HEIGHT = 48
+
+function fitRowsToViewport(available: number, chrome: number, rowHeight: number) {
+  const safeRowHeight = Math.max(1, rowHeight)
+  return Math.max(
+    MIN_PAGE_SIZE,
+    Math.min(MAX_PAGE_SIZE, Math.floor((available - chrome) / safeRowHeight))
+  )
+}
 
 const COMPACT_OPERATORS: FilterOperatorLabels = {
   gt: "over",
@@ -311,6 +322,8 @@ function FinanceGrid({
   locale = "es-ES",
   onProject,
 }: FinanceGridProps) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const autoFit = useRef(true)
   const [query, setQuery] = useState<FilterQuery>(SEED)
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -323,6 +336,55 @@ function FinanceGrid({
     () => new Intl.NumberFormat(locale, { style: "currency", currency }),
     [locale, currency]
   )
+
+  useLayoutEffect(() => {
+    const card = cardRef.current
+    if (!card) return
+    let animationFrame = 0
+    const schedule = () => {
+      cancelAnimationFrame(animationFrame)
+      animationFrame = requestAnimationFrame(() => {
+        if (!autoFit.current) return
+        const cardRect = card.getBoundingClientRect()
+        const rootNode = card.getRootNode()
+        const host = rootNode instanceof ShadowRoot ? rootNode.host : null
+        const main = host instanceof HTMLElement ? host.closest(".main") : null
+        const mainBottom = main?.getBoundingClientRect().bottom ?? window.innerHeight
+        const viewportBottom = Math.min(window.innerHeight, mainBottom)
+        const heightOf = (selector: string) =>
+          card.querySelector<HTMLElement>(selector)?.getBoundingClientRect().height ?? 0
+        const sampleRow = card.querySelector<HTMLElement>(
+          '[data-slot="data-grid-table-body"] > tr'
+        )
+        const rowHeight = sampleRow?.getBoundingClientRect().height || FALLBACK_ROW_HEIGHT
+        const chrome =
+          heightOf('[data-slot="card-header"]') +
+          heightOf('[data-slot="data-grid-table"] thead') +
+          heightOf('[data-slot="data-grid-table-foot"]') +
+          heightOf('[data-slot="card-footer"]') +
+          4
+        const pageSize = fitRowsToViewport(
+          Math.max(0, viewportBottom - cardRect.top - 12),
+          chrome,
+          rowHeight
+        )
+        setPagination((current) =>
+          current.pageSize === pageSize
+            ? current
+            : { pageIndex: 0, pageSize }
+        )
+      })
+    }
+    schedule()
+    window.addEventListener("resize", schedule)
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule)
+    observer?.observe(card)
+    return () => {
+      cancelAnimationFrame(animationFrame)
+      window.removeEventListener("resize", schedule)
+      observer?.disconnect()
+    }
+  }, [])
 
   const fields = useMemo<FilterField[]>(() => {
     const statuses = Array.from(new Map(sourceRows.map((row) => [row.status, row])).values())
@@ -528,7 +590,10 @@ function FinanceGrid({
     pageCount: Math.ceil(rows.length / pagination.pageSize),
     getRowId: (row: FinanceGridRow) => row.id,
     state: { pagination, sorting },
-    onPaginationChange: setPagination,
+    onPaginationChange: (updater) => {
+      autoFit.current = false
+      setPagination(updater)
+    },
     onSortingChange: setSorting,
   })
 
@@ -542,6 +607,9 @@ function FinanceGrid({
       </DataGridTableFootRowCell>
     </DataGridTableFootRow>
   )
+  const pageSizes = Array.from(
+    new Set([pagination.pageSize, 10, 25, 50, 100])
+  ).sort((a, b) => a - b)
 
   return (
     <DataGrid
@@ -550,7 +618,7 @@ function FinanceGrid({
       emptyMessage="No invoices match these filters"
       tableLayout={{ dense: true }}
     >
-      <Card className="w-full gap-0 p-0">
+      <Card className="w-full gap-0 p-0" ref={cardRef}>
         <CardHeader className="flex items-center justify-between gap-3 px-4 py-2">
           <div className="flex min-w-0 flex-col gap-0.5">
             <CardTitle className="truncate text-sm font-medium">Facturas</CardTitle>
@@ -588,7 +656,7 @@ function FinanceGrid({
         </CardContent>
         <CardFooter className="border-t-0 px-4 py-2.5">
           <DataGridPagination
-            sizes={[5, 10, 25]}
+            sizes={pageSizes}
             className="flex-row py-0 *:py-0! **:order-none! *:last:flex-row!"
           />
         </CardFooter>
