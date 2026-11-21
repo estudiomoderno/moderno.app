@@ -18,6 +18,7 @@ import { Filters } from "./vendor/reui/filters/filters"
 import type { FilterOperatorLabels } from "./vendor/reui/filters/filters-operators"
 import {
   createFilterQuery,
+  createFilterRule,
   isFilterRule,
 } from "./vendor/reui/filters/filters-query"
 import type {
@@ -84,7 +85,36 @@ interface FinanceGridProps {
   onProject?: (projectId: string) => void
 }
 
-const SEED = createFilterQuery<unknown>([], "and")
+const SEED = createFilterQuery<unknown>(
+  [
+    createFilterRule({
+      id: "initial-status",
+      path: ["status"],
+      operator: "not_empty",
+    }),
+    createFilterRule({
+      id: "initial-client",
+      path: ["client"],
+      operator: "not_empty",
+    }),
+    createFilterRule({
+      id: "initial-total",
+      path: ["total"],
+      operator: "not_empty",
+    }),
+    createFilterRule({
+      id: "initial-invoice-ref",
+      path: ["invoice", "ref"],
+      operator: "not_empty",
+    }),
+    createFilterRule({
+      id: "initial-invoice-date",
+      path: ["invoice", "date"],
+      operator: "not_empty",
+    }),
+  ],
+  "and"
+)
 const GUTTER_START = "ps-4"
 const GUTTER_END = "pe-4"
 const MIN_PAGE_SIZE = 5
@@ -893,7 +923,7 @@ function FinanceGrid({
             />
             <Button
               variant="ghost"
-              disabled={query.rules.length === 0}
+              disabled={query === SEED}
               onClick={() => applyQuery(SEED)}
             >
               Restablecer

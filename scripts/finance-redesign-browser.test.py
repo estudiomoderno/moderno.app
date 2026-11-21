@@ -165,9 +165,16 @@ try:
             adaptive_page_size = int(page.get_by_role("combobox", name="Facturas por página").inner_text())
             assert adaptive_page_size > 5, adaptive_page_size
             if width == 1440:
-                page.get_by_role("button", name="Filtro avanzado", exact=True).click()
-                expect(page.locator('[data-slot="filters-advanced"]')).to_be_visible()
-                expect(page.get_by_text("Todavía no hay filtros", exact=True)).to_be_visible()
+                page.get_by_role("button", name="Filtro avanzado").click()
+                advanced_filters = page.locator('[data-slot="filters-advanced"]')
+                expect(advanced_filters).to_be_visible()
+                expect(advanced_filters.locator('[data-slot="filter-row"]')).to_have_count(5)
+                initial_filters = " ".join(advanced_filters.locator('[data-slot="filter-row"]').all_inner_texts())
+                for label in ["Estado", "Cliente", "Importe", "Número", "Fecha de emisión"]:
+                    assert label in initial_filters, initial_filters
+                page.wait_for_timeout(250)
+                if output:
+                    page.screenshot(path=str(output / "finance-sales-filters-1440.png"), full_page=True)
                 add_filter = page.get_by_role("button", name="Añadir filtro", exact=True).first
                 expect(add_filter).to_be_visible()
                 expect(page.get_by_role("button", name="Añadir grupo", exact=True)).to_be_visible()
@@ -180,9 +187,6 @@ try:
                 assert field_labels[:4] == ["Estado", "Cliente", "Proyecto", "Importe"], field_labels
                 assert field_labels[4].startswith("Factura"), field_labels
                 page.keyboard.press("Escape")
-                page.wait_for_timeout(250)
-                if output:
-                    page.screenshot(path=str(output / "finance-sales-filters-1440.png"), full_page=True)
                 page.keyboard.press("Escape")
                 expect(page.locator('[data-slot="filters-advanced"]')).not_to_be_visible()
             if output and width == 1440:

@@ -69,9 +69,10 @@ test('invoice grid copies the supplied Card and filter composition classes exact
  assert.match(component,/CardDescription className="truncate text-xs tabular-nums"/);
  assert.match(component,/CardAction className="flex shrink-0 items-center gap-2"/);
  assert.match(component,/variant="advanced"[\s\S]*advancedMode="popover"[\s\S]*advancedAlign="end"[\s\S]*reorderable/);
- assert.match(component,/createFilterQuery<unknown>\(\[\], "and"\)/);
+ assert.match(component,/createFilterQuery<unknown>\(/);
+ for(const id of ['initial-status','initial-client','initial-total','initial-invoice-ref','initial-invoice-date'])assert.match(component,new RegExp(id));
  assert.match(component,/useState<FilterQuery>\(SEED\)/);
- assert.match(component,/Button[\s\S]*variant="ghost"[\s\S]*disabled=\{query\.rules\.length === 0\}/);
+ assert.match(component,/Button[\s\S]*variant="ghost"[\s\S]*disabled=\{query === SEED\}/);
  assert.match(component,/>\s*Restablecer\s*</);
  assert.match(component,/CardContent className="border-y px-0"/);
  assert.match(component,/CardFooter className="border-t-0 px-4 py-2\.5"/);
