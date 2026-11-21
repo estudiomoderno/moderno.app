@@ -87,7 +87,7 @@ test('startup recovery is bounded and local writes remain blocked until cloud co
 test('cloud startup never waits on the local cache before opening the app', () => {
   assert.match(html, /if\(sb\)\{\s*if\(!_localResumeTask\)_localResumeTask=resumeStoredCopyForCloud\(\);\s*startRestoredApp\(\);\s*return;/)
   assert.match(html, /resolveStoredLocalCopy\(\{attempts:2,timeout:1500\}\)/)
-  assert.match(html, /if\(_localResumeTask\)await _localResumeTask/)
+  assert.match(html, /if\(typeof _localResumeTask!==['"]undefined['"]&&_localResumeTask\)await _localResumeTask/)
   assert.match(html, /_localResumeWarning='La copia local no se pudo leer/)
   assert.match(html, /ModernoAppLoading\.setProbe\(\(\)=>\(_localResumeFailed\|\|!!sb\|\|/)
 })

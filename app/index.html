@@ -12117,7 +12117,7 @@ async function cloudLoad(){
   const attempt=++_accessAttempt;_accessConnecting=true;_accessError="";
   _accessLoading=true;
   try{
-    if(_localResumeTask)await _localResumeTask;
+    if(typeof _localResumeTask!=='undefined'&&_localResumeTask)await _localResumeTask;
     if(_localWrite)await _localWrite;
     if(_saveErr){persistNow();if(_localWrite)await _localWrite;}
     if(_saveErr)throw new Error("Conserva los cambios actuales antes de reconectar. Descárgalos desde el estado de guardado.");
