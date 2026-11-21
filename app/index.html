@@ -11530,7 +11530,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.58";
+const MODERNO_VER="v3.67.59";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -12117,6 +12117,7 @@ async function cloudLoad(){
   const attempt=++_accessAttempt;_accessConnecting=true;_accessError="";
   _accessLoading=true;
   try{
+    if(_localResumeTask)await _localResumeTask;
     if(_localWrite)await _localWrite;
     if(_saveErr){persistNow();if(_localWrite)await _localWrite;}
     if(_saveErr)throw new Error("Conserva los cambios actuales antes de reconectar. Descárgalos desde el estado de guardado.");
@@ -12174,6 +12175,7 @@ async function cloudLoad(){
     _cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=verifiedUserId;
     _accessLoading=false;
     if(_localResumeBypassed){_localResumeBypassed=false;_localResumeFailed=false;}
+    if(_localResumeWarning){const warning=_localResumeWarning;_localResumeWarning='';setTimeout(()=>toast(warning),0);}
     if(rows && rows.length){
       _cloudApplying=true;
       try{ rows.forEach(r=>{ const io=CLOUD_BLOCKS[r.bloque]; if(io) io.set(r.contenido); _cloudSeen[r.bloque]=r.updated_at; }); }
@@ -12535,20 +12537,20 @@ let _localResumePointer=null;
     applyLocalSnapshot(raw);
   }catch(e){}
 })();
-async function resolveStoredLocalCopy(){
+async function resolveStoredLocalCopy({attempts=3,timeout=4000}={}){
   let lastError=new Error('No se ha podido leer la copia local');
-  for(let attempt=0;attempt<3;attempt++){
+  for(let attempt=0;attempt<attempts;attempt++){
     let timer;
     try{
       return await Promise.race([
         ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore()),
-        new Promise((_,reject)=>{timer=setTimeout(()=>{const error=new Error('La lectura de la copia local tarda demasiado');error.name='LocalCopyReadTimeoutError';reject(error);},4000);})
+        new Promise((_,reject)=>{timer=setTimeout(()=>{const error=new Error('La lectura de la copia local tarda demasiado');error.name='LocalCopyReadTimeoutError';reject(error);},timeout);})
       ]);
     }catch(error){
       lastError=error;
       try{_pendingArchiveStore?.reset?.();}catch(resetError){}
       _pendingArchiveStore=null;
-      if(attempt<2)await new Promise(resolve=>setTimeout(resolve,150*(attempt+1)));
+      if(attempt<attempts-1)await new Promise(resolve=>setTimeout(resolve,150*(attempt+1)));
     }finally{clearTimeout(timer);}
   }
   throw lastError;
@@ -12586,8 +12588,31 @@ function continueWithCloudCopy(){
     const main=document.getElementById('view'),notice=document.createElement('p');notice.style.cssText='margin-top:12px;color:var(--red-ink,#a5442f)';notice.textContent='No se ha podido conservar la referencia local. Reintenta sin cerrar esta pestaña.';main?.append(notice);
   }
 }
+let _localResumeTask=null,_localResumeWarning='';
+async function resumeStoredCopyForCloud(){
+  try{
+    const raw=await resolveStoredLocalCopy({attempts:2,timeout:1500});
+    if(localStorage.getItem(LS_KEY)!==_localResumePointer)throw new Error('La copia local ha cambiado en otra pestaña');
+    const activeSession=state.sessionUser;
+    applyLocalSnapshot(raw);
+    state.sessionUser=activeSession||null;
+    _localResumePending=false;_localResumeFailed=false;
+    return true;
+  }catch(error){
+    try{preserveUnreadableLocalCopy();_localResumePending=false;_localResumePointer=null;}
+    catch(preserveError){/* El puntero actual permanece intacto y bloquea cualquier escritura local. */}
+    _localResumeBypassed=true;_localResumeFailed=true;_resumeRaw=null;
+    _localResumeWarning='La copia local no se pudo leer, pero se ha conservado para recuperación. Se han cargado los datos de la nube.';
+    return false;
+  }
+}
 async function resumeStoredApp(){
   if(_localResumePending){
+    if(sb){
+      if(!_localResumeTask)_localResumeTask=resumeStoredCopyForCloud();
+      startRestoredApp();
+      return;
+    }
     try{
       const raw=await resolveStoredLocalCopy();
       if(localStorage.getItem(LS_KEY)!==_localResumePointer)throw new Error('La copia local ha cambiado en otra pestaña');
@@ -13578,7 +13603,9 @@ function dataReset(){
     ()=>{ localStorage.removeItem(LS_KEY); location.reload(); });
 }
 
+let _restoredAppStarted=false;
 function startRestoredApp(){
+if(_restoredAppStarted)return;_restoredAppStarted=true;
 (function(){ const l=document.querySelector(".sidebar img.logo"), m=document.querySelector("#mHeader .mlogo"); if(l&&m) m.src=l.src;
   document.querySelectorAll(".verTag").forEach(e=>e.textContent=MODERNO_VER);
   console.log("Moderno.app beta "+MODERNO_VER); })();
@@ -13771,7 +13798,7 @@ try{ if(location.hash==="#") history.replaceState({},"",location.pathname||"/");
 <link rel="stylesheet" href="/brand/calendar-ui.css?v=365112">
 <script src="/calendar-ui.js?v=36748"></script>
 <script>
-ModernoAppLoading.setProbe(()=>(_localResumeFailed||!_localResumePending&&!document.documentElement.classList.contains('portalboot'))&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
+ModernoAppLoading.setProbe(()=>(_localResumeFailed||!!sb||!_localResumePending&&!document.documentElement.classList.contains('portalboot'))&&(!_accessLoading||!!_accessError||document.getElementById('loginScreen')?.style.display==='grid'));
 if(!sb)ModernoAppLoading.sessionReady();
 </script>
 <script>

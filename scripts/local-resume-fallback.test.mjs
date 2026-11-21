@@ -77,9 +77,17 @@ test('cloud fallback refuses to start if the local pointer cannot be preserved',
 })
 
 test('startup recovery is bounded and local writes remain blocked until cloud confirmation', () => {
-  assert.match(html, /for\(let attempt=0;attempt<3;attempt\+\+\)/)
+  assert.match(html, /for\(let attempt=0;attempt<attempts;attempt\+\+\)/)
   assert.match(html, /LocalCopyReadTimeoutError/)
   assert.match(html, /_pendingArchiveStore\?\.reset\?\.\(\)/)
   assert.match(html, /if\(_localResumePending\|\|_localResumeBypassed&&\(!_cloudLoadedStudy\|\|_accessLoading\)\)return/)
   assert.match(html, /if\(_localResumeBypassed\)\{_localResumeBypassed=false;_localResumeFailed=false;\}/)
+})
+
+test('cloud startup never waits on the local cache before opening the app', () => {
+  assert.match(html, /if\(sb\)\{\s*if\(!_localResumeTask\)_localResumeTask=resumeStoredCopyForCloud\(\);\s*startRestoredApp\(\);\s*return;/)
+  assert.match(html, /resolveStoredLocalCopy\(\{attempts:2,timeout:1500\}\)/)
+  assert.match(html, /if\(_localResumeTask\)await _localResumeTask/)
+  assert.match(html, /_localResumeWarning='La copia local no se pudo leer/)
+  assert.match(html, /ModernoAppLoading\.setProbe\(\(\)=>\(_localResumeFailed\|\|!!sb\|\|/)
 })
