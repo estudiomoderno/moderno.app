@@ -14,12 +14,23 @@ function allowedOrigins(env,deployment){
  if(deployment.environment==='production'&&(values.length!==1||values[0]!=='https://app.moderno.app'))throw new SecretarioError('not_configured','El origen de producción del Secretario no es válido.',503);
  return values;
 }
-async function readBody(request){
+const cancelled=()=>new SecretarioError('cancelled','La consulta se ha detenido. No se ha creado ningún documento.',408);
+function withAbort(value,signal){
+ if(signal?.aborted)return Promise.reject(cancelled());
+ return new Promise((resolve,reject)=>{
+  const onAbort=()=>reject(cancelled());
+  signal?.addEventListener('abort',onAbort,{once:true});
+  Promise.resolve(value).then(resolve,reject).finally(()=>signal?.removeEventListener('abort',onAbort));
+ });
+}
+async function readBody(request,signal){
  if(Number(request.headers.get('Content-Length'))>TRANSPORT_LIMIT)throw new SecretarioError('body_limit','La solicitud es demasiado grande.',413);
  if(!request.body)throw new SecretarioError('invalid_request','Falta la solicitud.');
  const reader=request.body.getReader(),chunks=[];let size=0;
- try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>TRANSPORT_LIMIT){await reader.cancel();throw new SecretarioError('body_limit','La solicitud es demasiado grande.',413);}chunks.push(value);}}
- finally{reader.releaseLock();}
+ const onAbort=()=>{void reader.cancel().catch(()=>{});};
+ signal?.addEventListener('abort',onAbort,{once:true});
+ try{for(;;){if(signal?.aborted)throw cancelled();const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>TRANSPORT_LIMIT){await reader.cancel();throw new SecretarioError('body_limit','La solicitud es demasiado grande.',413);}chunks.push(value);}if(signal?.aborted)throw cancelled();}
+ finally{signal?.removeEventListener('abort',onAbort);reader.releaseLock();}
  const bytes=new Uint8Array(size);let at=0;for(const chunk of chunks){bytes.set(chunk,at);at+=chunk.length;}
  let body;try{body=JSON.parse(new TextDecoder().decode(bytes));}catch{throw new SecretarioError('invalid_request','No se ha podido leer la solicitud.');}
  let input=body,privateSession='';
@@ -30,16 +41,22 @@ async function readBody(request){
  }
  if(new TextEncoder().encode(JSON.stringify(input)).byteLength>INPUT_LIMIT)throw new SecretarioError('body_limit','La solicitud es demasiado grande.',413);
  if(privateSession&&(!/^[^\s]{20,65536}$/.test(privateSession)||privateSession.length>SESSION_LIMIT))throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
- return {input,privateSession};
+ return {input,privateSession,inputBytes:new TextEncoder().encode(JSON.stringify(input)).byteLength};
 }
 
 /** authenticate must cryptographically validate the token against the project's
  * JWKS and return a user-scoped Supabase client. No admin client or
  * user_metadata authorization. */
-export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Date.now,uuid=()=>crypto.randomUUID(),planner}){
+export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Date.now,uuid=()=>crypto.randomUUID(),planner,logger,timeoutMs=25000}){
  const rates=new Map();
  return async request=>{
-  const requestId=uuid(),origin=request.headers.get('Origin');let allowed=[];
+  const requestId=uuid(),origin=request.headers.get('Origin'),started=now();let allowed=[],stage='gateway',inputBytes=0,timedOut=false;
+  const controller=new AbortController(),onAbort=()=>controller.abort();
+  request.signal.addEventListener('abort',onAbort,{once:true});if(request.signal.aborted)controller.abort();
+  const timeout=setTimeout(()=>{timedOut=true;controller.abort();},timeoutMs);
+  const timings={},quota={};
+  const mark=(name,details={})=>{stage=name;timings[name]=Math.max(0,now()-started);for(const key of ['dailyRemaining','monthlyRemaining','globalMonthlyRemaining'])if(Number.isInteger(details[key]))quota[key]=details[key];};
+  const report=(status,code)=>{try{logger?.info?.(JSON.stringify({event:'moderno_secretary_request',requestId,status,code,stage,durationMs:Math.max(0,now()-started),inputBytes,model:env.OPENAI_MODEL||'',timings,...quota}));}catch{}};
   const json=(body,status=200)=>new Response(JSON.stringify({...body,requestId}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin','X-Content-Type-Options':'nosniff','X-Moderno-Secretary-Transport':'body-session-v1',...(origin&&allowed.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS'}});
   try{
    const deployment=validateEnvironment(env);
@@ -52,30 +69,25 @@ export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Dat
    // standard Authorization header before this verify_jwt=false function runs.
    // A bounded body envelope avoids proxy header limits. Keep the legacy bearer
    // fallback for rollout, and reject conflicting credentials.
-   const {input,privateSession}=await readBody(request);
+   const body=await readBody(request,controller.signal),{input,privateSession}=body;inputBytes=body.inputBytes;mark('body_validated');
    const auth=request.headers.get('Authorization')||'',legacy=/^Bearer ([^\s]{20,8192})$/.exec(auth)?.[1]||'';
    if(auth&&!legacy||privateSession&&legacy&&legacy!==privateSession)throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
    const token=privateSession||legacy;
    if(!token)throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
-   const actor=await authenticate(token);
+   const actor=await withAbort(authenticate(token,controller.signal),controller.signal);mark('authenticated');
    if(!actor?.userId||!actor.client)throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
    if(deployment.allowedUserIds.length&&!deployment.allowedUserIds.includes(actor.userId))throw new SecretarioError('rollout_forbidden','El Secretario todavía no está habilitado para este usuario.',403);
    // A local-instance burst limit complements the isolated project budget. It
    // is deliberately not described as a distributed or monetary hard cap.
    const minute=Math.floor(now()/60000);for(const [key,value] of rates)if(value.minute!==minute)rates.delete(key);
    const rate=rates.get(actor.userId)||{minute,count:0};if(rate.count>=12||rates.size>=2000&&!rates.has(actor.userId))throw new SecretarioError('rate_limit','Hay varias consultas en curso. Espera un momento y vuelve a intentarlo.',429);rate.count++;rates.set(actor.userId,rate);
-   const controller=new AbortController(),onAbort=()=>controller.abort();
-   request.signal.addEventListener('abort',onAbort,{once:true});if(request.signal.aborted)controller.abort();
-   const timeout=setTimeout(()=>controller.abort(),25000);
-   try{
-    const result=await runSecretary({client:actor.client,input,planner:planner||(({request:turn,context})=>requestPlan({fetchImpl,apiKey:env.OPENAI_API_KEY,model:env.OPENAI_MODEL,request:turn,context,signal:controller.signal}))});
-    if(controller.signal.aborted)throw new SecretarioError('cancelled','La consulta se ha detenido. No se ha creado ningún documento.',408);
-    return json(result);
-   }finally{clearTimeout(timeout);request.signal.removeEventListener('abort',onAbort);}
+   const result=await runSecretary({client:actor.client,input,signal:controller.signal,onStage:mark,planner:planner||(({request:turn,context})=>requestPlan({fetchImpl,apiKey:env.OPENAI_API_KEY,model:env.OPENAI_MODEL,request:turn,context,signal:controller.signal}))});
+   if(controller.signal.aborted)throw cancelled();
+   mark('completed');report(200,'ok');return json(result);
   }catch(error){
-   const safe=error instanceof SecretarioError?error:new SecretarioError('unavailable','No he podido completar la consulta. Tus documentos siguen intactos.',503);
+   const safe=error instanceof SecretarioError?error:timedOut||request.signal.aborted?new SecretarioError('cancelled','La consulta se ha detenido. No se ha creado ningún documento.',408):new SecretarioError('unavailable','No he podido completar la consulta. Tus documentos siguen intactos.',503);
    // Do not log prompts, amounts, tokens, document content, or raw provider errors.
-   return json({error:{code:safe.code,message:safe.message}},safe.status);
-  }
+   report(safe.status,safe.code);return json({error:{code:safe.code,message:safe.message}},safe.status);
+  }finally{clearTimeout(timeout);request.signal.removeEventListener('abort',onAbort);}
  };
 }

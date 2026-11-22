@@ -6617,7 +6617,8 @@ function vInvoice(kind){
   const isF = kind==="factura";
   if(!isF && state.qView!=="nuevo") return vQuotesList();
   if(isF && state.fView!=="nuevo" && !draftMeaningful("factura")) return vInvoiceList();
-  const d = state.draft && state.draft.kind===kind ? state.draft : (state.draft = {
+  const existingDraft=!!(state.draft&&state.draft.kind===kind);
+  const d = existingDraft ? state.draft : (state.draft = {
     kind, brand:"cm", clientIdx:-1, lines:[], iva:{on:true,pct:state.account.vat}, irpf:{on:false,pct:retPct()}, disc:{on:false,pct:10}, legend:"", validUntil:"", num:null, date:new Date().toISOString().slice(0,10), editRef:null
   });
   const nextNum = (function(){
@@ -6633,6 +6634,7 @@ function vInvoice(kind){
   const cat = state.catalog.filter(c=>c.brand===d.brand);
   const sub = linesSum(d.lines);
   d.disc = d.disc || {on:false,pct:10};
+  if(!existingDraft) draftTrack(d);
   const desc = d.disc.on? sub*d.disc.pct/100:0, base = sub-desc;
   const iva = d.iva.on? base*d.iva.pct/100:0, irpf = (state.irpf&&d.irpf.on)? base*d.irpf.pct/100:0;
   const total = base+iva-irpf;
@@ -10478,7 +10480,20 @@ function catPickCount(){
 function catPickAddAll(){CatalogUI.add();}
 function catPickDraw(){CatalogUI.picker();}
 /* ===== Borradores de presupuesto/factura ===== */
-function draftDirty(){ const d=state.draft; return !!(d && ((d.lines||[]).length || d.clientIdx>=0 || (d.legend||"").trim())); }
+const _draftClean=new WeakMap();
+function draftComparable(d){
+  if(!d||typeof d!=="object") return "";
+  const clean={};Object.keys(d).filter(key=>!key.startsWith("_")).sort().forEach(key=>{ clean[key]=d[key]; });
+  return canon(clean);
+}
+function draftTrack(d=state.draft){ if(d&&typeof d==="object") _draftClean.set(d,draftComparable(d)); return d; }
+function draftDirty(){
+  const d=state.draft;if(!d)return false;
+  if(_draftClean.has(d))return _draftClean.get(d)!==draftComparable(d);
+  const today=new Date().toISOString().slice(0,10),vat=state.account&&state.account.vat,ret=retPct();
+  return !!((d.lines||[]).length||d.clientIdx>=0||(d.legend||"").trim()||d.projectId!=null||d.due||d.validUntil||d.capSummary||d.editRef||d.fromEntry||d.fromHito||d._draftId||d.brand&&d.brand!=="cm"||d.date&&d.date!==today||
+    d.iva&&(d.iva.on!==true||Number(d.iva.pct)!==Number(vat))||d.irpf&&(d.irpf.on!==false||Number(d.irpf.pct)!==Number(ret))||d.disc&&(d.disc.on!==false||Number(d.disc.pct)!==10));
+}
 function draftMeaningful(kind){ const d=state.draft; return !!d && d.kind===kind && !!(d.editRef||d.fromEntry||d.fromHito||d._draftId||(d.lines&&d.lines.length)||d.clientIdx>=0); }
 function draftEditing(){ const v=state.view; return !!state.draft && ((v==="presupuestos" && state.qView==="nuevo") || (v==="facturas" && (state.fView==="nuevo"||draftMeaningful("factura")))); }
 function draftSave(){
@@ -10503,7 +10518,7 @@ function draftExitModal(view, arg){
 }
 function draftResume(id){
   const b=(state.borradores||[]).find(x=>x.id===id); if(!b) return;
-  state.draft=JSON.parse(JSON.stringify(b.draft)); state.draft._draftId=b.id;
+  state.draft=JSON.parse(JSON.stringify(b.draft)); state.draft._draftId=b.id; state.draft.disc=state.draft.disc||{on:false,pct:10}; draftTrack(state.draft);
   if(b.kind==="factura") go("facturas"); else { state.qView="nuevo"; go("presupuestos"); }
 }
 function draftDelete(id){ askConfirm("¿Eliminar este borrador? No se puede deshacer.","Eliminar",()=>{ state.borradores=(state.borradores||[]).filter(x=>x.id!==id); try{ cloudDirty(); }catch(e){} render(); }); }
@@ -11530,7 +11545,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.68";
+const MODERNO_VER="v3.67.69";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -13807,9 +13822,9 @@ const renderBeforeShoppingAdd=render;
 render=function(...args){const started=Date.now();try{const result=renderBeforeShoppingAdd.apply(this,args);shoppingRoomAddEnhance();return result;}finally{efficiencyMetrics.record('render',{ms:Date.now()-started});}};
 shoppingRoomAddEnhance();
 </script>
-<link rel="stylesheet" href="/brand/secretario.css?v=2">
+<link rel="stylesheet" href="/brand/secretario.css?v=3">
 <script src="/secretario-bridge.js?v=3"></script>
 <script src="/secretary-feedback.js?v=2"></script>
-<script src="/secretario-ui.js?v=7"></script>
+<script src="/secretario-ui.js?v=8"></script>
 </body>
 </html>

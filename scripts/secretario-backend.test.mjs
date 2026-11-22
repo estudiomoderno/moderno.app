@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {ADMIN_BLOCKS,TEST_PROJECT_REF,PRODUCTION_PROJECT_REF,SECRETARY_MODEL,normalizeRequest,loadAuthorizedSnapshot,sourceIndex,modelContext,validatePlanScope,executePlan,financeMetrics,requestPlan,reserveRequest,runSecretary,validateEnvironment} from '../supabase/functions/secretario/core.mjs';
+import {ADMIN_BLOCKS,TEST_PROJECT_REF,PRODUCTION_PROJECT_REF,SECRETARY_MODEL,normalizeRequest,loadAuthorizedSnapshot,loadAuthorizedVersions,sourceIndex,modelContext,validatePlanScope,executePlan,financeMetrics,requestPlan,reserveRequest,runSecretary,validateEnvironment} from '../supabase/functions/secretario/core.mjs';
 import {createSecretaryHandler} from '../supabase/functions/secretario/handler.mjs';
 
 const STUDY='00000000-0000-4000-8000-000000000001',PILOT_USER='10000000-0000-4000-8000-000000000001',VERSION='2026-11-22T10:00:00.000Z';
@@ -36,7 +36,7 @@ function legacyPlannerContext(s,r){
   drafts:s.drafts.filter(item=>item&&typeof item==='object'&&!Array.isArray(item)&&item.draft&&typeof item.draft==='object'&&!item.draft.editRef).map(item=>({id:identifier(item.id),kind:text(item.kind),projectId:item.draft.projectId==null?null:identifier(item.draft.projectId),clientId:clientKey(s.clients[item.draft.clientIdx]||{},item.draft.clientIdx),lines:(item.draft.lines||[]).map((line,index)=>({index,name:text(line.name),qty:amount(line.qty),unit:text(line.unit),price:amount(line.price),hidden:!!line.hidden}))}))};
 }
 function rows(s){const v={proyectos:s.projects,contactos:s.clients,config:s.config,presupuestos:{quotes:s.quotes,drafts:s.drafts,n:0},facturas:{invoices:s.invoices,entries:s.entries,n:0}};return Object.entries(v).map(([bloque,contenido])=>({bloque,contenido,rol:s.role,updated_at:s.versions[bloque]||VERSION}));}
-function client(s=snapshot(),override={}){const calls=[];return {calls,async rpc(name,args){calls.push({name,args});assert.ok(['app_rol','app_leer_bloques','secretary_request_reserve'].includes(name),'Secretary only reads authorized data or reserves its bounded usage');if(name==='app_rol')return override.roleResult||{data:s.role,error:null};if(name==='secretary_request_reserve')return override.quotaResult||{data:{accepted:true,daily_remaining:19,monthly_remaining:199,global_monthly_remaining:199},error:null};return override.blocksResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)),error:null};}};}
+function client(s=snapshot(),override={}){const calls=[];return {calls,async rpc(name,args){calls.push({name,args});assert.ok(['app_rol','app_leer_bloques','app_leer_versiones','secretary_request_reserve'].includes(name),'Secretary only reads authorized data, verifies versions or reserves its bounded usage');if(name==='app_rol')return override.roleResult||{data:s.role,error:null};if(name==='secretary_request_reserve')return override.quotaResult||{data:{accepted:true,daily_remaining:19,monthly_remaining:199,global_monthly_remaining:199},error:null};if(name==='app_leer_versiones')return override.versionsResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)).map(({bloque,updated_at,rol})=>({bloque,updated_at,rol})),error:null};return override.blocksResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)),error:null};}};}
 function request(changes={}){return normalizeRequest({studyId:STUDY,message:'Prepara un presupuesto de 2 horas de Asesoría para Casa Demo',context:{view:'proyecto',projectId:1},...changes});}
 function plan(changes={}){return {intent:'prepare_draft',view:null,projectId:'1',projectQuery:null,clientId:'contact:0',clientQuery:null,kind:'presupuesto',quoteRef:null,draftId:null,lines:[{name:'Asesoría',catalogId:'7',qty:2,qtyEvidence:'2 horas',unit:'h',price:null,priceEvidence:null}],sourceIds:[],question:null,...changes};}
 
@@ -73,6 +73,14 @@ test('request accepts only conversation text and explicit context, never client 
 });
 test('read boundary uses user role and exact current blocks',async()=>{
  const db=client(),s=await loadAuthorizedSnapshot(db,request());assert.equal(s.role,'admin');assert.deepEqual(db.calls.map(x=>x.name),['app_rol','app_leer_bloques']);assert.deepEqual(db.calls[1].args,{p_estudio:STUDY,p_bloques:ADMIN_BLOCKS});
+});
+test('lightweight revalidation is complete, role-bound and fail-closed',async()=>{
+ const expected=await loadAuthorizedVersions(client(),request(),ADMIN_BLOCKS);assert.equal(expected.role,'admin');assert.deepEqual(expected.versions,snapshot().versions);
+ const valid=rows(snapshot()).map(({bloque,updated_at,rol})=>({bloque,updated_at,rol}));
+ for(const versionsResult of [
+  {data:null,error:{code:'PGRST202'}},{data:[]},{data:valid.slice(1)},{data:[...valid.slice(1),valid[1]]},{data:valid.map((row,index)=>index?row:{...row,rol:'colaborador'})},{data:valid.map((row,index)=>index?row:{...row,updated_at:'invalid'})}
+ ])await assert.rejects(loadAuthorizedVersions(client(snapshot(),{versionsResult}),request(),ADMIN_BLOCKS),{code:'data_unavailable'});
+ const collaborator=snapshot();collaborator.role='colaborador';const db=client(collaborator),result=await loadAuthorizedVersions(db,request(),['proyectos']);assert.equal(result.role,'colaborador');assert.deepEqual(db.calls[0].args.p_bloques,['proyectos']);
 });
 test('a distributed server quota is reserved once before the provider is called',async()=>{
  const db=client();let used=false;
@@ -180,6 +188,13 @@ test('every structured line answer must be consumed at its original index',()=>{
  assert.deepEqual(context.catalog.map(item=>item.id),['a','b']);assert.deepEqual(context.requirements.lines,[{index:0,field:'catalogId',ids:['a']},{index:0,field:'qty'},{index:1,field:'catalogId',ids:['b']},{index:1,field:'qty'}]);
  const partial=plan({lines:[{name:'Asesoría A',catalogId:'a',qty:2,qtyEvidence:'2 horas',unit:'h',price:null,priceEvidence:null}]});assert.throws(()=>validatePlanScope(partial,context),{code:'invalid_plan'});
  const complete=plan({lines:[{name:'Asesoría A',catalogId:'a',qty:2,qtyEvidence:'2 horas',unit:'h',price:null,priceEvidence:null},{name:'Asesoría B',catalogId:'b',qty:3,qtyEvidence:'3 horas',unit:'h',price:null,priceEvidence:null}]});assert.doesNotThrow(()=>validatePlanScope(complete,context));const result=executePlan(s,r,complete);assert.equal(result.status,'proposal');assert.deepEqual(result.actions[0].payload.lines.map(line=>line.catId),['a','b']);
+});
+test('document kind and free line name stay bound to their structured answers',()=>{
+ const s=snapshot(),r=request({message:'Factura y concepto confirmados',automatic:true,answers:{kind:'factura','line.0.name':'Dirección creativa','line.0.qty':'2 horas','line.0.price':'100 euros'}}),context=modelContext(s,r);
+ const correct=plan({kind:'factura',lines:[{name:'Dirección creativa',catalogId:null,qty:2,qtyEvidence:'2 horas',unit:'h',price:100,priceEvidence:'100 euros'}]});
+ assert.equal(context.requirements.expectedKind,'factura');assert.doesNotThrow(()=>validatePlanScope(correct,context));
+ assert.throws(()=>validatePlanScope({...correct,kind:'presupuesto'},context),{code:'invalid_plan'});
+ assert.throws(()=>validatePlanScope({...correct,lines:[{...correct.lines[0],name:'Otro concepto'}]},context),{code:'invalid_plan'});
 });
 test('a client shared by both spaces completes its structured clarification chain',()=>{
  const s=snapshot();s.clients=[{name:'Cliente común',num:'C-1',brand:'both',type:'Cliente'},{name:'Cliente común',num:'C-2',brand:'both',type:'Cliente'}];
@@ -289,7 +304,7 @@ test('compact planning keeps the complete snapshot authoritative for financial r
  const result=await runSecretary({client:db,input,planner:async({context})=>{plannerContext=context;return summaryPlan;}});
  assert.ok(Buffer.byteLength(JSON.stringify(plannerContext),'utf8')<=80000);assert.equal(JSON.stringify(plannerContext).includes('Movimiento objetivo Zeta'),false);
  assert.equal(result.metrics.invoiced,412);assert.equal(result.metrics.pending,412);assert.equal(result.sourceCount,429);
- assert.equal(db.calls.filter(call=>call.name==='secretary_request_reserve').length,1);assert.equal(db.calls.filter(call=>call.name==='app_leer_bloques').length,2);
+ assert.equal(db.calls.filter(call=>call.name==='secretary_request_reserve').length,1);assert.equal(db.calls.filter(call=>call.name==='app_leer_bloques').length,1);assert.equal(db.calls.filter(call=>call.name==='app_leer_versiones').length,1);
 });
 test('complete runtime keeps every supported intent inside the compact verified scope',async()=>{
  const scenarios=[
@@ -297,6 +312,7 @@ test('complete runtime keeps every supported intent inside the compact verified 
   {input:request({message:'Abre Casa Demo'}),planner:()=>plan({intent:'navigate',view:'proyecto',lines:[],edits:[],sourceIds:[]}),status:'answer'},
   {input:request({message:'Revisa la tarea Revisar propuesta'}),planner:({context})=>plan({intent:'inspect',view:null,projectId:null,clientId:null,kind:null,lines:[],edits:[],sourceIds:[context.sources.find(item=>item.kind==='task').key]}),status:'answer'},
   {input:request({message:'Resume las finanzas',context:{view:'finanzas',projectId:null}}),planner:()=>plan({intent:'summary',view:null,projectId:null,clientId:null,kind:null,lines:[],edits:[],sourceIds:[]}),status:'answer'},
+  {input:request({message:'¿Qué queda pendiente en Casa Demo?'}),planner:()=>plan({intent:'project_status',view:null,clientId:null,kind:null,lines:[],edits:[],sourceIds:[]}),status:'answer'},
   {input:request({message:'Necesito concretar una consulta'}),planner:()=>plan({intent:'clarify',view:null,projectId:null,clientId:null,kind:null,lines:[],edits:[],sourceIds:[],question:'¿Qué necesitas concretar?'}),status:'clarifying'},
   {input:request(),planner:()=>plan(),status:'proposal'}
  ];
@@ -309,6 +325,23 @@ test('real draft proposal uses authoritative price, tax settings, client and sou
 test('missing quantities and unknown prices ask questions and never become zero',()=>{
  const s=snapshot();s.config.catalog[0].price=null;let result=executePlan(s,request(),plan());assert.equal(result.status,'clarifying');assert.equal(result.actions.length,0);assert.ok(result.questions.some(q=>q.id==='line.0.price'));
  result=executePlan(snapshot(),request(),plan({lines:[{name:'Asesoría',catalogId:'7',qty:1,qtyEvidence:null,price:null}]}));assert.equal(result.status,'clarifying');assert.ok(result.questions.some(q=>q.id==='line.0.qty'));
+});
+test('currency clarification completes a summary without changing study settings',()=>{
+ const s=snapshot();delete s.config.account.currency;
+ const first=executePlan(s,request({message:'Resume las finanzas',context:{view:'finanzas',projectId:null}}),plan({intent:'summary',view:null,projectId:null,clientId:null,kind:null,lines:[],edits:[],sourceIds:[]}));assert.equal(first.status,'clarifying');assert.equal(first.questions[0].id,'currency');
+ const r=request({message:'EUR',automatic:true,context:{view:'finanzas',projectId:null},answers:{currency:'EUR'}}),context=modelContext(s,r),summary=plan({intent:'summary',view:null,projectId:null,clientId:null,kind:null,lines:[],edits:[],sourceIds:[]});assert.doesNotThrow(()=>validatePlanScope(summary,context));assert.match(executePlan(s,r,summary).message,/0,00\s*€/);
+});
+test('incomplete, fiscally invalid or oversized inherited documents route to the editor without a dead clarification loop',()=>{
+ const make=(lines,tax={on:true,pct:21})=>{const s=snapshot();s.quotes=[{ref:'P-ORIGEN',brand:'demo',client:'Cliente de prueba',clientIdx:0,projectId:1,lines,iva:tax,irpf:{on:false,pct:0},disc:{on:false,pct:10}}];return s;};
+ const r=request({message:'Crea factura desde P-ORIGEN'}),p=plan({kind:'factura',quoteRef:'P-ORIGEN',lines:[]});
+ for(const result of [executePlan(make([{name:'Partida',qty:null,price:100,unit:'ud'}]),r,p),executePlan(make([{name:'Partida',qty:1,price:100,unit:'ud'}],{on:true,pct:150}),r,p),executePlan(make(Array.from({length:201},(_,index)=>({name:`Partida ${index}`,qty:1,price:1,unit:'ud'}))),r,p)]){
+  assert.equal(result.status,'answer');assert.equal(result.questions.length,0);assert.equal(result.actions[0].type,'navigate');assert.equal(result.actions[0].payload.view,'presupuestos');
+ }
+});
+test('project status is calculated from authorized tasks and documents',()=>{
+ const s=snapshot();s.projects[0].status='En progreso';s.projects[0].tasks=[{id:11,title:'Vencida',col:'pend',due:'2020-01-01'},{id:12,title:'Terminada',col:'listo',due:'2020-01-01'},{id:13,title:'Sin fecha',col:'prog'}];s.projects[0].files=[{id:21,name:'Plano demo.pdf'}];
+ const result=executePlan(s,request({message:'¿Qué queda pendiente?'}),plan({intent:'project_status',view:null,clientId:null,kind:null,lines:[],edits:[],sourceIds:[]}));assert.equal(result.status,'answer');assert.match(result.message,/Tareas pendientes: 2 de 3/);assert.match(result.message,/Tareas vencidas: 1/);assert.match(result.message,/Documentos disponibles: 1/);assert.equal(result.actions[0].payload.view,'proyecto');
+ s.projects[0].tasks=Array.from({length:50},(_,index)=>({id:index+100,title:`Pendiente ${index+1}`,col:'pend'}));const many=executePlan(s,request({message:'¿Qué queda pendiente?'}),plan({intent:'project_status',view:null,clientId:null,kind:null,lines:[],edits:[],sourceIds:[]}));assert.equal(many.sources.length,40);assert.equal(many.sourceCount,51);
 });
 test('a numeric guess does not override catalog, while explicit user price evidence can',()=>{
  const p=plan();p.lines[0].price=450;p.lines[0].priceEvidence='450 euros';assert.equal(executePlan(snapshot(),request(),p).status,'clarifying');
@@ -401,6 +434,10 @@ test('provider errors, refusal, incomplete or malformed output never manufacture
  for(const body of [{status:'incomplete',output:[]},{status:'completed',output:[{type:'message',content:[{type:'refusal',refusal:'no'}]}]},{status:'completed',output:[{type:'message',content:[{type:'output_text',text:'not json'}]}]}])await assert.rejects(requestPlan({apiKey:'fixture',model:'fixture',request:request(),context:{},fetchImpl:async()=>new Response(JSON.stringify(body))}));
  await assert.rejects(requestPlan({apiKey:'fixture',model:'fixture',request:request(),context:{},fetchImpl:async()=>new Response('{"secret":"raw upstream detail"}',{status:500})}),error=>error.code==='provider_unavailable'&&!error.message.includes('secret'));
 });
+test('an aborted provider request is classified as cancelled, not unavailable',async()=>{
+ const controller=new AbortController();controller.abort();
+ await assert.rejects(requestPlan({apiKey:'fixture',model:'fixture',request:request(),context:{},signal:controller.signal,fetchImpl:async(_url,{signal})=>{if(signal.aborted)throw new DOMException('aborted','AbortError');}}),{code:'cancelled',status:408});
+});
 
 function http(body=request(),options={}){const session=options.session===undefined?'t'.repeat(30):options.session;return new Request('https://edge.test/secretario',{method:'POST',body:JSON.stringify(session?{session,payload:body}:body),...options,headers:{Origin:'http://localhost:4173','Content-Type':'application/json',...options.headers}});}
 function productionHttp(body=request(),options={}){return http(body,{...options,headers:{Origin:'https://app.moderno.app',...options.headers}});}
@@ -451,6 +488,21 @@ test('HTTP real contract returns a reviewable proposal without writes',async()=>
 test('HTTP enforces bytes and per-user burst limit',async()=>{
  const h=handler({now:()=>1000});assert.equal((await h(http({message:'x'.repeat(50000)}))).status,413);
  const h2=handler({now:()=>1000});for(let n=0;n<12;n++)assert.equal((await h2(http())).status,200);assert.equal((await h2(http())).status,429);
+});
+test('HTTP cancellation and timeout stop before revalidation and return a safe 408',async()=>{
+ for(const mode of ['client','timeout']){
+  const browserAbort=new AbortController(),seen=[];let notifyStarted;const started=new Promise(resolve=>{notifyStarted=resolve;});
+  const h=handler({timeoutMs:mode==='timeout'?5:1000,planner:({signal})=>new Promise((resolve,reject)=>{seen.push('planner');notifyStarted();signal.addEventListener('abort',()=>reject(new DOMException('private abort detail','AbortError')),{once:true});})});
+  const pending=h(http(request(),{signal:browserAbort.signal}));if(mode==='client'){await started;browserAbort.abort();}
+  const result=await pending,body=await result.json();assert.equal(result.status,408);assert.equal(body.error.code,'cancelled');assert.deepEqual(seen,['planner']);
+ }
+});
+test('the request deadline also covers authentication before any data RPC or provider call',async()=>{
+ let provider=false;const h=handler({timeoutMs:5,authenticate:()=>new Promise(()=>{}),planner:async()=>{provider=true;return plan();}}),result=await h(http()),body=await result.json();
+ assert.equal(result.status,408);assert.equal(body.error.code,'cancelled');assert.equal(provider,false);
+});
+test('structured request logs contain only safe operational fields',async()=>{
+ const rows=[];const result=await handler({logger:{info:value=>rows.push(JSON.parse(value))}})(http());assert.equal(result.status,200);assert.equal(rows.length,1);assert.equal(rows[0].event,'moderno_secretary_request');assert.equal(rows[0].code,'ok');assert.equal(rows[0].stage,'completed');assert.ok(rows[0].inputBytes>0);assert.doesNotMatch(JSON.stringify(rows[0]),/Casa Demo|Cliente de prueba|t{20}/);
 });
 test('HTTP safe errors do not disclose thrown tokens or internal database detail',async()=>{
  const h=handler({authenticate:async()=>{throw new Error('raw JWT private-table');}}),result=await h(http()),body=await result.text();assert.equal(result.status,503);assert.doesNotMatch(body,/raw JWT|private-table/);
