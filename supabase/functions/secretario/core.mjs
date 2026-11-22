@@ -60,6 +60,16 @@ export async function loadAuthorizedSnapshot(client,request){
  return snapshot;
 }
 
+export async function reserveRequest(client,studyId){
+ const result=await client.rpc('secretary_request_reserve',{p_estudio:studyId});
+ if(result.error){
+  if(result.error.code==='PT429')fail('quota_exhausted','Has alcanzado el límite de la prueba del Secretario. Puedes seguir usando Finanzas y volver a intentarlo más adelante.',429);
+  fail('quota_unavailable','No puedo comprobar el límite de consumo del Secretario. No se ha enviado ninguna consulta al modelo.',503);
+ }
+ if(!object(result.data)||result.data.accepted!==true)fail('quota_unavailable','No puedo comprobar el límite de consumo del Secretario. No se ha enviado ninguna consulta al modelo.',503);
+ return result.data;
+}
+
 const clientKey=(c,index)=>c.id!=null?id(c.id):`contact:${index}`;
 const catalogKey=(c,index)=>c.id!=null?id(c.id):`catalog:${index}`;
 function source(kind,record,extra={}){return {kind,id:id(record.id??record.ref),label:text(record.name||record.title||record.ref||record.concept||'Registro',220),...extra};}
@@ -282,6 +292,7 @@ export async function requestPlan({fetchImpl=fetch,apiKey,model,request,context,
 
 export async function runSecretary({client,input,planner}){
  const request=normalizeRequest(input),snapshot=await loadAuthorizedSnapshot(client,request),context=modelContext(snapshot,request);
+ await reserveRequest(client,request.studyId);
  const plan=await planner({request,context});
  // Re-check access and versions after the model latency; a revocation or edit
  // must not result in a stale proposal being returned as current data.

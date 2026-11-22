@@ -57,6 +57,8 @@ jobs:
         run: node scripts/build-invitation-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Consentimiento y mejora del Secretario con datos ficticios
         run: node scripts/build-secretary-feedback-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+      - name: Contrato, RLS y cuotas del Secretario con datos ficticios
+        run: node scripts/build-secretary-runtime-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Preparar PHP (si falta)
         run: |
           if ! command -v php >/dev/null; then

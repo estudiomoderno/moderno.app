@@ -6,7 +6,7 @@ El propietario autoriza desarrollar el Secretario: Finanzas abre una conversaci�
 
 También autoriza aprender de dificultades comunes: valoraciones opcionales por usuario y estudio, con categorías cerradas y sin conversaciones, documentos, clientes, precios o importes. Los informes agregados se destinan a revisión humana de mejoras versionadas; no entrenan automáticamente el modelo ni comparten memoria entre estudios. Retirar el consentimiento detiene los envíos y elimina sus valoraciones conservadas.
 
-Implementación en rama aislada. El despliegue y la activación permanecen bloqueados hasta verificar datos/permisos en Moderno Prueba, completar la credencial autorizada de OpenAI, configurar límites y pasar las pruebas integradas. No se ha modificado producción. [Alcance y validación](SECRETARIO-IMPLEMENTACION-2026-11-22.md) · [Mejora compartida](SECRETARIO-MEJORA-COMUN.md).
+Implementación en rama aislada. El 22/11/2026 se preparó solo `moderno-pruebas`: RLS y contrato mínimo, cuota distribuida (20 consultas por persona/estudio/día y 200 al mes), feedback opcional, retención diaria y Edge Function desactivada. La activación permanece bloqueada hasta completar en un proyecto exclusivo la credencial de OpenAI, el límite duro/alertas, los secretos de prueba y la prueba conectada. No se ha modificado producción ni se ha fusionado el PR de borrador. [Alcance y validación](SECRETARIO-IMPLEMENTACION-2026-11-22.md) · [Mejora compartida](SECRETARIO-MEJORA-COMUN.md).
 
 ## 2026-11-19 — Rediseño integral y publicación de Finanzas
 

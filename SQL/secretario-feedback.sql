@@ -174,11 +174,15 @@ revoke all on function moderno_secretary.report(date) from public,anon,authentic
 -- Programar antes de activar: elimina datos crudos vencidos, incluso sin tráfico.
 create or replace function moderno_secretary.purge_expired()
 returns bigint language plpgsql security invoker set search_path='' as $fn$
-declare affected bigint;
+declare affected bigint; usage_affected bigint:=0;
 begin
  delete from moderno_secretary.feedback where created_at<now()-interval '90 days';
  get diagnostics affected=row_count;
- return affected;
+ if to_regclass('moderno_secretary.usage_daily') is not null then
+  delete from moderno_secretary.usage_daily where day<(now() at time zone 'UTC')::date-120;
+  get diagnostics usage_affected=row_count;
+ end if;
+ return affected+usage_affected;
 end $fn$;
 revoke all on function moderno_secretary.purge_expired() from public,anon,authenticated;
 commit;

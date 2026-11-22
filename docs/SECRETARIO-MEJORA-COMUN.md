@@ -69,7 +69,7 @@ Contrato de integración acordado con las RPC autenticadas de Supabase:
 | `secretary_feedback_consent_set` | `p_estudio,p_enabled,p_expected_revision` | Preferencia confirmada `{enabled,version:1,revision}`. |
 | `secretary_feedback_submit` | `p_estudio,p_event` | `{accepted:true}` solo si el evento se ha aceptado. |
 
-La implementación de estas RPC y sus controles se realiza por separado. Añadir el archivo cliente no activa por sí solo el servicio.
+Las RPC y sus controles están versionados en `SQL/secretario-feedback.sql` y se instalaron únicamente en `moderno-pruebas`. Añadir el archivo cliente o aplicar el SQL no activa por sí solo el servicio: los flags del navegador y del servidor continúan desactivados.
 
 Secuencia de integración:
 
@@ -83,7 +83,7 @@ El servidor aplica control de revisión: `SET true` solo se acepta si `p_expecte
 
 El servidor debe validar categorías y claves de nuevo, resolver `auth.uid()`, comprobar la pertenencia y los permisos del estudio, y revalidar el consentimiento de manera atómica con la aceptación del evento. Una solicitud aceptada antes de retirar el permiso puede haber llegado; la retirada persistente elimina esos eventos propios. No se debe afirmar que la cancelación del navegador deshace una escritura ya completada.
 
-La [propuesta SQL](../SQL/secretario-feedback.sql) conserva como máximo una valoración por usuario, estudio, tarea y mes natural UTC; una nueva valoración de ese recorrido actualiza la anterior. Los informes usan meses naturales como unidad de selección y solo incluyen registros de los últimos 90 días. Antes de activar la recogida debe programarse y comprobarse la purga de registros vencidos, incluso cuando no haya tráfico. El módulo cliente no programa esta operación.
+La [propuesta SQL](../SQL/secretario-feedback.sql) conserva como máximo una valoración por usuario, estudio, tarea y mes natural UTC; una nueva valoración de ese recorrido actualiza la anterior. Los informes usan meses naturales como unidad de selección y solo incluyen registros de los últimos 90 días. En `moderno-pruebas`, [la migración de retención](../SQL/secretario-retencion-cron.sql) programa una purga diaria incluso cuando no haya tráfico. Antes de activar la recogida debe comprobarse el primer resultado del trabajo. El módulo cliente no programa esta operación.
 
 ## Revisión común de recorridos
 
@@ -133,4 +133,4 @@ Después de una respuesta, ofrecer “Me ha ayudado” y “Podría mejorar”, 
 
 `node --test scripts/secretario-feedback-ui.test.mjs` ejecuta las funciones reales de consentimiento de la interfaz junto con el controlador. Comprueba recuperación de retirada fallida tras vaciar o recargar, aislamiento del marcador por identidad, respuestas tardías de lectura o activación y limpieza de las confirmaciones antiguas después del borrado.
 
-Las comprobaciones de SQL/RLS y del adaptador real pertenecen a la integración en Moderno Prueba. Este módulo no aplica migraciones, no modifica datos reales y no publica cambios.
+Las comprobaciones SQL/RLS se ejecutan con datos inventados en PostgreSQL desechable y se verificaron también contra los metadatos de Moderno Prueba. El adaptador real con OpenAI sigue pendiente de credencial y presupuesto exclusivos. Este módulo no modifica datos reales ni publica cambios en producción.

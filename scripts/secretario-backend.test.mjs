@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {ADMIN_BLOCKS,TEST_PROJECT_REF,normalizeRequest,loadAuthorizedSnapshot,modelContext,executePlan,financeMetrics,requestPlan,runSecretary,validateEnvironment} from '../supabase/functions/secretario/core.mjs';
+import {ADMIN_BLOCKS,TEST_PROJECT_REF,normalizeRequest,loadAuthorizedSnapshot,modelContext,executePlan,financeMetrics,requestPlan,reserveRequest,runSecretary,validateEnvironment} from '../supabase/functions/secretario/core.mjs';
 import {createSecretaryHandler} from '../supabase/functions/secretario/handler.mjs';
 
 const STUDY='00000000-0000-4000-8000-000000000001',VERSION='2026-11-22T10:00:00.000Z';
@@ -10,7 +10,7 @@ const env={SECRETARY_ENABLED:'true',SECRETARY_ENVIRONMENT:'test',SECRETARY_ALLOW
 const copy=x=>JSON.parse(JSON.stringify(x));
 function snapshot(){return {studyId:STUDY,role:'admin',versions:Object.fromEntries(ADMIN_BLOCKS.map(b=>[b,VERSION])),projects:[{id:1,name:'Casa Demo',num:'PR-DEMO',brand:'demo',client:'Cliente de prueba',tasks:[{id:11,title:'Revisar propuesta',done:false}],files:[{id:21,name:'Plano demo.pdf',data:'never-send-base64'}]}],clients:[{name:'Cliente de prueba',num:'CL-001',brand:'demo',type:'Cliente',nif:'PRIVATE-TAX-ID',email:'private@example.invalid'}],config:{BRAND:{demo:{name:'Espacio Demo'}},account:{vat:21,irpf:15,currency:'EUR',iban:'PRIVATE-IBAN'},emitter:{email:'private@example.invalid'},users:[{name:'PRIVATE-USER'}],catalog:[{id:7,brand:'demo',name:'Asesoría',price:125,unit:'h',tipo:'Servicio'}]},quotes:[],drafts:[],invoices:[],entries:[]};}
 function rows(s){const v={proyectos:s.projects,contactos:s.clients,config:s.config,presupuestos:{quotes:s.quotes,drafts:s.drafts,n:0},facturas:{invoices:s.invoices,entries:s.entries,n:0}};return Object.entries(v).map(([bloque,contenido])=>({bloque,contenido,rol:s.role,updated_at:s.versions[bloque]||VERSION}));}
-function client(s=snapshot(),override={}){const calls=[];return {calls,async rpc(name,args){calls.push({name,args});assert.ok(['app_rol','app_leer_bloques'].includes(name),'Secretary never writes through RPC');if(name==='app_rol')return override.roleResult||{data:s.role,error:null};return override.blocksResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)),error:null};}};}
+function client(s=snapshot(),override={}){const calls=[];return {calls,async rpc(name,args){calls.push({name,args});assert.ok(['app_rol','app_leer_bloques','secretary_request_reserve'].includes(name),'Secretary only reads authorized data or reserves its bounded usage');if(name==='app_rol')return override.roleResult||{data:s.role,error:null};if(name==='secretary_request_reserve')return override.quotaResult||{data:{accepted:true,daily_remaining:19,monthly_remaining:199},error:null};return override.blocksResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)),error:null};}};}
 function request(changes={}){return normalizeRequest({studyId:STUDY,message:'Prepara un presupuesto de 2 horas de Asesoría para Casa Demo',context:{view:'proyecto',projectId:1},...changes});}
 function plan(changes={}){return {intent:'prepare_draft',view:null,projectId:'1',projectQuery:null,clientId:'contact:0',clientQuery:null,kind:'presupuesto',quoteRef:null,draftId:null,lines:[{name:'Asesoría',catalogId:'7',qty:2,qtyEvidence:'2 horas',unit:'h',price:null,priceEvidence:null}],sourceIds:[],question:null,...changes};}
 
@@ -27,6 +27,15 @@ test('request accepts only conversation text and explicit context, never client 
 });
 test('read boundary uses user role and exact current blocks',async()=>{
  const db=client(),s=await loadAuthorizedSnapshot(db,request());assert.equal(s.role,'admin');assert.deepEqual(db.calls.map(x=>x.name),['app_rol','app_leer_bloques']);assert.deepEqual(db.calls[1].args,{p_estudio:STUDY,p_bloques:ADMIN_BLOCKS});
+});
+test('a distributed server quota is reserved once before the provider is called',async()=>{
+ const db=client();let used=false;
+ await runSecretary({client:db,input:request(),planner:async()=>{used=true;return plan();}});
+ assert.equal(used,true);assert.equal(db.calls.filter(x=>x.name==='secretary_request_reserve').length,1);
+ const blocked=client(snapshot(),{quotaResult:{data:null,error:{code:'PT429'}}});used=false;
+ await assert.rejects(runSecretary({client:blocked,input:request(),planner:async()=>{used=true;return plan();}}),{code:'quota_exhausted',status:429});assert.equal(used,false);
+ const unavailable=client(snapshot(),{quotaResult:{data:null,error:{code:'PGRST202'}}});
+ await assert.rejects(reserveRequest(unavailable,STUDY),{code:'quota_unavailable',status:503});
 });
 test('no schema, partial block projection, duplicate or stale role cannot reach model',async()=>{
  for(const blocksResult of [{error:{code:'PGRST202'}},{data:[]},{data:rows(snapshot()).slice(1)},{data:rows(snapshot()).map((x,i)=>i?x:{...x,rol:'colaborador'})},{data:[...rows(snapshot()).slice(1),rows(snapshot())[1]]}]){
