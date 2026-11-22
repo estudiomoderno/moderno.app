@@ -123,7 +123,8 @@ test('published app enables only the production endpoint and keeps feedback off'
   const config='window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario",feedbackEnabled:false});';
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=5"></script>'));
+  assert.ok(html.includes('<script src="/secretario-bridge.js?v=3"></script>'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=7"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
 });
 
@@ -160,6 +161,12 @@ test('browser call sends the public project key separately from the user session
   assert.doesNotMatch(request,/service[_-]?role|sb_secret_/i);
 });
 
+test('a bounded-context response keeps its specific safe message instead of becoming generic',async()=>{
+  const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
+  assert.match(code,/code==='context_limit'.*payload\?\.error\?\.message/);
+  assert.match(code,/No he podido completar la consulta\. Puedes volver a intentarlo\./);
+});
+
 test('assistant identity uses the verified Auth user id and never profile metadata or email',async()=>{
   const html=await readFile(new URL('../app/index.html',import.meta.url),'utf8');
   const start=html.indexOf('function sbUserToSession('),end=html.indexOf('function applySessionUI(',start);
@@ -178,4 +185,36 @@ test('long conversations fit the server budget using whole recent turns without 
   records.push({role:'assistant',content:'large'.repeat(1500)},{role:'user',content:'Después'});
   assert.deepEqual(bridge.recentHistory(records,'Continúa').history,[{role:'user',content:'Después'}]);
   assert.throws(()=>bridge.recentHistory([],message+'x'),error=>error.code==='message_length');
+});
+
+test('automatic option turns keep their marker across the browser history boundary',()=>{
+  const records=[{role:'user',content:'Opción · 2 · h',automatic:true},{role:'assistant',content:'¿Cantidad?'},{role:'user',content:'Texto normal',automatic:false}];
+  assert.deepEqual(bridge.recentHistory(records,'Continúa').history,[{role:'user',content:'Opción · 2 · h',automatic:true},{role:'assistant',content:'¿Cantidad?'},{role:'user',content:'Texto normal'}]);
+});
+
+test('the UI marks structured option submissions as automatic history',async()=>{
+  const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
+  assert.match(code,/appendMessage\('user',content,undefined,!!answerValues\)/);
+  assert.match(code,/\.\.\.\(automatic===true\?\{automatic:true\}:\{\}\)/);
+  const mergeStart=code.indexOf('function structuredFor('),mergeEnd=code.indexOf('\n  function pendingAfter',mergeStart),mergeContext=vm.createContext({});assert.ok(mergeStart>=0&&mergeEnd>mergeStart);vm.runInContext(code.slice(mergeStart,mergeEnd),mergeContext);
+  const previous={clientId:'contact:1','line.0.catalogId':'id:a','line.0.qty':'2 horas','line.0.price':'100'};
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor(previous,{'line.0.qty':'3 horas'}))),{...previous,'line.0.qty':'3 horas'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor(previous,{'line.0.catalogId':'id:b'}))),{clientId:'contact:1','line.0.catalogId':'id:b'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor(previous,{'line.0.qty':'4 horas','line.0.catalogId':'id:b'}))),{clientId:'contact:1','line.0.qty':'4 horas','line.0.catalogId':'id:b'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor(previous,{clientId:'contact:2'}))),{clientId:'contact:2'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor(previous,{projectId:'2'}))),{projectId:'2'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor(previous,{projectId:'none'}))),{clientId:'contact:1',projectId:'none'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor({clientId:'contact:1'},{brand:'demo'}))),{clientId:'contact:1',brand:'demo'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor({brand:'demo'},{clientId:'contact:1'}))),{brand:'demo',clientId:'contact:1'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor({clientId:'contact:1',brand:'demo'},{projectId:'none'}))),{clientId:'contact:1',brand:'demo',projectId:'none'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor({projectId:'1',brand:'demo'},{clientId:'contact:1'}))),{projectId:'1',brand:'demo',clientId:'contact:1'});
+  assert.deepEqual(JSON.parse(JSON.stringify(mergeContext.structuredFor(previous,undefined))),{});
+  assert.match(code,/automatic:!!answerValues,history/);
+  assert.match(code,/hasStructuredAnswers\?\{answers:structuredAnswers\}:\{\}/);
+  const start=code.indexOf('function pendingAfter('),end=code.indexOf('\n  const activeProject',start),context=vm.createContext({});assert.ok(start>=0&&end>start);vm.runInContext(code.slice(start,end),context);
+  const candidate={clientId:'contact:1'};const retained=context.pendingAfter('clarifying',candidate);assert.deepEqual(JSON.parse(JSON.stringify(retained)),candidate);assert.notEqual(retained,candidate);
+  assert.deepEqual(JSON.parse(JSON.stringify(context.pendingAfter('answer',candidate))),{});assert.deepEqual(JSON.parse(JSON.stringify(context.pendingAfter('error',candidate))),{});assert.deepEqual(JSON.parse(JSON.stringify(context.pendingAfter('aborted',candidate))),{});
+  assert.match(code,/pendingAnswers=pendingAfter\(payload\.status,structuredAnswers\)/);
+  assert.match(code,/catch\(error\)\{[\s\S]{0,180}pendingAnswers=pendingAfter\('error',structuredAnswers\)/);
+  assert.doesNotMatch(code,/if\(hasStructuredAnswers\)pendingAnswers=structuredAnswers/);
 });

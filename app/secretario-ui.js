@@ -13,7 +13,7 @@ var ModernoSecretary=(()=>{
   const ready=()=>!_accessLoading&&!!ESTUDIO_ID&&!!state.sessionUser?.id&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon;
   let identity=owner(),messages=[],panel=null,thread=null,composer=null,sendButton=null,stopButton=null,statusNode=null,contextNode=null;
   let collapsed=false,home=false,homePending=false,lastView=null,lastProject=null,busy=false,controller=null,generation=0,unavailable=false,authSubscription=null;
-  let requestCounter=0,actions=new Map(),questions=[],answers={},feedbackTask='finance_question',contextTrimmed=false;
+  let requestCounter=0,actions=new Map(),questions=[],answers={},pendingAnswers={},feedbackTask='finance_question',contextTrimmed=false;
   let positionQueued=false,positionSources=[];
   const positionResize=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>schedulePosition()):null;
   let feedbackLoaded=false,feedbackLoading=false,feedbackRevision=null,feedbackOperation=0,feedbackError='',feedbackHost=null;
@@ -28,10 +28,38 @@ var ModernoSecretary=(()=>{
   const el=(tag,className,value)=>{const node=document.createElement(tag);if(className)node.className=className;if(value!==undefined)node.textContent=value;return node;};
   const button=(label,fn,className='secretary-button')=>{const node=el('button',className,label);node.type='button';node.addEventListener('click',fn);return node;};
   const labelText=(value,max=500)=>typeof value==='string'?value.slice(0,max):'';
+  function structuredFor(previous,current){
+    if(!current)return {};
+    const before=previous||{},fullResetKeys=new Set(['draftId','quoteRef','brand']),relationKeys=new Set(['projectId','clientId']);
+    const changed=(key,value)=>before[key]!==value;
+    const entries=Object.entries(current),resetAll=entries.some(([key,value])=>(fullResetKeys.has(key)||relationKeys.has(key))&&changed(key,value));
+    let merged=resetAll?{}:{...before};
+    // A client that belongs to both spaces needs client + brand to survive as a
+    // single clarification chain. The server validates the combination again,
+    // so retaining these relation answers cannot bind an incompatible record.
+    if(resetAll&&current.brand!==undefined){
+      if(before.clientId!==undefined)merged.clientId=before.clientId;
+      if(before.projectId!==undefined)merged.projectId=before.projectId;
+    }
+    if(resetAll&&current.clientId!==undefined){
+      if(before.brand!==undefined)merged.brand=before.brand;
+      if(before.projectId!==undefined)merged.projectId=before.projectId;
+    }
+    if(resetAll&&current.projectId==='none'){
+      if(current.clientId===undefined&&before.clientId!==undefined)merged.clientId=before.clientId;
+      if(current.brand===undefined&&before.brand!==undefined)merged.brand=before.brand;
+    }
+    for(const [key,value] of Object.entries(current)){
+      const match=key.match(/^line\.(\d+)\.catalogId$/);
+      if(match&&before[key]!==undefined&&before[key]!==value){delete merged[`line.${match[1]}.qty`];delete merged[`line.${match[1]}.price`];}
+    }
+    return {...merged,...current};
+  }
+  function pendingAfter(status,candidate){return status==='clarifying'?{...(candidate||{})}:{};}
   const activeProject=()=>['proyecto','estancia'].includes(state.view)?state.projects?.find(p=>p.id===state.currentProject):null;
   function icon(){const image=el('img','secretary-logo');image.src='/brand/moderno_app_simbolo_negro.svg';image.alt='';return image;}
   function reset(){
-    generation++;controller?.abort();controller=null;busy=false;messages=[];actions.clear();questions=[];answers={};contextTrimmed=false;
+    generation++;controller?.abort();controller=null;busy=false;messages=[];actions.clear();questions=[];answers={};pendingAnswers={};contextTrimmed=false;
     feedbackOperation++;feedback?.setContext(null);feedbackLoaded=false;feedbackLoading=false;feedbackRevision=null;feedbackError='';feedbackHost=null;
     panel?.remove();panel=null;thread=null;composer=null;identity=owner();collapsed=false;home=false;homePending=false;unavailable=false;lastView=null;lastProject=null;
     document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on');
@@ -126,8 +154,8 @@ var ModernoSecretary=(()=>{
     }
     toast('Abre la sección correspondiente para consultar esta fuente.');
   }
-  function appendMessage(role,content,response){
-    const record={role,content:labelText(content,12000),response,owner:identity};messages.push(record);
+  function appendMessage(role,content,response,automatic=false){
+    const record={role,content:labelText(content,12000),response,owner:identity,...(automatic===true?{automatic:true}:{})};messages.push(record);
     drawThread();return record;
   }
   function setStatus(value){if(statusNode)statusNode.textContent=value+(contextTrimmed?' Uso el contexto reciente; el historial sigue visible.':'');}
@@ -352,7 +380,8 @@ var ModernoSecretary=(()=>{
     let history;
     try{const recent=bridge.recentHistory(messages.filter(item=>item.role==='user'||item.response),content);history=recent.history;contextTrimmed=recent.trimmed;}
     catch(error){setStatus(error.message);return;}
-    appendMessage('user',content);questions=[];answers={};busy=true;controller=new AbortController();updateBusy();drawThread();
+    const structuredAnswers=structuredFor(pendingAnswers,answerValues),hasStructuredAnswers=Object.keys(structuredAnswers).length>0;
+    appendMessage('user',content,undefined,!!answerValues);questions=[];answers={};busy=true;controller=new AbortController();updateBusy();drawThread();
     if(composer)composer.value='';setStatus('Puedes detener la consulta cuando quieras.');
     try{
       const client=sb;if(!client?.auth)throw Error('La conexión del Secretario todavía no está configurada.');
@@ -360,11 +389,11 @@ var ModernoSecretary=(()=>{
       if(error||!session?.access_token||session.user?.id!==state.sessionUser?.id)throw Error('Comprueba tu sesión para seguir con el Secretario.');
       if(epoch!==generation||captured!==owner())return;
       const project=activeProject();feedbackTask=project?'project_question':'finance_question';
-      const input={studyId:ESTUDIO_ID,message:content,history,context:{view:home?'finanzas':state.view,...(project?{projectId:project.id}:{})},...(answerValues?{answers:answerValues}:{})};
+      const input={studyId:ESTUDIO_ID,message:content,automatic:!!answerValues,history,context:{view:home?'finanzas':state.view,...(project?{projectId:project.id}:{})},...(hasStructuredAnswers?{answers:structuredAnswers}:{})};
       const response=await fetch(endpoint(),{method:'POST',credentials:'omit',cache:'no-store',signal:controller.signal,
         // This user's signed session is larger than common proxy header limits.
-        // The function reads it from a bounded JSON envelope and still validates
-        // it remotely with Auth.getUser before accessing any application data.
+        // The function reads it from a bounded JSON envelope, validates its
+        // signature and claims against the project JWKS, then preserves RLS.
         headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},
         body:JSON.stringify({session:session.access_token,payload:input})});
       const payload=await response.json().catch(()=>null);
@@ -373,6 +402,7 @@ var ModernoSecretary=(()=>{
         const code=payload?.error?.code;
         if(response.status===401||response.status===403)throw Error('No puedo consultar esos datos con tu sesión actual. Comprueba tu acceso.');
         if(response.status===429)throw Error('El Secretario ha alcanzado su límite temporal. Prueba de nuevo más tarde.');
+        if(code==='context_limit')throw Error(payload?.error?.message||'Necesito una consulta más concreta para localizar esos datos.');
         if(['not_configured','provider_unavailable','service_unavailable','SECRETARY_NOT_CONFIGURED'].includes(code)||response.status>=500)throw Error('El Secretario todavía no está disponible. Puedes seguir usando las pantallas y editores de Finanzas.');
         throw Error('No he podido completar la consulta. Puedes volver a intentarlo.');
       }
@@ -381,6 +411,7 @@ var ModernoSecretary=(()=>{
         actions:Array.isArray(payload.actions)?payload.actions.filter(action=>['navigate','prepare_draft'].includes(action.type)).slice(0,4):[]};
       safe.actions=safe.actions.map((action,index)=>({...action,id:String(payload.requestId||current)+':'+String(action.id||index)}));
       questions=Array.isArray(payload.questions)?payload.questions.filter(question=>typeof question.id==='string'&&typeof question.prompt==='string').slice(0,6).map(question=>({...question,options:Array.isArray(question.options)?question.options.slice(0,8):[]})):[];
+      pendingAnswers=pendingAfter(payload.status,structuredAnswers);
       if(safe.actions.some(action=>action.type==='prepare_draft')){const draft=safe.actions.find(action=>action.type==='prepare_draft').payload;feedbackTask=draft.sourceQuoteRef?'invoice_from_quote':draft.kind==='factura'?'invoice_create':'quote_create';}
       else if(safe.actions.some(action=>action.type==='navigate'))feedbackTask='navigation';
       unavailable=false;const record=appendMessage('assistant',payload.message,safe);record.feedbackTask=feedbackTask;
@@ -388,6 +419,7 @@ var ModernoSecretary=(()=>{
       setStatus(questions.length?'Puedes elegir una opción o escribir tu respuesta.':'Los documentos se guardan desde su editor.');
     }catch(error){
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
+      pendingAnswers=pendingAfter('error',structuredAnswers);
       if(error.name==='AbortError')appendMessage('assistant','Consulta detenida. Puedes seguir cuando quieras.');
       else{unavailable=true;appendMessage('assistant',error.message||'El Secretario no está disponible ahora. Los editores siguen accesibles.');}
       setStatus(unavailable?'Tus documentos siguen disponibles en los accesos directos.':'Consulta detenida.');
