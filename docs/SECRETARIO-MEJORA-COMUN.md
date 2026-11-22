@@ -57,6 +57,8 @@ El adaptador `send` recibe `(event, {signal, context:{userId,studyId}})` y solo 
 
 El controlador no conserva preferencias entre instancias o inicios de sesión. Al abrir una sesión consulta la preferencia real mediante la integración. No hay cola offline, reintentos automáticos ni envío retroactivo de valoraciones anteriores al consentimiento.
 
+La interfaz conserva únicamente un marcador de **retirada pendiente**, separado por usuario y estudio, para mantener el bloqueo al vaciar la conversación o recargar tras un fallo de red. No contiene valoraciones, conversaciones ni documentos. Mientras exista, la recuperación consiste en reintentar la retirada; una lectura de un permiso anterior no lo reactiva. El marcador se elimina únicamente después de que el servidor confirme `enabled:false`.
+
 ## Persistencia y revocación
 
 Contrato de integración acordado con las RPC autenticadas de Supabase:
@@ -81,7 +83,7 @@ El servidor aplica control de revisión: `SET true` solo se acepta si `p_expecte
 
 El servidor debe validar categorías y claves de nuevo, resolver `auth.uid()`, comprobar la pertenencia y los permisos del estudio, y revalidar el consentimiento de manera atómica con la aceptación del evento. Una solicitud aceptada antes de retirar el permiso puede haber llegado; la retirada persistente elimina esos eventos propios. No se debe afirmar que la cancelación del navegador deshace una escritura ya completada.
 
-La [propuesta SQL](../SQL/secretario-feedback.sql) conserva como máximo una valoración por usuario, estudio, tarea y mes natural UTC; una nueva valoración de ese recorrido actualiza la anterior. Los informes usan meses completos como unidad de selección y solo incluyen registros de los últimos 90 días. Antes de activar la recogida debe programarse y comprobarse la purga de registros vencidos, incluso cuando no haya tráfico. El módulo cliente no programa esta operación.
+La [propuesta SQL](../SQL/secretario-feedback.sql) conserva como máximo una valoración por usuario, estudio, tarea y mes natural UTC; una nueva valoración de ese recorrido actualiza la anterior. Los informes usan meses naturales como unidad de selección y solo incluyen registros de los últimos 90 días. Antes de activar la recogida debe programarse y comprobarse la purga de registros vencidos, incluso cuando no haya tráfico. El módulo cliente no programa esta operación.
 
 ## Revisión común de recorridos
 
@@ -128,5 +130,7 @@ Después de una respuesta, ofrecer “Me ha ayudado” y “Podría mejorar”, 
 ## Comprobación
 
 `node --test scripts/secretary-feedback.test.mjs` cubre exclusión de datos confidenciales, ausencia de envío sin permiso, aislamiento de identidad, respuestas tardías de consentimiento, revocación antes y durante el envío, cancelación con un adaptador que ignore la señal, errores sin filtración de texto y supresión de categorías pequeñas. Todas las identidades usadas en pruebas son ficticias y los transportes son dobles locales, sin red.
+
+`node --test scripts/secretario-feedback-ui.test.mjs` ejecuta las funciones reales de consentimiento de la interfaz junto con el controlador. Comprueba recuperación de retirada fallida tras vaciar o recargar, aislamiento del marcador por identidad, respuestas tardías de lectura o activación y limpieza de las confirmaciones antiguas después del borrado.
 
 Las comprobaciones de SQL/RLS y del adaptador real pertenecen a la integración en Moderno Prueba. Este módulo no aplica migraciones, no modifica datos reales y no publica cambios.

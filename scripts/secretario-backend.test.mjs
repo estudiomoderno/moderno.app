@@ -93,6 +93,19 @@ test('quote source retains correct brand when references repeat in another space
  s.quotes=[{...quote,brand:'other',projectId:2},quote];const result=executePlan(s,request({message:'Factura de P-DEMO-1'}),plan({kind:'factura',quoteRef:'P-DEMO-1',lines:[]}));assert.equal(result.sources.find(x=>x.kind==='quote').brand,'demo');
  s.invoices=[{brand:'demo',ref:'F-1',legend:'Según presupuesto P-DEMO-1. Condición histórica'}];assert.equal(executePlan(s,request({message:'Factura de P-DEMO-1'}),plan({kind:'factura',quoteRef:'P-DEMO-1',lines:[]})).actions[0].type,'navigate');
 });
+test('quote and saved draft cannot bind a document to a project in another space',()=>{
+ const s=snapshot();s.config.BRAND.other={name:'Otro espacio'};s.clients[0].brand='both';
+ const base={brand:'other',client:'Cliente de prueba',clientIdx:0,projectId:1,lines:[{name:'Servicio',qty:1,price:80,unit:'ud'}],iva:{on:true,pct:21},irpf:{on:false,pct:15},disc:{on:false,pct:10}};
+ s.quotes=[{...base,ref:'P-DEMO-1'}];s.drafts=[{id:123,kind:'presupuesto',draft:copy(base)}];
+ assert.throws(()=>executePlan(s,request({message:'Prepara factura de P-DEMO-1'}),plan({kind:'factura',quoteRef:'P-DEMO-1',lines:[]})),{code:'source_unavailable',status:409});
+ assert.throws(()=>executePlan(s,request(),plan({draftId:'123',lines:[]})),{code:'source_unavailable',status:409});
+});
+test('duplicate compatible catalog IDs fail equally in either array order',()=>{
+ const s=snapshot();s.config.catalog=[{id:7,brand:'both',name:'Partida compartida',price:100,unit:'h'},{id:7,brand:'demo',name:'Partida del espacio',price:200,unit:'h'}];
+ for(let order=0;order<2;order++){assert.throws(()=>executePlan(s,request(),plan()),error=>error.code==='source_unavailable'&&error.status===409&&/varias partidas/.test(error.message));s.config.catalog.reverse();}
+ // A record from a different space cannot make the permitted selection ambiguous.
+ s.config.catalog.find(c=>c.brand==='both').brand='other';const result=executePlan(s,request(),plan());assert.equal(result.status,'proposal');assert.equal(result.actions[0].payload.lines[0].price,200);
+});
 test('partial sources are disclosed and malformed payment detail is not treated as complete',()=>{
  const s=snapshot();s.entries=Array.from({length:81},(_,index)=>({id:index,brand:'demo',pid:1,kind:'in',amount:100,status:'pend'}));s.entries[0].cobros=[{amount:null}];
  const r=executePlan(s,request(),plan({intent:'summary'}));assert.equal(r.sources.length,80);assert.equal(r.sourceCount,81);assert.match(r.message,/80 de 81/);assert.equal(r.metrics.uncertainCollections,1);assert.equal(r.metrics.pending,8000);

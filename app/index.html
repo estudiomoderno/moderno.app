@@ -11553,7 +11553,7 @@ ModernoMail.configure({
 
 function sbUserToSession(u){
   const md = u.user_metadata || {};
-  return { name: md.full_name || md.name || (u.email||"").split("@")[0] || "Usuario",
+  return { id:typeof u.id==='string'?u.id:null, name: md.full_name || md.name || (u.email||"").split("@")[0] || "Usuario",
            mail: u.email || "", prov: (u.app_metadata && u.app_metadata.provider) || "email",
            avatar: md.avatar_url || md.picture || "" };
 }
@@ -13806,5 +13806,9 @@ const renderBeforeShoppingAdd=render;
 render=function(...args){const started=Date.now();try{const result=renderBeforeShoppingAdd.apply(this,args);shoppingRoomAddEnhance();return result;}finally{efficiencyMetrics.record('render',{ms:Date.now()-started});}};
 shoppingRoomAddEnhance();
 </script>
+<link rel="stylesheet" href="/brand/secretario.css?v=1">
+<script src="/secretario-bridge.js?v=1"></script>
+<script src="/secretary-feedback.js?v=1"></script>
+<script src="/secretario-ui.js?v=1"></script>
 </body>
 </html>

@@ -162,6 +162,7 @@ function prepareDraft(s,r,p){
  if(!client.c||base&&base.client&&norm(base.client)!==norm(client.c.name))return clarify('El cliente del documento ha cambiado. Selecciona el cliente actual.',[question('clientId','¿Qué cliente debe figurar?')]);
  const brand=base?.brand||project?.brand||(client.c.brand!=='both'?client.c.brand:r.answers.brand||null);
  if(!brand||!object(s.config.BRAND)||!own(s.config.BRAND,brand))return clarify('Necesito confirmar el espacio que emite el documento.',[question('brand','¿Desde qué espacio lo preparamos?',Object.entries(s.config.BRAND||{}).map(([key,b])=>({label:b.name||key,value:key})))]);
+ if(project&&project.brand!==brand)fail('source_unavailable','El documento y su proyecto pertenecen a espacios distintos. Revisa el vínculo en el editor.',409);
  if(client.c.brand!==brand&&client.c.brand!=='both')fail('invalid_client','El cliente no pertenece al espacio del documento.');
  if(!base&&!project&&!(r.answers.projectId==='none'||/sin proyecto/i.test(userText(r))))return clarify('¿Lo vinculamos a un proyecto?',[question('projectId','Selecciona un proyecto o indica que no lleva proyecto',[...s.projects.filter(x=>x.brand===brand).slice(0,7).map(x=>({label:x.name,value:id(x.id)})),{label:'Sin proyecto',value:'none'}])]);
  let lines=[];const missing=[];
@@ -170,8 +171,9 @@ function prepareDraft(s,r,p){
   if(p.lines.length>80)fail('plan_limit','El documento supera el tamaño de esta primera versión.');
   p.lines.forEach((l,index)=>{
    if(!object(l))fail('invalid_plan','No se ha podido preparar una partida.');
-   const catalog=l.catalogId==null?null:(s.config.catalog||[]).find((c,i)=>catalogKey(c,i)===id(l.catalogId)&&!c.archived&&c.tipo!=='Producto'&&(c.brand===brand||c.brand==='both'));
-   if(l.catalogId!=null&&!catalog)fail('source_unavailable','Una partida de catálogo ya no está disponible.',409);
+   const candidates=l.catalogId==null?[]:(s.config.catalog||[]).filter((c,i)=>catalogKey(c,i)===id(l.catalogId)&&!c.archived&&c.tipo!=='Producto'&&(c.brand===brand||c.brand==='both'));
+   if(l.catalogId!=null&&candidates.length!==1)fail('source_unavailable',candidates.length?'Hay varias partidas compatibles con el mismo identificador. Revisa el catálogo antes de elegir un precio.':'Una partida de catálogo ya no está disponible.',409);
+   const catalog=candidates[0]||null;
    const name=text(catalog?.name||l.name,500);if(!name)missing.push(question(`line.${index}.name`,'¿Qué servicio o partida incluimos?'));
    const qty=numberInEvidence(l.qty,l.qtyEvidence,r)&&l.qty>0?l.qty:null;
    if(qty===null)missing.push(question(`line.${index}.qty`,`¿Qué cantidad o medida confirmas para «${name}»?`));

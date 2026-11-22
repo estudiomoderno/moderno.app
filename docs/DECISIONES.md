@@ -1,5 +1,13 @@
 # Decisiones de TALLER
 
+## 2026-11-22 — Secretario en Finanzas y Proyectos; mejora compartida opcional
+
+El propietario autoriza desarrollar el Secretario: Finanzas abre una conversación central, con el logotipo oficial, que acompaña al usuario en un lateral plegable al abrir documentos y pantallas. Reutiliza los editores y las reglas de cálculo; pregunta por datos incompletos y prepara documentos editables. El guardado y la emisión siguen siendo decisiones explícitas en los editores. Esta orden sustituye la pausa anterior del asistente y la mera reserva visual, sin autorizar cambios en datos de producción.
+
+También autoriza aprender de dificultades comunes: valoraciones opcionales por usuario y estudio, con categorías cerradas y sin conversaciones, documentos, clientes, precios o importes. Los informes agregados se destinan a revisión humana de mejoras versionadas; no entrenan automáticamente el modelo ni comparten memoria entre estudios. Retirar el consentimiento detiene los envíos y elimina sus valoraciones conservadas.
+
+Implementación en rama aislada. El despliegue y la activación permanecen bloqueados hasta verificar datos/permisos en Moderno Prueba, completar la credencial autorizada de OpenAI, configurar límites y pasar las pruebas integradas. No se ha modificado producción. [Alcance y validación](SECRETARIO-IMPLEMENTACION-2026-11-22.md) · [Mejora compartida](SECRETARIO-MEJORA-COMUN.md).
+
 ## 2026-11-19 — Rediseño integral y publicación de Finanzas
 
 El propietario solicita rediseñar por completo Finanzas como espacio profesional de control, manteniendo una única entrada principal y cinco secciones internas: **Resumen, Facturas, Presupuestos, Contabilidad y Previsión**. Se aprueba una interfaz compacta y trazable que distingue facturado, cobrado, pendiente, gasto y previsión; añade emitidas/recibidas sin duplicar registros; conserva documentos, cobros parciales, filtros, estados, proyectos, editores y exportaciones; y retira del Resumen los indicadores fiscales específicos de España sin eliminar sus datos ni reglas.

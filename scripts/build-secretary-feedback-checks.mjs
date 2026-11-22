@@ -6,6 +6,8 @@ import {pathToFileURL} from 'node:url';
 export function buildSecretaryFeedbackChecks(){
  const sql=fs.readFileSync(new URL('../SQL/secretario-feedback.sql',import.meta.url),'utf8')
   .replace(/^begin;\s*$/mi,'').replace(/^commit;\s*$/mi,'');
+ const rollback=fs.readFileSync(new URL('../SQL/secretario-feedback.rollback.sql',import.meta.url),'utf8')
+  .replace(/^begin;\s*$/mi,'').replace(/^commit;\s*$/mi,'');
  return `begin;
 do $$begin
  if exists(select 1 from information_schema.columns where table_schema='auth' and table_name='users' and column_name='email')
@@ -103,6 +105,18 @@ select pg_temp.assert_true((select count(*)=4 from moderno_secretary.feedback),'
 update moderno_secretary.feedback set created_at=now()-interval '91 days';
 select pg_temp.assert_true(moderno_secretary.purge_expired()=4,'retention removes expired raw events');
 select pg_temp.assert_true(not exists(select 1 from moderno_secretary.feedback),'expired feedback removed');
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+select public.secretary_feedback_submit('33333333-3333-4333-8333-333333333331','{"version":1,"event":"secretary_feedback","task":"invoice_from_quote","outcome":"helpful"}');
+${rollback}
+select pg_temp.assert_true(not has_function_privilege('authenticated','public.secretary_feedback_submit(uuid,jsonb)','EXECUTE'),'rollback blocks public submission');
+select pg_temp.assert_true(not has_function_privilege('authenticated','moderno_secretary.submit(uuid,jsonb)','EXECUTE'),'rollback blocks private submission too');
+set local role authenticated;
+do $$begin
+ begin perform public.secretary_feedback_consent_set('33333333-3333-4333-8333-333333333331',true,0);raise exception 'Rollback grant accepted';exception when insufficient_privilege then perform pg_temp.assert_true(true,'rollback blocks new grants');end;
+end$$;
+select pg_temp.assert_true(public.secretary_feedback_consent_set('33333333-3333-4333-8333-333333333331',false,0)->>'enabled'='false','rollback preserves own withdrawal');
+reset role;
+select pg_temp.assert_true(not exists(select 1 from moderno_secretary.feedback),'rollback withdrawal deletes own retained feedback');
 select count(*) as secretary_feedback_checks_passed from assertions;
 rollback;`;
 }

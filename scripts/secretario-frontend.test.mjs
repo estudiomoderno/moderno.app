@@ -1,0 +1,139 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+
+const require=createRequire(import.meta.url);
+const bridge=require('../app/secretario-bridge.js');
+const stamp='2026-11-22T09:00:00Z';
+const versions=()=>Object.fromEntries(bridge.BLOCKS.map(key=>[key,stamp]));
+function fixture(){
+  const snapshot={role:'admin',studyId:'fictional-study',brands:['cm'],irpf:false,today:'2026-11-22',versions:versions(),dirtyBlocks:[],
+    clients:[{name:'Cliente ficticio',brand:'cm',type:'Cliente'}],projects:[{id:9001,name:'Proyecto ficticio',brand:'cm'}],quotes:[],drafts:[]};
+  const payload={mode:'create',kind:'factura',brand:'cm',clientId:'contact:0',clientIndex:0,clientLabel:'Cliente ficticio',clientBrand:'cm',projectId:9001,
+    lines:[{name:'Asesoría ficticia',qty:2,unit:'h',price:100,cap:'Servicios'}],iva:{on:true,pct:21},irpf:{on:false,pct:0},disc:{on:false,pct:10},legend:'',sourceVersions:versions()};
+  return {snapshot,payload};
+}
+
+test('creates a real editor draft without assigning an issued reference, counter or saved total',()=>{
+  const {snapshot,payload}=fixture(),before=JSON.stringify(snapshot);
+  const draft=bridge.prepareDraft(payload,snapshot);
+  assert.equal(draft.kind,'factura');assert.equal(draft.clientIdx,0);assert.equal(draft.projectId,9001);
+  assert.deepEqual(draft.lines,[{name:'Asesoría ficticia',qty:2,unit:'h',price:100,desc:'',cap:'Servicios'}]);
+  assert.equal(draft.num,null);assert.equal(draft.editRef,null);assert.equal(draft.date,'2026-11-22');
+  assert.equal(Object.hasOwn(draft,'total'),false);assert.equal(Object.hasOwn(draft,'ref'),false);
+  assert.equal(JSON.stringify(snapshot),before);
+  payload.lines[0].qty=9;assert.equal(draft.lines[0].qty,2);
+});
+
+test('unknown prices, missing amounts and nonfinite values cannot silently become zero',()=>{
+  for(const value of [null,undefined,'',NaN,Infinity,'100',-1]){
+    const {snapshot,payload}=fixture();payload.lines[0].price=value;
+    assert.throws(()=>bridge.prepareDraft(payload,snapshot),/precio/);
+  }
+  const {snapshot,payload}=fixture();payload.lines[0].price=0;
+  assert.equal(bridge.prepareDraft(payload,snapshot).lines[0].price,0);
+  payload.lines[0].qty=0;assert.throws(()=>bridge.prepareDraft(payload,snapshot),/mayor que cero/);
+});
+
+test('server versions and local unsaved source changes both invalidate a proposal',()=>{
+  for(const key of bridge.BLOCKS){
+    const {snapshot,payload}=fixture();snapshot.versions[key]='new-version';
+    assert.throws(()=>bridge.prepareDraft(payload,snapshot),error=>error.code==='stale_proposal');
+  }
+  const {snapshot,payload}=fixture();snapshot.dirtyBlocks=['config'];
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),/cambios pendientes/);
+  snapshot.dirtyBlocks=[];delete payload.sourceVersions.contactos;
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),error=>error.code==='stale_proposal');
+});
+
+test('ambiguous or changed contact identity never resolves to the first display-name match',()=>{
+  const {snapshot,payload}=fixture();snapshot.clients.unshift({name:'Otra persona',brand:'cm',type:'Cliente'});
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),/contacto ha cambiado/);
+  snapshot.clients.shift();payload.clientId='actual-id';snapshot.clients[0].id='actual-id';
+  assert.equal(bridge.prepareDraft(payload,snapshot).clientIdx,0);
+  snapshot.clients.push({...snapshot.clients[0]});
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),/contacto ha cambiado/);
+});
+
+test('roles, project ownership, configured tax settings and spaces are checked again at the editor boundary',()=>{
+  for(const role of ['colaborador','miembro','cliente','gestoria',null]){
+    const {snapshot,payload}=fixture();snapshot.role=role;
+    assert.throws(()=>bridge.prepareDraft(payload,snapshot),error=>error.code==='forbidden');
+  }
+  const {snapshot,payload}=fixture();payload.projectId=777;
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),error=>error.code==='forbidden');
+  payload.projectId=9001;payload.irpf.on=true;
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),/retención/);
+  payload.irpf.on=false;payload.iva.pct=150;
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),/impuesto/);
+});
+
+test('quote conversion is bound to a unique reference, project and space',()=>{
+  const {snapshot,payload}=fixture();payload.mode='from_quote';payload.sourceQuoteRef='PS-0001';
+  snapshot.quotes=[{ref:'PS-0001',brand:'cm',projectId:9001,client:'Cliente ficticio'}];
+  assert.equal(bridge.prepareDraft(payload,snapshot).sourceQuoteRef,'PS-0001');
+  snapshot.quotes.push({...snapshot.quotes[0]});
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),/presupuesto de origen/);
+});
+
+test('saved-draft changes are limited to the existing line order and cannot edit an issued document',()=>{
+  const {snapshot,payload}=fixture();payload.mode='edit_saved_draft';payload.draftId=42;
+  snapshot.drafts=[{id:42,kind:'factura',draft:{brand:'cm',clientIdx:0,lines:[{name:'Asesoría ficticia',qty:1,unit:'h',price:75,sourceProof:{revision:'original'}}]}}];
+  const proposal=bridge.prepareDraft(payload,snapshot);
+  assert.equal(proposal._draftId,42);assert.equal(proposal.lines[0].qty,2);
+  assert.equal(snapshot.drafts[0].draft.lines[0].qty,1);
+  payload.lines[0].name='Otra partida';assert.throws(()=>bridge.prepareDraft(payload,snapshot),/partidas.*cambiado/);
+  payload.lines[0].name='Asesoría ficticia';snapshot.drafts[0].draft.editRef='F-0001';
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),/borrador guardado/);
+});
+
+test('source metadata is retained as a clone and rejects a different study',()=>{
+  const {snapshot,payload}=fixture();payload.lines[0].source={study:'fictional-study',project:9001,row:'line-1'};
+  payload.lines[0].catalogSource={id:'service-1',price:100,unit:'h'};payload.lines[0].catId='service-1';
+  const draft=bridge.prepareDraft(payload,snapshot);
+  assert.deepEqual(draft.lines[0].source,payload.lines[0].source);
+  assert.notEqual(draft.lines[0].source,payload.lines[0].source);
+  payload.lines[0].source.study='another-study';
+  assert.throws(()=>bridge.prepareDraft(payload,snapshot),error=>error.code==='forbidden');
+});
+
+test('navigation accepts only existing authorized app screens and accessible projects',()=>{
+  const snapshot={projects:[{id:9001}],canView:view=>view!=='facturas'};
+  assert.deepEqual(bridge.navigation({view:'gastos'},snapshot),{view:'contabilidad'});
+  assert.deepEqual(bridge.navigation({view:'prevision'},snapshot),{view:'prevision'});
+  assert.deepEqual(bridge.navigation({view:'proyecto',projectId:'9001'},snapshot),{view:'proyecto',projectId:9001});
+  for(const payload of [{view:'https://outside.invalid'},{view:'javascript:alert(1)'},{view:'facturas'},{view:'proyecto',projectId:22}])
+    assert.throws(()=>bridge.navigation(payload,snapshot),error=>error.code==='forbidden');
+});
+
+test('production without an explicit gate does not install handlers or touch the existing app',async()=>{
+  const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
+  for(const config of [undefined,{}, {enabled:false},{enabled:'true'}]){
+    const context=vm.createContext({window:{MODERNO_SECRETARY_CONFIG:config}});
+    vm.runInContext(code,context);
+    assert.equal(context.ModernoSecretary.enabled,false);
+    assert.equal(context.ModernoSecretary.openFinance(),false);
+  }
+});
+
+test('assistant identity uses the verified Auth user id and never profile metadata or email',async()=>{
+  const html=await readFile(new URL('../app/index.html',import.meta.url),'utf8');
+  const start=html.indexOf('function sbUserToSession('),end=html.indexOf('function applySessionUI(',start);
+  const context=vm.createContext({});vm.runInContext(html.slice(start,end),context);
+  const session=context.sbUserToSession({id:'auth-user-a',email:'person@example.invalid',user_metadata:{id:'another-user',full_name:'Persona ficticia'}});
+  assert.equal(session.id,'auth-user-a');
+  assert.equal(context.sbUserToSession({email:'person@example.invalid',user_metadata:{id:'another-user'}}).id,null);
+});
+
+test('long conversations fit the server budget using whole recent turns without erasing visible history',()=>{
+  const records=Array.from({length:24},(_,i)=>({role:i%2?'assistant':'user',content:String(i).padEnd(5000,'x')}));
+  const before=JSON.stringify(records),message='m'.repeat(6000),result=bridge.recentHistory(records,message);
+  assert.equal(result.trimmed,true);assert.equal(result.history.length,3);
+  assert.ok(result.history.reduce((sum,turn)=>sum+turn.content.length,0)+message.length<=24000);
+  assert.equal(result.history[0].content,records[21].content);assert.equal(JSON.stringify(records),before);
+  records.push({role:'assistant',content:'large'.repeat(1500)},{role:'user',content:'Después'});
+  assert.deepEqual(bridge.recentHistory(records,'Continúa').history,[{role:'user',content:'Después'}]);
+  assert.throws(()=>bridge.recentHistory([],message+'x'),error=>error.code==='message_length');
+});
