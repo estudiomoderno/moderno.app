@@ -17,6 +17,8 @@ do $$begin
  if exists(select 1 from information_schema.columns where table_schema='auth' and table_name='users' and column_name='email')
   or to_regclass('public.estudios') is not null then raise exception 'Requires bare, disposable local fixture';end if;
 end$$;
+grant usage on schema auth to anon,authenticated;
+grant execute on function auth.uid() to anon,authenticated;
 create table public.estudios(id uuid primary key default gen_random_uuid(),nombre text not null);
 create table public.miembros(user_id uuid not null references auth.users(id),estudio_id uuid not null references public.estudios(id),rol text not null,primary key(user_id,estudio_id));
 ${prerequisites}
