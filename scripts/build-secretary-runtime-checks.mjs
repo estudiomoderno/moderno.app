@@ -73,6 +73,8 @@ do $$begin
 end$$;
 reset role;
 ${runtimeRollback}
+select pg_temp.assert_true(not has_function_privilege('public','public.secretary_request_reserve(uuid)','EXECUTE'),'runtime rollback removes inherited public execution');
+select pg_temp.assert_true(not has_function_privilege('anon','public.secretary_request_reserve(uuid)','EXECUTE'),'runtime rollback keeps anonymous callers blocked');
 select pg_temp.assert_true(not has_function_privilege('authenticated','public.secretary_request_reserve(uuid)','EXECUTE'),'runtime rollback blocks new reservations without deleting counters');
 select pg_temp.assert_true((select coalesce(sum(requests),0)=200 from moderno_secretary.usage_daily),'runtime rollback preserves usage counters');
 select count(*) as secretary_runtime_checks_passed from assertions;

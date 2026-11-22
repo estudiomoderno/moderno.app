@@ -6,7 +6,7 @@ begin;
 do $rollback$
 begin
   if to_regprocedure('public.secretary_request_reserve(uuid)') is not null then
-    revoke execute on function public.secretary_request_reserve(uuid) from authenticated;
+    revoke execute on function public.secretary_request_reserve(uuid) from public,anon,authenticated;
   end if;
 end $rollback$;
 

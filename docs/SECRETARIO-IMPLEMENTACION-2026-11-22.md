@@ -4,9 +4,9 @@
 
 Finanzas necesita una entrada comprensible para profesionales del diseño. El Secretario abre una conversación central, ayuda a encontrar información y prepara documentos editables. La conversación se traslada al lateral al navegar y puede plegarse; las secciones existentes siguen disponibles.
 
-La entrega permanece en una rama y un PR de borrador hasta completar los controles productivos. El 22/11/2026 se preparó el proyecto Supabase aislado `moderno-pruebas` y se completó una prueba real de extremo a extremo con una identidad, estudio y datos exclusivamente ficticios. Auth, RLS, cuota, Edge Function, Responses API y respuesta financiera quedaron comprobados con una sola consulta. El acceso temporal de prueba se desactivó después.
+La entrega permanece en una rama y un PR de borrador hasta completar el canary productivo. El 22/11/2026 se preparó el proyecto Supabase aislado `moderno-pruebas` y se completó una prueba real de extremo a extremo con una identidad, estudio y datos exclusivamente ficticios. Auth, RLS, cuota, Edge Function, Responses API y respuesta financiera quedaron comprobados con una sola consulta. El acceso temporal de prueba se desactivó después.
 
-El propietario ha autorizado publicar el piloto directamente en la aplicación porque actualmente es el único usuario. Esa autorización no elimina las condiciones de copia, reversión y verificación: no se aplicará SQL ni se desplegará la función en producción hasta acreditar una copia actual y restaurable de la base. El lanzamiento queda limitado por allowlist de usuario en servidor y no se abre automáticamente a futuros usuarios.
+El propietario ha autorizado publicar el piloto directamente en la aplicación porque actualmente es el único usuario. Esa autorización no elimina las condiciones de copia, reversión y verificación. La copia se acreditó antes de aplicar el runtime y desplegar la función apagada. El lanzamiento queda limitado por allowlist de usuario en servidor y no se abre automáticamente a futuros usuarios.
 
 ## Componentes
 
@@ -102,15 +102,17 @@ Las migraciones aplicadas en el proyecto de pruebas son `secretario_test_prerequ
 
 ## Preparación productiva
 
-La inspección de solo lectura confirmó que producción tiene PostgreSQL 17, RLS en `estudios`, `miembros` y `datos_estudio`, y las firmas `app_rol`, `app_rol_usuario` y `app_leer_bloques`. No existe ningún objeto homónimo del Secretario. Para el piloto se aplicará solo `secretario-runtime.sql`; no se aplicarán los prerrequisitos de pruebas, feedback ni cron.
+El preflight de solo lectura confirmó que producción tiene PostgreSQL 17, RLS en `estudios`, `miembros` y `datos_estudio`, y las firmas `app_rol`, `app_rol_usuario` y `app_leer_bloques`. Antes del despliegue no existía ningún objeto homónimo del Secretario. Para el piloto se aplicó solo `secretario-runtime.sql`; no se aplicaron los prerrequisitos de pruebas, feedback ni cron.
 
-Storage tiene una copia programada verificada el 22/11/2026 con 945 objetos idénticos. La copia actual y restaurable de la base aún debe acreditarse en el panel `Database → Backups → Scheduled` antes de cualquier migración productiva.
+Storage tiene una copia programada verificada el 22/11/2026 con 945 objetos idénticos. El panel productivo `Database → Backups → Scheduled` mostró una copia física del 22/11/2026 a las 00:25:39 UTC y la opción `Restore`, además de las copias diarias anteriores. Con ambas evidencias se aplicó la migración aditiva `secretario_runtime_pilot` (`20261122145441`): esquema y tabla privados, RLS, RPC con `search_path=''`, `anon` sin ejecución, `authenticated` sin acceso directo y contador inicial `0/200`.
+
+La Edge Function productiva `secretario` se desplegó como versión 1 con `verify_jwt=false`, porque valida cada sesión mediante `Auth.getUser`. Los secretos se cargaron con `SECRETARY_ENABLED=false`, modelo fijado, origen exacto y allowlist del propietario. Una invocación sin credenciales devolvió `503 disabled`, confirmando que la función corta antes de autenticar, leer datos o llamar a OpenAI. Feedback y cron no se instalaron.
 
 ## Comprobaciones
 
 Las pruebas unitarias cubren el servidor local, validación de peticiones/respuestas, referencias, permisos, cuota previa al proveedor, propuestas, cálculos y revocación del consentimiento. Las pruebas SQL usan PostgreSQL desechable con datos inventados y `rollback`; incluyen contrato, RLS, alta aislada, escritura versionada, cuota diaria/mensual, feedback y retirada. El flujo de navegador intercepta la IA y bloquea conexiones externas. Los workflows de PR no despliegan ni usan credenciales de producción.
 
-El candidato anterior pasó [CI general y PostgreSQL 17](https://github.com/estudiomoderno/moderno.app/actions/runs/45012449672), [navegador aislado](https://github.com/estudiomoderno/moderno.app/actions/runs/45012449703) y [visual de proyectos](https://github.com/estudiomoderno/moderno.app/actions/runs/45012449739). Tras añadir las guardas productivas, 83 comprobaciones específicas y la suite local completa de 837 pruebas pasan sin fallos. El nuevo contrato SQL global deberá volver a pasar PostgreSQL 17 en el siguiente HEAD del PR antes de aplicar producción.
+El candidato con guardas productivas pasó [CI general y PostgreSQL 17](https://github.com/estudiomoderno/moderno.app/actions/runs/45034657248), [navegador aislado](https://github.com/estudiomoderno/moderno.app/actions/runs/45034657227) y [visual de proyectos](https://github.com/estudiomoderno/moderno.app/actions/runs/45034657223). Además, 83 comprobaciones específicas y la suite local completa de 837 pruebas pasaron sin fallos. Cualquier cambio posterior debe volver a pasar los tres workflows antes de fusionar.
 
 Chromium no pudo arrancar en el contenedor de trabajo por la restricción de sockets del entorno. Por eso se usa una comprobación aislada en GitHub Actions. La ejecución local completa tuvo cuatro fallos de infraestructura al crear procesos (`EPERM`), no fallos de aserción del Secretario; el resultado autoritativo será el workflow del PR. No se ha eludido la restricción ni presentado una captura no comprobada como resultado.
 
