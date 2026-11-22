@@ -13,6 +13,16 @@ if (backend.protocol!=='https:' || backend.username || backend.password || backe
   throw new Error('Configura SUPABASE_URL y una clave pública del proyecto de pruebas en .env. El servidor local no admite producción ni claves administrativas.');
 }
 const safeBackend=backend.origin;
+// This is an explicit local test gate. The production HTML never carries it.
+const secretaryEnabled=process.env.MODERNO_SECRETARY_ENABLED==='true';
+if(secretaryEnabled&&backend.hostname!=='chsilowzrtumbcofspwv.supabase.co'){
+  throw new Error('El Secretario solo se puede activar contra Moderno Prueba.');
+}
+const secretaryConfig=secretaryEnabled?{
+  enabled:true,
+  endpoint:safeBackend+'/functions/v1/secretario',
+  feedbackEnabled:process.env.MODERNO_SECRETARY_FEEDBACK_ENABLED==='true'
+}:null;
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 const server = http.createServer(async (req, res) => {
   if (!['GET', 'HEAD'].includes(req.method)) {
@@ -35,6 +45,11 @@ const server = http.createServer(async (req, res) => {
       .replace(/const SUPABASE_ANON_KEY = "[^"]+";/,'const SUPABASE_ANON_KEY = '+JSON.stringify(anonKey)+';')
       .replace('const LS_KEY="moderno_prod_v1";', 'const LS_KEY='+JSON.stringify('moderno_pruebas_'+backend.hostname.split('.')[0])+';'));
       if(!body.includes('const SUPABASE_URL = '+JSON.stringify(safeBackend)+';') || !body.includes('const LS_KEY='+JSON.stringify('moderno_pruebas_'+backend.hostname.split('.')[0])+';'))throw new Error('No se pudo aislar el HTML');
+      if(secretaryConfig){
+        const html=body.toString();
+        if(!html.includes('</head>'))throw new Error('No se pudo configurar el Secretario de pruebas');
+        body=Buffer.from(html.replace('</head>','<script>window.MODERNO_SECRETARY_CONFIG=Object.freeze('+JSON.stringify(secretaryConfig)+');</script>\n</head>'));
+      }
     }
     res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store', 'Content-Security-Policy':"connect-src 'self' "+safeBackend+' wss://'+backend.hostname });
     res.end(req.method === 'HEAD' ? undefined : body);
