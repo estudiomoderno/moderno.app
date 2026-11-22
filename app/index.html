@@ -11530,14 +11530,14 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.65";
+const MODERNO_VER="v3.67.66";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
    La anon public key está diseñada para ir en el cliente (protegida por RLS). */
 const SUPABASE_URL = "https://auth.moderno.app";
 const SUPABASE_ANON_KEY = "sb_publishable_MfUr7rezJhqiX1ujS295aA_aDF-YbLu";
-window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://auth.moderno.app/functions/v1/secretario",feedbackEnabled:false});
+window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario",feedbackEnabled:false});
 const MAIL_FUNCTION_URL = "https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/mail-connect";
 const MAIL_FUNCTION_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNncXR5bHZhYXB3YnV3cXZwanRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5OTY1NjAsImV4cCI6MjEwMzU3MjU2MH0.TR87W5BPvAAH4A9BrtmPd5aPVjX53HuS4CQm6bjtzOk";
 const sb = (SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("PEGA_AQUI") && SUPABASE_ANON_KEY.length>40 && window.supabase)
@@ -13810,6 +13810,6 @@ shoppingRoomAddEnhance();
 <link rel="stylesheet" href="/brand/secretario.css?v=2">
 <script src="/secretario-bridge.js?v=2"></script>
 <script src="/secretary-feedback.js?v=2"></script>
-<script src="/secretario-ui.js?v=3"></script>
+<script src="/secretario-ui.js?v=4"></script>
 </body>
 </html>

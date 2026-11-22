@@ -120,11 +120,31 @@ test('production without an explicit gate does not install handlers or touch the
 
 test('published app enables only the production endpoint and keeps feedback off',async()=>{
   const html=await readFile(new URL('../app/index.html',import.meta.url),'utf8');
-  const config='window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://auth.moderno.app/functions/v1/secretario",feedbackEnabled:false});';
+  const config='window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario",feedbackEnabled:false});';
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=3"></script>'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=4"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
+});
+
+test('secretary sends the session only to the exact canonical project function',async()=>{
+  const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
+  const start=code.indexOf('function endpoint()'),end=code.indexOf('\n  async function submitMessage',start);
+  assert.ok(start>=0&&end>start);
+  const source=code.slice(start,end);
+  const resolve=(base,configured)=>vm.runInNewContext(`(()=>{const config=${JSON.stringify({endpoint:configured})};${source};return endpoint();})()`,{
+    URL,SUPABASE_URL:base,location:{origin:'https://app.moderno.app'}
+  });
+  const canonical='https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario';
+  assert.equal(resolve('https://auth.moderno.app',canonical),canonical);
+  assert.equal(resolve('https://chsilowzrtumbcofspwv.supabase.co','https://chsilowzrtumbcofspwv.supabase.co/functions/v1/secretario'),'https://chsilowzrtumbcofspwv.supabase.co/functions/v1/secretario');
+  for(const invalid of [
+    'https://auth.moderno.app/functions/v1/secretario',
+    'https://other-project.supabase.co/functions/v1/secretario',
+    canonical+'?next=outside',canonical+'#fragment',
+    'https://user@cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario',
+    'http://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario'
+  ])assert.throws(()=>resolve('https://auth.moderno.app',invalid),/todavía no está configurada/);
 });
 
 test('browser call sends the public project key separately from the user session',async()=>{

@@ -50,7 +50,7 @@ Los importes de resumen se calculan de forma determinista y las pruebas comparan
 
 ### Navegador y servidor local
 
-El candidato de HTML publicado contiene exclusivamente el endpoint público `https://auth.moderno.app/functions/v1/secretario`, con el Secretario activado y el feedback desactivado. No contiene la clave de OpenAI. El servidor local sustituye esa configuración y solo puede activar el Secretario contra `moderno-pruebas`; continúa rechazando producción y claves administrativas.
+El candidato de HTML publicado conserva `https://auth.moderno.app` para Auth y utiliza exclusivamente el endpoint canónico del mismo proyecto para la Edge Function: `https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario`. El dominio personalizado rechazaba los POST autenticados en la pasarela antes del runtime; el endpoint canónico evita esa ruta sin cambiar proyecto, sesión, RLS ni origen admitido. El Secretario está activado y el feedback desactivado. El navegador no contiene la clave de OpenAI. El servidor local sustituye esa configuración y solo puede activar el Secretario contra `moderno-pruebas`; continúa rechazando producción y claves administrativas.
 
 El navegador nunca recibe la clave de OpenAI. El origen de la función se deriva del mismo backend de pruebas; la política de conexiones del servidor local se mantiene limitada a ese backend.
 

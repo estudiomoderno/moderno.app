@@ -338,8 +338,11 @@ var ModernoSecretary=(()=>{
   function updateBusy(){if(sendButton)sendButton.disabled=busy;if(composer)composer.disabled=busy;if(stopButton)stopButton.hidden=!busy;}
   function endpoint(){
     const base=new URL(SUPABASE_URL),target=new URL(config.endpoint||base.origin+'/functions/v1/secretario',location.origin);
-    // An auth token may only reach the configured app backend, never a URL from a model response.
-    if(target.origin!==base.origin||target.protocol!=='https:'||target.pathname!=='/functions/v1/secretario')throw Error('La conexión del Secretario todavía no está configurada.');
+    // Auth keeps its branded domain. Edge Functions use the canonical project
+    // origin because the custom-domain gateway rejects authenticated POSTs.
+    const edgeOrigin=base.origin==='https://auth.moderno.app'?'https://cgqtylvaapwbuwqvpjtb.supabase.co':base.origin;
+    // A user token may only reach the exact configured project function.
+    if(target.origin!==edgeOrigin||target.protocol!=='https:'||target.pathname!=='/functions/v1/secretario'||target.username||target.password||target.search||target.hash)throw Error('La conexión del Secretario todavía no está configurada.');
     return target.href;
   }
   async function submitMessage(content,answerValues){
