@@ -116,7 +116,7 @@
   function recentHistory(records,message){
     if(typeof message!=='string'||!message.trim()||message.length>6000)fail('Escribe un mensaje de hasta 6.000 caracteres.','message_length');
     const turns=(records||[]).filter(record=>['user','assistant'].includes(record.role)&&typeof record.content==='string');
-    let history=turns.slice(-16).map(({role,content})=>({role,content}));
+    let history=turns.slice(-16).map(({role,content,automatic})=>({role,content,...(automatic===true?{automatic:true}:{})}));
     const oversized=history.findLastIndex(turn=>turn.content.length>6000);
     if(oversized>=0)history=history.slice(oversized+1);
     let total=message.length+history.reduce((sum,turn)=>sum+turn.content.length,0);
