@@ -173,14 +173,18 @@ try:
                         assert request.headers.get("origin") == origin
                         assert request.headers.get("access-control-request-method") == "POST"
                         requested_headers = {header.strip().lower() for header in request.headers.get("access-control-request-headers", "").split(",") if header.strip()}
-                        assert requested_headers.issubset({"authorization", "apikey", "content-type"})
+                        assert requested_headers.issubset({"apikey", "content-type"})
                         assert "apikey" in requested_headers
                         request_route.fulfill(status=204, headers=cors_headers, body="")
                         return
                     assert request.method == "POST"
-                    assert request.headers.get("authorization") == "Bearer fictional-token-no-credentials"
+                    assert request.headers.get("authorization") is None
+                    assert request.headers.get("x-moderno-session") is None
                     assert request.headers.get("apikey") == "sb_publishable_fictional_only_no_credentials_secretary"
-                    body = request.post_data_json
+                    envelope = request.post_data_json
+                    assert set(envelope) == {"session", "payload"}
+                    assert envelope["session"] == "fictional-token-no-credentials"
+                    body = envelope["payload"]
                     assert set(body).issubset({"studyId", "message", "history", "context", "answers"})
                     assert body["studyId"] == "11111111-1111-4111-8111-111111111111"
                     requests.append(body)
