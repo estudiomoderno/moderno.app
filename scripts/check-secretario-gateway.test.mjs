@@ -15,7 +15,7 @@ function fixture(changes={}){
       'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info',
       ...changes.preflightHeaders
     }),...changes.preflight};
-    return {ok:false,status:401,headers:headers({'Access-Control-Allow-Origin':'https://app.moderno.app','Content-Type':'application/json',...changes.gatewayHeaders}),json:async()=>({error:{code:'unauthorized'},requestId:'fixture-request'}),...changes.gateway};
+    return {ok:false,status:401,headers:headers({'Access-Control-Allow-Origin':'https://app.moderno.app','Content-Type':'application/json','X-Moderno-Secretary-Transport':'body-session-v1',...changes.gatewayHeaders}),json:async()=>({error:{code:'unauthorized'},requestId:'fixture-request'}),...changes.gateway};
   };
   return {calls,fetcher};
 }
@@ -25,11 +25,11 @@ test('production probe validates CORS and reaches the protected handler without 
   assert.deepEqual(result,{ok:true,preflight:200,gateway:401});
   assert.equal(f.calls.length,2);
   assert.equal(f.calls[0][0],endpoint);assert.equal(f.calls[0][1].method,'OPTIONS');
-  assert.equal(f.calls[0][1].headers['Access-Control-Request-Headers'],'authorization,apikey,content-type');
+  assert.equal(f.calls[0][1].headers['Access-Control-Request-Headers'],'apikey,content-type');
   assert.equal(f.calls[1][1].method,'POST');assert.equal(f.calls[1][1].credentials,'omit');
   assert.equal(f.calls[1][1].headers.apikey,'sb_publishable_fixture');
-  assert.equal(f.calls[1][1].headers.Authorization,'Bearer probe');
-  assert.equal(f.calls[1][1].body,'{}');
+  assert.equal(f.calls[1][1].headers.Authorization,undefined);
+  const envelope=JSON.parse(f.calls[1][1].body);assert.equal(envelope.session.length,30000);assert.match(envelope.session,/^p+$/);assert.deepEqual(envelope.payload,{});
   assert.ok(!JSON.stringify(result).includes('sb_publishable'));
 });
 
@@ -43,9 +43,10 @@ test('probe fails closed for another endpoint or malformed public configuration'
 test('probe rejects incomplete preflight and gateway responses before reporting healthy',async()=>{
   for(const changes of [
     {preflightHeaders:{'Access-Control-Allow-Origin':'https://outside.invalid'}},
-    {preflightHeaders:{'Access-Control-Allow-Headers':'authorization, content-type'}},
+    {preflightHeaders:{'Access-Control-Allow-Headers':'content-type'}},
     {preflight:{ok:false,status:503}},
     {gateway:{status:400,json:async()=>null}},
-    {gatewayHeaders:{'Content-Type':'text/html'}}
+    {gatewayHeaders:{'Content-Type':'text/html'}},
+    {gatewayHeaders:{'X-Moderno-Secretary-Transport':'legacy'}}
   ])await assert.rejects(checkSecretaryGateway({html,fetcher:fixture(changes).fetcher}));
 });

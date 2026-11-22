@@ -123,7 +123,7 @@ test('published app enables only the production endpoint and keeps feedback off'
   const config='window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario",feedbackEnabled:false});';
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=4"></script>'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=5"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
 });
 
@@ -153,8 +153,10 @@ test('browser call sends the public project key separately from the user session
   assert.ok(start>=0&&end>start);
   const request=code.slice(start,end);
   assert.match(request,/credentials:'omit'/);
-  assert.match(request,/Authorization:'Bearer '\+session\.access_token/);
   assert.match(request,/apikey:SUPABASE_ANON_KEY/);
+  assert.doesNotMatch(request,/Authorization/);
+  assert.doesNotMatch(request,/x-moderno-session/);
+  assert.match(request,/JSON\.stringify\(\{session:session\.access_token,payload:input\}\)/);
   assert.doesNotMatch(request,/service[_-]?role|sb_secret_/i);
 });
 

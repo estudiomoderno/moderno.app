@@ -1,6 +1,6 @@
 import {SecretarioError,validateEnvironment,requestPlan,runSecretary} from './core.mjs';
 
-const LIMIT=48000;
+const INPUT_LIMIT=48000,TRANSPORT_LIMIT=131072,SESSION_LIMIT=65536;
 function allowedOrigins(env,deployment){
  const values=String(env.SECRETARY_ALLOWED_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean);
  if(!values.length)throw new SecretarioError('not_configured','Falta configurar el origen del Secretario.',503);
@@ -15,22 +15,32 @@ function allowedOrigins(env,deployment){
  return values;
 }
 async function readBody(request){
- if(Number(request.headers.get('Content-Length'))>LIMIT)throw new SecretarioError('body_limit','La solicitud es demasiado grande.',413);
+ if(Number(request.headers.get('Content-Length'))>TRANSPORT_LIMIT)throw new SecretarioError('body_limit','La solicitud es demasiado grande.',413);
  if(!request.body)throw new SecretarioError('invalid_request','Falta la solicitud.');
  const reader=request.body.getReader(),chunks=[];let size=0;
- try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>LIMIT){await reader.cancel();throw new SecretarioError('body_limit','La solicitud es demasiado grande.',413);}chunks.push(value);}}
+ try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>TRANSPORT_LIMIT){await reader.cancel();throw new SecretarioError('body_limit','La solicitud es demasiado grande.',413);}chunks.push(value);}}
  finally{reader.releaseLock();}
  const bytes=new Uint8Array(size);let at=0;for(const chunk of chunks){bytes.set(chunk,at);at+=chunk.length;}
- try{return JSON.parse(new TextDecoder().decode(bytes));}catch{throw new SecretarioError('invalid_request','No se ha podido leer la solicitud.');}
+ let body;try{body=JSON.parse(new TextDecoder().decode(bytes));}catch{throw new SecretarioError('invalid_request','No se ha podido leer la solicitud.');}
+ let input=body,privateSession='';
+ const envelope=body&&typeof body==='object'&&!Array.isArray(body)&&(Object.hasOwn(body,'session')||Object.hasOwn(body,'payload'));
+ if(envelope){
+  if(Object.keys(body).length!==2||!Object.hasOwn(body,'session')||!Object.hasOwn(body,'payload')||typeof body.session!=='string'||!body.payload||typeof body.payload!=='object'||Array.isArray(body.payload))throw new SecretarioError('invalid_request','La solicitud no tiene un formato válido.');
+  privateSession=body.session;input=body.payload;
+ }
+ if(new TextEncoder().encode(JSON.stringify(input)).byteLength>INPUT_LIMIT)throw new SecretarioError('body_limit','La solicitud es demasiado grande.',413);
+ if(privateSession&&(!/^[^\s]{20,65536}$/.test(privateSession)||privateSession.length>SESSION_LIMIT))throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
+ return {input,privateSession};
 }
 
-/** authenticate must validate the bearer token remotely and return a user-scoped
- * Supabase client. No admin client, body token or user_metadata authorization. */
+/** authenticate must cryptographically validate the token against the project's
+ * JWKS and return a user-scoped Supabase client. No admin client or
+ * user_metadata authorization. */
 export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Date.now,uuid=()=>crypto.randomUUID(),planner}){
  const rates=new Map();
  return async request=>{
   const requestId=uuid(),origin=request.headers.get('Origin');let allowed=[];
-  const json=(body,status=200)=>new Response(JSON.stringify({...body,requestId}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin','X-Content-Type-Options':'nosniff',...(origin&&allowed.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS'}});
+  const json=(body,status=200)=>new Response(JSON.stringify({...body,requestId}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin','X-Content-Type-Options':'nosniff','X-Moderno-Secretary-Transport':'body-session-v1',...(origin&&allowed.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS'}});
   try{
    const deployment=validateEnvironment(env);
    allowed=allowedOrigins(env,deployment);
@@ -38,16 +48,23 @@ export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Dat
    if(request.method==='OPTIONS')return json({ok:true});
    if(request.method!=='POST')throw new SecretarioError('method_not_allowed','Utiliza POST para consultar el Secretario.',405);
    if(!/^application\/json(?:\s*;|$)/i.test(request.headers.get('Content-Type')||''))throw new SecretarioError('invalid_content_type','La solicitud debe ser JSON.',415);
-   const auth=request.headers.get('Authorization')||'';
-   if(!/^Bearer [^\s]{20,8192}$/.test(auth))throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
-   const actor=await authenticate(auth.slice(7));
+   // Supabase's hosted gateway rejects this user's large ES256 JWT in the
+   // standard Authorization header before this verify_jwt=false function runs.
+   // A bounded body envelope avoids proxy header limits. Keep the legacy bearer
+   // fallback for rollout, and reject conflicting credentials.
+   const {input,privateSession}=await readBody(request);
+   const auth=request.headers.get('Authorization')||'',legacy=/^Bearer ([^\s]{20,8192})$/.exec(auth)?.[1]||'';
+   if(auth&&!legacy||privateSession&&legacy&&legacy!==privateSession)throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
+   const token=privateSession||legacy;
+   if(!token)throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
+   const actor=await authenticate(token);
    if(!actor?.userId||!actor.client)throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
    if(deployment.allowedUserIds.length&&!deployment.allowedUserIds.includes(actor.userId))throw new SecretarioError('rollout_forbidden','El Secretario todavía no está habilitado para este usuario.',403);
    // A local-instance burst limit complements the isolated project budget. It
    // is deliberately not described as a distributed or monetary hard cap.
    const minute=Math.floor(now()/60000);for(const [key,value] of rates)if(value.minute!==minute)rates.delete(key);
    const rate=rates.get(actor.userId)||{minute,count:0};if(rate.count>=12||rates.size>=2000&&!rates.has(actor.userId))throw new SecretarioError('rate_limit','Hay varias consultas en curso. Espera un momento y vuelve a intentarlo.',429);rate.count++;rates.set(actor.userId,rate);
-   const input=await readBody(request),controller=new AbortController(),onAbort=()=>controller.abort();
+   const controller=new AbortController(),onAbort=()=>controller.abort();
    request.signal.addEventListener('abort',onAbort,{once:true});if(request.signal.aborted)controller.abort();
    const timeout=setTimeout(()=>controller.abort(),25000);
    try{

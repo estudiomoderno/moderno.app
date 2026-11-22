@@ -360,9 +360,13 @@ var ModernoSecretary=(()=>{
       if(error||!session?.access_token||session.user?.id!==state.sessionUser?.id)throw Error('Comprueba tu sesión para seguir con el Secretario.');
       if(epoch!==generation||captured!==owner())return;
       const project=activeProject();feedbackTask=project?'project_question':'finance_question';
+      const input={studyId:ESTUDIO_ID,message:content,history,context:{view:home?'finanzas':state.view,...(project?{projectId:project.id}:{})},...(answerValues?{answers:answerValues}:{})};
       const response=await fetch(endpoint(),{method:'POST',credentials:'omit',cache:'no-store',signal:controller.signal,
-        headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token,apikey:SUPABASE_ANON_KEY},
-        body:JSON.stringify({studyId:ESTUDIO_ID,message:content,history,context:{view:home?'finanzas':state.view,...(project?{projectId:project.id}:{})},...(answerValues?{answers:answerValues}:{})})});
+        // This user's signed session is larger than common proxy header limits.
+        // The function reads it from a bounded JSON envelope and still validates
+        // it remotely with Auth.getUser before accessing any application data.
+        headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},
+        body:JSON.stringify({session:session.access_token,payload:input})});
       const payload=await response.json().catch(()=>null);
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
       if(!response.ok){
