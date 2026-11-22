@@ -5,7 +5,7 @@ import {createSecretaryHandler} from './handler.mjs';
 const names=['SUPABASE_URL','SUPABASE_ANON_KEY','OPENAI_API_KEY','OPENAI_MODEL','SECRETARY_ENABLED','SECRETARY_ENVIRONMENT','SECRETARY_ALLOWED_PROJECT_REF','SECRETARY_ALLOWED_ORIGINS','SECRETARY_ALLOWED_USER_IDS'];
 const env=Object.fromEntries(names.map(name=>[name,Deno.env.get(name)||'']));
 
-Deno.serve(createSecretaryHandler({env,authenticate:async(token:string)=>{
+Deno.serve(createSecretaryHandler({env,logger:console,authenticate:async(token:string)=>{
  try{
   // ES256 sessions are verified locally against this project's cached JWKS.
   // Sending this account's unusually large JWT back to Auth as a header would

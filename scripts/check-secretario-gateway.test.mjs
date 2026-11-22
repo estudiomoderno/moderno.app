@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {checkSecretaryGateway} from './check-secretario-gateway.mjs';
 
 const endpoint='https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario';
@@ -49,4 +50,9 @@ test('probe rejects incomplete preflight and gateway responses before reporting 
     {gatewayHeaders:{'Content-Type':'text/html'}},
     {gatewayHeaders:{'X-Moderno-Secretary-Transport':'legacy'}}
   ])await assert.rejects(checkSecretaryGateway({html,fetcher:fixture(changes).fetcher}));
+});
+
+test('the Secretary keeps gateway JWT verification disabled because the handler verifies the bounded body session',()=>{
+  const config=readFileSync(new URL('../supabase/config.toml',import.meta.url),'utf8');
+  assert.match(config,/\[functions\.secretario\]\s*\r?\nverify_jwt\s*=\s*false(?:\s|$)/);
 });

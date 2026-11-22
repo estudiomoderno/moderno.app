@@ -194,6 +194,9 @@ try:
                     if "consulta lenta" in message:
                         pending.append(request_route)
                         return
+                    if "fallo red" in message:
+                        request_route.abort()
+                        return
                     if "fallo disponible" in message:
                         request_route.fulfill(status=503, headers=cors_headers, content_type="application/json", body=json.dumps({"error": {"code": "not_configured", "message": "Fixture"}}))
                         return
@@ -271,7 +274,7 @@ try:
             panel.get_by_role("button", name="Plegar el Secretario", exact=True).click()
             expect(panel).to_be_hidden()
             page.get_by_role("button", name="Nuestro Secretario", exact=True).click()
-            expect(panel.get_by_text("El borrador está preparado para revisar.", exact=True)).to_be_visible()
+            expect(panel.locator(".secretary-bubble").get_by_text("El borrador está preparado para revisar.", exact=True)).to_be_visible()
 
             # Resume + edit a saved draft, preserving its original metadata and date.
             page.evaluate("""()=>{
@@ -313,7 +316,7 @@ try:
             page.evaluate("state.draft=null;state.fView=null;go('proyecto',9001)")
             expect(panel).to_be_visible()
             expect(panel.locator(".secretary-context")).to_have_text("Proyecto ficticio")
-            expect(panel.get_by_text("El borrador está preparado para revisar.", exact=True).first).to_be_visible()
+            expect(panel.locator(".secretary-bubble").get_by_text("El borrador está preparado para revisar.", exact=True).first).to_be_visible()
             page.locator("#secretary-message").fill("respuesta segura")
             wait_for_stable_view(page)
             assert_secretary_clearance(page)
@@ -333,13 +336,44 @@ try:
             }""")
             assert_secretary_clearance(page)
             panel.get_by_role("button", name="Enviar", exact=True).click()
-            expect(panel.get_by_text('<img src=x onerror="window.injected=true">', exact=True)).to_be_visible()
+            expect(panel.locator(".secretary-bubble").get_by_text('<img src=x onerror="window.injected=true">', exact=True)).to_be_visible()
             assert page.evaluate("window.injected!==true")
             panel.locator(".secretary-more-sources summary").click()
             expect(panel.get_by_role("button", name="Fuente ficticia 24", exact=True)).to_be_visible()
             page.locator("#secretary-message").fill("fallo disponible")
             panel.get_by_role("button", name="Enviar", exact=True).click()
-            expect(panel.get_by_text("El Secretario todavía no está disponible. Puedes seguir usando las pantallas y editores de Finanzas.", exact=True)).to_be_visible()
+            expect(panel.locator(".secretary-bubble").get_by_text("El Secretario todavía no está disponible. Puedes seguir usando las pantallas y editores de Finanzas.", exact=True)).to_be_visible()
+
+            # Browser network failures stay in Spanish and offer an explicit retry.
+            page.locator("#secretary-message").fill("fallo red")
+            panel.get_by_role("button", name="Enviar", exact=True).click()
+            expect(panel.locator(".secretary-bubble").get_by_text("No se ha podido conectar con el Secretario. Comprueba la conexión y vuelve a intentarlo.", exact=True)).to_be_visible()
+            expect(panel.get_by_role("button", name="Volver a intentar", exact=True).last).to_be_visible()
+
+            # A slow answer cannot cross from one project context into another.
+            page.locator("#secretary-message").fill("consulta lenta del proyecto")
+            panel.get_by_role("button", name="Enviar", exact=True).click()
+            expect(panel.locator(".secretary-working").get_by_text("Consultando las tareas y documentos autorizados de este proyecto…", exact=True)).to_be_visible()
+            page.wait_for_timeout(50)
+            page.evaluate("""()=>{state.projects.push({id:9002,num:'PR-9002',name:'Segundo proyecto ficticio',brand:'cm',client:'Cliente ficticio',status:'En progreso',tasks:[],files:[]});go('proyecto',9002)}""")
+            expect(panel.locator(".secretary-bubble").get_by_text("La consulta se detuvo porque cambiaste de pantalla o de proyecto. Puedes volver a hacerla en el contexto actual.", exact=True)).to_be_visible()
+            for request_route in list(pending):
+                try:
+                    request_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps({"requestId": "late-project", "status": "answer", "message": "RESPUESTA DEL PROYECTO ANTERIOR", "sources": [], "questions": [], "actions": [], "trace": []}))
+                except Exception:
+                    pass
+            pending.clear()
+            expect(panel.get_by_text("RESPUESTA DEL PROYECTO ANTERIOR", exact=True)).to_have_count(0)
+
+            # Date/tax-only changes in a new editor are protected like line edits.
+            page.evaluate("""()=>{state.draft=null;state.fView='nuevo';go('facturas')}""")
+            page.wait_for_function("state.draft&&state.view==='facturas'")
+            page.locator("input[type=date]").nth(1).fill("2027-01-31")
+            page.locator("input[type=date]").nth(1).dispatch_event("change")
+            page.locator("#secretary-message").fill("Abre facturas")
+            panel.get_by_role("button", name="Enviar", exact=True).click()
+            expect(page.locator("#modalBox")).to_contain_text("a medias")
+            page.locator("#modalBox").get_by_role("button", name="Seguir editando", exact=True).click()
 
             # A response belonging to a signed-out user cannot repopulate the chat.
             page.locator("#secretary-message").fill("consulta lenta")

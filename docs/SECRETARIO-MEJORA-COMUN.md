@@ -6,7 +6,7 @@
 
 El módulo no llama a OpenAI, no entrena modelos y no incorpora información de otros estudios a las respuestas del Secretario. Los informes se destinan a personas que revisan posibles mejoras. Cualquier cambio posterior en instrucciones, preguntas o interfaz necesita revisión, pruebas y una publicación versionada.
 
-La participación está desactivada por defecto. El permiso corresponde a la pareja **usuario autenticado + estudio autorizado**. No se guarda en `state.account` ni en la configuración compartida del estudio. Tener permiso para trabajar en un estudio no equivale a aceptar esta participación.
+La participación está desactivada por defecto. En el piloto productivo actual también está oculta: no se instalaron las RPC ni el cron de feedback y `feedbackEnabled` permanece en `false`. El permiso corresponde a la pareja **usuario autenticado + estudio autorizado**. No se guarda en `state.account` ni en la configuración compartida del estudio. Tener permiso para trabajar en un estudio no equivale a aceptar esta participación.
 
 ## Contrato de eventos
 
@@ -123,7 +123,7 @@ Control discreto en las opciones del Secretario:
 >
 > Comparte valoraciones y motivos predefinidos. No incluye tus conversaciones ni documentos. Puedes desactivarlo cuando quieras.
 
-Si aún falta el backend o el transporte, el control debe quedar desactivado y mostrar **“Pendiente de activar”**. No simular un guardado local como si el servidor ya conociera la preferencia.
+Si aún falta el backend o el transporte, como ocurre en producción, el control debe permanecer oculto. Una futura pantalla administrativa puede mostrar **“Pendiente de activar”**, pero la app no debe ofrecer consentimiento o valoración hasta que las RPC, retención y primera purga estén instaladas y verificadas. No simular un guardado local como si el servidor ya conociera la preferencia.
 
 Después de una respuesta, ofrecer “Me ha ayudado” y “Podría mejorar”, con motivos predefinidos cuando corresponda. Solo mostrar confirmación de envío tras `status:sent`. Un fallo de feedback no bloquea el chat, los editores ni el trabajo del usuario.
 
@@ -133,4 +133,4 @@ Después de una respuesta, ofrecer “Me ha ayudado” y “Podría mejorar”, 
 
 `node --test scripts/secretario-feedback-ui.test.mjs` ejecuta las funciones reales de consentimiento de la interfaz junto con el controlador. Comprueba recuperación de retirada fallida tras vaciar o recargar, aislamiento del marcador por identidad, respuestas tardías de lectura o activación y limpieza de las confirmaciones antiguas después del borrado.
 
-Las comprobaciones SQL/RLS se ejecutan con datos inventados en PostgreSQL desechable y se verificaron también contra los metadatos de Moderno Prueba. El adaptador real con OpenAI sigue pendiente de credencial y presupuesto exclusivos. Este módulo no modifica datos reales ni publica cambios en producción.
+Las comprobaciones SQL/RLS se ejecutan con datos inventados en PostgreSQL desechable y se verificaron también contra los metadatos de Moderno Prueba. El Secretario principal sí utiliza la Responses API mediante su Edge Function; este módulo de feedback no llama a OpenAI y no necesita una credencial del proveedor. En producción no se ha aplicado `SQL/secretario-feedback.sql` ni `SQL/secretario-retencion-cron.sql`, no se ha habilitado el flag y la revisión `v3.67.69` no incorpora ninguna migración. Este módulo no modifica datos reales ni publica cambios por sí solo.

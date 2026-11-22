@@ -124,7 +124,8 @@ test('published app enables only the production endpoint and keeps feedback off'
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
   assert.ok(html.includes('<script src="/secretario-bridge.js?v=3"></script>'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=7"></script>'));
+  assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=3">'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=8"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
 });
 
@@ -165,6 +166,32 @@ test('a bounded-context response keeps its specific safe message instead of beco
   const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
   assert.match(code,/code==='context_limit'.*payload\?\.error\?\.message/);
   assert.match(code,/No he podido completar la consulta\. Puedes volver a intentarlo\./);
+});
+
+test('network, quota and changed-context errors have stable Spanish recovery paths',async()=>{
+  const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
+  assert.match(code,/No se ha podido conectar con el Secretario\. Comprueba la conexión y vuelve a intentarlo\./);
+  assert.match(code,/code==='quota_exhausted'/);assert.match(code,/code==='context_changed'/);assert.match(code,/code==='provider_busy'/);
+  assert.match(code,/record\.retryContent=content/);assert.match(code,/Volver a intentar/);
+  assert.doesNotMatch(code,/appendMessage\('assistant',error\.message/);
+});
+
+test('an in-flight request is bound to its original screen and project',async()=>{
+  const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
+  assert.match(code,/originContext=currentContext\(\)/);assert.match(code,/if\(!sameContext\(originContext\)\)/);
+  assert.match(code,/La consulta se detuvo porque cambiaste de pantalla o de proyecto/);
+  assert.match(code,/if\(changedView\)\{questions=\[\];answers=\{\};pendingAnswers=\{\}/);
+  assert.doesNotMatch(code,/changedView&&\['proyecto','estancia'\]\.includes\(state\.view\)\)collapsed=false/);
+});
+
+test('the editor dirty guard covers every editable field after an empty draft opens',async()=>{
+  const html=await readFile(new URL('../app/index.html',import.meta.url),'utf8'),start=html.indexOf('const _draftClean='),end=html.indexOf('\nfunction draftMeaningful',start);
+  assert.ok(start>=0&&end>start);
+  const context=vm.createContext({state:{account:{vat:21},draft:{kind:'factura',brand:'cm',clientIdx:-1,lines:[],iva:{on:true,pct:21},irpf:{on:false,pct:15},disc:{on:false,pct:10},legend:'',validUntil:'',due:'',num:1,date:'2026-11-22',editRef:null}},canon:value=>JSON.stringify(value),retPct:()=>15,Date:class extends Date{constructor(...args){super(...(args.length?args:['2026-11-22T12:00:00Z']));}static now(){return Date.parse('2026-11-22T12:00:00Z');}}});
+  vm.runInContext(html.slice(start,end),context);context.draftTrack();assert.equal(context.draftDirty(),false);
+  for(const [field,value] of [['due','2026-12-22'],['projectId',9001],['capSummary',true],['legend','Condición']]){const before=context.state.draft[field];context.state.draft[field]=value;assert.equal(context.draftDirty(),true,field);context.state.draft[field]=before;}
+  context.state.draft.iva.pct=10;assert.equal(context.draftDirty(),true);
+  assert.match(html,/state\.draft\.disc=state\.draft\.disc\|\|\{on:false,pct:10\}; draftTrack\(state\.draft\)/);
 });
 
 test('assistant identity uses the verified Auth user id and never profile metadata or email',async()=>{

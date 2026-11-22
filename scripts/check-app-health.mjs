@@ -11,9 +11,13 @@ export async function appHealth(fetcher=fetch,now=()=>performance.now()){
   const page=await get('app',origin+'/?health=1');
   if(!page.ok)throw Error('La entrada de la app no responde correctamente');
   const html=await page.text();
-  if(!/const MODERNO_VER="v[\d.]+"/.test(html)||!html.includes('/save-efficiency.js?'))throw Error('La entrada no contiene la versión esperada');
+  const secretaryAsset=/src="(\/secretario-ui\.js\?v=\d+)"/.exec(html)?.[1];
+  if(!/const MODERNO_VER="v[\d.]+"/.test(html)||!html.includes('/save-efficiency.js?')||!secretaryAsset)throw Error('La entrada no contiene la versión esperada');
   const asset=await get('guardado',origin+'/save-efficiency.js?health=1');
   if(!asset.ok||!(await asset.text()).includes('ModernoEfficiency'))throw Error('El recurso de guardado no está disponible');
+  const secretaryUi=await get('secretario-ui',origin+secretaryAsset);
+  const secretarySource=secretaryUi.ok?await secretaryUi.text():'';
+  if(!secretaryUi.ok||!secretarySource.includes('var ModernoSecretary=(()=>')||!secretarySource.includes('body:JSON.stringify({session:session.access_token,payload:input})'))throw Error('El recurso del Secretario no está disponible');
   const publicKey=/const SUPABASE_ANON_KEY\s*=\s*"([^"]+)"/.exec(html)?.[1];
   const backend=/const SUPABASE_URL\s*=\s*"([^"]+)"/.exec(html)?.[1];
   // Read-only unauthenticated request. An explicit authorization rejection
