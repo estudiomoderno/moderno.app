@@ -14,6 +14,8 @@ var ModernoSecretary=(()=>{
   let identity=owner(),messages=[],panel=null,thread=null,composer=null,sendButton=null,stopButton=null,statusNode=null,contextNode=null;
   let collapsed=false,home=false,homePending=false,lastView=null,lastProject=null,busy=false,controller=null,generation=0,unavailable=false,authSubscription=null;
   let requestCounter=0,actions=new Map(),questions=[],answers={},feedbackTask='finance_question',contextTrimmed=false;
+  let positionQueued=false,positionSources=[];
+  const positionResize=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>schedulePosition()):null;
   let feedbackLoaded=false,feedbackLoading=false,feedbackRevision=null,feedbackOperation=0,feedbackError='',feedbackHost=null;
   const pendingWithdrawals=new Set();
   let withdrawalStorageBlocked=false;
@@ -251,7 +253,10 @@ var ModernoSecretary=(()=>{
     form.addEventListener('submit',event=>{
       event.preventDefault();
       if(questions.some(question=>!String(answers[question.id]||'').trim())){setStatus('Responde a las preguntas para continuar. También puedes escribir abajo.');return;}
-      const copy={...answers},message=questions.map(question=>question.prompt+' '+String(copy[question.id])).join('\n');
+      const copy={...answers},message=questions.map(question=>{
+        const value=String(copy[question.id]),option=(question.options||[]).find(item=>String(item.value??item.id??item.label)===value);
+        return question.prompt+' '+(option?labelText(option.label,160):value);
+      }).join('\n');
       submitMessage(message,copy);
     });container.append(form);
   }
@@ -383,12 +388,32 @@ var ModernoSecretary=(()=>{
       else checkIdentity();
     }
   }
+  function schedulePosition(){
+    if(positionQueued)return;positionQueued=true;
+    requestAnimationFrame(()=>{positionQueued=false;position();});
+  }
   function position(){
-    if(!panel||home||collapsed)return;
-    const header=document.querySelector('#desktop-header .desktop-inset-header'),workspace=document.querySelector('.project-workspace-tabs,.project-tabs');
-    let top=header&&getComputedStyle(header).display!=='none'?Math.max(76,header.getBoundingClientRect().bottom+16):76;
-    if(activeProject()&&workspace&&getComputedStyle(workspace).position==='fixed')top=Math.max(top,workspace.getBoundingClientRect().bottom+14);
-    panel.style.setProperty('--secretary-top',Math.min(top,180)+'px');
+    const surface=collapsed?document.getElementById('secretary-reopen'):panel;
+    if(!surface?.isConnected||home&&!collapsed)return;
+    const sources=[...document.querySelectorAll('#syncTag,#project-window-bar,.project-tabs.project-dock,#desktop-header .desktop-inset-header,#mHeader')];
+    if(positionResize){
+      for(const node of positionSources)if(!sources.includes(node))positionResize.unobserve(node);
+      for(const node of sources)if(!positionSources.includes(node))positionResize.observe(node);
+      positionSources=sources;
+    }
+    const screenHeight=window.innerHeight,rect=surface.getBoundingClientRect();
+    let top=76,bottom=window.innerWidth<=900?16:48;
+    for(const node of sources){
+      const style=getComputedStyle(node),box=node.getBoundingClientRect();
+      if(style.display==='none'||style.visibility==='hidden'||!box.width||!box.height)continue;
+      const overlapsHorizontally=rect.left<box.right&&rect.right>box.left;
+      if(node.id==='syncTag'||node.matches('.project-dock')&&box.bottom>screenHeight/2){
+        if(overlapsHorizontally)bottom=Math.max(bottom,screenHeight-box.top+12);
+      }else if(overlapsHorizontally&&box.bottom<screenHeight/2)top=Math.max(top,box.bottom+14);
+    }
+    if(collapsed){surface.style.bottom=bottom+'px';return;}
+    panel.style.setProperty('--secretary-top',top+'px');
+    panel.style.setProperty('--secretary-bottom',bottom+'px');
   }
   function refresh(){
     checkIdentity();
@@ -404,10 +429,13 @@ var ModernoSecretary=(()=>{
     document.body.classList.toggle('secretary-lateral',!home&&!collapsed);document.body.classList.toggle('secretary-folded',collapsed);
     panel.classList.toggle('is-home',home);panel.hidden=collapsed;
     contextNode.textContent=activeProject()?.name||'Finanzas';
-    if(!panel.isConnected)document.getElementById('view')?.append(panel);
+    // Fixed lateral UI belongs to the viewport, outside project animations and
+    // containing blocks. The central conversation remains ordinary view content.
+    const mount=home?document.getElementById('view'):document.body;
+    if(panel.parentElement!==mount)mount?.append(panel);
     document.getElementById('secretary-reopen')?.remove();
     if(collapsed){const reopen=button('Nuestro Secretario',unfold,'secretary-reopen');reopen.id='secretary-reopen';reopen.prepend(icon());document.body.append(reopen);}
-    updateBusy();position();if(changedView&&!messages.length)drawThread();if(!feedbackError)loadFeedback();
+    updateBusy();position();schedulePosition();if(changedView&&!messages.length)drawThread();if(!feedbackError)loadFeedback();
   }
   const previousRender=render;
   render=function(){panel?.remove();const result=previousRender.apply(this,arguments);refresh();return result;};
@@ -423,7 +451,9 @@ var ModernoSecretary=(()=>{
     if(finance){event.preventDefault();event.stopImmediatePropagation();openFinance();return;}
     if(event.target.closest?.('#page-route-bar')){home=false;homePending=false;}
   },true);
-  window.addEventListener('resize',position);
+  window.addEventListener('resize',schedulePosition);
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',schedulePosition);
+  new MutationObserver(schedulePosition).observe(document.body,{childList:true});
   window.addEventListener('storage',handleFeedbackStorage);
   if(sb?.auth?.onAuthStateChange){
     const result=sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'||session?.user?.id&&session.user.id!==state.sessionUser?.id)reset();});authSubscription=result?.data?.subscription;

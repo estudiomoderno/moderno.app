@@ -99,6 +99,29 @@ setup = r"""()=>{
  go('informes');ModernoSecretary.openFinance();fixtureVersions();window.fixtureBaseline=fixtureDocuments();
 }"""
 
+def wait_for_stable_view(page):
+    """Wait for the app's actual finite route fade, without disabling animation."""
+    page.evaluate("""async()=>{
+      const nodes=[document.getElementById('view'),document.getElementById('moderno-secretary')].filter(Boolean);
+      const animations=nodes.flatMap(node=>node.getAnimations()).filter(animation=>animation.playState==='running'&&animation.effect?.getTiming().iterations!==Infinity);
+      await Promise.all(animations.map(animation=>animation.finished.catch(()=>{})));
+      await document.fonts.ready;
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    }""")
+    page.wait_for_function("""()=>['view','moderno-secretary'].every(id=>{const node=document.getElementById(id);return !node||Number(getComputedStyle(node).opacity)>.999})""")
+
+
+def assert_secretary_clearance(page):
+    page.wait_for_function("""()=>{
+      const panel=document.getElementById('moderno-secretary'),sync=document.getElementById('syncTag');
+      if(!panel||!sync)return false;
+      const p=panel.getBoundingClientRect(),s=sync.getBoundingClientRect(),button=panel.querySelector('button[type=submit]')?.getBoundingClientRect();
+      if(!button)return false;
+      const disjoint=rect=>rect.right<=s.left||rect.left>=s.right||rect.bottom<=s.top-10||rect.top>=s.bottom+10;
+      return panel.parentElement===document.body&&disjoint(p)&&disjoint(button)&&p.top>=0&&p.bottom<=innerHeight;
+    }""")
+
+
 with socket.socket() as sock:
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
@@ -205,6 +228,7 @@ try:
             expect(page.get_by_role("heading", name="¿Qué hacemos hoy?", exact=True)).to_be_visible()
             expect(panel.get_by_role("button", name="Facturas", exact=True)).to_be_visible()
             expect(page.locator(".finance-overview")).to_be_hidden()
+            wait_for_stable_view(page)
             if output:
                 page.screenshot(path=str(output / f"secretario-central-{width}.png"), full_page=True)
 
@@ -221,6 +245,12 @@ try:
             assert page.evaluate("fixtureDocuments()===fixtureBaseline")
             assert requests[-1]["history"][0]["role"] == "user"
             assert page.evaluate("state.draft.editRef===null&&state.invoices.length===0")
+            expect(panel.locator(".secretary-thread")).not_to_contain_text("contact:0")
+            expect(panel.locator(".secretary-thread")).to_contain_text("Elige el cliente Cliente ficticio")
+            wait_for_stable_view(page)
+            assert_secretary_clearance(page)
+            assert page.locator("#secretary-message").evaluate("element=>getComputedStyle(element).borderTopWidth==='0px'&&getComputedStyle(element).boxShadow==='none'")
+            assert panel.locator("label[for=secretary-message]").evaluate("element=>element.getBoundingClientRect().width<=1&&element.getBoundingClientRect().height<=1")
             if output:
                 page.screenshot(path=str(output / f"secretario-borrador-{width}.png"), full_page=True)
 
@@ -277,6 +307,23 @@ try:
             expect(panel.locator(".secretary-context")).to_have_text("Proyecto ficticio")
             expect(panel.get_by_text("El borrador está preparado para revisar.", exact=True).first).to_be_visible()
             page.locator("#secretary-message").fill("respuesta segura")
+            wait_for_stable_view(page)
+            assert_secretary_clearance(page)
+            # A growing save-status message must move the composer above it too.
+            page.evaluate("""()=>{
+              const sync=document.getElementById('syncTag');
+              window.fixtureSyncPresentation={style:sync.getAttribute('style'),text:sync.querySelector('.txt').textContent};
+              sync.style.maxWidth='200px';sync.style.whiteSpace='normal';
+              sync.querySelector('.txt').textContent='Estado ficticio de guardado con varias líneas para comprobar que todos los controles permanecen accesibles.';
+            }""")
+            assert_secretary_clearance(page)
+            if output:
+                page.screenshot(path=str(output / f"secretario-proyecto-{width}.png"), full_page=True)
+            page.evaluate("""()=>{const sync=document.getElementById('syncTag'),saved=window.fixtureSyncPresentation;
+              if(saved.style===null)sync.removeAttribute('style');else sync.setAttribute('style',saved.style);
+              sync.querySelector('.txt').textContent=saved.text;
+            }""")
+            assert_secretary_clearance(page)
             panel.get_by_role("button", name="Enviar", exact=True).click()
             expect(panel.get_by_text('<img src=x onerror="window.injected=true">', exact=True)).to_be_visible()
             assert page.evaluate("window.injected!==true")
