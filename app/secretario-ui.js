@@ -358,7 +358,7 @@ var ModernoSecretary=(()=>{
       if(epoch!==generation||captured!==owner())return;
       const project=activeProject();feedbackTask=project?'project_question':'finance_question';
       const response=await fetch(endpoint(),{method:'POST',credentials:'omit',cache:'no-store',signal:controller.signal,
-        headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token,apikey:SUPABASE_ANON_KEY},
         body:JSON.stringify({studyId:ESTUDIO_ID,message:content,history,context:{view:home?'finanzas':state.view,...(project?{projectId:project.id}:{})},...(answerValues?{answers:answerValues}:{})})});
       const payload=await response.json().catch(()=>null);
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
