@@ -123,8 +123,19 @@ test('published app enables only the production endpoint and keeps feedback off'
   const config='window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://auth.moderno.app/functions/v1/secretario",feedbackEnabled:false});';
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=2"></script>'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=3"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
+});
+
+test('browser call sends the public project key separately from the user session',async()=>{
+  const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
+  const start=code.indexOf('const response=await fetch(endpoint()'),end=code.indexOf('const payload=await response.json()',start);
+  assert.ok(start>=0&&end>start);
+  const request=code.slice(start,end);
+  assert.match(request,/credentials:'omit'/);
+  assert.match(request,/Authorization:'Bearer '\+session\.access_token/);
+  assert.match(request,/apikey:SUPABASE_ANON_KEY/);
+  assert.doesNotMatch(request,/service[_-]?role|sb_secret_/i);
 });
 
 test('assistant identity uses the verified Auth user id and never profile metadata or email',async()=>{

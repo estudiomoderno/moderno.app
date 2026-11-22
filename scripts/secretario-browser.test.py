@@ -129,7 +129,7 @@ origin = f"http://127.0.0.1:{port}"
 cors_headers = {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Access-Control-Allow-Headers": "authorization, apikey, content-type",
     "Vary": "Origin",
 }
 server = subprocess.Popen(
@@ -173,11 +173,13 @@ try:
                         assert request.headers.get("origin") == origin
                         assert request.headers.get("access-control-request-method") == "POST"
                         requested_headers = {header.strip().lower() for header in request.headers.get("access-control-request-headers", "").split(",") if header.strip()}
-                        assert requested_headers.issubset({"authorization", "content-type"})
+                        assert requested_headers.issubset({"authorization", "apikey", "content-type"})
+                        assert "apikey" in requested_headers
                         request_route.fulfill(status=204, headers=cors_headers, body="")
                         return
                     assert request.method == "POST"
                     assert request.headers.get("authorization") == "Bearer fictional-token-no-credentials"
+                    assert request.headers.get("apikey") == "sb_publishable_fictional_only_no_credentials_secretary"
                     body = request.post_data_json
                     assert set(body).issubset({"studyId", "message", "history", "context", "answers"})
                     assert body["studyId"] == "11111111-1111-4111-8111-111111111111"
