@@ -15,3 +15,9 @@ verify_jwt = false
 # membership inside the handler, so it also supports current signing keys.
 [functions.mail-connect]
 verify_jwt = false
+
+# Secretario validates each user with Auth.getUser and reads the existing
+# filtered RPC using that user's JWT. Environment, origin and rollout guards
+# fail closed before any study data or model call.
+[functions.secretario]
+verify_jwt = false

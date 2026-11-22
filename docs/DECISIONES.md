@@ -1,5 +1,15 @@
 # Decisiones de TALLER
 
+## 2026-11-22 — Secretario en Finanzas y Proyectos; mejora compartida opcional
+
+El propietario autoriza desarrollar el Secretario: Finanzas abre una conversación central, con el logotipo oficial, que acompaña al usuario en un lateral plegable al abrir documentos y pantallas. Reutiliza los editores y las reglas de cálculo; pregunta por datos incompletos y prepara documentos editables. El guardado y la emisión siguen siendo decisiones explícitas en los editores. Esta orden sustituye la pausa anterior del asistente y la mera reserva visual, sin autorizar cambios en datos de producción.
+
+También autoriza aprender de dificultades comunes: valoraciones opcionales por usuario y estudio, con categorías cerradas y sin conversaciones, documentos, clientes, precios o importes. Los informes agregados se destinan a revisión humana de mejoras versionadas; no entrenan automáticamente el modelo ni comparten memoria entre estudios. Retirar el consentimiento detiene los envíos y elimina sus valoraciones conservadas.
+
+El mismo 22/11/2026 se completó una prueba conectada de extremo a extremo en `moderno-pruebas`, con identidad, estudio y datos exclusivamente ficticios: Auth, RLS, lectura autorizada, cuota, Responses API y respuesta financiera pasaron; se registró una sola consulta y el acceso temporal quedó desactivado. El propietario confirmó publicar el piloto directamente en la app porque por ahora es el único usuario.
+
+La publicación se prepara como canary: allowlist del propietario en servidor, modelo fijado, feedback desactivado, 20 consultas diarias por persona/estudio y un máximo global de 200 consultas al mes para toda la app. No se amplía automáticamente al llegar nuevos usuarios. Tras acreditar una copia física restaurable de la base y la copia verificada de los 945 objetos de Storage, se aplicó únicamente el runtime de cuota y se desplegó la Edge Function productiva apagada. La prueba `503 disabled` confirmó el corte previo a Auth, datos y OpenAI. El PR sigue sin fusionar hasta activar y verificar el canary del propietario. [Alcance y validación](SECRETARIO-IMPLEMENTACION-2026-11-22.md) · [Mejora compartida](SECRETARIO-MEJORA-COMUN.md).
+
 ## 2026-11-19 — Rediseño integral y publicación de Finanzas
 
 El propietario solicita rediseñar por completo Finanzas como espacio profesional de control, manteniendo una única entrada principal y cinco secciones internas: **Resumen, Facturas, Presupuestos, Contabilidad y Previsión**. Se aprueba una interfaz compacta y trazable que distingue facturado, cobrado, pendiente, gasto y previsión; añade emitidas/recibidas sin duplicar registros; conserva documentos, cobros parciales, filtros, estados, proyectos, editores y exportaciones; y retira del Resumen los indicadores fiscales específicos de España sin eliminar sus datos ni reglas.

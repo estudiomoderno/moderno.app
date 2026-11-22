@@ -11537,6 +11537,7 @@ const MODERNO_VER="v3.67.65";
    La anon public key está diseñada para ir en el cliente (protegida por RLS). */
 const SUPABASE_URL = "https://auth.moderno.app";
 const SUPABASE_ANON_KEY = "sb_publishable_MfUr7rezJhqiX1ujS295aA_aDF-YbLu";
+window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://auth.moderno.app/functions/v1/secretario",feedbackEnabled:false});
 const MAIL_FUNCTION_URL = "https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/mail-connect";
 const MAIL_FUNCTION_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNncXR5bHZhYXB3YnV3cXZwanRiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5OTY1NjAsImV4cCI6MjEwMzU3MjU2MH0.TR87W5BPvAAH4A9BrtmPd5aPVjX53HuS4CQm6bjtzOk";
 const sb = (SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("PEGA_AQUI") && SUPABASE_ANON_KEY.length>40 && window.supabase)
@@ -11553,7 +11554,7 @@ ModernoMail.configure({
 
 function sbUserToSession(u){
   const md = u.user_metadata || {};
-  return { name: md.full_name || md.name || (u.email||"").split("@")[0] || "Usuario",
+  return { id:typeof u.id==='string'?u.id:null, name: md.full_name || md.name || (u.email||"").split("@")[0] || "Usuario",
            mail: u.email || "", prov: (u.app_metadata && u.app_metadata.provider) || "email",
            avatar: md.avatar_url || md.picture || "" };
 }
@@ -13806,5 +13807,9 @@ const renderBeforeShoppingAdd=render;
 render=function(...args){const started=Date.now();try{const result=renderBeforeShoppingAdd.apply(this,args);shoppingRoomAddEnhance();return result;}finally{efficiencyMetrics.record('render',{ms:Date.now()-started});}};
 shoppingRoomAddEnhance();
 </script>
+<link rel="stylesheet" href="/brand/secretario.css?v=2">
+<script src="/secretario-bridge.js?v=2"></script>
+<script src="/secretary-feedback.js?v=2"></script>
+<script src="/secretario-ui.js?v=2"></script>
 </body>
 </html>
