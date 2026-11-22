@@ -1,4 +1,5 @@
 import {pathToFileURL} from 'node:url';
+import {checkSecretaryGateway} from './check-secretario-gateway.mjs';
 const origin='https://app.moderno.app';
 export async function appHealth(fetcher=fetch,now=()=>performance.now()){
   const checks=[];
@@ -18,6 +19,7 @@ export async function appHealth(fetcher=fetch,now=()=>performance.now()){
   // Read-only unauthenticated request. An explicit authorization rejection
   // proves the RPC and database answered without exposing any studio records.
   if(backend!=='https://auth.moderno.app'||!publicKey?.startsWith('sb_publishable_'))throw Error('Configuración pública no reconocida');
+  await checkSecretaryGateway({html,fetcher:(url,options)=>get(options.method==='OPTIONS'?'secretario-cors':'secretario-pasarela',url,options)});
   const rpc=await get('base-de-datos',backend+'/rest/v1/rpc/app_leer_versiones',{method:'POST',headers:{apikey:publicKey,'Content-Type':'application/json'},body:JSON.stringify({p_estudio:'00000000-0000-0000-0000-000000000000',p_bloques:[]})});
   const denial=await rpc.json();
   if(![401,403].includes(rpc.status)||denial?.code!=='42501')throw Error('La comprobación de acceso anónimo de la base de datos no respondió como se esperaba');

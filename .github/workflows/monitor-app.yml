@@ -26,5 +26,5 @@ jobs:
           node-version: '24'
       - name: Comprobar lógica sin peticiones reales
         run: node --test scripts/check-app-health.test.mjs
-      - name: Comprobar app y lectura anónima rechazada
+      - name: Comprobar app, pasarela del Secretario y lectura anónima rechazada
         run: node scripts/check-app-health.mjs
