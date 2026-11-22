@@ -13,7 +13,8 @@ if (backend.protocol!=='https:' || backend.username || backend.password || backe
   throw new Error('Configura SUPABASE_URL y una clave pública del proyecto de pruebas en .env. El servidor local no admite producción ni claves administrativas.');
 }
 const safeBackend=backend.origin;
-// This is an explicit local test gate. The production HTML never carries it.
+// This is an explicit local test gate. It replaces the published production
+// configuration before the HTML is served from localhost.
 const secretaryEnabled=process.env.MODERNO_SECRETARY_ENABLED==='true';
 if(secretaryEnabled&&backend.hostname!=='chsilowzrtumbcofspwv.supabase.co'){
   throw new Error('El Secretario solo se puede activar contra Moderno Prueba.');
@@ -43,13 +44,9 @@ const server = http.createServer(async (req, res) => {
       body=Buffer.from(body.toString()
       .replace('const SUPABASE_URL = "https://auth.moderno.app";', 'const SUPABASE_URL = '+JSON.stringify(safeBackend)+';')
       .replace(/const SUPABASE_ANON_KEY = "[^"]+";/,'const SUPABASE_ANON_KEY = '+JSON.stringify(anonKey)+';')
+      .replace(/window\.MODERNO_SECRETARY_CONFIG=Object\.freeze\([^;]+\);/,'window.MODERNO_SECRETARY_CONFIG=Object.freeze('+JSON.stringify(secretaryConfig||{enabled:false})+');')
       .replace('const LS_KEY="moderno_prod_v1";', 'const LS_KEY='+JSON.stringify('moderno_pruebas_'+backend.hostname.split('.')[0])+';'));
-      if(!body.includes('const SUPABASE_URL = '+JSON.stringify(safeBackend)+';') || !body.includes('const LS_KEY='+JSON.stringify('moderno_pruebas_'+backend.hostname.split('.')[0])+';'))throw new Error('No se pudo aislar el HTML');
-      if(secretaryConfig){
-        const html=body.toString();
-        if(!html.includes('</head>'))throw new Error('No se pudo configurar el Secretario de pruebas');
-        body=Buffer.from(html.replace('</head>','<script>window.MODERNO_SECRETARY_CONFIG=Object.freeze('+JSON.stringify(secretaryConfig)+');</script>\n</head>'));
-      }
+      if(!body.includes('const SUPABASE_URL = '+JSON.stringify(safeBackend)+';') || !body.includes('const LS_KEY='+JSON.stringify('moderno_pruebas_'+backend.hostname.split('.')[0])+';') || !body.includes('window.MODERNO_SECRETARY_CONFIG=Object.freeze('+JSON.stringify(secretaryConfig||{enabled:false})+');'))throw new Error('No se pudo aislar el HTML');
     }
     res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store', 'Content-Security-Policy':"connect-src 'self' "+safeBackend+' wss://'+backend.hostname });
     res.end(req.method === 'HEAD' ? undefined : body);

@@ -17,6 +17,7 @@ verify_jwt = false
 verify_jwt = false
 
 # Secretario validates each user with Auth.getUser and reads the existing
-# filtered RPC using that user's JWT. Its handler is disabled outside tests.
+# filtered RPC using that user's JWT. Environment, origin and rollout guards
+# fail closed before any study data or model call.
 [functions.secretario]
 verify_jwt = false

@@ -118,6 +118,15 @@ test('production without an explicit gate does not install handlers or touch the
   }
 });
 
+test('published app enables only the production endpoint and keeps feedback off',async()=>{
+  const html=await readFile(new URL('../app/index.html',import.meta.url),'utf8');
+  const config='window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://auth.moderno.app/functions/v1/secretario",feedbackEnabled:false});';
+  assert.equal(html.split(config).length,2);
+  assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=2"></script>'));
+  assert.doesNotMatch(config,/OPENAI|sk-/i);
+});
+
 test('assistant identity uses the verified Auth user id and never profile metadata or email',async()=>{
   const html=await readFile(new URL('../app/index.html',import.meta.url),'utf8');
   const start=html.indexOf('function sbUserToSession('),end=html.indexOf('function applySessionUI(',start);

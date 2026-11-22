@@ -1,12 +1,17 @@
 import {SecretarioError,validateEnvironment,requestPlan,runSecretary} from './core.mjs';
 
 const LIMIT=48000;
-function allowedOrigins(env){
+function allowedOrigins(env,deployment){
  const values=String(env.SECRETARY_ALLOWED_ORIGINS||'').split(',').map(x=>x.trim()).filter(Boolean);
- if(!values.length)throw new SecretarioError('not_configured','Falta configurar el origen de pruebas del Secretario.',503);
- for(const origin of values){let url;try{url=new URL(origin);}catch{throw new SecretarioError('not_configured','El origen de pruebas no es válido.',503);}
-  if(url.origin!==origin||origin==='https://app.moderno.app'||origin==='https://moderno.app'||!(['https:'].includes(url.protocol)||(url.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(url.hostname))))throw new SecretarioError('not_configured','El origen de pruebas no es válido.',503);
+ if(!values.length)throw new SecretarioError('not_configured','Falta configurar el origen del Secretario.',503);
+ if(new Set(values).size!==values.length)throw new SecretarioError('not_configured','El origen del Secretario no es válido.',503);
+ for(const origin of values){let url;try{url=new URL(origin);}catch{throw new SecretarioError('not_configured','El origen del Secretario no es válido.',503);}
+  const valid=deployment.environment==='production'
+   ? origin==='https://app.moderno.app'
+   : url.origin===origin&&url.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(url.hostname);
+  if(url.origin!==origin||!valid)throw new SecretarioError('not_configured','El origen del Secretario no es válido.',503);
  }
+ if(deployment.environment==='production'&&(values.length!==1||values[0]!=='https://app.moderno.app'))throw new SecretarioError('not_configured','El origen de producción del Secretario no es válido.',503);
  return values;
 }
 async function readBody(request){
@@ -27,16 +32,17 @@ export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Dat
   const requestId=uuid(),origin=request.headers.get('Origin');let allowed=[];
   const json=(body,status=200)=>new Response(JSON.stringify({...body,requestId}),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','Vary':'Origin','X-Content-Type-Options':'nosniff',...(origin&&allowed.includes(origin)?{'Access-Control-Allow-Origin':origin}:{}),'Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS'}});
   try{
-   allowed=allowedOrigins(env);
-   if(origin&&!allowed.includes(origin))throw new SecretarioError('origin_forbidden','Este origen no está autorizado para el entorno de pruebas.',403);
+   const deployment=validateEnvironment(env);
+   allowed=allowedOrigins(env,deployment);
+   if((deployment.environment==='production'&&!origin)||(origin&&!allowed.includes(origin)))throw new SecretarioError('origin_forbidden','Este origen no está autorizado para el Secretario.',403);
    if(request.method==='OPTIONS')return json({ok:true});
    if(request.method!=='POST')throw new SecretarioError('method_not_allowed','Utiliza POST para consultar el Secretario.',405);
-   validateEnvironment(env);
    if(!/^application\/json(?:\s*;|$)/i.test(request.headers.get('Content-Type')||''))throw new SecretarioError('invalid_content_type','La solicitud debe ser JSON.',415);
    const auth=request.headers.get('Authorization')||'';
    if(!/^Bearer [^\s]{20,8192}$/.test(auth))throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
    const actor=await authenticate(auth.slice(7));
    if(!actor?.userId||!actor.client)throw new SecretarioError('unauthorized','Inicia sesión de nuevo para continuar.',401);
+   if(deployment.allowedUserIds.length&&!deployment.allowedUserIds.includes(actor.userId))throw new SecretarioError('rollout_forbidden','El Secretario todavía no está habilitado para este usuario.',403);
    // A local-instance burst limit complements the isolated project budget. It
    // is deliberately not described as a distributed or monetary hard cap.
    const minute=Math.floor(now()/60000);for(const [key,value] of rates)if(value.minute!==minute)rates.delete(key);

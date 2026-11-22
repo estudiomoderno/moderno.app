@@ -10,7 +10,7 @@ test('local server replaces backend, isolates cache and limits connections',asyn
   assert.ok(html.includes('const SUPABASE_URL = "https://pruebasdemo.supabase.co";'));
   assert.ok(html.includes('const LS_KEY="moderno_pruebas_pruebasdemo";'));
   assert.ok(!html.includes('const LS_KEY="moderno_prod_v1";'));
-  assert.ok(!html.includes('window.MODERNO_SECRETARY_CONFIG=Object.freeze('));
+  assert.ok(html.includes('window.MODERNO_SECRETARY_CONFIG=Object.freeze({"enabled":false})'));
   assert.equal(res.headers.get('content-security-policy'),"connect-src 'self' https://pruebasdemo.supabase.co wss://pruebasdemo.supabase.co");
   const asset=await fetch('http://127.0.0.1:'+port+'/specifications.js');assert.equal(asset.status,200);assert.match(await asset.text(),/var ModernoSpec/);
  }finally{clearTimeout(timer);if(child.exitCode===null){const stopped=once(child,'exit');child.kill();await stopped;}}

@@ -2,21 +2,33 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {ADMIN_BLOCKS,TEST_PROJECT_REF,normalizeRequest,loadAuthorizedSnapshot,modelContext,executePlan,financeMetrics,requestPlan,reserveRequest,runSecretary,validateEnvironment} from '../supabase/functions/secretario/core.mjs';
+import {ADMIN_BLOCKS,TEST_PROJECT_REF,PRODUCTION_PROJECT_REF,SECRETARY_MODEL,normalizeRequest,loadAuthorizedSnapshot,modelContext,executePlan,financeMetrics,requestPlan,reserveRequest,runSecretary,validateEnvironment} from '../supabase/functions/secretario/core.mjs';
 import {createSecretaryHandler} from '../supabase/functions/secretario/handler.mjs';
 
-const STUDY='00000000-0000-4000-8000-000000000001',VERSION='2026-11-22T10:00:00.000Z';
-const env={SECRETARY_ENABLED:'true',SECRETARY_ENVIRONMENT:'test',SECRETARY_ALLOWED_PROJECT_REF:TEST_PROJECT_REF,SECRETARY_ALLOWED_ORIGINS:'http://localhost:4173',SUPABASE_URL:`https://${TEST_PROJECT_REF}.supabase.co`,SUPABASE_ANON_KEY:'test-public-key',OPENAI_API_KEY:'fixture-not-a-real-key',OPENAI_MODEL:'fixture-model'};
+const STUDY='00000000-0000-4000-8000-000000000001',PILOT_USER='10000000-0000-4000-8000-000000000001',VERSION='2026-11-22T10:00:00.000Z';
+const env={SECRETARY_ENABLED:'true',SECRETARY_ENVIRONMENT:'test',SECRETARY_ALLOWED_PROJECT_REF:TEST_PROJECT_REF,SECRETARY_ALLOWED_ORIGINS:'http://localhost:4173',SECRETARY_ALLOWED_USER_IDS:'',SUPABASE_URL:`https://${TEST_PROJECT_REF}.supabase.co`,SUPABASE_ANON_KEY:'test-public-key',OPENAI_API_KEY:'fixture-not-a-real-key',OPENAI_MODEL:SECRETARY_MODEL};
+const productionEnv={...env,SECRETARY_ENVIRONMENT:'production',SECRETARY_ALLOWED_PROJECT_REF:PRODUCTION_PROJECT_REF,SECRETARY_ALLOWED_ORIGINS:'https://app.moderno.app',SECRETARY_ALLOWED_USER_IDS:PILOT_USER,SUPABASE_URL:`https://${PRODUCTION_PROJECT_REF}.supabase.co`};
 const copy=x=>JSON.parse(JSON.stringify(x));
 function snapshot(){return {studyId:STUDY,role:'admin',versions:Object.fromEntries(ADMIN_BLOCKS.map(b=>[b,VERSION])),projects:[{id:1,name:'Casa Demo',num:'PR-DEMO',brand:'demo',client:'Cliente de prueba',tasks:[{id:11,title:'Revisar propuesta',done:false}],files:[{id:21,name:'Plano demo.pdf',data:'never-send-base64'}]}],clients:[{name:'Cliente de prueba',num:'CL-001',brand:'demo',type:'Cliente',nif:'PRIVATE-TAX-ID',email:'private@example.invalid'}],config:{BRAND:{demo:{name:'Espacio Demo'}},account:{vat:21,irpf:15,currency:'EUR',iban:'PRIVATE-IBAN'},emitter:{email:'private@example.invalid'},users:[{name:'PRIVATE-USER'}],catalog:[{id:7,brand:'demo',name:'Asesoría',price:125,unit:'h',tipo:'Servicio'}]},quotes:[],drafts:[],invoices:[],entries:[]};}
 function rows(s){const v={proyectos:s.projects,contactos:s.clients,config:s.config,presupuestos:{quotes:s.quotes,drafts:s.drafts,n:0},facturas:{invoices:s.invoices,entries:s.entries,n:0}};return Object.entries(v).map(([bloque,contenido])=>({bloque,contenido,rol:s.role,updated_at:s.versions[bloque]||VERSION}));}
-function client(s=snapshot(),override={}){const calls=[];return {calls,async rpc(name,args){calls.push({name,args});assert.ok(['app_rol','app_leer_bloques','secretary_request_reserve'].includes(name),'Secretary only reads authorized data or reserves its bounded usage');if(name==='app_rol')return override.roleResult||{data:s.role,error:null};if(name==='secretary_request_reserve')return override.quotaResult||{data:{accepted:true,daily_remaining:19,monthly_remaining:199},error:null};return override.blocksResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)),error:null};}};}
+function client(s=snapshot(),override={}){const calls=[];return {calls,async rpc(name,args){calls.push({name,args});assert.ok(['app_rol','app_leer_bloques','secretary_request_reserve'].includes(name),'Secretary only reads authorized data or reserves its bounded usage');if(name==='app_rol')return override.roleResult||{data:s.role,error:null};if(name==='secretary_request_reserve')return override.quotaResult||{data:{accepted:true,daily_remaining:19,monthly_remaining:199,global_monthly_remaining:199},error:null};return override.blocksResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)),error:null};}};}
 function request(changes={}){return normalizeRequest({studyId:STUDY,message:'Prepara un presupuesto de 2 horas de Asesoría para Casa Demo',context:{view:'proyecto',projectId:1},...changes});}
 function plan(changes={}){return {intent:'prepare_draft',view:null,projectId:'1',projectQuery:null,clientId:'contact:0',clientQuery:null,kind:'presupuesto',quoteRef:null,draftId:null,lines:[{name:'Asesoría',catalogId:'7',qty:2,qtyEvidence:'2 horas',unit:'h',price:null,priceEvidence:null}],sourceIds:[],question:null,...changes};}
 
-test('production, missing explicit test gate and disabled model fail closed',()=>{
+test('only the two exact deployments and the pinned model pass environment guards',()=>{
  assert.doesNotThrow(()=>validateEnvironment(env));
- for(const changes of [{SECRETARY_ENABLED:'false'},{SECRETARY_ENVIRONMENT:'production'},{SECRETARY_ALLOWED_PROJECT_REF:'other'},{SUPABASE_URL:'https://auth.moderno.app'},{OPENAI_MODEL:''},{OPENAI_API_KEY:''}])assert.throws(()=>validateEnvironment({...env,...changes}));
+ assert.doesNotThrow(()=>validateEnvironment(productionEnv));
+ for(const candidate of [
+  {...env,SECRETARY_ENABLED:'false'},
+  {...env,SECRETARY_ENVIRONMENT:'production'},
+  {...productionEnv,SECRETARY_ALLOWED_PROJECT_REF:TEST_PROJECT_REF},
+  {...productionEnv,SUPABASE_URL:`https://${TEST_PROJECT_REF}.supabase.co`},
+  {...productionEnv,SUPABASE_URL:'https://auth.moderno.app'},
+  {...productionEnv,SECRETARY_ALLOWED_USER_IDS:''},
+  {...productionEnv,SECRETARY_ALLOWED_USER_IDS:'not-a-user-id'},
+  {...env,OPENAI_MODEL:'another-model'},
+  {...env,OPENAI_API_KEY:''}
+ ])assert.throws(()=>validateEnvironment(candidate));
  for(const changes of [{SUPABASE_URL:`https://user:password@${TEST_PROJECT_REF}.supabase.co`},{SUPABASE_ANON_KEY:'sb_secret_example'},{SUPABASE_ANON_KEY:'header.'+Buffer.from(JSON.stringify({role:'service_role'})).toString('base64url')+'.sig'}])assert.throws(()=>validateEnvironment({...env,...changes}),{code:'environment_blocked'});
 });
 test('request accepts only conversation text and explicit context, never client snapshot',()=>{
@@ -142,13 +154,31 @@ test('provider errors, refusal, incomplete or malformed output never manufacture
  await assert.rejects(requestPlan({apiKey:'fixture',model:'fixture',request:request(),context:{},fetchImpl:async()=>new Response('{"secret":"raw upstream detail"}',{status:500})}),error=>error.code==='provider_unavailable'&&!error.message.includes('secret'));
 });
 
-function http(body=request(),options={}){return new Request('https://edge.test/secretario',{method:'POST',headers:{Origin:'http://localhost:4173','Content-Type':'application/json',Authorization:'Bearer '+'t'.repeat(30),...options.headers},body:JSON.stringify(body),...options});}
-function handler(changes={}){return createSecretaryHandler({env,authenticate:async()=>({userId:'fake-user',client:client()}),planner:async()=>plan(),uuid:()=> 'request-demo',...changes});}
+function http(body=request(),options={}){return new Request('https://edge.test/secretario',{method:'POST',body:JSON.stringify(body),...options,headers:{Origin:'http://localhost:4173','Content-Type':'application/json',Authorization:'Bearer '+'t'.repeat(30),...options.headers}});}
+function productionHttp(body=request(),options={}){return http(body,{...options,headers:{Origin:'https://app.moderno.app',...options.headers}});}
+function handler(changes={}){const {actorId='fake-user',...deps}=changes;return createSecretaryHandler({env,authenticate:async()=>({userId:actorId,client:client()}),planner:async()=>plan(),uuid:()=> 'request-demo',...deps});}
 test('HTTP authentication/CORS gates happen before provider or source reads',async()=>{
  let used=false;const h=handler({authenticate:async()=>{used=true;return null;}});
  assert.equal((await h(http(request(),{headers:{Origin:'https://evil.invalid','Content-Type':'application/json',Authorization:'Bearer '+'t'.repeat(30)}}))).status,403);assert.equal(used,false);
- assert.equal((await h(http(request(),{headers:{Origin:'http://localhost:4173','Content-Type':'application/json'}}))).status,401);assert.equal(used,false);
+ assert.equal((await h(http(request(),{headers:{Origin:'http://localhost:4173',Authorization:''}}))).status,401);assert.equal(used,false);
  const disabled=handler({env:{...env,SECRETARY_ENABLED:'false'},authenticate:async()=>{used=true;}});assert.equal((await disabled(http())).status,503);assert.equal(used,false);
+});
+test('production accepts only the exact app origin, a present Origin and the pilot user',async()=>{
+ const allowed=handler({env:productionEnv,actorId:PILOT_USER});
+ assert.equal((await allowed(productionHttp())).status,200);
+ for(const origin of ['http://localhost:4173','https://moderno.app','https://evil.invalid','https://app.moderno.app.evil.invalid']){
+  assert.equal((await allowed(productionHttp(request(),{headers:{Origin:origin}}))).status,403);
+ }
+ assert.equal((await allowed(productionHttp(request(),{headers:{Origin:''}}))).status,403);
+ let reached=false;
+ const excluded=handler({env:productionEnv,actorId:'20000000-0000-4000-8000-000000000002',planner:async()=>{reached=true;return plan();}});
+ assert.equal((await excluded(productionHttp())).status,403);assert.equal(reached,false);
+ const testHandler=handler();assert.equal((await testHandler(http(request(),{headers:{Origin:'https://app.moderno.app'}}))).status,403);
+});
+test('invalid or revoked authentication cannot read RPCs or call the provider',async()=>{
+ let provider=false,rpc=false;
+ const h=handler({authenticate:async()=>{throw Error('revoked token');},planner:async()=>{provider=true;return plan();}});
+ const result=await h(http());assert.equal(result.status,503);assert.equal(provider,false);assert.equal(rpc,false);
 });
 test('HTTP real contract returns a reviewable proposal without writes',async()=>{
  const result=await handler()(http()),body=await result.json();assert.equal(result.status,200);assert.equal(result.headers.get('access-control-allow-origin'),'http://localhost:4173');assert.equal(result.headers.get('cache-control'),'no-store');assert.equal(body.requestId,'request-demo');assert.equal(body.actions[0].type,'prepare_draft');assert.equal(body.status,'proposal');

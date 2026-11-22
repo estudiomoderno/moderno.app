@@ -5,6 +5,11 @@ import vm from 'node:vm';
 
 const ui=fs.readFileSync(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
 const core=fs.readFileSync(new URL('../app/secretary-feedback.js',import.meta.url),'utf8');
+
+test('production pilot hides feedback controls while collection is disabled',()=>{
+  assert.match(ui,/if\(config\.feedbackEnabled!==true\|\|!feedback\)\{feedbackHost\.hidden=true;return;\}/);
+  assert.doesNotMatch(ui,/pendiente de activarse en pruebas/);
+});
 function section(start,end){
   const from=ui.indexOf(start),to=ui.indexOf(end,from);
   assert.ok(from>=0&&to>from,'Secretary feedback test boundaries must exist');

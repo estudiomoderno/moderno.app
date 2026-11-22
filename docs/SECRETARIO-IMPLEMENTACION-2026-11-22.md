@@ -1,10 +1,12 @@
-# Secretario de Moderno.app — implementación en pruebas
+# Secretario de Moderno.app — implementación y piloto
 
 ## Objetivo y estado
 
 Finanzas necesita una entrada comprensible para profesionales del diseño. El Secretario abre una conversación central, ayuda a encontrar información y prepara documentos editables. La conversación se traslada al lateral al navegar y puede plegarse; las secciones existentes siguen disponibles.
 
-Esta entrega permanece en una rama y un PR de borrador. No implica activación en la aplicación publicada ni conexión efectiva a OpenAI. El 22/11/2026 se preparó únicamente el proyecto Supabase aislado `moderno-pruebas`: se aplicaron sus migraciones de RLS, contrato, cuota y retención, y se desplegó la Edge Function desactivada por configuración. No se ha modificado producción. La instrucción actual del propietario permite desarrollar el asistente y preparar una credencial de pruebas; sustituye las pausas históricas sobre IA, conservando la prohibición de tocar datos reales.
+La entrega permanece en una rama y un PR de borrador hasta completar los controles productivos. El 22/11/2026 se preparó el proyecto Supabase aislado `moderno-pruebas` y se completó una prueba real de extremo a extremo con una identidad, estudio y datos exclusivamente ficticios. Auth, RLS, cuota, Edge Function, Responses API y respuesta financiera quedaron comprobados con una sola consulta. El acceso temporal de prueba se desactivó después.
+
+El propietario ha autorizado publicar el piloto directamente en la aplicación porque actualmente es el único usuario. Esa autorización no elimina las condiciones de copia, reversión y verificación: no se aplicará SQL ni se desplegará la función en producción hasta acreditar una copia actual y restaurable de la base. El lanzamiento queda limitado por allowlist de usuario en servidor y no se abre automáticamente a futuros usuarios.
 
 ## Componentes
 
@@ -16,7 +18,8 @@ Esta entrega permanece en una rama y un PR de borrador. No implica activación e
 | `supabase/functions/secretario/` | Autentica con `getUser`, lee datos mediante el JWT del usuario, solicita un plan estructurado y verifica acciones/fuentes. |
 | `app/secretary-feedback.js` | Contrato cerrado, consentimiento, cancelación y agregación de revisión sin textos privados. |
 | `SQL/secretario-pruebas-prerequisitos.sql` | Contrato mínimo, RLS y alta aislada para el proyecto vacío de Moderno Prueba; se niega a ejecutarse si ya hay datos. |
-| `SQL/secretario-runtime.sql` | Cuota distribuida de 20 consultas por persona/estudio/día y 200 al mes, sin conservar contenido. |
+| `SQL/secretario-runtime.sql` | Cuota de 20 consultas por persona/estudio/día, 200 al mes y 200 globales al mes para toda la app, sin conservar contenido. |
+| `SQL/secretario-runtime.rollback.sql` | Corte no destructivo de nuevas reservas; conserva los contadores. |
 | `SQL/secretario-feedback.sql` | Consentimiento y valoraciones independientes de los documentos. RPC con identidad y pertenencia verificadas; tablas internas sin acceso directo. |
 | `SQL/secretario-retencion-cron.sql` | Purga diaria de valoraciones vencidas y contadores antiguos mediante Supabase Cron. |
 
@@ -47,23 +50,33 @@ Los importes de resumen se calculan de forma determinista y las pruebas comparan
 
 ### Navegador y servidor local
 
-El HTML de producción carece de configuración activa. El servidor local oficial puede inyectarla únicamente si `MODERNO_SECRETARY_ENABLED=true` y la URL corresponde al proyecto verificado `moderno-pruebas`. La mejora compartida requiere además `MODERNO_SECRETARY_FEEDBACK_ENABLED=true` y sus RPC disponibles.
+El candidato de HTML publicado contiene exclusivamente el endpoint público `https://auth.moderno.app/functions/v1/secretario`, con el Secretario activado y el feedback desactivado. No contiene la clave de OpenAI. El servidor local sustituye esa configuración y solo puede activar el Secretario contra `moderno-pruebas`; continúa rechazando producción y claves administrativas.
 
 El navegador nunca recibe la clave de OpenAI. El origen de la función se deriva del mismo backend de pruebas; la política de conexiones del servidor local se mantiene limitada a ese backend.
 
 ### Edge Function
 
-Configurar exclusivamente en el servidor de pruebas:
+Configuración de pruebas:
 
 - `SECRETARY_ENABLED=true`.
 - `SECRETARY_ENVIRONMENT=test`.
 - `SECRETARY_ALLOWED_PROJECT_REF=chsilowzrtumbcofspwv`.
-- `SECRETARY_ALLOWED_ORIGINS`: lista explícita de orígenes de pruebas, sin comodines ni el dominio de producción.
+- `SECRETARY_ALLOWED_ORIGINS`: loopback local explícito, sin comodines ni el dominio de producción.
 - `OPENAI_API_KEY`: secreto del proyecto autorizado, nunca en GitHub, HTML, capturas o registros.
-- `OPENAI_MODEL`: modelo comprobado para el esquema de respuesta y el presupuesto acordado.
+- `OPENAI_MODEL=gpt-5.4-mini-2026-03-17`: modelo comprobado y fijado por código.
 - Variables públicas de Supabase del entorno de pruebas; se rechazan claves administrativas.
 
-La llamada al proveedor usa `store:false`; esto no es una promesa de retención cero del proveedor. Se necesita completar la política de datos aplicable y comprobar la configuración contratada antes de activar para usuarios. El manejador limita tamaño, duración y ráfagas por instancia. Además, antes de cada llamada reserva de forma atómica una unidad en `secretary_request_reserve`: 20 consultas por persona/estudio/día y 200 al mes. Solo guarda identidad técnica, estudio, fecha y contador; no guarda mensajes ni documentos. Esta cuota reduce el riesgo pero **no sustituye el límite de presupuesto del proyecto en OpenAI**, que debe verificarse antes de una prueba conectada.
+Configuración productiva del canary:
+
+- `SECRETARY_ENABLED=true` solo después de instalar y comprobar la cuota.
+- `SECRETARY_ENVIRONMENT=production`.
+- `SECRETARY_ALLOWED_PROJECT_REF=cgqtylvaapwbuwqvpjtb`.
+- `SECRETARY_ALLOWED_ORIGINS=https://app.moderno.app`, único origen admitido y obligatorio en POST.
+- `SECRETARY_ALLOWED_USER_IDS`: UUID exacto del propietario; es obligatorio en producción.
+- Clave restringida del proyecto OpenAI dedicado y el mismo modelo fijado.
+- La URL interna de Supabase debe coincidir exactamente con el proyecto productivo; el alias público no relaja esa guarda.
+
+La llamada al proveedor usa `store:false`; esto no es una promesa de retención cero del proveedor. El manejador limita tamaño, duración y ráfagas por instancia. Antes de cada llamada, `secretary_request_reserve` toma primero un bloqueo mensual global y después el del usuario/estudio: como máximo 20 consultas diarias por persona/estudio, 200 mensuales por persona/estudio y 200 mensuales entre toda la aplicación. Solo guarda identidad técnica, estudio, fecha y contador; no guarda mensajes ni documentos. La cuota cuenta solicitudes, no tokens ni euros, y complementa los controles de facturación del proyecto OpenAI.
 
 ### Mejora compartida
 
@@ -82,22 +95,28 @@ Comprobación del 22/11/2026, sin leer ni modificar registros de producción:
 - Se instalaron el alta ficticia aislada, `app_rol`, `app_leer_bloques` y `app_guardar_lote`. El alta crea como máximo un estudio de pruebas por identidad autenticada y no copia información productiva.
 - Se instalaron la cuota distribuida, el consentimiento/feedback y la purga diaria. Las tablas privadas tienen RLS y no conceden acceso directo a `anon` ni `authenticated`.
 - Los asesores de seguridad y rendimiento no muestran errores de RLS ni avisos de inicialización repetida de `auth.uid()`. Permanecen avisos informativos esperados sobre tablas privadas sin políticas y funciones `security definer`: son fronteras RPC intencionadas, con privilegios y pertenencia comprobados en pruebas.
-- La Edge Function `secretario` está desplegada en el proyecto de pruebas, pero no se considera activada: faltan la credencial, el modelo, los orígenes permitidos y los flags de prueba.
-- No se ha confirmado una credencial de OpenAI instalada. La captura disponible muestra el formulario previo a crearla y el proyecto predeterminado, que no debe utilizarse. La clave debe pertenecer a un proyecto exclusivo con límite duro y alertas comprobados; nunca debe pegarse en chat ni Git.
+- La Edge Function `secretario` se activó en pruebas con origen, proyecto y modelo exactos y una clave restringida a Responses; no se expuso la clave al navegador ni al repositorio.
+- Una cuenta ficticia confirmada, un estudio ficticio y nueve bloques vacíos completaron el recorrido. El resumen devolvió ceros coherentes y la base registró exactamente una reserva. La página temporal quedó anulada con respuesta 410 y el archivo local fue retirado.
 
-Las migraciones aplicadas en el proyecto de pruebas son `secretario_test_prerequisites`, `secretario_runtime_quota`, `secretario_feedback_opt_in`, `secretario_retention_cron` y `secretario_test_rls_optimization`. La base sigue sin estudios, miembros ni contenido de clientes. Falta crear una identidad ficticia y completar la configuración de OpenAI antes de una prueba conectada. No se copiará información real de producción para salir del bloqueo.
+Las migraciones aplicadas en el proyecto de pruebas son `secretario_test_prerequisites`, `secretario_runtime_quota`, `secretario_feedback_opt_in`, `secretario_retention_cron`, `secretario_test_rls_optimization` y `secretario_global_quota_guard`. El contenido creado para la comprobación es ficticio y permanece aislado; no se copió información de producción. Tras actualizar la cuota se verificó que conserva una sola reserva, que `anon` no puede ejecutarla y que el bloqueo global está instalado.
+
+## Preparación productiva
+
+La inspección de solo lectura confirmó que producción tiene PostgreSQL 17, RLS en `estudios`, `miembros` y `datos_estudio`, y las firmas `app_rol`, `app_rol_usuario` y `app_leer_bloques`. No existe ningún objeto homónimo del Secretario. Para el piloto se aplicará solo `secretario-runtime.sql`; no se aplicarán los prerrequisitos de pruebas, feedback ni cron.
+
+Storage tiene una copia programada verificada el 22/11/2026 con 945 objetos idénticos. La copia actual y restaurable de la base aún debe acreditarse en el panel `Database → Backups → Scheduled` antes de cualquier migración productiva.
 
 ## Comprobaciones
 
 Las pruebas unitarias cubren el servidor local, validación de peticiones/respuestas, referencias, permisos, cuota previa al proveedor, propuestas, cálculos y revocación del consentimiento. Las pruebas SQL usan PostgreSQL desechable con datos inventados y `rollback`; incluyen contrato, RLS, alta aislada, escritura versionada, cuota diaria/mensual, feedback y retirada. El flujo de navegador intercepta la IA y bloquea conexiones externas. Los workflows de PR no despliegan ni usan credenciales de producción.
 
-El candidato con cuota y migraciones pasó [CI general y PostgreSQL 17](https://github.com/estudiomoderno/moderno.app/actions/runs/45012449672), [navegador aislado](https://github.com/estudiomoderno/moderno.app/actions/runs/45012449703) y [visual de proyectos](https://github.com/estudiomoderno/moderno.app/actions/runs/45012449739). Las cuatro suites específicas del Secretario también pasan localmente (72 comprobaciones). Los dos primeros intentos del nuevo check SQL detectaron defectos de la propia fixture —permisos simulados de `auth` y sintaxis de un intervalo—; ambos se corrigieron antes de esta ejecución verde y no afectaban al proyecto Supabase aplicado.
+El candidato anterior pasó [CI general y PostgreSQL 17](https://github.com/estudiomoderno/moderno.app/actions/runs/45012449672), [navegador aislado](https://github.com/estudiomoderno/moderno.app/actions/runs/45012449703) y [visual de proyectos](https://github.com/estudiomoderno/moderno.app/actions/runs/45012449739). Tras añadir las guardas productivas, 83 comprobaciones específicas y la suite local completa de 837 pruebas pasan sin fallos. El nuevo contrato SQL global deberá volver a pasar PostgreSQL 17 en el siguiente HEAD del PR antes de aplicar producción.
 
 Chromium no pudo arrancar en el contenedor de trabajo por la restricción de sockets del entorno. Por eso se usa una comprobación aislada en GitHub Actions. La ejecución local completa tuvo cuatro fallos de infraestructura al crear procesos (`EPERM`), no fallos de aserción del Secretario; el resultado autoritativo será el workflow del PR. No se ha eludido la restricción ni presentado una captura no comprobada como resultado.
 
 ## Reversión
 
-Desactivar los flags del navegador y `SECRETARY_ENABLED` devuelve la entrada a las pantallas existentes. La conversación solo vive en memoria. Ninguna propuesta del asistente modifica un documento hasta que el usuario trabaja en el editor y confirma sus acciones habituales.
+Desactivar `SECRETARY_ENABLED` corta el backend; revertir la configuración del navegador devuelve la entrada a las pantallas existentes. `SQL/secretario-runtime.rollback.sql` revoca nuevas reservas sin borrar contadores. La conversación solo vive en memoria. Ninguna propuesta del asistente modifica un documento hasta que el usuario trabaja en el editor y confirma sus acciones habituales.
 
 Para retirar el circuito de valoración, `SQL/secretario-feedback.rollback.sql` bloquea nuevos envíos y activaciones, conserva la consulta y permite retirar los datos propios. La cuota puede bloquearse revocando `secretary_request_reserve`; la tarea se retira con `cron.unschedule` antes de eliminar objetos privados. Ninguna reversión elimina facturas, presupuestos, contactos, archivos ni registros financieros. Una fusión a `main` publicaría recursos de la aplicación por el workflow existente: **esta entrega debe permanecer en PR de borrador hasta resolver la activación y verificarla**.
 

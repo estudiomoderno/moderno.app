@@ -1,6 +1,12 @@
 /* The model proposes intent. Permissions, source selection and draft validation
  * stay here; document numbering, tax totals and persistence stay in the editor. */
 export const TEST_PROJECT_REF='chsilowzrtumbcofspwv';
+export const PRODUCTION_PROJECT_REF='cgqtylvaapwbuwqvpjtb';
+export const SECRETARY_MODEL='gpt-5.4-mini-2026-03-17';
+const DEPLOYMENTS=Object.freeze({
+ test:Object.freeze({projectRef:TEST_PROJECT_REF,supabaseOrigin:`https://${TEST_PROJECT_REF}.supabase.co`}),
+ production:Object.freeze({projectRef:PRODUCTION_PROJECT_REF,supabaseOrigin:`https://${PRODUCTION_PROJECT_REF}.supabase.co`})
+});
 export const ADMIN_BLOCKS=['proyectos','contactos','config','presupuestos','facturas'];
 export const PROJECT_BLOCKS=['proyectos'];
 const VIEWS=['finanzas','facturas','gastos','presupuestos','prevision','proyecto'];
@@ -19,13 +25,17 @@ function keys(value,allowed){if(!object(value)||Object.keys(value).some(k=>!allo
 
 export function validateEnvironment(env){
  if(env.SECRETARY_ENABLED!=='true')fail('disabled','El Secretario todavía no está activado en este entorno.',503);
- if(env.SECRETARY_ENVIRONMENT!=='test'||env.SECRETARY_ALLOWED_PROJECT_REF!==TEST_PROJECT_REF)fail('environment_blocked','El Secretario solo puede ejecutarse en el entorno de pruebas verificado.',503);
- let url;try{url=new URL(env.SUPABASE_URL);}catch{fail('environment_blocked','No se ha verificado la conexión de pruebas.',503);}
- if(url.origin!==`https://${TEST_PROJECT_REF}.supabase.co`||url.username||url.password||url.pathname!=='/'||url.search||url.hash)fail('environment_blocked','No se ha verificado la conexión de pruebas.',503);
+ const deployment=DEPLOYMENTS[env.SECRETARY_ENVIRONMENT];
+ if(!deployment||env.SECRETARY_ALLOWED_PROJECT_REF!==deployment.projectRef)fail('environment_blocked','El Secretario no está autorizado para este entorno.',503);
+ let url;try{url=new URL(env.SUPABASE_URL);}catch{fail('environment_blocked','No se ha verificado la conexión del Secretario.',503);}
+ if(url.origin!==deployment.supabaseOrigin||url.username||url.password||url.pathname!=='/'||url.search||url.hash)fail('environment_blocked','No se ha verificado la conexión del Secretario.',503);
  if(!env.SUPABASE_ANON_KEY||!env.OPENAI_API_KEY||!env.OPENAI_MODEL)fail('not_configured','Falta completar la configuración del Secretario.',503);
+ if(env.OPENAI_MODEL!==SECRETARY_MODEL)fail('environment_blocked','El modelo configurado no pertenece al despliegue verificado.',503);
  if(/^sb_secret_/i.test(env.SUPABASE_ANON_KEY))fail('environment_blocked','La conexión del Secretario requiere una clave pública de Supabase.',503);
  const keyParts=env.SUPABASE_ANON_KEY.split('.');if(keyParts.length===3){let claims;try{claims=JSON.parse(atob(keyParts[1].replace(/-/g,'+').replace(/_/g,'/')));}catch{fail('environment_blocked','La clave pública de Supabase no se ha podido verificar.',503);}if(claims.role!=='anon')fail('environment_blocked','La conexión del Secretario requiere una clave pública de Supabase.',503);}
- return {model:env.OPENAI_MODEL};
+ const allowedUserIds=String(env.SECRETARY_ALLOWED_USER_IDS||'').split(',').map(value=>value.trim()).filter(Boolean);
+ if(allowedUserIds.some(value=>!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))||env.SECRETARY_ENVIRONMENT==='production'&&!allowedUserIds.length)fail('not_configured','Falta limitar los usuarios del lanzamiento del Secretario.',503);
+ return {model:env.OPENAI_MODEL,environment:env.SECRETARY_ENVIRONMENT,projectRef:deployment.projectRef,allowedUserIds};
 }
 
 export function normalizeRequest(input){

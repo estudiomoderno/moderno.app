@@ -172,7 +172,7 @@ var ModernoSecretary=(()=>{
       const value=feedbackResult(data);
       if(captured!==owner()||operation!==feedbackOperation||withdrawalPending())return;
       feedbackRevision=value.revision;feedbackLoaded=feedback.setConsent(value.enabled,token);feedbackError='';
-    }catch(error){if(captured===owner()&&operation===feedbackOperation){feedbackError='La mejora compartida está pendiente de activarse en pruebas.';feedbackLoaded=false;}}
+    }catch(error){if(captured===owner()&&operation===feedbackOperation){feedbackError='La mejora compartida no está disponible en este momento.';feedbackLoaded=false;}}
     finally{if(captured===owner()&&operation===feedbackOperation){feedbackLoading=false;drawFeedbackSettings();drawThread();}}
   }
   async function setFeedbackConsent(enabled){
@@ -201,8 +201,9 @@ var ModernoSecretary=(()=>{
     }finally{if(captured===owner()&&operation===feedbackOperation){feedbackLoading=false;drawFeedbackSettings();drawThread();}}
   }
   function drawFeedbackSettings(){
-    if(!feedbackHost)return;feedbackHost.replaceChildren();feedbackHost.append(el('strong','','Mejorar el Secretario'));
-    if(config.feedbackEnabled!==true||!feedback){feedbackHost.append(el('p','','La mejora compartida está pendiente de activarse en pruebas.'));return;}
+    if(!feedbackHost)return;feedbackHost.replaceChildren();
+    if(config.feedbackEnabled!==true||!feedback){feedbackHost.hidden=true;return;}
+    feedbackHost.hidden=false;feedbackHost.append(el('strong','','Mejorar el Secretario'));
     const label=el('label','secretary-consent'),input=el('input','');input.type='checkbox';input.checked=feedback.getState().consent;input.disabled=!feedbackLoaded||feedbackLoading;
     input.addEventListener('change',()=>setFeedbackConsent(input.checked));label.append(input,document.createTextNode('Ayudar a mejorar el Secretario'));feedbackHost.append(label);
     feedbackHost.append(el('p','','Comparte valoraciones y motivos predefinidos. No incluye tus conversaciones ni documentos. Puedes desactivarlo y retirar tus valoraciones.'));

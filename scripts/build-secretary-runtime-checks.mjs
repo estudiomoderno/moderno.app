@@ -12,6 +12,7 @@ function body(file){
 export function buildSecretaryRuntimeChecks(){
  const prerequisites=body('secretario-pruebas-prerequisitos.sql');
  const runtime=body('secretario-runtime.sql');
+ const runtimeRollback=body('secretario-runtime.rollback.sql');
  return `begin;
 do $$begin
  if exists(select 1 from information_schema.columns where table_schema='auth' and table_name='users' and column_name='email')
@@ -59,11 +60,21 @@ cross join lateral(
  select day::date from generate_series(date_trunc('month',current_date)::date,(date_trunc('month',current_date)+interval '1 month'-interval '1 day')::date,interval '1 day') day
  where day::date<>current_date limit 9
 ) d where m.user_id='10000000-0000-4000-8000-000000000001';
+insert into public.estudios(id,nombre) values('33333333-3333-4333-8333-333333333332','Segundo estudio ficticio');
+insert into public.miembros(user_id,estudio_id,rol) values('10000000-0000-4000-8000-000000000002','33333333-3333-4333-8333-333333333332','admin');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
 do $$declare study uuid:=(select estudio_id from public.miembros where user_id=auth.uid());begin
  begin perform public.secretary_request_reserve(study);raise exception 'Monthly quota exceeded';exception when sqlstate 'PT429' then perform pg_temp.assert_true(true,'request 201 in the month is blocked');end;
 end$$;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
+do $$begin
+ begin perform public.secretary_request_reserve('33333333-3333-4333-8333-333333333332');raise exception 'Global monthly quota exceeded';exception when sqlstate 'PT429' then perform pg_temp.assert_true(true,'global request 201 is blocked across users and studies');end;
+end$$;
+reset role;
+${runtimeRollback}
+select pg_temp.assert_true(not has_function_privilege('authenticated','public.secretary_request_reserve(uuid)','EXECUTE'),'runtime rollback blocks new reservations without deleting counters');
+select pg_temp.assert_true((select coalesce(sum(requests),0)=200 from moderno_secretary.usage_daily),'runtime rollback preserves usage counters');
 select count(*) as secretary_runtime_checks_passed from assertions;
 rollback;`;
 }
