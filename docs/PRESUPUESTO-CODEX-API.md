@@ -4,7 +4,7 @@ Decisión de Cerebro: **10 de octubre de 2026**. Autorización del usuario: **m�
 
 ## Estado (no confundir con activación)
 - **POLÍTICA APROBADA**: 20 EUR por mes natural como techo total autorizado para este propósito.
-- **CONTROL DE PLATAFORMA PENDIENTE**: no se ha creado ni verificado un proyecto de OpenAI API dedicado ni un límite duro en él.
+- **PROYECTO SELECCIONADO**: el 22/11/2026 se autorizó el destino dedicado **«Moderno.app - Taller»** en el flujo seguro de OpenAI Platform. No se ha verificado todavía el límite duro, las alertas ni una clave instalada.
 - **EJECUCIÓN FACTURABLE DESACTIVADA**: no hay workflow que invoque `openai/codex-action`. NO habilitar llamadas solo por existir esta documentación.
 - La integración de ChatGPT con OpenAI Platform permite iniciar el asistente de clave API pero no administrar aquí proyectos, límites, alertas ni secretos de GitHub. No crear la clave en el "Default project" ni guardar claves en GitHub hasta que exista un proyecto dedicado y límite comprobado.
 
