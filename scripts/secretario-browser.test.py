@@ -185,8 +185,10 @@ try:
                     assert set(envelope) == {"session", "payload"}
                     assert envelope["session"] == "fictional-token-no-credentials"
                     body = envelope["payload"]
-                    assert set(body).issubset({"studyId", "message", "history", "context", "answers"})
+                    assert set(body).issubset({"studyId", "message", "automatic", "history", "context", "answers"})
                     assert body["studyId"] == "11111111-1111-4111-8111-111111111111"
+                    assert isinstance(body.get("automatic"), bool)
+                    assert body["automatic"] is bool(body.get("answers"))
                     requests.append(body)
                     message = body["message"]
                     if "consulta lenta" in message:
