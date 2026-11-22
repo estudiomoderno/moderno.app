@@ -103,6 +103,12 @@ with socket.socket() as sock:
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
 origin = f"http://127.0.0.1:{port}"
+cors_headers = {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, content-type",
+    "Vary": "Origin",
+}
 server = subprocess.Popen(
     ["node", "scripts/dev-server.mjs"], cwd=repo,
     env=dict(os.environ, PORT=str(port), SUPABASE_URL=backend,
@@ -140,6 +146,13 @@ try:
             def route(request_route):
                 request = request_route.request
                 if request.url == endpoint:
+                    if request.method == "OPTIONS":
+                        assert request.headers.get("origin") == origin
+                        assert request.headers.get("access-control-request-method") == "POST"
+                        requested_headers = {header.strip().lower() for header in request.headers.get("access-control-request-headers", "").split(",") if header.strip()}
+                        assert requested_headers.issubset({"authorization", "content-type"})
+                        request_route.fulfill(status=204, headers=cors_headers, body="")
+                        return
                     assert request.method == "POST"
                     assert request.headers.get("authorization") == "Bearer fictional-token-no-credentials"
                     body = request.post_data_json
@@ -151,7 +164,7 @@ try:
                         pending.append(request_route)
                         return
                     if "fallo disponible" in message:
-                        request_route.fulfill(status=503, content_type="application/json", body=json.dumps({"error": {"code": "not_configured", "message": "Fixture"}}))
+                        request_route.fulfill(status=503, headers=cors_headers, content_type="application/json", body=json.dumps({"error": {"code": "not_configured", "message": "Fixture"}}))
                         return
                     if "editar guardado" in message:
                         response = proposal("edit_saved_draft", 42)
@@ -170,7 +183,7 @@ try:
                                     "sources": [], "actions": [], "trace": [],
                                     "questions": [{"id": "clientId", "prompt": "Elige el cliente", "freeText": True,
                                                    "options": [{"id": "client-0", "label": "Cliente ficticio", "value": "contact:0"}]}]}
-                    request_route.fulfill(status=200, content_type="application/json", body=json.dumps(response))
+                    request_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(response))
                 elif not request.url.startswith(origin + "/"):
                     request_route.abort()
                 elif request.method not in ("GET", "HEAD"):
@@ -183,6 +196,9 @@ try:
             page.goto(origin, wait_until="networkidle")
             page.evaluate(fixture)
             page.evaluate(setup)
+            print(f"Secretary fixture loaded at {width}px", flush=True)
+            if output:
+                page.screenshot(path=str(output / f"secretario-inicial-{width}.png"), full_page=True)
             panel = page.locator("#moderno-secretary")
             expect(panel).to_be_visible()
             expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-home.*"))
@@ -282,7 +298,7 @@ try:
             expect(panel.get_by_text("El borrador está preparado para revisar.", exact=True)).to_have_count(0)
             for request_route in pending:
                 try:
-                    request_route.fulfill(status=200, content_type="application/json", body=json.dumps({"requestId": "late", "status": "answer", "message": "PRIVATE OLD RESPONSE", "sources": [], "questions": [], "actions": [], "trace": []}))
+                    request_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps({"requestId": "late", "status": "answer", "message": "PRIVATE OLD RESPONSE", "sources": [], "questions": [], "actions": [], "trace": []}))
                 except Exception:
                     pass  # AbortController may already have closed the intercepted request.
             expect(panel.get_by_text("PRIVATE OLD RESPONSE", exact=True)).to_have_count(0)
