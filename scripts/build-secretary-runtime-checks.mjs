@@ -56,7 +56,7 @@ insert into moderno_secretary.usage_daily(user_id,estudio_id,day,requests)
 select '10000000-0000-4000-8000-000000000001',m.estudio_id,d.day,20
 from public.miembros m
 cross join lateral(
- select day::date from generate_series(date_trunc('month',current_date)::date,(date_trunc('month',current_date)+interval '1 month-1 day')::date,interval '1 day') day
+ select day::date from generate_series(date_trunc('month',current_date)::date,(date_trunc('month',current_date)+interval '1 month'-interval '1 day')::date,interval '1 day') day
  where day::date<>current_date limit 9
 ) d where m.user_id='10000000-0000-4000-8000-000000000001';
 set local role authenticated;
