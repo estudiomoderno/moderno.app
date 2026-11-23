@@ -1,0 +1,106 @@
+{
+  "version": 2,
+  "seed": 20261123,
+  "identities": 1000,
+  "studies": 250,
+  "membersPerStudy": 4,
+  "documents": [
+    { "label": "small", "studies": 175, "bytes": 75000 },
+    { "label": "medium", "studies": 50, "bytes": 1000000 },
+    { "label": "large", "studies": 20, "bytes": 6000000 },
+    { "label": "extreme", "studies": 5, "bytes": 9500000 }
+  ],
+  "profiles": {
+    "smoke": {
+      "duration": "2m",
+      "versionRate": 1,
+      "saveRate": 1,
+      "fullReadRate": 0,
+      "preAllocatedVUs": 5,
+      "maxVUs": 10
+    },
+    "target": {
+      "duration": "20m",
+      "versionRate": 6,
+      "saveRate": 5,
+      "fullReadRate": 1,
+      "preAllocatedVUs": 80,
+      "maxVUs": 250
+    },
+    "margin": {
+      "duration": "10m",
+      "versionRate": 23,
+      "saveRate": 10,
+      "fullReadRate": 1,
+      "preAllocatedVUs": 250,
+      "maxVUs": 1000
+    },
+    "concurrent-1000": {
+      "vus": 1000,
+      "iterations": 1,
+      "maxDuration": "5m"
+    },
+    "soak": {
+      "duration": "90m",
+      "versionRate": 6,
+      "saveRate": 5,
+      "fullReadRate": 1,
+      "preAllocatedVUs": 100,
+      "maxVUs": 300
+    },
+    "large": {
+      "duration": "10m",
+      "versionRate": 1,
+      "saveRate": 5,
+      "fullReadRate": 0,
+      "preAllocatedVUs": 30,
+      "maxVUs": 100
+    },
+    "reconnect": {
+      "iterations": 1000,
+      "vus": 1000,
+      "maxDuration": "2m"
+    },
+    "contention": {
+      "duration": "3m",
+      "versionRate": 0,
+      "saveRate": 10,
+      "fullReadRate": 0,
+      "preAllocatedVUs": 20,
+      "maxVUs": 50
+    },
+    "replay": {
+      "duration": "5m",
+      "saveRate": 2,
+      "preAllocatedVUs": 10,
+      "maxVUs": 40
+    },
+    "noop": {
+      "duration": "3m",
+      "saveRate": 2,
+      "preAllocatedVUs": 10,
+      "maxVUs": 40
+    },
+    "array-sync": {
+      "duration": "5m",
+      "saveRate": 2,
+      "preAllocatedVUs": 20,
+      "maxVUs": 80
+    },
+    "limits": {
+      "iterations": 250,
+      "vus": 25,
+      "maxDuration": "10m"
+    }
+  },
+  "slos": {
+    "readRate": 0.999,
+    "writeRate": 0.995,
+    "versionsP95Ms": 250,
+    "smallP95Ms": 1000,
+    "mediumP95Ms": 2000,
+    "largeP95Ms": 8000,
+    "extremeP95Ms": 15000,
+    "writeMaxMs": 55000
+  }
+}
