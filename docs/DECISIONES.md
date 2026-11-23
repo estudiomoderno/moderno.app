@@ -1,5 +1,13 @@
 # Decisiones de TALLER
 
+## 2026-11-23 — Guardado grande sin falsa revisión
+
+El propietario aporta un diagnóstico porque el estado **Guardando** cambia a **Necesita revisión · 69 copias por revisar** y ordena corregirlo e implementarlo por completo sin nuevas preguntas. El análisis confirma que las 69 son copias locales históricas conservadas, no errores actuales; el fallo real son dos RPC delta de unos 4,73 MB cancelados por el límite general de 8 segundos de PostgreSQL.
+
+Se autoriza y aplica una excepción reversible de 30 segundos exclusivamente a `app_guardar_lote` y `app_guardar_lote_delta`, tras prueba grande con datos ficticios y `ROLLBACK` en `moderno-pruebas`. Los límites globales, datos, RLS, permisos, atomicidad e historial permanecen intactos. La interfaz `v3.67.70` separa el reintento automático de los conflictos reales: muestra **Pendiente de guardar** tras un fallo transitorio, vuelve a **Guardando** al reintentar y reserva **Necesita revisión** para intervención manual. Las copias históricas continúan descargables, pero dejan de contaminar el indicador principal.
+
+Esta corrección resuelve el volumen actual; para una escala futura de 1.000 usuarios sigue siendo necesaria una migración específica que normalice proyectos y listas en filas independientes. Diagnóstico, validación y reversión: [Guardado de estudios grandes](GUARDADO-GRANDE-2026-11-23.md).
+
 ## 2026-11-22 — Secretario en Finanzas y Proyectos; mejora compartida opcional
 
 El propietario autoriza desarrollar el Secretario: Finanzas abre una conversación central, con el logotipo oficial, que acompaña al usuario en un lateral plegable al abrir documentos y pantallas. Reutiliza los editores y las reglas de cálculo; pregunta por datos incompletos y prepara documentos editables. El guardado y la emisión siguen siendo decisiones explícitas en los editores. Esta orden sustituye la pausa anterior del asistente y la mera reserva visual, sin autorizar cambios en datos de producción.

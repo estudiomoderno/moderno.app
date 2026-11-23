@@ -2,7 +2,8 @@ import fs from 'node:fs';import {pathToFileURL} from 'node:url';import efficienc
 export function buildDeltaChecks(){
   const baseline=fs.readFileSync(new URL('./sql/guardado-delta-baseline.sql',import.meta.url),'utf8');
   const candidate=fs.readFileSync(new URL('../SQL/guardado-delta.sql',import.meta.url),'utf8').replace(/^begin;\s*$/mi,'').replace(/^commit;\s*$/mi,'');
-  let sql=fs.readFileSync(new URL('./sql/guardado-delta-checks.sql',import.meta.url),'utf8').replace('-- BASELINE_HERE',()=>baseline).replace('-- CANDIDATE_HERE',()=>candidate);
+  const timeout=fs.readFileSync(new URL('../SQL/guardado-grande-timeout.sql',import.meta.url),'utf8').replace(/^begin;\s*$/mi,'').replace(/^commit;\s*$/mi,'');
+  let sql=fs.readFileSync(new URL('./sql/guardado-delta-checks.sql',import.meta.url),'utf8').replace('-- BASELINE_HERE',()=>baseline).replace('-- CANDIDATE_HERE',()=>candidate+'\n'+timeout);
   const literal=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
   const cases=[[{}, {'a/b~ñ':null}],[[1,2,3],[1,3]],[[1,2],[2,1]],[[null],[]],[null,{name:'Ficticio'}],[{},JSON.parse('{"__proto__":{"safe":true}}')]];
   for(let i=0;i<100;i++){

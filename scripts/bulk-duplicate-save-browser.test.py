@@ -48,7 +48,7 @@ try:
       })();}};
     }};
     window.realTimeout=window.setTimeout;window.realClear=window.clearTimeout;window.deadlines=[];
-    window.setTimeout=(fn,ms,...args)=>{if(ms===20000||ms===30000||ms===90000){const token={fn,ms};deadlines.push(token);return token;}return realTimeout(fn,ms,...args);};
+    window.setTimeout=(fn,ms,...args)=>{if(ms===20000||ms===30000||ms===90000||ms>=12000&&ms<=18000){const token={fn,ms};deadlines.push(token);return token;}return realTimeout(fn,ms,...args);};
     window.clearTimeout=token=>{if(token&&typeof token==='object'&&token.fn)token.cancelled=true;else realClear(token);};
    }""")
    html=(repo/'app/index.html').read_text();flush_source=html.split('async function cloudFlush(){',1)[1].split('function cloudSnapshotAll(){',1)[0]
@@ -63,9 +63,12 @@ try:
     page.evaluate('roomMenu(9001,8001)');page.get_by_role('button',name='Duplicar lista',exact=True).click()
    page.wait_for_function('fixtureWrites===1&&_cloudBusy&&!_localWrite',timeout=30000)
    assert page.evaluate("state.projects[0].rooms.length===12&&roomDuplicationPending()&&!!ModernoPendingArchive.pointer(localStorage.getItem(LS_KEY))")
+   expect(page.locator('#syncTag .txt')).to_have_text('Guardando')
    page.evaluate('syncDetails()');expect(page.locator('[data-sync-title]')).to_contain_text('Guardando')
+   expect(page.locator('#modalBox')).to_contain_text('55 copias de seguridad de sesiones anteriores')
+   expect(page.locator('#modalBox')).to_contain_text('No representan 55 errores actuales')
    page.evaluate('deadlines.find(t=>t.ms===90000&&!t.cancelled).fn()');page.wait_for_function('!_cloudBusy')
-   expect(page.locator('[data-sync-title]')).to_have_text('Necesita revisión');expect(page.locator('[data-sync-detail]')).to_contain_text('tarda demasiado')
+   expect(page.locator('[data-sync-title]')).to_have_text('Pendiente de guardar');expect(page.locator('[data-sync-detail]')).to_contain_text('tarda demasiado')
    assert page.evaluate('fixtureSignals[0].aborted&&syncCopyKeys().length===55&&syncHasChanges()')
    if output:page.screenshot(path=str(output/f'bulk-stalled-{width}.png'),full_page=True)
    with page.expect_download() as event:page.get_by_role('button',name='Descargar cambios actuales',exact=True).click()

@@ -18,6 +18,9 @@ create policy fixture_admin_only on public.datos_estudio for select to authentic
 create temp table assertions(label text);
 grant insert,select on assertions to authenticated;
 create function pg_temp.assert_true(v boolean,label text) returns void language plpgsql as $$begin if v is distinct from true then raise exception 'FAILED: %',label; end if;insert into assertions values(label);end$$;
+select pg_temp.assert_true((select 'statement_timeout=30s'=any(proconfig) from pg_proc where oid='public.app_guardar_lote(uuid,jsonb)'::regprocedure),'full writer has scoped timeout');
+select pg_temp.assert_true((select 'statement_timeout=30s'=any(proconfig) from pg_proc where oid='public.app_guardar_lote_delta(uuid,jsonb)'::regprocedure),'delta writer has scoped timeout');
+select pg_temp.assert_true(not coalesce((select 'statement_timeout=30s'=any(rolconfig) from pg_roles where rolname='authenticated'),false),'authenticated role timeout unchanged');
 -- ROUND_TRIP_HERE
 insert into public.miembros values('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000011','admin'),('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000012','miembro');
 insert into public.datos_estudio values('00000000-0000-0000-0000-000000000001','proyectos','[{"id":1,"name":"Ficticio","rooms":[{"id":2,"sections":[{"items":[{"id":3,"name":"Mesa ficticia","qty":1,"price":20,"cost":7}]}]}]}]','2026-01-01'),('00000000-0000-0000-0000-000000000001','contactos','[{"id":1,"name":"Ficticio"}]','2026-01-01');

@@ -117,7 +117,7 @@ for(const phase of ['read','write'])test('hung '+phase+' expires, preserves pend
  try{
   const timeout=s.local.timers.find(t=>!t.cancelled&&t.ms===(phase==='read'?30000:90000));
   assert.ok(timeout,'A stalled save must have an explicit deadline');timeout.fn();await pending;
-  assert.equal(s.c._cloudBusy,false);assert.equal(s.local.dirty,true);assert.equal(s.local.mode,'err');assert.match(s.local.message,/tarda demasiado/);assert.equal(signals.at(-1).aborted,true);
+  assert.equal(s.c._cloudBusy,false);assert.equal(s.local.dirty,true);assert.equal(s.local.mode,'retry');assert.match(s.local.message,/tarda demasiado/);assert.equal(signals.at(-1).aborted,true);
   const hash=s.c._cloudHash.contactos;release();await new Promise(r=>setImmediate(r));
   assert.equal(s.c._cloudHash.contactos,hash);assert.equal(s.local.dirty,true);
   if(phase==='read')delete hooks.afterRead;else delete hooks.beforeWrite;

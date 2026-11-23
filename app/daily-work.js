@@ -18,6 +18,7 @@
     if(!online)return {mode:'pending',label:changed?'Pendiente en este dispositivo':'Sin conexión',detail:'No se puede confirmar el estado actual de la nube. Conserva esta pestaña abierta.'};
     if(phase==='saving')return {mode:'saving',label:'Guardando',detail:detail||'Esperando la confirmación del servidor.'};
     if(phase==='connecting')return {mode:'saving',label:'Conectando',detail:'Comprobando los datos de tu estudio.'};
+    if(phase==='retry')return {mode:'pending',label:'Pendiente de guardar',detail:detail||'El servidor no confirmó el último intento. Se reintentará automáticamente.'};
     if(changed||phase==='pending')return {mode:'pending',label:'Pendiente en este dispositivo',detail:detail||'Los cambios todavía no están confirmados en la nube.'};
     if(confirmed)return {mode:'ok',label:'Guardado en nube',detail:'Los datos actuales coinciden con la última versión confirmada.'};
     return {mode:'pending',label:'Pendiente de comprobar',detail:'Todavía no hay confirmación de la nube.'};

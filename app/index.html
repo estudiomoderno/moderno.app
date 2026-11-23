@@ -1268,7 +1268,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/sync-merge.js?v=3590"></script>
 <script src="/private-files.js?v=36598"></script>
-<script src="/daily-work.js?v=36585"></script>
+<script src="/daily-work.js?v=36770"></script>
 <script src="/gestoria.js?v=20260909"></script>
 <script src="/pending-archive.js?v=36758"></script>
 <script src="/save-efficiency.js?v=36599"></script>
@@ -11545,7 +11545,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.69";
+const MODERNO_VER="v3.67.70";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11716,13 +11716,14 @@ function syncRefresh(){
   if(title)title.textContent=view.label;if(detail)detail.textContent=view.detail;
   let el=document.getElementById('syncTag');
   if(!el){el=document.createElement('button');el.id='syncTag';el.type='button';el.innerHTML='<span class="dot" aria-hidden="true"></span><span class="txt" role="status" aria-live="polite"></span>';el.onclick=syncDetails;document.body.appendChild(el);}
-  el.className=view.mode;el.title=view.detail;el.setAttribute('aria-label',view.label+'. Ver estado y copias pendientes');
-  const copies=syncCopyKeys().length;const text=view.label+(copies?' · '+copies+' copia(s) por revisar':'');const label=el.querySelector('.txt');if(label.textContent!==text)label.textContent=text;
+  el.className=view.mode;el.title=view.detail;el.setAttribute('aria-label',view.label+'. Ver estado y copias de seguridad');
+  const label=el.querySelector('.txt');if(label.textContent!==view.label)label.textContent=view.label;
 }
 function syncTag(mode,msg){
   if(_syncReview&&mode!=='err'&&mode!=='ok'){syncRefresh();return;}
   if(mode==='err'){_syncReview=true;_syncPhase='pending';}
   else if(mode==='ok'){_syncConfirmed=true;_syncReview=false;_syncPhase='idle';}
+  else if(mode==='retry'){_syncReview=false;_syncPhase='retry';}
   else {_syncPhase=mode==='saving'&&msg&&msg.startsWith('Conectando')?'connecting':mode;}
   _syncDetail=msg||'';syncRefresh();
 }
@@ -11737,7 +11738,8 @@ function syncDownloadDiagnostics(){
 function syncDetails(){
   if(_modalAbierto()){toast('Guarda o cancela el formulario antes de abrir el estado de sincronización.');return;}
   const v=syncView(),copies=syncCopyKeys().length;
-  modal('<h3 data-sync-title>'+v.label+'</h3><p data-sync-detail>'+ModernoDaily.escape(v.detail)+'</p><p style="font-size:11px;color:var(--ink-soft)">Versión '+ModernoDaily.escape(MODERNO_VER)+'</p><p>Descargar una copia conserva lo que tienes en esta pestaña. No sustituye automáticamente los datos de la nube.</p>'+(copies?'<p>'+copies+' copia(s) anterior(es) pendiente(s) de revisar.</p>':'')+'<div class="modal-foot sync-actions">'+(Object.keys(window._cloudConflicts||{}).length?'<button class="btn btn-gold" onclick="flowReviewOpen()">Resolver cambios</button>':'')+'<button class="btn btn-ghost" onclick="syncDownloadCurrent()">Descargar cambios actuales</button>'+(copies?'<button class="btn btn-ghost" onclick="closeModal();cloudPendingNotice()">Ver copias anteriores</button>':'')+'<button class="btn btn-ghost" onclick="syncDownloadDiagnostics()">Descargar diagnóstico</button><button class="btn btn-ghost" onclick="syncRetrySave()">Reintentar guardado</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>');
+  const copyNote=copies?(copies===1?'Hay 1 copia de seguridad de una sesión anterior disponible. No representa un error actual.':'Hay '+copies+' copias de seguridad de sesiones anteriores disponibles. No representan '+copies+' errores actuales.') : '';
+  modal('<h3 data-sync-title>'+v.label+'</h3><p data-sync-detail>'+ModernoDaily.escape(v.detail)+'</p><p style="font-size:11px;color:var(--ink-soft)">Versión '+ModernoDaily.escape(MODERNO_VER)+'</p><p>Descargar una copia conserva lo que tienes en esta pestaña. No sustituye automáticamente los datos de la nube.</p>'+(copyNote?'<p>'+copyNote+'</p>':'')+'<div class="modal-foot sync-actions">'+(Object.keys(window._cloudConflicts||{}).length?'<button class="btn btn-gold" onclick="flowReviewOpen()">Resolver cambios</button>':'')+'<button class="btn btn-ghost" onclick="syncDownloadCurrent()">Descargar cambios actuales</button>'+(copies?'<button class="btn btn-ghost" onclick="closeModal();cloudPendingNotice()">Ver copias anteriores</button>':'')+'<button class="btn btn-ghost" onclick="syncDownloadDiagnostics()">Descargar diagnóstico</button><button class="btn btn-ghost" onclick="syncRetrySave()">Reintentar guardado</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>');
 }
 window.addEventListener('offline',()=>{syncRefresh();});
 window.addEventListener('online',()=>{syncRefresh();cloudDirty();});
@@ -11954,9 +11956,9 @@ async function cloudFlush(){
   }catch(e){
     if(ESTUDIO_ID!==estudio||_accessRole!==role)return;
     const conflict=Object.keys(conflicts).length>0;
-    syncTag('err',conflict?'Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.':'No se pudo guardar la operación completa: '+(e.message||e)+' — se reintentará');
+    syncTag(conflict?'err':'retry',conflict?'Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.':'No se pudo guardar la operación completa: '+(e.message||e)+' — se reintentará');
     console.warn('[sync]',e.message||e);
-    clearTimeout(_cloudRetryT);if(!conflict){const delay=typeof ModernoEfficiency==='undefined'?15000:ModernoEfficiency.backoff(++_cloudFailures);if(typeof _cloudRetryAfter!=='undefined')_cloudRetryAfter=Date.now()+delay;_cloudRetryT=setTimeout(cloudFlush,delay);}
+    if(typeof _cloudT!=='undefined')clearTimeout(_cloudT);clearTimeout(_cloudRetryT);if(!conflict){const delay=typeof ModernoEfficiency==='undefined'?15000:ModernoEfficiency.backoff(++_cloudFailures);if(typeof _cloudRetryAfter!=='undefined')_cloudRetryAfter=Date.now()+delay;_cloudRetryT=setTimeout(cloudFlush,delay);}
   }finally{_cloudBusy=false;if(typeof CatalogUI!=='undefined')setTimeout(()=>CatalogUI.trySeed(),0);}
 }
 
@@ -12015,7 +12017,13 @@ async function cloudPoll(bloques=null){
         if(identity()!==owner)return;if(error)throw error;
         pollOk=true;
         rows.filter(r=>r.updated_at&&_cloudSeen[r.bloque]!==r.updated_at).forEach(r=>cloudApplyRemote(r.bloque,r.contenido,r.updated_at));
-      }catch(e){if(identity()===owner)syncTag('err',e.message||'No se pudo actualizar la consulta');}
+      }catch(e){
+        if(identity()===owner){
+          const message=e?.message||'No se pudo actualizar la consulta',code=String(e?.code||e?.status||'');
+          const needsReview=!!e?.syncReview||['401','403','42501','PGRST301','PGRST302'].includes(code)||/sesión ha cambiado|permisos han cambiado|respuesta.+no válida|no autorizado/i.test(message);
+          if(needsReview)syncTag('err',message);else if(typeof console!=='undefined')console.warn('[poll]',message);
+        }
+      }
       finally{clearTimeout(timer);if(typeof efficiencyMetrics!=='undefined')efficiencyMetrics.record('poll',{ms:Date.now()-began,ok:pollOk});}
     }
   }).finally(()=>{context.running=null;});
@@ -12106,8 +12114,8 @@ function cloudPendingNotice(){
     keys.sort().reverse();
     const box=document.createElement("div");box.id="cloudPendingCopies";box.setAttribute("role","alert");
     box.style.cssText="position:fixed;bottom:44px;right:16px;max-width:400px;padding:14px;background:#fff3bd;color:#222;border:1px solid #887332;border-radius:12px;z-index:10000;font-size:14px";
-    const label=document.createElement("p");label.textContent="Hay una copia de cambios pendientes de una sesión anterior. Descárgala y revísala antes de volver a aplicar esos cambios.";
-    const list=document.createElement("select");list.setAttribute("aria-label","Copia pendiente");
+    const label=document.createElement("p");label.textContent="Copias de seguridad de sesiones anteriores. No representan errores actuales ni se aplican automáticamente.";
+    const list=document.createElement("select");list.setAttribute("aria-label","Copia de seguridad anterior");
     for(const key of keys){const option=document.createElement("option");option.value=key;option.textContent=new Date(Number(key.split("_pendiente_").pop())).toLocaleString();list.appendChild(option);}
     const download=document.createElement("button");download.textContent="Descargar copia";
     download.onclick=async()=>{try{const raw=await ModernoPendingArchive.resolve(localStorage,list.value,pendingArchiveStore());if(!raw)throw new Error();const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="Moderno-cambios-pendientes-"+list.value.split("_pendiente_").pop()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast("No se pudo descargar la copia pendiente");}};
