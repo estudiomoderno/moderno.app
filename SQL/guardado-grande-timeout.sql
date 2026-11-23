@@ -19,15 +19,15 @@ end
 $guard$;
 
 alter function public.app_guardar_lote(uuid,jsonb)
-  set statement_timeout='30s';
+  set statement_timeout='60s';
 alter function public.app_guardar_lote_delta(uuid,jsonb)
-  set statement_timeout='30s';
+  set statement_timeout='60s';
 
 do $verify$
 begin
-  if not coalesce((select 'statement_timeout=30s'=any(proconfig)
+  if not coalesce((select 'statement_timeout=60s'=any(proconfig)
                    from pg_proc where oid='public.app_guardar_lote(uuid,jsonb)'::regprocedure),false)
-     or not coalesce((select 'statement_timeout=30s'=any(proconfig)
+     or not coalesce((select 'statement_timeout=60s'=any(proconfig)
                       from pg_proc where oid='public.app_guardar_lote_delta(uuid,jsonb)'::regprocedure),false) then
     raise exception 'No se pudo limitar la ampliación a los RPC de guardado';
   end if;
