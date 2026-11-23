@@ -1,5 +1,13 @@
 # Decisiones de TALLER
 
+## 2026-11-23 — Guardado grande sin falsa revisión
+
+El propietario aporta un diagnóstico porque el estado **Guardando** cambia a **Necesita revisión · 69 copias por revisar** y ordena corregirlo e implementarlo por completo sin nuevas preguntas. El análisis confirma que las 69 son copias locales históricas conservadas, no errores actuales; el fallo real son dos RPC delta de unos 4,73 MB cancelados por el límite general de 8 segundos de PostgreSQL. El control posterior mostró ejecuciones válidas de hasta 25,15 segundos y cancelaciones al primer margen de 30 segundos, con `proyectos` ya en torno a 9,5 MB, por lo que 30 segundos no dejaban holgura suficiente.
+
+Se autoriza y aplica una excepción reversible de 60 segundos exclusivamente a `app_guardar_lote` y `app_guardar_lote_delta`, tras prueba grande con datos ficticios y `ROLLBACK` en `moderno-pruebas`. Los límites globales, datos actuales del estudio, RLS, permisos y atomicidad permanecen intactos. El historial conserva una revisión completa por bloque cada cinco minutos y amortiza la retención de 30 días a una sola fila vencida por actualización con `SKIP LOCKED`; evita duplicar varios megabytes en cada pulsación y elimina la limpieza masiva del camino de guardado. La interfaz `v3.67.70` separa el reintento automático de los conflictos reales: muestra **Pendiente de guardar** tras un fallo transitorio, vuelve a **Guardando** al reintentar y reserva **Necesita revisión** para intervención manual. Las copias históricas continúan descargables, pero dejan de contaminar el indicador principal.
+
+Esta corrección resuelve el volumen actual; para una escala futura de 1.000 usuarios sigue siendo necesaria una migración específica que normalice proyectos y listas en filas independientes. Diagnóstico, validación y reversión: [Guardado de estudios grandes](GUARDADO-GRANDE-2026-11-23.md).
+
 ## 2026-11-22 — Secretario en Finanzas y Proyectos; mejora compartida opcional
 
 El propietario autoriza desarrollar el Secretario: Finanzas abre una conversación central, con el logotipo oficial, que acompaña al usuario en un lateral plegable al abrir documentos y pantallas. Reutiliza los editores y las reglas de cálculo; pregunta por datos incompletos y prepara documentos editables. El guardado y la emisión siguen siendo decisiones explícitas en los editores. Esta orden sustituye la pausa anterior del asistente y la mera reserva visual, sin autorizar cambios en datos de producción.
