@@ -3,18 +3,19 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import sync from '../app/sync-merge.js';
+import daily from '../app/daily-work.js';
 const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
 const code=html.slice(html.indexOf('async function cloudFlush(){'),html.indexOf('function cloudSnapshotAll(){'));
 const base=[{id:1,name:'A'},{id:2,name:'B'}];
 function fixture(){return {row:{contenido:structuredClone(base),updated_at:'2026-01-01T00:00:00Z'},writes:0};}
 function session(store,items=structuredClone(base),hooks={}){
  const local={dirty:true,timers:[]};
- const c={Date,console:{warn(){},info(){}},window:{},localStorage:{removeItem(){local.dirty=false}},LS_KEY:'test',ESTUDIO_ID:'test',_accessRole:'admin',_cloudBusy:false,_cloudApplying:false,_cloudForce:{},_cloudCount:{contactos:base.length},_cloudHash:{contactos:sync.canonical(base)},_cloudSeen:{contactos:store.row?.updated_at},_cloudRetryT:null,CLOUD_SAVE_DEBOUNCE_MS:120,CLOUD_BLOCKS:{contactos:{get:()=>items,set:v=>{items=v}}},canon:sync.canonical,ModernoSync:sync,persistSoon(){},blockCount:v=>v.length,syncTag(mode,msg){local.mode=mode;local.message=msg},clearTimeout(){},setTimeout(){},cloudGuardModal(){local.guarded=true},sb:{from(){let method='GET',payload,filters={};return {select(){return this},eq(k,v){filters[k]=v;return this},update(v){method='PATCH';payload=structuredClone(v);return this},insert(v){method='POST';payload=structuredClone(v);return this},async maybeSingle(){
- if(method==='GET'){if(hooks.failRead)return {error:new Error('offline')};const result=structuredClone(store.row);await hooks.afterRead?.();return {data:result};}
+ const c={Date,console:{warn(){},info(){}},window:{},localStorage:{removeItem(){local.dirty=false}},LS_KEY:'test',ESTUDIO_ID:'test',_accessRole:'admin',_accessAttempt:1,_cloudUserId:'user-a',state:{sessionUser:{id:'user-a'}},_cloudBusy:false,_cloudApplying:false,_cloudForce:{},_cloudCount:{contactos:base.length},_cloudHash:{contactos:sync.canonical(base)},_cloudSeen:{contactos:store.row?.updated_at},_cloudRetryT:null,CLOUD_SAVE_DEBOUNCE_MS:120,CLOUD_BLOCKS:{contactos:{get:()=>items,set:v=>{items=v}}},canon:sync.canonical,ModernoSync:sync,ModernoDaily:daily,persistSoon(){},blockCount:v=>v.length,filePendingReferences(value){return hooks.pendingReferences?.(value)||[]},fileRetryPending(){hooks.fileRetries=(hooks.fileRetries||0)+1;return Promise.resolve()},fileConfirmCloudReferencesBestEffort(){},syncTag(mode,msg){local.mode=mode;local.message=msg},clearTimeout(){},setTimeout(){},cloudGuardModal(){local.guarded=true},sb:{from(){let method='GET',payload,filters={};return {select(){return this},eq(k,v){filters[k]=v;return this},update(v){method='PATCH';payload=structuredClone(v);return this},insert(v){method='POST';payload=structuredClone(v);return this},async maybeSingle(){
+  if(method==='GET'){if(hooks.failRead)return {error:hooks.readError||new Error('offline')};const result=structuredClone(store.row);await hooks.afterRead?.();return {data:result};}
  await hooks.beforeWrite?.();
  if(method==='PATCH'&&store.row?.updated_at!==filters.updated_at)return {data:null};
  if(method==='POST'&&store.row)return {error:new Error('duplicate')};
- if(hooks.failWrite)return {error:new Error('offline')};
+  if(hooks.failWrite)return {error:hooks.writeError||new Error('offline')};
  store.row=structuredClone(payload);store.writes++;await hooks.afterWrite?.(items);return {data:{updated_at:payload.updated_at}};
  }}}}};
  c.sb.rpc=async(_name,p)=>{
@@ -63,6 +64,19 @@ test('collaborator local counters never attempt an unauthorized configuration wr
  const store=fixture(),s=session(store);s.c._accessRole='colaborador';s.c.CLOUD_BLOCKS.config={get:()=>({counters:{m:4}}),set(){assert.fail('No modificar configuración');}};
  await s.flush();assert.equal(store.writes,0);assert.equal(s.local.mode,'ok');
 });
+test('a permanently pending file defers only its block while unrelated changes are saved',async()=>{
+ const store=fixture(),items=structuredClone(base);items[0].name='A1';const pending=[{id:'pending',file:'local-file://aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'}];
+ const hooks={pendingReferences:value=>value===pending?['local-file://aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa']:[]};
+ const s=session(store,items,hooks);s.c.CLOUD_BLOCKS.proyectos={get:()=>pending,set:()=>assert.fail('No debe aplicar el bloque pendiente')};s.c._cloudHash.proyectos=sync.canonical([]);s.c._cloudSeen.proyectos='2026-01-01T00:00:00Z';s.c._cloudCount.proyectos=0;
+ await s.flush();
+ assert.equal(store.writes,1);assert.equal(store.row.contenido[0].name,'A1');assert.equal(s.c._cloudHash.proyectos,sync.canonical([]));
+ assert.equal(hooks.fileRetries,1);assert.equal(s.local.dirty,true);assert.equal(s.local.mode,'pending');assert.match(s.local.message,/falta terminar 1 archivo/);
+});
+test('a corrupt pending-file reference isolates its block while unrelated changes are saved',async()=>{
+ const store=fixture(),items=structuredClone(base);items[0].name='A1';const corrupt=[{file:'local-file://dañada'}],hooks={pendingReferences:value=>{if(value===corrupt)throw Error('referencia dañada');return [];}};const s=session(store,items,hooks);
+ s.c.CLOUD_BLOCKS.proyectos={get:()=>corrupt,set:()=>assert.fail('No debe aplicar el bloque dañado')};s.c._cloudHash.proyectos=sync.canonical([]);s.c._cloudSeen.proyectos='2026-01-01T00:00:00Z';s.c._cloudCount.proyectos=0;
+ await s.flush();assert.equal(store.writes,1);assert.equal(store.row.contenido[0].name,'A1');assert.equal(s.c._cloudHash.proyectos,sync.canonical([]));assert.equal(s.local.dirty,true);assert.equal(s.local.mode,'err');assert.match(s.local.message,/referencia de archivo que necesita revisión/);
+});
 test('race between read and write cannot overwrite; retry merges',async()=>{
  const store=fixture(),a=structuredClone(base);a[0].name='A1';let first=true;
  const s=session(store,a,{beforeWrite(){if(first){first=false;store.row={contenido:[{id:1,name:'A'},{id:2,name:'B1'}],updated_at:'2026-01-02T00:00:00Z'};}}});
@@ -80,10 +94,33 @@ test('edits made during upload remain pending and are saved next',async()=>{
  await s.flush();assert.equal(store.row.contenido[1].name,'B');assert.equal(s.get()[1].name,'B1');assert.equal(s.local.dirty,true);
  await s.flush();assert.equal(store.row.contenido[1].name,'B1');assert.equal(s.local.dirty,false);
 });
+test('a late acknowledgement from another user in the same study and role cannot mutate the new session',async()=>{
+ const store=fixture(),items=structuredClone(base);items[0].name='A1';let release,started;
+ const ready=new Promise(resolve=>started=resolve),gate=new Promise(resolve=>release=resolve);
+ const s=session(store,items,{async afterRead(){started();await gate;}}),before=s.c._cloudHash.contactos;
+ const pending=s.flush();await ready;
+ s.c.state.sessionUser.id='user-b';s.c._cloudUserId='user-b';s.c._accessAttempt++;
+ release();await pending;
+ assert.equal(store.writes,0);assert.equal(s.c._cloudHash.contactos,before);assert.equal(s.local.dirty,true);assert.equal(s.get()[0].name,'A1');
+});
+test('a late row read from user A is rejected after switching to user B in the same study and role',async()=>{
+ const store=fixture();let release,started;const ready=new Promise(resolve=>started=resolve),gate=new Promise(resolve=>release=resolve);
+ const s=session(store,structuredClone(base),{async afterRead(){started();await gate;}});
+ const pending=s.c.cloudReadRows(['contactos']);await ready;
+ s.c.state.sessionUser.id='user-b';s.c._cloudUserId='user-b';s.c._accessAttempt++;
+ release();const result=await pending;
+ assert.match(result.error?.message||'',/sesión ha cambiado/);assert.equal(result.data,undefined);
+});
 for(const failure of ['failRead','failWrite'])test(`${failure} preserves pending edits`,async()=>{
  const store=fixture(),a=structuredClone(base);a[0].name='A1';const s=session(store,a,{[failure]:true});await s.flush();
  assert.equal(store.writes,0);assert.equal(s.get()[0].name,'A1');assert.equal(s.local.dirty,true);
  assert.equal(s.local.timers.filter(t=>!t.cancelled).at(-1).ms,15000);
+});
+test('invalid save credentials require review and do not enter an automatic retry loop',async()=>{
+ const store=fixture(),a=structuredClone(base);a[0].name='A1';const denied=Object.assign(new Error('No autorizado'),{code:'42501'});
+ const s=session(store,a,{failWrite:true,writeError:denied});await s.flush();
+ assert.equal(store.writes,0);assert.equal(s.local.dirty,true);assert.equal(s.local.mode,'err');assert.match(s.local.message,/sesión|permisos/);
+ assert.equal(s.local.timers.some(timer=>!timer.cancelled&&timer.ms===15000),false);
 });
 test('guarded reduction is not marked saved',async()=>{
  const store=fixture(),s=session(store,[]);s.c._cloudCount.contactos=10;await s.flush();assert.equal(store.writes,0);assert.equal(s.local.dirty,true);assert.equal(s.local.guarded,true);

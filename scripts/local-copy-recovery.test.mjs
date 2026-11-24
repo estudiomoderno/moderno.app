@@ -8,6 +8,7 @@ const code=html.slice(html.indexOf('let _saveT=null, _lastSave=null, _saveErr=fa
 function fixture({mode='quota',failArchive=false}={}){
  const disk=new Map([['app','old'],['app_pendiente_1','old copy']]);let archived=false,attempts=0,dirty=0,flushes=0;
  const c={pendingArchiveStore:()=>({}),ModernoPendingArchive:{writeCurrent:async()=>{const e=new Error();e.name='QuotaExceededError';throw e;}},Date,JSON,Blob,ESTUDIO_ID:'fictional',_accessRole:'admin',LS_KEY:'app',state:{sessionUser:{id:'user'},note:'latest'},BRAND:{},wsOrder:['cm'],toast(){},syncRefresh(){},closeModal(){},cloudDirty(){dirty++},async cloudFlush(){flushes++},syncCopyKeys:()=>['app_pendiente_1'],
+  fileLocalPersistenceSnapshot(){return null},fileConfirmLocalPersistence(){return Promise.resolve([])},
   localStorage:{setItem(k,v){if(mode==='blocked'){const e=new Error();e.name='SecurityError';throw e;}if((mode==='quota'&&!archived||mode==='always-quota')){const e=new Error();e.name='QuotaExceededError';throw e;}if(mode!=='silent')disk.set(k,v)},getItem:k=>disk.get(k)??null},
   setTimeout(fn,ms){const t=setTimeout(fn,ms);t.unref();return t},clearTimeout,
   async cloudArchivePendingCopies(){attempts++;if(failArchive)throw Error('fictional failure');await new Promise(resolve=>setImmediate(resolve));archived=true;}

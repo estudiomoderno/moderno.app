@@ -2,8 +2,12 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-const context={};vm.createContext(context);vm.runInContext(readFileSync(new URL('../app/pending-archive.js',import.meta.url),'utf8'),context);
+let nonce=0;const context={crypto:{randomUUID:()=>`00000000-0000-4000-8000-${String(++nonce).padStart(12,'0')}`}};vm.createContext(context);vm.runInContext(readFileSync(new URL('../app/pending-archive.js',import.meta.url),'utf8'),context);
 const archive=context.ModernoPendingArchive;
+test('archive markers persist owner and study derived from the verified snapshot',()=>{
+ const raw=JSON.stringify({state:{sessionUser:{id:'user-a'}},sync:{user:'user-a',study:'study-a'}}),marked=archive.marker('copy',archive.snapshotOwner(raw),archive.snapshotStudy(raw),archive.snapshotHint(raw));
+ assert.equal(archive.owner(marked),'id:user-a');assert.equal(archive.study(marked),'study-a');assert.equal(archive.study(raw),'study-a');assert.equal(archive.hint(marked),archive.snapshotHint(raw));
+});
 function fixture(){const map=new Map([['app_pendiente_1','{"saved":"one"}'],['app_pendiente_2','{"saved":"two"}'],['app','current'],['app_dirty','1']]),disk=new Map();return {map,disk,storage:{get length(){return map.size},key:i=>[...map.keys()][i],getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v)},store:{write:async(k,v)=>disk.set(k,v),read:async k=>disk.get(k),remove:async k=>disk.delete(k)}};}
 test('archives every copy, verifies content and keeps current snapshot and dirty flag',async()=>{const f=fixture();await archive.migrate(f.storage,'app_pendiente_',f.store);assert.equal(f.map.get('app'),'current');assert.equal(f.map.get('app_dirty'),'1');assert.equal(f.map.size,4);assert.equal(await archive.resolve(f.storage,'app_pendiente_1',f.store),'{"saved":"one"}');assert.equal(await archive.resolve(f.storage,'app_pendiente_2',f.store),'{"saved":"two"}');await archive.migrate(f.storage,'app_pendiente_',f.store);assert.equal(f.disk.size,2);});
 for(const failure of ['write','readback'])test(failure+' failure preserves original copy',async()=>{const f=fixture();if(failure==='write')f.store.write=async()=>{throw Error('quota')};else f.store.read=async()=>null;await assert.rejects(archive.migrate(f.storage,'app_pendiente_',f.store));assert.equal(f.map.get('app_pendiente_1'),'{"saved":"one"}');assert.equal(f.map.get('app_dirty'),'1');});

@@ -1268,12 +1268,13 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/sync-merge.js?v=3590"></script>
 <script src="/private-files.js?v=36598"></script>
-<script src="/daily-work.js?v=36770"></script>
+<script src="/file-upload-queue.js?v=36771"></script>
+<script src="/daily-work.js?v=36771"></script>
 <script src="/gestoria.js?v=20260909"></script>
-<script src="/pending-archive.js?v=36758"></script>
-<script src="/save-efficiency.js?v=36599"></script>
+<script src="/pending-archive.js?v=36772"></script>
+<script src="/save-efficiency.js?v=36771"></script>
 <script src="/pending-recovery.js?v=36598"></script>
-<script src="/flow-recovery.js?v=331"></script>
+<script src="/flow-recovery.js?v=36772"></script>
 <script src="/router.js?v=365109"></script>
 <script src="/specifications.js?v=36587"></script>
 <script src="/accounting-report.js?v=36541"></script>
@@ -4573,7 +4574,8 @@ const ROLES = {
 };
 function uploadLogo(b,f){
   if(!f) return;
-  fileUp(f).then(__u=>{ if(__u==null) return; state.logos[b]=__u; closeModal(); window.SettingsUI?.open?.('estudio'); render(); toast("✓ Logo de "+BRAND[b].name+" subido"); });
+  const identity=fileViewIdentity();
+  fileUp(f).then(__u=>{ if(__u==null||identity!==fileViewIdentity()) return; state.logos[b]=__u; closeModal(); window.SettingsUI?.open?.('estudio'); render(); toast("✓ Logo de "+BRAND[b].name+" subido"); });
 }
 function profileMenu(){ go("ajustes"); }
 function vAjustes(){
@@ -5291,7 +5293,10 @@ function calNew(){
 }
 
 function folderPhotoSources(p){
-  return (Array.isArray(p.folderPhotos)?p.folderPhotos:[]).filter(v=>typeof v==='string' && v.length<=48000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(v)).slice(0,3);
+  const embedded=/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+  const local=/^local-file:\/\/[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+  const stored=/^storage:\/\/archivos\/[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}\/[a-z0-9._/-]+$/i;
+  return (Array.isArray(p.folderPhotos)?p.folderPhotos:[]).filter(v=>typeof v==='string'&&((v.length<=48000&&embedded.test(v))||local.test(v)||stored.test(v))).slice(0,3);
 }
 function folderPhotosHtml(p){return "";}
 let folioSequence=Promise.resolve();
@@ -5624,7 +5629,8 @@ function catRenameGo(oldName){
 }
 function catImgLoad(inp){
   const f=inp.files[0]; inp.value=""; if(!f||!catImgTarget) return;
-  fileUp(f).then(__u=>{ if(__u==null) return; (state.catImgs=state.catImgs||{})[catImgTarget]=__u; catImgTarget=null; render(); toast("🗂 Imagen de la carpeta actualizada"); });
+  const target=catImgTarget,identity=fileViewIdentity();
+  fileUp(f).then(__u=>{ if(__u==null||identity!==fileViewIdentity()) return; (state.catImgs=state.catImgs||{})[target]=__u; if(catImgTarget===target)catImgTarget=null; render(); toast("🗂 Imagen de la carpeta actualizada"); });
 }
 function libNewCatFolder(){
   const i=document.getElementById("libNewCatInp"); if(!i||!i.value.trim()) return;
@@ -5691,8 +5697,8 @@ function libEdit(i){
 }
 function lbDrawThumb(){ const t=document.getElementById("lbThumb"); if(t) t.innerHTML = lbImg?`<img ${fileImageAttrs(lbImg)}>`:"🛋"; }
 async function lbLoadImg(f){
- if(!f)return;const d=libraryUploadDraft;if(!d||!d.form.isConnected)return;d.pending++;
- try{const data=await fileUp(f);if(data&&d===libraryUploadDraft&&d.form.isConnected){lbImg=data;lbDrawThumb();}}finally{d.pending--;}
+ if(!f)return;const d=libraryUploadDraft,identity=fileViewIdentity();if(!d||!d.form.isConnected)return;d.pending++;
+ try{const data=await fileUp(f);if(data&&identity===fileViewIdentity()&&d===libraryUploadDraft&&d.form.isConnected){lbImg=data;lbDrawThumb();}}finally{d.pending--;}
 }
 function libScrape(){ productUrlSuggest('lbUrl','lbN','lbCat'); }
 function productUrlSuggest(urlId,nameId,categoryId){
@@ -7640,8 +7646,8 @@ function obraFaseDragStart(ev,fi){ obraDragFase=fi; obraDragItem=null; ev.dataTr
 function obraAttach(pid,f,i){ obraFileTarget={pid,f,i}; document.getElementById("obraFileInp").click(); }
 function obraFileLoad(inp){
   const file=inp.files[0]; inp.value=""; if(!file||!obraFileTarget) return;
-  const {pid,f,i}=obraFileTarget; obraFileTarget=null;
-  fileUp(file).then(__u=>{ if(__u==null) return; obraSnap(pid); const p=state.projects.find(x=>x.id===pid); p.obraF[f].items[i].file={name:file.name,data:__u,type:file.type}; render(); toast("✓ Archivo adjuntado al punto"); });
+  const {pid,f,i}=obraFileTarget,identity=fileViewIdentity(); obraFileTarget=null;
+  fileUp(file).then(__u=>{ const p=state.projects.find(x=>x.id===pid),item=p?.obraF?.[f]?.items?.[i];if(__u==null||identity!==fileViewIdentity()||!item) return; obraSnap(pid);item.file={name:file.name,data:__u,type:file.type}; render(); toast("✓ Archivo adjuntado al punto"); });
 }
 async function fileFull(data){
   try{
@@ -7682,12 +7688,13 @@ function obraPlanosToggle(pid){ state.planosOpen=state.planosOpen||{}; state.pla
 function obraPlanoPick(pid){ obraPlanoTarget=pid; const el=document.getElementById("obraPlanoInp"); if(el) el.click(); }
 function obraPlanoLoad(inp){
   const files=[...inp.files]; inp.value=""; if(!files.length||!obraPlanoTarget) return;
-  const pid=obraPlanoTarget; obraPlanoTarget=null;
+  const pid=obraPlanoTarget,identity=fileViewIdentity(); obraPlanoTarget=null;
   obraSnap(pid);
   const p=state.projects.find(x=>x.id===pid); p.obraPlanos=p.obraPlanos||[];
-  let done=0;
-  files.forEach(f=>{ fileUp(f).then(__u=>{ if(__u==null) return; p.obraPlanos.push({name:f.name,data:__u,type:f.type}); done++;
-      if(done===files.length){ render(); toast("\u2713 "+done+(done===1?" plano subido":" planos subidos")); } }); });
+  Promise.allSettled(files.map(async f=>{const data=await fileUp(f);if(!data||identity!==fileViewIdentity()||!state.projects.includes(p))return false;p.obraPlanos.push({name:f.name,data,type:f.type});persistSoon();return true;})).then(results=>{
+    if(identity!==fileViewIdentity()||!state.projects.includes(p))return;
+    const done=results.filter(row=>row.status==='fulfilled'&&row.value===true).length;render();toast("\u2713 "+done+" de "+files.length+(files.length===1?" plano preparado":" planos preparados"));
+  });
 }
 async function obraPlanoView(pid,i){
   const fl=state.projects.find(x=>x.id===pid).obraPlanos[i]; if(!fl) return;
@@ -8311,7 +8318,8 @@ function presFootModal(){
 }
 function footLogoUp(file){
   if(!file) return;
-  fileUp(file).then(__u=>{ if(__u==null) return; presGet().pr.foot.logoImg=__u; closeModal(); presFootModal(); toast("✓ Logo de la empresa cargado para el pie"); });
+  const {p,pr}=presGet(),identity=fileViewIdentity(),foot=pr.foot;
+  fileUp(file).then(__u=>{ if(__u==null||identity!==fileViewIdentity()||!state.projects.includes(p)||pr.foot!==foot) return; foot.logoImg=__u; closeModal(); presFootModal(); toast("✓ Logo de la empresa cargado para el pie"); });
 }
 function presRenderEl(p,e,i,c){
   const sel = !c && presSel===i;
@@ -8346,9 +8354,10 @@ function presRenderEl(p,e,i,c){
       </table>${handle}</div>`;
   }
   if(e.t==="pdf"){
+    const safeName=String(e.name||"plano.pdf").replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
     return `<div style="${base};background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.08)" ${grab}>
-      <embed src="${e.data}" type="application/pdf" style="width:100%;aspect-ratio:1.2;pointer-events:${sel?"none":"none"};display:block">
-      <div style="font-family:${PFONTS.sora};font-size:8.5px;color:#9A938A;padding:4px 8px">${e.name||"plano.pdf"}</div>${handle}</div>`;
+      <embed ${fileEmbedAttrs(e.data)} type="application/pdf" aria-label="${safeName}" style="width:100%;aspect-ratio:1.2;pointer-events:${sel?"none":"none"};display:block">
+      <div style="font-family:${PFONTS.sora};font-size:8.5px;color:#9A938A;padding:4px 8px">${safeName}</div>${handle}</div>`;
   }
   if(e.t==="cad"){
     return `<div style="${base};background:#fff;border:1.5px dashed #C9C3BA;border-radius:10px;aspect-ratio:1.4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#5C554D" ${grab}>
@@ -8485,7 +8494,8 @@ function presPlanIns(f){
   if(!f) return;
   const ext = f.name.split(".").pop().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   if(ext==="pdf"){
-    fileUp(f).then(__u=>{ if(__u==null) return; presSnap(); presGet().pr.pages[presPg].els.push({t:"pdf",x:8,y:6,w:70,data:__u,name:f.name}); presSel=presGet().pr.pages[presPg].els.length-1; closeModal(); render(); });
+    const {p,pr}=presGet(),page=pr.pages[presPg],identity=fileViewIdentity();
+    fileUp(f).then(__u=>{ if(__u==null||identity!==fileViewIdentity()||!state.projects.includes(p)||!pr.pages.includes(page)) return; presSnap();page.els.push({t:"pdf",x:8,y:6,w:70,data:__u,name:f.name});presSel=page.els.length-1;closeModal();render(); });
   } else {
     presSnap(); presGet().pr.pages[presPg].els.push({t:"cad",x:8,y:6,w:70,name:f.name});
     presSel=presGet().pr.pages[presPg].els.length-1; closeModal(); render();
@@ -8493,10 +8503,10 @@ function presPlanIns(f){
   }
 }
 function presImgIns(f){
-  if(!f) return; fileUp(f).then(__u=>{ if(__u==null) return; presSnap(); presGet().pr.pages[presPg].els.push({t:"img",x:15,y:15,w:40,img:__u}); presSel=presGet().pr.pages[presPg].els.length-1; closeModal(); render(); });
+  if(!f)return;const {p,pr}=presGet(),page=pr.pages[presPg],identity=fileViewIdentity();fileUp(f).then(__u=>{if(__u==null||identity!==fileViewIdentity()||!state.projects.includes(p)||!pr.pages.includes(page))return;presSnap();page.els.push({t:"img",x:15,y:15,w:40,img:__u});presSel=page.els.length-1;closeModal();render();});
 }
 function pinImgUp(f){
-  if(!f) return; fileUp(f).then(__u=>{ if(__u==null) return; presSnap(); presEl().img=__u; render(); toast("✓ Imagen del pin cargada"); });
+  if(!f)return;const {p}=presGet(),target=presEl(),identity=fileViewIdentity();fileUp(f).then(__u=>{if(__u==null||identity!==fileViewIdentity()||!state.projects.includes(p)||presEl()!==target)return;presSnap();target.img=__u;render();toast("✓ Imagen del pin cargada");});
 }
 function presProdPick(kind){
   const {p}=presGet();
@@ -8621,8 +8631,12 @@ function moodDrop(ev,si,ii){
   dragMood=null; moodOpen(moodCur.pid,moodCur.mid,moodClient);
 }
 function moodUpload(si,files){
-  const {m}=moodGet(); let left=files.length;
-  [...files].forEach(f=>{ fileUp(f).then(__u=>{ if(__u==null) return; m.secs[si].items.push({img:__u,w:1}); if(--left===0) moodOpen(moodCur.pid,moodCur.mid); }); });
+  const list=[...files];if(!list.length)return;
+  const {p,m}=moodGet(),section=m.secs[si],pid=moodCur.pid,mid=moodCur.mid,identity=fileViewIdentity();
+  Promise.allSettled(list.map(async f=>{const data=await fileUp(f);const live=state.projects.find(project=>project.id===pid);if(!data||identity!==fileViewIdentity()||live!==p||!p.moods?.includes(m)||m.secs[si]!==section)return false;section.items.push({img:data,w:1});persistSoon();return true;})).then(results=>{
+    const live=state.projects.find(project=>project.id===pid);if(identity!==fileViewIdentity()||live!==p||!p.moods?.includes(m))return;
+    moodOpen(pid,mid);const done=results.filter(row=>row.status==='fulfilled'&&row.value===true).length;if(done<list.length)toast(done+' de '+list.length+' imágenes preparadas');
+  });
 }
 function moodFromLib(si){
   const lib = state.library||[];
@@ -9028,13 +9042,13 @@ function itemToLibrary(){
 }
 function itemDraftActive(d){return d&&d===itemUploadDraft&&d.form.isConnected;}
 async function itLoadImg(f){
- if(!f)return;const d=itemUploadDraft;if(!itemDraftActive(d))return;d.pending++;
- try{const data=await fileUp(f);if(data&&itemDraftActive(d)){itImg=data;itDrawThumb();}}
+ if(!f)return;const d=itemUploadDraft,identity=fileViewIdentity();if(!itemDraftActive(d))return;d.pending++;
+ try{const data=await fileUp(f);if(data&&identity===fileViewIdentity()&&itemDraftActive(d)){itImg=data;itDrawThumb();}}
  finally{d.pending--;}
 }
 async function itAddFiles(files){
- const d=itemUploadDraft;if(!itemDraftActive(d))return;d.pending++;
- try{for(const f of files){const data=await fileUp(f);if(!itemDraftActive(d))return;if(data)d.files.push({name:f.name,type:f.type||'',data});}if(itemDraftActive(d))itDrawFiles();}
+ const d=itemUploadDraft,identity=fileViewIdentity();if(!itemDraftActive(d))return;d.pending++;
+ try{for(const f of files){const data=await fileUp(f);if(identity!==fileViewIdentity()||!itemDraftActive(d))return;if(data)d.files.push({name:f.name,type:f.type||'',data});}if(identity===fileViewIdentity()&&itemDraftActive(d))itDrawFiles();}
  finally{d.pending--;}
 }
 function itDrawThumb(){ const e=document.getElementById('itThumb');if(e)e.innerHTML=itImg?`<img ${fileImageAttrs(itImg)}>`:'🛋'; }
@@ -9252,7 +9266,7 @@ function czPreviewDraw(id){
 }
 function czPhotosDraw(){
   const list=document.getElementById('czPhotosList'); if(!list||!cz)return;
-  list.innerHTML=folderPhotoSources(cz).map((src,i)=>'<div><img src="'+src+'" alt="Foto '+(i+1)+'"><button type="button" class="btn btn-ghost" '+(cz.busy?'disabled':'')+' onclick="czRemovePhoto('+i+')">Quitar foto '+(i+1)+'</button></div>').join('');
+  list.innerHTML=folderPhotoSources(cz).map((src,i)=>'<div><img '+fileImageAttrs(src)+' alt="Foto '+(i+1)+'"><button type="button" class="btn btn-ghost" '+(cz.busy?'disabled':'')+' onclick="czRemovePhoto('+i+')">Quitar foto '+(i+1)+'</button></div>').join('');
   const input=document.getElementById('czPhotosInput'), save=document.getElementById('czSave');
   if(input)input.disabled=cz.busy||cz.folderPhotos.length>=3;
   const button=document.getElementById('czPhotosButton');if(button){button.disabled=cz.busy||cz.folderPhotos.length>=3;button.textContent=cz.busy?'Preparando fotos…':cz.folderPhotos.length>=3?'3 fotos añadidas':'Añadir fotos';}
@@ -9839,11 +9853,12 @@ async function tkOpenFile(i){
 }
 function tkAddFiles(list){
   const arr=[...(list||[])]; if(!arr.length) return;
-  const ctx=state._tkCtx; const files=tk.files;
+  const ctx=state._tkCtx,identity=fileViewIdentity(); const files=tk.files;
   arr.forEach(f=>{
     const fo={name:f.name, type:f.type||"", size:f.size||0, url:null, subiendo:true};
     files.push(fo); tkDrawFiles();
     fileUp(f).then(u=>{
+      if(identity!==fileViewIdentity())return;
       if(u==null){ const k=files.indexOf(fo); if(k>=0) files.splice(k,1); toast("⚠ No se pudo guardar «"+f.name+"»"); }
       else { fo.url=u; delete fo.subiendo; }
       if(tk && tk.files===files) tkDrawFiles();
@@ -11113,24 +11128,14 @@ function inPeriod(e){
   if(P.mode==='año')return true;if(P.mode==='mes')return m===P.month;if(P.mode==='tri')return Math.ceil(m/3)===P.quarter;return true;
 }
 function subeAdjunto(f, obj){
-  // sube a Storage y planta la url en el MISMO objeto (aunque ya viva dentro del asiento)
   if(!f || !obj) return;
-  if(!sb || !ESTUDIO_ID){
-    const rd=new FileReader(); rd.onload=()=>{ obj.data=rd.result; delete obj.subiendo; persistSoon(); render(); };
-    rd.readAsDataURL(f); return;
-  }
-  const path=ESTUDIO_ID+"/gastos/"+Date.now().toString(36)+"-"+f.name.replace(/[^\w.\-]+/g,"_").slice(-60);
-  sb.storage.from("archivos").upload(path, f, {contentType:f.type||"application/octet-stream", cacheControl:"31536000"})
-    .then(({error})=>{
-      if(error) throw error;
-      const {data}=sb.storage.from("archivos").getPublicUrl(path);
-      if(data && data.publicUrl){ obj.url=data.publicUrl; delete obj.subiendo; persistSoon(); render(); toast("\u2601 Factura guardada en la nube \u2713"); }
-    })
-    .catch(()=>{
-      const rd=new FileReader();
-      rd.onload=()=>{ if((rd.result||"").length<400000){ obj.data=rd.result; delete obj.subiendo; persistSoon(); render(); toast("Guardada en este dispositivo (sin nube)"); } else { delete obj.subiendo; toast("No se pudo subir y es demasiado grande para guardarla local — reint\u00e9ntalo con conexi\u00f3n"); render(); } };
-      rd.readAsDataURL(f);
-    });
+  const identity=fileViewIdentity();
+  fileUp(f).then(source=>{
+    if(identity!==fileViewIdentity())return;
+    if(!source)throw Error('No se pudo conservar el adjunto');
+    obj.data=source;delete obj.url;delete obj.subiendo;persistSoon();render();
+    toast(source.startsWith('local-file://')?'Factura protegida; terminando la subida…':'Factura guardada ✓');
+  }).catch(()=>{if(identity!==fileViewIdentity())return;delete obj.subiendo;render();toast('No se pudo conservar el adjunto. Vuelve a intentarlo.');});
 }
 function fileSrc(fo){ return (fo && (fo.url || fo.data)) || null; }
 let _fileRequestCache=null;
@@ -11145,8 +11150,13 @@ async function fileSignMember(path,ttl=60,{client=sb,fetcher=fetch}={}){
   if(owner!==fileViewIdentity()){const failure=new Error('La sesión ha cambiado');failure.status=401;throw failure;}return url;
 }
 async function fileResolveForView(fo,{refresh=false}={}){
-  const source=fileSrc(fo); if(!source)return null;
+  let source=fileSrc(fo); if(!source)return null;
   try{
+    if(typeof source==='string'&&source.startsWith('local-file://')){
+      const resolved=await fileUploadQueue().resolve(source,{study:ESTUDIO_ID});
+      if(!String(resolved||'').startsWith('storage://'))return resolved;
+      source=resolved;
+    }
     const origins=[new URL(SUPABASE_URL).origin,'https://auth.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co'];
     if(!_fileRequestCache){const resolve=ModernoFiles.createResolver({origins,
       signMember:fileSignMember,
@@ -11159,10 +11169,21 @@ async function fileResolveForView(fo,{refresh=false}={}){
 function fileImageAttrs(source){
   const escape=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   try{
+    if(typeof source==='string'&&source.startsWith('local-file://'))return 'data-private-file="'+escape(source)+'" alt="Imagen pendiente de subir"';
     const origins=[new URL(SUPABASE_URL).origin,'https://auth.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co'];
     if(ModernoFiles.storagePath(source,origins))return 'data-private-file="'+escape(source)+'" alt="Imagen del proyecto"';
     return 'src="'+escape(source)+'"';
   }catch{return 'alt="Imagen no disponible"';}
+}
+function fileEmbedAttrs(source){
+  const escape=v=>String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  try{
+    if(typeof source==='string'&&source.startsWith('local-file://'))return 'data-private-file="'+escape(source)+'"';
+    const origins=[new URL(SUPABASE_URL).origin,'https://auth.moderno.app','https://cgqtylvaapwbuwqvpjtb.supabase.co'];
+    if(ModernoFiles.storagePath(source,origins))return 'data-private-file="'+escape(source)+'"';
+    if(typeof source==='string'&&(/^(?:https?:|blob:)/i.test(source)||/^data:application\/pdf(?:;[^,]*)?,/i.test(source)))return 'src="'+escape(source)+'"';
+  }catch(error){}
+  return '';
 }
 function documentBrandImageAttrs(source,bk,height){
   const escape=v=>String(v||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -11178,7 +11199,7 @@ function documentBrandFallback(img){
   img.replaceWith(fallback);return fallback;
 }
 function fileViewIdentity(){return [ESTUDIO_ID,state.portalAnon,state.sessionUser&&state.sessionUser.id,typeof _accessRole==='undefined'?'':_accessRole,typeof _accessAttempt==='undefined'?'':_accessAttempt].join('|');}
-const _imageLoads=new WeakMap();
+const _imageLoads=new WeakMap(),_embedLoads=new WeakMap();
 function fileLoadImage(img,refresh=false){
   if(!refresh&&_imageLoads.has(img))return _imageLoads.get(img);
   const owner=fileViewIdentity();
@@ -11196,15 +11217,30 @@ function fileLoadImage(img,refresh=false){
   })();
   _imageLoads.set(img,promise);return promise;
 }
+function fileLoadEmbed(embed,refresh=false){
+  if(!refresh&&_embedLoads.has(embed))return _embedLoads.get(embed);
+  const owner=fileViewIdentity();
+  const promise=(async()=>{
+    if(!embed.dataset.privateFile)return !!embed.getAttribute('src');
+    const src=await fileResolveForView({data:embed.dataset.privateFile},{refresh});
+    if(!src||!embed.isConnected||owner!==fileViewIdentity())throw Error('PDF no disponible');
+    embed.src=src;embed.classList.remove('file-failed');embed.classList.add('file-ready');return true;
+  })();
+  _embedLoads.set(embed,promise);return promise;
+}
 document.addEventListener('DOMContentLoaded',()=>{
   const observed=new WeakSet();
   const start=img=>{if(!_imageLoads.has(img))fileLoadImage(img).catch(()=>{if(img.hasAttribute('data-client-brand')){ClientPortalSite.brandFallback(img);return;}if(img.hasAttribute('data-document-brand')){documentBrandFallback(img);return;}img.alt='Imagen no disponible';img.classList.add('image-failed');window.ModernoShoppingFeedback?.imageState(img,'failed');});};
+  const startEmbed=embed=>{if(!_embedLoads.has(embed))fileLoadEmbed(embed).catch(()=>{embed.removeAttribute('src');embed.classList.add('file-failed');embed.setAttribute('aria-label','PDF no disponible');});};
   const lazy=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){lazy.unobserve(entry.target);start(entry.target);}},{rootMargin:'300px'}):null;
-  const scan=()=>document.querySelectorAll('img[data-private-file],img[data-document-brand],.shopping-product-photo img,.shopping-image-frame img,.project-card-cover img').forEach(img=>{
-    if(_imageLoads.has(img)||observed.has(img))return;
-    observed.add(img);
-    if(lazy&&img.loading==='lazy')lazy.observe(img);else start(img);
-  });
+  const scan=()=>{
+    document.querySelectorAll('img[data-private-file],img[data-document-brand],.shopping-product-photo img,.shopping-image-frame img,.project-card-cover img').forEach(img=>{
+      if(_imageLoads.has(img)||observed.has(img))return;
+      observed.add(img);
+      if(lazy&&img.loading==='lazy')lazy.observe(img);else start(img);
+    });
+    document.querySelectorAll('embed[data-private-file]').forEach(startEmbed);
+  };
   new MutationObserver(scan).observe(document.body,{childList:true,subtree:true});scan();
 });
 /* Arrastrar y soltar archivos (v3.26): en la fila de Contabilidad, en «Adjuntar» y en el modal de gasto/ingreso */
@@ -11417,7 +11453,8 @@ function obLogoPick(which){
 }
 function obLogoLoad(inp){
   const f=inp.files[0]; inp.value=""; if(!f||!obLogoTarget) return;
-  fileUp(f).then(__u=>{ if(__u==null) return; obData["logo"+obLogoTarget]=__u; obLogoTarget=null; onboardDraw(); toast("\u2713 Logotipo cargado"); });
+  const identity=fileViewIdentity(),draft=obData,target=obLogoTarget;
+  fileUp(f).then(__u=>{ if(__u==null||identity!==fileViewIdentity()||obData!==draft||obLogoTarget!==target) return; draft["logo"+target]=__u; obLogoTarget=null; onboardDraw(); toast("\u2713 Logotipo cargado"); });
 }
 function onboardNext(dir){
   if(obStep===0 && dir>0){
@@ -11545,7 +11582,7 @@ document.addEventListener("click",e=>{
 });
 
 /* ============ GUARDADO LOCAL (beta) ============ */
-const MODERNO_VER="v3.67.70";
+const MODERNO_VER="v3.67.72";
 
 /* ============ AUTENTICACIÓN REAL — Supabase Auth (Google OAuth) ============
    Pega aquí los dos valores de tu proyecto (Supabase → Settings → API).
@@ -11619,29 +11656,153 @@ function ensureSelfInTeam(){
 function meName(){ const s=state.sessionUser; if(s&&s.name) return s.name; const u0=state.users&&state.users[0]; return (u0&&u0.name)||"Yo"; }
 function meMail(){ return ((state.sessionUser&&state.sessionUser.mail)||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
 function isAdminU(){ return (!sb || !ESTUDIO_ID) ? true : state.myRole==="admin"; }
+function pendingCopyIdentity(user=state.sessionUser){
+  const id=String(user?.id||'').trim();if(id)return 'id:'+id;
+  const mail=String(user?.mail||user?.email||'').trim().toLowerCase();return mail?'mail:'+mail:'';
+}
+function pendingCopySnapshotOwner(raw){
+  if(typeof ModernoPendingArchive!=='undefined'&&typeof ModernoPendingArchive.snapshotOwner==='function')return ModernoPendingArchive.snapshotOwner(raw);
+  try{const value=JSON.parse(raw),user=value?.state?.sessionUser||{},sessionId=String(user.id||'').trim(),syncId=String(value?.sync?.user||'').trim();if(sessionId&&syncId&&sessionId!==syncId)return '';const id=sessionId||syncId;if(id)return 'id:'+id;const mail=String(user.mail||user.email||'').trim().toLowerCase();return mail?'mail:'+mail:'';}catch(e){return '';}
+}
+function pendingCopySnapshotStudy(raw){
+  if(typeof ModernoPendingArchive!=='undefined'&&typeof ModernoPendingArchive.snapshotStudy==='function')return ModernoPendingArchive.snapshotStudy(raw);
+  try{return String(JSON.parse(raw)?.sync?.study||'').trim();}catch(e){return '';}
+}
+function pendingCopyStoredOwner(raw){
+  if(typeof ModernoPendingArchive!=='undefined'&&typeof ModernoPendingArchive.owner==='function')return ModernoPendingArchive.owner(raw)||'';
+  return pendingCopySnapshotOwner(raw);
+}
+function pendingCopyStoredStudy(raw){
+  if(typeof ModernoPendingArchive!=='undefined'&&typeof ModernoPendingArchive.study==='function')return ModernoPendingArchive.study(raw)||'';
+  return pendingCopySnapshotStudy(raw);
+}
+function pendingCopySnapshotHint(raw){return typeof ModernoPendingArchive!=='undefined'&&typeof ModernoPendingArchive.snapshotHint==='function'?ModernoPendingArchive.snapshotHint(raw):'';}
+function pendingCopyStoredHint(raw){return typeof ModernoPendingArchive!=='undefined'&&typeof ModernoPendingArchive.hint==='function'?ModernoPendingArchive.hint(raw)||'':'';}
+function pendingCopyAllKeys(){
+  const keys=[];try{for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key&&key.startsWith(LS_KEY+'_pendiente_'))keys.push(key);}}catch(e){}return keys;
+}
+let _pendingCopyMigration=null;
+function pendingCopyMigrateOwnership(){
+  if(typeof localStorage==='undefined'||typeof ModernoPendingArchive==='undefined')return Promise.resolve();
+  if(_pendingCopyMigration)return _pendingCopyMigration;
+  const task=(async()=>{
+   // Una sola lectura ampliada cada vez. Con decenas de snapshots grandes,
+   // Promise.all duplicaba picos de memoria y una segunda llamada de arranque
+   // repetía el mismo trabajo antes de que terminara la primera.
+   for(const key of pendingCopyAllKeys()){
+    const reference=localStorage.getItem(key),target=ModernoPendingArchive.pointer(reference);
+    if(!reference||!target||pendingCopyStoredOwner(reference)&&pendingCopyStoredStudy(reference)&&pendingCopyStoredHint(reference))continue;
+    try{
+      const raw=await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore()),owner=pendingCopySnapshotOwner(raw),study=pendingCopySnapshotStudy(raw),storedOwner=pendingCopyStoredOwner(reference),storedStudy=pendingCopyStoredStudy(reference);
+      // Un pointer legacy solo se atribuye con el snapshot resuelto y ambas
+      // fronteras verificables. Si falta usuario o estudio se conserva oculto.
+      if(!owner||!study||storedOwner&&storedOwner!==owner||storedStudy&&storedStudy!==study||localStorage.getItem(key)!==reference)continue;
+      const upgraded=ModernoPendingArchive.marker(target,owner,study,pendingCopySnapshotHint(raw));localStorage.setItem(key,upgraded);
+      if(localStorage.getItem(key)!==upgraded)throw new Error('No se pudo verificar el propietario y estudio de la copia');
+    }catch(e){/* Conservar y ocultar es más seguro que atribuir por suposición. */}
+   }
+  })();
+  _pendingCopyMigration=task;
+  const clear=()=>{if(_pendingCopyMigration===task)_pendingCopyMigration=null;};
+  task.then(clear,clear);
+  return task;
+}
+async function pendingCopyResolveForCurrentUser(key){
+  const owner=pendingCopyIdentity(),study=String(ESTUDIO_ID||'').trim();if(!owner||!study||!syncCopyKeys().includes(key))throw new Error('La copia no pertenece a esta sesión y estudio');
+  const raw=await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore());
+  if(!raw||pendingCopySnapshotOwner(raw)!==owner||pendingCopySnapshotStudy(raw)!==study)throw new Error('No se pudo verificar el propietario y estudio de la copia');
+  return raw;
+}
+function pendingCopyWhen(key){const value=Number(String(key).slice((LS_KEY+'_pendiente_').length).split('.')[0]);return Number.isFinite(value)?value:0;}
 function sbEnter(user, saluda){
   if(sb&&!ESTUDIO_ID)_accessLoading=true;
   routeAuthReturn();
   state.sessionUser = sbUserToSession(user);
   ensureSelfInTeam();
   applySessionUI(); showLogin(false); if(!_accessLoading)persistSoon(); render();
+  pendingCopyMigrateOwnership().then(()=>{try{syncRefresh();}catch(e){}}).catch(()=>{});
   if(!ESTUDIO_ID) cloudLoad();
   if(!_sbEntered){ _sbEntered=true;
     if(saluda) toast("✓ Sesión iniciada — hola, "+state.sessionUser.name.split(" ")[0]);
     if(!sb) afterLoginOnce();
   }
 }
+function sbEmptyStudyState(){
+  // Account boundaries use an allow-list. Any current or future tenant key not
+  // listed here is deleted instead of being inherited by the next session.
+  return {
+    brandFilter:'all',view:'home',currentProject:null,currentRoom:null,
+    projects:[],library:[],clients:[],quotes:[],invoices:[],entries:[],borradores:[],docs:[],trash:[],
+    catalog:[],catalogArchive:[],catalogSeed:null,entriesDel:{},docsDel:{},obraTpl:[],
+    account:{},emitter:{},users:[],logos:{},counters:{},idPrefix:{},series:{},trades:[],notifs:[],
+    quoteCounter:0,invCounter:0,defMargin:0,irpf:false,
+    cal:{view:'mes',off:0,showTasks:true,showObra:false,pid:null,g:false,a:false,events:[]},calToken:null,
+    catImgs:{},customCats:[],techs:[],typeColors:{},exOpts:{},
+    adminSec:'perfil',onboarded:false,mailUnread:0,draft:null,myRole:null,sessionUser:null,userName:'',
+    projQ:'',projTab:'tareas',projView:'grid',showArchived:false,roomSearch:'',rf:null,rowOpen:{},
+    libQ:'',libF:{cat:'',sup:'',min:'',max:''},libPickQ:'',libSeq:1,lpQ:'',catQ:'',catPickType:'',catTab:'cm',
+    agQ:'',agendaTab:'Clientes',afterClient:null,compFilter:'',compProj:0,
+    qView:null,fView:null,qFilter:{from:'',to:'',client:'',status:''},fFilter:{},expenseFilter:{},
+    financeSearch:'',financeSummaryPeriod:'',financeProjectsExpanded:false,financeInvoiceGrid:{},
+    period:null,accTab:'in',accF:{},accQ:{},accN:{},accSort:'desc',accDateOpen:false,accExportKind:'in',
+    wsMine:true,wsProj:'all',wsQuery:'',wsProjQ:'',obraCalOff:0,planOpen:{},planosOpen:{},planMigrated:false,
+    permRole:0,presBack:null,tl:{scale:'mes',off:0,colw:170},
+    _hist:null,_histBloque:'proyectos',_invs:[],_catSel:{},_libSel:{},_tiSel:{},_entryEdit:null,_tk:null,_tkCtx:null,_welEdit:null,
+    portalAnon:null,portalFacturas:[],portalResp:[],portalEmisor:{},portalEstudio:'',portalTel:'',
+    portalBrandToken:null,portalCapabilities:{},portalCobrado:0,portalCalOff:0,portalCalProject:null,obraPortalPlanos:false,
+  };
+}
+function sbClearStudyState(){
+  Object.keys(state).forEach(key=>delete state[key]);
+  Object.assign(state,sbEmptyStudyState());
+  // BRAND and wsOrder are tenant data too (team e-mails, colours, arbitrary
+  // metadata and ordering), so rebuild the clean production workspace.
+  Object.keys(BRAND).forEach(key=>delete BRAND[key]);
+  BRAND.cm={name:'',chip:'cm',front:'var(--cm-soft)',back:'var(--cm-back)'};
+  wsOrder=['cm'];
+}
+let _sessionResetTask=null,_authEventGeneration=0;
+function sbResetSession(){
+  if(_sessionResetTask)return _sessionResetTask;
+  if(!state.sessionUser&&!ESTUDIO_ID)return Promise.resolve();
+  const task=(async()=>{
+    const channel=_rtChan;
+    clearTimeout(_saveT);
+    // Persist with A's owner still intact. Then invalidate network work and raise
+    // the login curtain synchronously while a large IndexedDB write finishes.
+    try{persistNow();}catch(e){}
+    const localWrite=_localWrite;
+    teamPresence?.stop();
+    _accessAttempt++;_accessConnecting=false;_accessError='';_accessLoading=!!sb;
+    clearTimeout(_cloudT);clearTimeout(_cloudRetryT);clearInterval(_rtPoll);_rtPoll=null;
+    if(typeof cloudRealtimeChange==='function'){clearTimeout(cloudRealtimeChange.timer);cloudRealtimeChange.timer=null;cloudRealtimeChange.pending=null;}
+    _rtChan=null;_rtRerender=false;showLogin(true);render();
+    const removeChannel=channel?Promise.resolve().then(()=>sb.removeChannel(channel)).catch(()=>{}):Promise.resolve();
+    if(localWrite)try{await localWrite;}catch(e){}
+    // An expanded local write creates the file-attachment barrier only after
+    // IndexedDB confirms that snapshot. Do not dispose the queue or clear A's
+    // identity until that marker is durable; otherwise a fast logout can leave
+    // a valid local-file reference permanently in review.
+    const fileAttachment=_fileAttachTask;
+    if(fileAttachment)try{await fileAttachment;}catch(e){}
+    // Attribute readable legacy backups before clearing A. Anything that cannot
+    // be attributed remains stored but will not be listed for another account.
+    try{await pendingCopyMigrateOwnership();}catch(e){}
+    fileResetSession();
+    state.sessionUser=null;_sbEntered=false;_afterDone=false;ESTUDIO_ID=null;_cloudLoadedStudy=null;_cloudUserId=null;
+    _accessRole=null;_gestoriaData=null;window._cloudConflicts={};
+    Object.keys(_cloudHash).forEach(k=>delete _cloudHash[k]);Object.keys(_cloudSeen).forEach(k=>delete _cloudSeen[k]);
+    Object.keys(_cloudCount).forEach(k=>delete _cloudCount[k]);Object.keys(_cloudForce).forEach(k=>delete _cloudForce[k]);
+    _cloudWriteRequest=null;_cloudFailures=0;_cloudRetryAfter=0;_syncReview=false;_syncConfirmed=false;_syncPhase='connecting';_syncDetail='';
+    try{if(typeof closeModal==='function')closeModal();if(typeof document!=='undefined')document.getElementById('cloudPendingCopies')?.remove();}catch(e){}
+    sbClearStudyState();applySessionUI();showLogin(true);render();await removeChannel;
+  })();
+  _sessionResetTask=task;task.finally(()=>{if(_sessionResetTask===task)_sessionResetTask=null;});return task;
+}
 async function sbLogout(){
-  teamPresence?.stop();
-  _accessAttempt++;_accessConnecting=false;_accessError='';window._cloudConflicts={};
-  _accessRole=null;_gestoriaData=null;_accessLoading=!!sb;
-  clearTimeout(_cloudT);clearTimeout(_cloudRetryT);clearInterval(_rtPoll);_rtPoll=null;
-  if(_rtChan){try{await sb.removeChannel(_rtChan);}catch(e){} _rtChan=null;}
+  const resetting=sbResetSession();
   try{ if(sb) await sb.auth.signOut(); }catch(e){}
-  state.sessionUser = null; _sbEntered=false; _afterDone=false; ESTUDIO_ID=null;_cloudLoadedStudy=null;_cloudUserId=null;
-  Object.keys(_cloudHash).forEach(k=>delete _cloudHash[k]);
-  Object.keys(_cloudSeen).forEach(k=>delete _cloudSeen[k]);
-  persistNow(); applySessionUI(); showLogin(true);
+  await resetting;
   toast("Sesión cerrada — tus datos siguen guardados en este navegador");
 }
 
@@ -11703,7 +11864,10 @@ function fixBrands(){
 }
 let _syncPhase='connecting', _syncDetail='', _syncConfirmed=false, _syncReview=false;
 function syncHasChanges(){return Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()));}
-function syncCopyKeys(){const keys=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(LS_KEY+'_pendiente_'))keys.push(k);}}catch(e){}return keys;}
+function syncCopyKeys(){
+  const owner=pendingCopyIdentity(),study=String(ESTUDIO_ID||'').trim();if(!owner||!study)return [];
+  return pendingCopyAllKeys().filter(key=>{try{const raw=localStorage.getItem(key);return pendingCopyStoredOwner(raw)===owner&&pendingCopyStoredStudy(raw)===study;}catch(e){return false;}});
+}
 function syncView(){
   if(typeof _localWrite!=='undefined'&&_localWrite&&!_syncReview)return {mode:'saving',label:'Guardando',detail:'Conservando y verificando la copia local ampliada.'};
   return ModernoDaily.saveStatus({editing:typeof document!=='undefined'&&!!document.querySelector('.overlay.open input:not([type="hidden"]), .overlay.open textarea, .overlay.open select, .overlay.open [contenteditable="true"]'),localFailure:typeof _saveErr!=='undefined'&&_saveErr,localDetail:typeof _saveErrDetail==='undefined'?'':_saveErrDetail,review:_syncReview,online:navigator.onLine,changed:syncHasChanges(),confirmed:_syncConfirmed,phase:_syncPhase,detail:_syncDetail});
@@ -11728,7 +11892,7 @@ function syncTag(mode,msg){
   _syncDetail=msg||'';syncRefresh();
 }
 function syncDownloadCurrent(){
-  try{const raw=JSON.stringify({v:1,appVersion:MODERNO_VER,when:Date.now(),state,BRAND,wsOrder,sync:localSnapshotSync()});const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='moderno-cambios-actuales-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast('No se pudo descargar la copia. Conserva esta pestaña abierta.');}
+  try{const raw=JSON.stringify({v:1,appVersion:MODERNO_VER,when:Date.now(),state,BRAND,wsOrder,sync:localSnapshotSyncDurable()});const url=URL.createObjectURL(new Blob([raw],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='moderno-cambios-actuales-'+Date.now()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast('No se pudo descargar la copia. Conserva esta pestaña abierta.');}
 }
 function syncDownloadDiagnostics(){
   const data={version:MODERNO_VER,when:new Date().toISOString(),metrics:efficiencyMetrics.snapshot()};
@@ -11742,28 +11906,204 @@ function syncDetails(){
   modal('<h3 data-sync-title>'+v.label+'</h3><p data-sync-detail>'+ModernoDaily.escape(v.detail)+'</p><p style="font-size:11px;color:var(--ink-soft)">Versión '+ModernoDaily.escape(MODERNO_VER)+'</p><p>Descargar una copia conserva lo que tienes en esta pestaña. No sustituye automáticamente los datos de la nube.</p>'+(copyNote?'<p>'+copyNote+'</p>':'')+'<div class="modal-foot sync-actions">'+(Object.keys(window._cloudConflicts||{}).length?'<button class="btn btn-gold" onclick="flowReviewOpen()">Resolver cambios</button>':'')+'<button class="btn btn-ghost" onclick="syncDownloadCurrent()">Descargar cambios actuales</button>'+(copies?'<button class="btn btn-ghost" onclick="closeModal();cloudPendingNotice()">Ver copias anteriores</button>':'')+'<button class="btn btn-ghost" onclick="syncDownloadDiagnostics()">Descargar diagnóstico</button><button class="btn btn-ghost" onclick="syncRetrySave()">Reintentar guardado</button><button class="btn btn-dark" onclick="closeModal()">Cerrar</button></div>');
 }
 window.addEventListener('offline',()=>{syncRefresh();});
-window.addEventListener('online',()=>{syncRefresh();cloudDirty();});
+window.addEventListener('online',()=>{syncRefresh();fileRetryPending();cloudDirty();});
 /* ===== Archivos del estudio: Supabase Storage (bucket "archivos") =====
-   Ruta: {estudio_id}/{aleatorio}.{ext}. El estado guarda solo la URL.
-   Sin nube (o si falla la subida): degrada a incrustado en el navegador. */
-function _readDataURL(f){ return new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>res(null); r["readAs"+"DataURL"](f); }); }
+   Ruta: {estudio_id}/pending/{uuid}.{ext}. El estado guarda una referencia
+   estable y el Blob pendiente vive en IndexedDB: nunca se incrusta en JSON. */
+let _fileQueue=null,_fileQueueStore=null,_fileQueueOwner=null,_fileRetryTask=null,_fileRetryTimer=null,_fileAttachTimer=null,_fileAttachTask=null,_fileRetryFailures=0;
+const _fileDraftLeases=new Set();
+function fileQueueOwner(){return String(state.sessionUser?.id||'').trim();}
+function _fileExtension(name,type){
+  const raw=(String(name||'').includes('.')?String(name).split('.').pop():String(type||'').split('/').pop()||'bin').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'').slice(0,8);
+  return raw||'bin';
+}
+async function _fileUploadRemote(record){
+  if(!sb||!ESTUDIO_ID||ESTUDIO_ID!==record.study||!record.owner||fileQueueOwner()!==record.owner)throw Error('La sesión o el estudio ha cambiado');
+  const id=String(record.id||crypto.randomUUID()).toLowerCase(),ext=_fileExtension(record.name,record.type);
+  const path=record.study+'/pending/'+id+'.'+ext;
+  const bucket=sb.storage.from('archivos');
+  const {error}=await bucket.upload(path,record.blob,{contentType:record.type||record.blob?.type||'application/octet-stream',cacheControl:'31536000',upsert:false});
+  if(error){
+    // La subida puede haber llegado aunque el navegador pierda la respuesta. En
+    // el reintento no sobrescribimos: acepta solo el objeto idéntico que ya exista
+    // en la ruta UUID. Así basta INSERT y un colaborador nunca pisa otro archivo.
+    try{
+      if(typeof bucket.download==='function'){
+        const existing=await bucket.download(path);
+        if(!existing.error&&await _fileBlobsEqual(existing.data,record.blob))return 'storage://archivos/'+path;
+      }
+    }catch(downloadError){}
+    throw error;
+  }
+  return 'storage://archivos/'+path;
+}
+async function _fileBlobsEqual(a,b){
+  if(!(a instanceof Blob)||!(b instanceof Blob)||a.size!==b.size)return false;
+  const [left,right]=await Promise.all([a.arrayBuffer(),b.arrayBuffer()]);
+  const x=new Uint8Array(left),y=new Uint8Array(right);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return false;return true;
+}
+function fileUploadQueue(){
+  const owner=fileQueueOwner();if(!owner)throw Error('No hay una cuenta autenticada para los archivos pendientes');
+  if(_fileQueue){if(_fileQueueOwner!==owner)throw Error('La cuenta ha cambiado; vuelve a abrir el archivo');return _fileQueue;}
+  if(typeof ModernoFileUploadQueue==='undefined')throw Error('No se ha cargado la cola segura de archivos');
+  _fileQueueStore=ModernoFileUploadQueue.createStore(window.indexedDB);
+  _fileQueueOwner=owner;
+  return _fileQueue=ModernoFileUploadQueue.createQueue({store:_fileQueueStore,upload:_fileUploadRemote,owner});
+}
+function fileResetSession(){
+  try{_fileRequestCache?.clear();}catch(error){}
+  _fileRequestCache=null;
+  try{_fileQueue?.dispose();}catch(error){}
+  try{_fileQueueStore?.reset();}catch(error){}
+  clearTimeout(_fileRetryTimer);clearTimeout(_fileAttachTimer);_fileRetryTimer=null;_fileAttachTimer=null;_fileRetryFailures=0;_fileDraftLeases.clear();
+  _fileQueue=null;_fileQueueStore=null;_fileQueueOwner=null;_fileRetryTask=null;_fileAttachTask=null;
+}
+function _replaceFileReference(root,from,to){
+  const changed=[],stack=[root],seen=new Set();let visited=0;
+  while(stack.length){
+    const current=stack.pop();if(!current||typeof current!=='object'||seen.has(current))continue;
+    if(++visited>250000)throw Error('Hay demasiados datos para revisar los archivos pendientes');
+    seen.add(current);
+    for(const key of Object.keys(current)){
+      const value=current[key];
+      if(value===from){current[key]=to;changed.push([current,key]);}
+      else if(value&&typeof value==='object')stack.push(value);
+    }
+  }
+  return {count:changed.length,undo(){for(const [owner,key] of changed)if(owner[key]===to)owner[key]=from;}};
+}
+async function _persistFileReference(local,remote,{study=ESTUDIO_ID,owner=fileViewIdentity()}={}){
+  if(ESTUDIO_ID!==study||fileViewIdentity()!==owner)return false;
+  const replacement=_replaceFileReference(state,local,remote);
+  if(!replacement.count)return false;
+  persistNow();if(_localWrite)await _localWrite;
+  if(ESTUDIO_ID!==study||fileViewIdentity()!==owner){replacement.undo();return false;}
+  if(_saveErr){replacement.undo();persistNow();return false;}
+  render();return true;
+}
+function _hasFileReference(root,target){
+  const stack=[root],seen=new Set();let visited=0;
+  while(stack.length){const current=stack.pop();if(current===target)return true;if(!current||typeof current!=='object'||seen.has(current))continue;if(++visited>250000)throw Error('Hay demasiados datos para confirmar los archivos');seen.add(current);for(const value of Object.values(current))stack.push(value);}
+  return false;
+}
+async function fileConfirmCloudReferences(values){
+  if(!sb||!ESTUDIO_ID)return 0;
+  const study=ESTUDIO_ID,owner=fileViewIdentity(),queue=fileUploadQueue(),rows=await queue.list(study);let confirmed=0;
+  for(const row of rows){
+    if(!row.remote||row.cloudConfirmedAt||!values.some(value=>_hasFileReference(value,row.remote)))continue;
+    if(ESTUDIO_ID!==study||fileViewIdentity()!==owner)return confirmed;
+    await queue.confirmCloud(row.reference,row.remote,{study});confirmed++;
+  }
+  return confirmed;
+}
+function fileConfirmCloudReferencesBestEffort(values){
+  // Esta tarea solo libera bytes de Blobs cuya referencia remota ya fue
+  // confirmada. Nunca debe retener el guardado: si IndexedDB se bloquea, la
+  // fila y su Blob permanecen intactos para que el siguiente arranque reintente.
+  let timer;
+  const timeout=new Promise(resolve=>{timer=setTimeout(()=>resolve(null),5000);timer?.unref?.();});
+  void Promise.race([Promise.resolve().then(()=>fileConfirmCloudReferences(values)),timeout])
+    .catch(error=>console.warn('[storage cloud ack]',error?.message||error))
+    .finally(()=>clearTimeout(timer));
+}
+function filePendingReferences(value=Object.values(CLOUD_BLOCKS).map(io=>io.get())){
+  if(typeof ModernoFileUploadQueue==='undefined')return [];
+  return ModernoFileUploadQueue.collectReferences(value);
+}
+function fileLocalPersistenceSnapshot(){
+  if(!sb||!ESTUDIO_ID||_cloudLoadedStudy!==ESTUDIO_ID||_accessLoading||!_cloudUserId||state.sessionUser?.id!==_cloudUserId)return null;
+  try{return {study:ESTUDIO_ID,owner:fileViewIdentity(),references:filePendingReferences(state)};}
+  catch(error){console.warn('[storage local scan]',error?.message||error);return null;}
+}
+function fileVerifiedPersistenceSnapshot(study,owner){
+  try{
+    if(typeof _verifiedLocalContent!=='string'||!_verifiedLocalReference||localStorage.getItem(LS_KEY)!==_verifiedLocalReference)return null;
+    const saved=JSON.parse(_verifiedLocalContent),sync=saved?.sync;
+    if(sync?.v!==1||!sync.pending||typeof sync.pending!=='object'||Array.isArray(sync.pending)||sync.study!==study||sync.user!==state.sessionUser?.id||study!==ESTUDIO_ID||owner!==fileViewIdentity())return null;
+    return {study,owner,references:filePendingReferences(saved.state)};
+  }catch(error){console.warn('[storage verified snapshot]',error?.message||error);return null;}
+}
+function fileConfirmLocalPersistence(snapshot){
+  if(!snapshot||!snapshot.references.length)return Promise.resolve([]);
+  clearTimeout(_fileAttachTimer);_fileAttachTimer=null;
+  const previous=_fileAttachTask;
+  const task=Promise.resolve(previous).catch(()=>[]).then(async()=>{
+    // This durable snapshot belongs to its captured study even if logout has
+    // already invalidated the visible session. The local marker makes a later
+    // reload self-healing; only the remote retry remains identity-bound.
+    const attached=await fileUploadQueue().markPersisted(snapshot.references,{study:snapshot.study});
+    if(snapshot.study===ESTUDIO_ID&&snapshot.owner===fileViewIdentity()&&attached.length)setTimeout(fileRetryPending,0);
+    return attached;
+  }).catch(error=>{
+    console.warn('[storage local attachment]',error?.message||error);
+    if(snapshot.study===ESTUDIO_ID&&snapshot.owner===fileViewIdentity()){
+      clearTimeout(_fileAttachTimer);_fileAttachTimer=setTimeout(()=>{_fileAttachTimer=null;fileConfirmLocalPersistence(snapshot);},1000);
+    }
+    return [];
+  }).finally(()=>{if(_fileAttachTask===task){_fileAttachTask=null;try{syncRefresh();}catch(error){}}});
+  _fileAttachTask=task;return task;
+}
+function fileScheduleRetry(study,owner){
+  clearTimeout(_fileRetryTimer);
+  const delay=Math.min(60000,1000*2**Math.min(_fileRetryFailures,6));
+  _fileRetryTimer=setTimeout(()=>{
+    _fileRetryTimer=null;
+    if(ESTUDIO_ID===study&&fileViewIdentity()===owner)fileRetryPending();
+  },delay);
+}
+function fileRetryPending(){
+  if(_fileRetryTask)return _fileRetryTask;
+  if(!sb||!ESTUDIO_ID||_accessLoading||typeof navigator!=='undefined'&&navigator.onLine===false)return Promise.resolve([]);
+  clearTimeout(_fileRetryTimer);_fileRetryTimer=null;
+  const study=ESTUDIO_ID,owner=fileViewIdentity(),references=filePendingReferences(),protectedReferences=[...new Set([...references,..._fileDraftLeases])],queue=fileUploadQueue();
+  const task=Promise.resolve().then(async()=>{
+    if(_fileAttachTask)await _fileAttachTask;
+    if(ESTUDIO_ID!==study||fileViewIdentity()!==owner)return [];
+    const verified=fileVerifiedPersistenceSnapshot(study,owner);
+    if(verified)await queue.markPersisted(verified.references,{study});
+    if(ESTUDIO_ID!==study||fileViewIdentity()!==owner)return [];
+    await queue.reconcile(study,protectedReferences,{minimumAgeMs:60000});
+    return queue.retryAll(study,{references,onUploaded:async(local,remote)=>{
+    if(ESTUDIO_ID!==study||fileViewIdentity()!==owner)return false;
+    const persisted=await _persistFileReference(local,remote,{study,owner});
+    if(persisted)_fileDraftLeases.delete(local);
+    // The Blob/mapping remains durable until the corresponding cloud batch is
+    // acknowledged. This also gives another tab time to replace its local ref.
+    return false;
+    }});
+  }).then(results=>{
+    if(ESTUDIO_ID!==study||fileViewIdentity()!==owner)return results;
+    for(const row of results)if(row.confirmed)_fileDraftLeases.delete(row.reference);
+    const missing=results.filter(row=>row.error?.code==='LOCAL_FILE_MISSING').length;
+    const failed=results.filter(row=>row.error&&row.error.code!=='LOCAL_FILE_MISSING').length;
+    if(failed){_fileRetryFailures++;syncTag('pending','Hay '+failed+' archivo'+(failed===1?'':'s')+' pendiente'+(failed===1?'':'s')+' de subir; se reintentará.');fileScheduleRetry(study,owner);}
+    else{_fileRetryFailures=0;if(results.some(row=>!row.error&&row.remote)){syncTag('pending','Archivos subidos; confirmando los cambios del estudio…');cloudDirty();}}
+    if(missing)syncTag('err','Falta la copia local de '+missing+' archivo'+(missing===1?'':'s')+'. Quita '+(missing===1?'ese archivo y vuelve':'esos archivos y vuelve')+' a adjuntarlo antes de continuar.');
+    return results;
+  }).catch(error=>{console.warn('[storage queue]',error?.message||error);if(ESTUDIO_ID===study&&fileViewIdentity()===owner){_fileRetryFailures++;fileScheduleRetry(study,owner);}return [];}).finally(()=>{if(_fileRetryTask===task)_fileRetryTask=null;});
+  _fileRetryTask=task;return task;
+}
 async function fileUp(f){
   if(!f) return null;
-  if(!sb || !ESTUDIO_ID) return await _readDataURL(f);
+  if(!sb||!ESTUDIO_ID){
+    toast('El archivo no se ha añadido. Inicia sesión y vuelve a intentarlo.');
+    return null;
+  }
+  const study=ESTUDIO_ID,owner=fileViewIdentity(),queue=fileUploadQueue();
   try{
-    const extRaw=(f.name && f.name.includes(".") ? f.name.split(".").pop() : "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"").slice(0,8);
-    const path=ESTUDIO_ID+"/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9)+"."+(extRaw||"bin");
-    syncTag("saving","Subiendo archivo\u2026");
-    const {error} = await sb.storage.from("archivos").upload(path, f, {contentType:f.type||undefined, cacheControl:"31536000", upsert:false});
-    if(error) throw error;
-    const {data} = sb.storage.from("archivos").getPublicUrl(path);
-    syncTag("pending","Archivo preparado; falta confirmar su referencia en el estudio");
-    return (data && data.publicUrl) || null;
+    const local=await queue.enqueue(f,{study,name:f.name});
+    if(ESTUDIO_ID!==study||fileViewIdentity()!==owner)return null;
+    _fileDraftLeases.add(local);
+    // persistNow marca de forma durable la referencia cuando ya forma parte de
+    // una copia local verificada. Hasta entonces retryAll la considera borrador:
+    // cancelar el formulario o cerrar la pestaña no crea un objeto remoto.
+    syncTag('pending','Archivo protegido; se subirá después de conservar el formulario');
+    return local;
   }catch(e){
     console.warn("[storage]", e && e.message || e);
-    syncTag("err","No se pudo subir a la nube");
-    toast("\u26a0 No se pudo subir el archivo a la nube \u2014 se guarda en este navegador por ahora");
-    return await _readDataURL(f);
+    if(ESTUDIO_ID!==study||fileViewIdentity()!==owner)return null;
+    toast('No se pudo conservar el archivo. No se ha añadido al proyecto.');
+    return null;
   }
 }
 const LOCAL_SAVE_DEBOUNCE_MS=80,CLOUD_SAVE_DEBOUNCE_MS=120;
@@ -11813,10 +12153,10 @@ function cloudGuardModal(b, oldN, newN){
     ()=>{ cloudRecoverBlock(b); });
 }
 async function cloudReadRows(bloques=null,signal=null){
-  const estudio=ESTUDIO_ID,role=_accessRole;
+  const estudio=ESTUDIO_ID,role=_accessRole,user=state.sessionUser?.id,cloudUser=_cloudUserId,generation=_accessAttempt;
   const query=sb.rpc("app_leer_bloques",{p_estudio:estudio,p_bloques:bloques});
   const result=await(signal&&typeof query.abortSignal==='function'?query.abortSignal(signal):query);
-  if(ESTUDIO_ID!==estudio||_accessRole!==role)return {error:new Error("La sesión ha cambiado; vuelve a cargar la consulta")};
+  if(ESTUDIO_ID!==estudio||_accessRole!==role||state.sessionUser?.id!==user||_cloudUserId!==cloudUser||_accessAttempt!==generation)return {error:new Error("La sesión ha cambiado; vuelve a cargar la consulta")};
   if(result.error)return result;
   if(!Array.isArray(result.data)||result.data.some(r=>!r||r.rol!==role))return {error:new Error("Tus permisos han cambiado; conserva los cambios pendientes y vuelve a entrar")};
   return result;
@@ -11847,21 +12187,173 @@ async function cloudRecoverBlock(b){
 }
 // Capability negotiation is read-only. Only a missing RPC permits fallback.
 const efficiencyMetrics=ModernoEfficiency.metrics();
-let _deltaRpcAvailable=null,_cloudFailures=0,_cloudRetryAfter=0;
+let _deltaRpcAvailable=null,_saveV2Available=null,_cloudFailures=0,_cloudRetryAfter=0,_cloudWriteRequest=null;
+function cloudWriteHash32(text,seed){let hash=seed>>>0;for(let i=0;i<text.length;i++){hash^=text.charCodeAt(i);hash=Math.imul(hash,16777619)>>>0;}return hash.toString(16).padStart(8,'0');}
+function cloudWriteRequestId(owner,fingerprint){
+  const source=String(owner)+'|'+String(fingerprint);
+  let raw=cloudWriteHash32(source,2166136261)+cloudWriteHash32(source,2246822519)+cloudWriteHash32(source,3266489917)+cloudWriteHash32(source,668265263);
+  raw=raw.slice(0,12)+'4'+raw.slice(13,16)+'8'+raw.slice(17);
+  return raw.slice(0,8)+'-'+raw.slice(8,12)+'-'+raw.slice(12,16)+'-'+raw.slice(16,20)+'-'+raw.slice(20,32);
+}
+async function cloudWriteFingerprint(study,changes){
+  const raw=JSON.stringify([study,changes]),bytes=typeof TextEncoder==='function'?new TextEncoder().encode(raw):Uint8Array.from(raw,value=>value.charCodeAt(0)&255);
+  if(globalThis.crypto?.subtle){const digest=await globalThis.crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,'0')).join('');}
+  let a=2166136261,b=2246822519;for(const value of bytes){a=Math.imul(a^value,16777619);b=Math.imul(b^value,3266489917);}return bytes.length+':'+(a>>>0).toString(16)+':'+(b>>>0).toString(16);
+}
+function cloudWriteJournalPrefix(){return LS_KEY+'_write_request_v2_';}
+function cloudWriteJournalKey(owner,fingerprint){return cloudWriteJournalPrefix()+encodeURIComponent(owner)+'|'+encodeURIComponent(fingerprint);}
+function cloudWriteJournalValid(value,owner,fingerprint){
+  return !!value&&value.v===2&&value.owner===owner&&value.fingerprint===fingerprint&&/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.requestId||'')&&Number.isFinite(value.createdAt)&&value.envelope?.v===2&&value.envelope.requestId===value.requestId&&Array.isArray(value.envelope.cambios)&&value.envelope.cambios.length>0;
+}
+async function cloudWriteJournalRaw(key){
+  if(typeof localStorage==='undefined')return null;
+  const raw=localStorage.getItem(key);if(raw==null)return null;
+  if(typeof ModernoPendingArchive!=='undefined'&&ModernoPendingArchive.pointer?.(raw))return ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore());
+  return raw;
+}
+async function cloudWriteJournalRead(owner,fingerprint){
+  const key=cloudWriteJournalKey(owner,fingerprint),raw=await cloudWriteJournalRaw(key);if(raw==null)return null;
+  let saved;try{saved=JSON.parse(raw);}catch(error){throw Error('El reintento guardado está dañado; conserva esta pestaña y descarga los cambios');}
+  if(!cloudWriteJournalValid(saved,owner,fingerprint))throw Error('El reintento guardado no es válido; conserva esta pestaña y descarga los cambios');
+  return saved;
+}
+async function cloudWriteJournalPending(owner){
+  if(typeof localStorage==='undefined')return [];
+  const keys=[],prefix=cloudWriteJournalPrefix()+encodeURIComponent(owner)+'|';
+  // No abrir journals de otra cuenta: una copia dañada o un IndexedDB privado
+  // de A nunca debe bloquear ni revelar los guardados de B en el navegador.
+  for(let index=0;index<localStorage.length;index++){const key=localStorage.key(index);if(key?.startsWith(prefix))keys.push(key);}
+  const rows=[];
+  for(const key of keys){
+    const raw=await cloudWriteJournalRaw(key);if(raw==null)continue;
+    let value;try{value=JSON.parse(raw);}catch(error){throw Error('El reintento guardado está dañado; conserva esta pestaña y descarga los cambios');}
+    if(!cloudWriteJournalValid(value,value?.owner,value?.fingerprint))throw Error('El reintento guardado no es válido; conserva esta pestaña y descarga los cambios');
+    if(value.owner===owner)rows.push(value);
+  }
+  return rows.sort((left,right)=>left.createdAt-right.createdAt||left.requestId.localeCompare(right.requestId));
+}
+async function cloudWriteJournalStore(record){
+  if(typeof localStorage==='undefined')throw Error('No hay almacenamiento local para proteger el reintento');
+  if(!cloudWriteJournalValid(record,record?.owner,record?.fingerprint))throw Error('No se puede proteger un reintento no válido');
+  const key=cloudWriteJournalKey(record.owner,record.fingerprint),raw=JSON.stringify(record);
+  try{
+    if(raw.length>262144&&typeof ModernoPendingArchive!=='undefined'&&typeof pendingArchiveStore==='function'){
+      const store=pendingArchiveStore();await store.write(key,raw);
+      if(await store.read(key)!==raw)throw Error('No se pudo verificar el reintento ampliado');
+      localStorage.setItem(key,ModernoPendingArchive.marker(key));
+    }else localStorage.setItem(key,raw);
+    const saved=await cloudWriteJournalRead(record.owner,record.fingerprint);
+    if(saved.requestId!==record.requestId||JSON.stringify(saved.envelope)!==JSON.stringify(record.envelope))throw Error('El reintento verificado no coincide');
+    return saved;
+  }catch(error){throw Error('No se pudo conservar el reintento antes de enviarlo: '+(error?.message||error));}
+}
+async function cloudWriteJournalRemove(record){
+  if(typeof localStorage==='undefined')throw Error('No se pudo cerrar el reintento local');
+  const key=cloudWriteJournalKey(record.owner,record.fingerprint),raw=localStorage.getItem(key);
+  if(raw==null)return;
+  const saved=await cloudWriteJournalRead(record.owner,record.fingerprint);
+  if(saved.requestId!==record.requestId)throw Error('Otro reintento ocupa el registro local');
+  const archived=typeof ModernoPendingArchive!=='undefined'?ModernoPendingArchive.pointer?.(raw):null;
+  localStorage.removeItem(key);if(localStorage.getItem(key)!==null)throw Error('No se pudo cerrar el reintento local');
+  if(archived)try{await pendingArchiveStore().remove(archived);}catch(error){console.warn('[save journal cleanup]',error?.message||error);}
+}
+function cloudWriteLegacyRequest(owner,fingerprint,changes){
+  if(typeof localStorage==='undefined')return null;
+  try{
+    const saved=JSON.parse(localStorage.getItem(LS_KEY+'_write_request'));
+    if(saved?.owner!==owner||saved?.fingerprint!==fingerprint||!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saved.requestId||''))return null;
+    return {v:2,owner,fingerprint,requestId:saved.requestId,createdAt:Date.now(),envelope:{v:2,requestId:saved.requestId,cambios:JSON.parse(JSON.stringify(changes))}};
+  }catch(error){return null;}
+}
+async function cloudWriteJournalLock(owner,action){
+  const locks=globalThis.navigator?.locks;
+  if(!locks||typeof locks.request!=='function')return action();
+  return locks.request('moderno-write-request:'+owner,{mode:'exclusive'},action);
+}
+async function cloudWriteEnvelope(study,changes){
+  const fingerprint=await cloudWriteFingerprint(study,changes),owner=JSON.stringify([study,typeof state==='undefined'?null:state.sessionUser?.id]);
+  const request=await cloudWriteJournalLock(owner,async()=>{
+    let saved=(await cloudWriteJournalPending(owner))[0],migrated=false;
+    if(!saved){saved=cloudWriteLegacyRequest(owner,fingerprint,changes);migrated=!!saved;}
+    if(!saved&&!changes.length)return null;
+    if(!saved){const requestId=cloudWriteRequestId(owner,fingerprint);saved={v:2,owner,fingerprint,requestId,createdAt:Date.now(),envelope:{v:2,requestId,cambios:JSON.parse(JSON.stringify(changes))}};}
+    saved=await cloudWriteJournalStore(saved);
+    if(migrated){
+      try{const legacy=JSON.parse(localStorage.getItem(LS_KEY+'_write_request'));if(legacy?.owner===owner&&legacy?.fingerprint===fingerprint&&legacy?.requestId===saved.requestId)localStorage.removeItem(LS_KEY+'_write_request');}catch(error){}
+    }
+    return saved;
+  });
+  if(!request)return null;
+  const storedFingerprint=await cloudWriteFingerprint(study,request.envelope.cambios);
+  if(storedFingerprint!==request.fingerprint)throw Error('El reintento guardado no coincide con su contenido');
+  _cloudWriteRequest=request;
+  return {...request,currentFingerprint:fingerprint,matchesCurrent:request.fingerprint===fingerprint};
+}
+async function cloudWriteJournalConfirmed(requestId,owner,fingerprint){
+  if(typeof localStorage==='undefined'||!owner||!fingerprint)return;
+  const record=await cloudWriteJournalRead(owner,fingerprint);
+  if(record&&record.requestId!==requestId)throw Error('El acuse no coincide con el reintento local');
+  if(record)await cloudWriteJournalRemove(record);
+  try{const legacy=JSON.parse(localStorage.getItem(LS_KEY+'_write_request'));if(legacy?.owner===owner&&legacy?.fingerprint===fingerprint&&legacy?.requestId===requestId)localStorage.removeItem(LS_KEY+'_write_request');}catch(error){}
+  if(_cloudWriteRequest?.requestId===requestId&&_cloudWriteRequest.owner===owner&&_cloudWriteRequest.fingerprint===fingerprint)_cloudWriteRequest=null;
+}
+function cloudWriteReceiptAckBestEffort(requestId,owner){
+  // El journal local ya esta cerrado y verificado. El ACK solo acorta el TTL
+  // del recibo remoto; un RPC bloqueado no puede reabrir ni frenar el guardado.
+  let timer;
+  const timeout=new Promise(resolve=>{timer=setTimeout(()=>resolve(null),5000);timer?.unref?.();});
+  const acknowledgement=Promise.resolve().then(async()=>{
+    const [study,actor]=JSON.parse(owner);
+    if(typeof sb==='undefined'||!sb?.rpc||study!==ESTUDIO_ID||actor!==state.sessionUser?.id)return null;
+    const confirmation=await sb.rpc('app_confirmar_guardado_v2',{p_estudio:study,p_request_id:requestId});
+    if(confirmation?.error&&confirmation.error.code!=='PGRST202')throw confirmation.error;
+    return confirmation;
+  });
+  void Promise.race([acknowledgement,timeout])
+    .catch(error=>console.warn('[save receipt ack]',error?.message||error))
+    .finally(()=>clearTimeout(timer));
+}
+async function cloudWriteConfirmed(requestId,owner,fingerprint){
+  await cloudWriteJournalConfirmed(requestId,owner,fingerprint);
+  cloudWriteReceiptAckBestEffort(requestId,owner);
+}
 async function cloudReadSaveVersions(snapshots,signal){
   if(_deltaRpcAvailable===false)return null;
-  const study=ESTUDIO_ID,role=_accessRole;
+  const study=ESTUDIO_ID,role=_accessRole,user=state.sessionUser?.id,cloudUser=_cloudUserId,generation=_accessAttempt;
   const query=sb.rpc('app_leer_versiones',{p_estudio:study,p_bloques:snapshots.map(s=>s.b)});
   const result=await(signal&&typeof query.abortSignal==='function'?query.abortSignal(signal):query);
-  if(study!==ESTUDIO_ID||role!==_accessRole)throw Error('La sesión ha cambiado; se conservan los cambios');
+  if(study!==ESTUDIO_ID||role!==_accessRole||user!==state.sessionUser?.id||cloudUser!==_cloudUserId||generation!==_accessAttempt)throw Error('La sesión ha cambiado; se conservan los cambios');
   if(result.error){if(result.error.code==='PGRST202'){_deltaRpcAvailable=false;return null;}throw result.error;}
   if(!Array.isArray(result.data)||result.data.some(r=>!r||r.rol!==role||!snapshots.some(s=>s.b===r.bloque))||new Set(result.data.map(r=>r.bloque)).size!==result.data.length)throw Error('Respuesta de versiones no válida');
   _deltaRpcAvailable=true;return result.data;
 }
 async function cloudSaveBatch(study,plans,signal){
   const changes=plans.map(p=>_deltaRpcAvailable===true?ModernoEfficiency.change(p):{bloque:p.b,contenido:p.merged,base:p.version});
-  const started=Date.now();let ok=false,bytes=new Blob([JSON.stringify(changes)]).size,usedDelta=changes.some(c=>c.cambios);
+  const started=Date.now();let ok=false,bytes=0,usedDelta=changes.some(c=>c.cambios);
   try{
+    if(_saveV2Available!==false){
+      const request=await cloudWriteEnvelope(study,changes);if(!request)return {data:[]};
+      bytes+=new Blob([JSON.stringify(request.envelope)]).size;
+      let query=sb.rpc('app_guardar_lote_v2',{p_estudio:study,p_solicitud:request.envelope});
+      const result=await(signal&&typeof query.abortSignal==='function'?query.abortSignal(signal):query);
+      const fallbackCode=result.error?.code;
+      if(fallbackCode!=='PGRST202'&&fallbackCode!=='55000'){
+        _saveV2Available=true;
+        if(result.error)return result;
+        const response=result.data,blocks=response?.bloques,expected=request.envelope.cambios.map(change=>change?.bloque),received=Array.isArray(blocks)?blocks.map(block=>block?.bloque):[];
+        if(response?.v!==2||response?.requestId!==request.requestId||!Array.isArray(blocks)||new Set(expected).size!==expected.length||new Set(received).size!==received.length||expected.length!==received.length||expected.some(block=>!received.includes(block))||blocks.some(block=>typeof block?.updated_at!=='string'||!block.updated_at||typeof block.changed!=='boolean'))return {error:new Error('Respuesta idempotente no válida; se conserva el requestId para reintentar')};
+        ok=true;
+        if(!request.matchesCurrent)return {data:null,v2:response,pendingReplay:{request,blocks}};
+        return {data:blocks,v2:response,writeRequest:request};
+      }
+      // PGRST202 prueba que el RPC no existe; 55000 prueba que el servidor v2
+      // esta drenando y que no habia un recibo exacto (los replays se devuelven
+      // antes de comprobar accept_new). Solo esos dos casos permiten cerrar este
+      // journal verificado y crear la operacion por la ruta anterior.
+      _saveV2Available=false;await cloudWriteJournalConfirmed(request.requestId,request.owner,request.fingerprint);
+      if(!plans.length)return {data:[]};
+    }
+    bytes+=new Blob([JSON.stringify(changes)]).size;
     let query=sb.rpc(_deltaRpcAvailable===true?'app_guardar_lote_delta':'app_guardar_lote',{p_estudio:study,p_cambios:changes});
     let result=await(signal&&typeof query.abortSignal==='function'?query.abortSignal(signal):query);
     if(result.error?.code==='PGRST202'&&_deltaRpcAvailable===true){
@@ -11878,10 +12370,24 @@ async function cloudFlush(){
   if(typeof _accessRole!=="undefined"&&_accessRole==="gestoria")return;
   if(!sb||!ESTUDIO_ID||_cloudBusy||_cloudApplying)return;
   if(typeof navigator!=='undefined'&&navigator.onLine===false){syncTag('pending','Sin conexión; tus cambios siguen pendientes.');return;}
+  const pendingFileBlocks={},pendingFileScanErrors=[];let pendingFiles=[];
+  for(const [block,io] of Object.entries(CLOUD_BLOCKS)){
+    try{
+      const refs=filePendingReferences(io.get());
+      if(refs.length){pendingFileBlocks[block]=refs;pendingFiles.push(...refs);}
+    }catch(error){
+      console.warn('[storage queue scan]',block,error?.message||error);
+      pendingFileBlocks[block]=['invalid-local-reference'];pendingFileScanErrors.push(block);
+    }
+  }
+  pendingFiles=[...new Set(pendingFiles)];
+  if(pendingFileScanErrors.length)syncTag('err','No se pudieron comprobar los archivos de '+pendingFileScanErrors.length+' bloque'+(pendingFileScanErrors.length===1?'':'s')+'. Sus cambios siguen conservados en este navegador.');
+  if(pendingFiles.length){syncTag('pending','Subiendo '+pendingFiles.length+' archivo'+(pendingFiles.length===1?'':'s')+'; los demás cambios se guardarán mientras tanto…');fileRetryPending();}
   const conflicts=window._cloudConflicts||(window._cloudConflicts={});
   if(Object.keys(conflicts).length){syncTag('err','Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.');return;}
   _cloudBusy=true;
-  const estudio=ESTUDIO_ID,role=_accessRole,plans=[],snapshots=[];
+  const estudio=ESTUDIO_ID,role=_accessRole,user=state.sessionUser?.id,cloudUser=_cloudUserId,generation=_accessAttempt,plans=[],snapshots=[];
+  const sameSession=()=>ESTUDIO_ID===estudio&&_accessRole===role&&state.sessionUser?.id===user&&_cloudUserId===cloudUser&&_accessAttempt===generation;
   const request=async(make,timeout=30000)=>{
     const controller=typeof AbortController==='function'?new AbortController():null;
     let timer;
@@ -11890,7 +12396,7 @@ async function cloudFlush(){
         Promise.resolve().then(()=>make(controller?.signal)),
         new Promise((_,reject)=>{timer=setTimeout(()=>{reject(new Error('El servidor tarda demasiado en responder. Los cambios siguen pendientes'));controller?.abort();},timeout);})
       ]);
-      if(ESTUDIO_ID!==estudio||_accessRole!==role)throw new Error('La sesión ha cambiado; se conservan los cambios pendientes');
+      if(!sameSession())throw new Error('La sesión ha cambiado; se conservan los cambios pendientes');
       return response;
     }finally{clearTimeout(timer);}
   };
@@ -11899,6 +12405,9 @@ async function cloudFlush(){
     // Capturar toda la operación antes del primer await.
     for(const b of Object.keys(CLOUD_BLOCKS)){
       if(_accessRole==='colaborador'&&!['proyectos','compras','contactos','fases','agenda'].includes(b))continue;
+      // Una referencia local nunca sale del navegador. Solo se aplaza su bloque;
+      // los bloques independientes mantienen su lote atómico y pueden avanzar.
+      if(pendingFileBlocks[b]?.length)continue;
       const valueHash=canon(CLOUD_BLOCKS[b].get());
       if(_cloudHash[b]===valueHash)continue;
       const value=JSON.parse(valueHash);
@@ -11923,16 +12432,43 @@ async function cloudFlush(){
       }
       plans.push({...s,merged,mergedHash:merged===s.value?s.valueHash:canon(merged),patchBase:cur?.contenido,version:cur?cur.updated_at:null});
     }
-    if(plans.length){
-      if(ESTUDIO_ID!==estudio)throw Error('La sesión ha cambiado');
-      const {data:saved,error}=await request(signal=>{
+    const writeOwner=JSON.stringify([estudio,user]),pendingWrites=typeof cloudWriteJournalPending==='function'?await cloudWriteJournalPending(writeOwner):[],hasPendingWrite=pendingWrites.length>0||typeof _cloudWriteRequest!=='undefined'&&_cloudWriteRequest?.owner===writeOwner;
+    if(!snapshots.length&&hasPendingWrite)syncTag('saving','Confirmando el guardado anterior…');
+    if(plans.length||hasPendingWrite){
+      if(!sameSession())throw Error('La sesión ha cambiado');
+      const saveResult=await request(signal=>{
         if(typeof cloudSaveBatch==='function')return cloudSaveBatch(estudio,plans,signal);
         const query=sb.rpc('app_guardar_lote',{p_estudio:estudio,p_cambios:plans.map(p=>({bloque:p.b,contenido:p.merged,base:p.version}))});
         return signal&&typeof query.abortSignal==='function'?query.abortSignal(signal):query;
-      },90000);
+      },90000),{data:saved,error,pendingReplay,writeRequest}=saveResult||{};
       if(error)throw error;
+      if(pendingReplay){
+        const refreshed=[];
+        for(const change of pendingReplay.request.envelope.cambios){
+          const block=change?.bloque;if(!block||!CLOUD_BLOCKS[block])throw Error('El guardado pendiente contiene un bloque no válido');
+          const result=await request(signal=>cloudReadBlock(block,signal));if(result.error)throw result.error;
+          if(!result.data?.updated_at)throw Error('No se pudo releer el guardado pendiente; se conserva para reintentar');
+          refreshed.push({block,row:result.data});
+        }
+        if(!sameSession())return;
+        const previous=refreshed.map(({block})=>({block,hash:_cloudHash[block],seen:_cloudSeen[block],count:_cloudCount[block],hasHash:Object.prototype.hasOwnProperty.call(_cloudHash,block),hasSeen:Object.prototype.hasOwnProperty.call(_cloudSeen,block),hasCount:Object.prototype.hasOwnProperty.call(_cloudCount,block)}));
+        try{
+          for(const {block,row} of refreshed){_cloudHash[block]=canon(row.contenido);_cloudSeen[block]=row.updated_at;_cloudCount[block]=blockCount(row.contenido);window._cloudDiag[block]={ok:true,at:new Date().toLocaleTimeString(),msg:''};}
+          fileConfirmCloudReferencesBestEffort(refreshed.map(item=>item.row.contenido));
+          persistNow();if(_localWrite)await _localWrite;
+          if(!sameSession())return;
+          if(_saveErr)throw Error('El servidor confirmó los cambios, pero falta verificar la copia local antes de cerrar el reintento');
+          await cloudWriteConfirmed(pendingReplay.request.requestId,pendingReplay.request.owner,pendingReplay.request.fingerprint);
+        }catch(replayError){
+          for(const item of previous){if(item.hasHash)_cloudHash[item.block]=item.hash;else delete _cloudHash[item.block];if(item.hasSeen)_cloudSeen[item.block]=item.seen;else delete _cloudSeen[item.block];if(item.hasCount)_cloudCount[item.block]=item.count;else delete _cloudCount[item.block];}
+          throw replayError;
+        }
+        _cloudFailures=0;_cloudRetryAfter=0;syncTag('pending','Guardado anterior confirmado; aplicando los cambios siguientes…');clearTimeout(_cloudRetryT);_cloudRetryT=setTimeout(cloudFlush,CLOUD_SAVE_DEBOUNCE_MS);return;
+      }
+      if(!plans.length)return;
       if(!Array.isArray(saved)||plans.some(p=>!saved.some(s=>s.bloque===p.b&&s.updated_at)))throw Error('No se pudo confirmar la operación completa; se conservan los cambios');
-      if(ESTUDIO_ID!==estudio)return;
+      if(!sameSession())return;
+      const previous=plans.map(plan=>({block:plan.b,hash:_cloudHash[plan.b],seen:_cloudSeen[plan.b],count:_cloudCount[plan.b],force:_cloudForce[plan.b],hasHash:Object.prototype.hasOwnProperty.call(_cloudHash,plan.b),hasSeen:Object.prototype.hasOwnProperty.call(_cloudSeen,plan.b),hasCount:Object.prototype.hasOwnProperty.call(_cloudCount,plan.b),hasForce:Object.prototype.hasOwnProperty.call(_cloudForce,plan.b)}));
       for(const p of plans){
         const currentHash=canon(CLOUD_BLOCKS[p.b].get()),current=JSON.parse(currentHash);
         try{
@@ -11947,18 +12483,32 @@ async function cloudFlush(){
         if(window._cloudGuardShown===p.b)window._cloudGuardShown=null;
         window._cloudDiag[p.b]={ok:true,at:new Date().toLocaleTimeString(),msg:''};
       }
-      persistSoon();
+      fileConfirmCloudReferencesBestEffort(plans.map(p=>p.merged));
+      if(writeRequest){
+        persistNow();if(_localWrite)await _localWrite;
+        if(!sameSession())return;
+        if(_saveErr){for(const item of previous){if(item.hasHash)_cloudHash[item.block]=item.hash;else delete _cloudHash[item.block];if(item.hasSeen)_cloudSeen[item.block]=item.seen;else delete _cloudSeen[item.block];if(item.hasCount)_cloudCount[item.block]=item.count;else delete _cloudCount[item.block];if(item.hasForce)_cloudForce[item.block]=item.force;else delete _cloudForce[item.block];}throw Error('El servidor confirmó los cambios, pero falta verificar la copia local antes de cerrar el reintento');}
+        await cloudWriteConfirmed(writeRequest.requestId,writeRequest.owner,writeRequest.fingerprint);
+      }else persistSoon();
     }
     if(typeof _cloudFailures!=='undefined'){_cloudFailures=0;_cloudRetryAfter=0;}
     if(Object.keys(conflicts).length){syncTag('err','Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.');return;}
-    if(Object.keys(CLOUD_BLOCKS).some(b=>(_accessRole!=='colaborador'||['proyectos','compras','contactos','fases','agenda'].includes(b))&&_cloudHash[b]!==canon(CLOUD_BLOCKS[b].get()))){syncTag('pending','Guardando los siguientes cambios…');clearTimeout(_cloudRetryT);_cloudRetryT=setTimeout(cloudFlush,CLOUD_SAVE_DEBOUNCE_MS);}
+    const moreReady=Object.keys(CLOUD_BLOCKS).some(b=>{
+      if(_accessRole==='colaborador'&&!['proyectos','compras','contactos','fases','agenda'].includes(b)||_cloudHash[b]===canon(CLOUD_BLOCKS[b].get()))return false;
+      try{return filePendingReferences(CLOUD_BLOCKS[b].get()).length===0;}catch(error){return false;}
+    });
+    if(moreReady){syncTag('pending','Guardando los siguientes cambios…');clearTimeout(_cloudRetryT);_cloudRetryT=setTimeout(cloudFlush,CLOUD_SAVE_DEBOUNCE_MS);}
+    else if(pendingFileScanErrors.length)syncTag('err','Los cambios sin archivos están guardados; '+pendingFileScanErrors.length+' bloque'+(pendingFileScanErrors.length===1?' conserva':'s conservan')+' una referencia de archivo que necesita revisión.');
+    else if(pendingFiles.length)syncTag('pending','Los cambios sin archivos están guardados; falta terminar '+pendingFiles.length+' archivo'+(pendingFiles.length===1?'':'s')+'.');
     else{localStorage.removeItem(LS_KEY+'_dirty');syncTag('ok','Guardado ✓');}
   }catch(e){
-    if(ESTUDIO_ID!==estudio||_accessRole!==role)return;
+    if(!sameSession())return;
     const conflict=Object.keys(conflicts).length>0;
-    syncTag(conflict?'err':'retry',conflict?'Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.':'No se pudo guardar la operación completa: '+(e.message||e)+' — se reintentará');
+    const failureMode=conflict?'review':typeof ModernoDaily!=='undefined'&&typeof ModernoDaily.syncFailureMode==='function'?ModernoDaily.syncFailureMode(e):'review';
+    const review=failureMode==='review';
+    syncTag(review?'err':'retry',conflict?'Hay cambios de dos personas que necesitan revisión. Abre el estado de guardado para resolverlos.':review?'No se pudo confirmar la sesión, los permisos o el contenido del guardado: '+(e.message||e):'No se pudo guardar la operación completa: '+(e.message||e)+' — se reintentará');
     console.warn('[sync]',e.message||e);
-    if(typeof _cloudT!=='undefined')clearTimeout(_cloudT);clearTimeout(_cloudRetryT);if(!conflict){const delay=typeof ModernoEfficiency==='undefined'?15000:ModernoEfficiency.backoff(++_cloudFailures);if(typeof _cloudRetryAfter!=='undefined')_cloudRetryAfter=Date.now()+delay;_cloudRetryT=setTimeout(cloudFlush,delay);}
+    if(typeof _cloudT!=='undefined')clearTimeout(_cloudT);clearTimeout(_cloudRetryT);if(!review){const delay=typeof ModernoEfficiency==='undefined'?15000:ModernoEfficiency.backoff(++_cloudFailures);if(typeof _cloudRetryAfter!=='undefined')_cloudRetryAfter=Date.now()+delay;_cloudRetryT=setTimeout(cloudFlush,delay);}
   }finally{_cloudBusy=false;if(typeof CatalogUI!=='undefined')setTimeout(()=>CatalogUI.trySeed(),0);}
 }
 
@@ -12092,33 +12642,81 @@ function cloudRealtimeStart(){
 let _pendingArchiveStore;
 function pendingArchiveStore(){return _pendingArchiveStore||(_pendingArchiveStore=ModernoPendingArchive.createStore(window.indexedDB));}
 async function cloudArchivePendingCopies(){await ModernoPendingArchive.migrate(localStorage,LS_KEY+'_pendiente_',pendingArchiveStore());}
+async function pendingCopyFindDuplicate(raw){
+  if(!raw)return null;
+  const wantedHint=pendingCopySnapshotHint(raw);
+  const keys=syncCopyKeys().slice().sort((left,right)=>pendingCopyWhen(right)-pendingCopyWhen(left)||right.localeCompare(left));
+  for(const key of keys){
+    try{
+      const reference=localStorage.getItem(key);
+      if(reference===raw)return key;
+      const archived=ModernoPendingArchive.pointer(reference);
+      if(archived){
+        const storedHint=pendingCopyStoredHint(reference);
+        // El hint solo evita lecturas; la igualdad exacta sigue siendo la prueba.
+        if((!storedHint||!wantedHint||storedHint===wantedHint)&&await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore())===raw)return key;
+      }
+    }catch(e){}
+  }
+  return null;
+}
+function pendingCopyNewKey(){
+  const generator=globalThis.crypto;let suffix=generator?.randomUUID?.();
+  if(!suffix&&generator?.getRandomValues){const words=generator.getRandomValues(new Uint32Array(4));suffix=Array.from(words,value=>value.toString(16).padStart(8,'0')).join('');}
+  if(!suffix)throw new Error('No hay un generador seguro para identificar la copia pendiente');
+  return LS_KEY+'_pendiente_'+Date.now()+'.'+suffix;
+}
+async function pendingCopyAcknowledgeDuplicate(attempt){
+  if(!_resumed||localStorage.getItem(LS_KEY+'_dirty')!=='1')return null;
+  const owner=localCopyOwner(),reference=localStorage.getItem(LS_KEY),raw=await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore());
+  if(!raw)throw new Error('No se encuentra la copia local pendiente');
+  const duplicate=await pendingCopyFindDuplicate(raw);if(!duplicate)return null;
+  if(attempt!==_accessAttempt||owner!==localCopyOwner()||localStorage.getItem(LS_KEY)!==reference||localStorage.getItem(LS_KEY+'_dirty')!=='1'||await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore())!==raw)throw new Error('La copia pendiente ha cambiado');
+  localStorage.removeItem(LS_KEY+'_dirty');return duplicate;
+}
 function cloudKeepPendingCopy(){
   if(!_resumed || localStorage.getItem(LS_KEY+"_dirty")!=="1") return;
   const raw=localStorage.getItem(LS_KEY);
   if(!raw) throw new Error("No se encuentra la copia local pendiente");
   if(ModernoPendingArchive.pointer(raw))throw new Error("La copia actual usa almacenamiento ampliado");
-  const key=LS_KEY+"_pendiente_"+Date.now();
+  const duplicate=syncCopyKeys().find(key=>localStorage.getItem(key)===raw);
+  if(duplicate){localStorage.removeItem(LS_KEY+"_dirty");return duplicate;}
+  const key=pendingCopyNewKey();
+  if(localStorage.getItem(key)!=null)throw new Error('Ya existe una copia pendiente con ese identificador');
   localStorage.setItem(key,raw);
   if(localStorage.getItem(key)!==raw) throw new Error("No se pudo verificar la copia pendiente");
   localStorage.removeItem(LS_KEY+"_dirty");
+  return key;
 }
 async function cloudKeepPendingCopyArchived(attempt){
-  const owner=localCopyOwner();
-  const stamp=Date.now()+'.'+crypto.getRandomValues(new Uint32Array(2)).join('');
-  await ModernoPendingArchive.preserve(localStorage,LS_KEY,LS_KEY+'_pendiente_'+stamp,pendingArchiveStore(),()=>attempt===_accessAttempt&&owner===localCopyOwner());
+  if(!_resumed||localStorage.getItem(LS_KEY+'_dirty')!=='1')return;
+  const duplicate=await pendingCopyAcknowledgeDuplicate(attempt);if(duplicate)return duplicate;
+  const owner=localCopyOwner(),key=pendingCopyNewKey();
+  return ModernoPendingArchive.preserve(localStorage,LS_KEY,key,pendingArchiveStore(),()=>attempt===_accessAttempt&&owner===localCopyOwner());
+}
+async function cloudKeepPendingCopyForConnection(attempt){
+  if(!_resumed||localStorage.getItem(LS_KEY+'_dirty')!=='1')return;
+  await pendingCopyMigrateOwnership();
+  if(await pendingCopyAcknowledgeDuplicate(attempt))return;
+  try{return cloudKeepPendingCopy();}catch(copyError){
+    syncTag('saving','Conservando copias anteriores para liberar espacio…');
+    await cloudArchivePendingCopies();
+    if(attempt!==_accessAttempt)throw new Error('La sesión ha cambiado');
+    try{return cloudKeepPendingCopy();}catch(secondError){return cloudKeepPendingCopyArchived(attempt);}
+  }
 }
 function cloudPendingNotice(){
   try{
-    const keys=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(LS_KEY+"_pendiente_"))keys.push(k);}
+    const keys=syncCopyKeys();
     if(!keys.length||document.getElementById("cloudPendingCopies"))return;
     keys.sort().reverse();
     const box=document.createElement("div");box.id="cloudPendingCopies";box.setAttribute("role","alert");
     box.style.cssText="position:fixed;bottom:44px;right:16px;max-width:400px;padding:14px;background:#fff3bd;color:#222;border:1px solid #887332;border-radius:12px;z-index:10000;font-size:14px";
     const label=document.createElement("p");label.textContent="Copias de seguridad de sesiones anteriores. No representan errores actuales ni se aplican automáticamente.";
     const list=document.createElement("select");list.setAttribute("aria-label","Copia de seguridad anterior");
-    for(const key of keys){const option=document.createElement("option");option.value=key;option.textContent=new Date(Number(key.split("_pendiente_").pop())).toLocaleString();list.appendChild(option);}
+    for(const key of keys){const option=document.createElement("option");option.value=key;const when=pendingCopyWhen(key);option.textContent=when?new Date(when).toLocaleString():'Copia conservada';list.appendChild(option);}
     const download=document.createElement("button");download.textContent="Descargar copia";
-    download.onclick=async()=>{try{const raw=await ModernoPendingArchive.resolve(localStorage,list.value,pendingArchiveStore());if(!raw)throw new Error();const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="Moderno-cambios-pendientes-"+list.value.split("_pendiente_").pop()+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast("No se pudo descargar la copia pendiente");}};
+    download.onclick=async()=>{try{const key=list.value,raw=await pendingCopyResolveForCurrentUser(key);const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="Moderno-cambios-pendientes-"+(pendingCopyWhen(key)||Date.now())+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){toast("No se pudo descargar la copia pendiente de esta cuenta");}};
     const close=document.createElement("button");close.textContent="Cerrar aviso";close.onclick=()=>box.remove();
     box.append(label,list,download,close);document.body.appendChild(box);
   }catch(e){}
@@ -12136,6 +12734,9 @@ async function cloudConnectionStep(request,attempt){
   try{const result=await Promise.race([request,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('La conexión tarda demasiado. Comprueba tu conexión y vuelve a intentarlo.')),20000);})]);if(attempt!==_accessAttempt)throw Error('La sesión ha cambiado');return result;}
   finally{clearTimeout(timer);}
 }
+function cloudLoadError(message,cause,review=false){
+  const error=new Error(message);if(cause)error.cause=cause;if(review)error.syncReview=true;return error;
+}
 async function cloudLoad(){
   if(!sb||_accessConnecting)return;
   const attempt=++_accessAttempt;_accessConnecting=true;_accessError="";
@@ -12151,13 +12752,13 @@ async function cloudLoad(){
     let verifiedUserId=null;
     if(sb.auth?.getUser){
       const identity=await cloudConnectionStep(sb.auth.getUser(),attempt);
-      if(identity.error||!identity.data?.user?.id)throw new Error('No se pudo verificar tu identidad. Conserva tus cambios y reintenta.');
+      if(identity.error||!identity.data?.user?.id)throw cloudLoadError('No se pudo verificar tu identidad. Conserva tus cambios y reintenta.',identity.error,!identity.error);
       if(invitation)ModernoInvitations.assertUser(identity.data.user);
       verifiedUserId=identity.data.user.id;
       if(state.sessionUser?.id!==verifiedUserId)state.sessionUser=sbUserToSession(identity.data.user);
     }
     const {data:mem, error:e1} = await cloudConnectionStep(invitation?sb.rpc("app_aceptar_invitacion",{p_estudio:invitation.study}):sb.rpc("unirse_al_estudio"),attempt);
-    if(e1||!mem||!mem.estudio_id){ throw new Error(invitation?(e1?.code==='42501'?e1.message:"No se pudo aceptar la invitación. Reintenta o pide un nuevo enlace al administrador."):"No se pudo comprobar tu acceso al estudio. Revisa la conexión y reintenta."); }
+    if(e1||!mem||!mem.estudio_id){ throw cloudLoadError(invitation?(e1?.code==='42501'?e1.message:"No se pudo aceptar la invitación. Reintenta o pide un nuevo enlace al administrador."):"No se pudo comprobar tu acceso al estudio. Revisa la conexión y reintenta.",e1,!e1); }
     if(invitation&&mem.estudio_id!==invitation.study)throw Error("No se pudo verificar el estudio de la invitación.");
     ESTUDIO_ID = mem.estudio_id;
     state.myRole = mem.rol || "miembro";
@@ -12176,24 +12777,19 @@ async function cloudLoad(){
     }catch(e){}
     if(attempt!==_accessAttempt)return;
     try{
-      try{cloudKeepPendingCopy();}catch(copyError){
-        syncTag('saving','Conservando copias anteriores para liberar espacio…');
-        await cloudArchivePendingCopies();
-        if(attempt!==_accessAttempt)throw new Error('La sesión ha cambiado');
-        try{cloudKeepPendingCopy();}catch(copyError){await cloudKeepPendingCopyArchived(attempt);}
-      }
+      await cloudKeepPendingCopyForConnection(attempt);
       // Las copias se consultan voluntariamente desde el estado de sincronización.
     }catch(e){throw new Error("No hay espacio para conservar la copia pendiente. Descarga los cambios desde el estado de sincronización y conserva esta pestaña abierta.");}
     if(attempt!==_accessAttempt)return;
     const access=await cloudConnectionStep(sb.rpc("app_rol",{p_estudio:ESTUDIO_ID}),attempt);
-    if(access.error||!['admin','colaborador','gestoria','contratista','cliente'].includes(access.data)){throw new Error("No se pudieron verificar tus permisos. Reintenta o consulta con el administrador del estudio.");}
+    if(access.error||!['admin','colaborador','gestoria','contratista','cliente'].includes(access.data)){throw cloudLoadError("No se pudieron verificar tus permisos. Reintenta o consulta con el administrador del estudio.",access.error,!access.error);}
     _accessRole=access.data;
     if(invitation)ModernoInvitations.finish(ESTUDIO_ID);
     if(_accessRole==="gestoria"){_accessLoading=false;await gestoriaLoad();return;}
     if(_accessRole==='contratista'||_accessRole==='cliente'){_accessLoading=false;render();return;}
     const eid = ESTUDIO_ID;
     const {data:rows, error:e2} = await cloudConnectionStep(cloudReadRows(),attempt);
-    if(e2){ throw new Error("No se pudieron cargar los datos del estudio. Revisa la conexión y reintenta."); }
+    if(e2){ throw cloudLoadError("No se pudieron cargar los datos del estudio. Revisa la conexión y reintenta.",e2); }
     const recovery=ModernoPendingRecovery.plan(_resumeRaw,rows,{study:ESTUDIO_ID,user:verifiedUserId,role:_accessRole},{canonical:canon,merge:ModernoSync.mergeSavedData});
     cloudPrepareFilteredCache(rows);
     _cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=verifiedUserId;
@@ -12225,7 +12821,9 @@ async function cloudLoad(){
         else { const t=_wantCliToken; _wantCliToken=null; portalBootDone(); go("home"); toast(_wantObra?"Ese enlace de obra ya no es válido (llave antigua o regenerada): abre el proyecto → Seguimiento de obra → QR de obra para obtener el nuevo":"Ese enlace de portal no corresponde a ningún proyecto de tu estudio"); console.warn("[portal] llave no encontrada:", t); }
       }
       afterLoginOnce();
-      if(_accessRole==='admin'){setTimeout(migrateEmbeddedLogos, 800);if(typeof CatalogUI!=='undefined')setTimeout(()=>CatalogUI.trySeed(),0);}
+      setTimeout(()=>fileConfirmCloudReferences(rows.map(row=>row.contenido)).catch(error=>console.warn('[storage cloud ack]',error?.message||error)),0);
+      setTimeout(fileRetryPending,0);
+      if(_accessRole==='admin'){setTimeout(migrateEmbeddedCloudFiles,800);if(typeof CatalogUI!=='undefined')setTimeout(()=>CatalogUI.trySeed(),0);}
     } else if(Object.keys(recovery.changes).length){
       cloudMarkLoadedBlocks([]);
       for(const [block,value] of Object.entries(recovery.changes)){_cloudApplying=true;try{CLOUD_BLOCKS[block].set(value);}finally{_cloudApplying=false;}}
@@ -12248,8 +12846,18 @@ async function cloudLoad(){
       cloudDirty(); cloudRealtimeStart(); syncTag("ok","Estudio listo ✓");
       afterLoginOnce();
     }
-  }catch(e){if(attempt!==_accessAttempt)return;_accessLoading=true;_accessError=e.message||"No se pudo completar la conexión. Reintenta.";console.warn("[sync]",e);syncTag("err",_accessError);}
-  finally{if(attempt===_accessAttempt){_accessConnecting=false;render();}}
+  }catch(e){
+    if(attempt!==_accessAttempt)return;
+    _accessLoading=true;_accessError=e.message||"No se pudo completar la conexión. Reintenta.";console.warn("[sync]",e);
+    const failureMode=typeof ModernoDaily!=='undefined'&&typeof ModernoDaily.syncFailureMode==='function'?ModernoDaily.syncFailureMode(e):'review';
+    syncTag(failureMode==='retry'?'retry':'err',_accessError);
+    if(failureMode==='retry'){
+      const delay=typeof ModernoEfficiency==='undefined'?15000:ModernoEfficiency.backoff(++_cloudFailures);
+      _cloudRetryAfter=Date.now()+delay;clearTimeout(_cloudRetryT);
+      _cloudRetryT=setTimeout(()=>{if(attempt===_accessAttempt)cloudLoad();},delay);
+    }
+  }
+  finally{if(attempt===_accessAttempt){_accessConnecting=false;render();if(!_accessLoading&&['admin','colaborador'].includes(_accessRole))setTimeout(fileRetryPending,0);}}
 }
 function _dataUrlBlob(du){
   try{
@@ -12260,23 +12868,44 @@ function _dataUrlBlob(du){
     return new Blob([arr],{type:mime});
   }catch(e){ return null; }
 }
-async function migrateEmbeddedLogos(){
-  if(!sb||!ESTUDIO_ID||!state.logos) return;
-  let moved=0;
-  for(const k of Object.keys(state.logos)){
-    const v=state.logos[k];
-    if(typeof v!=="string" || !v.startsWith("data:")) continue;
-    const blob=_dataUrlBlob(v); if(!blob) continue;
-    try{
-      const ext=(blob.type.split("/")[1]||"png").replace(/[^a-z0-9]/g,"").slice(0,5)||"png";
-      const path=ESTUDIO_ID+"/logo-"+k+"-"+Date.now().toString(36)+"."+ext;
-      const {error}=await sb.storage.from("archivos").upload(path, blob, {contentType:blob.type, cacheControl:"31536000"});
-      if(error) throw error;
-      const {data}=sb.storage.from("archivos").getPublicUrl(path);
-      if(data && data.publicUrl){ state.logos[k]=data.publicUrl; moved++; }
-    }catch(e){ console.warn("[logo]", e && e.message || e); }
+async function _embeddedFileId(source){
+  if(!crypto?.subtle||typeof TextEncoder==='undefined')throw Error('El navegador no puede identificar de forma segura este archivo antiguo');
+  const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(source))));
+  const bytes=digest.slice(0,16);bytes[6]=(bytes[6]&15)|128;bytes[8]=(bytes[8]&63)|128;
+  const hex=[...bytes].map(value=>value.toString(16).padStart(2,'0')).join('');
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20,32)}`;
+}
+function _embeddedCloudFiles(){
+  const roots=Object.values(CLOUD_BLOCKS).map(io=>io.get()),found=new Set(),stack=[...roots],seen=new Set();let visited=0;
+  const allowed=/^data:(?:image\/(?:avif|bmp|gif|heic|heif|jpe?g|png|tiff?|webp)|application\/pdf);base64,[a-z0-9+/=\r\n]+$/i;
+  while(stack.length){
+    const value=stack.pop();if(!value||typeof value!=='object'||seen.has(value))continue;
+    if(++visited>250000)throw Error('Demasiados datos para revisar archivos antiguos');seen.add(value);
+    for(const child of Object.values(value)){
+      if(typeof child==='string'&&allowed.test(child))found.add(child);
+      else if(child&&typeof child==='object')stack.push(child);
+    }
   }
-  if(moved){ persistNow(); toast("\u2601 Logo"+(moved>1?"s":"")+" migrado"+(moved>1?"s":"")+" a la nube \u2014 guardados ligeros a partir de ahora"); }
+  return [...found];
+}
+async function migrateEmbeddedCloudFiles(){
+  if(!sb||!ESTUDIO_ID||_accessRole!=='admin')return;
+  const study=ESTUDIO_ID,owner=fileViewIdentity(),sources=_embeddedCloudFiles();if(!sources.length)return;
+  const uploaded=[];
+  for(const source of sources){
+    if(ESTUDIO_ID!==study||fileViewIdentity()!==owner)return;
+    const blob=_dataUrlBlob(source);if(!blob)continue;
+    try{
+      const remote=await _fileUploadRemote({id:await _embeddedFileId(source),study,owner:fileQueueOwner(),name:'archivo-migrado.'+_fileExtension('',blob.type),type:blob.type,blob});
+      uploaded.push([source,remote]);
+    }catch(error){console.warn('[embedded image]',error?.message||error);}
+  }
+  if(!uploaded.length||ESTUDIO_ID!==study||fileViewIdentity()!==owner)return;
+  const replacements=uploaded.map(([local,remote])=>_replaceFileReference(state,local,remote));
+  const moved=replacements.reduce((total,item)=>total+item.count,0);if(!moved)return;
+  persistNow();if(_localWrite)await _localWrite;
+  if(_saveErr){for(const item of replacements.reverse())item.undo();persistNow();return;}
+  render();cloudDirty();toast('Archivos antiguos trasladados a almacenamiento seguro; el guardado ya no arrastra copias pesadas.');
 }
 function cloudOfferMigration(){
   modal(`<h3>☁️ Tu estudio en la nube está vacío</h3>
@@ -12446,6 +13075,17 @@ function localSnapshotSync(){
   if(typeof _cloudLoadedStudy==='undefined'||_cloudLoadedStudy!==ESTUDIO_ID||_accessLoading||!_cloudUserId||state.sessionUser?.id!==_cloudUserId)return undefined;
   return ModernoPendingRecovery.capture({study:ESTUDIO_ID,user:_cloudUserId,role:_accessRole,loaded:true,hashes:_cloudHash,versions:_cloudSeen,values:Object.fromEntries(Object.entries(CLOUD_BLOCKS).map(([b,io])=>[b,io.get()])),canonical:canon,conflicts:window._cloudConflicts||{}});
 }
+function localSnapshotSyncDurable(){
+  const current=localSnapshotSync();if(current)return current;
+  // Durante el arranque todavía no conocemos ESTUDIO_ID. No borres de la copia
+  // la frontera usuario+estudio que ya fue leída y verificada: es la que permite
+  // conservar el pendiente sin enseñárselo después a otra cuenta o estudio.
+  try{
+    const previous=JSON.parse(_verifiedLocalContent||'null')?.sync;
+    if(previous?.v===1&&previous.study&&previous.user&&previous.pending&&typeof previous.pending==='object'&&!Array.isArray(previous.pending)&&state.sessionUser?.id===previous.user)return previous;
+  }catch(error){}
+  return undefined;
+}
 function localCopyOwner(){return JSON.stringify([ESTUDIO_ID,state.sessionUser?.id,state.sessionUser?.mail,typeof _accessRole==='undefined'?'':_accessRole]);}
 function localCopyFailure(error,raw){
   const quota=error?.name==='QuotaExceededError'||error?.code===22||error?.code===1014;
@@ -12476,17 +13116,18 @@ function repairLocalCopy(){
 }
 function persistNow(){
   if(_localResumePending||_localResumeBypassed&&(!_cloudLoadedStudy||_accessLoading))return;
-  const revision=++_localRevision,owner=localCopyOwner(),started=Date.now();
+  const revision=++_localRevision,owner=localCopyOwner(),started=Date.now(),fileSnapshot=fileLocalPersistenceSnapshot();
   let raw,content;
   try{
-    content=JSON.stringify({state,BRAND,wsOrder,sync:localSnapshotSync()});
-    if(content===_verifiedLocalContent&&localStorage.getItem(LS_KEY)===_verifiedLocalReference){_saveErr=false;_saveErrDetail='';cloudDirty();return;}
+    content=JSON.stringify({state,BRAND,wsOrder,sync:localSnapshotSyncDurable()});
+    if(content===_verifiedLocalContent&&localStorage.getItem(LS_KEY)===_verifiedLocalReference){_saveErr=false;_saveErrDetail='';fileConfirmLocalPersistence(fileSnapshot);cloudDirty();return;}
     raw='{"v":1,"when":'+Date.now()+','+content.slice(1);
     if(raw.length>524288||typeof ModernoPendingArchive.pointer==='function'&&ModernoPendingArchive.pointer(localStorage.getItem(LS_KEY))){const expanded=new Error('Usar almacenamiento ampliado');expanded.modernoExpanded=true;throw expanded;}
     localStorage.setItem(LS_KEY,raw);
     if(localStorage.getItem(LS_KEY)!==raw){const error=new Error();error.name='LocalCopyVerificationError';throw error;}
     _verifiedLocalContent=content;_verifiedLocalReference=raw;
     _lastSave=new Date(); _saveErr=false;_saveErrDetail='';
+    fileConfirmLocalPersistence(fileSnapshot);
     if(typeof efficiencyMetrics!=='undefined')efficiencyMetrics.record('local',{ms:Date.now()-started,bytes:raw.length*2});
   }catch(e){
     const quota=e.modernoExpanded||localCopyFailure(e,raw);if(!e.modernoExpanded)_saveErr=true;
@@ -12502,7 +13143,7 @@ function persistNow(){
             new Promise((_,reject)=>{timer=setTimeout(()=>{active=false;const error=new Error('Copia local sin respuesta');error.name='LocalCopyTimeoutError';reject(error);},20000);})
           ]);
           if(!written)return;
-          if(valid()){_verifiedLocalContent=content;_verifiedLocalReference=localStorage.getItem(LS_KEY);_lastSave=new Date();_saveErr=false;_saveErrDetail='';if(typeof efficiencyMetrics!=='undefined')efficiencyMetrics.record('local',{ms:Date.now()-started,bytes:raw.length*2});cloudDirty();}
+          if(valid()){_verifiedLocalContent=content;_verifiedLocalReference=localStorage.getItem(LS_KEY);_lastSave=new Date();_saveErr=false;_saveErrDetail='';fileConfirmLocalPersistence(fileSnapshot);if(typeof efficiencyMetrics!=='undefined')efficiencyMetrics.record('local',{ms:Date.now()-started,bytes:raw.length*2});cloudDirty();}
         }catch(error){if(valid()){if(typeof efficiencyMetrics!=='undefined')efficiencyMetrics.record('local',{ms:Date.now()-started,ok:false});localCopyFailure(error,raw);_saveErr=true;toast(_saveErrDetail);repairLocalCopy();}}
         finally{active=false;clearTimeout(timer);try{syncRefresh();}catch(error){}}
       });
@@ -13480,7 +14121,7 @@ render = function(){
   globalThis.ModernoAppLoading?.refresh();
 };
 window.addEventListener("beforeunload", persistNow);
-window.addEventListener('beforeunload',event=>{if(_localResumePending||_localWrite||_saveErr||roomDuplicationPending()){event.preventDefault();event.returnValue='';}});
+window.addEventListener('beforeunload',event=>{if(_localResumePending||_localWrite||_fileAttachTask||_saveErr||roomDuplicationPending()){event.preventDefault();event.returnValue='';}});
 /* Vigía de Administración: cualquier ajuste tocado confirma y persiste */
 let _admPingT=null;
 function adminSavedPing(){
@@ -13589,7 +14230,7 @@ setTimeout(versionSentinel, 2500);
 setInterval(versionSentinel, 120000);
 function backupExport(){
   persistNow();
-  const raw = JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder,sync:localSnapshotSync()});
+  const raw = JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder,sync:localSnapshotSyncDurable()});
   const a=document.createElement("a");
   const url=URL.createObjectURL(new Blob([raw],{type:"application/json"}));a.href=url;
   setTimeout(()=>URL.revokeObjectURL(url),30000);
@@ -13653,9 +14294,16 @@ if(sb){
     globalThis.ModernoAppLoading?.sessionReady();
   });
   sb.auth.onAuthStateChange((ev, session)=>{
-    if(ev==="SIGNED_IN" && session && session.user){ sbEnter(session.user, true); gcalAfterOAuth(session); }
+    if(ev==="SIGNED_IN" && session && session.user){
+      const generation=++_authEventGeneration,user=session.user;
+      Promise.resolve().then(async()=>{
+        if(_sessionResetTask||state.sessionUser?.id&&state.sessionUser.id!==user.id||!state.sessionUser&&ESTUDIO_ID)await sbResetSession();
+        if(generation!==_authEventGeneration)return;
+        sbEnter(user,true);gcalAfterOAuth(session);
+      }).catch(error=>{if(generation===_authEventGeneration){_accessError=error?.message||'No se pudo cambiar de cuenta';showLogin(true);render();}});
+    }
     if(ev==="PASSWORD_RECOVERY") setTimeout(passResetModal, 400);
-    if(ev==="SIGNED_OUT"){ if(typeof projectPlanDialog!=='undefined')projectPlanDialog?.dismiss(true);teamPresence?.stop();state.sessionUser=null; _sbEntered=false; applySessionUI(); showLogin(true); }
+    if(ev==="SIGNED_OUT"){++_authEventGeneration;if(typeof projectPlanDialog!=='undefined')projectPlanDialog?.dismiss(true);sbResetSession().catch(()=>{});}
   });
 } else if(_resumed && state.sessionUser){
   showLogin(false); applySessionUI();

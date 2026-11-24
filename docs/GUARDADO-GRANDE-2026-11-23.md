@@ -1,4 +1,4 @@
-# Guardado de estudios grandes — v3.67.70
+# Guardado de estudios grandes — v3.67.72
 
 ## Incidencia
 
@@ -27,3 +27,15 @@ Las 69 entradas mostradas por la interfaz son copias locales históricas `_pendi
 La reversión del margen está en `SQL/guardado-grande-timeout.rollback.sql`; la del historial en `SQL/historial-guardado-acotado.rollback.sql`. Ninguna exige restaurar una copia de la base ni borrar copias locales. Revertir el historial recupera también su antigua limpieza masiva, por lo que debe hacerse con cautela.
 
 Este ajuste desbloquea el volumen actual, pero no convierte el documento monolítico en una arquitectura para 1.000 usuarios. La evolución posterior debe separar proyectos —y después listas/partidas— en filas versionadas independientes, con migración compatible y recuperación ensayadas.
+
+## Investigación de escala posterior
+
+La medición completa encontró tres amplificadores que el cambio de timeout no resolvía:
+
+- Nueve imágenes Base64 ocupaban 5.893.002 bytes dentro de `proyectos`; otra imagen histórica estaba en `folderPhotos`. Cada guardado transportaba y reescribía esos binarios.
+- Insertar, borrar o reordenar una lista identificada podía enviar todo el tramo restante como un `splice`. El diagnóstico adjunto contiene dos deltas de 4.734.025 bytes.
+- El delta reducía el transporte, pero el servidor seguía reconstruyendo el JSONB, reescribiendo el bloque completo y alimentando un historial que ya ocupaba aproximadamente 1,88 GB.
+
+La revisión siguiente prepara `array_sync`, cola durable de archivos con referencias estables e idempotencia por `requestId`. La cola no sube un borrador hasta que su referencia entra en el estado guardable, reutiliza la misma ruta sin sobrescribir ante respuestas perdidas, protege formularios abiertos y reintenta fallos transitorios con backoff ligado a la identidad. En un fixture local de unos 10,5 MB, la reordenación/alta identificada baja a menos de 5 KB. El histórico se prepara para limpieza fuera de la transacción del usuario. El writer v2 final aún debe compilarse y validarse en PostgreSQL 17 aislado antes de cualquier despliegue.
+
+El candidato está diseñado y probado localmente para proteger el estudio frente al mismo patrón de crecimiento. La capacidad de 1.000 usuarios no se certificará hasta validar el writer final en PostgreSQL 17, migrar de un bloque monolítico a filas por proyecto, ejecutar la carga v2 completa y revisar p95, errores, conexiones, locks, WAL, temporales y recuperación.

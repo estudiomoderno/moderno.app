@@ -11,7 +11,32 @@ server=subprocess.Popen(['node','scripts/dev-server.mjs'],cwd=repo,env=dict(os.e
 opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
 fixture_setup="()=>{\n    if(sb!==null)throw Error('Backend must be disabled');\n    state.sessionUser={name:'Persona ficticia',mail:'persona@example.invalid',id:'fixture'};\n    state.onboarded=true;state.myRole='admin';_accessRole='admin';_accessLoading=false;\n    state.account.name='Estudio ficticio';state.account.apiToken='';state.account.billContacts=[];\n    BRAND.cm.name='Estudio ficticio';state.brandFilter='all';\n    const project=structuredClone(state.projects[0]);\n    Object.assign(project,{id:9001,num:'PR-9001',name:'Proyecto ficticio',brand:'cm',tpl:false,client:'Cliente ficticio',tasks:[],files:[],rooms:[\n     {id:8001,kind:'estancia',name:'Salón ficticio',icon:'sofa'},\n     {id:8002,kind:'estancia',name:'Dormitorio ficticio',icon:'bed'},\n     {id:8003,kind:'pav',name:'Pavimentos ficticios',icon:'wall'},\n     {id:8004,kind:'otra',name:'Otras compras ficticias',icon:'bulb'}\n    ].map((room,i)=>({...room,created:'2026-10-19',sections:[{id:'section-'+i,name:'General',items:[{name:'Producto ficticio '+i,price:25+i,qty:2,unit:'ud',status:'Pendiente',supplier:'Proveedor ficticio',sku:'FIC-'+i}]}]}))});\n    state.projects=[project];state.clients=[{name:'Cliente ficticio',type:'Cliente',brand:'cm',email:'cliente@example.invalid'}];\n    state.entries=[];state.invoices=[];state.quotes=[];state.docs=[];state.library=[];state.catalog=[];state.notifs=[];\n    state.collapsed={'g-9001-estancia':false,'g-9001-pav':false,'g-9001-otra':false,'unrelated':true};\n    applySessionUI();drawBrandSwitch();showLogin(false);go('proyecto',9001);projTab('listas');\n    window.records=()=>JSON.stringify({projects:state.projects,clients:state.clients,invoices:state.invoices,quotes:state.quotes,entries:state.entries,collapsed:state.collapsed});\n    window.baseline=records();window.printCount=0;window.print=()=>{printCount++;window.printHTML=document.getElementById('printZone').innerHTML;};\n   }"
 import copy
-store={};mode='ok';revision=0;project_writes=0
+store={};receipts={};mode='ok';revision=0;project_writes=0
+
+def apply_ops(before,ops):
+ value=copy.deepcopy(before)
+ for op in ops:
+  if not op['path']:
+   if op['op']=='set':value=copy.deepcopy(op['value']);continue
+   target=value;parent=None;key=None
+  else:
+   parent=value
+   for raw in op['path'][:-1]:parent=parent[int(raw)] if isinstance(parent,list) else parent[raw]
+   raw=op['path'][-1];key=int(raw) if isinstance(parent,list) else raw;target=parent[key]
+  if op['op']=='splice':target[op['index']:op['index']+op['delete']]=copy.deepcopy(op['items'])
+  elif op['op']=='array_sync':
+   identity=lambda item:(type(item['id']).__name__,item['id'])
+   current={identity(item):item for item in target};added={identity(item):item for item in op['items']}
+   ordered=[]
+   for item_id in op['order']:
+    item_key=(type(item_id).__name__,item_id);ordered.append(copy.deepcopy(current[item_key] if item_key in current else added[item_key]))
+   if parent is None:value=ordered
+   else:parent[key]=ordered
+  elif op['op']=='remove':
+   if isinstance(parent,list):parent.pop(key)
+   else:parent.pop(key,None)
+  elif op['op']=='set':parent[key]=copy.deepcopy(op['value'])
+ return value
 
 def rpc(name,params=None):
  global mode,revision,project_writes
@@ -19,22 +44,33 @@ def rpc(name,params=None):
  if name=='unirse_al_estudio':return {'data':{'estudio_id':'fictional','rol':'admin'}}
  if name=='app_rol':return {'data':'admin'}
  if mode=='offline':return {'error':{'message':'Fallo de red ficticio'}}
+ if name=='app_leer_versiones':
+  return {'data':[{'bloque':b,'updated_at':row['updated_at'],'rol':'admin'} for b,row in store.items() if params.get('p_bloques') is None or b in params['p_bloques']]}
  if name=='app_leer_bloques':
   return {'data':[dict(copy.deepcopy(row),bloque=b,rol='admin') for b,row in store.items() if params.get('p_bloques') is None or b in params['p_bloques']]}
- assert name=='app_guardar_lote' and params['p_estudio']=='fictional'
- changes=params['p_cambios']
+ assert name in ['app_guardar_lote','app_guardar_lote_delta','app_guardar_lote_v2'] and params['p_estudio']=='fictional'
+ request=params.get('p_solicitud') if name=='app_guardar_lote_v2' else None
+ if request and request['requestId'] in receipts:
+  replay=copy.deepcopy(receipts[request['requestId']]);replay['replayed']=True;return {'data':replay}
+ changes=request['cambios'] if request else params['p_cambios']
  if any((store.get(c['bloque']) or {}).get('updated_at')!=c['base'] for c in changes):return {'error':{'message':'Version changed'}}
  revision+=1
  for c in changes:
-  store[c['bloque']]={'contenido':copy.deepcopy(c['contenido']),'updated_at':'fixture-v'+str(revision)}
+  before=(store.get(c['bloque']) or {}).get('contenido')
+  store[c['bloque']]={'contenido':apply_ops(before,c['cambios']) if 'cambios' in c else copy.deepcopy(c['contenido']),'updated_at':'fixture-v'+str(revision)}
   if c['bloque']=='proyectos':project_writes+=1
+ blocks=[{'bloque':c['bloque'],'updated_at':store[c['bloque']]['updated_at'],'changed':True} for c in changes]
+ if request:
+  response={'v':2,'requestId':request['requestId'],'replayed':False,'bloques':blocks};receipts[request['requestId']]=copy.deepcopy(response)
  if mode=='commit-lost':mode='ok';return {'error':{'message':'Confirmación perdida ficticia'}}
- return {'data':[{'bloque':c['bloque'],'updated_at':store[c['bloque']]['updated_at']} for c in changes]}
+ return {'data':response if request else blocks}
 
 html=(repo/'app/index.html').read_text()
 read_source=html[html.index('async function cloudReadRows('):html.index('function cloudPrepareFilteredCache(')]
 load_source=html.split('async function cloudLoad(){',1)[1].split('function _dataUrlBlob(',1)[0]
 flush_source=html.split('async function cloudFlush(){',1)[1].split('function cloudSnapshotAll(){',1)[0]
+versions_source=html[html.index('async function cloudReadSaveVersions('):html.index('async function cloudSaveBatch(')]
+save_source=html[html.index('async function cloudSaveBatch('):html.index('async function cloudFlush(){')]
 dirty_source=html.split('function cloudDirty(){',1)[1].split('const _cloudCount=',1)[0]
 
 def wire(page):
@@ -42,10 +78,12 @@ def wire(page):
  page.evaluate("""sources=>{
   window.fixtureClient={auth:{getUser:async()=>({data:{user:{id:'fixture',email:'persona@example.invalid',user_metadata:{full_name:'Persona ficticia'},app_metadata:{provider:'email'}}}})},rpc:(name,params)=>fixtureRPC(name,params)};
   window.fixtureRead=new Function('sb',sources.read+';return {rows:cloudReadRows,block:cloudReadBlock};')(fixtureClient);
-  cloudFlush=new Function('sb','cloudReadBlock','return async function cloudFlush(){'+sources.flush)(fixtureClient,fixtureRead.block);
+  window.fixtureVersions=new Function('sb','return '+sources.versions)(fixtureClient);
+  window.fixtureSave=new Function('sb','return '+sources.save)(fixtureClient);
+  cloudFlush=new Function('sb','cloudReadBlock','cloudReadSaveVersions','cloudSaveBatch','return async function cloudFlush(){'+sources.flush)(fixtureClient,fixtureRead.block,fixtureVersions,fixtureSave);
   cloudDirty=new Function('sb','return function cloudDirty(){'+sources.dirty)(fixtureClient);
   window.fixtureLoad=new Function('sb','cloudReadRows','return async function cloudLoad(){'+sources.load)(fixtureClient,fixtureRead.rows);
- }""",{'read':read_source,'load':load_source,'flush':flush_source,'dirty':dirty_source})
+ }""",{'read':read_source,'load':load_source,'flush':flush_source,'versions':versions_source,'save':save_source,'dirty':dirty_source})
 
 try:
  for attempt in range(100):
@@ -55,9 +93,11 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official server unavailable')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  launch={'headless':True,'args':['--no-sandbox']}
+  if os.environ.get('CHROMIUM_PATH'):launch['executable_path']=os.environ['CHROMIUM_PATH']
+  browser=p.chromium.launch(**launch)
   for width in [1440,390]:
-   context=browser.new_context(viewport={'width':width,'height':1000},locale='es-ES');errors=[];writes=[];store.clear();mode='ok';revision=0;project_writes=0
+   context=browser.new_context(viewport={'width':width,'height':1000},locale='es-ES');errors=[];writes=[];store.clear();receipts.clear();mode='ok';revision=0;project_writes=0
    def route(r):
     if not r.request.url.startswith(origin+'/'):r.abort();return
     if r.request.method not in ['GET','HEAD']:writes.append(r.request.method);r.abort();return
@@ -92,8 +132,11 @@ try:
     await fixtureLoad();clearTimeout(_cloudT);clearTimeout(_cloudRetryT);
     const recovered=state.projects[0].rooms.length===12&&state.projects[0].name==='Cambio remoto independiente'&&syncHasChanges();
     await cloudFlush();persistNow();if(_localWrite)await _localWrite;
-    return recovered&&!syncHasChanges()&&syncView().label==='Guardado en nube'&&Object.keys(JSON.parse(await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore())).sync.pending).length===0;
-   }""");assert result
+    return {recovered,dirty:syncHasChanges()};
+   }""")
+   page.wait_for_function('_localWrite===null',timeout=30000);page.evaluate('persistNow()');page.wait_for_function('_localWrite===null',timeout=30000)
+   saved=page.evaluate("""async()=>{const value=JSON.parse(await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore()));return {label:syncView().label,hasSync:!!value.sync,pending:Object.keys(value.sync?.pending||{})};}""")
+   assert result['recovered'] and not result['dirty'] and saved['label']=='Guardado en nube' and saved['hasSync'] and not saved['pending'],(result,saved)
    assert len(store['proyectos']['contenido'][0]['rooms'])==12
    # Server committed but the response was lost; reopening must recognize it without another duplicate.
    mode='commit-lost';page.evaluate('roomMenu(9001,8001)');page.get_by_role('button',name='Duplicar lista',exact=True).click();page.wait_for_function('!_cloudBusy&&!_localWrite')
@@ -102,12 +145,13 @@ try:
    page=open_page();page.evaluate('async()=>{await fixtureLoad();clearTimeout(_cloudT);clearTimeout(_cloudRetryT);await cloudFlush();}')
    assert project_writes==before;assert page.evaluate("state.projects[0].rooms.length===13&&!syncHasChanges()")
    # An unresolved conflict must survive multiple crashes; a second reload may not turn it into an overwrite.
-   mode='offline';page.evaluate("state.projects[0].rooms[0].sections[0].items[0].name='Edición local';persistNow();cloudFlush();")
+   mode='offline';page.evaluate("async()=>{state.projects[0].rooms[0].sections[0].items[0].name='Edición local';persistNow();await cloudFlush();if(_localWrite)await _localWrite;}")
    page.wait_for_function('!_cloudBusy&&!_localWrite');page.evaluate('async()=>{persistNow();if(_localWrite)await _localWrite;}');page.close(run_before_unload=False)
    mode='ok';store['proyectos']['contenido'][0]['rooms'][0]['sections'][0]['items'][0]['name']='Edición remota';revision+=1;store['proyectos']['updated_at']='fixture-v'+str(revision);before=project_writes
    for reload in range(2):
     page=open_page();page.evaluate('async()=>{await fixtureLoad();clearTimeout(_cloudT);clearTimeout(_cloudRetryT);await cloudFlush();persistNow();if(_localWrite)await _localWrite;}')
-    assert page.evaluate("!!_cloudConflicts.proyectos&&state.projects[0].rooms[0].sections[0].items[0].name==='Edición local'&&syncHasChanges()")
+    conflict=page.evaluate("""()=>({present:!!_cloudConflicts.proyectos,name:state.projects[0].rooms[0].sections[0].items[0].name,dirty:syncHasChanges(),status:syncView().label})""")
+    assert conflict['present'] and conflict['name']=='Edición local' and conflict['dirty'],(width,reload,conflict)
     assert project_writes==before;assert store['proyectos']['contenido'][0]['rooms'][0]['sections'][0]['items'][0]['name']=='Edición remota'
     page.evaluate('syncDetails()');expect(page.locator('[data-sync-detail]')).to_contain_text('revisión')
     if output and reload==1:page.screenshot(path=str(output/f'recovery-conflict-{width}.png'),full_page=True)

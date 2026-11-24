@@ -15,7 +15,7 @@ setup="""()=>{
  if(sb!==null)throw Error('Backend must be disabled');
  state.sessionUser={id:'fixture',mail:'fixture@example.invalid',name:'Persona ficticia'};state.onboarded=true;state.myRole='admin';_accessRole='admin';_accessLoading=false;
  state.account.name='Estudio ficticio';state.account.apiToken='';state.account.billContacts=[];state.projects=[];state.clients=[];state.library=[];state.catalog=[];state.entries=[];state.invoices=[];state.quotes=[];state.docs=[];state.notifs=[];
- BRAND.cm.name='Estudio ficticio';ESTUDIO_ID='estudio-ficticio';applySessionUI();drawBrandSwitch();showLogin(false);go('proyectos');
+ BRAND.cm.name='Estudio ficticio';ESTUDIO_ID='estudio-ficticio';_cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=state.sessionUser.id;applySessionUI();drawBrandSwitch();showLogin(false);go('proyectos');
  for(const b of Object.keys(CLOUD_BLOCKS))_cloudHash[b]=canon(CLOUD_BLOCKS[b].get());
  window.records=()=>JSON.stringify({projects:state.projects,library:state.library,quotes:state.quotes,invoices:state.invoices,account:state.account});window.baseline=records();
 }"""
@@ -57,7 +57,7 @@ try:
      ModernoPendingArchive.writeCurrent=async()=>{throw new DOMException('Fictional unavailable live storage','QuotaExceededError');};
      window.expectedCopies=[];
      for(let i=0;i<30;i++){
-       const key=LS_KEY+'_pendiente_'+(2000000000000+i),raw=JSON.stringify({v:1,fixture:i,padding:'x'.repeat(400000)});
+       const key=LS_KEY+'_pendiente_'+(2000000000000+i),raw=JSON.stringify({v:1,state:{sessionUser:{id:state.sessionUser.id}},sync:{study:ESTUDIO_ID,user:state.sessionUser.id},fixture:i,padding:'x'.repeat(400000)});
        try{localStorage.setItem(key,raw);expectedCopies.push([key,raw]);}catch(e){break;}
      }
      if(!expectedCopies.length)throw Error('No quota fixture');
@@ -89,8 +89,8 @@ try:
      const snapshot=JSON.parse(await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore()));
      if(snapshot.state.account.quotaFixture!=='current-memory-'+ 'y'.repeat(800000))throw Error('Current snapshot was lost');
      for(let i=0;i<count;i++){
-       const key=LS_KEY+'_pendiente_'+(2000000000000+i),expected=JSON.stringify({v:1,fixture:i,padding:'x'.repeat(400000)});
-       const stored=localStorage.getItem(key);if(stored!==expected&&stored!==ModernoPendingArchive.marker(key))throw Error('Historical copy changed without a verified pointer');
+       const key=LS_KEY+'_pendiente_'+(2000000000000+i),expected=JSON.stringify({v:1,state:{sessionUser:{id:'fixture'}},sync:{study:'estudio-ficticio',user:'fixture'},fixture:i,padding:'x'.repeat(400000)}),expectedMarker=ModernoPendingArchive.marker(key,ModernoPendingArchive.snapshotOwner(expected),ModernoPendingArchive.snapshotStudy(expected),ModernoPendingArchive.snapshotHint(expected));
+       const stored=localStorage.getItem(key);if(stored!==expected&&stored!==expectedMarker)throw Error('Historical copy changed without a verified pointer');
        if(await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore())!==expected)throw Error('Old copy differs');
      }
      return {copies:count,current:true};

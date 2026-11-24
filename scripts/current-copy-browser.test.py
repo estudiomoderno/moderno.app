@@ -13,7 +13,7 @@ setup="""()=>{
  if(sb!==null)throw Error('Backend must be disabled');
  state.sessionUser={id:'fixture',mail:'fixture@example.invalid',name:'Persona ficticia'};state.onboarded=true;state.myRole='admin';_accessRole='admin';_accessLoading=false;
  state.account.name='Estudio ficticio';state.account.apiToken='';state.account.billContacts=[];state.projects=[];state.clients=[];state.library=[];state.catalog=[];state.entries=[];state.invoices=[];state.quotes=[];state.docs=[];state.notifs=[];
- BRAND.cm.name='Estudio ficticio';ESTUDIO_ID='estudio-ficticio';applySessionUI();drawBrandSwitch();showLogin(false);go('proyectos');
+ BRAND.cm.name='Estudio ficticio';ESTUDIO_ID='estudio-ficticio';_cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=state.sessionUser.id;applySessionUI();drawBrandSwitch();showLogin(false);go('proyectos');
  for(const b of Object.keys(CLOUD_BLOCKS))_cloudHash[b]=canon(CLOUD_BLOCKS[b].get());
  window.records=()=>JSON.stringify({projects:state.projects,library:state.library,quotes:state.quotes,invoices:state.invoices,account:state.account});window.baseline=records();
 }"""
@@ -25,7 +25,9 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official server unavailable')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  launch={'headless':True,'args':['--no-sandbox']}
+  if os.environ.get('CHROMIUM_PATH'):launch['executable_path']=os.environ['CHROMIUM_PATH']
+  browser=p.chromium.launch(**launch)
   for width in [1440,390]:
    context=browser.new_context(viewport={'width':width,'height':900},locale='es-ES');page=context.new_page();errors=[];writes=[]
    page.on('pageerror',lambda e:errors.append(str(e)))
@@ -37,8 +39,8 @@ try:
    page.evaluate("""async()=>{
      clearTimeout(_saveT);window.nativeStore=pendingArchiveStore();
      for(let i=0;i<55;i++){
-       const key=LS_KEY+'_pendiente_'+(2100000000000+i),raw=JSON.stringify({v:1,fictional:i});
-       await nativeStore.write(key,raw);localStorage.setItem(key,ModernoPendingArchive.marker(key));
+       const key=LS_KEY+'_pendiente_'+(2100000000000+i),raw=JSON.stringify({v:1,state:{sessionUser:{id:state.sessionUser.id}},sync:{study:ESTUDIO_ID,user:state.sessionUser.id},fictional:i});
+       await nativeStore.write(key,raw);localStorage.setItem(key,ModernoPendingArchive.marker(key,ModernoPendingArchive.snapshotOwner(raw),ModernoPendingArchive.snapshotStudy(raw),ModernoPendingArchive.snapshotHint(raw)));
      }
      state.account.quotaFixture='z'.repeat(6*1024*1024);state.account.latestNote='first';
      let quota=false;try{localStorage.setItem(LS_KEY,JSON.stringify({v:1,state,BRAND,wsOrder}));}catch(e){quota=e.name==='QuotaExceededError';}
@@ -59,11 +61,13 @@ try:
    assert page.evaluate("(()=>{const e=new Event('beforeunload',{cancelable:true});window.dispatchEvent(e);return !e.defaultPrevented&&!_localWrite;})()")
    assert page.evaluate('prepareAppReload()') # native reload guard reads back IndexedDB too
    # Real navigation must recover the large local snapshot before initialization runs.
-   page.reload(wait_until='networkidle');page.wait_for_function('_resumed&&!_localResumePending')
+   page.reload(wait_until='networkidle');page.wait_for_function('_resumed&&!_localResumePending');page.evaluate("ESTUDIO_ID='estudio-ficticio';_cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=state.sessionUser.id")
    assert page.evaluate("state.account.latestNote==='newest during write'&&state.account.quotaFixture.length===6*1024*1024&&syncCopyKeys().length===55")
-   page.evaluate("clearTimeout(_saveT);_accessRole='admin';_accessLoading=false;ESTUDIO_ID='estudio-ficticio';window.nativeStore=pendingArchiveStore();localStorage.setItem(LS_KEY+'_dirty','1');_resumed=true;")
+   page.evaluate("""async()=>{clearTimeout(_saveT);_accessRole='admin';_accessLoading=false;ESTUDIO_ID='estudio-ficticio';_cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=state.sessionUser.id;window.nativeStore=pendingArchiveStore();persistNow();if(_localWrite)await _localWrite;localStorage.setItem(LS_KEY+'_dirty','1');_resumed=true;}""")
    # Materialize a historical copy of the full data before any cloud cache replacement.
-   assert page.evaluate("""async()=>{await cloudKeepPendingCopyArchived(_accessAttempt);const key=syncCopyKeys().find(k=>!k.endsWith('00000')&&k.includes('.'));window.liveHistoryKey=key;return JSON.parse(await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore())).state.account.latestNote==='newest during write';}""")
+   history=page.evaluate("""async()=>{const key=await cloudKeepPendingCopyArchived(_accessAttempt);window.liveHistoryKey=key;const reference=key&&localStorage.getItem(key),raw=key&&await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore());return {key,listed:!!key&&syncCopyKeys().includes(key),owner:reference&&ModernoPendingArchive.owner(reference),study:reference&&ModernoPendingArchive.study(reference),currentOwner:pendingCopyIdentity(),currentStudy:ESTUDIO_ID,note:raw&&JSON.parse(raw).state.account.latestNote};}""")
+   assert history['key'] and history['listed'] and history['note']=='newest during write',history
+   assert history['owner']==history['currentOwner'] and history['study']==history['currentStudy'],history
    # A real IndexedDB failure leaves memory/download intact and native Retry repairs it.
    page.evaluate("_pendingArchiveStore={read:k=>nativeStore.read(k),write:async()=>{throw new DOMException('Fictional full disk','QuotaExceededError');}};_localRepairAfter=Date.now()+60000;state.account.latestNote='unsaved failure';persistNow();")
    page.wait_for_function('!_localWrite');assert page.evaluate('_saveErr')
@@ -74,6 +78,8 @@ try:
    page.evaluate('_pendingArchiveStore=nativeStore')
    page.get_by_role('button',name='Reintentar guardado',exact=True).click();page.wait_for_function('!_localWrite&&!_saveErr',timeout=15000)
    assert page.evaluate("""async()=>JSON.parse(await ModernoPendingArchive.resolve(localStorage,liveHistoryKey,pendingArchiveStore())).state.account.latestNote==='newest during write'""")
+   transient_sync=page.evaluate("""async()=>({stored:JSON.parse(await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore())).sync||null,verified:JSON.parse(_verifiedLocalContent||'null')?.sync||null,user:state.sessionUser?.id||null})""")
+   assert transient_sync['stored'] and transient_sync['stored']['study']=='estudio-ficticio',transient_sync
    assert page.evaluate("syncView().label!=='Guardado en nube'")
    # Test an interrupted startup read: show a retry screen, do not overwrite the pointer.
    context.add_init_script("""if(sessionStorage.getItem('fixtureFailReadOnce')==='1'){
@@ -84,7 +90,9 @@ try:
      indexedDB.open=function(){const request={error:new DOMException('Fictional persistent read failure','UnknownError')};setTimeout(()=>request.onerror?.(),0);return request;};
    }""")
    page.evaluate("sessionStorage.setItem('fixtureFailReadOnce','1')")
-   page.reload(wait_until='networkidle');page.wait_for_function('_resumed&&!_localResumePending')
+   page.reload(wait_until='networkidle');page.wait_for_function('_resumed&&!_localResumePending');page.evaluate("ESTUDIO_ID='estudio-ficticio';_cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=state.sessionUser.id")
+   transient_sync=page.evaluate("""async()=>({stored:JSON.parse(await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore())).sync||null,verified:JSON.parse(_verifiedLocalContent||'null')?.sync||null,user:state.sessionUser?.id||null})""")
+   assert transient_sync['stored'] and transient_sync['stored']['study']=='estudio-ficticio',transient_sync
    assert page.evaluate("state.account.latestNote==='unsaved failure'&&state.account.quotaFixture.length===6*1024*1024")
    assert page.get_by_text('No se ha podido leer la copia local',exact=True).count()==0
    page.evaluate("sessionStorage.setItem('fixtureFailRead','1')")
@@ -93,12 +101,14 @@ try:
    assert page.evaluate('_localResumePending&&!!ModernoPendingArchive.pointer(localStorage.getItem(LS_KEY))')
    if output:page.screenshot(path=str(output/f'large-copy-retry-{width}.png'),full_page=True)
    page.evaluate("sessionStorage.removeItem('fixtureFailRead');indexedDB.open=fixtureNativeIndexedDBOpen")
-   page.get_by_role('button',name='Reintentar',exact=True).click();page.wait_for_function('_resumed&&!_localResumePending')
+   page.get_by_role('button',name='Reintentar',exact=True).click();page.wait_for_function('_resumed&&!_localResumePending');page.evaluate("ESTUDIO_ID='estudio-ficticio';_cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=state.sessionUser.id")
+   assert page.evaluate("""async()=>JSON.parse(await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore())).sync?.study==='estudio-ficticio'""")
    assert page.evaluate("state.account.latestNote==='unsaved failure'&&state.account.quotaFixture.length===6*1024*1024&&syncCopyKeys().length===56&&sb===null")
    # Full native startup pipeline: conserve the latest >6 MB pending snapshot before replacing the cache.
    page.evaluate("""async()=>{
      clearTimeout(_saveT);if(_localWrite)await _localWrite;
      localStorage.setItem(LS_KEY+'_dirty','1');_resumed=true;_accessRole='admin';_accessLoading=false;ESTUDIO_ID='estudio-ficticio';
+     window.beforeStartupSync=JSON.parse(await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore())).sync||null;
      window.rowsBefore=Object.entries(CLOUD_BLOCKS).map(([bloque,io])=>({bloque,contenido:JSON.parse(canon(io.get())),updated_at:'fixture-v0'}));
      const account=rowsBefore.find(x=>x.bloque==='config').contenido.account;account.quotaFixture='remote data';account.latestNote='remote confirmed';
      window.fixtureClient={rpc:async name=>{if(name==='unirse_al_estudio')return {data:{estudio_id:'estudio-ficticio',rol:'admin'}};if(name==='app_rol')return {data:'admin'};throw Error('Unexpected RPC');}};
@@ -106,14 +116,17 @@ try:
    }""")
    html=(repo/'app/index.html').read_text();load_source=html.split('async function cloudLoad(){',1)[1].split('function _dataUrlBlob(',1)[0]
    page.evaluate("async source=>{window.fixtureLoad=new Function('sb','cloudReadRows','return async function cloudLoad(){'+source)(fixtureClient,fixtureRead);await fixtureLoad();}",load_source)
-   assert page.evaluate("""async()=>{
-     if(_accessError||_accessLoading||state.account.latestNote!=='remote confirmed'||syncCopyKeys().length!==57)return false;
+   startup=page.evaluate("""async()=>{
+     let recovered=false;
      for(const key of syncCopyKeys()){
        const d=JSON.parse(await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore()));
-       if(d.state?.account?.latestNote==='unsaved failure'&&d.state.account.quotaFixture.length===6*1024*1024)return true;
+       if(d.state?.account?.latestNote==='unsaved failure'&&d.state.account.quotaFixture.length===6*1024*1024)recovered=true;
      }
-     return false;
+     const hidden=pendingCopyAllKeys().filter(key=>!syncCopyKeys().includes(key)).sort().slice(-3).map(key=>{const raw=localStorage.getItem(key);return {key,owner:pendingCopyStoredOwner(raw),study:pendingCopyStoredStudy(raw)}});
+     return {error:_accessError,loading:_accessLoading,note:state.account.latestNote,copies:syncCopyKeys().length,allCopies:pendingCopyAllKeys().length,recovered,beforeStartupSync,hidden};
    }""")
+   assert not startup['error'] and not startup['loading'] and startup['note']=='remote confirmed' and startup['copies']==57 and startup['recovered'],startup
+   assert startup['allCopies']==startup['copies'] and startup['hidden']==[] and startup['beforeStartupSync']['study']=='estudio-ficticio',startup
    assert not errors,errors;assert not writes,writes
    print(width,'PASS >6 MB actual quota; newest edit; 55 historical copies; reload; immutable pending copy; failed storage+download+retry; failed startup+retry; no remote writes',flush=True)
    context.close()

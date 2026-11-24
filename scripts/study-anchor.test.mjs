@@ -2,10 +2,12 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
 const html=readFileSync(new URL('../app/index.html',import.meta.url),'utf8');
-const code=html.slice(html.indexOf('async function cloudLoad(){'),html.indexOf('function _dataUrlBlob('));
+const daily=createRequire(import.meta.url)('../app/daily-work.js');
+const code=html.slice(html.indexOf('function cloudLoadError('),html.indexOf('function _dataUrlBlob('));
 async function resolve(probe,error=null){
- const ctx={_localWrite:null,_saveErr:false,_accessConnecting:false,_accessAttempt:0,cloudConnectionStep:async p=>p,render(){},console:{warn(){}},state:{},ESTUDIO_ID:null,_resumed:false,LS_KEY:'test',syncTag(){},afterLoginOnce(){},localStorage:{getItem:()=> 'old-study',setItem(){}},sb:{
+ const ctx={_localWrite:null,_saveErr:false,_accessConnecting:false,_accessAttempt:0,_cloudFailures:0,_cloudRetryAfter:0,_cloudRetryT:null,cloudConnectionStep:async p=>p,cloudKeepPendingCopyForConnection:async()=>{},render(){},console:{warn(){}},state:{},ESTUDIO_ID:null,_resumed:false,LS_KEY:'test',ModernoDaily:daily,setTimeout:()=>1,clearTimeout(){},syncTag(){},afterLoginOnce(){},localStorage:{getItem:()=> 'old-study',setItem(){}},sb:{
   rpc:async()=>({data:{estudio_id:'new-study',rol:'admin'}}),
   from(){return {
    select(){return this},eq(){return this},limit:async()=>({data:probe,error}),

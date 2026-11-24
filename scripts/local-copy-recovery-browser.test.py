@@ -25,7 +25,9 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official server unavailable')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  launch={'headless':True,'args':['--no-sandbox']}
+  if os.environ.get('CHROMIUM_PATH'):launch['executable_path']=os.environ['CHROMIUM_PATH']
+  browser=p.chromium.launch(**launch)
   for width in [1440,390]:
    for failure in [False,True]:
     context=browser.new_context(viewport={'width':width,'height':900},locale='es-ES');page=context.new_page();errors=[];writes=[]
@@ -35,14 +37,19 @@ try:
      if r.request.method not in ['GET','HEAD']:writes.append(r.request.method);r.abort();return
      r.continue_()
     page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.evaluate(setup)
-    page.evaluate("""failure=>{
+    page.evaluate("""async failure=>{
       clearTimeout(_saveT);_localRepairAfter=0;
-      ModernoPendingArchive.writeCurrent=async()=>{throw new DOMException('Fictional unavailable live storage','QuotaExceededError');};
+      window.savedWriteCurrent=ModernoPendingArchive.writeCurrent;window.writeAttempts=0;
+      ModernoPendingArchive.writeCurrent=async(...args)=>{writeAttempts++;if(writeAttempts===1)throw new DOMException('Fictional unavailable live storage','QuotaExceededError');return savedWriteCurrent(...args);};
       window.savedArchive=cloudArchivePendingCopies;window.archiveAttempts=0;
       cloudArchivePendingCopies=async()=>{archiveAttempts++;if(failure)throw Error('fictional archive failure');const promise=savedArchive();state.account.latestNote='Changed while archiving';await promise;};
-      for(let i=0;i<53;i++)localStorage.setItem(LS_KEY+'_pendiente_'+(2100000000000+i),JSON.stringify({v:1,fictional:i,padding:'x'.repeat(98000)}));
+      for(let i=0;i<53;i++)localStorage.setItem(LS_KEY+'_pendiente_'+(2100000000000+i),JSON.stringify({v:1,state:{sessionUser:{id:'fixture'}},sync:{study:ESTUDIO_ID,user:'fixture'},fictional:i,padding:'x'.repeat(98000)}));
+      // Chromium has used both 5 MiB and 10 MiB localStorage quotas. Fill the
+      // remaining space dynamically so the recovery path is deterministic.
+      let quotaFilled=false;for(let i=0;i<200;i++){try{localStorage.setItem(LS_KEY+'_quota_fixture_'+i,'z'.repeat(100000));}catch(error){if(error.name!=='QuotaExceededError')throw error;quotaFilled=true;break;}}
+      if(!quotaFilled)throw Error('Browser quota was not reached');
       state.account.quotaFixture='current-'+ 'y'.repeat(800000);window.memoryBefore=records();
-      persistNow();if(!_saveErr)throw Error('Quota was not reproduced');
+      persistNow();if(_localWrite)await _localWrite;if(!_saveErr)throw Error('Quota was not reproduced');
     }""",failure)
     page.wait_for_function('_localWrite===null&&_localRepair===null',timeout=10000)
     if failure:
@@ -58,11 +65,12 @@ try:
      page.evaluate("cloudArchivePendingCopies=async()=>{archiveAttempts++;const task=savedArchive();state.account.latestNote='Changed while archiving';await task;}")
      page.get_by_role('button',name='Reintentar guardado',exact=True).click()
      page.wait_for_function('_localWrite===null&&_localRepair===null&&!_saveErr',timeout=10000)
-    assert page.evaluate("!_saveErr&&JSON.parse(localStorage.getItem(LS_KEY)).state.account.latestNote==='Changed while archiving'")
+    saved=page.evaluate("""async()=>{const raw=await ModernoPendingArchive.resolve(localStorage,LS_KEY,pendingArchiveStore()),data=raw&&JSON.parse(raw);return {saveErr:_saveErr,detail:_saveErrDetail,note:data?.state?.account?.latestNote||null,copies:syncCopyKeys().length,archiveAttempts};}""")
+    assert not saved['saveErr'] and saved['note']=='Changed while archiving',saved
     # Read every original copy back from the real IndexedDB archive; no discards or auto-imports.
     assert page.evaluate("""async()=>{
       for(let i=0;i<53;i++){
-        const key=LS_KEY+'_pendiente_'+(2100000000000+i),raw=JSON.stringify({v:1,fictional:i,padding:'x'.repeat(98000)});
+        const key=LS_KEY+'_pendiente_'+(2100000000000+i),raw=JSON.stringify({v:1,state:{sessionUser:{id:'fixture'}},sync:{study:ESTUDIO_ID,user:'fixture'},fictional:i,padding:'x'.repeat(98000)});
         if(await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore())!==raw)throw Error('Old copy changed');
       }
       return syncCopyKeys().length===53&&sb===null;
