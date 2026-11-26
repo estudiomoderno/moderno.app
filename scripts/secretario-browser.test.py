@@ -204,11 +204,11 @@ try:
                     if "fallo disponible" in message:
                         request_route.fulfill(status=503, headers=cors_headers, content_type="application/json", body=json.dumps({"error": {"code": "not_configured", "message": "Fixture"}}))
                         return
-                    if message in ("Dime qué facturas tengo pendiente cobrar", "¿Cuántas facturas tengo pendientes de cobrar?", "Abre la factura FC-0002"):
+                    if message in ("Dime qué facturas tengo pendientes de cobrar", "¿Cuántas facturas tengo pendientes de cobrar?", "Abre la factura FC-0002", "Facturas pendientes de cobrar de Casa Lino en febrero de 2026"):
                         result = json.loads(subprocess.check_output(invoice_fixture_script, cwd=repo,
                             input=json.dumps({"input": body, "options": {"origin": origin, "extra": 12 if message.startswith("¿Cuántas") else 0}}).encode()))
                         assert result["status"] == 200, result["body"]
-                        if message == "Dime qué facturas tengo pendiente cobrar":
+                        if message == "Dime qué facturas tengo pendientes de cobrar":
                             pending_receivables.append((request_route,result["body"]))
                             return
                         request_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(result["body"]))
@@ -261,7 +261,7 @@ try:
               window.originalInvoicesFixture={clients:state.clients,invoices:state.invoices,entries:state.entries};
               Object.assign(state,data);
             }""", invoice_fixture)
-            page.locator("#secretary-message").fill("Dime qué facturas tengo pendiente cobrar")
+            page.locator("#secretary-message").fill("Dime qué facturas tengo pendientes de cobrar")
             panel.get_by_role("button", name="Enviar", exact=True).click()
             activity = panel.locator(".secretary-working")
             expect(activity).to_contain_text("Sesión comprobada")
@@ -334,6 +334,14 @@ try:
             paged.get_by_role("button", name="Ver más", exact=True).click()
             expect(paged.locator(".secretary-invoice")).to_have_count(15)
             assert requests[-1]["invoicePage"]["offset"] == 12
+            assert page.evaluate("document.body.classList.contains('secretary-home')")
+            page.locator("#secretary-message").fill("Facturas pendientes de cobrar de Casa Lino en febrero de 2026")
+            panel.get_by_role("button", name="Enviar", exact=True).click()
+            filtered = panel.locator(".secretary-turn-assistant").last
+            expect(filtered.locator(".secretary-bubble")).to_contain_text("Tienes 1 factura pendiente de cobro por 750,00")
+            expect(filtered).to_contain_text("Casa Lino · Emisión: 2026-02-01 a 2026-02-28")
+            expect(filtered.locator(".secretary-invoice")).to_have_count(1)
+            expect(filtered.locator(".secretary-invoice")).to_contain_text("FC-0002")
             assert page.evaluate("document.body.classList.contains('secretary-home')")
             print(f"{width} PASS: verified pending rows, click and explicit open, native close, return and paging", flush=True)
             page.evaluate("Object.assign(state,window.originalInvoicesFixture);ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")

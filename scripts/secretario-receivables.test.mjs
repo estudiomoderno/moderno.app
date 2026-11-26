@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {collectReceivables, isGeneralReceivablesQuestion, receivablesPage} from '../supabase/functions/secretario/receivables.mjs';
+import {collectReceivables, receivablesPage} from '../supabase/functions/secretario/receivables.mjs';
+import {isReceivableIntent} from '../supabase/functions/secretario/receivable-scope.mjs';
 import {fixtureRequest, invoiceFixture, studyId} from './secretario-receivables-fixture.mjs';
 
 const today = '2026-11-26';
-const message = 'Dime qué facturas tengo pendiente cobrar';
+const message = 'Dime qué facturas tengo pendientes de cobrar';
 const request = {studyId,message,context:{view:'finanzas',timeZone:'Europe/Madrid'}};
 const snapshot = extra => ({...invoiceFixture({extra}),config:{account:{currency:'EUR'},series:{fc:'FC'}}});
 
@@ -12,7 +13,8 @@ test('the question uses the authorized invoice blocks and never calls the planne
   const {status,body,calls} = await fixtureRequest(request);
   assert.equal(status,200);
   assert.deepEqual(calls.map(call=>call.name),['app_rol','app_leer_bloques','app_leer_versiones']);
-  assert.deepEqual(calls[1].args.p_bloques,['proyectos','config','facturas']);
+  assert.deepEqual(calls[1].args.p_bloques,['proyectos','contactos','config','facturas']);
+  assert.equal(body.receivables.intent,'pending_invoices');
   assert.equal(body.receivables.count,3);
   assert.equal(body.receivables.overdue,1);
   assert.deepEqual(body.receivables.amounts,[{currency:'EUR',amount:1680}]);
@@ -43,12 +45,62 @@ test('respects tombstones, reconciles legacy invoices, and rejects ambiguous lin
   s.entries.push({id:501,link:'FC-0300',kind:'in',brand:'cm',amount:95,status:'env',date:'27/10/2026',pid:9001});
   s.entries.push({id:502,concept:'Otros ingresos',kind:'in',brand:'cm',amount:600,status:'pend'});
   const result=collectReceivables(s,{today,projectId:'9001'});
-  assert.equal(result.review,1);
+  assert.equal(result.review,0);
+  assert.deepEqual(collectReceivables(s,{today,projectId:'9002'}),{review:1,rows:[]});
   assert.deepEqual(result.rows.map(row=>[row.kind,row.label,row.due]),[
     ['invoice_entry','FC-0300','2026-11-26'],['invoice','FC-0003','2030-01-20']
   ]);
   assert.equal(result.rows[0].overdue,false);
-  assert.deepEqual(collectReceivables(s,{today,projectId:'9002'}),{review:0,rows:[]});
+  assert.deepEqual(collectReceivables(s,{today,projectId:'9003'}),{review:0,rows:[]});
+});
+
+test('filters by authorized client, project, issue dates, due dates and overdue status', async () => {
+  const cases = [
+    ['Facturas pendientes de cobro de Casa Lino', [2], 750, 0, 'Casa Lino'],
+    ['Facturas pendientes del proyecto PR-0901', [1,3], 930, 1, 'Proyecto ficticio'],
+    ['Facturas pendientes emitidas en febrero de 2026', [2], 750, 0, 'Emisión: 2026-02-01 a 2026-02-28'],
+    ['Facturas pendientes con vencimiento en enero de 2030', [2,3], 1200, 0, 'Vencimiento: 2030-01-01 a 2030-01-31'],
+    ['Facturas pendientes del proyecto Reforma Lino del cliente Casa Lino, emitidas en febrero de 2026', [2], 750, 0, 'Casa Lino · Reforma Lino · Emisión: 2026-02-01 a 2026-02-28'],
+    ['Facturas pendientes del cliente Cliente sin facturas', [], 0, 0, 'Cliente sin facturas'],
+    ['Facturas pendientes del cliente Casa Cobro Completo', [], 0, 0, 'Casa Cobro Completo'],
+    ['Facturas pendientes del proyecto PR-0901 de Casa Lino', [], 0, 0, 'Casa Lino · Proyecto ficticio'],
+    ['Facturas pendientes vencidas', [1], 480, 1, 'Solo vencidas'],
+    ['Facturas pendientes sin vencer', [2,3], 1200, 0, 'Sin vencer']
+  ];
+  for (const [message,numbers,total,overdue,scopeLabel] of cases) {
+    const {status,body}=await fixtureRequest({...request,message});
+    assert.equal(status,200,message);
+    const {count,amounts,overdue:expired,scopeLabel:label}=body.receivables;
+    assert.deepEqual([count,expired,label],[numbers.length,overdue,scopeLabel],message);
+    assert.deepEqual(amounts,total?[{currency:'EUR',amount:total}]:[]);
+    assert.deepEqual(body.sources.map(row=>row.label),numbers.map(n=>'FC-000'+n));
+    assert.equal(body.sources.reduce((sum,row)=>sum+row.pending,0),total);
+    assert.deepEqual(body.actions,[]);
+    if(!numbers.length)assert.equal(body.message,'No tienes facturas pendientes de cobro.');
+    else assert.ok(body.message.includes(new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(total)));
+  }
+});
+
+test('asks a focused scope question and uses the verified answer without falling back to a summary', async () => {
+  const message='Facturas pendientes del cliente Nombre inválido en febrero de 2026';
+  const first=(await fixtureRequest({...request,message})).body;
+  assert.equal(first.questions[0].id,'receivable_client');
+  assert.deepEqual(first.sources,[]);
+  const second=(await fixtureRequest({...request,message:'Casa Lino',automatic:true,
+    history:[{role:'user',content:message},{role:'assistant',content:first.message}],
+    answers:{receivable_client:'Casa Lino'}})).body;
+  assert.equal(second.receivables.scopeLabel,'Casa Lino · Emisión: 2026-02-01 a 2026-02-28');
+  assert.deepEqual(second.sources.map(row=>row.label),['FC-0002']);
+  for(const [message,field] of [
+    ['Facturas pendientes no de Casa Lino','receivable_scope'],
+    ['Facturas pendientes de cobrar de los últimos seis meses','receivable_period'],
+    ['Facturas pendientes a fecha de 2026-09-01','receivable_scope']
+  ]){
+    const {body}=await fixtureRequest({...request,message});
+    assert.equal(body.questions[0].id,field);
+    assert.deepEqual(body.sources,[]);
+    assert.equal(body.receivables,undefined);
+  }
 });
 
 test('pagination preserves the total and ordering, and forces a fresh query when versions change', async () => {
@@ -63,16 +115,19 @@ test('pagination preserves the total and ordering, and forces a fresh query when
   const stale=await fixtureRequest(nextRequest,{extra:14,version:'2026-11-26T09:00:00Z'});
   assert.equal(stale.status,409);
   assert.equal(stale.body.error.code,'context_changed');
+  const otherScope=await fixtureRequest({...nextRequest,message:'Facturas pendientes de cobrar de Casa Lino'},{extra:14});
+  assert.equal(otherScope.status,409);
 });
 
-test('returns no results clearly and does not classify filtered questions as study-wide', () => {
+test('classifies financial lookup separately from opening a document or listing tasks', () => {
   const empty=receivablesPage({invoices:[],entries:[],config:{}},{today});
   assert.equal(empty.message,'No tienes facturas pendientes de cobro.');
   assert.equal(empty.count,0);
-  assert.equal(isGeneralReceivablesQuestion(message),true);
-  assert.equal(isGeneralReceivablesQuestion('¿Qué tengo pendiente de cobrar?'),true);
-  for(const query of ['Abre la factura pendiente','Facturas pendientes de cobro de Casa Lino','Facturas pendientes de cobro vencidas','¿Qué tareas me quedan pendientes?']){
-    assert.equal(isGeneralReceivablesQuestion(query),false,query);
+  for(const query of [message,'¿Qué tengo pendiente de cobrar?','Facturas pendientes de cobro de Casa Lino','Facturas pendientes de cobro vencidas']){
+    assert.equal(isReceivableIntent(query),true,query);
+  }
+  for(const query of ['Abre la factura pendiente','¿Qué tareas me quedan pendientes?']){
+    assert.equal(isReceivableIntent(query),false,query);
   }
 });
 
