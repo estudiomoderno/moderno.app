@@ -65,7 +65,8 @@ export function isReceivableIntent(value) {
 const dateToken='(?:\\d{4}-\\d{2}-\\d{2}|\\d{1,2}/\\d{1,2}/\\d{4})';
 const monthDate=(y,m,d=1)=>new Date(Date.UTC(y,m,d)).toISOString().slice(0,10);
 
-function parsePeriod(text,today){
+export function parsePeriod(value,today){
+  const text=compact(value);
   const [year,month]=today.split('-').map(Number);
   const ranges=[
     [new RegExp('\\b(?:entre|del|de|desde) ('+dateToken+') (?:y|al|a|hasta) ('+dateToken+')\\b'),m=>[isoDate(m[1]),isoDate(m[2])]],
@@ -110,14 +111,32 @@ function clientCandidates(snapshot){
   const map=new Map();
   const contacts=snapshot.clients??[];
   const shared=new Set(contacts.filter(row=>row?.brand==='both').map(row=>compact(row.name)));
-  function add(name,brand,aliases=[]){
+  const contactGroups=new Map();
+  const describe=(name,brand)=>[compact(name),shared.has(compact(name))?'':display(brand)];
+  contacts.forEach((row,index)=>{
+    if(!row||!['Cliente','Proveedor'].includes(row.type)||!display(row.name))return;
+    const key=JSON.stringify(describe(row.name,row.brand));
+    if(!contactGroups.has(key))contactGroups.set(key,[]);
+    contactGroups.get(key).push({row,index});
+  });
+  function add(name,brand,aliases=[],contact){
     if(!display(name))return;
-    const normalized=compact(name),space=shared.has(normalized)?'':display(brand);
-    const key=JSON.stringify([normalized,space]),previous=map.get(key);
-    const detail=display(snapshot.config.BRAND?.[space]?.name)||space;
-    map.set(key,{kind:'client',key,brand:space,label:display(name),detail,aliases:refAliases(name,...aliases,...(previous?.aliases??[])),name:normalized});
+    const [normalized,space]=describe(name,brand),group=JSON.stringify([normalized,space]);
+    const groupContacts=contactGroups.get(group)||[],duplicates=groupContacts.length>1;
+    if(duplicates&&!contact)return;
+    const contactId=contact?String(contact.row.id??'contact:'+contact.index):null;
+    const identityConflict=duplicates&&contact?.row.id!=null&&groupContacts.filter(item=>String(item.row.id)===contactId).length>1;
+    const numberConflict=duplicates&&contact?.row.num&&groupContacts.filter(item=>compact(item.row.num)===compact(contact.row.num)).length>1;
+    const key=duplicates?JSON.stringify([normalized,space,identityConflict?'contact:'+contact.index:contactId]):group,previous=map.get(key);
+    const detail=[contact?.row.num,duplicates&&(!contact.row.num||numberConflict)?'Ficha '+(contact.index+1):'',
+      display(snapshot.config.BRAND?.[space]?.name)||space].filter(Boolean).join(' · ');
+    map.set(key,{kind:'client',key,brand:space,label:display(name),detail,
+      ids:contactId?[contactId]:previous?.ids??[],clientIndex:duplicates?contact.index:null,
+      aliases:refAliases(name,...aliases,...(previous?.aliases??[])),name:normalized});
   }
-  for(const row of contacts)if(row&&['Cliente','Proveedor'].includes(row.type))add(row.name,row.brand,[row.fiscal,row.num]);
+  for(const group of contactGroups.values())for(const contact of group){
+    const {row}=contact;add(row.name,row.brand,[row.fiscal,row.num],contact);
+  }
   for(const row of snapshot.invoices)if(row)add(row.client,row.brand);
   for(const row of snapshot.entries)if(row?.kind==='in'&&row.link)add(row.client||row.sup||display(row.concept).split(' · ').slice(1).join(' · '),row.brand);
   return [...map.values()];
@@ -142,7 +161,7 @@ function entityMatches(text,candidates){
 
 function findCandidates(answer,items){
   const name=compact(answer);
-  return items.filter(item=>item.key===answer||item.aliases.includes(name));
+  return items.filter(item=>item.key===answer||item.ids?.includes(answer)||item.aliases.includes(name));
 }
 
 export function resolveReceivableScope(snapshot,request,turn,today){
@@ -158,8 +177,10 @@ export function resolveReceivableScope(snapshot,request,turn,today){
   let remainder=input;
   let chosenProject=null,chosenClient=null;
   const allMatches=entityMatches(input,[...clients,...projects]);
-  const explicitProject=/\b(?:este|del|el) proyecto\b/.test(input);
-  const currentProject=/\beste proyecto\b/.test(input)?projects.find(item=>item.key===request.context.projectId):null;
+  const explicitProject=/\b(?:este|ese|del|el) proyecto\b/.test(input);
+  const projectReference=/\b(?:de )?(este|ese) proyecto\b/.exec(input);
+  const projectId=projectReference?.[1]==='ese'?base?.projectId??request.context.projectId:request.context.projectId;
+  const currentProject=projectReference?projects.find(item=>item.key===projectId):null;
   const remove=(text)=>{remainder=remainder.replace(text,' ');};
   const ranges=new Map();
   for(const match of allMatches){
@@ -197,7 +218,7 @@ export function resolveReceivableScope(snapshot,request,turn,today){
   const reference=references[0]??(clearAll?null:base?.reference??null);
   if(references.length)remove(references[0]);
   if(/\b(?:excepto|excluy\w*|salvo|no (?!cobradas?\b|vencidas?\b)|o)\b/.test(remainder))return queryError('receivable_scope',scopePrompt);
-  if(currentProject)remove(/\beste proyecto\b/);
+  if(currentProject)remove(projectReference[0]);
   for(const [kind,items,field,prompt] of [
     ['project',projects,'receivable_project','¿De qué proyecto quieres ver las facturas pendientes?'],
     ['client',clients,'receivable_client','¿De qué cliente quieres ver las facturas pendientes?']
@@ -242,7 +263,7 @@ export function resolveReceivableScope(snapshot,request,turn,today){
     if(!periodAnswer&&(/\b(?:periodo|trimestre|meses|semanas?|fechas?|desde|hasta|entre)\b/.test(remainder)||/\d/.test(remainder)))return queryError('receivable_period','¿Qué periodo quieres consultar? Indica el mes y el año, o dos fechas.');
     return queryError('receivable_scope',scopePrompt);
   }
-  return {scope:{projectId:chosenProject?.key??null,projectLabel:chosenProject?.label??null,client:chosenClient?{name:chosenClient.name,label:chosenClient.label,brand:chosenClient.brand}:null,
+  return {scope:{projectId:chosenProject?.key??null,projectLabel:chosenProject?.label??null,client:chosenClient?{name:chosenClient.name,label:chosenClient.label,brand:chosenClient.brand,clientIndex:chosenClient.clientIndex}:null,
     date:period?{from:period.from,to:period.to,field:dueRange?'due':'issued'}:clearDate?null:base?.date??null,
     overdue:overdue??(clearOverdue?null:base?.overdue??null),reference},
     clientKey:chosenClient?.key??null};

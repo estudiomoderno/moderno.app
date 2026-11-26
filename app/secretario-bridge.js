@@ -123,5 +123,24 @@
     while(history.length&&total>24000)total-=history.shift().content.length;
     return {history,trimmed:history.length!==turns.length};
   }
-  return Object.freeze({VIEWS,BLOCKS,prepareDraft,navigation,assertVersions,recentHistory});
+  function clarificationAnswer(questions,message){
+    if(questions.length!==1)return null;
+    const [question]=questions,key=question.id;
+    if(key.startsWith('receivable_'))return null;
+    const normalize=value=>String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();
+    const reply=normalize(message).replace(/^(?:mejor |en realidad |cambia a |elige |usa |(?:quiero )?el(?: cliente| proyecto)? |(?:quiero )?la )/,'').trim();
+    const original=normalize(message);
+    const matches=question.options.filter(option=>[option.label,...String(option.label??'').split(' · '),option.value]
+      .some(value=>value&&[original,reply].includes(normalize(value))));
+    if(matches.length===1)return {[key]:String(matches[0].value??matches[0].id)};
+    if(key==='period'&&/^(?:este (?:mes|ano)|(?:el )?(?:mes|ano) (?:pasado|anterior)|(?:en |de )?(?:19|20|21)\d{2}|(?:entre|del|de|desde|hasta) \d+[/-])/i.test(reply))return {[key]:message};
+    if(/^line\.\d+\.(?:qty|price)$/.test(key)&&/^(?:(?:a|son|por) )?\d+(?:[.,]\d+)?(?: [a-záéíóú€$²³/]+){0,4}$/i.test(reply))return {[key]:message};
+    return null;
+  }
+  function sourcePointer(source){
+    if(!source||!source.kind||source.id==null)return null;
+    const {kind,id,brand,projectId}=source;
+    return {kind,id:String(id),...(brand?{brand:String(brand)}:{}),...(projectId!=null?{projectId:String(projectId)}:{})};
+  }
+  return Object.freeze({VIEWS,BLOCKS,prepareDraft,navigation,assertVersions,recentHistory,clarificationAnswer,sourcePointer});
 });

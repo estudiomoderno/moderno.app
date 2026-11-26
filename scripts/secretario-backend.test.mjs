@@ -312,7 +312,7 @@ test('compact planning keeps the complete snapshot authoritative for financial r
  const input=request({message:'Dame un resumen económico',context:{view:'finanzas'}}),summaryPlan=plan({intent:'summary',view:null,projectId:null,clientId:null,clientQuery:null,kind:null,lines:[],edits:[],sourceIds:[]});
  const result=await runSecretary({client:db,input,planner:async({context})=>{plannerContext=context;return summaryPlan;}});
  assert.ok(Buffer.byteLength(JSON.stringify(plannerContext),'utf8')<=80000);assert.equal(JSON.stringify(plannerContext).includes('Movimiento objetivo Zeta'),false);
- assert.equal(result.metrics.invoiced,412);assert.equal(result.metrics.pending,412);assert.equal(result.sourceCount,429);
+ assert.equal(result.metrics.invoiced,412);assert.equal(result.metrics.pending,412);assert.equal(result.sourceCount,419);assert.ok(!result.sources.some(source=>source.kind==='quote'));
  assert.equal(db.calls.filter(call=>call.name==='secretary_request_reserve').length,1);assert.equal(db.calls.filter(call=>call.name==='app_leer_bloques').length,1);assert.equal(db.calls.filter(call=>call.name==='app_leer_versiones').length,1);
 });
 test('complete runtime keeps every supported intent inside the compact verified scope',async()=>{
@@ -539,4 +539,92 @@ test('structured request logs contain only safe operational fields',async()=>{
 });
 test('HTTP safe errors do not disclose thrown tokens or internal database detail',async()=>{
  const h=handler({authenticate:async()=>{throw new Error('raw JWT private-table');}}),result=await h(http()),body=await result.text();assert.equal(result.status,503);assert.doesNotMatch(body,/raw JWT|private-table/);
+});
+
+function financePlan(intent,lookup={},fields={}){
+ return plan({intent,view:null,projectId:null,clientId:null,kind:null,lines:[],edits:[],sourceIds:[],
+  lookup:{metric:null,documentType:null,period:null,reference:null,overdue:null,continuation:false,...lookup},...fields});
+}
+
+test('a colloquial interpretation uses the same verified query and can be paged without a second provider call',async()=>{
+ const s=snapshot();
+ s.invoices=Array.from({length:13},(_,index)=>({ref:'F-DEMO-'+(100+index),client:'Cliente de prueba',clientIdx:0,projectId:1,brand:'demo',date:'2026-03-03',due:'2026-12-12',total:300,status:'env'}));
+ s.entries=s.invoices.map((invoice,index)=>({id:index+1,link:invoice.ref,pid:1,kind:'in',brand:'demo',amount:300,status:'env',date:invoice.date,due:invoice.due,cobros:[{amount:100}]}));
+ const db=client(s),clock=()=>Date.parse('2026-11-26T12:00:00Z');
+ const r=request({message:'¿Qué abonos de clientes sigo esperando este año?',context:{view:'finanzas'}});
+ const first=await runSecretary({input:r,client:db,planner:async()=>financePlan('pending_invoices',{period:'este año'}),now:clock});
+ assert.equal(first.receivables.count,13);assert.deepEqual(first.receivables.amounts,[{amount:2600,currency:'EUR'}]);
+ assert.equal(first.receivableContext.scope.date.from,'2026-01-01');
+ assert.ok(first.sources.every(item=>item.pending===200));
+ const second=await runSecretary({input:{...r,receivableContext:first.receivableContext,invoicePage:{offset:12,version:first.receivables.version,projectId:null}},client:db,planner:()=>assert.fail('Pagination must stay deterministic'),now:clock});
+ assert.deepEqual(second.sources.map(row=>row.id),['F-DEMO-112']);
+ assert.equal(db.calls.filter(call=>call.name==='secretary_request_reserve').length,1);
+});
+
+test('a document query stays in the conversation and an ordinal opens its exact authorized result',async()=>{
+ const s=snapshot(),base={brand:'demo',client:'Cliente de prueba',clientIdx:0,projectId:1,total:150,status:'env'};
+ s.invoices=[{...base,ref:'F-DEMO-001',date:'2026-03-09'},{...base,ref:'F-DEMO-002',date:'2026-03-10'},
+  {...base,ref:'F-DEMO-003',date:'2025-01-01'},{...base,ref:'F-DEMO-004',status:'borrador',date:'2026-03-11'}];
+ const db=client(s),clock=()=>Date.parse('2026-11-26T07:00:00Z');
+ const input=request({message:'Muestra las facturas de Casa Demo de este año',context:{view:'finanzas'}});
+ const result=await runSecretary({input,client:db,planner:async()=>financePlan('list_documents',{documentType:'invoice',period:'este año'},{projectId:'1'}),now:clock});
+ assert.deepEqual(result.sources.map(row=>row.id),['F-DEMO-002','F-DEMO-001']);
+ assert.deepEqual(result.actions,[]);
+ const results=result.sources.map(({kind,id,brand,projectId})=>({kind,id,brand,projectId}));
+ const next=request({message:'¿Puedes abrir la segunda factura?',context:{view:'finanzas',focus:{results}}});
+ const opened=await runSecretary({input:next,client:db,planner:()=>assert.fail('The order is already known'),now:clock});
+ assert.equal(opened.actions[0].openImmediately,true);assert.equal(opened.actions[0].payload.id,'F-DEMO-001');
+ assert.equal(opened.actions[0].sourceVersions.facturas,VERSION);assert.equal(opened.preserveQueryContext,true);
+ s.role='colaborador';
+ await assert.rejects(runSecretary({input:next,client:db,planner:()=>assert.fail('A second lookup should not use the model')}),{code:'source_unavailable'});
+ assert.throws(()=>request({context:{focus:{results:[{...results[0],amount:200}]}}}),{code:'invalid_context'});
+});
+
+test('a specific total sums only its verified rows, stays in scope and separates currencies',()=>{
+ const s=snapshot();
+ s.entries=[{id:1,kind:'out',amount:300,currency:'EUR',date:'2026-03-10'},
+  {id:2,kind:'out',amount:210,currency:'USD',pid:1,date:'2026-03-10'},
+  {id:3,kind:'in',amount:990,currency:'USD',pid:1,date:'2026-03-10'},
+  {id:4,kind:'out',amount:2500,date:'2025-03-10'},{id:5,kind:'out',amount:700,status:'anul',date:'2026-03-10'}];
+ const now=Date.parse('2026-11-26T12:00:00Z');
+ const intent=financePlan('summary',{metric:'costs',period:'este año'});
+ const whole=executePlan(s,request({message:'¿Qué costes hay este año en todo el estudio?',context:{view:'proyecto',projectId:1}}),intent,now);
+ assert.deepEqual(whole.sources.map(row=>row.id),['1','2']);
+ assert.match(whole.message,/300,00/);assert.match(whole.message,/210,00/);
+ assert.doesNotMatch(whole.message,/510,00|Facturado|Presupuestos|990/);
+ assert.deepEqual(whole.actions,[]);
+ const scoped=executePlan(s,request({message:'¿Qué costes hay este año en este proyecto?',context:{view:'proyecto',projectId:1}}),intent,now);
+ assert.deepEqual(scoped.sources.map(row=>row.id),['2']);
+ const payments=executePlan(s,request({message:'¿Cuánto he cobrado este año?',context:{view:'finanzas'}}),financePlan('summary',{metric:'recordedCollections',period:'este año'}),now);
+ assert.equal(payments.sources.length,0);assert.match(payments.message,/No hay registros/);
+});
+
+test('a duplicate client needs an explicit choice and then filters by contact identity',async()=>{
+ const s=snapshot();
+ s.clients.push({...s.clients[0],num:'CL-002'});s.projects[0].client='';
+ s.invoices=s.clients.map(({name},index)=>({ref:'F-CLI-00'+(index+1),client:name,clientIdx:index,brand:'demo',date:'2026-01-01',due:'2026-12-01',total:100,status:'env'}));
+ s.entries=s.invoices.map((row,index)=>({id:index+1,brand:'demo',link:row.ref,amount:100,status:'env',date:row.date,due:row.due,kind:'in'}));
+ const db=client(s),ask=(input)=>runSecretary({client:db,input,planner:()=>assert.fail('Verified intent uses the direct path'),now:()=>Date.parse('2026-11-26T12:00:00Z')});
+ const origin=request({message:'Facturas pendientes del cliente Cliente de prueba este año',context:{view:'finanzas'}});
+ const first=await ask(origin);
+ assert.equal(first.status,'clarifying');assert.deepEqual(first.questions[0].options.map(row=>row.label),['Cliente de prueba · CL-001 · Espacio Demo','Cliente de prueba · CL-002 · Espacio Demo']);
+ for(const tail of [{message:'CL-002',automatic:false},{message:'Cliente de prueba · CL-002 · Espacio Demo',automatic:true,answers:{receivable_client:first.questions[0].options[1].value}}]){
+  const next=await ask({...origin,...tail,receivableContext:first.receivableContext});
+  assert.equal(next.status,'answer');assert.deepEqual(next.sources.map(row=>row.id),['F-CLI-002']);
+  assert.equal(next.receivableContext.scope.date.from,'2026-01-01');
+ }
+});
+
+test('a scoped saved draft can receive a corrected quantity via the composer',async()=>{
+ const s=snapshot(),draft={brand:'demo',clientIdx:0,projectId:1,lines:[{name:'Asesoría',qty:1,price:120,unit:'h'}],
+  iva:{on:true,pct:21},irpf:{on:false,pct:0},disc:{on:false,pct:0}};
+ s.drafts=[{id:'saved-A',kind:'presupuesto',draft}];const before=JSON.stringify(s);
+ const context={view:'presupuestos',projectId:1,focus:{document:{kind:'draft',id:'saved-A',projectId:'1'}}};
+ const input=request({message:'Cambia esa cantidad',context});
+ const first=await runSecretary({client:client(s),input,planner:async()=>plan({kind:null,draftId:null,lines:[],edits:[]})});
+ assert.equal(first.questions[0].id,'line.0.qty');
+ const follow=request({message:'3 horas',context,automatic:true,answers:{'line.0.qty':'3 horas'},history:[{role:'user',content:input.message},{role:'assistant',content:first.message}]});
+ const second=await runSecretary({client:client(s),input:follow,planner:async()=>plan({kind:null,draftId:null,lines:[],edits:[{lineIndex:0,qty:3,qtyEvidence:'3 horas',price:null,priceEvidence:null}]})});
+ assert.equal(second.actions[0].payload.mode,'edit_saved_draft');assert.equal(second.actions[0].payload.lines[0].qty,3);
+ assert.equal(second.actions[0].payload.lines[0].price,120);assert.equal(JSON.stringify(s),before);
 });

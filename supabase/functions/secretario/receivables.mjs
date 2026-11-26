@@ -63,6 +63,7 @@ export function collectReceivables(snapshot, {today, projectId = null, client = 
   function inScope(doc,entry){
     if(projectId!==null&&project(doc)!==projectId&&project(entry)!==projectId)return false;
     if(client&&(normalizedName(clientName(doc,entry))!==client.name||client.brand&&client.brand!==(doc?.brand??entry?.brand)))return false;
+    if(client?.clientIndex!=null&&doc?.clientIdx!=null&&doc.clientIdx!==''&&String(doc.clientIdx)!==String(client.clientIndex))return false;
     const due=entry?dueDate(doc,entry):null;
     const dateValue=date?.field==='due'?due?.date:isoDate(doc?.date)||isoDate(entry?.date);
     if(date&&dateValue&&(dateValue<date.from||dateValue>date.to))return false;
@@ -90,6 +91,7 @@ export function collectReceivables(snapshot, {today, projectId = null, client = 
         || markedPaid && movements.length && remaining > 0
         || paidStatus.test(status(doc)) && status(entry) && !paidStatus.test(status(entry)) && remaining > 0) { review++; return; }
     if (markedPaid || remaining <= 0) return;
+    if(client?.clientIndex!=null&&(doc?.clientIdx==null||doc.clientIdx==='')){review++;return;}
     const due = dueDate(doc, entry);
     const issuedDate=isoDate(doc?.date)||isoDate(entry.date);
     if (!code || due.conflict || date&&(date.field==='due'?!due.date:!issuedDate) || overdue&&!due.date) { review++; return; }
