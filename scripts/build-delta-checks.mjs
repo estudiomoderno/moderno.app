@@ -2,10 +2,11 @@ import fs from 'node:fs';import {pathToFileURL} from 'node:url';import efficienc
 export function buildDeltaChecks(){
   const baseline=fs.readFileSync(new URL('./sql/guardado-delta-baseline.sql',import.meta.url),'utf8');
   const candidate=fs.readFileSync(new URL('../SQL/guardado-delta.sql',import.meta.url),'utf8').replace(/^begin;\s*$/mi,'').replace(/^commit;\s*$/mi,'');
-  const timeout=fs.readFileSync(new URL('../SQL/guardado-grande-timeout.sql',import.meta.url),'utf8').replace(/^begin;\s*$/mi,'').replace(/^commit;\s*$/mi,'');
-  let sql=fs.readFileSync(new URL('./sql/guardado-delta-checks.sql',import.meta.url),'utf8').replace('-- BASELINE_HERE',()=>baseline).replace('-- CANDIDATE_HERE',()=>candidate+'\n'+timeout);
+  const upgrade=fs.readFileSync(new URL('../SQL/guardado-delta-array-sync.sql',import.meta.url),'utf8').replace(/^begin;\s*$/mi,'').replace(/^commit;\s*$/mi,'');
+  const rollback=fs.readFileSync(new URL('../SQL/guardado-delta-array-sync.rollback.sql',import.meta.url),'utf8').replace(/^begin;\s*$/mi,'').replace(/^commit;\s*$/mi,'');
+  let sql=fs.readFileSync(new URL('./sql/guardado-delta-checks.sql',import.meta.url),'utf8').replace('-- BASELINE_HERE',()=>baseline).replace('-- CANDIDATE_HERE',()=>candidate).replace('-- ARRAY_SYNC_ROLLBACK_FIRST_HERE',()=>rollback).replace('-- ARRAY_SYNC_UPGRADE_HERE',()=>upgrade).replace('-- ARRAY_SYNC_ROLLBACK_SECOND_HERE',()=>rollback);
   const literal=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
-  const cases=[[{}, {'a/b~ñ':null}],[[1,2,3],[1,3]],[[1,2],[2,1]],[[null],[]],[null,{name:'Ficticio'}],[{},JSON.parse('{"__proto__":{"safe":true}}')]];
+  const cases=[[{}, {'a/b~ñ':null}],[[1,2,3],[1,3]],[[1,2],[2,1]],[[null],[]],[null,{name:'Ficticio'}],[{},JSON.parse('{"__proto__":{"safe":true}}')],[[{id:1,name:'Uno'},{id:'1',name:'Texto'}],[{id:'1',name:'Texto editado'},{id:2,name:'Nuevo'},{id:1,name:'Uno'}]],[{rows:[{id:1,value:1},{id:2,value:2}]},{rows:[{id:2,value:3},{id:1,value:1}]}]];
   for(let i=0;i<100;i++){
     const a=Array.from({length:i%8},(_,j)=>({id:j,name:'Producto ficticio '+j,qty:1,attrs:{color:'azul',note:null}}));const b=structuredClone(a);
     if(i%3===0)b.splice(i%(b.length+1),0,{id:100+i,name:'Alta ficticia'});else if(i%3===1&&b.length)b[0].attrs.color='blanco';else if(b.length)b.splice(0,1);

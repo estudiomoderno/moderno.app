@@ -15,8 +15,8 @@ concurrency:
 jobs:
   verify:
     name: Pruebas aisladas (sin produccion)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
@@ -29,36 +29,73 @@ jobs:
           --health-retries 10
     steps:
       - name: Obtener codigo sin credenciales persistentes
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
           fetch-depth: 0
       - name: Preparar Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
       - name: Pruebas de JavaScript
         run: node --test scripts/*.test.mjs
       - name: Equivalencia SQL y tiempos con datos ficticios
         run: |
+          set -o pipefail
           docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1 < scripts/sql/fiabilidad-bootstrap-local.sql
           node scripts/build-fiabilidad-sql.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Guardado delta, roles y conflictos con datos ficticios
-        run: node scripts/build-delta-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+        run: |
+          set -o pipefail
+          node scripts/build-delta-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+      - name: Guardado idempotente, reintentos y recibos privados con datos ficticios
+        run: |
+          set -o pipefail
+          node scripts/build-idempotent-save-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+      - name: Diez reintentos concurrentes confirman una sola escritura ficticia
+        run: |
+          set -euo pipefail
+          test_db=moderno_idempotent_concurrency
+          trap 'docker exec ${{ job.services.postgres.id }} dropdb -U postgres --if-exists "$test_db"' EXIT
+          docker exec ${{ job.services.postgres.id }} createdb -U postgres "$test_db"
+          docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d "$test_db" -v ON_ERROR_STOP=1 < scripts/sql/idempotent-concurrency-bootstrap.sql
+          node scripts/build-idempotent-concurrency-fixture.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d "$test_db" -v ON_ERROR_STOP=1
+          node scripts/idempotent-concurrency-local.mjs ${{ job.services.postgres.id }} "$test_db"
+      - name: Retencion de historial fuera del guardado con datos ficticios
+        run: |
+          set -euo pipefail
+          test_db=moderno_history_retention
+          trap 'docker exec ${{ job.services.postgres.id }} dropdb -U postgres --if-exists "$test_db"' EXIT
+          docker exec ${{ job.services.postgres.id }} createdb -U postgres "$test_db"
+          node scripts/build-history-retention-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d "$test_db" -v ON_ERROR_STOP=1
       - name: Guardado de listas como colaborador y permisos con datos ficticios
-        run: node scripts/build-collaborator-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+        run: |
+          set -o pipefail
+          node scripts/build-collaborator-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Equivalencia del combinador optimizado y permisos
-        run: node scripts/build-collaborator-performance-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+        run: |
+          set -o pipefail
+          node scripts/build-collaborator-performance-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Borrado de productos por colaboradores y protección de proyectos
-        run: node scripts/build-product-delete-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+        run: |
+          set -o pipefail
+          node scripts/build-product-delete-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Categorías de archivos y diario como colaborador
-        run: node scripts/build-project-sections-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+        run: |
+          set -o pipefail
+          node scripts/build-project-sections-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Aceptación de invitaciones y aislamiento sin crear estudios
-        run: node scripts/build-invitation-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+        run: |
+          set -o pipefail
+          node scripts/build-invitation-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Consentimiento y mejora del Secretario con datos ficticios
-        run: node scripts/build-secretary-feedback-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+        run: |
+          set -o pipefail
+          node scripts/build-secretary-feedback-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Contrato, RLS y cuotas del Secretario con datos ficticios
-        run: node scripts/build-secretary-runtime-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+        run: |
+          set -o pipefail
+          node scripts/build-secretary-runtime-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
       - name: Preparar PHP (si falta)
         run: |
           if ! command -v php >/dev/null; then
@@ -69,3 +106,18 @@ jobs:
         run: php -l mailer/enviar-invitacion.php
       - name: Pruebas de autorizacion de invitaciones (sin enviar correos)
         run: php scripts/invitation-auth.test.php
+      - name: Preparar Chromium para recorridos criticos de guardado
+        id: chromium
+        if: ${{ !cancelled() }}
+        run: |
+          python -m pip install --disable-pip-version-check playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Guardado, recuperacion e IndexedDB en navegador real
+        if: ${{ !cancelled() && steps.chromium.outcome == 'success' }}
+        run: |
+          python scripts/save-efficiency-browser.test.py
+          python scripts/bulk-duplicate-save-browser.test.py
+          python scripts/pending-recovery-browser.test.py
+          python scripts/local-copy-recovery-browser.test.py
+          python scripts/private-image-cache-browser.test.py
+          python scripts/current-copy-browser.test.py

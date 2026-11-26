@@ -23,11 +23,30 @@
     if(confirmed)return {mode:'ok',label:'Guardado en nube',detail:'Los datos actuales coinciden con la última versión confirmada.'};
     return {mode:'pending',label:'Pendiente de comprobar',detail:'Todavía no hay confirmación de la nube.'};
   }
+  function syncFailureMode(error){
+    const chain=[];for(let current=error;current&&chain.length<4&&!chain.includes(current);current=current.cause)chain.push(current);
+    const codes=chain.flatMap(item=>[item?.code,item?.status,item?.statusCode]).filter(value=>value!==undefined&&value!==null).map(value=>String(value).toUpperCase());
+    const names=chain.map(item=>String(item?.name||'')).join(' ');
+    const message=chain.map(item=>String(item?.message||item||'')).join(' ');
+    if(chain.some(item=>item?.syncReview===true))return 'review';
+    if(codes.some(code=>['401','403','409','42501','PGRST301','PGRST302','PT409','INVALID_JWT','BAD_JWT','REFRESH_TOKEN_NOT_FOUND','SESSION_NOT_FOUND','USER_NOT_FOUND'].includes(code))||
+       /conflicto|no autorizado|sin autorizaci[oó]n|permisos? (?:han cambiado|inv[aá]lid)|sesi[oó]n (?:inv[aá]lid|ha cambiado|caduc)|token (?:inv[aá]lid|caduc)|respuesta.+no v[aá]lida|datos?.+(?:dañad|corrupt)|copia.+(?:dañad|no coincide)|contrato.+(?:inv[aá]lid|incompatible)/i.test(message))return 'review';
+    if(/AbortError|TimeoutError/i.test(names)||codes.some(code=>['0','408','425','429','ERR_NETWORK','ETIMEDOUT','ECONNRESET','ECONNREFUSED','ECONNABORTED','PGRST000','PGRST001','PGRST002','PGRST003','55P03','57014','57P01','57P02','57P03'].includes(code)||/^5\d\d$/.test(code)||/^08/.test(code)||/^40/.test(code)||/^53/.test(code))||
+       /failed to fetch|load failed|network(?:\s*error| request)?|fetch failed|offline|sin conexi[oó]n|tiempo de espera|timeout|timed out|tarda demasiado|temporar|service unavailable|bad gateway|gateway timeout|socket hang up|connection (?:reset|refused|closed)/i.test(message))return 'retry';
+    // Un código estructurado no reconocido suele proceder de Auth/Postgres o del
+    // contrato REST. El texto exterior puede mencionar “conexión”, pero eso no lo
+    // convierte en un fallo de red.
+    if(codes.length)return 'review';
+    if(/conexi[oó]n/i.test(message))return 'retry';
+    // Un error desconocido podría indicar datos o contrato incompatibles. No se
+    // oculta tras reintentos automáticos hasta poder demostrar que es transitorio.
+    return 'review';
+  }
   function monthDays(month){
     if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw Error('Mes no válido');
     const [y,m]=month.split('-').map(Number), first=new Date(Date.UTC(y,m-1,1));
     const offset=(first.getUTCDay()+6)%7, count=new Date(Date.UTC(y,m,0)).getUTCDate();
     return Array.from({length:Math.ceil((offset+count)/7)*7},(_,i)=>i<offset||i>=offset+count?'':month+'-'+String(i-offset+1).padStart(2,'0'));
   }
-  return {normalize,escape,today,due,isMine,compare,projectMatches,saveStatus,monthDays};
+  return {normalize,escape,today,due,isMine,compare,projectMatches,saveStatus,syncFailureMode,monthDays};
 });

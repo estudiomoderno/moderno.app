@@ -108,7 +108,9 @@ test('workflow y metricas usan v2 por defecto y conservan legacy solo como basel
   assert.match(workflow,/LOAD_USERS_FILE=\$LOAD_RECOVERY_FILE/);assert.match(workflow,/node scripts\/load\/recovery-manifest\.mjs/);
   assert.match(metrics,/app_guardar_lote_v2/);assert.match(metrics,/app_guardar_lote_delta/);
   assert.match(metrics,/app_private\.save_requests/);
-  assert.match(metrics,/max\(per_actor\)<=32/);
+  assert.match(metrics,/load_receipts_within_ttl/);
+  assert.match(metrics,/interval '30 days'/);
+  assert.doesNotMatch(metrics,/max\(per_actor\)<=32/);
 });
 
 test('la limpieza elimina primero el historial no enlazado y verifica que no quede fixture',async()=>{

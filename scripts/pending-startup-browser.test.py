@@ -13,7 +13,7 @@ setup="""()=>{
  if(sb!==null)throw Error('Backend must be disabled');
  state.sessionUser={id:'fixture',mail:'fixture@example.invalid',name:'Persona ficticia'};state.onboarded=true;state.myRole='admin';_accessRole='admin';_accessLoading=false;
  state.account.name='Estudio ficticio';state.account.apiToken='';state.account.billContacts=[];state.projects=[];state.clients=[];state.library=[];state.catalog=[];state.entries=[];state.invoices=[];state.quotes=[];state.docs=[];state.notifs=[];
- BRAND.cm.name='Estudio ficticio';ESTUDIO_ID='estudio-ficticio';applySessionUI();drawBrandSwitch();showLogin(false);go('proyectos');
+ BRAND.cm.name='Estudio ficticio';ESTUDIO_ID='estudio-ficticio';_cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=state.sessionUser.id;applySessionUI();drawBrandSwitch();showLogin(false);go('proyectos');
  for(const b of Object.keys(CLOUD_BLOCKS))_cloudHash[b]=canon(CLOUD_BLOCKS[b].get());
  window.records=()=>JSON.stringify({projects:state.projects,library:state.library,quotes:state.quotes,invoices:state.invoices,account:state.account});window.baseline=records();
 }"""
@@ -25,7 +25,9 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official server unavailable')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  launch={'headless':True,'args':['--no-sandbox']}
+  if os.environ.get('CHROMIUM_PATH'):launch['executable_path']=os.environ['CHROMIUM_PATH']
+  browser=p.chromium.launch(**launch)
   for width in [1440,390]:
    for failure in [False,True]:
     page=browser.new_page(viewport={'width':width,'height':900},locale='es-ES');errors=[];writes=[]
@@ -38,14 +40,14 @@ try:
     page.evaluate("""async failure=>{
       clearTimeout(_saveT);_localRepairAfter=Date.now()+60000;
       state.account.quotaFixture='pending-'+ 'z'.repeat(3100000);persistNow();if(_localWrite)await _localWrite;clearTimeout(_saveT);
-      // Exercise migration of a legacy large localStorage snapshot explicitly.
-      localStorage.setItem(LS_KEY,JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder}));
+      // Exercise migration of a large localStorage snapshot with verified tenant metadata.
+      localStorage.setItem(LS_KEY,JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder,sync:{study:ESTUDIO_ID,user:state.sessionUser.id,role:'admin',loaded:true}}));
       if(_saveErr)throw Error('Current original must fit');
       _resumed=true;localStorage.setItem(LS_KEY+'_dirty','1');
       window.originalRaw=localStorage.getItem(LS_KEY);window.originalMemory=records();
       for(let i=0;i<53;i++){
-        const key=LS_KEY+'_pendiente_'+(2100000000000+i),raw=JSON.stringify({v:1,fictional:i});
-        await pendingArchiveStore().write(key,raw);localStorage.setItem(key,ModernoPendingArchive.marker(key));
+        const key=LS_KEY+'_pendiente_'+(2100000000000+i),raw=JSON.stringify({v:1,state:{sessionUser:{id:state.sessionUser.id}},sync:{study:ESTUDIO_ID,user:state.sessionUser.id},fictional:i});
+        await pendingArchiveStore().write(key,raw);localStorage.setItem(key,ModernoPendingArchive.marker(key,ModernoPendingArchive.snapshotOwner(raw),ModernoPendingArchive.snapshotStudy(raw),ModernoPendingArchive.snapshotHint(raw)));
       }
       let quota=false;try{cloudKeepPendingCopy();}catch(e){quota=e.name==='QuotaExceededError';}
       if(!quota)throw Error('Actual duplicate quota not reproduced');
@@ -76,7 +78,8 @@ try:
     assert page.evaluate("""async()=>{
       for(let i=0;i<53;i++){
         const key=LS_KEY+'_pendiente_'+(2100000000000+i);
-        if(await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore())!==JSON.stringify({v:1,fictional:i}))throw Error('Old copy changed');
+        const expected=JSON.stringify({v:1,state:{sessionUser:{id:state.sessionUser.id}},sync:{study:ESTUDIO_ID,user:state.sessionUser.id},fictional:i});
+        if(await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore())!==expected)throw Error('Old copy changed');
       }
       const key=syncCopyKeys().find(k=>!k.startsWith(LS_KEY+'_pendiente_21000000000'));
       if(!key)return false;const archived=JSON.parse(await ModernoPendingArchive.resolve(localStorage,key,pendingArchiveStore())),original=JSON.parse(originalRaw);return archived.state.account.quotaFixture===original.state.account.quotaFixture&&canon(archived.state.projects)===canon(original.state.projects)&&canon(archived.state.library)===canon(original.state.library)&&sb===null;

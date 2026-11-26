@@ -17,12 +17,21 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
+      - name: Bloquear un cliente incompatible con el guardado de produccion
+        env:
+          PROD_SAVE_SCHEMA_VERSION: ${{ vars.PROD_SAVE_SCHEMA_VERSION }}
+        run: |
+          if test "$PROD_SAVE_SCHEMA_VERSION" != 'guardado-v2-array-sync-confirm-ttl30d-20261123'; then
+            echo '::error::Despliegue bloqueado: producción no confirma todavía array_sync, guardado v2 y recibos confirmables con TTL de 30 días.'
+            exit 1
+          fi
       - name: Comprobar candidato
         run: node --test scripts/*.test.mjs
       - name: Comprobar autorización de invitaciones sin enviar correo
@@ -65,7 +74,7 @@ jobs:
       - name: Publicar comprobación de permisos del correo
         id: deploy_mail_support
         continue-on-error: true
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
@@ -78,7 +87,7 @@ jobs:
             **/config.php
       - name: Reintentar comprobación de permisos del correo
         if: steps.deploy_mail_support.outcome == 'failure'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
@@ -92,7 +101,7 @@ jobs:
       - name: Publicar servicio de invitaciones protegido
         id: deploy_mail_entry
         continue-on-error: true
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
@@ -105,7 +114,7 @@ jobs:
             **/config.php
       - name: Reintentar servicio de invitaciones protegido
         if: steps.deploy_mail_entry.outcome == 'failure'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
@@ -123,7 +132,7 @@ jobs:
       - name: Subir recursos antes del HTML
         id: deploy_assets
         continue-on-error: true
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
@@ -139,7 +148,7 @@ jobs:
             index.html
       - name: Reintentar recursos antes del HTML
         if: steps.deploy_assets.outcome == 'failure'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
@@ -156,7 +165,7 @@ jobs:
       - name: Publicar entrada una vez disponibles los recursos
         id: deploy_entry
         continue-on-error: true
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}
@@ -167,7 +176,7 @@ jobs:
           state-name: .ftp-entry-state.json
       - name: Reintentar entrada una vez disponibles los recursos
         if: steps.deploy_entry.outcome == 'failure'
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@8e83cea8672e3fbcbb9fdafff34debf6ae4c5f65 # v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USER }}

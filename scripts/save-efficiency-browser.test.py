@@ -19,7 +19,9 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official isolated server unavailable')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  launch={'headless':True,'args':['--no-sandbox']}
+  if os.environ.get('CHROMIUM_PATH'):launch['executable_path']=os.environ['CHROMIUM_PATH']
+  browser=p.chromium.launch(**launch)
   for width in [1440,390]:
    page=browser.new_page(viewport={'width':width,'height':1000},locale='es-ES');errors=[];external=[]
    page.on('pageerror',lambda e:errors.append(str(e)))
@@ -34,20 +36,22 @@ try:
     state.projects=Array.from({length:15},(_,i)=>({...structuredClone(first),id:9001+i,name:'Proyecto ficticio '+i}));
     window.rows={};window.calls=[];window.revision=0;
     for(const b of Object.keys(CLOUD_BLOCKS)){const value=JSON.parse(canon(CLOUD_BLOCKS[b].get()));rows[b]={bloque:b,contenido:value,updated_at:'v0',rol:'admin'};_cloudHash[b]=canon(value);_cloudSeen[b]='v0';_cloudCount[b]=blockCount(value);}
-    window.applyFake=(before,ops)=>{let value=structuredClone(before);for(const op of ops){let parent=value;for(const k of op.path.slice(0,-1))parent=parent[k];const key=op.path.at(-1);if(op.op==='splice'){(op.path.length?parent[key]:value).splice(op.index,op.delete,...structuredClone(op.items));}else if(op.op==='remove')delete parent[key];else if(op.path.length)parent[key]=structuredClone(op.value);else value=structuredClone(op.value);}return value;};
+    window.applyFake=(before,ops)=>{let value=structuredClone(before);for(const op of ops){let parent=value;for(const k of op.path.slice(0,-1))parent=parent[k];const key=op.path.at(-1),target=op.path.length?parent[key]:value;if(op.op==='splice'){target.splice(op.index,op.delete,...structuredClone(op.items));}else if(op.op==='array_sync'){const idKey=id=>typeof id+':'+id,byId=new Map(target.map(item=>[idKey(item.id),item])),added=new Map(op.items.map(item=>[idKey(item.id),item])),next=op.order.map(id=>structuredClone(byId.get(idKey(id))||added.get(idKey(id))));if(op.path.length)parent[key]=next;else value=next;}else if(op.op==='remove')delete parent[key];else if(op.path.length)parent[key]=structuredClone(op.value);else value=structuredClone(op.value);}return value;};
     window.fakeClient={rpc(name,args){calls.push({name,bytes:JSON.stringify(args).length});return Promise.resolve().then(()=>{
      const selected=args.p_bloques||Object.keys(rows);
      if(name==='app_leer_versiones')return {data:selected.filter(b=>rows[b]).map(b=>({bloque:b,updated_at:rows[b].updated_at,rol:'admin'}))};
      if(name==='app_leer_bloques')return {data:selected.filter(b=>rows[b]).map(b=>structuredClone(rows[b]))};
-     if(!['app_guardar_lote','app_guardar_lote_delta'].includes(name))throw Error('Unexpected RPC');
-     if(args.p_cambios.some(c=>c.base!==rows[c.bloque]?.updated_at))return {error:{code:'PT409',message:'Version conflict'}};
-     const next=args.p_cambios.map(c=>({bloque:c.bloque,contenido:c.cambios?applyFake(rows[c.bloque].contenido,c.cambios):structuredClone(c.contenido),updated_at:'v'+(++revision),rol:'admin'}));
+     if(!['app_guardar_lote','app_guardar_lote_delta','app_guardar_lote_v2'].includes(name))throw Error('Unexpected RPC');
+     const incoming=name==='app_guardar_lote_v2'?args.p_solicitud.cambios:args.p_cambios;
+     if(incoming.some(c=>c.base!==rows[c.bloque]?.updated_at))return {error:{code:'PT409',message:'Version conflict'}};
+     const next=incoming.map(c=>({bloque:c.bloque,contenido:c.cambios?applyFake(rows[c.bloque].contenido,c.cambios):structuredClone(c.contenido),updated_at:'v'+(++revision),rol:'admin'}));
      for(const row of next)rows[row.bloque]=row;
-     return {data:next.map(r=>({bloque:r.bloque,updated_at:r.updated_at}))};
+     const bloques=next.map(r=>({bloque:r.bloque,updated_at:r.updated_at,changed:true}));
+     return {data:name==='app_guardar_lote_v2'?{v:2,requestId:args.p_solicitud.requestId,replayed:false,bloques}:bloques};
     });}};
     window.originalLocalSet=Storage.prototype.setItem;window.largeSyncWrites=0;
     Storage.prototype.setItem=function(k,v){if(k===LS_KEY&&String(v).length>524288){largeSyncWrites++;throw Error('Large synchronous storage write');}return originalLocalSet.call(this,k,v);};
-    for(let i=0;i<58;i++){const k=LS_KEY+'_pendiente_'+i;await pendingArchiveStore().write(k,JSON.stringify({v:1,fictional:i}));localStorage.setItem(k,ModernoPendingArchive.marker(k));}
+    for(let i=0;i<58;i++){const k=LS_KEY+'_pendiente_'+i,raw=JSON.stringify({v:1,state:{sessionUser:{id:state.sessionUser.id}},sync:{study:ESTUDIO_ID,user:state.sessionUser.id},fictional:i});await pendingArchiveStore().write(k,raw);localStorage.setItem(k,ModernoPendingArchive.marker(k,ModernoPendingArchive.snapshotOwner(raw),ModernoPendingArchive.snapshotStudy(raw),ModernoPendingArchive.snapshotHint(raw)));}
     state.currentRoom=first.rooms[0].id;state.view='estancia';render();
    }""")
    # Bind exactly the production read/save helpers to the fake RPC transport.
@@ -66,7 +70,7 @@ try:
    result=page.evaluate("""async()=>({calls,dirty:syncHasChanges(),saved:rows.proyectos.contenido[0].rooms[0].sections[0].items[0].qty,largeSyncWrites,copies:syncCopyKeys().length,localPointer:!!ModernoPendingArchive.pointer(localStorage.getItem(LS_KEY)),metrics:efficiencyMetrics.snapshot(),fullBytes:JSON.stringify(rows.proyectos.contenido).length})""")
    assert not result['dirty'],result
    assert result['saved']==2 and result['copies']==58 and result['largeSyncWrites']==0 and result['localPointer'],result
-   assert [c['name'] for c in result['calls']]==['app_leer_versiones','app_guardar_lote_delta'],result['calls']
+   assert [c['name'] for c in result['calls']]==['app_leer_versiones','app_guardar_lote_v2'],result['calls']
    assert result['calls'][1]['bytes']<result['fullBytes']/1000
    print(width,'fictional wire bytes:',result['calls'][1]['bytes'],'vs full block',result['fullBytes'],flush=True)
    # Unchanged polls only fetch tiny version metadata, never all project payloads.

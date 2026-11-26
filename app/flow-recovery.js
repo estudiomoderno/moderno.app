@@ -32,8 +32,12 @@ async function flowReviewApply(){
       window._cloudConflicts[f.block]={...f.record,remote:cur.contenido,version:cur.updated_at};flowReviewOpen();toast('Hay cambios nuevos. Revisa de nuevo la comparación.');return;
     }
     const plan=ModernoSync.reviewChanges(f.record.base,f.record.local,f.record.remote,f.choices);if(plan.conflicts.length)return;
-    const raw=JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder}),key=LS_KEY+'_pendiente_'+Date.now();
-    await pendingArchiveStore().write(key,raw);localStorage.setItem(key,ModernoPendingArchive.marker(key));
+    const raw=JSON.stringify({v:1,when:Date.now(),state,BRAND,wsOrder,sync:localSnapshotSync()}),key=pendingCopyNewKey();
+    if(localStorage.getItem(key)!=null)throw Error('Ya existe una copia con ese identificador');
+    const archive=pendingArchiveStore(),reference=ModernoPendingArchive.marker(key,pendingCopySnapshotOwner(raw),pendingCopySnapshotStudy(raw),pendingCopySnapshotHint(raw));
+    await archive.write(key,raw);
+    try{localStorage.setItem(key,reference);if(localStorage.getItem(key)!==reference)throw Error('No se pudo verificar la copia de la resolución');}
+    catch(error){try{await archive.remove?.(key);}catch(cleanupError){}throw error;}
     // Recheck after asynchronous backup before changing any local values.
     if(ESTUDIO_ID!==estudio||canon(CLOUD_BLOCKS[f.block].get())!==canon(f.record.local))throw Error('Hay cambios nuevos; vuelve a revisar');
     _cloudApplying=true;try{CLOUD_BLOCKS[f.block].set(plan.value);}finally{_cloudApplying=false;}

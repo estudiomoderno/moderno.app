@@ -1,5 +1,20 @@
 # Decisiones de TALLER
 
+## 2026-11-23 — Guardado incremental, archivos fuera del documento e idempotencia
+
+La investigación posterior a la incidencia de guardado confirma que ampliar el tiempo de espera no basta para crecer. El bloque `proyectos` productivo ocupaba aproximadamente 9,5 MB; 5,89 MB correspondían a nueve imágenes Base64. Un cambio de longitud en una lista podía producir un `splice` de unos 4,73 MB y PostgreSQL reconstruía el JSON completo. Además, `datos_estudio_hist` ocupaba alrededor de 1,88 GB porque conservaba instantáneas completas. Con este modelo no se acredita capacidad para 1.000 usuarios activos.
+
+Se prepara una entrega compatible y reversible con cuatro defensas:
+
+- Los arrays con identificadores usan `array_sync`: transmiten el orden final, los objetos nuevos y solo los campos modificados. Arrays históricos sin IDs continúan por la ruta compatible anterior.
+- Una aplicación sincronizada deja de incrustar archivos en JSON. Conserva primero el `Blob` en IndexedDB, usa una referencia `local-file://` corta y no inicia la subida hasta que el formulario haya incorporado esa referencia al estado; cancelar no crea un objeto remoto. Los reintentos usan siempre la misma ruta UUID sin sobrescribir, se reanudan con backoff y solo eliminan la copia local después de persistir una referencia estable `storage://`. Las Data URL históricas de los bloques persistidos se trasladan a Storage de forma gradual.
+- `app_guardar_lote_v2` recibe un `requestId` estable, confirma datos y recibo en la misma transacción, devuelve exactamente el resultado anterior al reintentar y no actualiza ni crea historial cuando el contenido no cambió.
+- La retención se separa del trigger de usuario y se diseña en lotes pequeños con `SKIP LOCKED`. Su activación programada queda como fase operativa separada: requiere índice global, backup reciente, prueba manual y autorización productiva específica.
+
+El orden obligatorio es SQL `array_sync` → RPC v2 → verificación aislada → cliente. La aplicación solo degrada a contratos antiguos cuando PostgREST confirma que la RPC no existe (`PGRST202`); nunca tras timeout, red, permisos o conflicto.
+
+El candidato de esta entrega está diseñado y probado localmente para impedir que vuelvan a entrar binarios en el documento y para deduplicar respuestas perdidas. El writer v2 final todavía debe compilarse y validarse en PostgreSQL 17 aislado. No levanta el bloqueo de lanzamiento a 1.000 usuarios: antes deben normalizarse proyectos/listas en filas independientes y superar el arnés de carga contra el camino v2 en un entorno representativo. Evidencia y puerta de salida: [Revisión de escala del guardado](ESCALA-GUARDADO-2026-11-23.md).
+
 ## 2026-11-23 — Guardado grande sin falsa revisión
 
 El propietario aporta un diagnóstico porque el estado **Guardando** cambia a **Necesita revisión · 69 copias por revisar** y ordena corregirlo e implementarlo por completo sin nuevas preguntas. El análisis confirma que las 69 son copias locales históricas conservadas, no errores actuales; el fallo real son dos RPC delta de unos 4,73 MB cancelados por el límite general de 8 segundos de PostgreSQL. El control posterior mostró ejecuciones válidas de hasta 25,15 segundos y cancelaciones al primer margen de 30 segundos, con `proyectos` ya en torno a 9,5 MB, por lo que 30 segundos no dejaban holgura suficiente.

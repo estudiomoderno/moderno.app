@@ -18,7 +18,9 @@ try:
   except OSError:time.sleep(.05)
  else:raise AssertionError('Official server unavailable')
  with sync_playwright() as p:
-  browser=p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+  launch={'headless':True,'args':['--no-sandbox']}
+  if os.environ.get('CHROMIUM_PATH'):launch['executable_path']=os.environ['CHROMIUM_PATH']
+  browser=p.chromium.launch(**launch)
   for width in [1440,390]:
    page=browser.new_page(viewport={'width':width,'height':1000},locale='es-ES');errors=[];writes=[]
    page.on('pageerror',lambda e:errors.append(str(e)))
@@ -28,11 +30,11 @@ try:
     r.continue_()
    page.route('**/*',route);page.goto(origin,wait_until='networkidle');page.evaluate(fixture_setup)
    page.evaluate("""async()=>{
-    clearTimeout(_saveT);ESTUDIO_ID='fictional';const p=state.projects[0];
+    clearTimeout(_saveT);ESTUDIO_ID='fictional';_cloudLoadedStudy=ESTUDIO_ID;_cloudUserId=state.sessionUser.id;const p=state.projects[0];
     const template=structuredClone(p.rooms[0]);
     p.rooms=Array.from({length:8},(_,ri)=>({...structuredClone(template),id:8001+ri,kind:'estancia',name:'Lista ficticia '+ri,sections:[{id:'s-'+ri,name:'General',items:Array.from({length:44},(_,i)=>({id:'i-'+ri+'-'+i,name:'Producto ficticio '+i,price:25+i,qty:2,unit:'ud',supplier:'Tienda ficticia',desc:'d'.repeat(4500),capture:{fields:{description:{value:'e'.repeat(4500),source:{raw:'f'.repeat(4500)}}}}}))}]}));
     state.catalog=Array.from({length:180},(_,i)=>({id:'catalog-'+i,name:'Catálogo ficticio '+i,desc:'c'.repeat(10000)}));
-    for(let i=0;i<55;i++){const key=LS_KEY+'_pendiente_'+(2100000000000+i),raw=JSON.stringify({v:1,fictional:i});await pendingArchiveStore().write(key,raw);localStorage.setItem(key,ModernoPendingArchive.marker(key));}
+    for(let i=0;i<55;i++){const key=LS_KEY+'_pendiente_'+(2100000000000+i),raw=JSON.stringify({v:1,state:{sessionUser:{id:state.sessionUser.id}},sync:{study:ESTUDIO_ID,user:state.sessionUser.id},fictional:i});await pendingArchiveStore().write(key,raw);localStorage.setItem(key,ModernoPendingArchive.marker(key,ModernoPendingArchive.snapshotOwner(raw),ModernoPendingArchive.snapshotStudy(raw),ModernoPendingArchive.snapshotHint(raw)));}
     state.currentRoom=8001;state.view='estancia';render();cloudSnapshotAll();window.fixtureRows={};
     for(const b of Object.keys(CLOUD_BLOCKS))fixtureRows[b]={contenido:JSON.parse(canon(CLOUD_BLOCKS[b].get())),updated_at:'fixture-v0'};
     window.fixtureMode='hang';window.fixtureWrites=0;window.fixtureSignals=[];

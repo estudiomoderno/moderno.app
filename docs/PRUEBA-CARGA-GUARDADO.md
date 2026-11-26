@@ -86,7 +86,7 @@ k6 falla el trabajo al incumplir un umbral. El resumen no contiene tokens y se i
 - actividad y esperas, locks y filas muertas;
 - autovacuum/analyze;
 - llamadas, latencia, buffers, temporales y WAL tanto de `app_guardar_lote_v2` como del baseline `app_guardar_lote_delta`;
-- tamaño y cardinalidad del libro privado de recibos, incluido el máximo por actor y estudio (nunca mayor de 32).
+- tamaño y cardinalidad del libro privado de recibos, cuántos tienen acuse, máximo observado por actor y estudio y edad del recibo más antiguo. No existe expulsión por cantidad: después de cerrar de forma durable el guardado local, el cliente envía el acuse sin bloquear la interfaz; el servidor conserva el resultado reproducible durante 24 horas para otra pestaña que haya perdido la misma respuesta. Los recibos sin acuse se conservan 30 días. Ambas limpiezas son globales, indexables, acotadas y usan `SKIP LOCKED`.
 
 Además se deben exportar del panel de Supabase CPU, RAM e IOPS del mismo intervalo. Criterios operativos:
 

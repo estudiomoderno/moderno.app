@@ -58,22 +58,29 @@ with bounded as (
    group by estudio_id,actor_id
 )
 select (select count(*) from app_private.save_requests) as receipts,
+       (select count(*) from app_private.save_requests where acknowledged_at is not null) as acknowledged_receipts,
+       (select count(*) from app_private.save_requests where acknowledged_at is null) as unacknowledged_receipts,
        (select count(distinct estudio_id) from app_private.save_requests) as studies,
        (select count(distinct actor_id) from app_private.save_requests) as actors,
        coalesce(max(per_actor),0) as max_receipts_per_actor_and_study,
+       coalesce(extract(epoch from clock_timestamp()-(select min(committed_at) from app_private.save_requests)),0)::bigint as oldest_receipt_age_seconds,
        pg_catalog.pg_total_relation_size('app_private.save_requests'::regclass) as receipt_bytes
   from bounded;
 
-select coalesce(max(per_actor)<=32,true) as receipts_bounded
-  from (
-    select count(*) as per_actor
-      from app_private.save_requests
-     group by estudio_id,actor_id
-  ) bounded
+-- Los recibos recientes no tienen limite por cantidad: un ACK perdido debe
+-- seguir siendo reproducible. La carga solo exige que no deje abandonos TTL.
+select not exists(
+  select 1
+  from app_private.save_requests r
+  join public.estudios e on e.id=r.estudio_id
+  where e.nombre like 'LOAD:load-%'
+    and ((r.acknowledged_at is not null and r.acknowledged_at<statement_timestamp()-interval '24 hours')
+      or (r.acknowledged_at is null and r.committed_at<statement_timestamp()-interval '30 days'))
+) as load_receipts_within_ttl
 \gset
-\if :receipts_bounded
+\if :load_receipts_within_ttl
 \else
-  \echo 'ERROR: app_private.save_requests supera 32 recibos por actor y estudio'
+  \echo 'ERROR: la carga conserva recibos confirmados mas de 24 horas o sin confirmar mas de 30 dias'
   \quit 3
 \endif
 

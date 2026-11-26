@@ -19,7 +19,7 @@ test('unavailable workspace names never reappear as a fallback',()=>{
 });
 function fixture(){
  const calls=[],applied=[];
- const c={setTimeout,clearTimeout,AbortController,ESTUDIO_ID:'ficticio',_accessRole:'colaborador',_cloudSeen:{},document:{hidden:false},syncTag:(...args)=>calls.push(args),cloudApplyRemote:(...args)=>applied.push(args),sb:{from(){assert.fail('No se permite leer la tabla sin filtrar');},rpc:async(name,p)=>{calls.push([name,p]);return {data:[{bloque:'proyectos',contenido:[{id:1,name:'Ficticio'}],updated_at:'1',rol:'colaborador'}]};}}};
+ const c={setTimeout,clearTimeout,AbortController,ESTUDIO_ID:'ficticio',_accessRole:'colaborador',_accessAttempt:1,_cloudUserId:'user-a',state:{sessionUser:{id:'user-a'}},_cloudSeen:{},document:{hidden:false},syncTag:(...args)=>calls.push(args),cloudApplyRemote:(...args)=>applied.push(args),sb:{from(){assert.fail('No se permite leer la tabla sin filtrar');},rpc:async(name,p)=>{calls.push([name,p]);return {data:[{bloque:'proyectos',contenido:[{id:1,name:'Ficticio'}],updated_at:'1',rol:'colaborador'}]};}}};
  vm.createContext(c);vm.runInContext(code,c);return {c,calls,applied};
 }
 test('a block is read through the server permission filter',async()=>{const {c,calls}=fixture();const r=await c.cloudReadBlock('proyectos');assert.equal(r.data.contenido[0].name,'Ficticio');assert.equal(calls[0][0],'app_leer_bloques');assert.deepEqual(Array.from(calls[0][1].p_bloques),['proyectos']);});
