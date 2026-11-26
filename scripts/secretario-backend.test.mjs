@@ -628,3 +628,15 @@ test('a scoped saved draft can receive a corrected quantity via the composer',as
  assert.equal(second.actions[0].payload.mode,'edit_saved_draft');assert.equal(second.actions[0].payload.lines[0].qty,3);
  assert.equal(second.actions[0].payload.lines[0].price,120);assert.equal(JSON.stringify(s),before);
 });
+
+test('a new explicit project replaces the prior project without discarding the requested period',()=>{
+ const s=snapshot();
+ s.projects.push({id:2,name:'Oficina Alba',num:'PR-ALBA',brand:'demo'});
+ s.entries=[{id:1,kind:'out',amount:100,pid:1,date:'2026-04-01'},{id:2,kind:'out',amount:220,pid:2,date:'2026-04-01'},
+  {id:3,kind:'out',amount:300,pid:2,date:'2025-04-01'}];
+ const r=request({message:'Mejor los costes de Oficina Alba',context:{view:'proyecto',projectId:1},
+  history:[{role:'user',content:'Costes de Casa Demo este año'},{role:'assistant',content:'Costes registrados'}]});
+ const result=executePlan(s,r,financePlan('summary',{metric:'costs',period:'este año',continuation:true},{projectId:'2'}),Date.parse('2026-11-26T12:00:00Z'));
+ assert.equal(result.status,'answer');assert.match(result.message,/Oficina Alba/);
+ assert.deepEqual(result.sources.map(row=>row.id),['2']);
+});

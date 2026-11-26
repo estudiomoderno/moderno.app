@@ -292,7 +292,7 @@ export function validatePlanScope(plan,context){
   if(requirement.field==='price'&&line?.price==null&&edit?.price==null)fail('invalid_plan','El plan omitió un precio que acababas de confirmar.',502);
  }
  if(plan.projectId!=null&&plan.projectId!=='none'&&!has(context.projects,plan.projectId,'id'))fail('invalid_plan','El proyecto propuesto no estaba entre los candidatos verificados.',502);
- if(['summary','project_status','prepare_draft','navigate'].includes(plan.intent)&&plan.projectId==null&&context.currentProject!=null&&!has(context.projects,context.currentProject,'id'))fail('invalid_plan','El proyecto activo fue sustituido por una referencia más reciente y ya no puede usarse de forma implícita.',502);
+ if(['summary','project_status','prepare_draft','navigate'].includes(plan.intent)&&!(plan.intent==='summary'&&plan.lookup)&&plan.projectId==null&&context.currentProject!=null&&!has(context.projects,context.currentProject,'id'))fail('invalid_plan','El proyecto activo fue sustituido por una referencia más reciente y ya no puede usarse de forma implícita.',502);
  if(plan.clientId!=null&&!has(context.clients,plan.clientId,'id'))fail('invalid_plan','El cliente propuesto no estaba entre los candidatos verificados.',502);
  if(plan.quoteRef!=null&&!has(context.quotes,plan.quoteRef,'ref'))fail('invalid_plan','El presupuesto propuesto no estaba entre los candidatos verificados.',502);
  if(plan.draftId!=null&&!has(context.drafts,plan.draftId,'id'))fail('invalid_plan','El borrador propuesto no estaba entre los candidatos verificados.',502);
@@ -559,7 +559,8 @@ function financeScope(s,r,p,now){
  const study=wholeStudy.test(norm(current));
  const expectedProject=p.projectId||(answeredProjects.length===1?id(answeredProjects[0].id):projects.length===1?id(projects[0].id):null);
  if(!study&&projects.length>1&&!answeredProjects.length)return {question:question('projectId','¿Qué proyecto quieres consultar?',projects.slice(0,8).map(item=>({label:[item.num,item.name].filter(Boolean).join(' · '),value:id(item.id)})))};
- const origin=study||!expectedProject&&!activeProjectReference.test(norm(current))?{...scopeRequest,context:{...r.context,projectId:null}}:scopeRequest;
+ const projectEvidence=currentProjects.length?{...scopeRequest,message:current}:scopeRequest;
+ const origin=study||!expectedProject&&!activeProjectReference.test(norm(current))?{...projectEvidence,context:{...r.context,projectId:null}}:projectEvidence;
  const picked=study?{project:null}:projectChoice(s,origin,{...p,projectId:expectedProject});
  if(picked.question)return picked;
  if(!study&&!picked.project&&(p.projectQuery||/\b(?:el|este|ese) proyecto\b/.test(norm(current))))
@@ -567,9 +568,12 @@ function financeScope(s,r,p,now){
  let client=null;
  if(p.lookup&&(p.clientId||p.clientQuery||own(r.answers,'clientId')||/\bcliente\b/.test(norm(current)))){
   const available=s.clients.flatMap((c,index)=>object(c)&&c.type==='Cliente'?[{c,index}]:[]);
-  const candidates=available.filter(({c,index})=>own(r.answers,'clientId')?
-   answerMatches(r,'clientId',[clientKey(c,index),c.name,c.num]):[c.name,c.num].some(value=>mentioned(value,scopeRequest)));
-  const numbered=candidates.filter(({c})=>mentioned(c.num,scopeRequest));
+  const hasClientAnswer=own(r.answers,'clientId');
+  const namedClients=message=>available.filter(({c})=>[c.name,c.num].some(value=>mentioned(value,{...scopeRequest,message})));
+  const currentClients=namedClients(current),clientEvidence=currentClients.length?current:previous;
+  const candidates=hasClientAnswer?available.filter(({c,index})=>answerMatches(r,'clientId',[clientKey(c,index),c.name,c.num])):
+   currentClients.length?currentClients:namedClients(previous);
+  const numbered=candidates.filter(({c})=>mentioned(c.num,{...scopeRequest,message:clientEvidence}));
   const matches=numbered.length===1?numbered:candidates;
   if(matches.length!==1||p.clientId&&id(p.clientId)!==clientKey(matches[0].c,matches[0].index))
    return {question:question('clientId','¿Qué cliente quieres consultar?',matches.slice(0,8).map(({c,index})=>({label:[c.name,c.num||'Ficha '+(index+1),c.brand].filter(Boolean).join(' · '),value:clientKey(c,index)})))};
