@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import vm from 'node:vm';
-import {ADMIN_BLOCKS,TEST_PROJECT_REF,PRODUCTION_PROJECT_REF,SECRETARY_MODEL,normalizeRequest,loadAuthorizedSnapshot,loadAuthorizedVersions,sourceIndex,modelContext,validatePlanScope,executePlan,financeMetrics,requestPlan,reserveRequest,runSecretary,validateEnvironment} from '../supabase/functions/secretario/core.mjs';
+import {ADMIN_BLOCKS,TEST_PROJECT_REF,PRODUCTION_PROJECT_REF,SECRETARY_MODEL,SecretarioError,normalizeRequest,loadAuthorizedSnapshot,loadAuthorizedVersions,sourceIndex,modelContext,validatePlanScope,executePlan,financeMetrics,requestPlan,reserveRequest,runSecretary,validateEnvironment} from '../supabase/functions/secretario/core.mjs';
 import {createSecretaryHandler} from '../supabase/functions/secretario/handler.mjs';
 
 const STUDY='00000000-0000-4000-8000-000000000001',PILOT_USER='10000000-0000-4000-8000-000000000001',VERSION='2026-11-22T10:00:00.000Z';
@@ -36,7 +37,7 @@ function legacyPlannerContext(s,r){
   drafts:s.drafts.filter(item=>item&&typeof item==='object'&&!Array.isArray(item)&&item.draft&&typeof item.draft==='object'&&!item.draft.editRef).map(item=>({id:identifier(item.id),kind:text(item.kind),projectId:item.draft.projectId==null?null:identifier(item.draft.projectId),clientId:clientKey(s.clients[item.draft.clientIdx]||{},item.draft.clientIdx),lines:(item.draft.lines||[]).map((line,index)=>({index,name:text(line.name),qty:amount(line.qty),unit:text(line.unit),price:amount(line.price),hidden:!!line.hidden}))}))};
 }
 function rows(s){const v={proyectos:s.projects,contactos:s.clients,config:s.config,presupuestos:{quotes:s.quotes,drafts:s.drafts,n:0},facturas:{invoices:s.invoices,entries:s.entries,n:0}};return Object.entries(v).map(([bloque,contenido])=>({bloque,contenido,rol:s.role,updated_at:s.versions[bloque]||VERSION}));}
-function client(s=snapshot(),override={}){const calls=[];return {calls,async rpc(name,args){calls.push({name,args});assert.ok(['app_rol','app_leer_bloques','app_leer_versiones','secretary_request_reserve'].includes(name),'Secretary only reads authorized data, verifies versions or reserves its bounded usage');if(name==='app_rol')return override.roleResult||{data:s.role,error:null};if(name==='secretary_request_reserve')return override.quotaResult||{data:{accepted:true,daily_remaining:19,monthly_remaining:199,global_monthly_remaining:199},error:null};if(name==='app_leer_versiones')return override.versionsResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)).map(({bloque,updated_at,rol})=>({bloque,updated_at,rol})),error:null};return override.blocksResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)),error:null};}};}
+function client(s=snapshot(),override={}){const calls=[];return {calls,async rpc(name,args){calls.push({name,args});assert.ok(['app_rol','app_leer_bloques','app_leer_versiones','secretary_request_reserve'].includes(name),'Secretary only reads authorized data, verifies versions or reserves its bounded usage');if(name==='app_rol')return override.roleResult||{data:s.role,error:null};if(name==='secretary_request_reserve')return override.quotaResult||{data:{accepted:true,daily_remaining:99,monthly_remaining:199,global_monthly_remaining:199},error:null};if(name==='app_leer_versiones')return override.versionsResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)).map(({bloque,updated_at,rol})=>({bloque,updated_at,rol})),error:null};return override.blocksResult||{data:rows(s).filter(r=>args.p_bloques.includes(r.bloque)),error:null};}};}
 function request(changes={}){return normalizeRequest({studyId:STUDY,message:'Prepara un presupuesto de 2 horas de Asesoría para Casa Demo',context:{view:'proyecto',projectId:1},...changes});}
 function plan(changes={}){return {intent:'prepare_draft',view:null,projectId:'1',projectQuery:null,clientId:'contact:0',clientQuery:null,kind:'presupuesto',quoteRef:null,draftId:null,lines:[{name:'Asesoría',catalogId:'7',qty:2,qtyEvidence:'2 horas',unit:'h',price:null,priceEvidence:null}],sourceIds:[],question:null,...changes};}
 
@@ -90,6 +91,14 @@ test('a distributed server quota is reserved once before the provider is called'
  await assert.rejects(runSecretary({client:blocked,input:request(),planner:async()=>{used=true;return plan();}}),{code:'quota_exhausted',status:429});assert.equal(used,false);
  const unavailable=client(snapshot(),{quotaResult:{data:null,error:{code:'PGRST202'}}});
  await assert.rejects(reserveRequest(unavailable,STUDY),{code:'quota_unavailable',status:503});
+});
+test('quota migration guards pin verified predecessors and the rollback matches the current body',()=>{
+ const read=file=>fs.readFileSync(new URL(file,import.meta.url),'utf8'),body=sql=>sql.match(/as \$fn\$([\s\S]*?)\$fn\$;/)[1],hash=sql=>createHash('md5').update(body(sql)).digest('hex');
+ const current=read('../SQL/secretario-runtime.sql'),upgrade=read('../SQL/secretario-cuota-diaria-100.sql'),rollback=read('../SQL/secretario-cuota-diaria-100.rollback.sql'),legacy=read('./fixtures/secretario-runtime-20.sql');
+ assert.equal(hash(legacy),'022417ead8f26a2427800a96a75cebcf');
+ assert.ok(upgrade.includes("'"+hash(legacy)+"'"));assert.ok(upgrade.includes("'67d2bb813a6083642fad634ead215079'"));
+ assert.equal(body(upgrade),body(current));assert.ok(rollback.includes("'"+hash(current)+"'"));
+ assert.notEqual(body(rollback),body(current));assert.match(body(current),/month_start date:=date_trunc\('month',today_utc::timestamp\)::date/);
 });
 test('no schema, partial block projection, duplicate or stale role cannot reach model',async()=>{
  for(const blocksResult of [{error:{code:'PGRST202'}},{data:[]},{data:rows(snapshot()).slice(1)},{data:rows(snapshot()).map((x,i)=>i?x:{...x,rol:'colaborador'})},{data:[...rows(snapshot()).slice(1),rows(snapshot())[1]]}]){
@@ -442,6 +451,30 @@ test('an aborted provider request is classified as cancelled, not unavailable',a
 function http(body=request(),options={}){const session=options.session===undefined?'t'.repeat(30):options.session;return new Request('https://edge.test/secretario',{method:'POST',body:JSON.stringify(session?{session,payload:body}:body),...options,headers:{Origin:'http://localhost:4173','Content-Type':'application/json',...options.headers}});}
 function productionHttp(body=request(),options={}){return http(body,{...options,headers:{Origin:'https://app.moderno.app',...options.headers}});}
 function handler(changes={}){const {actorId='fake-user',...deps}=changes;return createSecretaryHandler({env,authenticate:async()=>({userId:actorId,client:client()}),planner:async()=>plan(),uuid:()=> 'request-demo',...deps});}
+for(const [sqlMessage,scope,message] of [
+ ['Límite diario del Secretario alcanzado','daily',/límite diario.*usuario.*00:00 UTC/],
+ ['Límite mensual del Secretario alcanzado','monthly',/límite mensual.*usuario en este estudio.*primer día de cada mes a las 00:00 UTC/],
+ ['Límite mensual global alcanzado','global_monthly',/límite mensual compartido.*primer día de cada mes a las 00:00 UTC/],
+ ['PRIVATE-UNKNOWN-SQL-ERROR',undefined,/Has alcanzado el límite de la prueba del Secretario/]
+])test(`HTTP quota rejection reports ${scope||'unknown'} scope without calling the model or leaking SQL`,async()=>{
+ const db=client(snapshot(),{quotaResult:{data:null,error:{code:'PT429',message:sqlMessage,details:'PRIVATE-SQL-DETAIL',hint:'PRIVATE-SQL-HINT',quotaScope:'forged'}}});
+ let modelCalls=0,fetchCalls=0;const logs=[];
+ const h=handler({authenticate:async()=>({userId:'fake-user',client:db}),planner:async()=>{modelCalls++;return plan();},fetchImpl:async()=>{fetchCalls++;throw Error('Unexpected provider call');},logger:{info:value=>logs.push(JSON.parse(value))}});
+ const result=await h(http()),body=await result.json();
+ assert.equal(result.status,429);assert.equal(body.error.code,'quota_exhausted');assert.equal(body.requestId,'request-demo');
+ assert.equal(body.error.quotaScope,scope);assert.equal(Object.hasOwn(body.error,'quotaScope'),scope!==undefined);assert.match(body.error.message,message);
+ assert.deepEqual(Object.keys(body.error).sort(),scope?['code','message','quotaScope']:['code','message']);
+ assert.doesNotMatch(JSON.stringify(body),/PRIVATE-|forged|resetsAt/);assert.equal(modelCalls,0);assert.equal(fetchCalls,0);
+ assert.deepEqual(db.calls.map(call=>call.name),['app_rol','app_leer_bloques','secretary_request_reserve']);
+ assert.equal(logs.length,1);assert.equal(logs[0].code,'quota_exhausted');assert.doesNotMatch(JSON.stringify(logs),/PRIVATE-|forged/);
+});
+test('HTTP quota diagnostics accept only the closed enum on a quota 429',async()=>{
+ for(const [code,status,scope] of [['quota_exhausted',429,'PRIVATE-SQL-SCOPE'],['quota_exhausted',429,{daily:true}],['provider_busy',429,'daily'],['quota_exhausted',503,'daily']]){
+  const error=Object.assign(new SecretarioError(code,'Mensaje controlado.',status),{quotaScope:scope,details:'PRIVATE-SQL-DETAIL'});
+  const result=await handler({authenticate:async()=>{throw error;}})(http()),body=await result.json();
+  assert.equal(result.status,status);assert.deepEqual(body.error,{code,message:'Mensaje controlado.'});assert.doesNotMatch(JSON.stringify(body),/PRIVATE-|quotaScope/);
+ }
+});
 test('HTTP authentication/CORS gates happen before provider or source reads',async()=>{
  let used=false;const h=handler({authenticate:async()=>{used=true;return null;}});
  assert.equal((await h(http(request(),{headers:{Origin:'https://evil.invalid','Content-Type':'application/json'}}))).status,403);assert.equal(used,false);

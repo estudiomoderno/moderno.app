@@ -1,9 +1,14 @@
 -- Cuota distribuida del Secretario. No conserva preguntas,
 -- respuestas, nombres, documentos ni importes: solo contadores de solicitudes.
+-- Instalación nueva: 100 reservas por persona/día UTC entre todos sus estudios.
+-- Para actualizar un runtime de 20 ya instalado usar secretario-cuota-diaria-100.sql.
 begin;
 
 do $guard$
 begin
+  if to_regclass('moderno_secretary.usage_daily') is not null then
+    raise exception 'Runtime ya instalado: usar la migración de cuota diaria';
+  end if;
   if to_regclass('auth.users') is null
      or to_regclass('public.estudios') is null
      or to_regclass('public.miembros') is null
@@ -29,7 +34,7 @@ create table if not exists moderno_secretary.usage_daily(
   user_id uuid not null references auth.users(id) on delete cascade,
   estudio_id uuid not null references public.estudios(id) on delete cascade,
   day date not null,
-  requests integer not null default 0 check(requests between 0 and 20),
+  requests integer not null default 0 check(requests between 0 and 100),
   updated_at timestamptz not null default clock_timestamp(),
   primary key(user_id,estudio_id,day)
 );
@@ -42,8 +47,9 @@ returns jsonb language plpgsql security definer set search_path='' as $fn$
 declare
   actor_id uuid:=auth.uid();
   today_utc date:=(clock_timestamp() at time zone 'UTC')::date;
-  month_start date:=date_trunc('month',clock_timestamp() at time zone 'UTC')::date;
+  month_start date:=date_trunc('month',today_utc::timestamp)::date;
   used_day integer;
+  used_user_day integer;
   used_month integer;
   used_global_month integer;
 begin
@@ -67,18 +73,25 @@ begin
   if used_month>=200 then
     raise exception 'Límite mensual del Secretario alcanzado' using errcode='PT429';
   end if;
+  -- The global monthly lock above also serializes this daily sum across studies.
+  select coalesce(sum(requests),0)::integer into used_user_day
+  from moderno_secretary.usage_daily
+  where user_id=actor_id and day=today_utc;
+  if used_user_day>=100 then
+    raise exception 'Límite diario del Secretario alcanzado' using errcode='PT429';
+  end if;
   insert into moderno_secretary.usage_daily(user_id,estudio_id,day,requests)
   values(actor_id,p_estudio,today_utc,1)
   on conflict(user_id,estudio_id,day) do update
     set requests=moderno_secretary.usage_daily.requests+1,updated_at=clock_timestamp()
-    where moderno_secretary.usage_daily.requests<20
+    where moderno_secretary.usage_daily.requests<100
   returning requests into used_day;
   if used_day is null then
     raise exception 'Límite diario del Secretario alcanzado' using errcode='PT429';
   end if;
   return jsonb_build_object(
     'accepted',true,
-    'daily_remaining',20-used_day,
+    'daily_remaining',100-used_user_day-1,
     'monthly_remaining',200-used_month-1,
     'global_monthly_remaining',200-used_global_month-1
   );

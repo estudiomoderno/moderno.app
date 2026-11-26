@@ -1,5 +1,11 @@
 # Decisiones de TALLER
 
+## 2026-11-26 — Secretario de Finanzas y 100 consultas diarias por usuario
+
+El propietario pide «Secretario de Finanzas» como cabecera, retirar el subtítulo «Finanzas» y ampliar el personaje lavanda durante la conversación. El error de cuota debe indicar si se ha agotado el día o el mes y mantener disponibles los accesos a las pantallas. Se publica la corrección de presentación y diagnóstico por el proceso habitual.
+
+Tras confirmar el agotamiento de las 20 reservas diarias, solicita 100 por usuario al día. La actualización suma el uso de una persona entre sus estudios, conserva los contadores actuales y no amplía los 200 mensuales globales, el presupuesto de 20 EUR/mes ni la allowlist. La ampliación SQL necesita las comprobaciones aisladas y de copias antes de activarla; el cambio web no aplica esa migración. [Alcance, pruebas, coste orientativo y reversión](SECRETARIO-CABECERA-CUOTA-2026-11-26.md).
+
 ## 2026-11-26 — Secretario lavanda animado y acceso plegado
 
 El propietario elige la variante lavanda del logotipo expresivo y autoriza implementarla y publicarla. Finanzas recibe al usuario con el Secretario grande; durante la conversación el personaje reduce su tamaño y los resultados permanecen en el centro. Al abrir un documento se mantiene el lateral existente. Al plegarlo queda un acceso en la esquina inferior derecha que recupera la misma conversación y evita el indicador de guardado y las herramientas del proyecto.

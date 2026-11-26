@@ -124,8 +124,8 @@ test('published app enables only the production endpoint and keeps feedback off'
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
   assert.ok(html.includes('<script src="/secretario-bridge.js?v=3"></script>'));
-  assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=6">'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=13"></script>'));
+  assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=7">'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=14"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
 });
 
@@ -174,6 +174,26 @@ test('network, quota and changed-context errors have stable Spanish recovery pat
   assert.match(code,/code==='quota_exhausted'/);assert.match(code,/code==='context_changed'/);assert.match(code,/code==='provider_busy'/);
   assert.match(code,/record\.retry=retry/);assert.match(code,/Volver a intentar/);
   assert.doesNotMatch(code,/appendMessage\('assistant',error\.message/);
+});
+
+test('quota failures distinguish known limits without inventing a reset for unknown scopes or leaking raw references',async()=>{
+  const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
+  const start=code.indexOf('function requestFailure('),end=code.indexOf('\n  function feedbackScope(',start);
+  assert.ok(start>=0&&end>start);
+  const context=vm.createContext({});vm.runInContext(code.slice(start,end),context);
+  for(const [scope,phrase] of [['daily','tu límite diario'],['monthly','tu límite mensual'],['global_monthly','límite mensual compartido']]){
+    const error=context.quotaFailure(scope,'quota-fixture-12345678');
+    assert.ok(error.message.includes(phrase),scope);
+    assert.equal(error.secretaryQuota,true);assert.equal(error.retryable,false);assert.equal(error.secretaryUnavailable,false);
+    assert.equal(error.secretaryReference,'quota-fi');assert.equal(error.message.includes('quota-fi'),false);
+    assert.ok(error.message.includes('00:00 UTC'));
+  }
+  for(const scope of [undefined,null,'DAILY','other',{daily:true}]){
+    const error=context.quotaFailure(scope,'<unsafe reference>');
+    assert.ok(error.message.includes('límite de la prueba'));
+    assert.equal(error.message.includes('00:00'),false);assert.equal(error.message.includes('unsafe'),false);
+    assert.equal(error.secretaryReference,undefined);assert.equal(error.retryable,false);
+  }
 });
 
 test('an in-flight request is bound to its original screen and project',async()=>{

@@ -115,10 +115,22 @@ export async function loadAuthorizedVersions(client,request,blocks,signal){
  return {role:rows[0].rol,versions:Object.fromEntries(rows.map(row=>[row.bloque,row.updated_at]))};
 }
 
+// The installed RPC uses one SQLSTATE for all quota windows. Match only its
+// known messages; never pass database messages or details to the browser.
+const QUOTA_ERRORS=new Map([
+ ['Límite diario del Secretario alcanzado',{quotaScope:'daily',message:'Has alcanzado el límite diario de consultas con IA para tu usuario. La cuota diaria se renueva a las 00:00 UTC. Puedes seguir usando Finanzas.'}],
+ ['Límite mensual del Secretario alcanzado',{quotaScope:'monthly',message:'Has alcanzado el límite mensual de consultas con IA para tu usuario en este estudio. La cuota mensual se renueva el primer día de cada mes a las 00:00 UTC. Puedes seguir usando Finanzas.'}],
+ ['Límite mensual global alcanzado',{quotaScope:'global_monthly',message:'El piloto ha alcanzado su límite mensual compartido de consultas con IA. La cuota mensual se renueva el primer día de cada mes a las 00:00 UTC. Puedes seguir usando Finanzas.'}]
+]);
 export async function reserveRequest(client,studyId,signal){
  const result=await rpc(client,'secretary_request_reserve',{p_estudio:studyId},signal);
  if(result.error){
-  if(result.error.code==='PT429')fail('quota_exhausted','Has alcanzado el límite de la prueba del Secretario. Puedes seguir usando Finanzas y volver a intentarlo más adelante.',429);
+  if(result.error.code==='PT429'){
+   const detail=QUOTA_ERRORS.get(result.error.message);
+   const error=new SecretarioError('quota_exhausted',detail?.message||'Has alcanzado el límite de la prueba del Secretario. Puedes seguir usando Finanzas y volver a intentarlo más adelante.',429);
+   if(detail)error.quotaScope=detail.quotaScope;
+   throw error;
+  }
   fail('quota_unavailable','No puedo comprobar el límite de consumo del Secretario. No se ha enviado ninguna consulta al modelo.',503);
  }
  if(!object(result.data)||result.data.accepted!==true)fail('quota_unavailable','No puedo comprobar el límite de consumo del Secretario. No se ha enviado ninguna consulta al modelo.',503);

@@ -227,6 +227,18 @@ try:
                     if "fallo disponible" in message:
                         request_route.fulfill(status=503, headers=cors_headers, content_type="application/json", body=json.dumps({"error": {"code": "not_configured", "message": "Fixture"}}))
                         return
+                    quota_scopes = {
+                        "cuota diaria ficticia": "daily", "cuota mensual ficticia": "monthly",
+                        "cuota compartida ficticia": "global_monthly", "cuota antigua ficticia": None,
+                    }
+                    if message in quota_scopes:
+                        scope = quota_scopes[message]
+                        error = {"code": "quota_exhausted", "message": "Raw provider error must not become the assistant response"}
+                        if scope is not None:
+                            error["quotaScope"] = scope
+                        request_route.fulfill(status=429, headers=cors_headers, content_type="application/json",
+                                              body=json.dumps({"requestId": "quota-fixture-12345678", "error": error}))
+                        return
                     demo_questions = {
                         "que facturas quedan por que me pagen", "solo las de este año", "enséñame solo las vencidas",
                         "¿Cuánto falta por cobrar de la F-DEMO-002?", "¿Qué ingresos de facturas faltan?",
@@ -286,6 +298,10 @@ try:
                 page.screenshot(path=str(output / f"secretario-inicial-{width}.png"), full_page=True)
             panel = page.locator("#moderno-secretary")
             expect(panel).to_be_visible()
+            expect(panel).to_have_attribute('aria-label', 'Secretario de Finanzas')
+            expect(panel.locator('.secretary-title strong')).to_have_text('Secretario de Finanzas')
+            expect(panel.locator('.secretary-context')).to_be_hidden()
+            expect(panel.locator('.secretary-context')).to_have_text('')
             expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-home.*"))
             expect(page.get_by_role("heading", name="¿Qué hacemos hoy?", exact=True)).to_be_visible()
             expect(panel.get_by_role("button", name="Facturas", exact=True)).to_be_visible()
@@ -311,6 +327,41 @@ try:
             page.emulate_media(reduced_motion="no-preference")
             if output:
                 page.screenshot(path=str(output / f"secretario-central-{width}.png"), full_page=True)
+
+            # Quota failures explain their scope, keep the conversation central,
+            # and offer a native navigation action that consumes no extra AI call.
+            for query, expected in [
+                ('cuota diaria ficticia', 'tu límite diario'),
+                ('cuota mensual ficticia', 'tu límite mensual'),
+                ('cuota compartida ficticia', 'límite mensual compartido'),
+                ('cuota antigua ficticia', 'límite de la prueba'),
+            ]:
+                page.locator('#secretary-message').fill(query)
+                panel.get_by_role('button', name='Enviar', exact=True).click()
+                quota_turn = panel.locator('.secretary-turn-assistant').last
+                expect(quota_turn.locator('.secretary-bubble')).to_contain_text(expected)
+                expect(quota_turn.locator('.secretary-bubble')).not_to_contain_text('Raw provider error')
+                expect(quota_turn.locator('.secretary-bubble')).not_to_contain_text('quota-fi')
+                expect(quota_turn.locator('.secretary-reference')).to_contain_text('quota-fi')
+                expect(quota_turn.get_by_role('button', name='Volver a intentar', exact=True)).to_have_count(0)
+                expect(panel).to_have_attribute('data-character-state', 'aviso')
+                assert page.evaluate("state.view==='informes'&&document.body.classList.contains('secretary-home')")
+                expect(panel.locator('.secretary-context')).to_be_hidden()
+                header_character = panel.locator('[data-secretary-presence=header]')
+                expect(header_character).to_be_visible()
+                assert header_character.evaluate('(node,size)=>node.getBoundingClientRect().width===size&&node.getBoundingClientRect().height===size', 80 if width > 500 else 72)
+                if output and query == 'cuota diaria ficticia':
+                    page.screenshot(path=str(output / f'secretario-cuota-{width}.png'))
+                request_count = len(requests)
+                quota_turn.get_by_role('button', name='Abrir Facturas', exact=True).click()
+                page.wait_for_function("state.view==='facturas'")
+                wait_for_stable_view(page)
+                assert len(requests) == request_count
+                assert page.evaluate('fixtureDocuments()===fixtureBaseline')
+                expect(panel.locator('.secretary-title strong')).to_have_text('Secretario de Finanzas')
+                page.evaluate('ModernoSecretary.openFinance()')
+            page.evaluate("ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")
+            print(f'{width} PASS: scoped quota recovery, native invoice navigation without extra AI call, Finance header', flush=True)
 
             # The HTTP response comes from the real handler and financial calculation.
             page.evaluate("""data=>{
@@ -585,7 +636,11 @@ try:
             # One conversation follows the current project, including after folding.
             page.evaluate("state.draft=null;state.fView=null;go('proyecto',9001)")
             expect(panel).to_be_visible()
+            expect(panel).to_have_attribute('aria-label', 'Nuestro Secretario')
+            expect(panel.locator('.secretary-title strong')).to_have_text('Nuestro Secretario')
+            expect(panel.locator('.secretary-context')).to_be_visible()
             expect(panel.locator(".secretary-context")).to_have_text("Proyecto ficticio")
+            assert panel.locator('[data-secretary-presence=header]').evaluate('(node,size)=>node.getBoundingClientRect().width===size&&node.getBoundingClientRect().height===size', 80 if width > 500 else 72)
             expect(panel.locator(".secretary-bubble").get_by_text("El borrador está preparado para revisar.", exact=True).first).to_be_visible()
             page.locator("#secretary-message").fill("respuesta segura")
             wait_for_stable_view(page)

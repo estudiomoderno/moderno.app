@@ -11,7 +11,7 @@ var ModernoSecretary=(()=>{
   const supported=()=>financeViews.includes(state.view)||['proyecto','estancia','presedit'].includes(state.view);
   const owner=()=>JSON.stringify([ESTUDIO_ID||'',state.sessionUser?.id||'',_accessRole||'']);
   const ready=()=>!_accessLoading&&!!ESTUDIO_ID&&!!state.sessionUser?.id&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon;
-  let identity=owner(),messages=[],panel=null,thread=null,composer=null,sendButton=null,stopButton=null,statusNode=null,contextNode=null,announcementNode=null;
+  let identity=owner(),messages=[],panel=null,thread=null,composer=null,sendButton=null,stopButton=null,statusNode=null,titleNode=null,contextNode=null,announcementNode=null;
   let collapsed=false,home=false,homePending=false,lastView=null,lastProject=null,busy=false,controller=null,generation=0,unavailable=false,authSubscription=null;
   let documentOpen=false,preview=null,returnButton=null;
   let requestCounter=0,actions=new Map(),questions=[],answers={},pendingAnswers={},feedbackTask='finance_question',contextTrimmed=false;
@@ -64,6 +64,7 @@ var ModernoSecretary=(()=>{
   }
   function pendingAfter(status,candidate){return status==='clarifying'?{...(candidate||{})}:{};}
   const activeProject=()=>['proyecto','estancia'].includes(state.view)?state.projects?.find(p=>p.id===state.currentProject):null;
+  const secretaryName=()=>activeProject()?'Nuestro Secretario':'Secretario de Finanzas';
   function icon(presence){
     const image=el('img','secretary-logo secretary-character');image.src=characterPath+'espera.png';image.alt='';image.width=512;image.height=512;image.draggable=false;
     image.dataset.characterState='espera';image.dataset.animated='false';
@@ -90,7 +91,8 @@ var ModernoSecretary=(()=>{
     }
     if(panel){panel.dataset.characterState=characterState;panel.classList.toggle('has-welcome',!messages.length);}
     if(reopen){
-      const label=characterUnread||busy?'Abrir Secretario, '+characterLabel.toLocaleLowerCase('es'):'Abrir Secretario';
+      const opening=activeProject()?'Abrir Secretario':'Abrir Secretario de Finanzas';
+      const label=characterUnread||busy?opening+', '+characterLabel.toLocaleLowerCase('es'):opening;
       reopen.dataset.characterState=characterState;reopen.dataset.unread=String(characterUnread);
       reopen.setAttribute('aria-label',label);reopen.title=label;
     }
@@ -136,7 +138,7 @@ var ModernoSecretary=(()=>{
     resetCharacter();
     generation++;controller?.abort();messages.forEach(record=>record.pageController?.abort());controller=null;busy=false;messages=[];actions.clear();questions=[];answers={};pendingAnswers={};contextTrimmed=false;
     feedbackOperation++;feedback?.setContext(null);feedbackLoaded=false;feedbackLoading=false;feedbackRevision=null;feedbackError='';feedbackHost=null;
-    panel?.remove();panel=null;thread=null;composer=null;announcementNode=null;identity=owner();collapsed=false;home=false;homePending=false;unavailable=false;lastView=null;lastProject=null;requestContext=null;contextInterrupted=false;
+    panel?.remove();panel=null;thread=null;composer=null;titleNode=null;contextNode=null;announcementNode=null;identity=owner();collapsed=false;home=false;homePending=false;unavailable=false;lastView=null;lastProject=null;requestContext=null;contextInterrupted=false;
     activeActivity=null;documentOpen=false;preview?.node.remove();preview=null;returnButton=null;
     document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open');
     document.getElementById('secretary-reopen')?.remove();
@@ -366,6 +368,15 @@ var ModernoSecretary=(()=>{
   }
   function requestFailure(message,{retryable=false,unavailable=false}={}){const error=Error(message);error.retryable=retryable;error.secretaryUnavailable=unavailable;return error;}
   function withReference(message,requestId){const value=String(requestId||'');return /^[a-z0-9-]{8,80}$/i.test(value)?`${message} Referencia ${value.slice(0,8)}.`:message;}
+  function quotaFailure(scope,requestId){
+    let message='Has alcanzado el límite de la prueba del Secretario. Puedes seguir trabajando desde Finanzas.';
+    if(scope==='daily')message='Has alcanzado tu límite diario del Secretario. Este límite se renueva cada día a las 00:00 UTC.';
+    else if(scope==='monthly')message='Has alcanzado tu límite mensual del Secretario. Este límite se renueva el día 1 de cada mes a las 00:00 UTC.';
+    else if(scope==='global_monthly')message='Se ha alcanzado el límite mensual compartido del Secretario. Este límite se renueva el día 1 de cada mes a las 00:00 UTC.';
+    const error=requestFailure(message),reference=String(requestId||'');error.secretaryQuota=true;
+    if(/^[a-z0-9-]{8,80}$/i.test(reference))error.secretaryReference=reference.slice(0,8);
+    return error;
+  }
   function feedbackScope(){return {userId:state.sessionUser.id,studyId:String(ESTUDIO_ID)};}
   function withdrawalKey(){return 'moderno_secretary_withdrawal:'+JSON.stringify([ESTUDIO_ID||'',state.sessionUser?.id||'']);}
   function withdrawalPending(){
@@ -575,7 +586,7 @@ var ModernoSecretary=(()=>{
       welcome.append(prompts);thread.append(welcome);
     }
     for(const record of messages){
-      const item=el('article','secretary-turn secretary-turn-'+record.role);item.setAttribute('aria-label',record.role==='user'?'Tú':'Nuestro Secretario');
+      const item=el('article','secretary-turn secretary-turn-'+record.role);item.setAttribute('aria-label',record.role==='user'?'Tú':secretaryName());
       if(record.activity)item.append(drawActivity(record.activity));
       const line=el('div','secretary-message-line');
       line.append(messageAvatar(record.role),el('div','secretary-bubble',record.content));item.append(line);
@@ -599,6 +610,10 @@ var ModernoSecretary=(()=>{
         extras.append(target);
       }
       if(record.retry){extras.append(button('Volver a intentar',()=>{const retry=record.retry;delete record.retry;drawThread();retry();},'secretary-button'));}
+      if(record.quota&&canView('facturas'))extras.append(button('Abrir Facturas',()=>{
+        if(checkIdentity()&&record.owner===identity&&ready())goDirect('facturas');
+      },'secretary-button secretary-quota-action'));
+      if(record.reference)extras.append(el('p','secretary-caption secretary-reference','Referencia técnica: '+record.reference+'.'));
       if(record.response){drawQuestions(extras,record.response);drawFeedback(extras,record);}
       if(extras.childNodes.length)item.append(extras);
       thread.append(item);
@@ -614,9 +629,9 @@ var ModernoSecretary=(()=>{
     drawThread();
   }
   function build(){
-    panel=el('section','secretary-panel');panel.id='moderno-secretary';panel.setAttribute('aria-label','Nuestro Secretario');
+    panel=el('section','secretary-panel');panel.id='moderno-secretary';panel.setAttribute('aria-label',secretaryName());
     const header=el('header','secretary-header'),title=el('div','secretary-title');title.append(icon('header'));
-    const copy=el('div','');copy.append(el('strong','','Nuestro Secretario'));contextNode=el('span','secretary-context','Finanzas');copy.append(contextNode);title.append(copy);header.append(title);
+    const copy=el('div','');titleNode=el('strong','',secretaryName());copy.append(titleNode);contextNode=el('span','secretary-context','');contextNode.hidden=true;copy.append(contextNode);title.append(copy);header.append(title);
     const controls=el('div','secretary-controls');
     const settings=el('details','secretary-settings');const summary=el('summary','','•••');summary.setAttribute('aria-label','Opciones del Secretario');settings.append(summary);
     const settingsContent=el('div','secretary-settings-content');settingsContent.append(el('strong','','Tu conversación'));
@@ -629,7 +644,7 @@ var ModernoSecretary=(()=>{
     returnButton=button('Volver al chat',returnToConversation,'secretary-button secretary-return');shortcuts.append(returnButton);
     for(const view of financeViews)if(canView(view))shortcuts.append(button(sectionLabels[view],()=>goDirect(view),'secretary-shortcut'));
     panel.append(shortcuts);
-    thread=el('div','secretary-thread');thread.setAttribute('role','log');thread.setAttribute('aria-label','Conversación con el Secretario');panel.append(thread);
+    thread=el('div','secretary-thread');thread.setAttribute('role','log');thread.setAttribute('aria-label','Conversación con '+secretaryName());panel.append(thread);
     const form=el('form','secretary-composer');const inputLabel=el('label','sr-only','Mensaje para el Secretario');inputLabel.htmlFor='secretary-message';form.append(inputLabel);
     composer=el('textarea','');composer.id='secretary-message';composer.rows=2;composer.maxLength=6000;composer.placeholder='Cuéntame qué necesitas…';form.append(composer);
     composer.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();form.requestSubmit();}});
@@ -694,7 +709,7 @@ var ModernoSecretary=(()=>{
         const code=payload?.error?.code;
         const ref=payload?.requestId;
         if(response.status===401||response.status===403)throw requestFailure(withReference('No puedo consultar esos datos con tu sesión actual. Comprueba tu acceso.',ref));
-        if(code==='quota_exhausted')throw requestFailure(withReference('Has alcanzado el límite de la prueba del Secretario. Puedes seguir trabajando desde Finanzas.',ref));
+        if(code==='quota_exhausted')throw quotaFailure(payload?.error?.quotaScope,ref);
         if(code==='rate_limit')throw requestFailure(withReference('Hay varias consultas en curso. Espera un momento y vuelve a intentarlo.',ref),{retryable:true});
         if(code==='provider_busy')throw requestFailure(withReference('El servicio está ocupado ahora. Vuelve a intentarlo en un momento.',ref),{retryable:true,unavailable:true});
         if(code==='context_changed')throw requestFailure(withReference('Los datos o tus permisos cambiaron durante la consulta. Vuelve a intentarlo.',ref),{retryable:true});
@@ -730,13 +745,14 @@ var ModernoSecretary=(()=>{
         if(!contextInterrupted&&!answerValues)record.retry=retry;
       }
       else{
-        setCharacter('aviso','No se pudo completar la consulta',{notify:true});
+        setCharacter('aviso',error.secretaryQuota?'Límite del Secretario alcanzado':'No se pudo completar la consulta',{notify:true});
         const network=error instanceof TypeError||navigator.onLine===false;
         unavailable=network||error.secretaryUnavailable===true;
         const record=appendMessage('assistant',network?'No se ha podido conectar con el Secretario. Comprueba la conexión y vuelve a intentarlo.':error.message||'El Secretario no está disponible ahora. Los editores siguen accesibles.');
+        if(error.secretaryQuota===true){record.quota=true;record.reference=error.secretaryReference||'';}
         if(network||error.retryable===true)record.retry=retry;
       }
-      setStatus(unavailable?'Tus documentos siguen disponibles en los accesos directos.':'Consulta detenida.');
+      setStatus(error.secretaryQuota?'Puedes seguir trabajando desde los accesos directos.':unavailable?'Tus documentos siguen disponibles en los accesos directos.':'Consulta detenida.');
     }finally{
       if(epoch===generation&&captured===owner()&&current===requestCounter){busy=false;controller=null;requestContext=null;contextInterrupted=false;updateBusy();drawThread();const target=questions.length?thread?.querySelector('.secretary-question button,.secretary-free-answer'):composer;if(!collapsed&&panel?.isConnected&&!panel.hidden)target?.focus();}
       else checkIdentity();
@@ -790,7 +806,10 @@ var ModernoSecretary=(()=>{
     if(preview&&!preview.node.isConnected)document.getElementById('view')?.append(preview.node);
     panel.classList.toggle('is-home',home);panel.hidden=collapsed;
     returnButton.hidden=home;
-    contextNode.textContent=activeProject()?.name||'Finanzas';
+    const project=activeProject(),name=secretaryName();
+    titleNode.textContent=name;panel.setAttribute('aria-label',name);thread.setAttribute('aria-label','Conversación con '+name);
+    for(const turn of thread.querySelectorAll('.secretary-turn-assistant'))turn.setAttribute('aria-label',name);
+    contextNode.textContent=project?.name||'';contextNode.hidden=!project;
     // Fixed lateral UI belongs to the viewport, outside project animations and
     // containing blocks. The central conversation remains ordinary view content.
     const mount=home?document.getElementById('view'):document.body;
