@@ -26,7 +26,7 @@ function product_clipper_proxy_request(array $server,string $raw): array {
         $ids=$body['ids'] ?? null;
         if (!is_string($body['studyId'] ?? null)||!preg_match($uuid,$body['studyId'])||
             !$validId($body['projectId'] ?? null)||!$validId($body['roomId'] ?? null)||
-            !is_array($ids)||!array_is_list($ids)||count($ids)<1||count($ids)>3||
+            !is_array($ids)||count($ids)<1||count($ids)>3||array_keys($ids)!==range(0,count($ids)-1)||
             count(array_filter($ids,$validId))!==count($ids)||count(array_unique($ids))!==count($ids)) {
             throw new ProductClipperProxyError('Solicitud de precios no válida',400);
         }

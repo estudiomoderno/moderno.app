@@ -256,8 +256,9 @@ try:
     expected[0].rooms[0].sections[0].items.find(x=>x.id==='producto-importado-ficticio').price=89.5;
     return priceSaves.length===1&&canon(priceSaves[0])===canon(expected)&&canon(CLOUD_BLOCKS.proyectos.get())===canon(expected);
    }""")
-   page.evaluate("Object.assign(ProductClipper,originalPriceMethods);_accessRole='colaborador';render()")
+   page.evaluate("_accessRole='colaborador';render()")
    expect(refresh).to_have_count(0)
+   page.evaluate("Object.assign(ProductClipper,originalPriceMethods)")
    page.evaluate('ProductClipper.open=originalClipperOpen;cloudFlush=savedFlush;cloudReadBlock=savedRead;cloudApplyRemote=savedApply;persistNow=savedPersist')
    assert page.evaluate('sb===null')
    assert not writes,writes;assert not errors,errors
