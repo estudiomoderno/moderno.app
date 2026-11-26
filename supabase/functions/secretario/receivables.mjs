@@ -44,7 +44,7 @@ function legacyReference(entry, series) {
 const normalizedName=value=>normalize(value).replace(/[^a-z0-9/-]+/g,' ').trim().replace(/\s+/g,' ');
 const clientName=(doc,entry)=>clean(doc?.client || entry?.client || entry?.sup || clean(entry?.concept, 500).split(' · ').slice(1).join(' · '));
 
-export function collectReceivables(snapshot, {today, projectId = null, client = null, date = null, overdue = null} = {}) {
+export function collectReceivables(snapshot, {today, projectId = null, client = null, date = null, overdue = null, reference = null} = {}) {
   const data = snapshot.invoiceData ?? {}, defaultCurrency = currency(snapshot.config.account?.currency);
   const series = clean(snapshot.config.series?.fc).toUpperCase();
   const documents = new Map(), entries = new Map(), used = new Set(), idCounts = new Map();
@@ -98,11 +98,12 @@ export function collectReceivables(snapshot, {today, projectId = null, client = 
     rows.push({
       kind:doc ? 'invoice' : 'invoice_entry', id:doc ? ref : String(entry.id), label:ref, brand, projectId:pid || null,
       client:clientName(doc,entry),
-      remaining, currency:code, due:due.date, overdue:!!due.date && due.date < today, partial:paid > 0
+      remaining, gross, paid:cents(paid)/100, currency:code, due:due.date, overdue:!!due.date && due.date < today, partial:paid > 0
     });
   }
 
   for (const [identity, docs] of documents) {
+    if(reference&&!docs.some(doc=>normalize(doc.ref)===reference))continue;
     const linked = entries.get(identity) ?? [];
     linked.forEach(entry => used.add(entry));
     const issued = docs.filter(doc => !voidStatus.test(status(doc)) && doc.voided !== true && doc.draft !== true);
@@ -114,7 +115,7 @@ export function collectReceivables(snapshot, {today, projectId = null, client = 
   for (const entry of snapshot.entries) {
     if (entry?.kind !== 'in' || used.has(entry) || data.del?.[entry.id] || !inScope(null,entry)) continue;
     const ref = legacyReference(entry, series);
-    if (ref && !data.ddel?.[ref]) register(legacy,key(entry.brand,ref),{ref,entry});
+    if (ref && (!reference||normalize(ref)===reference) && !data.ddel?.[ref]) register(legacy,key(entry.brand,ref),{ref,entry});
   }
   for (const candidates of legacy.values()) {
     if (candidates.length !== 1) { review++; continue; }
@@ -134,11 +135,26 @@ export function receivablesPage(snapshot, {today, offset = 0, ...scope}) {
     if (row.overdue) overdue++;
   }
   const amounts = [...totals].sort(([a], [b]) => a.localeCompare(b)).map(([code, total]) => ({currency:code, amount:total / 100}));
-  const text = amounts.map(({currency, amount}) => new Intl.NumberFormat('es-ES',{style:'currency',currency}).format(amount)).join(' y ');
-  let message = rows.length
-    ? `Tienes ${rows.length} ${rows.length === 1 ? 'factura pendiente' : 'facturas pendientes'} de cobro por ${text}. ${overdue === 1 ? '1 está vencida.' : `${overdue} están vencidas.`}`
-    : review ? 'No he podido confirmar facturas con saldo pendiente.' : 'No tienes facturas pendientes de cobro.';
+  const money=(amount,currency)=>new Intl.NumberFormat('es-ES',{style:'currency',currency,useGrouping:'always',
+    ...(Number.isInteger(amount)?{minimumFractionDigits:0}:{})}).format(amount);
+  const text = amounts.map(({currency, amount}) => money(amount,currency)).join(' y ');
+  const filtered=scope.projectId||scope.client||scope.date||scope.overdue||scope.reference;
+  const year=scope.date?.field==='issued'&&scope.date.from.endsWith('-01-01')&&scope.date.to===scope.date.from.slice(0,4)+'-12-31'?scope.date.from.slice(0,4):null;
+  let message;
+  if(!rows.length){
+    message=review?'No he podido confirmar facturas con saldo pendiente.':`No tienes facturas pendientes de cobro${filtered?' con esos filtros':''}.`;
+  }else if(scope.reference&&rows.length===1){
+    const [row]=rows;
+    message=`Quedan ${text} por cobrar. La factura es de ${money(row.gross,row.currency)} y tiene ${money(row.paid,row.currency)} de cobros registrados.`;
+  }else if(scope.overdue==='overdue'){
+    const prefix=year?`De esas facturas de ${year}, `:'';
+    message=rows.length===1?`${prefix}${prefix?'queda':'Queda'} 1 vencida por ${text}.`:`${prefix}${prefix?'quedan':'Quedan'} ${rows.length} vencidas por ${text}.`;
+  }else{
+    const prefix=year?`De las emitidas en ${year}, tienes`:'Tienes';
+    message=`${prefix} ${rows.length} ${rows.length===1?'factura pendiente':'facturas pendientes'}${year?'':' de cobro'} por ${text}.`;
+    if(overdue)message+=overdue===1?' Una está vencida.':` De ellas, ${overdue} están vencidas.`;
+  }
   if (review) message += ` ${review === 1 ? 'Hay 1 factura que necesita' : `Hay ${review} facturas que necesitan`} revisión por datos incompletos o contradictorios.`;
-  const page = rows.slice(offset, offset + PAGE_SIZE).map(({remaining, ...row}) => ({...row, pending:remaining / 100}));
+  const page = rows.slice(offset, offset + PAGE_SIZE).map(({remaining,gross,paid,...row}) => ({...row, pending:remaining / 100}));
   return {message, page, count:rows.length, overdue, amounts, review, offset, next:offset + page.length < rows.length ? offset + page.length : null};
 }

@@ -1,5 +1,5 @@
 import {receivablesPage} from './receivables.mjs';
-import {receivableQuestion,resolveReceivableScope} from './receivable-scope.mjs';
+import {confirmReceivables,receivableQuestion,resolveReceivableScope,validReceivableContext} from './receivable-scope.mjs';
 
 /* The model proposes intent. Permissions, source selection and draft validation
  * stay here; document numbering, tax totals and persistence stay in the editor. */
@@ -57,7 +57,7 @@ export function validateEnvironment(env){
 }
 
 export function normalizeRequest(input){
- keys(input,['studyId','message','automatic','history','context','answers','invoicePage']);
+ keys(input,['studyId','message','automatic','history','context','answers','invoicePage','receivableContext']);
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.studyId||''))fail('invalid_study','Selecciona un estudio válido.');
  if(typeof input.message!=='string'||!input.message.trim()||input.message.length>6000)fail('invalid_message','Escribe un mensaje de hasta 6.000 caracteres.');
  if(input.automatic!==undefined&&typeof input.automatic!=='boolean')fail('invalid_request','No se ha podido leer la solicitud.');
@@ -81,7 +81,8 @@ export function normalizeRequest(input){
   if(!Number.isSafeInteger(invoicePage.offset)||invoicePage.offset<1||typeof invoicePage.version!=='string'||invoicePage.version.length>1200
     ||invoicePage.projectId!==null&&(typeof invoicePage.projectId!=='string'||invoicePage.projectId.length>160))fail('invalid_request','No se ha podido leer la página solicitada.');
  }
- return {studyId:input.studyId,message:input.message.trim(),automatic,history:turns,context:{view:context.view||'finanzas',projectId:context.projectId==null?null:id(context.projectId),timeZone},answers:{...answers},invoicePage};
+ if(input.receivableContext!=null&&!validReceivableContext(input.receivableContext))fail('invalid_request','No se ha podido leer el contexto de las facturas.');
+ return {studyId:input.studyId,message:input.message.trim(),automatic,history:turns,context:{view:context.view||'finanzas',projectId:context.projectId==null?null:id(context.projectId),timeZone},answers:{...answers},invoicePage,receivableContext:input.receivableContext??null};
 }
 
 export async function loadAuthorizedSnapshot(client,request,signal,{receivablesOnly=false}={}){
@@ -505,24 +506,32 @@ function summary(s,r,p){
  return response(message,'answer',{sources:sources.slice(0,80),metrics:v,sourceCount:sources.length,actions:[{id:'view-invoices',type:'navigate',label:'Revisar facturas',payload:{view:'facturas'}}],trace:[{label:'Facturas, cobros, costes y presupuestos autorizados consultados',status:'done'},{label:'Totales calculados con las reglas registradas en Moderno.app',status:'done'}]});
 }
 
-function pendingInvoices(s,r,original){
+function receivableClarification(field,prompt,options,turn){
+ return response(prompt,'clarifying',{questions:[question(field,prompt,options)],receivableContext:{
+  scope:turn.base??null,clarification:{field,query:turn.query,answers:turn.answers}
+ }});
+}
+
+function pendingInvoices(s,r,turn,now){
  if(s.role!=='admin')fail('forbidden','Tu rol no permite consultar facturas pendientes de cobro.',403);
- const parts=new Intl.DateTimeFormat('en',{timeZone:r.context.timeZone||'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts();
+ const parts=new Intl.DateTimeFormat('en',{timeZone:r.context.timeZone||'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
  const datePart=type=>parts.find(part=>part.type===type).value;
  const today=[datePart('year'),datePart('month'),datePart('day')].join('-');
- const resolved=resolveReceivableScope(s,r,original,today);
+ const resolved=resolveReceivableScope(s,r,turn,today);
  const scope=resolved.scope;
  if(!scope){
   if(r.invoicePage)fail('context_changed','El ámbito de la consulta ha cambiado. Vuelve a consultar los resultados.',409);
   const {field,prompt,options}=resolved.question;
-  return clarify(prompt,[question(field,prompt,options)]);
+  return receivableClarification(field,prompt,options,turn);
  }
- const {projectId,client,date,overdue}=scope;
- const version=JSON.stringify([s.studyId,s.versions.facturas,s.versions.config,s.versions.contactos,s.versions.proyectos,projectId,client?.name,client?.brand,date,overdue,today]);
+ const {projectId,client,date,overdue,reference}=scope;
+ const version=JSON.stringify([s.studyId,s.versions.facturas,s.versions.config,s.versions.contactos,s.versions.proyectos,projectId,client?.name,client?.brand,date,overdue,today,reference]);
  if(r.invoicePage&&(r.invoicePage.version!==version||r.invoicePage.projectId!==projectId))fail('context_changed','Las facturas han cambiado. Vuelve a consultar para actualizar los resultados.',409);
  const {message,page,...results}=receivablesPage(s,{today,...scope,offset:r.invoicePage?.offset??0});
+ if(reference&&results.count>1)return receivableClarification('receivable_client','Hay varias facturas con esa referencia. ¿De qué cliente es?',[],turn);
  const notes=[client?.label,scope.projectLabel,date&&`${date.field==='due'?'Vencimiento':'Emisión'}: ${date.from} a ${date.to}`,overdue==='overdue'?'Solo vencidas':overdue==='open'?'Sin vencer':null].filter(Boolean);
  return response(message,'answer',{sources:page,receivables:{...results,version,projectId,scopeLabel:notes.join(' · '),intent:'pending_invoices'},
+  receivableContext:{scope:{projectId,clientKey:resolved.clientKey,date,overdue,reference}},
   trace:[{label:'Consulta de facturas pendientes de cobro identificada',status:'done'},{label:'Facturas y cobros autorizados comprobados',status:'done'}]});
 }
 
@@ -554,9 +563,9 @@ export function executePlan(snapshot,request,plan){
  if(plan.intent==='prepare_draft')return prepareDraft(snapshot,request,plan);
  if(plan.intent==='summary')return summary(snapshot,request,plan);
  if(plan.intent==='pending_invoices'){
-  const original=receivableQuestion(request);
-  if(original)return pendingInvoices(snapshot,request,original);
-  return clarify('¿Te refieres a facturas pendientes de cobro? Si quieres, indica también el cliente, el proyecto o el periodo.',[question('detail','Describe las facturas que quieres consultar.')]);
+  if(snapshot.role!=='admin')fail('forbidden','Tu rol no permite consultar facturas pendientes de cobro.',403);
+  return receivableClarification('receivable_confirm',confirmReceivables,
+   [{label:'Sí, pendientes de cobro',value:'sí'}],{query:'',answers:{}});
  }
  if(plan.intent==='project_status')return projectStatus(snapshot,request,plan);
  if(plan.intent==='navigate'){
@@ -599,13 +608,20 @@ export async function requestPlan({fetchImpl=fetch,apiKey,model,request,context,
  try{return JSON.parse(output);}catch{fail('invalid_plan','La respuesta del asistente no se ha podido verificar.',502);}
 }
 
-export async function runSecretary({client,input,planner,signal,onStage}){
+export async function runSecretary({client,input,planner,signal,onStage,now=Date.now}){
  const stage=(name,details={})=>{try{onStage?.(name,details);}catch{}}
  const request=normalizeRequest(input);stage('authorization');
- const receivableText=receivableQuestion(request);
- if(request.invoicePage&&!receivableText)fail('context_changed','Vuelve a consultar para actualizar los resultados.',409);
- const receivablesOnly=!!receivableText;
- const snapshot=await loadAuthorizedSnapshot(client,request,signal,{receivablesOnly});
+ const receivableTurn=receivableQuestion(request);
+ if(request.invoicePage&&!receivableTurn)fail('context_changed','Vuelve a consultar para actualizar los resultados.',409);
+ const receivablesOnly=!!receivableTurn;
+ const read=async query=>{
+  try{return await query();}
+  catch(error){
+   if(receivablesOnly&&(!error.status||error.code==='data_unavailable'))fail('invoice_data_unavailable','No he podido consultar las facturas ahora. Puedes reintentarlo.',503);
+   throw error;
+  }
+ };
+ const snapshot=await read(()=>loadAuthorizedSnapshot(client,request,signal,{receivablesOnly}));
  let plan, directDocument;
  if(!receivablesOnly&&explicitDocumentOpen(request)){
   const match=/\b(factura|presupuesto)\s+([a-z0-9][a-z0-9/-]*\d[a-z0-9/-]*)[.!?]?$/i.exec(request.message.trim());
@@ -624,9 +640,9 @@ export async function runSecretary({client,input,planner,signal,onStage}){
  // Re-check access and versions after the model latency; a revocation or edit
  // must not result in a stale proposal being returned as current data. The
  // versions-only RPC avoids downloading every financial block a second time.
- const current=await loadAuthorizedVersions(client,request,Object.keys(snapshot.versions),signal);stage('revalidated');
+ const current=await read(()=>loadAuthorizedVersions(client,request,Object.keys(snapshot.versions),signal));stage('revalidated');
  if(current.role!==snapshot.role||Object.keys(current.versions).length!==Object.keys(snapshot.versions).length||Object.entries(snapshot.versions).some(([key,value])=>current.versions[key]!==value))fail('context_changed','Los datos o tus permisos cambiaron durante la consulta. Vuelve a intentarlo.',409);
- if(receivablesOnly)return pendingInvoices(snapshot,request,receivableText);
+ if(receivablesOnly)return pendingInvoices(snapshot,request,receivableTurn,now());
  if(directDocument)return response('He localizado el documento.','answer',{sources:[directDocument],actions:[documentAction(directDocument)]});
  return executePlan(snapshot,request,plan);
 }

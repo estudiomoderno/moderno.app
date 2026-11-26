@@ -26,6 +26,7 @@ stamp = "2026-11-22T09:00:00Z"
 source_versions = {key: stamp for key in ["config", "contactos", "proyectos", "presupuestos", "facturas"]}
 invoice_fixture_script = ["node", "scripts/secretario-receivables-fixture.mjs"]
 invoice_fixture = json.loads(subprocess.check_output(invoice_fixture_script, cwd=repo, input=b""))
+acceptance_fixture = json.loads(subprocess.check_output([*invoice_fixture_script, "--acceptance"], cwd=repo, input=b""))
 
 parsed = ast.parse((repo / "scripts/shopping-loading-browser.test.py").read_text())
 fixture = next(ast.literal_eval(node.value) for node in parsed.body if isinstance(node, ast.Assign)
@@ -166,6 +167,7 @@ try:
             page = browser.new_page(viewport={"width": width, "height": height}, locale="es-ES")
             errors, requests, forbidden_writes, pending = [], [], [], []
             pending_receivables = []
+            failed_invoice_reads = []
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.add_init_script(fake_sdk)
 
@@ -188,7 +190,7 @@ try:
                     assert set(envelope) == {"session", "payload"}
                     assert envelope["session"] == "fictional-token-no-credentials"
                     body = envelope["payload"]
-                    assert set(body).issubset({"studyId", "message", "automatic", "history", "context", "answers", "invoicePage"})
+                    assert set(body).issubset({"studyId", "message", "automatic", "history", "context", "answers", "invoicePage", "receivableContext"})
                     assert body["studyId"] == "11111111-1111-4111-8111-111111111111"
                     if not body.get("invoicePage"):
                         assert isinstance(body.get("automatic"), bool)
@@ -203,6 +205,21 @@ try:
                         return
                     if "fallo disponible" in message:
                         request_route.fulfill(status=503, headers=cors_headers, content_type="application/json", body=json.dumps({"error": {"code": "not_configured", "message": "Fixture"}}))
+                        return
+                    demo_questions = {
+                        "que facturas quedan por que me pagen", "solo las de este año", "enséñame solo las vencidas",
+                        "¿Cuánto falta por cobrar de la F-DEMO-002?", "¿Qué ingresos de facturas faltan?",
+                        "pendientes de cobro y solo de este año", "Muéstrame las pendientes de Casa Sol de este año",
+                        "Cliente Casa Sol", "Proyecto Casa Sol", "solo las de 2024", "solo las de 2025",
+                    }
+                    if message in demo_questions:
+                        options = {"origin": origin, "acceptance": True, "pendingPlan": message == "¿Qué ingresos de facturas faltan?"}
+                        if message == "solo las de 2025" and not failed_invoice_reads:
+                            failed_invoice_reads.append(message)
+                            options["failRead"] = "app_leer_bloques"
+                        result = json.loads(subprocess.check_output(invoice_fixture_script, cwd=repo,
+                            input=json.dumps({"input": body, "options": options}).encode()))
+                        request_route.fulfill(status=result["status"], headers=cors_headers, content_type="application/json", body=json.dumps(result["body"]))
                         return
                     if message in ("Dime qué facturas tengo pendientes de cobrar", "¿Cuántas facturas tengo pendientes de cobrar?", "Abre la factura FC-0002", "Facturas pendientes de cobrar de Casa Lino en febrero de 2026"):
                         result = json.loads(subprocess.check_output(invoice_fixture_script, cwd=repo,
@@ -280,8 +297,8 @@ try:
             pending_route, result = pending_receivables.pop()
             pending_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(result))
             answer = panel.locator(".secretary-turn-assistant").last
-            expect(answer.locator(".secretary-bubble")).to_contain_text("Tienes 3 facturas pendientes de cobro por 1680,00")
-            expect(answer.locator(".secretary-bubble")).to_contain_text("1 está vencida")
+            expect(answer.locator(".secretary-bubble")).to_contain_text("Tienes 3 facturas pendientes de cobro por 1.680")
+            expect(answer.locator(".secretary-bubble")).to_contain_text("Una está vencida")
             expect(answer.locator(".secretary-invoice")).to_have_count(3)
             expect(answer.locator(".secretary-invoice").filter(has_text="FC-0001")).to_contain_text("Vencida")
             expect(answer.locator(".secretary-invoice").filter(has_text="FC-0002")).to_contain_text("Vence")
@@ -338,12 +355,74 @@ try:
             page.locator("#secretary-message").fill("Facturas pendientes de cobrar de Casa Lino en febrero de 2026")
             panel.get_by_role("button", name="Enviar", exact=True).click()
             filtered = panel.locator(".secretary-turn-assistant").last
-            expect(filtered.locator(".secretary-bubble")).to_contain_text("Tienes 1 factura pendiente de cobro por 750,00")
+            expect(filtered.locator(".secretary-bubble")).to_contain_text("Tienes 1 factura pendiente de cobro por 750")
             expect(filtered).to_contain_text("Casa Lino · Emisión: 2026-02-01 a 2026-02-28")
             expect(filtered.locator(".secretary-invoice")).to_have_count(1)
             expect(filtered.locator(".secretary-invoice")).to_contain_text("FC-0002")
             assert page.evaluate("document.body.classList.contains('secretary-home')")
             print(f"{width} PASS: verified pending rows, click and explicit open, native close, return and paging", flush=True)
+            page.evaluate("data=>{Object.assign(state,data);ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions();window.demoRecords=fixtureDocuments()}", acceptance_fixture)
+
+            def ask_demo(question, message, docs):
+                page.locator("#secretary-message").fill(question)
+                panel.get_by_role("button", name="Enviar", exact=True).click()
+                turn = panel.locator(".secretary-turn-assistant").last
+                expect(turn.locator(".secretary-bubble")).to_have_text(message)
+                expect(turn.locator(".secretary-invoice strong").filter(has_text=__import__("re").compile(r"^F-DEMO-\d+$"))).to_have_text(docs)
+                assert page.evaluate("document.body.classList.contains('secretary-home')")
+                return turn
+
+            all_text = "Tienes 3 facturas pendientes de cobro por 2.300 €. De ellas, 2 están vencidas."
+            year_text = "De las emitidas en 2026, tienes 2 facturas pendientes por 1.500 €. Una está vencida."
+            ask_demo("que facturas quedan por que me pagen", all_text, ["F-DEMO-003", "F-DEMO-001", "F-DEMO-002"])
+            ask_demo("solo las de este año", year_text, ["F-DEMO-001", "F-DEMO-002"])
+            ask_demo("enséñame solo las vencidas", "De esas facturas de 2026, queda 1 vencida por 1.000 €.", ["F-DEMO-001"])
+            detail = ask_demo("¿Cuánto falta por cobrar de la F-DEMO-002?",
+                "Quedan 500 € por cobrar. La factura es de 1.200 € y tiene 700 € de cobros registrados.", ["F-DEMO-002"])
+            expect(detail.locator(".secretary-invoice")).to_contain_text("500,00")
+            if output:
+                wait_for_stable_view(page)
+                page.screenshot(path=str(output / f"secretario-continuidad-{width}.png"))
+            detail.get_by_role("button", name="Abrir factura", exact=True).click()
+            expect(page.locator(".finance-document-editor")).to_contain_text("Editando F-DEMO-002")
+            expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-lateral.*"))
+            expect(detail.locator(".secretary-invoice")).to_contain_text("F-DEMO-002")
+            assert page.evaluate("fixtureDocuments()===demoRecords")
+            panel.get_by_role("button", name="Volver al chat", exact=True).click()
+            expect(detail.locator(".secretary-invoice")).to_contain_text("F-DEMO-002")
+            assert page.evaluate("document.body.classList.contains('secretary-home')&&fixtureDocuments()===demoRecords")
+
+            for use_form in [True, False]:
+                ask_demo("¿Qué ingresos de facturas faltan?", "¿Te refieres a facturas pendientes de cobro?", [])
+                reply = "pendientes de cobro y solo de este año"
+                if use_form:
+                    panel.get_by_role("textbox", name="Otra respuesta: ¿Te refieres a facturas pendientes de cobro?", exact=True).fill(reply)
+                    panel.get_by_role("button", name="Continuar", exact=True).click()
+                    expect(panel.locator(".secretary-turn-assistant .secretary-bubble").last).to_have_text(year_text)
+                    expect(panel.locator(".secretary-turn-user .secretary-bubble").last).to_have_text(reply)
+                    assert requests[-1]["automatic"] is True and requests[-1]["message"] == reply
+                else:
+                    ask_demo(reply, year_text, ["F-DEMO-001", "F-DEMO-002"])
+                    assert requests[-1]["automatic"] is False
+
+            ambiguity = "¿Te refieres al cliente Casa Sol o al proyecto Casa Sol?"
+            ask_demo("Muéstrame las pendientes de Casa Sol de este año", ambiguity, [])
+            expect(panel.get_by_role("button", name="Cliente Casa Sol", exact=True)).to_be_visible()
+            expect(panel.get_by_role("button", name="Proyecto Casa Sol", exact=True)).to_be_visible()
+            ask_demo("Cliente Casa Sol", "No tienes facturas pendientes de cobro con esos filtros.", [])
+            ask_demo("Muéstrame las pendientes de Casa Sol de este año", ambiguity, [])
+            panel.get_by_role("button", name="Proyecto Casa Sol", exact=True).click()
+            panel.get_by_role("button", name="Continuar", exact=True).click()
+            expect(panel.locator(".secretary-turn-assistant .secretary-bubble").last).to_have_text(
+                "De las emitidas en 2026, tienes 1 factura pendiente por 1.000 €. Una está vencida.")
+            expect(panel.locator(".secretary-turn-user .secretary-bubble").last).to_have_text("Proyecto Casa Sol")
+            ask_demo("solo las de 2024", "No tienes facturas pendientes de cobro con esos filtros.", [])
+            error = ask_demo("solo las de 2025", "No he podido consultar las facturas ahora. Puedes reintentarlo.", [])
+            error.get_by_role("button", name="Volver a intentar", exact=True).click()
+            last = panel.locator(".secretary-turn-assistant").last
+            expect(last.locator(".secretary-invoice")).to_contain_text("F-DEMO-003")
+            assert requests[-1]["receivableContext"]["scope"]["projectId"] == "9001"
+            print(f"{width} PASS: exact acceptance dialogue, form and composer, invoice detail, choices, empty and failed read", flush=True)
             page.evaluate("Object.assign(state,window.originalInvoicesFixture);ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")
 
             page.locator("#secretary-message").fill("Crear una factura de 2 horas de asesoría a 100 por hora")
@@ -361,7 +440,7 @@ try:
             assert requests[-1]["history"][0]["role"] == "user"
             assert page.evaluate("state.draft.editRef===null&&state.invoices.length===0")
             expect(panel.locator(".secretary-thread")).not_to_contain_text("contact:0")
-            expect(panel.locator(".secretary-thread")).to_contain_text("Elige el cliente Cliente ficticio")
+            expect(panel.locator(".secretary-turn-user .secretary-bubble").last).to_have_text("Cliente ficticio")
             wait_for_stable_view(page)
             assert_secretary_clearance(page)
             assert page.locator("#secretary-message").evaluate("element=>getComputedStyle(element).borderTopWidth==='0px'&&getComputedStyle(element).boxShadow==='none'")
