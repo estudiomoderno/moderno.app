@@ -1,7 +1,7 @@
 """Private image cache and lazy loading, with fictional records only."""
 from pathlib import Path
 import os,socket,subprocess,time,urllib.request,sys
-from playwright.sync_api import sync_playwright,expect
+from playwright.sync_api import TimeoutError, sync_playwright, expect
 repo=Path(__file__).resolve().parents[1]
 output=Path(sys.argv[1]) if len(sys.argv)>1 else None
 if output:output.mkdir(parents=True,exist_ok=True)
@@ -25,6 +25,7 @@ try:
  with sync_playwright() as p:
   launch={'headless':True,'args':['--no-sandbox']}
   if os.environ.get('CHROMIUM_PATH'):launch['executable_path']=os.environ['CHROMIUM_PATH']
+  else:launch['channel']='chromium'
   browser=p.chromium.launch(**launch)
   for width in [1440,390]:
    page=browser.new_page(viewport={'width':width,'height':900},locale='es-ES');errors=[];writes=[]
@@ -52,7 +53,15 @@ try:
       document.getElementById('view').innerHTML='<div id="fixture-images" style="display:flex;flex-direction:column;gap:20px">'+Array.from({length:50},(_,i)=>'<img data-private-file="storage://archivos/'+ESTUDIO_ID+'/'+(same?'same':i)+'.png" loading="lazy" width="100" height="100" alt="Ficticia">').join('')+'</div>';
     };drawImages(true);
    }""",{'source':resolver,'origin':origin})
-   page.wait_for_function("document.querySelectorAll('#fixture-images img.image-ready').length>=2")
+   try:
+    page.wait_for_function("document.querySelectorAll('#fixture-images img.image-ready').length>=2")
+   except TimeoutError as error:
+    counts=page.evaluate("""()=>({signCalls,
+      observed:[...document.querySelectorAll('#fixture-images img')].slice(0,2).map(img=>({
+        hasSource:img.hasAttribute('src'),complete:img.complete,width:img.naturalWidth,
+        status:img.className,top:img.getBoundingClientRect().top
+      }))})""")
+    raise AssertionError(f'{width}: private images did not load: {counts}; page errors: {errors}') from error
    assert page.evaluate("signCalls===1&&document.querySelectorAll('#fixture-images img.image-ready').length<50&&signPeak<=4")
    page.evaluate('drawImages(true)');page.wait_for_function("document.querySelectorAll('#fixture-images img.image-ready').length>=2")
    assert page.evaluate('signCalls===1') # DOM recreation must not trigger another signing wave.
