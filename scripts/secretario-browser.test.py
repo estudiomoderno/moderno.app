@@ -24,6 +24,8 @@ backend = "https://chsilowzrtumbcofspwv.supabase.co"
 endpoint = backend + "/functions/v1/secretario"
 stamp = "2026-11-22T09:00:00Z"
 source_versions = {key: stamp for key in ["config", "contactos", "proyectos", "presupuestos", "facturas"]}
+invoice_fixture_script = ["node", "scripts/secretario-receivables-fixture.mjs"]
+invoice_fixture = json.loads(subprocess.check_output(invoice_fixture_script, cwd=repo, input=b""))
 
 parsed = ast.parse((repo / "scripts/shopping-loading-browser.test.py").read_text())
 fixture = next(ast.literal_eval(node.value) for node in parsed.body if isinstance(node, ast.Assign)
@@ -185,10 +187,11 @@ try:
                     assert set(envelope) == {"session", "payload"}
                     assert envelope["session"] == "fictional-token-no-credentials"
                     body = envelope["payload"]
-                    assert set(body).issubset({"studyId", "message", "automatic", "history", "context", "answers"})
+                    assert set(body).issubset({"studyId", "message", "automatic", "history", "context", "answers", "invoicePage"})
                     assert body["studyId"] == "11111111-1111-4111-8111-111111111111"
-                    assert isinstance(body.get("automatic"), bool)
-                    assert body["automatic"] is bool(body.get("answers"))
+                    if not body.get("invoicePage"):
+                        assert isinstance(body.get("automatic"), bool)
+                        assert body["automatic"] is bool(body.get("answers"))
                     requests.append(body)
                     message = body["message"]
                     if "consulta lenta" in message:
@@ -199,6 +202,12 @@ try:
                         return
                     if "fallo disponible" in message:
                         request_route.fulfill(status=503, headers=cors_headers, content_type="application/json", body=json.dumps({"error": {"code": "not_configured", "message": "Fixture"}}))
+                        return
+                    if message in ("Dime qué facturas tengo pendiente cobrar", "¿Cuántas facturas tengo pendientes de cobrar?", "Abre la factura FC-0002"):
+                        result = json.loads(subprocess.check_output(invoice_fixture_script, cwd=repo,
+                            input=json.dumps({"input": body, "options": {"origin": origin, "extra": 12 if message.startswith("¿Cuántas") else 0}}).encode()))
+                        assert result["status"] == 200, result["body"]
+                        request_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(result["body"]))
                         return
                     if "editar guardado" in message:
                         response = proposal("edit_saved_draft", 42)
@@ -243,9 +252,65 @@ try:
             if output:
                 page.screenshot(path=str(output / f"secretario-central-{width}.png"), full_page=True)
 
+            # The HTTP response comes from the real handler and financial calculation.
+            page.evaluate("""data=>{
+              window.originalInvoicesFixture={clients:state.clients,invoices:state.invoices,entries:state.entries};
+              Object.assign(state,data);
+            }""", invoice_fixture)
+            page.locator("#secretary-message").fill("Dime qué facturas tengo pendiente cobrar")
+            panel.get_by_role("button", name="Enviar", exact=True).click()
+            answer = panel.locator(".secretary-turn-assistant").last
+            expect(answer.locator(".secretary-bubble")).to_contain_text("Tienes 3 facturas pendientes de cobro por 1680,00")
+            expect(answer.locator(".secretary-bubble")).to_contain_text("1 está vencida")
+            expect(answer.locator(".secretary-invoice")).to_have_count(3)
+            expect(answer.locator(".secretary-invoice").filter(has_text="FC-0001")).to_contain_text("Vencida")
+            expect(answer.locator(".secretary-invoice").filter(has_text="FC-0002")).to_contain_text("Vence")
+            expect(answer.locator(".secretary-invoice").filter(has_text="FC-0003")).to_contain_text("450,00")
+            expect(answer).not_to_contain_text("1250")
+            for absent in ("FC-0004", "FC-0005", "FC-0006", "Presupuestos aceptados", "Costes registrados"):
+                expect(answer).not_to_contain_text(absent)
+            assert page.evaluate("state.view==='informes'&&document.body.classList.contains('secretary-home')")
+            expect(page.locator(".finance-invoices, .finance-document-editor")).to_have_count(0)
+            wait_for_stable_view(page)
+            if output:
+                page.screenshot(path=str(output / f"secretario-facturas-centro-{width}.png"))
+            answer.locator(".secretary-invoice").filter(has_text="FC-0001").get_by_role("button", name="Abrir factura").click()
+            expect(page.locator(".finance-document-editor")).to_contain_text("Editando FC-0001")
+            expect(page.locator("#paper")).to_contain_text("Espacio Olivo")
+            assert page.locator(".inv-form").evaluate("node=>getComputedStyle(node).position==='static'")
+            assert_secretary_clearance(page)
+            wait_for_stable_view(page)
+            if output:
+                if width >= 1100:
+                    page.locator("#paper").evaluate("(node)=>node.scrollIntoView({block:'start'})")
+                expect(page.locator("#toast")).not_to_have_class(__import__("re").compile(r".*\bshow\b.*"))
+                page.screenshot(path=str(output / f"secretario-factura-lateral-{width}.png"))
+            panel.get_by_role("button", name="Volver al chat", exact=True).click()
+            expect(answer.locator(".secretary-invoice")).to_have_count(3)
+            assert page.evaluate("document.body.classList.contains('secretary-home')&&state.draft===null")
+            page.locator("#secretary-message").fill("Abre la factura FC-0002")
+            panel.get_by_role("button", name="Enviar", exact=True).click()
+            expect(page.locator(".finance-document-editor")).to_contain_text("Editando FC-0002")
+            # The normal native editor close also returns to the conversation.
+            page.get_by_role("button", name="← Todas las facturas", exact=True).click()
+            expect(panel.locator(".secretary-invoice")).to_have_count(3)
+            assert page.evaluate("document.body.classList.contains('secretary-home')")
+            page.locator("#secretary-message").fill("¿Cuántas facturas tengo pendientes de cobrar?")
+            panel.get_by_role("button", name="Enviar", exact=True).click()
+            paged = panel.locator(".secretary-turn-assistant").last
+            expect(paged.locator(".secretary-invoice")).to_have_count(12)
+            expect(paged).to_contain_text("Viendo 12 de 15 facturas")
+            paged.get_by_role("button", name="Ver más", exact=True).click()
+            expect(paged.locator(".secretary-invoice")).to_have_count(15)
+            assert requests[-1]["invoicePage"]["offset"] == 12
+            assert page.evaluate("document.body.classList.contains('secretary-home')")
+            print(f"{width} PASS: verified pending rows, click and explicit open, native close, return and paging", flush=True)
+            page.evaluate("Object.assign(state,window.originalInvoicesFixture);ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")
+
             page.locator("#secretary-message").fill("Crear una factura de 2 horas de asesoría a 100 por hora")
             panel.get_by_role("button", name="Enviar", exact=True).click()
             expect(panel.get_by_role("button", name="Cliente ficticio", exact=True)).to_be_visible()
+            assert page.evaluate("document.body.classList.contains('secretary-home')")
             expect(panel.get_by_role("textbox", name="Otra respuesta: Elige el cliente", exact=True)).to_be_visible()
             panel.get_by_role("button", name="Cliente ficticio", exact=True).click()
             panel.get_by_role("button", name="Continuar", exact=True).click()
@@ -268,6 +333,7 @@ try:
             # A new request must not overwrite or silently leave the active draft.
             page.locator("#secretary-message").fill("Abre facturas")
             panel.get_by_role("button", name="Enviar", exact=True).click()
+            panel.get_by_role("button", name="Abrir facturas", exact=True).click()
             expect(page.locator("#modalBox")).to_contain_text("a medias")
             assert page.evaluate("state.draft.lines[0].qty===2")
             page.locator("#modalBox").get_by_role("button", name="Seguir editando", exact=True).click()
@@ -372,6 +438,7 @@ try:
             page.locator("input[type=date]").nth(1).dispatch_event("change")
             page.locator("#secretary-message").fill("Abre facturas")
             panel.get_by_role("button", name="Enviar", exact=True).click()
+            panel.get_by_role("button", name="Abrir facturas", exact=True).last.click()
             expect(page.locator("#modalBox")).to_contain_text("a medias")
             page.locator("#modalBox").get_by_role("button", name="Seguir editando", exact=True).click()
 
