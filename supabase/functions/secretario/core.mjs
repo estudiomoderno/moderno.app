@@ -1,4 +1,5 @@
-import {isGeneralReceivablesQuestion, receivablesPage} from './receivables.mjs';
+import {receivablesPage} from './receivables.mjs';
+import {receivableQuestion,resolveReceivableScope} from './receivable-scope.mjs';
 
 /* The model proposes intent. Permissions, source selection and draft validation
  * stay here; document numbering, tax totals and persistence stay in the editor. */
@@ -77,7 +78,7 @@ export function normalizeRequest(input){
  const invoicePage=input.invoicePage??null;
  if(invoicePage!==null){
   keys(invoicePage,['offset','version','projectId']);
-  if(!Number.isSafeInteger(invoicePage.offset)||invoicePage.offset<1||typeof invoicePage.version!=='string'||invoicePage.version.length>500
+  if(!Number.isSafeInteger(invoicePage.offset)||invoicePage.offset<1||typeof invoicePage.version!=='string'||invoicePage.version.length>1200
     ||invoicePage.projectId!==null&&(typeof invoicePage.projectId!=='string'||invoicePage.projectId.length>160))fail('invalid_request','No se ha podido leer la página solicitada.');
  }
  return {studyId:input.studyId,message:input.message.trim(),automatic,history:turns,context:{view:context.view||'finanzas',projectId:context.projectId==null?null:id(context.projectId),timeZone},answers:{...answers},invoicePage};
@@ -88,14 +89,14 @@ export async function loadAuthorizedSnapshot(client,request,signal,{receivablesO
  if(roleResult.error)fail('data_unavailable','No puedo verificar tus permisos en este estudio. No se ha modificado ningún documento.',503);
  const role=roleResult.data;if(!['admin','colaborador'].includes(role))fail('forbidden','Tu acceso actual no permite utilizar el Secretario en este estudio.',403);
  if(receivablesOnly&&role!=='admin')fail('forbidden','Tu rol no permite consultar facturas pendientes de cobro.',403);
- const blocks=receivablesOnly?['proyectos','config','facturas']:role==='admin'?ADMIN_BLOCKS:PROJECT_BLOCKS;
+ const blocks=receivablesOnly?['proyectos','contactos','config','facturas']:role==='admin'?ADMIN_BLOCKS:PROJECT_BLOCKS;
  const result=await rpc(client,'app_leer_bloques',{p_estudio:request.studyId,p_bloques:blocks},signal);
  if(result.error||!Array.isArray(result.data))fail('data_unavailable','Los datos autorizados del estudio todavía no están disponibles. No se ha modificado ningún documento.',503);
  const rows=result.data;
  if(rows.length!==blocks.length||rows.some(r=>!object(r)||r.rol!==role||!blocks.includes(r.bloque)||typeof r.updated_at!=='string'||!Number.isFinite(Date.parse(r.updated_at)))||new Set(rows.map(r=>r.bloque)).size!==blocks.length)fail('data_unavailable','No se ha podido verificar una versión completa y autorizada de los datos.',503);
  const values=Object.fromEntries(rows.map(r=>[r.bloque,r.contenido]));
- if(!Array.isArray(values.proyectos)||role==='admin'&&(!object(values.config)||!object(values.facturas)||!Array.isArray(values.facturas.invoices)||!Array.isArray(values.facturas.entries))
-   ||role==='admin'&&!receivablesOnly&&(!Array.isArray(values.contactos)||!object(values.presupuestos)||!Array.isArray(values.presupuestos.quotes)||!Array.isArray(values.presupuestos.drafts)))fail('data_unavailable','La estructura de datos todavía no está preparada para el Secretario.',503);
+ if(!Array.isArray(values.proyectos)||role==='admin'&&(!Array.isArray(values.contactos)||!object(values.config)||!object(values.facturas)||!Array.isArray(values.facturas.invoices)||!Array.isArray(values.facturas.entries))
+   ||role==='admin'&&!receivablesOnly&&(!object(values.presupuestos)||!Array.isArray(values.presupuestos.quotes)||!Array.isArray(values.presupuestos.drafts)))fail('data_unavailable','La estructura de datos todavía no está preparada para el Secretario.',503);
  const snapshot={studyId:request.studyId,role,versions:Object.fromEntries(rows.map(r=>[r.bloque,r.updated_at])),projects:values.proyectos.filter(object),clients:values.contactos||[],config:values.config||{},quotes:values.presupuestos?.quotes||[],drafts:values.presupuestos?.drafts||[],invoices:values.facturas?.invoices||[],entries:values.facturas?.entries||[],invoiceData:{del:values.facturas?.del,ddel:values.facturas?.ddel}};
  if(snapshot.projects.some(p=>!id(p.id))||new Set(snapshot.projects.map(p=>id(p.id))).size!==snapshot.projects.length)fail('data_unavailable','Hay proyectos sin una identidad inequívoca. Revisa los datos antes de continuar.',503);
  if(request.context.projectId&&!snapshot.projects.some(p=>id(p.id)===request.context.projectId))fail('project_forbidden','No encuentro ese proyecto entre los que puedes consultar.',403);
@@ -504,23 +505,25 @@ function summary(s,r,p){
  return response(message,'answer',{sources:sources.slice(0,80),metrics:v,sourceCount:sources.length,actions:[{id:'view-invoices',type:'navigate',label:'Revisar facturas',payload:{view:'facturas'}}],trace:[{label:'Facturas, cobros, costes y presupuestos autorizados consultados',status:'done'},{label:'Totales calculados con las reglas registradas en Moderno.app',status:'done'}]});
 }
 
-function pendingInvoices(s,r,p={}){
+function pendingInvoices(s,r,original){
  if(s.role!=='admin')fail('forbidden','Tu rol no permite consultar facturas pendientes de cobro.',403);
- let projectId=r.invoicePage?.projectId??null;
- if(r.invoicePage){
-  if(projectId!==null&&!s.projects.some(project=>id(project.id)===projectId))fail('project_forbidden','No encuentro ese proyecto entre los que puedes consultar.',403);
- }else if(p.projectId||p.projectQuery||own(r.answers,'projectId')||/\b(?:este|del) proyecto\b/.test(norm(r.message))){
-  const picked=projectChoice(s,r,p);if(picked.question)return clarify(picked.question.prompt,[picked.question]);
-  if(!picked.project)return clarify('¿De qué proyecto quieres consultar las facturas pendientes?',[question('projectId','Indica el proyecto.')]);
-  projectId=id(picked.project.id);
- }
  const parts=new Intl.DateTimeFormat('en',{timeZone:r.context.timeZone||'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts();
  const datePart=type=>parts.find(part=>part.type===type).value;
  const today=[datePart('year'),datePart('month'),datePart('day')].join('-');
- const version=JSON.stringify([s.studyId,s.versions.facturas,s.versions.config,projectId?s.versions.proyectos:null,projectId,today]);
- if(r.invoicePage&&r.invoicePage.version!==version)fail('context_changed','Las facturas han cambiado. Vuelve a consultar para actualizar los resultados.',409);
- const {message,page,...results}=receivablesPage(s,{today,projectId,offset:r.invoicePage?.offset??0});
- return response(message,'answer',{sources:page,receivables:{...results,version,projectId},trace:[]});
+ const resolved=resolveReceivableScope(s,r,original,today);
+ const scope=resolved.scope;
+ if(!scope){
+  if(r.invoicePage)fail('context_changed','El ámbito de la consulta ha cambiado. Vuelve a consultar los resultados.',409);
+  const {field,prompt,options}=resolved.question;
+  return clarify(prompt,[question(field,prompt,options)]);
+ }
+ const {projectId,client,date,overdue}=scope;
+ const version=JSON.stringify([s.studyId,s.versions.facturas,s.versions.config,s.versions.contactos,s.versions.proyectos,projectId,client?.name,client?.brand,date,overdue,today]);
+ if(r.invoicePage&&(r.invoicePage.version!==version||r.invoicePage.projectId!==projectId))fail('context_changed','Las facturas han cambiado. Vuelve a consultar para actualizar los resultados.',409);
+ const {message,page,...results}=receivablesPage(s,{today,...scope,offset:r.invoicePage?.offset??0});
+ const notes=[client?.label,scope.projectLabel,date&&`${date.field==='due'?'Vencimiento':'Emisión'}: ${date.from} a ${date.to}`,overdue==='overdue'?'Solo vencidas':overdue==='open'?'Sin vencer':null].filter(Boolean);
+ return response(message,'answer',{sources:page,receivables:{...results,version,projectId,scopeLabel:notes.join(' · '),intent:'pending_invoices'},
+  trace:[{label:'Consulta de facturas pendientes de cobro identificada',status:'done'},{label:'Facturas y cobros autorizados comprobados',status:'done'}]});
 }
 
 function explicitDocumentOpen(r){
@@ -551,8 +554,9 @@ export function executePlan(snapshot,request,plan){
  if(plan.intent==='prepare_draft')return prepareDraft(snapshot,request,plan);
  if(plan.intent==='summary')return summary(snapshot,request,plan);
  if(plan.intent==='pending_invoices'){
-  if(plan.clientId||plan.clientQuery)return clarify('¿Quieres ver el total pendiente de todo el estudio o de un proyecto concreto?',[question('detail','Indica el ámbito de la consulta.')]);
-  return pendingInvoices(snapshot,request,plan);
+  const original=receivableQuestion(request);
+  if(original)return pendingInvoices(snapshot,request,original);
+  return clarify('¿Te refieres a facturas pendientes de cobro? Si quieres, indica también el cliente, el proyecto o el periodo.',[question('detail','Describe las facturas que quieres consultar.')]);
  }
  if(plan.intent==='project_status')return projectStatus(snapshot,request,plan);
  if(plan.intent==='navigate'){
@@ -598,7 +602,9 @@ export async function requestPlan({fetchImpl=fetch,apiKey,model,request,context,
 export async function runSecretary({client,input,planner,signal,onStage}){
  const stage=(name,details={})=>{try{onStage?.(name,details);}catch{}}
  const request=normalizeRequest(input);stage('authorization');
- const receivablesOnly=!!request.invoicePage||!request.automatic&&isGeneralReceivablesQuestion(request.message);
+ const receivableText=receivableQuestion(request);
+ if(request.invoicePage&&!receivableText)fail('context_changed','Vuelve a consultar para actualizar los resultados.',409);
+ const receivablesOnly=!!receivableText;
  const snapshot=await loadAuthorizedSnapshot(client,request,signal,{receivablesOnly});
  let plan, directDocument;
  if(!receivablesOnly&&explicitDocumentOpen(request)){
@@ -620,7 +626,7 @@ export async function runSecretary({client,input,planner,signal,onStage}){
  // versions-only RPC avoids downloading every financial block a second time.
  const current=await loadAuthorizedVersions(client,request,Object.keys(snapshot.versions),signal);stage('revalidated');
  if(current.role!==snapshot.role||Object.keys(current.versions).length!==Object.keys(snapshot.versions).length||Object.entries(snapshot.versions).some(([key,value])=>current.versions[key]!==value))fail('context_changed','Los datos o tus permisos cambiaron durante la consulta. Vuelve a intentarlo.',409);
- if(receivablesOnly)return pendingInvoices(snapshot,request);
+ if(receivablesOnly)return pendingInvoices(snapshot,request,receivableText);
  if(directDocument)return response('He localizado el documento.','answer',{sources:[directDocument],actions:[documentAction(directDocument)]});
  return executePlan(snapshot,request,plan);
 }

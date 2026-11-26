@@ -32,6 +32,7 @@ var ModernoSecretary=(()=>{
   const labelText=(value,max=500)=>typeof value==='string'?value.slice(0,max):'';
   function structuredFor(previous,current){
     if(!current)return {};
+    if(current.receivable_scope!==undefined)return {...current};
     const before=previous||{},fullResetKeys=new Set(['draftId','quoteRef','brand']),relationKeys=new Set(['projectId','clientId']);
     const changed=(key,value)=>before[key]!==value;
     const entries=Object.entries(current),resetAll=entries.some(([key,value])=>(fullResetKeys.has(key)||relationKeys.has(key))&&changed(key,value));
@@ -448,10 +449,13 @@ var ModernoSecretary=(()=>{
     return Number.isSafeInteger(result?.count)&&Number.isSafeInteger(result.offset)&&result.offset>=0&&Array.isArray(rows)&&rows.length<=12
       &&result.count>=result.offset+rows.length&&(result.next===null||rows.length>0&&result.next===result.offset+rows.length&&result.next<result.count)
       &&typeof result.version==='string'&&(result.projectId===null||typeof result.projectId==='string')
+      &&Number.isSafeInteger(result.overdue)&&result.overdue>=0&&result.overdue<=result.count
+      &&Array.isArray(result.amounts)&&result.amounts.every(total=>/^[A-Z]{3}$/.test(total?.currency)&&Number.isFinite(total.amount)&&total.amount>0)
       &&rows.every(row=>['invoice','invoice_entry'].includes(row?.kind)&&typeof row.id==='string'&&typeof row.label==='string'&&Number.isFinite(row.pending)&&row.pending>0&&/^[A-Z]{3}$/.test(row.currency));
   }
   function drawReceivables(container,record){
     const {sources,receivables}=record.response;
+    if(receivables.scopeLabel)container.append(el('p','secretary-caption',labelText(receivables.scopeLabel,500)));
     if(!sources.length)return;
     const list=el('ul','secretary-invoices');
     for(const source of sources){
@@ -483,7 +487,7 @@ var ModernoSecretary=(()=>{
     try{
       const {data,error}=await sb.auth.getSession(),session=data?.session;
       if(error||!session?.access_token||session.user?.id!==state.sessionUser?.id||record.owner!==owner()||paging.signal.aborted)throw Error();
-      const input={studyId:ESTUDIO_ID,message:record.invoiceQuery.message,context:record.invoiceQuery.context,
+      const input={...record.invoiceQuery,studyId:ESTUDIO_ID,
         invoicePage:{offset:receipts.next,version:receipts.version,projectId:receipts.projectId}};
       const response=await sendQuery(session,input,paging.signal),payload=await response.json();
       if(record.owner!==owner()||paging.signal.aborted)return;
@@ -491,7 +495,8 @@ var ModernoSecretary=(()=>{
         if(response.status===409){record.pageError='Las facturas han cambiado. Vuelve a consultar para actualizar los resultados.';receipts.next=null;return;}
         throw Error();
       }
-      if(!validReceivables(payload)||payload.receivables.version!==receipts.version||payload.receivables.offset!==record.response.sources.length||payload.receivables.count!==receipts.count)throw Error();
+      if(!validReceivables(payload)||payload.receivables.version!==receipts.version||payload.receivables.offset!==record.response.sources.length||payload.receivables.count!==receipts.count
+        ||payload.receivables.overdue!==receipts.overdue||JSON.stringify(payload.receivables.amounts)!==JSON.stringify(receipts.amounts))throw Error();
       record.response.sources.push(...payload.sources);receipts.next=payload.receivables.next;
     }catch{
       if(!paging.signal.aborted)record.pageError='No se han podido cargar más facturas. Puedes volver a intentarlo.';
@@ -648,7 +653,7 @@ var ModernoSecretary=(()=>{
       else if(safe.actions.some(action=>action.type==='navigate'))feedbackTask='navigation';
       unavailable=false;requestContext=null;finishActivity('done',safe.trace);
       const record=appendMessage('assistant',payload.message,safe);record.feedbackTask=feedbackTask;
-      if(safe.receivables)record.invoiceQuery={message:input.message,context:input.context};
+      if(safe.receivables)record.invoiceQuery=input;
       const action=safe.actions.find(item=>item.type==='prepare_draft'&&safe.status==='proposal'&&draftRequested||item.type==='open_document'&&item.openImmediately===true);
       if(action&&epoch===generation&&captured===owner())runAction(action,captured);
       setStatus(questions.length?'Puedes elegir una opción o escribir tu respuesta.':'Los documentos se guardan desde su editor.');
