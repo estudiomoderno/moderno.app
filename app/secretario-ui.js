@@ -8,11 +8,12 @@ var ModernoSecretary=(()=>{
   if(!bridge)return Object.freeze({enabled:false,refresh(){},reset(){},openFinance(){return false;}});
   const financeViews=['informes','facturas','contabilidad','presupuestos','prevision'];
   const sectionLabels={informes:'Resumen',facturas:'Facturas',contabilidad:'Gastos',presupuestos:'Presupuestos',prevision:'Previsión'};
-  const supported=()=>financeViews.includes(state.view)||['proyecto','estancia'].includes(state.view);
+  const supported=()=>financeViews.includes(state.view)||['proyecto','estancia','presedit'].includes(state.view);
   const owner=()=>JSON.stringify([ESTUDIO_ID||'',state.sessionUser?.id||'',_accessRole||'']);
   const ready=()=>!_accessLoading&&!!ESTUDIO_ID&&!!state.sessionUser?.id&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon;
   let identity=owner(),messages=[],panel=null,thread=null,composer=null,sendButton=null,stopButton=null,statusNode=null,contextNode=null,announcementNode=null;
   let collapsed=false,home=false,homePending=false,lastView=null,lastProject=null,busy=false,controller=null,generation=0,unavailable=false,authSubscription=null;
+  let documentOpen=false,preview=null,returnButton=null;
   let requestCounter=0,actions=new Map(),questions=[],answers={},pendingAnswers={},feedbackTask='finance_question',contextTrimmed=false;
   let workingMessage='Consultando la información a la que tienes acceso…',requestContext=null,contextInterrupted=false;
   let positionQueued=false,positionSources=[];
@@ -60,16 +61,18 @@ var ModernoSecretary=(()=>{
   const activeProject=()=>['proyecto','estancia'].includes(state.view)?state.projects?.find(p=>p.id===state.currentProject):null;
   function icon(){const image=el('img','secretary-logo');image.src='/brand/moderno_app_simbolo_negro.svg';image.alt='';return image;}
   function reset(){
-    generation++;controller?.abort();controller=null;busy=false;messages=[];actions.clear();questions=[];answers={};pendingAnswers={};contextTrimmed=false;
+    generation++;controller?.abort();messages.forEach(record=>record.pageController?.abort());controller=null;busy=false;messages=[];actions.clear();questions=[];answers={};pendingAnswers={};contextTrimmed=false;
     feedbackOperation++;feedback?.setContext(null);feedbackLoaded=false;feedbackLoading=false;feedbackRevision=null;feedbackError='';feedbackHost=null;
     panel?.remove();panel=null;thread=null;composer=null;announcementNode=null;identity=owner();collapsed=false;home=false;homePending=false;unavailable=false;lastView=null;lastProject=null;requestContext=null;contextInterrupted=false;
-    document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on');
+    documentOpen=false;preview?.node.remove();preview=null;returnButton=null;
+    document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open');
     document.getElementById('secretary-reopen')?.remove();
   }
   function checkIdentity(){if(identity!==owner()){reset();return false;}return true;}
   function clearLayout(){
     panel?.remove();document.getElementById('secretary-reopen')?.remove();
-    document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on');
+    preview?.node.remove();preview=null;documentOpen=false;
+    document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open');
   }
   function busyEditor(view,projectId){
     if(document.querySelector('.overlay.open,dialog[open]')){toast('Termina o cierra la ventana abierta para continuar.');return true;}
@@ -78,20 +81,33 @@ var ModernoSecretary=(()=>{
   }
   function goDirect(view,projectId){
     if(!canView(view))return false;
-    home=false;homePending=false;
     if(busyEditor(view,projectId))return false;
+    preview?.node.remove();preview=null;home=false;homePending=false;
     go(view,projectId);refresh();return state.view===view&&(projectId==null||state.currentProject===projectId);
   }
   function openFinance(){
     checkIdentity();if(!ready())return false;
     const first=financeViews.find(view=>canView(view));if(!first)return false;
-    homePending=true;collapsed=false;
+    homePending=true;collapsed=false;preview?.node.remove();preview=null;
     if(busyEditor(first))return false;
     go(first);
     if(state.view===first){home=true;homePending=false;refresh();composer?.focus();return true;}
     return false;
   }
-  function fold(){collapsed=true;home=false;homePending=false;refresh();document.getElementById('secretary-reopen')?.focus();}
+  function returnToConversation(){
+    if(!ready())return;
+    if(preview){preview.node.remove();preview=null;}
+    if(document.querySelector('#view .finance-document-editor')&&draftEditing()){
+      if(draftDirty()){openFinance();return;}
+      state.draft=null;state.fView=null;state.qView=null;
+      home=true;collapsed=false;render();
+    }else{
+      if(!supported()||state.view==='presedit'){openFinance();return;}
+      home=true;collapsed=false;refresh();
+    }
+    composer?.focus();
+  }
+  function fold(){collapsed=true;refresh();document.getElementById('secretary-reopen')?.focus();}
   function unfold(){collapsed=false;refresh();composer?.focus();}
   function snapshot(){
     const dirtyBlocks=bridge.BLOCKS.filter(key=>!_cloudHash[key]||!CLOUD_BLOCKS[key]||canon(CLOUD_BLOCKS[key].get())!==_cloudHash[key]);
@@ -105,6 +121,10 @@ var ModernoSecretary=(()=>{
       const ok=action.payload.view==='finanzas'?openFinance():goDirect(target.view,target.projectId);
       if(!ok)throw Error('La navegación está esperando a que termines la edición abierta.');
       return 'Pantalla abierta.';
+    }
+    if(action?.type==='open_document'){
+      if(!openSource(action.payload,fromOwner))throw Error('No se pudo abrir el documento. Comprueba que sigue disponible.');
+      return '';
     }
     if(action?.type!=='prepare_draft')throw Error('Esta acción no está disponible.');
     const draft=bridge.prepareDraft(action.payload,snapshot()),view=draft.kind==='factura'?'facturas':'presupuestos';
@@ -130,8 +150,32 @@ var ModernoSecretary=(()=>{
     }
     refresh();return 'Borrador abierto para revisar. Tú decides cuándo guardarlo.';
   }
+  function mountPreview(title,description){
+    const section=el('section','finance-page secretary-document-preview');
+    section.append(button('← Volver a la conversación',returnToConversation),el('h1','big',title));
+    if(description)section.append(el('p','',description));
+    preview?.node.remove();
+    preview={node:section,view:state.view,project:state.currentProject};home=false;homePending=false;collapsed=false;refresh();
+    return section;
+  }
+  async function addPreviewFile(section,file){
+    if(!fileSrc(file))return;
+    const content=await fileResolveForView(file);
+    if(!content||preview?.node!==section)return;
+    const url=new URL(content,location.origin);
+    if(!['https:','http:','blob:','data:'].includes(url.protocol))return;
+    const type=String(file.type||'');
+    if((type==='application/pdf'||/\.pdf$/i.test(file.name||''))&&(url.protocol!=='data:'||/^data:application\/pdf[;,]/i.test(url.href))){
+      const frame=el('iframe','secretary-preview-pdf');
+      frame.title=file.name||'Documento PDF';frame.setAttribute('sandbox','');frame.referrerPolicy='no-referrer';frame.src=url.href;section.append(frame);
+    }else if(type.startsWith('image/')&&(url.protocol!=='data:'||/^data:image\//i.test(url.href))){
+      const image=el('img','secretary-preview-image');image.alt=file.name||'Documento';image.src=url.href;section.append(image);
+    }
+    if(url.protocol==='data:'&&!/^data:(?:image\/|application\/pdf[;,]|application\/octet-stream[;,])/i.test(url.href))return;
+    const link=el('a','secretary-button','Descargar archivo');link.href=url.href;link.download=file.name||'documento';link.target='_blank';link.rel='noopener noreferrer';section.append(link);
+  }
   function openSource(source,fromOwner){
-    if(!checkIdentity()||identity!==fromOwner||!ready())return;
+    if(!source||!checkIdentity()||identity!==fromOwner||!ready())return false;
     const id=String(source?.id||'');
     if(source.kind==='project'){
       const project=state.projects.find(p=>String(p.id)===id);if(project)goDirect('proyecto',project.id);else toast('El proyecto ya no está disponible.');return;
@@ -140,18 +184,37 @@ var ModernoSecretary=(()=>{
       const isF=source.kind==='invoice',view=isF?'facturas':'presupuestos',docs=isF?state.invoices:state.quotes;
       const candidates=docs.map((doc,index)=>({doc,index})).filter(({doc})=>doc.ref===id&&(!source.brand||doc.brand===source.brand)&&(source.projectId==null||String(doc.projectId||'')===String(source.projectId)));
       const index=candidates.length===1?candidates[0].index:-1;
-      if(index<0||!canView(view)){toast('El documento ya no está disponible en esta sesión.');return;}
-      if(busyEditor(view))return;
-      home=false;homePending=false;loadDoc(index,isF?'factura':'presupuesto');refresh();return;
+      if(index<0||!canView(view)||!Array.isArray(docs[index].lines)){toast('El documento ya no está disponible en esta sesión.');return false;}
+      if(busyEditor(view))return false;
+      home=false;homePending=false;collapsed=false;loadDoc(index,isF?'factura':'presupuesto');
+      if(state.draft?.editRef===id)draftTrack(state.draft);
+      refresh();return state.draft?.editRef===id;
+    }
+    if(source.kind==='invoice_entry'){
+      const entries=state.entries.filter(entry=>String(entry.id)===id&&entry.kind==='in'&&(!source.brand||entry.brand===source.brand));
+      if(entries.length!==1||!canView('facturas')||busyEditor('facturas'))return false;
+      const entry=entries[0],section=mountPreview(source.label,source.client);
+      section.append(el('p','',entry.concept||''),el('p','',invoiceMoney(source.pending,source.currency)+' pendientes de cobro'));
+      addPreviewFile(section,entry.file).catch(()=>toast('No se ha podido abrir el archivo.'));
+      return true;
     }
     if(source.kind==='entry'){goDirect('contabilidad');return;}
     if(source.kind==='catalog'){goDirect('catalogo');return;}
     if(source.kind==='client'){goDirect('agenda');return;}
-    if(['document','task'].includes(source.kind)){
+    if(source.kind==='document'){
+      const project=state.projects.find(p=>String(p.id)===String(source.projectId));
+      const files=project?.files?.filter(file=>String(project.id)+':'+String(file?.id)===id)||[];
+      if(files.length!==1||!canView('proyecto')||busyEditor(state.view))return false;
+      const file=files[0],section=mountPreview(file.name||source.label,project.name);
+      if(file.body!=null)section.append(el('pre','secretary-document-body',String(file.body)));
+      else addPreviewFile(section,file).catch(()=>toast('No se ha podido abrir el archivo.'));
+      return true;
+    }
+    if(source.kind==='task'){
       const project=state.projects.find(p=>String(p.id)===String(source.projectId));
       if(!project||!canView('proyecto')){toast('El proyecto ya no está disponible.');return;}
       if(!goDirect('proyecto',project.id))return;
-      projTab(source.kind==='document'?'archivos':'tareas');return;
+      projTab('tareas');return;
     }
     toast('Abre la sección correspondiente para consultar esta fuente.');
   }
@@ -162,9 +225,15 @@ var ModernoSecretary=(()=>{
   function setStatus(value){if(statusNode)statusNode.textContent=value+(contextTrimmed?' Uso el contexto reciente; el historial sigue visible.':'');}
   function currentContext(){const project=activeProject();return {home,view:state.view,projectId:project?.id??null};}
   function sameContext(expected){const current=currentContext();return !!expected&&current.home===expected.home&&current.view===expected.view&&String(current.projectId??'')===String(expected.projectId??'');}
+  function requestsDraft(value){
+    const words=labelText(value,6000).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    return /\b(?:prepar\w*|crea\w*|gener\w*|haz\w*|convert\w*|retom\w*|contin\w*|edit\w*)\b/.test(words)
+      &&/\b(?:factur\w*|presupuest\w*|borrador\w*|guardad\w*)\b/.test(words);
+  }
   function activityFor(content,projectId){
     const value=labelText(content,1000).toLocaleLowerCase('es');
     if(/(?:prepar|crea|crear|convert|contin|retom|borrador)/.test(value)&&/(?:factura|presupuesto|borrador)/.test(value))return 'Consultando clientes, proyectos y partidas para preparar el borrador…';
+    if(/pendiente|sin cobrar|por cobrar/.test(value)&&/cobr/.test(value))return 'Comprobando las facturas y sus cobros…';
     if(/(?:cobr|factur|coste|gasto|presupuesto|pendiente)/.test(value))return 'Consultando facturas, cobros, costes y presupuestos registrados…';
     if(projectId!=null)return 'Consultando las tareas y documentos autorizados de este proyecto…';
     return 'Consultando la información a la que tienes acceso…';
@@ -301,6 +370,64 @@ var ModernoSecretary=(()=>{
       submitMessage(message,copy);
     });container.append(form);
   }
+  const invoiceMoney=(amount,currency)=>new Intl.NumberFormat('es-ES',{style:'currency',currency}).format(amount);
+  function validReceivables(payload){
+    const result=payload?.receivables,rows=payload?.sources;
+    return Number.isSafeInteger(result?.count)&&Number.isSafeInteger(result.offset)&&result.offset>=0&&Array.isArray(rows)&&rows.length<=12
+      &&result.count>=result.offset+rows.length&&(result.next===null||rows.length>0&&result.next===result.offset+rows.length&&result.next<result.count)
+      &&typeof result.version==='string'&&(result.projectId===null||typeof result.projectId==='string')
+      &&rows.every(row=>['invoice','invoice_entry'].includes(row?.kind)&&typeof row.id==='string'&&typeof row.label==='string'&&Number.isFinite(row.pending)&&row.pending>0&&/^[A-Z]{3}$/.test(row.currency));
+  }
+  function drawReceivables(container,record){
+    const {sources,receivables}=record.response;
+    if(!sources.length)return;
+    const list=el('ul','secretary-invoices');
+    for(const source of sources){
+      const row=el('li','secretary-invoice');
+      const label=el('div','secretary-invoice-label');
+      label.append(el('strong','',labelText(source.label,160)),el('span','secretary-caption',labelText(source.client,160)||'Cliente sin registrar'));
+      const balance=el('div','secretary-invoice-balance');
+      const date=typeof source.due==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(source.due)?source.due.split('-').reverse().join('/'):'';
+      const status=source.overdue?(source.partial?'Vencida · Cobro parcial':'Vencida'):source.partial?'Cobro parcial':date?'Vence':'Sin vencimiento registrado';
+      balance.append(el('strong','',invoiceMoney(source.pending,source.currency)),el('span',source.overdue?'secretary-invoice-overdue':'secretary-caption',status+(date?' · '+date:'')));
+      row.append(label,balance,button('Abrir factura',()=>{
+        if(!openSource(source,record.owner))setStatus('La factura ya no está disponible. Vuelve a consultar los pendientes.');
+      },'secretary-source'));
+      list.append(row);
+    }
+    container.append(list);
+    if(sources.length<receivables.count)container.append(el('p','secretary-caption',`Viendo ${sources.length} de ${receivables.count} facturas. El total corresponde a todas.`));
+    if(receivables.next!==null){
+      const more=button(record.pageController?'Cargando…':'Ver más',()=>loadMoreInvoices(record),'secretary-button');
+      more.disabled=!!record.pageController;container.append(more);
+    }
+    if(record.pageError)container.append(el('p','secretary-caption',record.pageError));
+  }
+  async function loadMoreInvoices(record){
+    const receipts=record.response.receivables;
+    if(record.pageController||record.owner!==owner()||!ready()||receipts.next===null)return;
+    const paging=new AbortController();
+    record.pageController=paging;record.pageError='';drawThread();
+    try{
+      const {data,error}=await sb.auth.getSession(),session=data?.session;
+      if(error||!session?.access_token||session.user?.id!==state.sessionUser?.id||record.owner!==owner()||paging.signal.aborted)throw Error();
+      const input={studyId:ESTUDIO_ID,message:record.invoiceQuery.message,context:record.invoiceQuery.context,
+        invoicePage:{offset:receipts.next,version:receipts.version,projectId:receipts.projectId}};
+      const response=await sendQuery(session,input,paging.signal),payload=await response.json();
+      if(record.owner!==owner()||paging.signal.aborted)return;
+      if(!response.ok){
+        if(response.status===409){record.pageError='Las facturas han cambiado. Vuelve a consultar para actualizar los resultados.';receipts.next=null;return;}
+        throw Error();
+      }
+      if(!validReceivables(payload)||payload.receivables.version!==receipts.version||payload.receivables.offset!==record.response.sources.length||payload.receivables.count!==receipts.count)throw Error();
+      record.response.sources.push(...payload.sources);receipts.next=payload.receivables.next;
+    }catch{
+      if(!paging.signal.aborted)record.pageError='No se han podido cargar más facturas. Puedes volver a intentarlo.';
+    }finally{
+      record.pageController=null;
+      if(record.owner===owner()&&!paging.signal.aborted)drawThread();
+    }
+  }
   function drawThread(){
     if(!thread)return;
     const nearBottom=thread.scrollHeight-thread.scrollTop-thread.clientHeight<100;
@@ -322,7 +449,8 @@ var ModernoSecretary=(()=>{
         const list=el('ol','');for(const step of record.response.trace.slice(0,8))list.append(el('li','',labelText(step.label,300)));details.append(list);item.append(details);
       }
       item.append(el('div','secretary-bubble',record.content));
-      if(record.response?.sources?.length){
+      if(record.response?.receivables)drawReceivables(item,record);
+      else if(record.response?.sources?.length){
         const sources=el('div','secretary-sources');sources.append(el('span','secretary-caption','Fuentes'));
         const received=record.response.sources.slice(0,80);
         for(const source of received.slice(0,4))sources.append(button(labelText(source.label,180)||'Abrir fuente',()=>openSource(source,record.owner),'secretary-source'));
@@ -333,7 +461,7 @@ var ModernoSecretary=(()=>{
       }
       for(const action of record.response?.actions||[]){
         const result=actions.get(action.id);
-        if(result?.done){item.append(el('p','secretary-action-result',result.message));continue;}
+        if(result?.done){if(result.message)item.append(el('p','secretary-action-result',result.message));continue;}
         const target=el('div','secretary-proposal');
         if(result?.message)target.append(el('p','',result.message));
         target.append(button(action.type==='prepare_draft'?'Abrir borrador':labelText(action.label,120)||'Abrir',()=>runAction(action,record.owner),'secretary-action'));
@@ -364,6 +492,7 @@ var ModernoSecretary=(()=>{
     settings.append(settingsContent);controls.append(settings);
     const close=button('Plegar',fold,'secretary-fold');close.setAttribute('aria-label','Plegar el Secretario');controls.append(close);header.append(controls);panel.append(header);
     const shortcuts=el('nav','secretary-shortcuts');shortcuts.setAttribute('aria-label','Accesos directos de Finanzas');
+    returnButton=button('Volver al chat',returnToConversation,'secretary-button secretary-return');shortcuts.append(returnButton);
     for(const view of financeViews)if(canView(view))shortcuts.append(button(sectionLabels[view],()=>goDirect(view),'secretary-shortcut'));
     panel.append(shortcuts);
     thread=el('div','secretary-thread');thread.setAttribute('role','log');thread.setAttribute('aria-label','Conversación con el Secretario');panel.append(thread);
@@ -387,10 +516,18 @@ var ModernoSecretary=(()=>{
     if(target.origin!==edgeOrigin||target.protocol!=='https:'||target.pathname!=='/functions/v1/secretario'||target.username||target.password||target.search||target.hash)throw Error('La conexión del Secretario todavía no está configurada.');
     return target.href;
   }
+  function sendQuery(session,input,signal){
+    return fetch(endpoint(),{method:'POST',credentials:'omit',cache:'no-store',signal,
+      // The function verifies the signed session against the project JWKS.
+      headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},
+      body:JSON.stringify({session:session.access_token,payload:input})});
+  }
   async function submitMessage(content,answerValues){
     if(busy||!content?.trim())return;
     checkIdentity();if(!ready()){setStatus('Inicia sesión para consultar al Secretario.');return;}
+    if(!home&&!documentOpen){home=true;collapsed=false;refresh();}
     const captured=identity,epoch=generation,current=++requestCounter,originContext=currentContext();requestContext=originContext;contextInterrupted=false;
+    const draftRequested=requestsDraft(content)||questions.length>0&&requestsDraft(messages.findLast(item=>item.role==='user'&&!item.automatic)?.content);
     let history;
     try{const recent=bridge.recentHistory(messages.filter(item=>item.role==='user'||item.response),content);history=recent.history;contextTrimmed=recent.trimmed;}
     catch(error){setStatus(error.message);return;}
@@ -405,13 +542,8 @@ var ModernoSecretary=(()=>{
       if(!sameContext(originContext)){contextInterrupted=true;throw new DOMException('Context changed','AbortError');}
       const project=originContext.projectId==null?null:state.projects?.find(item=>String(item.id)===String(originContext.projectId));feedbackTask=project?'project_question':'finance_question';
       workingMessage=activityFor(content,originContext.projectId);drawThread();
-      const input={studyId:ESTUDIO_ID,message:content,automatic:!!answerValues,history,context:{view:originContext.home?'finanzas':originContext.view,...(originContext.projectId!=null?{projectId:originContext.projectId}:{})},...(hasStructuredAnswers?{answers:structuredAnswers}:{})};
-      const response=await fetch(endpoint(),{method:'POST',credentials:'omit',cache:'no-store',signal:controller.signal,
-        // This user's signed session is larger than common proxy header limits.
-        // The function reads it from a bounded JSON envelope, validates its
-        // signature and claims against the project JWKS, then preserves RLS.
-        headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},
-        body:JSON.stringify({session:session.access_token,payload:input})});
+      const input={studyId:ESTUDIO_ID,message:content,automatic:!!answerValues,history,context:{view:originContext.home?'finanzas':originContext.view,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,...(originContext.projectId!=null?{projectId:originContext.projectId}:{})},...(hasStructuredAnswers?{answers:structuredAnswers}:{})};
+      const response=await sendQuery(session,input,controller.signal);
       const payload=await response.json().catch(()=>null);
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
       if(!sameContext(originContext)){contextInterrupted=true;throw new DOMException('Context changed','AbortError');}
@@ -429,15 +561,18 @@ var ModernoSecretary=(()=>{
         throw requestFailure(withReference('No he podido completar la consulta. Puedes volver a intentarlo.',ref),{retryable:true});
       }
       if(!payload||!['answer','clarifying','proposal'].includes(payload.status)||typeof payload.message!=='string')throw Error('La respuesta no se pudo mostrar. Vuelve a intentarlo.');
+      if(payload.receivables&&!validReceivables(payload))throw Error('No se han podido comprobar las facturas de la respuesta.');
       const safe={...payload,sources:Array.isArray(payload.sources)?payload.sources:[],trace:Array.isArray(payload.trace)?payload.trace.filter(step=>step.status==='done'):[],
-        actions:Array.isArray(payload.actions)?payload.actions.filter(action=>['navigate','prepare_draft'].includes(action.type)).slice(0,4):[]};
+        actions:!payload.receivables&&Array.isArray(payload.actions)?payload.actions.filter(action=>['navigate','prepare_draft','open_document'].includes(action?.type)).slice(0,4):[]};
       safe.actions=safe.actions.map((action,index)=>({...action,id:String(payload.requestId||current)+':'+String(action.id||index)}));
       questions=Array.isArray(payload.questions)?payload.questions.filter(question=>typeof question.id==='string'&&typeof question.prompt==='string').slice(0,6).map(question=>({...question,options:Array.isArray(question.options)?question.options.slice(0,8):[]})):[];
       pendingAnswers=pendingAfter(payload.status,structuredAnswers);
       if(safe.actions.some(action=>action.type==='prepare_draft')){const draft=safe.actions.find(action=>action.type==='prepare_draft').payload;feedbackTask=draft.sourceQuoteRef?'invoice_from_quote':draft.kind==='factura'?'invoice_create':'quote_create';}
       else if(safe.actions.some(action=>action.type==='navigate'))feedbackTask='navigation';
       unavailable=false;requestContext=null;const record=appendMessage('assistant',payload.message,safe);record.feedbackTask=feedbackTask;
-      for(const action of safe.actions){if(epoch!==generation||captured!==owner())break;runAction(action,captured);}
+      if(safe.receivables)record.invoiceQuery={message:input.message,context:input.context};
+      const action=safe.actions.find(item=>item.type==='prepare_draft'&&safe.status==='proposal'&&draftRequested||item.type==='open_document'&&item.openImmediately===true);
+      if(action&&epoch===generation&&captured===owner())runAction(action,captured);
       setStatus(questions.length?'Puedes elegir una opción o escribir tu respuesta.':'Los documentos se guardan desde su editor.');
     }catch(error){
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
@@ -485,16 +620,24 @@ var ModernoSecretary=(()=>{
   function refresh(){
     checkIdentity();
     if(!ready()||!supported()){clearLayout();lastView=state.view;return;}
-    if(homePending&&financeViews.includes(state.view)&&!draftEditing()){home=true;homePending=false;}
-    if(lastView==null&&state.view==='informes')home=true;
-    if(!financeViews.includes(state.view))home=false;
+    if(preview&&(preview.view!==state.view||preview.project!==state.currentProject)){preview.node.remove();preview=null;}
+    const viewingDocument=!!preview||state.view==='presedit'||!!document.querySelector('#view .finance-document-editor');
+    if(viewingDocument){home=false;}
+    else if(homePending&&financeViews.includes(state.view)||documentOpen&&messages.length&&(lastView===state.view||lastView==='presedit'&&state.view==='proyecto')){
+      home=true;homePending=false;collapsed=false;
+    }else if(lastView==null&&state.view==='informes')home=true;
+    documentOpen=viewingDocument;
     const projectId=activeProject()?.id||null,changedView=lastView!==state.view||lastProject!==projectId;
     if(changedView){questions=[];answers={};pendingAnswers={};if(busy&&requestContext&&!sameContext(requestContext)){contextInterrupted=true;controller?.abort();}}
     lastView=state.view;lastProject=projectId;
     if(!panel)build();
     document.body.classList.add('secretary-on');document.body.classList.toggle('secretary-home',home&&!collapsed);
     document.body.classList.toggle('secretary-lateral',!home&&!collapsed);document.body.classList.toggle('secretary-folded',collapsed);
+    document.body.classList.toggle('secretary-previewing',!!preview);
+    document.body.classList.toggle('secretary-document-open',viewingDocument);
+    if(preview&&!preview.node.isConnected)document.getElementById('view')?.append(preview.node);
     panel.classList.toggle('is-home',home);panel.hidden=collapsed;
+    returnButton.hidden=home;
     contextNode.textContent=activeProject()?.name||'Finanzas';
     // Fixed lateral UI belongs to the viewport, outside project animations and
     // containing blocks. The central conversation remains ordinary view content.
@@ -509,7 +652,7 @@ var ModernoSecretary=(()=>{
   const previousGo=go;
   go=function(view,arg){
     const before=state.view,requestedHome=homePending,result=previousGo.apply(this,arguments);
-    if(state.view!==before&&!requestedHome)home=false;
+    if(state.view!==before&&!requestedHome&&!(before==='presedit'&&state.view==='proyecto'&&home))home=false;
     refresh();return result;
   };
   document.addEventListener('click',event=>{

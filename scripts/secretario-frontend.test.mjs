@@ -124,8 +124,8 @@ test('published app enables only the production endpoint and keeps feedback off'
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
   assert.ok(html.includes('<script src="/secretario-bridge.js?v=3"></script>'));
-  assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=3">'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=8"></script>'));
+  assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=4">'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=9"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
 });
 
@@ -151,7 +151,7 @@ test('secretary sends the session only to the exact canonical project function',
 
 test('browser call sends the public project key separately from the user session',async()=>{
   const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
-  const start=code.indexOf('const response=await fetch(endpoint()'),end=code.indexOf('const payload=await response.json()',start);
+  const start=code.indexOf('function sendQuery('),end=code.indexOf('async function submitMessage(',start);
   assert.ok(start>=0&&end>start);
   const request=code.slice(start,end);
   assert.match(request,/credentials:'omit'/);
