@@ -744,7 +744,7 @@ var ModernoSecretary=(()=>{
   }
   function schedulePosition(){
     if(positionQueued)return;positionQueued=true;
-    requestAnimationFrame(()=>{positionQueued=false;position();});
+    requestAnimationFrame(()=>{positionQueued=false;position();drawCharacter();});
   }
   function position(){
     const surface=collapsed?document.getElementById('secretary-reopen'):panel;
@@ -765,7 +765,7 @@ var ModernoSecretary=(()=>{
         if(overlapsHorizontally)bottom=Math.max(bottom,window.innerHeight-box.top+12);
       }else if(overlapsHorizontally&&box.bottom<screenMiddle)top=Math.max(top,box.bottom+14);
     }
-    if(collapsed){surface.style.bottom=bottom+'px';return;}
+    if(collapsed){surface.style.bottom='calc('+bottom+'px + env(safe-area-inset-bottom, 0px))';return;}
     panel.style.setProperty('--secretary-top',top+'px');
     panel.style.setProperty('--secretary-bottom',bottom+'px');
   }
