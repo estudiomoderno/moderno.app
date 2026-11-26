@@ -17,6 +17,7 @@ function section(start,end){
 }
 const identityHelpers=section('  const owner=()=>','  let identity=owner()');
 const declarations=section('  let identity=owner()','  const el=');
+const resetCharacterCode=section('  function resetCharacter(){','  function messageAvatar(');
 const resetCode=section('  function reset(){','  function checkIdentity(){');
 const consentCode=section('  function feedbackScope(){','  function drawFeedbackSettings(){');
 const storageRegistration=ui.match(/window\.addEventListener\(['"]storage['"],\s*handleFeedbackStorage\);/)?.[0];
@@ -34,7 +35,7 @@ function fixture({storage=new Map(),storageBlocked=false,rpc,userId='fixture-use
   const calls=[],listeners=new Map();
   const storageAccess=()=>{if(storageBlocked)throw new Error('Fictional storage access denied');};
   const sandbox=vm.createContext({
-    AbortController,
+    AbortController,clearTimeout,
     addEventListener:(name,handler)=>listeners.set(name,handler),
     localStorage:{
       getItem:key=>{storageAccess();return storage.get(key)??null;},
@@ -52,6 +53,7 @@ function fixture({storage=new Map(),storageBlocked=false,rpc,userId='fixture-use
     const drawFeedbackSettings=()=>{},drawThread=()=>{};
     ${identityHelpers}
     ${declarations}
+    ${resetCharacterCode}
     ${resetCode}
     ${consentCode}
     ${storageRegistration}
