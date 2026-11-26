@@ -81,7 +81,7 @@ export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Dat
    // is deliberately not described as a distributed or monetary hard cap.
    const minute=Math.floor(now()/60000);for(const [key,value] of rates)if(value.minute!==minute)rates.delete(key);
    const rate=rates.get(actor.userId)||{minute,count:0};if(rate.count>=12||rates.size>=2000&&!rates.has(actor.userId))throw new SecretarioError('rate_limit','Hay varias consultas en curso. Espera un momento y vuelve a intentarlo.',429);rate.count++;rates.set(actor.userId,rate);
-   const result=await runSecretary({client:actor.client,input,signal:controller.signal,onStage:mark,planner:planner||(({request:turn,context})=>requestPlan({fetchImpl,apiKey:env.OPENAI_API_KEY,model:env.OPENAI_MODEL,request:turn,context,signal:controller.signal}))});
+   const result=await runSecretary({client:actor.client,input,signal:controller.signal,onStage:mark,now,planner:planner||(({request:turn,context})=>requestPlan({fetchImpl,apiKey:env.OPENAI_API_KEY,model:env.OPENAI_MODEL,request:turn,context,signal:controller.signal}))});
    if(controller.signal.aborted)throw cancelled();
    mark('completed');report(200,'ok');return json(result);
   }catch(error){

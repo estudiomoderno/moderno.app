@@ -125,7 +125,7 @@ test('published app enables only the production endpoint and keeps feedback off'
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
   assert.ok(html.includes('<script src="/secretario-bridge.js?v=3"></script>'));
   assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=5">'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=11"></script>'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=12"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
 });
 
@@ -172,7 +172,7 @@ test('network, quota and changed-context errors have stable Spanish recovery pat
   const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
   assert.match(code,/No se ha podido conectar con el Secretario\. Comprueba la conexión y vuelve a intentarlo\./);
   assert.match(code,/code==='quota_exhausted'/);assert.match(code,/code==='context_changed'/);assert.match(code,/code==='provider_busy'/);
-  assert.match(code,/record\.retryContent=content/);assert.match(code,/Volver a intentar/);
+  assert.match(code,/record\.retry=retry/);assert.match(code,/Volver a intentar/);
   assert.doesNotMatch(code,/appendMessage\('assistant',error\.message/);
 });
 
@@ -221,7 +221,7 @@ test('automatic option turns keep their marker across the browser history bounda
 
 test('the UI marks structured option submissions as automatic history',async()=>{
   const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
-  assert.match(code,/appendMessage\('user',content,undefined,!!answerValues\)/);
+  assert.match(code,/appendMessage\('user',visibleContent,undefined,!!answerValues\)/);
   assert.match(code,/\.\.\.\(automatic===true\?\{automatic:true\}:\{\}\)/);
   const mergeStart=code.indexOf('function structuredFor('),mergeEnd=code.indexOf('\n  function pendingAfter',mergeStart),mergeContext=vm.createContext({});assert.ok(mergeStart>=0&&mergeEnd>mergeStart);vm.runInContext(code.slice(mergeStart,mergeEnd),mergeContext);
   const previous={clientId:'contact:1','line.0.catalogId':'id:a','line.0.qty':'2 horas','line.0.price':'100'};

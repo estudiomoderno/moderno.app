@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {collectReceivables, receivablesPage} from '../supabase/functions/secretario/receivables.mjs';
-import {isReceivableIntent} from '../supabase/functions/secretario/receivable-scope.mjs';
+import {isReceivableIntent,receivableQuestion} from '../supabase/functions/secretario/receivable-scope.mjs';
+import {executePlan} from '../supabase/functions/secretario/core.mjs';
 import {fixtureRequest, invoiceFixture, studyId} from './secretario-receivables-fixture.mjs';
 
 const today = '2026-11-26';
@@ -22,7 +23,7 @@ test('the question uses the authorized invoice blocks and never calls the planne
     ['FC-0001',480,true,false],['FC-0002',750,false,false],['FC-0003',450,false,true]
   ]);
   assert.deepEqual(body.actions,[]);
-  assert.match(body.message,/^Tienes 3 facturas pendientes de cobro por 1680,00\s*€. 1 está vencida\.$/);
+  assert.equal(body.message.replaceAll('\u00a0',' '),'Tienes 3 facturas pendientes de cobro por 1.680 €. Una está vencida.');
 });
 
 test('uses recorded IRPF and collections, keeps currencies separate and reports contradictory records', () => {
@@ -76,8 +77,8 @@ test('filters by authorized client, project, issue dates, due dates and overdue 
     assert.deepEqual(body.sources.map(row=>row.label),numbers.map(n=>'FC-000'+n));
     assert.equal(body.sources.reduce((sum,row)=>sum+row.pending,0),total);
     assert.deepEqual(body.actions,[]);
-    if(!numbers.length)assert.equal(body.message,'No tienes facturas pendientes de cobro.');
-    else assert.ok(body.message.includes(new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'}).format(total)));
+    if(!numbers.length)assert.equal(body.message,'No tienes facturas pendientes de cobro con esos filtros.');
+    else assert.ok(body.message.includes(new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',minimumFractionDigits:0,useGrouping:'always'}).format(total)));
   }
 });
 
@@ -141,4 +142,84 @@ test('blocks other studies and unauthorized roles, and explicitly opening a veri
   assert.equal(open.body.actions[0].type,'open_document');
   assert.equal(open.body.actions[0].payload.id,'FC-0002');
   assert.equal(open.body.actions[0].openImmediately,true);
+});
+
+const demoIds=(...numbers)=>numbers.map(number=>'F-DEMO-00'+number);
+const ask=(message,context,answers,options)=>fixtureRequest({...request,message,receivableContext:context,
+  ...(answers?{answers,automatic:true}:{})},{acceptance:true,...options});
+const shown=result=>result.body.sources.map(source=>source.label);
+const say=result=>result.body.message.replaceAll('\u00a0',' ');
+
+test('natural misspelling, adding the year, overdue refinement and fresh invoice lookup',async()=>{
+  const base=await ask('que facturas quedan por que me pagen');
+  assert.equal(say(base),'Tienes 3 facturas pendientes de cobro por 2.300 €. De ellas, 2 están vencidas.');
+  assert.deepEqual(shown(base),demoIds(3,1,2));
+  const annual=await ask('solo las de este año',base.body.receivableContext);
+  assert.equal(say(annual),'De las emitidas en 2026, tienes 2 facturas pendientes por 1.500 €. Una está vencida.');
+  assert.deepEqual(shown(annual),demoIds(1,2));
+  const overdue=await ask('enséñame solo las vencidas',annual.body.receivableContext);
+  assert.equal(say(overdue),'De esas facturas de 2026, queda 1 vencida por 1.000 €.');
+  assert.deepEqual(shown(overdue),demoIds(1));
+  const detail=await ask('¿Cuánto falta por cobrar de la F-DEMO-002?',overdue.body.receivableContext);
+  assert.equal(say(detail),'Quedan 500 € por cobrar. La factura es de 1.200 € y tiene 700 € de cobros registrados.');
+  assert.deepEqual(shown(detail),demoIds(2));
+  assert.equal(detail.body.sources[0].pending,500);
+  assert.deepEqual(detail.body.actions,[]);
+
+  const priorYear=await ask('ahora las del año pasado',overdue.body.receivableContext);
+  assert.deepEqual(shown(priorYear),demoIds(3));
+  const clearYear=await ask('de todos los años',priorYear.body.receivableContext);
+  assert.deepEqual(shown(clearYear),demoIds(3,1));
+  const onlyOpen=await ask('mejor las que están sin vencer',clearYear.body.receivableContext);
+  assert.deepEqual(shown(onlyOpen),demoIds(2));
+  const reset=await ask('todo el estudio',onlyOpen.body.receivableContext);
+  assert.deepEqual(shown(reset),demoIds(3,1,2));
+  const newRequest=await ask('¿Qué me queda por cobrar?',overdue.body.receivableContext);
+  assert.deepEqual(shown(newRequest),demoIds(3,1,2));
+  assert.equal(receivableQuestion({receivableContext:overdue.body.receivableContext,message:'Dime las tareas pendientes de este año',history:[]}),null);
+});
+
+test('confirmation works through the form, through the composer and in older open tabs',async()=>{
+  const old='¿Te refieres a facturas pendientes de cobro? Si quieres, indica también el cliente, el proyecto o el periodo.';
+  const clarification=executePlan({role:'admin'},{},{intent:'pending_invoices'});
+  assert.equal(clarification.questions[0].id,'receivable_confirm');
+  const answer='pendientes de cobro y solo de este año';
+  const fromForm=await ask(answer,clarification.receivableContext,{receivable_confirm:answer});
+  const typed=await ask(answer,clarification.receivableContext);
+  const legacy=await fixtureRequest({...request,message:'Describe las facturas que quieres consultar. '+answer,
+    history:[{role:'user',content:'que facturas quedan por que me pagen'},{role:'assistant',content:old}],
+    automatic:true,answers:{detail:answer}},{acceptance:true});
+  for(const result of [fromForm,typed,legacy]){
+    assert.equal(say(result),'De las emitidas en 2026, tienes 2 facturas pendientes por 1.500 €. Una está vencida.');
+    assert.deepEqual(shown(result),demoIds(1,2));
+  }
+});
+
+test('real client/project ambiguity offers both choices and preserves an existing year filter',async()=>{
+  const annual=await ask('Facturas pendientes de este año');
+  const ambiguous=await ask('Y las de Casa Sol',annual.body.receivableContext);
+  assert.equal(say(ambiguous),'¿Te refieres al cliente Casa Sol o al proyecto Casa Sol?');
+  const question=ambiguous.body.questions[0];
+  assert.deepEqual(question.options.map(option=>option.label),['Cliente Casa Sol','Proyecto Casa Sol']);
+  const client=await ask('Cliente Casa Sol',ambiguous.body.receivableContext);
+  assert.equal(say(client),'No tienes facturas pendientes de cobro con esos filtros.');
+  assert.deepEqual(shown(client),[]);
+  const project=await ask('Proyecto Casa Sol',ambiguous.body.receivableContext,{[question.id]:question.options[1].value});
+  assert.deepEqual(shown(project),demoIds(1));
+  assert.equal(project.body.receivables.scopeLabel,'Casa Sol · Emisión: 2026-01-01 a 2026-12-31');
+  const skipped=await ask('Dime qué facturas tengo pendientes de cobrar',ambiguous.body.receivableContext);
+  assert.deepEqual(shown(skipped),demoIds(3,1,2));
+});
+
+test('read and revalidation failures never report empty results, and the date uses the caller time zone',async()=>{
+  for(const failRead of ['app_leer_bloques','app_leer_versiones']){
+    const error=await ask('que facturas quedan por que me pagen',undefined,undefined,{failRead});
+    assert.equal(error.status,503);
+    assert.deepEqual(error.body.error,{code:'invoice_data_unavailable',message:'No he podido consultar las facturas ahora. Puedes reintentarlo.'});
+    assert.equal(error.body.receivables,undefined);
+  }
+  const now='2026-01-01T00:30:00Z';
+  const lookup=zone=>fixtureRequest({...request,message:'Facturas pendientes de este año',context:{timeZone:zone}},{now,acceptance:true});
+  assert.deepEqual(shown(await lookup('Europe/Madrid')),demoIds(1,2));
+  assert.deepEqual(shown(await lookup('America/New_York')),demoIds(3));
 });

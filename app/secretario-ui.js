@@ -436,11 +436,13 @@ var ModernoSecretary=(()=>{
     form.addEventListener('submit',event=>{
       event.preventDefault();
       if(questions.some(question=>!String(answers[question.id]||'').trim())){setStatus('Responde a las preguntas para continuar. También puedes escribir abajo.');return;}
-      const copy={...answers},message=questions.map(question=>{
+      const copy={...answers},values=questions.map(question=>{
         const value=String(copy[question.id]),option=(question.options||[]).find(item=>String(item.value??item.id??item.label)===value);
-        return question.prompt+' '+(option?labelText(option.label,160):value);
-      }).join('\n');
-      submitMessage(message,copy);
+        return option?labelText(option.label,160):value;
+      });
+      const receipt=questions.every(question=>question.id.startsWith('receivable_'));
+      const message=receipt?values.join('\n'):questions.map((question,index)=>question.prompt+' '+values[index]).join('\n');
+      submitMessage(message,copy,{visibleContent:values.join('\n')});
     });container.append(form);
   }
   const invoiceMoney=(amount,currency)=>new Intl.NumberFormat('es-ES',{style:'currency',currency}).format(amount);
@@ -543,7 +545,7 @@ var ModernoSecretary=(()=>{
         target.append(button(action.type==='prepare_draft'?'Abrir borrador':labelText(action.label,120)||'Abrir',()=>runAction(action,record.owner),'secretary-action'));
         extras.append(target);
       }
-      if(record.retryContent){extras.append(button('Volver a intentar',()=>{const value=record.retryContent;delete record.retryContent;drawThread();submitMessage(value);},'secretary-button'));}
+      if(record.retry){extras.append(button('Volver a intentar',()=>{const retry=record.retry;delete record.retry;drawThread();retry();},'secretary-button'));}
       if(record.response){drawQuestions(extras,record.response);drawFeedback(extras,record);}
       if(extras.childNodes.length)item.append(extras);
       thread.append(item);
@@ -600,19 +602,21 @@ var ModernoSecretary=(()=>{
       headers:{'Content-Type':'application/json',apikey:SUPABASE_ANON_KEY},
       body:JSON.stringify({session:session.access_token,payload:input})});
   }
-  async function submitMessage(content,answerValues){
+  async function submitMessage(content,answerValues,{visibleContent=content,previous}={}){
     if(busy||!content?.trim())return;
     checkIdentity();if(!ready()){setStatus('Inicia sesión para consultar al Secretario.');return;}
     if(!home&&!documentOpen){home=true;collapsed=false;refresh();}
     const captured=identity,epoch=generation,current=++requestCounter,originContext=currentContext();requestContext=originContext;contextInterrupted=false;
     const draftRequested=requestsDraft(content)||questions.length>0&&requestsDraft(messages.findLast(item=>item.role==='user'&&!item.automatic)?.content);
     let history;
-    try{const recent=bridge.recentHistory(messages.filter(item=>item.role==='user'||item.response),content);history=recent.history;contextTrimmed=recent.trimmed;}
+    const receivableContext=previous?previous.receivableContext:messages.at(-1)?.response?.receivableContext;
+    try{const recent=previous?{history:previous.history,trimmed:contextTrimmed}:bridge.recentHistory(messages.filter(item=>item.role==='user'||item.response),content);history=recent.history;contextTrimmed=recent.trimmed;}
     catch(error){setStatus(error.message);return;}
-    const structuredAnswers=structuredFor(pendingAnswers,answerValues),hasStructuredAnswers=Object.keys(structuredAnswers).length>0;
+    const structuredAnswers=previous?previous.structuredAnswers:receivableContext?.clarification?{...answerValues}:structuredFor(pendingAnswers,answerValues),hasStructuredAnswers=Object.keys(structuredAnswers).length>0;
+    const retry=()=>submitMessage(content,answerValues,{visibleContent,previous:{history,receivableContext,structuredAnswers}});
     questions=[];answers={};busy=true;controller=new AbortController();
     activeActivity={id:String(current),status:'running',started:performance.now(),query:null,steps:[],openByStep:new Map(),expanded:false};
-    appendMessage('user',content,undefined,!!answerValues);updateBusy();
+    appendMessage('user',visibleContent,undefined,!!answerValues);updateBusy();
     if(composer)composer.value='';setStatus('Puedes detener la consulta cuando quieras.');
     try{
       const client=sb;if(!client?.auth)throw Error('La conexión del Secretario todavía no está configurada.');
@@ -623,7 +627,7 @@ var ModernoSecretary=(()=>{
       if(controller.signal.aborted)throw new DOMException('Stopped','AbortError');
       const project=originContext.projectId==null?null:state.projects?.find(item=>String(item.id)===String(originContext.projectId));feedbackTask=project?'project_question':'finance_question';
       activeActivity.query=activityFor(content,originContext.projectId);drawThread();
-      const input={studyId:ESTUDIO_ID,message:content,automatic:!!answerValues,history,context:{view:originContext.home?'finanzas':originContext.view,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,...(originContext.projectId!=null?{projectId:originContext.projectId}:{})},...(hasStructuredAnswers?{answers:structuredAnswers}:{})};
+      const input={studyId:ESTUDIO_ID,message:content,automatic:!!answerValues,history,context:{view:originContext.home?'finanzas':originContext.view,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,...(originContext.projectId!=null?{projectId:originContext.projectId}:{})},...(hasStructuredAnswers?{answers:structuredAnswers}:{}),...(receivableContext?{receivableContext}:{})};
       const response=await sendQuery(session,input,controller.signal);
       const payload=await response.json().catch(()=>null);
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
@@ -639,6 +643,7 @@ var ModernoSecretary=(()=>{
         if(code==='context_changed')throw requestFailure(withReference('Los datos o tus permisos cambiaron durante la consulta. Vuelve a intentarlo.',ref),{retryable:true});
         if(code==='cancelled')throw Object.assign(new DOMException('Stopped','AbortError'),{requestId:ref});
         if(code==='context_limit')throw requestFailure(withReference(payload?.error?.message||'Necesito una consulta más concreta para localizar esos datos.',ref));
+        if(code==='invoice_data_unavailable')throw requestFailure('No he podido consultar las facturas ahora. Puedes reintentarlo.',{retryable:true});
         if(['not_configured','provider_unavailable','service_unavailable','SECRETARY_NOT_CONFIGURED'].includes(code)||response.status>=500)throw requestFailure(withReference('El Secretario todavía no está disponible. Puedes seguir usando las pantallas y editores de Finanzas.',ref),{retryable:true,unavailable:true});
         throw requestFailure(withReference('No he podido completar la consulta. Puedes volver a intentarlo.',ref),{retryable:true});
       }
@@ -663,13 +668,13 @@ var ModernoSecretary=(()=>{
       finishActivity(error.name==='AbortError'?'stopped':'failed');
       if(error.name==='AbortError'){
         const record=appendMessage('assistant',contextInterrupted?'La consulta se detuvo porque cambiaste de pantalla o de proyecto. Puedes volver a hacerla en el contexto actual.':'Consulta detenida. Puedes seguir cuando quieras.');
-        if(!contextInterrupted&&!answerValues)record.retryContent=content;
+        if(!contextInterrupted&&!answerValues)record.retry=retry;
       }
       else{
         const network=error instanceof TypeError||navigator.onLine===false;
         unavailable=network||error.secretaryUnavailable===true;
         const record=appendMessage('assistant',network?'No se ha podido conectar con el Secretario. Comprueba la conexión y vuelve a intentarlo.':error.message||'El Secretario no está disponible ahora. Los editores siguen accesibles.');
-        if(network||error.retryable===true)record.retryContent=content;
+        if(network||error.retryable===true)record.retry=retry;
       }
       setStatus(unavailable?'Tus documentos siguen disponibles en los accesos directos.':'Consulta detenida.');
     }finally{
