@@ -15,7 +15,7 @@ var ModernoSecretary=(()=>{
   let collapsed=false,home=false,homePending=false,lastView=null,lastProject=null,busy=false,controller=null,generation=0,unavailable=false,authSubscription=null;
   let documentOpen=false,preview=null,returnButton=null;
   let requestCounter=0,actions=new Map(),questions=[],answers={},pendingAnswers={},feedbackTask='finance_question',contextTrimmed=false;
-  let workingMessage='Consultando la información a la que tienes acceso…',requestContext=null,contextInterrupted=false;
+  let activeActivity=null,requestContext=null,contextInterrupted=false;
   let positionQueued=false,positionSources=[];
   const positionResize=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>schedulePosition()):null;
   let feedbackLoaded=false,feedbackLoading=false,feedbackRevision=null,feedbackOperation=0,feedbackError='',feedbackHost=null;
@@ -60,11 +60,31 @@ var ModernoSecretary=(()=>{
   function pendingAfter(status,candidate){return status==='clarifying'?{...(candidate||{})}:{};}
   const activeProject=()=>['proyecto','estancia'].includes(state.view)?state.projects?.find(p=>p.id===state.currentProject):null;
   function icon(){const image=el('img','secretary-logo');image.src='/brand/moderno_app_simbolo_negro.svg';image.alt='';return image;}
+  function messageAvatar(role){
+    const avatar=el('span','secretary-avatar');
+    if(role==='assistant'){
+      avatar.append(icon());
+      if(!unavailable&&navigator.onLine!==false){
+        const badge=el('span','secretary-avatar-badge');
+        badge.append(el('span','sr-only','Secretario activo en esta sesión'));avatar.append(badge);
+      }
+    }else{
+      const user=state.sessionUser;
+      const initials=(user?.name||'Tú').trim().split(/\s+/).filter(Boolean).slice(0,2).map(word=>Array.from(word)[0]).join('').toLocaleUpperCase('es');
+      avatar.append(el('span','',initials||'T'));
+      const photo=window.ModernoHeaderPresence?.photo(user?.avatar);
+      if(photo){
+        const image=el('img','');image.alt='';image.referrerPolicy='no-referrer';
+        image.addEventListener('error',()=>image.remove(),{once:true});image.src=photo;avatar.append(image);
+      }
+    }
+    return avatar;
+  }
   function reset(){
     generation++;controller?.abort();messages.forEach(record=>record.pageController?.abort());controller=null;busy=false;messages=[];actions.clear();questions=[];answers={};pendingAnswers={};contextTrimmed=false;
     feedbackOperation++;feedback?.setContext(null);feedbackLoaded=false;feedbackLoading=false;feedbackRevision=null;feedbackError='';feedbackHost=null;
     panel?.remove();panel=null;thread=null;composer=null;announcementNode=null;identity=owner();collapsed=false;home=false;homePending=false;unavailable=false;lastView=null;lastProject=null;requestContext=null;contextInterrupted=false;
-    documentOpen=false;preview?.node.remove();preview=null;returnButton=null;
+    activeActivity=null;documentOpen=false;preview?.node.remove();preview=null;returnButton=null;
     document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open');
     document.getElementById('secretary-reopen')?.remove();
   }
@@ -219,7 +239,9 @@ var ModernoSecretary=(()=>{
     toast('Abre la sección correspondiente para consultar esta fuente.');
   }
   function appendMessage(role,content,response,automatic=false){
-    const record={role,content:labelText(content,12000),response,owner:identity,...(automatic===true?{automatic:true}:{})};messages.push(record);
+    const record={role,content:labelText(content,12000),response,owner:identity,...(automatic===true?{automatic:true}:{})};
+    if(role==='assistant'&&activeActivity){record.activity=activeActivity;activeActivity=null;}
+    messages.push(record);
     drawThread();if(role==='assistant'&&announcementNode)announcementNode.textContent=record.content;return record;
   }
   function setStatus(value){if(statusNode)statusNode.textContent=value+(contextTrimmed?' Uso el contexto reciente; el historial sigue visible.':'');}
@@ -237,6 +259,56 @@ var ModernoSecretary=(()=>{
     if(/(?:cobr|factur|coste|gasto|presupuesto|pendiente)/.test(value))return 'Consultando facturas, cobros, costes y presupuestos registrados…';
     if(projectId!=null)return 'Consultando las tareas y documentos autorizados de este proyecto…';
     return 'Consultando la información a la que tienes acceso…';
+  }
+  function finishActivity(status,steps=[]){
+    if(!activeActivity)return;
+    activeActivity.status=status;
+    activeActivity.seconds=(performance.now()-activeActivity.started)/1000;
+    activeActivity.steps=steps.map(step=>labelText(step?.label,300)).filter(Boolean).slice(0,8);
+  }
+  const activityIcons={session:'m_user',query:'buscar',stopped:'cerrar',failed:'alerta',result:'docs'};
+  function drawActivity(activity){
+    const {status,query,steps,id}=activity;
+    const running=status==='running';
+    const rows=[{
+      kind:'session',status:query?'done':status,label:query?'Sesión comprobada':running?'Comprobando tu sesión…':status==='stopped'?'Comprobación detenida':'No se pudo comprobar la sesión',
+      detail:'Se comprueba que la sesión coincide con el perfil activo.'
+    }];
+    if(query)rows.push({
+      kind:'query',status,label:running?query:status==='done'?'Respuesta recibida':status==='stopped'?'Consulta detenida':'Consulta sin completar',
+      detail:'La consulta sigue en curso. Puedes detenerla desde el cuadro de mensaje.'
+    });
+    for(const label of steps)rows.push({kind:'result',status:'done',label});
+    const timeline=el('ol','secretary-activity-lines');
+    rows.forEach((row,index)=>{
+      const entry=el('li','secretary-activity-entry');
+      const line=el('span','secretary-activity-line');line.dataset.status=row.status;
+      if(row.status==='running')line.setAttribute('aria-current','step');
+      const glyph=el('span','secretary-activity-icon');glyph.setAttribute('aria-hidden','true');
+      glyph.innerHTML=ico(activityIcons[row.status==='stopped'||row.status==='failed'?row.status:row.kind]);
+      const label=el('span','secretary-activity-label',row.label);if(row.status==='running')label.setAttribute('role','status');
+      line.append(glyph,label);
+      const hasDetail=row.detail&&(row.status==='running'||row.kind==='session'&&row.status==='done');
+      if(hasDetail){
+        const details=el('details','secretary-activity-step');
+        details.open=activity.openByStep.get(row.kind)??row.status==='running';
+        const trigger=el('summary','secretary-activity-trigger');trigger.dataset.traceKey=id+':'+index;
+        trigger.append(line);details.append(trigger,el('p','secretary-activity-detail',row.detail));
+        trigger.addEventListener('click',()=>activity.openByStep.set(row.kind,!details.open));
+        entry.append(details);
+      }else entry.append(line);
+      timeline.append(entry);
+    });
+    if(running){
+      const pending=el('div','secretary-activity secretary-working');pending.append(timeline);return pending;
+    }
+    const history=el('details','secretary-activity secretary-trace');history.open=activity.expanded;
+    const heading=el('summary','secretary-activity-heading');heading.dataset.traceKey=id+':history';
+    heading.append(el('span','',status==='done'?'Actividad realizada':status==='stopped'?'Actividad detenida':'Actividad incompleta'));
+    const seconds=activity.seconds<1?'Menos de 1 s':new Intl.NumberFormat('es-ES',{maximumFractionDigits:1}).format(activity.seconds)+' s';
+    heading.append(el('span','secretary-activity-time',seconds));
+    heading.addEventListener('click',()=>{activity.expanded=!history.open;});
+    history.append(heading,timeline);return history;
   }
   function requestFailure(message,{retryable=false,unavailable=false}={}){const error=Error(message);error.retryable=retryable;error.secretaryUnavailable=unavailable;return error;}
   function withReference(message,requestId){const value=String(requestId||'');return /^[a-z0-9-]{8,80}$/i.test(value)?`${message} Referencia ${value.slice(0,8)}.`:message;}
@@ -431,6 +503,7 @@ var ModernoSecretary=(()=>{
   function drawThread(){
     if(!thread)return;
     const nearBottom=thread.scrollHeight-thread.scrollTop-thread.clientHeight<100;
+    const traceFocus=thread.contains(document.activeElement)?document.activeElement.dataset.traceKey:null;
     thread.replaceChildren();
     if(!messages.length){
       const welcome=el('div','secretary-welcome');welcome.append(icon());
@@ -443,13 +516,11 @@ var ModernoSecretary=(()=>{
     }
     for(const record of messages){
       const item=el('article','secretary-turn secretary-turn-'+record.role);item.setAttribute('aria-label',record.role==='user'?'Tú':'Nuestro Secretario');
-      const sender=el('div','secretary-sender',record.role==='user'?'Tú':'Nuestro Secretario');if(record.role!=='user')sender.prepend(icon());item.append(sender);
-      if(record.response?.trace?.length){
-        const details=el('details','secretary-trace');details.append(el('summary','','Actividad realizada'));
-        const list=el('ol','');for(const step of record.response.trace.slice(0,8))list.append(el('li','',labelText(step.label,300)));details.append(list);item.append(details);
-      }
-      item.append(el('div','secretary-bubble',record.content));
-      if(record.response?.receivables)drawReceivables(item,record);
+      if(record.activity)item.append(drawActivity(record.activity));
+      const line=el('div','secretary-message-line');
+      line.append(messageAvatar(record.role),el('div','secretary-bubble',record.content));item.append(line);
+      const extras=el('div','secretary-message-extras');
+      if(record.response?.receivables)drawReceivables(extras,record);
       else if(record.response?.sources?.length){
         const sources=el('div','secretary-sources');sources.append(el('span','secretary-caption','Fuentes'));
         const received=record.response.sources.slice(0,80);
@@ -457,21 +528,23 @@ var ModernoSecretary=(()=>{
         if(received.length>4){const more=el('details','secretary-more-sources');more.append(el('summary','',`Ver las ${received.length} fuentes`));const rest=el('div','secretary-sources');for(const source of received.slice(4))rest.append(button(labelText(source.label,180)||'Abrir fuente',()=>openSource(source,record.owner),'secretary-source'));more.append(rest);sources.append(more);}
         const sourceCount=Math.max(received.length,Number(record.response.sourceCount)||0,record.response.sources.length);
         if(sourceCount>received.length)sources.append(el('span','secretary-caption',`Se muestran ${received.length} de ${sourceCount} fuentes. Abre la sección para consultar el resto.`));
-        item.append(sources);
+        extras.append(sources);
       }
       for(const action of record.response?.actions||[]){
         const result=actions.get(action.id);
-        if(result?.done){if(result.message)item.append(el('p','secretary-action-result',result.message));continue;}
+        if(result?.done){if(result.message)extras.append(el('p','secretary-action-result',result.message));continue;}
         const target=el('div','secretary-proposal');
         if(result?.message)target.append(el('p','',result.message));
         target.append(button(action.type==='prepare_draft'?'Abrir borrador':labelText(action.label,120)||'Abrir',()=>runAction(action,record.owner),'secretary-action'));
-        item.append(target);
+        extras.append(target);
       }
-      if(record.retryContent){item.append(button('Volver a intentar',()=>{const value=record.retryContent;delete record.retryContent;drawThread();submitMessage(value);},'secretary-button'));}
-      if(record.response){drawQuestions(item,record.response);drawFeedback(item,record);}
+      if(record.retryContent){extras.append(button('Volver a intentar',()=>{const value=record.retryContent;delete record.retryContent;drawThread();submitMessage(value);},'secretary-button'));}
+      if(record.response){drawQuestions(extras,record.response);drawFeedback(extras,record);}
+      if(extras.childNodes.length)item.append(extras);
       thread.append(item);
     }
-    if(busy){const running=el('div','secretary-working',workingMessage);running.setAttribute('role','status');thread.append(running);}
+    if(activeActivity)thread.append(drawActivity(activeActivity));
+    if(traceFocus)thread.querySelector('[data-trace-key="'+traceFocus+'"]')?.focus({preventScroll:true});
     if(nearBottom||busy)thread.scrollTop=thread.scrollHeight;
   }
   function runAction(action,fromOwner){
@@ -532,7 +605,9 @@ var ModernoSecretary=(()=>{
     try{const recent=bridge.recentHistory(messages.filter(item=>item.role==='user'||item.response),content);history=recent.history;contextTrimmed=recent.trimmed;}
     catch(error){setStatus(error.message);return;}
     const structuredAnswers=structuredFor(pendingAnswers,answerValues),hasStructuredAnswers=Object.keys(structuredAnswers).length>0;
-    appendMessage('user',content,undefined,!!answerValues);questions=[];answers={};busy=true;workingMessage='Comprobando tu sesión y el acceso al estudio…';controller=new AbortController();updateBusy();drawThread();
+    questions=[];answers={};busy=true;controller=new AbortController();
+    activeActivity={id:String(current),status:'running',started:performance.now(),query:null,steps:[],openByStep:new Map(),expanded:false};
+    appendMessage('user',content,undefined,!!answerValues);updateBusy();
     if(composer)composer.value='';setStatus('Puedes detener la consulta cuando quieras.');
     try{
       const client=sb;if(!client?.auth)throw Error('La conexión del Secretario todavía no está configurada.');
@@ -540,13 +615,15 @@ var ModernoSecretary=(()=>{
       if(error||!session?.access_token||session.user?.id!==state.sessionUser?.id)throw Error('Comprueba tu sesión para seguir con el Secretario.');
       if(epoch!==generation||captured!==owner())return;
       if(!sameContext(originContext)){contextInterrupted=true;throw new DOMException('Context changed','AbortError');}
+      if(controller.signal.aborted)throw new DOMException('Stopped','AbortError');
       const project=originContext.projectId==null?null:state.projects?.find(item=>String(item.id)===String(originContext.projectId));feedbackTask=project?'project_question':'finance_question';
-      workingMessage=activityFor(content,originContext.projectId);drawThread();
+      activeActivity.query=activityFor(content,originContext.projectId);drawThread();
       const input={studyId:ESTUDIO_ID,message:content,automatic:!!answerValues,history,context:{view:originContext.home?'finanzas':originContext.view,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,...(originContext.projectId!=null?{projectId:originContext.projectId}:{})},...(hasStructuredAnswers?{answers:structuredAnswers}:{})};
       const response=await sendQuery(session,input,controller.signal);
       const payload=await response.json().catch(()=>null);
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
       if(!sameContext(originContext)){contextInterrupted=true;throw new DOMException('Context changed','AbortError');}
+      if(controller.signal.aborted)throw new DOMException('Stopped','AbortError');
       if(!response.ok){
         const code=payload?.error?.code;
         const ref=payload?.requestId;
@@ -562,14 +639,15 @@ var ModernoSecretary=(()=>{
       }
       if(!payload||!['answer','clarifying','proposal'].includes(payload.status)||typeof payload.message!=='string')throw Error('La respuesta no se pudo mostrar. Vuelve a intentarlo.');
       if(payload.receivables&&!validReceivables(payload))throw Error('No se han podido comprobar las facturas de la respuesta.');
-      const safe={...payload,sources:Array.isArray(payload.sources)?payload.sources:[],trace:Array.isArray(payload.trace)?payload.trace.filter(step=>step.status==='done'):[],
+      const safe={...payload,sources:Array.isArray(payload.sources)?payload.sources:[],trace:Array.isArray(payload.trace)?payload.trace.filter(step=>step?.status==='done'):[],
         actions:!payload.receivables&&Array.isArray(payload.actions)?payload.actions.filter(action=>['navigate','prepare_draft','open_document'].includes(action?.type)).slice(0,4):[]};
       safe.actions=safe.actions.map((action,index)=>({...action,id:String(payload.requestId||current)+':'+String(action.id||index)}));
       questions=Array.isArray(payload.questions)?payload.questions.filter(question=>typeof question.id==='string'&&typeof question.prompt==='string').slice(0,6).map(question=>({...question,options:Array.isArray(question.options)?question.options.slice(0,8):[]})):[];
       pendingAnswers=pendingAfter(payload.status,structuredAnswers);
       if(safe.actions.some(action=>action.type==='prepare_draft')){const draft=safe.actions.find(action=>action.type==='prepare_draft').payload;feedbackTask=draft.sourceQuoteRef?'invoice_from_quote':draft.kind==='factura'?'invoice_create':'quote_create';}
       else if(safe.actions.some(action=>action.type==='navigate'))feedbackTask='navigation';
-      unavailable=false;requestContext=null;const record=appendMessage('assistant',payload.message,safe);record.feedbackTask=feedbackTask;
+      unavailable=false;requestContext=null;finishActivity('done',safe.trace);
+      const record=appendMessage('assistant',payload.message,safe);record.feedbackTask=feedbackTask;
       if(safe.receivables)record.invoiceQuery={message:input.message,context:input.context};
       const action=safe.actions.find(item=>item.type==='prepare_draft'&&safe.status==='proposal'&&draftRequested||item.type==='open_document'&&item.openImmediately===true);
       if(action&&epoch===generation&&captured===owner())runAction(action,captured);
@@ -577,7 +655,11 @@ var ModernoSecretary=(()=>{
     }catch(error){
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
       pendingAnswers=pendingAfter('error',structuredAnswers);
-      if(error.name==='AbortError')appendMessage('assistant',contextInterrupted?'La consulta se detuvo porque cambiaste de pantalla o de proyecto. Puedes volver a hacerla en el contexto actual.':'Consulta detenida. Puedes seguir cuando quieras.');
+      finishActivity(error.name==='AbortError'?'stopped':'failed');
+      if(error.name==='AbortError'){
+        const record=appendMessage('assistant',contextInterrupted?'La consulta se detuvo porque cambiaste de pantalla o de proyecto. Puedes volver a hacerla en el contexto actual.':'Consulta detenida. Puedes seguir cuando quieras.');
+        if(!contextInterrupted&&!answerValues)record.retryContent=content;
+      }
       else{
         const network=error instanceof TypeError||navigator.onLine===false;
         unavailable=network||error.secretaryUnavailable===true;
