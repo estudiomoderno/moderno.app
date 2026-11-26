@@ -8,6 +8,9 @@ const files=['plan-options.js','brand/menu-icons/home.svg','brand/menu-icons/pro
 files.push('mail-connections.js','brand/agenda-ui.css','brand/mail-ui.css','brand/mail-icons/gmail.svg','brand/mail-icons/back.svg','brand/mail-icons/icloud.svg','brand/mail-icons/external-mail.svg','brand/mail-icons/compose.svg','brand/mail-icons/inbox.svg','brand/mail-icons/sent.svg','brand/mail-icons/drafts.svg','brand/mail-icons/spam.svg','brand/mail-icons/trash.svg','brand/mail-icons/refresh.svg','brand/mail-icons/settings.svg','brand/agenda-icons/exportar-csv.svg','brand/agenda-icons/exportar-pdf.svg','brand/agenda-icons/importar-contactos.svg','brand/agenda-icons/menu-importar-exportar.svg','contact-todos.svg','contact-proovedores.svg','contact-contratistas.svg','contact-arquitectos.svg','contact-team.svg','cad-viewer.js','brand/icons/plan-viewer/Capas.svg','brand/icons/plan-viewer/Comentar.svg','brand/icons/plan-viewer/Desplazar.svg','brand/icons/plan-viewer/Dibujar.svg','brand/icons/plan-viewer/Flecha.svg','brand/icons/plan-viewer/Medir.svg','brand/icons/plan-viewer/zoom-in.svg','brand/icons/plan-viewer/zoom-out.svg');
 files.push('brand/finance-icons/folder-simple-star-light.svg');
 files.push('secretario-bridge.js','secretario-ui.js','secretary-feedback.js','brand/secretario.css');
+for(const state of ['espera','pensando','trabajando','terminado','aviso']){
+  files.push('brand/secretario/lavanda/'+state+'.webp','brand/secretario/lavanda/'+state+'.png');
+}
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 export async function verifyPublication({fetchResource=fetch,readResource=name=>readFile(new URL('../app/'+name,import.meta.url)),revision='check'}={}){
   // Fixed public origin and resources, no authentication or arbitrary target URLs.

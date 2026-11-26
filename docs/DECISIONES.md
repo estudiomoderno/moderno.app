@@ -1,5 +1,11 @@
 # Decisiones de TALLER
 
+## 2026-11-26 — Secretario lavanda animado y acceso plegado
+
+El propietario elige la variante lavanda del logotipo expresivo y autoriza implementarla y publicarla. Finanzas recibe al usuario con el Secretario grande; durante la conversación el personaje reduce su tamaño y los resultados permanecen en el centro. Al abrir un documento se mantiene el lateral existente. Al plegarlo queda un acceso en la esquina inferior derecha que recupera la misma conversación y evita el indicador de guardado y las herramientas del proyecto.
+
+Los estados de espera, preparación, consulta, resultado y pregunta se vinculan a la actividad real. Un resultado recibido mientras está plegado deja una señal discreta, sin abrir el panel. El gesto de terminado indica respuesta o borrador preparado, no emisión o guardado. Se conservan expresiones estáticas con movimiento reducido y en pestañas ocultas. El cambio acotado reutiliza los archivos proporcionados; no modifica datos, permisos, servicios ni la configuración del piloto. [Alcance y comprobaciones](SECRETARIO-LAVANDA-2026-11-26.md).
+
 ## 2026-11-23 — Guardado grande sin falsa revisión
 
 El propietario aporta un diagnóstico porque el estado **Guardando** cambia a **Necesita revisión · 69 copias por revisar** y ordena corregirlo e implementarlo por completo sin nuevas preguntas. El análisis confirma que las 69 son copias locales históricas conservadas, no errores actuales; el fallo real son dos RPC delta de unos 4,73 MB cancelados por el límite general de 8 segundos de PostgreSQL. El control posterior mostró ejecuciones válidas de hasta 25,15 segundos y cancelaciones al primer margen de 30 segundos, con `proyectos` ya en torno a 9,5 MB, por lo que 30 segundos no dejaban holgura suficiente.

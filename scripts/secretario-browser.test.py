@@ -125,6 +125,27 @@ def assert_secretary_clearance(page):
     }""")
 
 
+def assert_launcher_clearance(page):
+    """The folded control must remain usable beside real chrome and save status."""
+    page.wait_for_function("""()=>{
+      const launcher=document.getElementById('secretary-reopen');
+      if(!launcher)return false;
+      const r=launcher.getBoundingClientRect();
+      if(r.width<44||r.height<44||r.top<0||r.left<0||r.bottom>innerHeight||r.right>innerWidth)return false;
+      return [...document.querySelectorAll('#syncTag,#project-window-bar,.project-tabs.project-dock')].every(node=>{
+        const style=getComputedStyle(node),box=node.getBoundingClientRect();
+        if(style.display==='none'||style.visibility==='hidden'||!box.width||!box.height)return true;
+        return r.right<=box.left||r.left>=box.right||r.bottom<=box.top-10||r.top>=box.bottom+10;
+      });
+    }""")
+
+
+def assert_static_history(panel):
+    avatars = panel.locator('.secretary-turn-assistant .secretary-character')
+    assert avatars.count() > 0
+    assert avatars.evaluate_all("async nodes=>{await Promise.all(nodes.map(node=>node.decode()));return nodes.every(node=>node.dataset.animated==='false'&&new URL(node.src).pathname.endsWith('.png')&&node.naturalWidth>0)}")
+
+
 with socket.socket() as sock:
     sock.bind(("127.0.0.1", 0))
     port = sock.getsockname()[1]
@@ -270,6 +291,24 @@ try:
             expect(panel.get_by_role("button", name="Facturas", exact=True)).to_be_visible()
             expect(page.locator(".finance-overview")).to_be_hidden()
             wait_for_stable_view(page)
+            welcome = panel.locator('.secretary-welcome .secretary-character')
+            expect(welcome).to_be_visible()
+            expect(welcome).to_have_attribute('data-character-state', 'espera')
+            welcome.evaluate("node=>node.decode()")
+            assert welcome.evaluate("(node,minimum)=>node.naturalWidth>0&&node.getBoundingClientRect().width>=minimum", 140 if width >= 1100 else 80)
+            assert welcome.evaluate("node=>new URL(node.src).pathname.startsWith('/brand/secretario/lavanda/')")
+            assert page.locator('img[data-secretary-presence][data-animated=true]').count() <= 1
+
+            # The supplied static pose is used when motion is reduced, including
+            # a preference change during an already visible animation.
+            page.emulate_media(reduced_motion="reduce")
+            expect(welcome).to_have_attribute('data-animated', 'false')
+            assert welcome.evaluate("node=>new URL(node.src).pathname.endsWith('.png')")
+            expect(page.locator('img[data-secretary-presence][data-animated=true]')).to_have_count(0)
+            page.evaluate("document.body.classList.add('dark')")
+            assert welcome.evaluate("node=>getComputedStyle(node).filter==='none'")
+            page.evaluate("document.body.classList.remove('dark')")
+            page.emulate_media(reduced_motion="no-preference")
             if output:
                 page.screenshot(path=str(output / f"secretario-central-{width}.png"), full_page=True)
 
@@ -291,11 +330,36 @@ try:
             live.click()
             expect(detail).to_be_visible()
             assert len(pending_receivables) == 1
+            expect(panel).to_have_attribute('data-character-state', 'trabajando')
+            expect(panel.locator('[data-secretary-presence=header]')).to_have_attribute('data-animated', 'true')
+            expect(page.locator('img[data-secretary-presence][data-animated=true]')).to_have_count(1)
             if output:
                 wait_for_stable_view(page)
                 page.screenshot(path=str(output / f"secretario-traza-activa-{width}.png"))
+
+            # Folding a running query preserves it. Receiving real results keeps
+            # the surface folded, marks them unread and leaves focus on the control.
+            panel.get_by_role('button', name='Plegar el Secretario', exact=True).click()
+            launcher = page.locator('#secretary-reopen')
+            expect(panel).to_be_hidden()
+            expect(launcher).to_have_attribute('data-character-state', 'trabajando')
+            expect(launcher).to_have_attribute('data-unread', 'false')
+            assert_launcher_clearance(page)
             pending_route, result = pending_receivables.pop()
             pending_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(result))
+            expect(launcher).to_have_attribute('data-unread', 'true')
+            expect(launcher).to_have_attribute('data-character-state', 'terminado')
+            expect(panel).to_be_hidden()
+            expect(launcher).to_be_focused()
+            if output:
+                page.screenshot(path=str(output / f"secretario-plegado-{width}.png"))
+            expect(launcher).to_have_attribute('data-character-state', 'espera', timeout=5500)
+            expect(launcher).to_have_attribute('data-unread', 'true')
+            expect(launcher.locator('.secretary-character')).to_have_attribute('data-animated', 'false')
+            assert launcher.locator('.secretary-character').evaluate("node=>new URL(node.src).pathname.endsWith('.png')")
+            launcher.click()
+            expect(launcher).to_have_count(0)
+            expect(panel).to_be_visible()
             answer = panel.locator(".secretary-turn-assistant").last
             expect(answer.locator(".secretary-bubble")).to_contain_text("Tienes 3 facturas pendientes de cobro por 1.680")
             expect(answer.locator(".secretary-bubble")).to_contain_text("Una está vencida")
@@ -319,6 +383,7 @@ try:
               })
             }""")
             expect(answer.locator(".secretary-avatar-badge")).to_be_visible()
+            assert_static_history(panel)
             wait_for_stable_view(page)
             if output:
                 page.screenshot(path=str(output / f"secretario-facturas-centro-{width}.png"))
@@ -425,9 +490,29 @@ try:
             print(f"{width} PASS: exact acceptance dialogue, form and composer, invoice detail, choices, empty and failed read", flush=True)
             page.evaluate("Object.assign(state,window.originalInvoicesFixture);ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")
 
+            # A requested draft may finish while folded. It becomes reviewable
+            # without opening an editor until the user chooses its action.
+            page.locator('#secretary-message').fill('consulta lenta preparar factura')
+            panel.get_by_role('button', name='Enviar', exact=True).click()
+            expect(panel).to_have_attribute('data-character-state', 'trabajando')
+            page.wait_for_timeout(30)
+            assert len(pending) == 1
+            panel.get_by_role('button', name='Plegar el Secretario', exact=True).click()
+            pending.pop().fulfill(status=200, headers=cors_headers, content_type='application/json', body=json.dumps(proposal()))
+            expect(page.locator('#secretary-reopen')).to_have_attribute('data-unread', 'true')
+            expect(panel).to_be_hidden()
+            assert page.evaluate("state.draft===null&&state.invoices.length===0&&state.view==='informes'")
+            page.locator('#secretary-reopen').click()
+            expect(panel.get_by_role('button', name='Abrir borrador', exact=True)).to_be_visible()
+            panel.get_by_role('button', name='Abrir borrador', exact=True).click()
+            expect(page.locator('.finance-document-editor')).to_be_visible()
+            assert page.evaluate("state.draft.lines[0].qty===2&&state.invoices.length===0")
+            page.evaluate("state.draft=null;state.fView=null;ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")
+
             page.locator("#secretary-message").fill("Crear una factura de 2 horas de asesoría a 100 por hora")
             panel.get_by_role("button", name="Enviar", exact=True).click()
             expect(panel.get_by_role("button", name="Cliente ficticio", exact=True)).to_be_visible()
+            expect(panel).to_have_attribute('data-character-state', 'aviso')
             assert page.evaluate("document.body.classList.contains('secretary-home')")
             expect(panel.get_by_role("textbox", name="Otra respuesta: Elige el cliente", exact=True)).to_be_visible()
             panel.get_by_role("button", name="Cliente ficticio", exact=True).click()
@@ -457,7 +542,8 @@ try:
             page.locator("#modalBox").get_by_role("button", name="Seguir editando", exact=True).click()
             panel.get_by_role("button", name="Plegar el Secretario", exact=True).click()
             expect(panel).to_be_hidden()
-            page.get_by_role("button", name="Nuestro Secretario", exact=True).click()
+            assert_launcher_clearance(page)
+            page.locator('#secretary-reopen').click()
             expect(panel.locator(".secretary-bubble").get_by_text("El borrador está preparado para revisar.", exact=True)).to_be_visible()
 
             # Resume + edit a saved draft, preserving its original metadata and date.
@@ -527,12 +613,14 @@ try:
             page.locator("#secretary-message").fill("fallo disponible")
             panel.get_by_role("button", name="Enviar", exact=True).click()
             expect(panel.locator(".secretary-bubble").get_by_text("El Secretario todavía no está disponible. Puedes seguir usando las pantallas y editores de Finanzas.", exact=True)).to_be_visible()
+            expect(panel).to_have_attribute('data-character-state', 'aviso')
 
             # Browser network failures stay in Spanish and offer an explicit retry.
             page.locator("#secretary-message").fill("fallo red")
             panel.get_by_role("button", name="Enviar", exact=True).click()
             expect(panel.locator(".secretary-bubble").get_by_text("No se ha podido conectar con el Secretario. Comprueba la conexión y vuelve a intentarlo.", exact=True)).to_be_visible()
             expect(panel.get_by_role("button", name="Volver a intentar", exact=True).last).to_be_visible()
+            expect(panel).to_have_attribute('data-character-state', 'aviso')
 
             page.locator("#secretary-message").fill("consulta lenta para detener")
             panel.get_by_role("button", name="Enviar", exact=True).click()
@@ -544,6 +632,8 @@ try:
             expect(stopped.locator('[data-status="stopped"]')).to_contain_text("Consulta detenida")
             expect(stopped.get_by_role("button", name="Volver a intentar", exact=True)).to_be_visible()
             expect(panel.locator('.secretary-working')).to_have_count(0)
+            expect(panel).not_to_have_attribute('data-character-state', 'terminado')
+            expect(page.locator('img[data-secretary-presence][data-character-state=trabajando][data-animated=true]')).to_have_count(0)
             for request_route in pending:
                 try:
                     request_route.abort()
