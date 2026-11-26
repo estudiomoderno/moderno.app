@@ -11,7 +11,13 @@ Decisión de Cerebro: **10 de octubre de 2026**. Autorización del usuario: **m�
 - **CLAVE DE PRUEBAS**: creada con permiso restringido a Responses/Write y guardada solo como secreto del servidor de `moderno-pruebas`. Nunca se guarda en HTML, Git, capturas o chat.
 - **PRUEBA CONECTADA**: una consulta ficticia de extremo a extremo terminó correctamente. No hubo reintentos automáticos ni datos productivos.
 
-La pantalla actual no ofrece un límite monetario duro configurable para este saldo promocional. Para el piloto sin facturación de pago, el corte por saldo y los límites de la aplicación sustituyen temporalmente ese control: 20 consultas diarias por persona/estudio y 200 consultas mensuales globales para toda Moderno.app. La allowlist inicial admite solo al propietario. Estas cuotas miden solicitudes, no tokens ni euros.
+La pantalla comprobada el 22/11 no ofrecía un límite monetario duro configurable para ese saldo promocional. Para el piloto sin facturación de pago, el corte por saldo y los límites de la aplicación sustituyen temporalmente ese control. El piloto empezó con 20 consultas diarias por persona/estudio y 200 consultas mensuales globales para toda Moderno.app. La allowlist inicial admite solo al propietario. Estas cuotas miden solicitudes, no tokens ni euros.
+
+## Ampliación diaria autorizada — 26/11/2026
+
+El propietario solicita **100 consultas al día por usuario**. La actualización versionada cuenta a cada persona una sola vez entre todos sus estudios, conserva las reservas ya realizadas y mantiene los topes mensuales de 200 por persona/estudio y 200 globales. No amplía el presupuesto de 20 EUR/mes, la allowlist ni la facturación. Su aplicación a producción exige verificar copias y ejecutar primero las pruebas aisladas; el estado de entrega se registra en [Secretario: cabecera y cuota diaria](SECRETARIO-CABECERA-CUOTA-2026-11-26.md).
+
+Los 200 globales siguen siendo un freno del piloto: no permiten ofrecer 100 consultas diarias sostenidas a cada futuro usuario. Antes de abrirlo a más usuarios deben acordarse el consumo mensual y su presupuesto a partir de uso medido. No interpretar esta ampliación diaria como autorización para eliminar o elevar automáticamente los topes mensuales.
 
 ## Controles obligatorios
 

@@ -87,7 +87,8 @@ export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Dat
   }catch(error){
    const safe=error instanceof SecretarioError?error:timedOut||request.signal.aborted?new SecretarioError('cancelled','La consulta se ha detenido. No se ha creado ningún documento.',408):new SecretarioError('unavailable','No he podido completar la consulta. Tus documentos siguen intactos.',503);
    // Do not log prompts, amounts, tokens, document content, or raw provider errors.
-   report(safe.status,safe.code);return json({error:{code:safe.code,message:safe.message}},safe.status);
+   const quotaScope=safe.code==='quota_exhausted'&&safe.status===429&&['daily','monthly','global_monthly'].includes(safe.quotaScope)?{quotaScope:safe.quotaScope}:{};
+   report(safe.status,safe.code);return json({error:{code:safe.code,message:safe.message,...quotaScope}},safe.status);
   }finally{clearTimeout(timeout);request.signal.removeEventListener('abort',onAbort);}
  };
 }
