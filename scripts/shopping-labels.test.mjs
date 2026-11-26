@@ -16,7 +16,7 @@ function fixture(){
  let saves=0;
  const c={state:{projects:[p]},_accessRole:'admin',ModernoDaily:{escape:E},ModernoSpec:spec,crypto:webcrypto,itFiles:structuredClone(item.files),itImg:item.img,itLibId:item.libId,itemUploadDraft:null,productAmountsValid:()=>true,getRoom:()=>({p,r:room}),toast:m=>messages.push(m),render(){},closeModal(){},persistSoon(){saves++;},document:{getElementById:id=>elements[id],addEventListener(){}}};
  c.specPrepare=project=>{if(c._accessRole==='colaborador')return false;spec.prepare(project);return true;};
- vm.createContext(c);vm.runInContext(source,c);vm.runInContext(html.slice(html.indexOf('function saveItem(si,ii)'),html.indexOf('function refreshPrices()',html.indexOf('function saveItem(si,ii)'))),c);
+ vm.createContext(c);vm.runInContext(source,c);vm.runInContext(html.slice(html.indexOf('function saveItem(si,ii)'),html.indexOf('function exHead(',html.indexOf('function saveItem(si,ii)'))),c);
  return {c,p,room,item,e:elements,messages,saves:()=>saves};
 }
 test('flattening includes collapsed legacy groups, maps General to no label, and never writes records',()=>{

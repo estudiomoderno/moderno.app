@@ -56,6 +56,63 @@ const request=body=>new Request('https://api.example.com',{method:'POST',headers
 const privateHeaderRequest=body=>new Request('https://api.example.com',{method:'POST',headers:{'X-Moderno-Session':'private-fixture-token-1234567890'},body:JSON.stringify(body)});
 const envelopeRequest=(body,token='x'.repeat(16000))=>new Request('https://api.example.com',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session64:btoa(token),payload:body})});
 const captureBody={action:'capture',id:'11111111-1111-4111-8111-111111111111',studyId:'22222222-2222-4222-8222-222222222222',url:product.url,destination:{kind:'biblioteca',brand:'cm'}};
+const pricesBody={action:'prices',studyId:captureBody.studyId,projectId:'1',roomId:'2',ids:['captured']};
+const offerWithVat={...product,offers:{...product.offers,price:'88.50',valueAddedTaxIncluded:true}};
+const sourcePriceItem={id:'captured',captureId:captureBody.id,url:product.url,price:90,sku:'one',unit:'ud',capture:extractProduct(page(offerWithVat),product.url)};
+const priceProjects=items=>[{id:1,rooms:[{id:2,sections:[{id:'s',items}]}]}];
+const shopPage=(data,url=product.url)=>({url,bytes:Buffer.from(page(data)),headers:{'content-type':'text/html'}});
+
+test('rechecks only saved captured products in the authorized list, without importing or uploading',async()=>{
+ const other={...sourcePriceItem,id:'other',cost:30},manual={id:'manual',url:product.url,price:40};
+ const projects=priceProjects([sourcePriceItem,other,manual]),before=JSON.stringify(projects);
+ let reads=0,fetched=0;
+ const handle=createHandler({authenticate:async()=>({id:'actor'}),loadProjects:async(actor,study)=>{
+  assert.equal(actor.id,'actor');assert.equal(study,captureBody.studyId);reads++;return projects;
+ },fetchPage:async url=>{assert.equal(url,product.url);fetched++;return shopPage(offerWithVat);}});
+ const result=await handle(envelopeRequest({...pricesBody,ids:['captured','manual','other']}));
+ assert.equal(result.status,200);
+ const {prices}=await result.json();
+ assert.deepEqual(prices[0],{id:'captured',status:'verified',price:88.5,previous:90,captureId:captureBody.id,url:product.url,sku:'one',unit:'ud'});
+ assert.deepEqual(prices[1],{id:'manual',status:'unavailable',code:'source_missing'});
+ assert.equal(prices[2].price,88.5);
+ assert.equal(reads,1);assert.equal(fetched,1);assert.equal(JSON.stringify(projects),before);
+});
+
+test('rejects price refresh without authorization and validates the scoped request before fetching',async()=>{
+ let fetched=0,reads=0;
+ const deps={authenticate:async()=>null,loadProjects:async()=>{reads++;throw Object.assign(Error('Forbidden'),{code:'42501'});},fetchPage:async()=>{fetched++;}};
+ assert.equal((await createHandler(deps)(request(pricesBody))).status,401);
+ deps.authenticate=async()=>({id:'actor'});
+ const handle=createHandler(deps);
+ for(const body of [{...pricesBody,ids:[]},{...pricesBody,ids:['1','1']},{...pricesBody,ids:['1','2','3','4']},{...pricesBody,roomId:'../room'}])assert.equal((await handle(request(body))).status,400);
+ assert.equal((await handle(request(pricesBody))).status,403);
+ deps.loadProjects=async()=>priceProjects([sourcePriceItem]);
+ assert.equal((await createHandler(deps)(request({...pricesBody,roomId:'other'}))).status,409);
+ assert.equal(reads,1);assert.equal(fetched,0);
+});
+
+test('price refresh reports unverifiable prices, variants, redirected sources and units individually',async()=>{
+ for(const [changeItem,changeProduct,finalUrl,expected] of [
+  [{},{offers:{...offerWithVat.offers,priceCurrency:'USD'}},product.url,'currency'],
+  [{},{offers:{...offerWithVat.offers,valueAddedTaxIncluded:false}},product.url,'tax'],
+  [{},{offers:{...offerWithVat.offers,valueAddedTaxIncluded:undefined}},product.url,'tax'],
+  [{},{sku:'different'},product.url,'variant'],
+  [{},{offers:{...offerWithVat.offers,eligibleQuantity:{unitCode:'MTK'}}},product.url,'unit'],
+  [{},{offers:{...offerWithVat.offers,price:'88.545'}},product.url,'price'],
+  [{url:product.url+'?new_variant=2'},{},product.url,'source_changed'],
+  [{},{},'https://other.example.com/product','variant'],
+  [{},{offers:{...offerWithVat.offers,price:'0'}},product.url,null]
+ ]){
+  const handle=createHandler({authenticate:async()=>({id:'actor'}),loadProjects:async()=>priceProjects([{...sourcePriceItem,...changeItem}]),
+   fetchPage:async()=>shopPage({...offerWithVat,...changeProduct},finalUrl)});
+  const response=await handle(request(pricesBody));
+  assert.equal(response.status,200);
+  const {prices:[row]}=await response.json();
+  if(expected)assert.deepEqual(row,{id:'captured',status:'unavailable',code:expected});
+  else assert.equal(row.price,0);
+ }
+});
+
 test('handler authenticates before any capture and idempotent retries never fetch again',async()=>{
  let started=0,fetched=0;const deps={authenticate:async()=>null,start:async()=>{started++;return {start:false,estado:'procesando'};},fetchPage:async()=>{fetched++;}};
  assert.equal((await createHandler(deps)(request(captureBody))).status,401);assert.equal(started,0);
