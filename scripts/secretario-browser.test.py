@@ -165,6 +165,7 @@ try:
         for width, height in [(1440, 1000), (390, 844)]:
             page = browser.new_page(viewport={"width": width, "height": height}, locale="es-ES")
             errors, requests, forbidden_writes, pending = [], [], [], []
+            pending_receivables = []
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.add_init_script(fake_sdk)
 
@@ -207,6 +208,9 @@ try:
                         result = json.loads(subprocess.check_output(invoice_fixture_script, cwd=repo,
                             input=json.dumps({"input": body, "options": {"origin": origin, "extra": 12 if message.startswith("¿Cuántas") else 0}}).encode()))
                         assert result["status"] == 200, result["body"]
+                        if message == "Dime qué facturas tengo pendiente cobrar":
+                            pending_receivables.append((request_route,result["body"]))
+                            return
                         request_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(result["body"]))
                         return
                     if "editar guardado" in message:
@@ -259,6 +263,22 @@ try:
             }""", invoice_fixture)
             page.locator("#secretary-message").fill("Dime qué facturas tengo pendiente cobrar")
             panel.get_by_role("button", name="Enviar", exact=True).click()
+            activity = panel.locator(".secretary-working")
+            expect(activity).to_contain_text("Sesión comprobada")
+            live = activity.locator('[aria-current="step"]')
+            expect(live).to_contain_text("Comprobando las facturas y sus cobros")
+            detail = activity.get_by_text("La consulta sigue en curso.", exact=False)
+            expect(detail).to_be_visible()
+            live.click()
+            expect(detail).to_be_hidden()
+            live.click()
+            expect(detail).to_be_visible()
+            assert len(pending_receivables) == 1
+            if output:
+                wait_for_stable_view(page)
+                page.screenshot(path=str(output / f"secretario-traza-activa-{width}.png"))
+            pending_route, result = pending_receivables.pop()
+            pending_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(result))
             answer = panel.locator(".secretary-turn-assistant").last
             expect(answer.locator(".secretary-bubble")).to_contain_text("Tienes 3 facturas pendientes de cobro por 1680,00")
             expect(answer.locator(".secretary-bubble")).to_contain_text("1 está vencida")
@@ -271,6 +291,17 @@ try:
                 expect(answer).not_to_contain_text(absent)
             assert page.evaluate("state.view==='informes'&&document.body.classList.contains('secretary-home')")
             expect(page.locator(".finance-invoices, .finance-document-editor")).to_have_count(0)
+            expect(activity).to_have_count(0)
+            expect(answer.locator(".secretary-trace summary").first).to_contain_text("Actividad realizada")
+            assert page.evaluate("""()=>{
+              const user=document.querySelector('.secretary-turn-user .secretary-message-line');
+              const bot=document.querySelector('.secretary-turn-assistant .secretary-message-line');
+              return [user,bot].every(row=>{
+                const avatar=row.querySelector('.secretary-avatar').getBoundingClientRect(),bubble=row.querySelector('.secretary-bubble').getBoundingClientRect();
+                return Math.abs(avatar.bottom-bubble.bottom)<1 && (row===user?avatar.left>bubble.right:avatar.right<bubble.left);
+              })
+            }""")
+            expect(answer.locator(".secretary-avatar-badge")).to_be_visible()
             wait_for_stable_view(page)
             if output:
                 page.screenshot(path=str(output / f"secretario-facturas-centro-{width}.png"))
@@ -415,6 +446,23 @@ try:
             panel.get_by_role("button", name="Enviar", exact=True).click()
             expect(panel.locator(".secretary-bubble").get_by_text("No se ha podido conectar con el Secretario. Comprueba la conexión y vuelve a intentarlo.", exact=True)).to_be_visible()
             expect(panel.get_by_role("button", name="Volver a intentar", exact=True).last).to_be_visible()
+
+            page.locator("#secretary-message").fill("consulta lenta para detener")
+            panel.get_by_role("button", name="Enviar", exact=True).click()
+            expect(panel.locator('.secretary-working [aria-current="step"]')).to_be_visible()
+            panel.get_by_role("button", name="Detener", exact=True).click()
+            stopped = panel.locator(".secretary-turn-assistant").last
+            expect(stopped.locator(".secretary-bubble")).to_contain_text("Consulta detenida.")
+            stopped.locator(".secretary-activity-heading").click()
+            expect(stopped.locator('[data-status="stopped"]')).to_contain_text("Consulta detenida")
+            expect(stopped.get_by_role("button", name="Volver a intentar", exact=True)).to_be_visible()
+            expect(panel.locator('.secretary-working')).to_have_count(0)
+            for request_route in pending:
+                try:
+                    request_route.abort()
+                except Exception:
+                    pass
+            pending.clear()
 
             # A slow answer cannot cross from one project context into another.
             page.locator("#secretary-message").fill("consulta lenta del proyecto")
