@@ -144,7 +144,7 @@ try:
     _cloudBusy=false;_cloudHash.proyectos=canon(CLOUD_BLOCKS.proyectos.get());
     cloudReadBlock=async()=>({data:{contenido:window.coverServer,updated_at:'version-ficticia'}});
     cloudApplyRemote=(block,data)=>{state.projects=data;};
-    window.mockClipperFetch=async(url,{body:requestBody})=>{const body=JSON.parse(requestBody);
+    window.mockClipperFetch=async(url,{body:requestBody})=>{const body=JSON.parse(requestBody).payload;
      urlCalls.push(body.action);
      if(body.action==='capture'){
       captureIds.push(body.id);
@@ -197,10 +197,71 @@ try:
    assert page.evaluate("coverRevisions.length===2&&coverRevisions.every(r=>r.primaryImage.endsWith('/side.webp'))&&itImg.endsWith('/side.webp')")
    assert page.evaluate("state.projects[0].rooms[0].sections[0].items.filter(x=>x.id==='producto-importado-ficticio').length===1")
    box.get_by_role('button',name='Cancelar',exact=True).click()
+   page.evaluate("""source=>{
+    const fixtureAuth={auth:{getSession:async()=>({data:{session:{access_token:'token-ficticio',user:{id:'fixture'}}}})}};
+    window.priceRequests=[];window.priceSaves=[];window.priceServer=null;
+    const items=getRoom().r.sections[0].items,current=items.find(x=>x.id==='producto-importado-ficticio');
+    const url='https://shop.example.com/lampara';
+    Object.assign(current,{url,capture:{requestedUrl:url},cost:25,margin:10});
+    for(const [id,name] of [['same','Mismo precio'],['other','Subida sin seleccionar'],['blocked','Tienda sin IVA confirmado']]){
+     items.push({...current,id,name});
+    }
+    window.beforePrices=structuredClone(CLOUD_BLOCKS.proyectos.get());
+    priceServer=structuredClone(beforePrices);
+    _cloudHash.proyectos=canon(CLOUD_BLOCKS.proyectos.get());
+    cloudReadBlock=async name=>{if(name!=='proyectos')throw Error('Unexpected block');return {data:{contenido:structuredClone(priceServer)}};};
+    cloudFlush=async()=>{if(_cloudHash.proyectos!==canon(CLOUD_BLOCKS.proyectos.get())){
+     priceServer=structuredClone(CLOUD_BLOCKS.proyectos.get());priceSaves.push(priceServer);_cloudHash.proyectos=canon(priceServer);
+    }};
+    const refreshTransport=async(url,{body})=>{
+     const request=JSON.parse(body).payload;priceRequests.push(request);
+     const prices=request.ids.map(id=>{
+      const item=priceServer[0].rooms[0].sections[0].items.find(x=>x.id===id);
+      if(id==='blocked')return {id,status:'unavailable',code:'tax'};
+      return {id,status:'verified',price:id==='same'?80:id==='other'?95:89.5,previous:item.price,
+       url:item.url,captureId:item.captureId,unit:item.unit,sku:item.sku??null};
+     });
+     return {ok:true,json:async()=>({prices})};
+    };
+    const clipper=new Function('sb','fetch',source+';return ProductClipper;')(fixtureAuth,refreshTransport);
+    window.originalPriceMethods={canRefreshPrices:ProductClipper.canRefreshPrices,refreshPrices:ProductClipper.refreshPrices};
+    Object.assign(ProductClipper,clipper,{open:originalClipperOpen});render();
+   }""",(repo/'app/product-clipper.js').read_text())
+   refresh=room.get_by_role('button',name='Actualizar precios web',exact=True)
+   expect(refresh).to_be_visible()
+   refresh.click()
+   prices=page.get_by_role('dialog',name='Actualizar precios web',exact=True)
+   expect(prices.get_by_role('status')).to_have_text('2 con cambios · 1 sin cambios · 1 sin verificar')
+   expect(prices.get_by_text('La tienda no confirma que el importe incluya el IVA.')).to_be_visible()
+   expect(prices.get_by_text('Sin cambios',exact=False).last).to_be_visible()
+   assert page.evaluate("priceRequests.length===2&&priceRequests.every(r=>r.action==='prices'&&r.projectId==='9001'&&r.roomId==='8001'&&!('url' in r))&&priceRequests.flatMap(r=>r.ids).length===4")
+   assert page.evaluate("priceSaves.length===0&&canon(CLOUD_BLOCKS.proyectos.get())===canon(beforePrices)")
+   if output:page.screenshot(path=str(output/f'actualizar-precios-web-{width}.png'))
+   prices.get_by_role('button',name='Cerrar',exact=True).click()
+   expect(prices).to_be_hidden()
+   assert page.evaluate("priceSaves.length===0&&canon(CLOUD_BLOCKS.proyectos.get())===canon(beforePrices)")
+   refresh.click()
+   expect(prices.get_by_role('status')).to_have_text('2 con cambios · 1 sin cambios · 1 sin verificar')
+   prices.get_by_role('checkbox',name='Subida sin seleccionar',exact=False).uncheck()
+   page.evaluate("priceServer[0].rooms[0].sections[0].items.find(x=>x.id==='producto-importado-ficticio').price=83")
+   prices.get_by_role('button',name='Aplicar precios',exact=True).click()
+   expect(prices.get_by_role('status')).to_contain_text('Alguno de los productos seleccionados cambió')
+   assert page.evaluate("priceSaves.length===0&&canon(CLOUD_BLOCKS.proyectos.get())===canon(beforePrices)")
+   page.evaluate("priceServer=structuredClone(beforePrices)")
+   prices.get_by_role('button',name='Aplicar precios',exact=True).click()
+   expect(prices).to_be_hidden()
+   expect(room.locator('.shopping-product-card').filter(has_text='Lámpara importada ficticia')).to_contain_text('89,50')
+   assert page.evaluate("""()=>{
+    const expected=structuredClone(beforePrices);
+    expected[0].rooms[0].sections[0].items.find(x=>x.id==='producto-importado-ficticio').price=89.5;
+    return priceSaves.length===1&&canon(priceSaves[0])===canon(expected)&&canon(CLOUD_BLOCKS.proyectos.get())===canon(expected);
+   }""")
+   page.evaluate("Object.assign(ProductClipper,originalPriceMethods);_accessRole='colaborador';render()")
+   expect(refresh).to_have_count(0)
    page.evaluate('ProductClipper.open=originalClipperOpen;cloudFlush=savedFlush;cloudReadBlock=savedRead;cloudApplyRemote=savedApply;persistNow=savedPersist')
    assert page.evaluate('sb===null')
    assert not writes,writes;assert not errors,errors
-   print(width,'PASS: three sources, manual save/cancel, library search/copy/guards, URL review without autosave, second cover retained on error and sent on explicit save; no remote writes')
+   print(width,'PASS: manual, library and URL import, verified web prices, selection, scoped save, stale-price guard; no remote writes')
    page.close()
   browser.close()
 finally:server.terminate();server.wait(timeout=5)

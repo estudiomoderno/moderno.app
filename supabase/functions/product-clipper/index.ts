@@ -18,6 +18,14 @@ Deno.serve(createHandler({allowedOrigins:origins,
    return {id:claims.sub,client};
   }catch{return null;}
  },
+ async loadProjects(actor:any,studyId:string,signal:AbortSignal){
+  const {data,error}=await actor.client.rpc('app_leer_bloques',{p_estudio:studyId,p_bloques:['proyectos']}).abortSignal(signal);
+  if(error)throw error;
+  if(data?.length!==1||data[0].bloque!=='proyectos'||data[0].rol!=='admin'||!Array.isArray(data[0].contenido)){
+   throw Object.assign(new Error('Destino no autorizado'),{code:'42501'});
+  }
+  return data[0].contenido;
+ },
  async start(actor:any,input:any){
   const {data,error}=await actor.client.rpc('clipper_iniciar',{p_id:input.id,p_estudio:input.studyId,p_url:input.url,p_destino:input.destination});if(error)throw error;
   // Bounded opportunistic cleanup, scoped by an RPC that excludes absorbed captures.

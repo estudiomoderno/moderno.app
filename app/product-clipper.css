@@ -27,4 +27,19 @@
 .clipper-gallery .clipper-image-caption span{display:inline;margin:0;font-size:inherit}
 .clipper-gallery label .clipper-cover-selected,.clipper-gallery label:has(input:checked) .clipper-cover-choose{display:none}
 .clipper-gallery label:has(input:checked) .clipper-cover-selected{display:inline;font-weight:600}
+.shopping-room-view #shopping-refresh-prices{flex:0 0 auto;width:auto;gap:6px;padding:0 9px;font-size:12px;font-weight:500}
+#shopping-refresh-prices img{width:16px;height:16px}
+.clipper-prices{width:min(520px,calc(100vw - 24px))}
+.clipper-prices header{margin-bottom:10px}
+.clipper-prices [data-progress]{margin:0 0 12px;color:var(--ink-soft)}
+.clipper-prices [data-results]>div{border-top:1px solid var(--ui-line,#dedede);padding:10px 0}
+.clipper-prices [data-results] label:not(.clipper-check){display:grid;grid-template-columns:1fr;gap:3px;margin:0;overflow-wrap:anywhere}
+.clipper-prices [data-results] label:not(.clipper-check):has(input){grid-template-columns:20px 1fr;cursor:pointer}
+.clipper-prices [data-results] input{grid-row:span 2;align-self:center;width:16px;height:16px;margin:0}
+.clipper-prices [data-results] span{font-size:12px;color:var(--ink-soft)}
+.clipper-prices [data-apply][hidden]{display:none}
+@media(max-width:560px){
+ .shopping-room-view #shopping-refresh-prices{flex-basis:32px;width:32px;padding:0}
+ #shopping-refresh-prices span{display:none}
+}
 

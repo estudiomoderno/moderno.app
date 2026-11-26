@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import vm from 'node:vm';
-const source=fs.readFileSync(new URL('../app/product-clipper.js',import.meta.url),'utf8').replace('return {open};','return {open,save,read,capture,activate:c=>active=c};')+';globalThis.clipper=ProductClipper;';
+const source=fs.readFileSync(new URL('../app/product-clipper.js',import.meta.url),'utf8').replace('return {open,canRefreshPrices,refreshPrices};','return {open,save,read,capture,activate:c=>active=c};')+';globalThis.clipper=ProductClipper;';
 function setup({kind='biblioteca',missing='',rpcError=false,readError=false,localConflict=false}={}){
  const id='capture-1',item={id:'item-1',captureId:id,name:'Mesa',cat:'Mobiliario'},dest=kind==='biblioteca'?{kind}:{kind,projectId:'1',roomId:'2',sectionId:'3'};
  const state={sessionUser:{id:'user'},library:[],projects:[{id:1,rooms:[{id:2,sections:[{id:3,items:[]}]}]}]},block=kind==='biblioteca'?'compras':'proyectos';

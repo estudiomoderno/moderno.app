@@ -1279,7 +1279,7 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <script src="/accounting-report.js?v=36541"></script>
 <link rel="stylesheet" href="/accounting-report.css?v=36541">
 <script src="/project-insights.js?v=36511"></script>
-<script src="/project-ui.js?v=36617"></script>
+<script src="/project-ui.js?v=36618"></script>
 <script src="/places.js?v=365135"></script>
 <script src="/home-map.js?v=365135"></script>
 <script src="/new-project.js?v=365133"></script>
@@ -1313,8 +1313,8 @@ html body:not(.portalmode) #view .account-icon-button.btn{width:28px!important;m
 <link rel="stylesheet" href="/contact-controls.css?v=353">
 <script src="/phone-vendor.js?v=1.13.13"></script>
 <script src="/phone-controls.js?v=3492"></script>
-<link rel="stylesheet" href="/product-clipper.css?v=36617">
-<script src="/product-clipper.js?v=36622"></script>
+<link rel="stylesheet" href="/product-clipper.css?v=36618">
+<script src="/product-clipper.js?v=36623"></script>
 <script src="/mail-connections.js?v=36745"></script>
 <script>/* QR Code Generator (c) Kazuhiko Arase — MIT — incrustado para funcionar sin conexión */
 //---------------------------------------------------------------------
@@ -9093,11 +9093,6 @@ function saveItem(si,ii){
   }
 
   closeModal();render();persistSoon();
-}
-function refreshPrices(){
-  const {r} = getRoom();
-  const n = r.sections.reduce((s,x)=>s+x.items.length,0);
-  toast("⟳ "+n+" producto(s) revisados — sin cambios de precio. En la app real se consulta cada tienda y avisa de subidas o bajadas.");
 }
 function exHead(p,r,o,extra){
   const lg=state.logos&&state.logos[p.brand];

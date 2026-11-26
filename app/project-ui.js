@@ -273,6 +273,7 @@ function shoppingRoomTools(room){
   </details>
   <button type="button" id="shopping-view-toggle" class="shopping-tool-button" title="${shoppingRoomViewMode==='rows'?'Ver como tarjetas':'Ver como filas'}" aria-label="Vista en filas" aria-pressed="${shoppingRoomViewMode==='rows'}" onclick="shoppingRoomViewToggle()">${shoppingRoomToolIcon(shoppingRoomViewMode==='rows'?'cards':'rows')}</button>
   ${shoppingRoomSortHtml()}
+  ${typeof ProductClipper!=='undefined'&&ProductClipper.canRefreshPrices(room)?'<button type="button" id="shopping-refresh-prices" class="shopping-tool-button" title="Actualizar precios web" aria-label="Actualizar precios web" onclick="ProductClipper.refreshPrices()"><img src="/brand/mail-icons/refresh.svg" alt=""><span>Actualizar precios web</span></button>':''}
   <div class="shopping-search-group">
    <button type="button" id="shopping-search-toggle" class="shopping-tool-button" title="Buscar producto" aria-label="Buscar producto" aria-expanded="${open}" aria-controls="shopping-product-search" onclick="shoppingRoomSearchToggle()">${shoppingRoomToolIcon('search')}</button>
    <div id="shopping-product-search" class="shopping-search-collapse" data-open="${open}" ${open?'':'inert'}><div class="shopping-search-inner"><input id="rsearch" type="search" aria-label="Buscar producto por nombre, SKU o proveedor" placeholder="Buscar producto" value="${E(state.roomSearch||'')}" oninput="shoppingRoomSearchInput(this)" onkeydown="if(event.key==='Escape'){event.preventDefault();shoppingRoomSearchToggle(false)}"></div></div>

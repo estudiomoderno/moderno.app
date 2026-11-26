@@ -43,10 +43,11 @@ const ProductClipper=(()=>{
   }else if(typeof libEdit==='function'){const index=state.library.findIndex(it=>String(it.id)===String(ctx.savedId));if(index>=0)libEdit(index);}
   toast('Producto añadido. Puedes ajustar sus datos en la ficha.');
  }
- async function invoke(body){
+ async function invoke(body,{signal,user}={}){
   const {data:auth,error:authError}=await sb.auth.getSession(),token=auth?.session?.access_token;
   if(authError||!token)throw Error('La sesión ha caducado. Vuelve a iniciar sesión para importar productos.');
-  let response;try{response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session64:btoa(token),payload:body}),credentials:'same-origin',cache:'no-store'});}catch{throw Error('No se pudo conectar con el importador. Conserva esta ventana y vuelve a intentarlo.');}
+  if(user&&auth.session.user?.id!==user)throw Error('La sesión ha cambiado. Vuelve a abrir la lista.');
+  let response;try{response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session64:btoa(token),payload:body}),credentials:'same-origin',cache:'no-store',signal});}catch{throw Error('No se pudo conectar con el importador. Conserva esta ventana y vuelve a intentarlo.');}
   let detail;try{detail=await response.json();}catch{}
   if(!response.ok)throw Object.assign(Error(detail?.error||'No se pudo consultar el importador. Conserva esta ventana y comprueba el estado.'),{code:detail?.code,status:response.status});
   return detail;
@@ -137,5 +138,116 @@ const ProductClipper=(()=>{
    ctx.savedId=data.itemId;if(await confirmSaved(ctx,ctx.savedId))finishSaved(ctx);
   }catch(e){message(ctx,e.message||'No se pudo confirmar el guardado. Consulta el estado antes de repetir.');}finally{ctx.busy=false;if(valid(ctx))d.querySelector('[data-save]').disabled=false;}
  }
- return {open};
+ const priceAccess=()=>Boolean(sb&&ESTUDIO_ID&&state.sessionUser?.id&&_accessRole==='admin'&&!_accessLoading&&(!state.account?.currency||state.account.currency==='EUR'));
+ const roomItems=room=>(room?.sections||[]).flatMap(section=>section.items||[]);
+ const hasPriceSource=item=>item?.id!=null&&Boolean(item.url&&item.captureId&&item.capture&&(item.capture.requestedUrl||item.capture.url));
+ const canRefreshPrices=room=>priceAccess()&&roomItems(room).some(hasPriceSource);
+ const priceReasons={
+  source_missing:'La captura de origen ya no está disponible.',
+  source_changed:'El enlace ya no coincide con la ficha capturada.',
+  variant:'La tienda no permite confirmar la misma variante.',
+  unit:'La unidad de venta no coincide.',
+  currency:'La tienda publica el precio en otra moneda.',
+  tax:'La tienda no confirma que el importe incluya el IVA.',
+  price:'La tienda no publica un precio exacto aplicable.',
+  unavailable:'La tienda no ha devuelto un precio verificable.'
+ };
+ const itemMatchesPrice=(item,quote)=>hasPriceSource(item)&&item.captureId===quote.captureId&&item.url===quote.url
+  &&(item.sku??null)===quote.sku&&(item.unit??null)===quote.unit&&(item.price??null)===quote.previous;
+ const uniqueById=(items,id)=>{
+  const matches=(items||[]).filter(item=>String(item?.id)===id);
+  return matches.length===1?matches[0]:null;
+ };
+ const currentItem=(room,id)=>uniqueById(roomItems(room),id);
+ const projectsSaved=()=>!_cloudBusy&&_cloudHash.proyectos===canon(CLOUD_BLOCKS.proyectos.get());
+
+ async function refreshPrices(){
+  const {p,r}=getRoom();
+  if(!p||!canRefreshPrices(r)||document.querySelector('dialog[open],#overlay.open'))return;
+  const targets=roomItems(r).filter(hasPriceSource),ids=[...new Set(targets.map(item=>String(item.id)))];
+  const owner=identity(),studyId=ESTUDIO_ID,user=state.sessionUser.id,projectId=String(p.id),roomId=String(r.id);
+  const dialog=document.createElement('dialog');
+  dialog.className='clipper-panel clipper-prices';
+  dialog.setAttribute('aria-labelledby','clipper-prices-title');
+  dialog.innerHTML='<header><h2 id="clipper-prices-title">Actualizar precios web</h2></header><p data-progress role="status" aria-live="polite">Preparando la consulta…</p><div data-results></div><footer><button type="button" class="btn btn-ghost" data-close>Cerrar</button><button type="button" class="btn btn-dark" data-apply hidden>Aplicar precios</button></footer>';
+  const progress=dialog.querySelector('[data-progress]'),results=dialog.querySelector('[data-results]');
+  const close=dialog.querySelector('[data-close]'),apply=dialog.querySelector('[data-apply]');
+  const controller=new AbortController();
+  let saving=false;
+  const current=()=>dialog.open&&!controller.signal.aborted&&priceAccess()&&identity()===owner&&state.view==='estancia'
+   &&String(state.currentProject)===projectId&&String(state.currentRoom)===roomId;
+  dialog.addEventListener('cancel',event=>{if(saving)event.preventDefault();});
+  dialog.addEventListener('close',()=>{controller.abort();dialog.remove();document.getElementById('shopping-refresh-prices')?.focus();},{once:true});
+  close.onclick=()=>dialog.close();
+  document.body.append(dialog);dialog.showModal();
+  const quotes=new Map();
+  try{
+   await cloudFlush();
+   if(!current())return dialog.close();
+   if(!projectsSaved())throw Error('La lista tiene cambios pendientes. Espera a que se guarden y vuelve a consultar.');
+   for(let start=0;start<ids.length;start+=3){
+    progress.textContent=`Consultando ${start} de ${ids.length} productos…`;
+    const batch=ids.slice(start,start+3);
+    const data=await invoke({action:'prices',studyId,projectId,roomId,ids:batch},{signal:controller.signal,user});
+    if(!current())return dialog.close();
+    if(!Array.isArray(data?.prices)||data.prices.length!==batch.length||data.prices.some((quote,i)=>quote?.id!==batch[i]))throw Error('No se pudo comprobar el resultado de las tiendas.');
+    for(const quote of data.prices)quotes.set(quote.id,quote);
+   }
+  }catch(error){
+   if(current())progress.textContent=error.message;
+   else if(dialog.open)dialog.close();
+   if(!quotes.size||!current())return;
+  }
+  const selectable=[];
+  let withoutChanges=0,unavailable=0;
+  const currency=new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR'});
+  for(const id of ids){
+   const item=currentItem(getRoom().r,id),quote=quotes.get(id);
+   const row=document.createElement('div'),label=document.createElement('label'),name=document.createElement('strong'),detail=document.createElement('span');
+   name.textContent=item?.name||targets.find(target=>String(target.id)===id)?.name||'Producto';
+   label.append(name,detail);row.append(label);results.append(row);
+   if(quote?.status!=='verified'||!Number.isFinite(quote.price)||quote.price<0||!itemMatchesPrice(item,quote)){
+    unavailable++;detail.textContent=priceReasons[quote?.code]||(quote?'El producto cambió durante la consulta.':'No se ha podido consultar la tienda.');continue;
+   }
+   if(item.price!=null&&item.price!==''&&Number(item.price)===quote.price){
+    withoutChanges++;detail.textContent=currency.format(quote.price)+' · Sin cambios';continue;
+   }
+   const input=document.createElement('input');input.type='checkbox';input.checked=true;
+   detail.textContent=(item.price==null||item.price===''?'Sin precio':currency.format(item.price))+' → '+currency.format(quote.price);
+   label.prepend(input);selectable.push({input,quote});
+  }
+  progress.textContent=`${selectable.length} con cambios · ${withoutChanges} sin cambios · ${unavailable} sin verificar`;
+  if(!selectable.length)return;
+  apply.hidden=false;
+  apply.onclick=async()=>{
+   const selected=selectable.filter(row=>row.input.checked).map(row=>row.quote);
+   if(!selected.length||!current()||saving)return;
+   saving=true;close.disabled=apply.disabled=true;
+   let applied=false;
+   try{
+    await cloudFlush();
+    if(!current()||!projectsSaved())throw Error('La lista tiene cambios pendientes. Vuelve a consultar cuando estén guardados.');
+    const {data,error}=await cloudReadBlock('proyectos',controller.signal);
+    if(error||!Array.isArray(data?.contenido)||!current()||!projectsSaved())throw Error('No se pudo verificar la lista guardada. Vuelve a consultar.');
+    const remoteProject=uniqueById(data.contenido,projectId);
+    const remoteRoom=uniqueById(remoteProject?.rooms,roomId);
+    const items=selected.map(quote=>({quote,item:currentItem(getRoom().r,quote.id)}));
+    if(items.some(({quote,item})=>!itemMatchesPrice(item,quote)||!itemMatchesPrice(currentItem(remoteRoom,quote.id),quote))){
+     throw Error('Alguno de los productos seleccionados cambió. Cierra la ventana y consulta los precios de nuevo.');
+    }
+    for(const {quote,item} of items)item.price=quote.price;
+    applied=true;
+    persistNow();await cloudFlush();
+    if(!current())return dialog.close();
+    render();dialog.close();
+    toast(projectsSaved()?`Precios actualizados en ${selected.length} producto(s).`:'Precios aplicados. El guardado sigue pendiente.');
+   }catch(error){
+    if(applied){dialog.close();if(identity()===owner)toast('Precios aplicados. Revisa el estado de guardado.');return;}
+    if(current())progress.textContent=error.message;
+    else dialog.close();
+   }finally{saving=false;close.disabled=false;apply.disabled=!selectable.some(row=>row.input.checked);}
+  };
+  results.addEventListener('change',()=>{if(!saving)apply.disabled=!selectable.some(row=>row.input.checked);});
+ }
+ return {open,canRefreshPrices,refreshPrices};
 })();

@@ -11,6 +11,11 @@ $request=product_clipper_proxy_request($server,$capture);proxy_check($request['t
 $largeToken=str_repeat('z',16000);$envelope=json_encode(['session64'=>base64_encode($largeToken),'payload'=>json_decode($capture,true)]);$wrapped=product_clipper_proxy_request(['REQUEST_METHOD'=>'POST','HTTP_ORIGIN'=>'https://app.moderno.app'],$envelope);proxy_check($wrapped['token']===$largeToken&&json_decode($wrapped['raw'],true)['action']==='capture'&&strpos($wrapped['raw'],'session64')===false);
 $wire=json_decode(product_clipper_proxy_wire($wrapped['token'],$wrapped['raw']),true);proxy_check(base64_decode($wire['session64'],true)===$largeToken&&$wire['payload']['action']==='capture');
 $fileRequest=product_clipper_proxy_request($server,$file);proxy_check(json_decode($fileRequest['raw'],true)['action']==='file');
+$prices=['action'=>'prices','studyId'=>'22222222-2222-4222-8222-222222222222','projectId'=>'9001','roomId'=>'8001','ids'=>['product-1','product-2']];
+$priceRequest=product_clipper_proxy_request($server,json_encode($prices));proxy_check(json_decode($priceRequest['raw'],true)===$prices);
+foreach ([[],['product-1','product-1'],['a','b','c','d'],['../other'],['0'=>20],['bad'=>'a']] as $ids) {
+    proxy_denied(fn()=>product_clipper_proxy_request($server,json_encode(array_replace($prices,['ids'=>$ids]))),400);
+}
 $redirected=product_clipper_proxy_request(array_diff_key(array_replace($server,['REDIRECT_HTTP_AUTHORIZATION'=>'Bearer '.str_repeat('y',30)]),['HTTP_AUTHORIZATION'=>1]),$read);proxy_check($redirected['token']===str_repeat('y',30));
 proxy_denied(fn()=>product_clipper_proxy_request(array_replace($server,['REQUEST_METHOD'=>'GET']),$read),405);
 proxy_denied(fn()=>product_clipper_proxy_request(array_replace($server,['HTTP_ORIGIN'=>'https://app.moderno.app.evil.invalid']),$read),403);
