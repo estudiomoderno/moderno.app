@@ -2,8 +2,15 @@
 -- Requires an empty isolated database. Everything is rolled back.
 begin;
 do $$begin if exists(select 1 from pg_tables where schemaname='public') or exists(select 1 from pg_namespace where nspname in ('auth','cron')) then raise exception 'Requires an empty isolated database';end if;end$$;
-create role anon nologin;
-create role authenticated nologin;
+-- Roles are cluster-wide and may already exist in the disposable CI container.
+do $$begin
+  if not exists(select 1 from pg_roles where rolname='anon') then
+    create role anon nologin;
+  end if;
+  if not exists(select 1 from pg_roles where rolname='authenticated') then
+    create role authenticated nologin;
+  end if;
+end$$;
 create schema auth;
 create function auth.jwt() returns jsonb language sql stable as $$select '{"email":"fixture@example.invalid"}'::jsonb$$;
 create table public.estudios(id uuid primary key);

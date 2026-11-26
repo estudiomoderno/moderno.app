@@ -25,7 +25,6 @@ try:
  with sync_playwright() as p:
   launch={'headless':True,'args':['--no-sandbox']}
   if os.environ.get('CHROMIUM_PATH'):launch['executable_path']=os.environ['CHROMIUM_PATH']
-  else:launch['channel']='chromium'
   browser=p.chromium.launch(**launch)
   for width in [1440,390]:
    page=browser.new_page(viewport={'width':width,'height':900},locale='es-ES');errors=[];writes=[]
@@ -63,6 +62,7 @@ try:
       }))})""")
     raise AssertionError(f'{width}: private images did not load: {counts}; page errors: {errors}') from error
    assert page.evaluate("signCalls===1&&document.querySelectorAll('#fixture-images img.image-ready').length<50&&signPeak<=4")
+   assert page.evaluate("document.querySelector('#fixture-images img.image-ready').loading==='eager'&&document.querySelector('#fixture-images img:last-child').loading==='lazy'")
    page.evaluate('drawImages(true)');page.wait_for_function("document.querySelectorAll('#fixture-images img.image-ready').length>=2")
    assert page.evaluate('signCalls===1') # DOM recreation must not trigger another signing wave.
    page.evaluate('drawImages(false)');page.wait_for_function("document.querySelectorAll('#fixture-images img.image-ready').length>=2")

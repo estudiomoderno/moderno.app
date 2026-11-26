@@ -11208,6 +11208,9 @@ function fileLoadImage(img,refresh=false){
     if(img.dataset.privateFile){
       const src=await fileResolveForView({data:img.dataset.privateFile},{refresh});
       if(!src||!img.isConnected||owner!==fileViewIdentity())throw Error('Imagen no disponible');
+      // El observador ya aplazó la carga. Al asignar la URL, Chromium debe
+      // iniciar la solicitud antes de que decode() espere la imagen.
+      if(img.loading==='lazy')img.loading='eager';
       img.src=src;
     }
     if(!img.getAttribute('src'))throw Error('Imagen sin origen');

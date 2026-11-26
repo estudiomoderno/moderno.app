@@ -63,8 +63,11 @@ jobs:
           node scripts/idempotent-concurrency-local.mjs ${{ job.services.postgres.id }} "$test_db"
       - name: Retencion de historial fuera del guardado con datos ficticios
         run: |
-          set -o pipefail
-          node scripts/build-history-retention-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -v ON_ERROR_STOP=1
+          set -euo pipefail
+          test_db=moderno_history_retention
+          trap 'docker exec ${{ job.services.postgres.id }} dropdb -U postgres --if-exists "$test_db"' EXIT
+          docker exec ${{ job.services.postgres.id }} createdb -U postgres "$test_db"
+          node scripts/build-history-retention-checks.mjs | docker exec -i ${{ job.services.postgres.id }} psql -U postgres -d "$test_db" -v ON_ERROR_STOP=1
       - name: Guardado de listas como colaborador y permisos con datos ficticios
         run: |
           set -o pipefail
