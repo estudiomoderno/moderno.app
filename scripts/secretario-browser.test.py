@@ -243,7 +243,7 @@ try:
                         "que facturas quedan por que me pagen", "solo las de este año", "enséñame solo las vencidas",
                         "¿Cuánto falta por cobrar de la F-DEMO-002?", "¿Qué ingresos de facturas faltan?",
                         "pendientes de cobro y solo de este año", "Muéstrame las pendientes de Casa Sol de este año",
-                        "Cliente Casa Sol", "Proyecto Casa Sol", "solo las de 2024", "solo las de 2025",
+                        "Cliente Casa Sol", "Proyecto Casa Sol", "solo las de 2024", "solo las de 2025", "Abre la segunda",
                     }
                     if message in demo_questions:
                         options = {"origin": origin, "acceptance": True, "pendingPlan": message == "¿Qué ingresos de facturas faltan?"}
@@ -366,7 +366,7 @@ try:
             # The HTTP response comes from the real handler and financial calculation.
             page.evaluate("""data=>{
               window.originalInvoicesFixture={clients:state.clients,invoices:state.invoices,entries:state.entries};
-              Object.assign(state,data);
+              Object.assign(state,data);fixtureVersions();
             }""", invoice_fixture)
             page.locator("#secretary-message").fill("Dime qué facturas tengo pendientes de cobrar")
             panel.get_by_role("button", name="Enviar", exact=True).click()
@@ -492,6 +492,22 @@ try:
             year_text = "De las emitidas en 2026, tienes 2 facturas pendientes por 1.500 €. Una está vencida."
             ask_demo("que facturas quedan por que me pagen", all_text, ["F-DEMO-003", "F-DEMO-001", "F-DEMO-002"])
             ask_demo("solo las de este año", year_text, ["F-DEMO-001", "F-DEMO-002"])
+            year_turn = panel.locator(".secretary-turn-assistant").filter(has_text=year_text)
+            if output:
+                wait_for_stable_view(page)
+                page.screenshot(path=str(output / f"secretario-consulta-central-{width}.png"))
+            page.locator("#secretary-message").fill("Abre la segunda")
+            panel.get_by_role("button", name="Enviar", exact=True).click()
+            expect(page.locator(".finance-document-editor")).to_contain_text("Editando F-DEMO-002")
+            expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-lateral.*"))
+            expect(year_turn.locator(".secretary-invoice")).to_have_count(2)
+            assert [row["id"] for row in requests[-1]["context"]["focus"]["results"]] == ["F-DEMO-001", "F-DEMO-002"]
+            if output:
+                wait_for_stable_view(page)
+                page.screenshot(path=str(output / f"secretario-factura-lateral-{width}.png"))
+            panel.get_by_role("button", name="Volver al chat", exact=True).click()
+            expect(page.locator("#secretary-message")).to_be_focused()
+            assert page.evaluate("fixtureDocuments()===demoRecords")
             ask_demo("enséñame solo las vencidas", "De esas facturas de 2026, queda 1 vencida por 1.000 €.", ["F-DEMO-001"])
             detail = ask_demo("¿Cuánto falta por cobrar de la F-DEMO-002?",
                 "Quedan 500 € por cobrar. La factura es de 1.200 € y tiene 700 € de cobros registrados.", ["F-DEMO-002"])

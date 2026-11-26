@@ -199,6 +199,8 @@ var ModernoSecretary=(()=>{
       return 'Pantalla abierta.';
     }
     if(action?.type==='open_document'){
+      if(action.sourceVersions&&Object.entries(action.sourceVersions).some(([block,version])=>_cloudSeen[block]!==version||!CLOUD_BLOCKS[block]||_cloudHash[block]!==canon(CLOUD_BLOCKS[block].get())))
+        throw Error('El documento ha cambiado. Vuelve a consultarlo para abrir su versión actual.');
       if(!openSource(action.payload,fromOwner))throw Error('No se pudo abrir el documento. Comprueba que sigue disponible.');
       return '';
     }
@@ -226,12 +228,12 @@ var ModernoSecretary=(()=>{
     }
     refresh();return 'Borrador abierto para revisar. Tú decides cuándo guardarlo.';
   }
-  function mountPreview(title,description){
+  function mountPreview(title,description,source){
     const section=el('section','finance-page secretary-document-preview');
     section.append(button('← Volver a la conversación',returnToConversation),el('h1','big',title));
     if(description)section.append(el('p','',description));
     preview?.node.remove();
-    preview={node:section,view:state.view,project:state.currentProject};home=false;homePending=false;collapsed=false;refresh();
+    preview={node:section,view:state.view,project:state.currentProject,source:bridge.sourcePointer(source)};home=false;homePending=false;collapsed=false;refresh();
     return section;
   }
   async function addPreviewFile(section,file){
@@ -269,7 +271,7 @@ var ModernoSecretary=(()=>{
     if(source.kind==='invoice_entry'){
       const entries=state.entries.filter(entry=>String(entry.id)===id&&entry.kind==='in'&&(!source.brand||entry.brand===source.brand));
       if(entries.length!==1||!canView('facturas')||busyEditor('facturas'))return false;
-      const entry=entries[0],section=mountPreview(source.label,source.client);
+      const entry=entries[0],section=mountPreview(source.label,source.client,source);
       section.append(el('p','',entry.concept||''),el('p','',invoiceMoney(source.pending,source.currency)+' pendientes de cobro'));
       addPreviewFile(section,entry.file).catch(()=>toast('No se ha podido abrir el archivo.'));
       return true;
@@ -281,7 +283,7 @@ var ModernoSecretary=(()=>{
       const project=state.projects.find(p=>String(p.id)===String(source.projectId));
       const files=project?.files?.filter(file=>String(project.id)+':'+String(file?.id)===id)||[];
       if(files.length!==1||!canView('proyecto')||busyEditor(state.view))return false;
-      const file=files[0],section=mountPreview(file.name||source.label,project.name);
+      const file=files[0],section=mountPreview(file.name||source.label,project.name,source);
       if(file.body!=null)section.append(el('pre','secretary-document-body',String(file.body)));
       else addPreviewFile(section,file).catch(()=>toast('No se ha podido abrir el archivo.'));
       return true;
@@ -301,8 +303,17 @@ var ModernoSecretary=(()=>{
     drawThread();if(role==='assistant'&&announcementNode)announcementNode.textContent=record.content;return record;
   }
   function setStatus(value){if(statusNode)statusNode.textContent=value+(contextTrimmed?' Uso el contexto reciente; el historial sigue visible.':'');}
-  function currentContext(){const project=activeProject();return {home,view:state.view,projectId:project?.id??null};}
-  function sameContext(expected){const current=currentContext();return !!expected&&current.home===expected.home&&current.view===expected.view&&String(current.projectId??'')===String(expected.projectId??'');}
+  function currentContext(){
+    const draft=!home&&draftEditing()?state.draft:null,project=activeProject();
+    const document=draft?(draft.editRef?bridge.sourcePointer({kind:draft.kind==='factura'?'invoice':'quote',id:draft.editRef,brand:draft.brand,projectId:draft.projectId}):
+      {kind:'draft',id:draft._draftId==null?null:String(draft._draftId),projectId:draft.projectId==null?null:String(draft.projectId)}):preview?.source??null;
+    return {home,view:state.view,projectId:draft?.projectId??preview?.source?.projectId??project?.id??null,document,draft,draftVersion:draft?draftComparable(draft):null};
+  }
+  function sameContext(expected){
+    const current=currentContext();
+    return !!expected&&current.home===expected.home&&current.view===expected.view&&String(current.projectId??'')===String(expected.projectId??'')
+      &&JSON.stringify(current.document)===JSON.stringify(expected.document)&&current.draft===expected.draft&&current.draftVersion===expected.draftVersion;
+  }
   function requestsDraft(value){
     const words=labelText(value,6000).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     return /\b(?:prepar\w*|crea\w*|gener\w*|haz\w*|convert\w*|retom\w*|contin\w*|edit\w*)\b/.test(words)
@@ -312,7 +323,7 @@ var ModernoSecretary=(()=>{
     const value=labelText(content,1000).toLocaleLowerCase('es');
     if(/(?:prepar|crea|crear|convert|contin|retom|borrador)/.test(value)&&/(?:factura|presupuesto|borrador)/.test(value))return 'Consultando clientes, proyectos y partidas para preparar el borrador…';
     if(/pendiente|sin cobrar|por cobrar/.test(value)&&/cobr/.test(value))return 'Comprobando las facturas y sus cobros…';
-    if(/(?:cobr|factur|coste|gasto|presupuesto|pendiente)/.test(value))return 'Consultando facturas, cobros, costes y presupuestos registrados…';
+    if(/(?:cobr|factur|coste|gasto|presupuesto|pendiente)/.test(value))return 'Preparando la consulta con los registros autorizados…';
     if(projectId!=null)return 'Consultando las tareas y documentos autorizados de este proyecto…';
     return 'Consultando la información a la que tienes acceso…';
   }
@@ -553,7 +564,7 @@ var ModernoSecretary=(()=>{
     try{
       const {data,error}=await sb.auth.getSession(),session=data?.session;
       if(error||!session?.access_token||session.user?.id!==state.sessionUser?.id||record.owner!==owner()||paging.signal.aborted)throw Error();
-      const input={...record.invoiceQuery,studyId:ESTUDIO_ID,
+      const input={...record.invoiceQuery,studyId:ESTUDIO_ID,receivableContext:record.response.receivableContext,
         invoicePage:{offset:receipts.next,version:receipts.version,projectId:receipts.projectId}};
       const response=await sendQuery(session,input,paging.signal),payload=await response.json();
       if(record.owner!==owner()||paging.signal.aborted)return;
@@ -651,7 +662,10 @@ var ModernoSecretary=(()=>{
     const composerFoot=el('div','secretary-composer-foot');composerFoot.append(el('span','','Puedes preguntar o pedirme que prepare un borrador.'));
     stopButton=button('Detener',()=>controller?.abort(),'secretary-button');stopButton.hidden=true;composerFoot.append(stopButton);
     sendButton=el('button','secretary-primary','Enviar');sendButton.type='submit';composerFoot.append(sendButton);form.append(composerFoot);
-    form.addEventListener('submit',event=>{event.preventDefault();const value=composer.value.trim();if(value)submitMessage(value);});panel.append(form);
+    form.addEventListener('submit',event=>{
+      event.preventDefault();const value=composer.value.trim();
+      if(value)submitMessage(value,bridge.clarificationAnswer(questions,value)||undefined);
+    });panel.append(form);
     statusNode=el('p','secretary-status','Los documentos se guardan desde su editor.');statusNode.setAttribute('role','status');panel.append(statusNode);
     announcementNode=el('p','sr-only','');announcementNode.setAttribute('aria-live','polite');announcementNode.setAttribute('aria-atomic','true');panel.append(announcementNode);drawThread();
     setCharacter('espera','Secretario disponible');
@@ -677,13 +691,18 @@ var ModernoSecretary=(()=>{
     checkIdentity();if(!ready()){setStatus('Inicia sesión para consultar al Secretario.');return;}
     if(!home&&!documentOpen){home=true;collapsed=false;refresh();}
     const captured=identity,epoch=generation,current=++requestCounter,originContext=currentContext();requestContext=originContext;contextInterrupted=false;
-    const draftRequested=requestsDraft(content)||questions.length>0&&requestsDraft(messages.findLast(item=>item.role==='user'&&!item.automatic)?.content);
+    const draftRequested=requestsDraft(content)||originContext.document?.kind==='draft'||
+      questions.length>0&&requestsDraft(messages.findLast(item=>item.role==='user'&&!item.automatic)?.content);
     let history;
-    const receivableContext=previous?previous.receivableContext:messages.at(-1)?.response?.receivableContext;
+    const previousQuery=messages.findLast(item=>item.role==='assistant');
+    const previousData=previousQuery?.response?.preserveQueryContext
+      ?messages.findLast(item=>item.role==='assistant'&&!item.response?.preserveQueryContext):previousQuery;
+    const receivableContext=previous?previous.receivableContext:previousData?.response?.receivableContext;
+    const results=previous?previous.results:previousData?.response?.sources?.slice(0,80).map(bridge.sourcePointer).filter(Boolean);
     try{const recent=previous?{history:previous.history,trimmed:contextTrimmed}:bridge.recentHistory(messages.filter(item=>item.role==='user'||item.response),content);history=recent.history;contextTrimmed=recent.trimmed;}
     catch(error){setStatus(error.message);return;}
     const structuredAnswers=previous?previous.structuredAnswers:receivableContext?.clarification?{...answerValues}:structuredFor(pendingAnswers,answerValues),hasStructuredAnswers=Object.keys(structuredAnswers).length>0;
-    const retry=()=>submitMessage(content,answerValues,{visibleContent,previous:{history,receivableContext,structuredAnswers}});
+    const retry=()=>submitMessage(content,answerValues,{visibleContent,previous:{history,receivableContext,structuredAnswers,results}});
     questions=[];answers={};busy=true;controller=new AbortController();
     characterUnread=false;setCharacter('pensando','Preparando la consulta');
     activeActivity={id:String(current),status:'running',started:performance.now(),query:null,steps:[],openByStep:new Map(),expanded:false};
@@ -698,7 +717,8 @@ var ModernoSecretary=(()=>{
       if(controller.signal.aborted)throw new DOMException('Stopped','AbortError');
       const project=originContext.projectId==null?null:state.projects?.find(item=>String(item.id)===String(originContext.projectId));feedbackTask=project?'project_question':'finance_question';
       activeActivity.query=activityFor(content,originContext.projectId);drawThread();
-      const input={studyId:ESTUDIO_ID,message:content,automatic:!!answerValues,history,context:{view:originContext.home?'finanzas':originContext.view,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,...(originContext.projectId!=null?{projectId:originContext.projectId}:{})},...(hasStructuredAnswers?{answers:structuredAnswers}:{}),...(receivableContext?{receivableContext}:{})};
+      const focus={...(originContext.document?{document:originContext.document}:{}),...(results?.length&&new TextEncoder().encode(JSON.stringify(results)).length<=8000?{results}:{})};
+      const input={studyId:ESTUDIO_ID,message:content,automatic:!!answerValues,history,context:{view:originContext.home?'finanzas':originContext.view,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone,...(originContext.projectId!=null?{projectId:originContext.projectId}:{}),...(Object.keys(focus).length?{focus}:{})},...(hasStructuredAnswers?{answers:structuredAnswers}:{}),...(receivableContext?{receivableContext}:{})};
       setCharacter('trabajando','Consulta en curso');
       const response=await sendQuery(session,input,controller.signal);
       const payload=await response.json().catch(()=>null);
@@ -732,7 +752,7 @@ var ModernoSecretary=(()=>{
       setCharacter(safe.status==='clarifying'||questions.length?'aviso':'terminado',safe.status==='clarifying'||questions.length?'Necesito un dato tuyo':safe.actions.some(item=>item.type==='prepare_draft')?'Borrador preparado':'Respuesta lista',{notify:true});
       const record=appendMessage('assistant',payload.message,safe);record.feedbackTask=feedbackTask;
       if(safe.receivables)record.invoiceQuery=input;
-      const action=safe.actions.find(item=>item.type==='prepare_draft'&&safe.status==='proposal'&&draftRequested||item.type==='open_document'&&item.openImmediately===true);
+      const action=safe.actions.find(item=>item.type==='prepare_draft'&&safe.status==='proposal'&&draftRequested||['open_document','navigate'].includes(item.type)&&item.openImmediately===true);
       if(action&&!collapsed&&epoch===generation&&captured===owner())runAction(action,captured);
       setStatus(questions.length?'Puedes elegir una opción o escribir tu respuesta.':'Los documentos se guardan desde su editor.');
     }catch(error){
