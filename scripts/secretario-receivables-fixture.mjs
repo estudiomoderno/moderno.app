@@ -44,6 +44,15 @@ export function invoiceFixture({extra = 0, acceptance = false} = {}) {
     entries.push({id:100+index,link:ref,brand,pid:projectId,kind:'in',concept:`Factura ${ref} · ${client}`,
       amount:total,base:total,cobros:collections,status:entryStatus,date:date.split('-').reverse().join('/'),due:due.split('-').reverse().join('/')});
   }
+  if(acceptance){
+    const expenses=[
+      {id:201,concept:'FR-DEMO-001',sup:'Proveedor A',pid:9001,amount:605,base:500,irpf:15,date:'12/11/2026',due:'20/11/2026',status:'pend'},
+      {id:202,concept:'FR-DEMO-002',sup:'Proveedor B',pid:9002,amount:300,date:'15/11/2026',due:'18/12/2026',status:'pend'},
+      {id:203,concept:'FR-DEMO-003',sup:'Proveedor ya pagado',amount:700,date:'15/11/2026',status:'cobr'},
+      {id:204,concept:'FR-DEMO-004',sup:'Proveedor anulado',amount:900,date:'15/11/2026',status:'anulada'}
+    ];
+    entries.push(...expenses.map(item=>({...item,kind:'out',brand:'cm'})));
+  }
   return {clients,invoices,entries};
 }
 

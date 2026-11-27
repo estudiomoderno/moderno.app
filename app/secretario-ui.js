@@ -362,6 +362,21 @@ var ModernoSecretary=(()=>{
     if(url.protocol==='data:'&&!/^data:(?:image\/|application\/pdf[;,]|application\/octet-stream[;,])/i.test(url.href))return;
     const link=el('a','secretary-button','Descargar archivo');link.href=url.href;link.download=file.name||'documento';link.target='_blank';link.rel='noopener noreferrer';section.append(link);
   }
+  function openPayable(source,fromOwner,sourceVersion){
+    if(!checkIdentity()||identity!==fromOwner||!ready()||_accessRole!=='admin'||!canView('contabilidad'))return false;
+    const invoices=CLOUD_BLOCKS.facturas;
+    if(!invoices||sourceVersion!==_cloudSeen.facturas||_cloudHash.facturas!==canon(invoices.get()))return false;
+    const matches=state.entries.filter(entry=>entry&&String(entry.id)===source.id);
+    const [entry]=matches;
+    if(matches.length!==1||entry.kind!=='out'||entry.status!=='pend'||state.entriesDel?.[source.id]||
+      String(entry.brand??'')!==String(source.brand??'')||String(entry.pid??entry.projectId??'')!==String(source.projectId??''))return false;
+    if(busyEditor('contabilidad',undefined,()=>openPayable(source,fromOwner,sourceVersion)))return true;
+    const section=mountPreview(source.label,source.supplier||'Proveedor sin registrar',source);
+    section.append(el('p','',invoiceMoney(source.pending,source.currency)+' por pagar'),el('p','',invoiceStatus(source)));
+    if(fileSrc(entry.file))addPreviewFile(section,entry.file).catch(()=>toast('No se ha podido abrir el archivo.'));
+    else section.append(el('p','secretary-caption','Sin documento adjunto'));
+    return true;
+  }
   function openSource(source,fromOwner){
     if(!source||!checkIdentity()||identity!==fromOwner||!ready())return false;
     const id=String(source?.id||'');
@@ -386,7 +401,10 @@ var ModernoSecretary=(()=>{
       addPreviewFile(section,entry.file).catch(()=>toast('No se ha podido abrir el archivo.'));
       return true;
     }
-    if(source.kind==='entry'){goDirect('contabilidad');return;}
+    if(source.kind==='entry'){
+      if(typeof source.sourceVersion==='string')return openPayable(source,fromOwner,source.sourceVersion);
+      goDirect('contabilidad');return;
+    }
     if(source.kind==='catalog'){goDirect('catalogo');return;}
     if(source.kind==='client'){goDirect('agenda');return;}
     if(source.kind==='document'){
@@ -698,60 +716,69 @@ var ModernoSecretary=(()=>{
     if(group.childNodes.length)container.append(group);
   }
   const invoiceMoney=(amount,currency)=>new Intl.NumberFormat('es-ES',{style:'currency',currency}).format(amount);
-  function validReceivables(payload){
-    const result=payload?.receivables,rows=payload?.sources;
-    return Number.isSafeInteger(result?.count)&&Number.isSafeInteger(result.offset)&&result.offset>=0&&Array.isArray(rows)&&rows.length<=12
+  const invoiceResults=payload=>payload?.payables??payload?.receivables;
+  function validInvoiceResults(payload){
+    const result=invoiceResults(payload),rows=payload?.sources,payables=payload?.payables;
+    return !(payables&&payload.receivables)&&Number.isSafeInteger(result?.count)&&Number.isSafeInteger(result.offset)&&result.offset>=0&&Array.isArray(rows)&&rows.length<=12
       &&result.count>=result.offset+rows.length&&(result.next===null||rows.length>0&&result.next===result.offset+rows.length&&result.next<result.count)
       &&typeof result.version==='string'&&(result.projectId===null||typeof result.projectId==='string')
       &&Number.isSafeInteger(result.overdue)&&result.overdue>=0&&result.overdue<=result.count
+      &&(!payables||typeof result.sourceVersion==='string'&&result.sourceVersion.length>0)
       &&Array.isArray(result.amounts)&&result.amounts.every(total=>/^[A-Z]{3}$/.test(total?.currency)&&Number.isFinite(total.amount)&&total.amount>0)
-      &&rows.every(row=>['invoice','invoice_entry'].includes(row?.kind)&&typeof row.id==='string'&&typeof row.label==='string'&&Number.isFinite(row.pending)&&row.pending>0&&/^[A-Z]{3}$/.test(row.currency));
+      &&rows.every(row=>(payables?row?.kind==='entry':['invoice','invoice_entry'].includes(row?.kind))&&typeof row.id==='string'&&typeof row.label==='string'
+        &&Number.isFinite(row.pending)&&row.pending>0&&/^[A-Z]{3}$/.test(row.currency));
   }
-  function drawReceivables(container,record){
-    const {sources,receivables}=record.response;
-    if(receivables.scopeLabel)container.append(el('p','secretary-caption',labelText(receivables.scopeLabel,500)));
+  function invoiceStatus(source){
+    const date=typeof source.due==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(source.due)?source.due.split('-').reverse().join('/'):'';
+    const status=source.overdue?(source.partial?'Vencida · Cobro parcial':'Vencida'):source.partial?'Cobro parcial':date?'Vence':'Sin vencimiento registrado';
+    return status+(date?' · '+date:'');
+  }
+  function drawInvoiceResults(container,record){
+    const {sources,payables}=record.response,result=invoiceResults(record.response);
+    if(result.scopeLabel)container.append(el('p','secretary-caption',labelText(result.scopeLabel,500)));
     if(!sources.length)return;
     const list=el('ul','secretary-invoices');
     for(const source of sources){
       const row=el('li','secretary-invoice');
       const label=el('div','secretary-invoice-label');
-      label.append(el('strong','',labelText(source.label,160)),el('span','secretary-caption',labelText(source.client,160)||'Cliente sin registrar'));
+      const counterparty=payables?labelText(source.supplier,160)||'Proveedor sin registrar':labelText(source.client,160)||'Cliente sin registrar';
+      label.append(el('strong','',labelText(source.label,160)),el('span','secretary-caption',counterparty));
       const balance=el('div','secretary-invoice-balance');
-      const date=typeof source.due==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(source.due)?source.due.split('-').reverse().join('/'):'';
-      const status=source.overdue?(source.partial?'Vencida · Cobro parcial':'Vencida'):source.partial?'Cobro parcial':date?'Vence':'Sin vencimiento registrado';
-      balance.append(el('strong','',invoiceMoney(source.pending,source.currency)),el('span',source.overdue?'secretary-invoice-overdue':'secretary-caption',status+(date?' · '+date:'')));
+      balance.append(el('strong','',invoiceMoney(source.pending,source.currency)),el('span',source.overdue?'secretary-invoice-overdue':'secretary-caption',invoiceStatus(source)));
       row.append(label,balance,button('Abrir factura',()=>{
-        if(!openSource(source,record.owner))setStatus('La factura ya no está disponible. Vuelve a consultar los pendientes.');
+        const opened=payables?openPayable(source,record.owner,payables.sourceVersion):openSource(source,record.owner);
+        if(!opened)setStatus(payables?'La factura no está disponible para abrir. Vuelve a consultar las facturas por pagar.':'La factura ya no está disponible. Vuelve a consultar los pendientes.');
       },'secretary-source'));
       list.append(row);
     }
     container.append(list);
-    if(sources.length<receivables.count)container.append(el('p','secretary-caption',`Viendo ${sources.length} de ${receivables.count} facturas. El total corresponde a todas.`));
-    if(receivables.next!==null){
+    if(sources.length<result.count)container.append(el('p','secretary-caption',`Viendo ${sources.length} de ${result.count} facturas. El total corresponde a todas.`));
+    if(result.next!==null){
       const more=button(record.pageController?'Cargando…':'Ver más',()=>loadMoreInvoices(record),'secretary-button');
       more.disabled=!!record.pageController;container.append(more);
     }
     if(record.pageError)container.append(el('p','secretary-caption',record.pageError));
   }
   async function loadMoreInvoices(record){
-    const receipts=record.response.receivables;
-    if(record.pageController||record.owner!==owner()||!ready()||receipts.next===null)return;
+    const result=invoiceResults(record.response);
+    if(record.pageController||record.owner!==owner()||!ready()||result.next===null)return;
     const paging=new AbortController();
     record.pageController=paging;record.pageError='';drawThread();
     try{
       const {data,error}=await sb.auth.getSession(),session=data?.session;
       if(error||!session?.access_token||session.user?.id!==state.sessionUser?.id||record.owner!==owner()||paging.signal.aborted)throw Error();
       const input={...record.invoiceQuery,studyId:ESTUDIO_ID,receivableContext:record.response.receivableContext,
-        invoicePage:{offset:receipts.next,version:receipts.version,projectId:receipts.projectId}};
+        invoicePage:{offset:result.next,version:result.version,projectId:result.projectId}};
       const response=await sendQuery(session,input,paging.signal),payload=await response.json();
       if(record.owner!==owner()||paging.signal.aborted)return;
       if(!response.ok){
-        if(response.status===409){record.pageError='Las facturas han cambiado. Vuelve a consultar para actualizar los resultados.';receipts.next=null;return;}
+        if(response.status===409){record.pageError='Las facturas han cambiado. Vuelve a consultar para actualizar los resultados.';result.next=null;return;}
         throw Error();
       }
-      if(!validReceivables(payload)||payload.receivables.version!==receipts.version||payload.receivables.offset!==record.response.sources.length||payload.receivables.count!==receipts.count
-        ||payload.receivables.overdue!==receipts.overdue||JSON.stringify(payload.receivables.amounts)!==JSON.stringify(receipts.amounts))throw Error();
-      record.response.sources.push(...payload.sources);receipts.next=payload.receivables.next;
+      const page=invoiceResults(payload);
+      if(!validInvoiceResults(payload)||!!payload.payables!==!!record.response.payables||page.version!==result.version||page.sourceVersion!==result.sourceVersion
+        ||page.offset!==record.response.sources.length||page.count!==result.count||page.overdue!==result.overdue||JSON.stringify(page.amounts)!==JSON.stringify(result.amounts))throw Error();
+      record.response.sources.push(...payload.sources);result.next=page.next;
     }catch{
       if(!paging.signal.aborted)record.pageError='No se han podido cargar más facturas. Puedes volver a intentarlo.';
     }finally{
@@ -781,7 +808,7 @@ var ModernoSecretary=(()=>{
       const reply=revealingReply?.record===record?revealingReply:null;
       line.append(messageAvatar(record.role),reply?.node||el('div','secretary-bubble',record.content));item.append(line);
       const extras=el('div','secretary-message-extras');
-      if(record.response?.receivables)drawReceivables(extras,record);
+      if(invoiceResults(record.response))drawInvoiceResults(extras,record);
       else if(record.response?.sources?.length){
         const sources=el('div','secretary-sources');sources.append(el('span','secretary-caption','Fuentes'));
         const received=record.response.sources.slice(0,80);
@@ -922,13 +949,14 @@ var ModernoSecretary=(()=>{
         if(code==='cancelled')throw Object.assign(new DOMException('Stopped','AbortError'),{requestId:ref});
         if(code==='context_limit')throw requestFailure(withReference(payload?.error?.message||'Necesito una consulta más concreta para localizar esos datos.',ref));
         if(code==='invoice_data_unavailable')throw requestFailure('No he podido consultar las facturas ahora. Puedes reintentarlo.',{retryable:true});
+        if(code==='payable_data_unavailable')throw requestFailure('No he podido consultar las facturas por pagar ahora. Puedes reintentarlo.',{retryable:true});
         if(['not_configured','provider_unavailable','service_unavailable','SECRETARY_NOT_CONFIGURED'].includes(code)||response.status>=500)throw requestFailure(withReference('El Secretario todavía no está disponible. Puedes seguir usando las pantallas y editores de Finanzas.',ref),{retryable:true,unavailable:true});
         throw requestFailure(withReference('No he podido completar la consulta. Puedes volver a intentarlo.',ref),{retryable:true});
       }
       if(!payload||!['answer','clarifying','proposal'].includes(payload.status)||typeof payload.message!=='string')throw Error('La respuesta no se pudo mostrar. Vuelve a intentarlo.');
-      if(payload.receivables&&!validReceivables(payload))throw Error('No se han podido comprobar las facturas de la respuesta.');
+      if(invoiceResults(payload)&&!validInvoiceResults(payload))throw Error('No se han podido comprobar las facturas de la respuesta.');
       const safe={...payload,sources:Array.isArray(payload.sources)?payload.sources:[],trace:Array.isArray(payload.trace)?payload.trace.filter(step=>step?.status==='done'):[],
-        actions:!payload.receivables&&Array.isArray(payload.actions)?payload.actions.filter(action=>['navigate','prepare_draft','open_document'].includes(action?.type)).slice(0,4):[]};
+        actions:!invoiceResults(payload)&&Array.isArray(payload.actions)?payload.actions.filter(action=>['navigate','prepare_draft','open_document'].includes(action?.type)).slice(0,4):[]};
       safe.actions=safe.actions.map((action,index)=>({...action,id:String(payload.requestId||current)+':'+String(action.id||index)}));
       questions=Array.isArray(payload.questions)?payload.questions.filter(question=>typeof question.id==='string'&&typeof question.prompt==='string').slice(0,6).map(question=>({...question,options:Array.isArray(question.options)?question.options.slice(0,8):[]})):[];
       pendingAnswers=pendingAfter(payload.status,structuredAnswers);
@@ -937,7 +965,7 @@ var ModernoSecretary=(()=>{
       unavailable=false;requestContext=null;finishActivity('done',safe.trace);
       setCharacter(safe.status==='clarifying'||questions.length?'aviso':'terminado',safe.status==='clarifying'||questions.length?'Necesito un dato tuyo':safe.actions.some(item=>item.type==='prepare_draft')?'Borrador preparado':'Respuesta lista',{notify:true});
       const record=appendMessage('assistant',payload.message,safe);record.feedbackTask=feedbackTask;
-      if(safe.receivables)record.invoiceQuery=input;
+      if(invoiceResults(safe))record.invoiceQuery=input;
       const action=safe.actions.find(item=>item.type==='prepare_draft'&&safe.status==='proposal'&&draftRequested||['open_document','navigate'].includes(item.type)&&item.openImmediately===true);
       if(action&&!collapsed&&!financeTransition&&epoch===generation&&captured===owner())runAction(action,captured);
       setStatus('');

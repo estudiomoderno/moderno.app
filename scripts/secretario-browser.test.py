@@ -18,6 +18,7 @@ from playwright.sync_api import expect, sync_playwright
 
 repo = Path(__file__).resolve().parents[1]
 output = Path(sys.argv[1]) if len(sys.argv) > 1 else None
+desktop_only = os.environ.get('SECRETARIO_DESKTOP_ONLY') == '1'
 if output:
     output.mkdir(parents=True, exist_ok=True)
 backend = "https://chsilowzrtumbcofspwv.supabase.co"
@@ -184,7 +185,8 @@ try:
         if executable:
             options["executable_path"] = executable
         browser = playwright.chromium.launch(**options)
-        for width, height in [(1440, 1000), (390, 844)]:
+        viewports = [(1440, 1000)] if desktop_only else [(1440, 1000), (390, 844)]
+        for width, height in viewports:
             page = browser.new_page(viewport={"width": width, "height": height}, locale="es-ES")
             errors, requests, forbidden_writes, pending = [], [], [], []
             pending_receivables = []
@@ -244,6 +246,8 @@ try:
                         "¿Cuánto falta por cobrar de la F-DEMO-002?", "¿Qué ingresos de facturas faltan?",
                         "pendientes de cobro y solo de este año", "Muéstrame las pendientes de Casa Sol de este año",
                         "Cliente Casa Sol", "Proyecto Casa Sol", "solo las de 2024", "solo las de 2025", "Abre la segunda",
+                        "quiero ver las facturas que me quedan por pagar", "No que tengo que pagar yo",
+                        "las que quiero pagar yo", "facturas", "Abre la primera",
                     }
                     if message in demo_questions:
                         options = {"origin": origin, "acceptance": True, "pendingPlan": message == "¿Qué ingresos de facturas faltan?"}
@@ -309,6 +313,8 @@ try:
             expect(panel).to_be_visible()
             expect(panel).to_have_attribute('aria-label', 'Secretario de Finanzas')
             expect(panel.locator('.secretary-title strong')).to_have_text('Secretario de Finanzas')
+            if width >= 1100:
+                expect(panel.locator('.secretary-title strong')).to_be_hidden()
             expect(panel.locator('.secretary-context')).to_be_hidden()
             expect(panel.locator('.secretary-context')).to_have_text('')
             expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-home.*"))
@@ -332,6 +338,8 @@ try:
             welcome.evaluate("node=>node.decode()")
             assert welcome.evaluate("(node,minimum)=>node.naturalWidth>0&&node.getBoundingClientRect().width>=minimum", 140 if width >= 1100 else 80)
             assert welcome.evaluate("node=>new URL(node.src).pathname.startsWith('/brand/secretario/lavanda/')")
+            if width >= 1100:
+                assert welcome.evaluate('node=>node.getBoundingClientRect().top<240')
             assert page.locator('img[data-secretary-presence][data-animated=true]').count() <= 1
 
             # The supplied static pose is used when motion is reduced, including
@@ -368,7 +376,7 @@ try:
                 expect(panel.locator('.secretary-context')).to_be_hidden()
                 header_character = panel.locator('[data-secretary-presence=header]')
                 expect(header_character).to_be_visible()
-                assert header_character.evaluate('(node,size)=>node.getBoundingClientRect().width===size&&node.getBoundingClientRect().height===size', 80 if width > 500 else 72)
+                assert header_character.evaluate('(node,size)=>node.getBoundingClientRect().width===size&&node.getBoundingClientRect().height===size', 48 if width >= 1100 else 72)
                 if output and query == 'cuota diaria ficticia':
                     page.screenshot(path=str(output / f'secretario-cuota-{width}.png'))
                 request_count = len(requests)
@@ -484,7 +492,7 @@ try:
                 panel.get_by_role("button", name="Enviar", exact=True).click()
                 turn = panel.locator(".secretary-turn-assistant").last
                 expect(turn.locator(".secretary-bubble")).to_have_text(message)
-                expect(turn.locator(".secretary-invoice strong").filter(has_text=__import__("re").compile(r"^F-DEMO-\d+$"))).to_have_text(docs)
+                expect(turn.locator(".secretary-invoice-label strong")).to_have_text(docs)
                 assert page.evaluate("document.body.classList.contains('secretary-home')")
                 return turn
 
@@ -558,6 +566,34 @@ try:
             last = panel.locator(".secretary-turn-assistant").last
             expect(last.locator(".secretary-invoice")).to_contain_text("F-DEMO-003")
             assert requests[-1]["receivableContext"]["scope"]["projectId"] == "9001"
+            if width >= 1100:
+                page.evaluate("go('informes');ModernoSecretary.openFinance()")
+                payable_message = 'Tienes 2 facturas pendientes de pago por 830 €. Una está vencida.'
+                payable_rows = ['FR-DEMO-001', 'FR-DEMO-002']
+                ask_demo('quiero ver las facturas que me quedan por pagar', payable_message, payable_rows)
+                ask_demo('que facturas quedan por que me pagen', 'Tienes 3 facturas pendientes de cobro por 2.300 €. De ellas, 2 están vencidas.',
+                         ['F-DEMO-003', 'F-DEMO-001', 'F-DEMO-002'])
+                result = ask_demo('No que tengo que pagar yo', payable_message, payable_rows)
+                expect(result.locator('.secretary-invoice').first).to_contain_text('Proveedor A')
+                expect(result.locator('.secretary-invoice').first).to_contain_text('530,00')
+                assert page.evaluate("document.body.classList.contains('secretary-home') && state.view==='informes'")
+                if output:
+                    page.screenshot(path=str(output / f'secretario-facturas-por-pagar-{width}.png'))
+                result.locator('.secretary-invoice').first.get_by_role('button', name='Abrir factura', exact=True).click()
+                document = page.locator('.secretary-document-preview')
+                expect(document.get_by_role('heading', name='FR-DEMO-001')).to_be_visible()
+                expect(document).to_contain_text('por pagar')
+                expect(page.locator('body')).to_have_class(__import__('re').compile(r'.*secretary-lateral.*'))
+                if output:
+                    page.screenshot(path=str(output / f'secretario-gasto-lateral-{width}.png'))
+                document.get_by_role('button', name='← Volver a la conversación', exact=True).click()
+                expect(result.locator('.secretary-invoice')).to_have_count(2)
+                page.locator('#secretary-message').fill('Abre la primera')
+                panel.get_by_role('button', name='Enviar', exact=True).click()
+                expect(document.get_by_role('heading', name='FR-DEMO-001')).to_be_visible()
+                document.get_by_role('button', name='← Volver a la conversación', exact=True).click()
+                assert page.evaluate("document.body.classList.contains('secretary-home') && fixtureDocuments()===demoRecords")
+                print('1440 PASS: pending supplier invoices, correction after receivables, readonly document and return', flush=True)
             print(f"{width} PASS: exact acceptance dialogue with one composer, invoice detail, choices, empty and failed read", flush=True)
             composer = panel.get_by_role("textbox", name="Mensaje para el Secretario", exact=True)
             send = panel.get_by_role("button", name="Enviar", exact=True)
@@ -622,7 +658,7 @@ try:
             page.evaluate("ModernoHeaderActions.refresh()")
             assert_launcher_clearance(page)
             expect(page.get_by_role("button", name="Modo IA", exact=True)).to_have_count(1)
-            if width >= 1100:
+            if width >= 1100 and not desktop_only:
                 page.set_viewport_size({"width": 390, "height": 844})
                 assert_launcher_clearance(page)
                 page.set_viewport_size({"width": width, "height": height})
