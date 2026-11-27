@@ -124,8 +124,8 @@ test('published app enables only the production endpoint and keeps feedback off'
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
   assert.ok(html.includes('<script src="/secretario-bridge.js?v=5"></script>'));
- assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=11">'));
- assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=19"></script>'));
+ assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=12">'));
+ assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=20"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
 });
 
@@ -261,7 +261,7 @@ test('the UI marks structured option submissions as automatic history',async()=>
   const start=code.indexOf('function pendingAfter('),end=code.indexOf('\n  const activeProject',start),context=vm.createContext({});assert.ok(start>=0&&end>start);vm.runInContext(code.slice(start,end),context);
   const candidate={clientId:'contact:1'};const retained=context.pendingAfter('clarifying',candidate);assert.deepEqual(JSON.parse(JSON.stringify(retained)),candidate);assert.notEqual(retained,candidate);
   assert.deepEqual(JSON.parse(JSON.stringify(context.pendingAfter('answer',candidate))),{});assert.deepEqual(JSON.parse(JSON.stringify(context.pendingAfter('error',candidate))),{});assert.deepEqual(JSON.parse(JSON.stringify(context.pendingAfter('aborted',candidate))),{});
-  assert.match(code,/pendingAnswers=pendingAfter\(payload\.status,structuredAnswers\)/);
+  assert.match(code,/pendingAnswers=pendingAfter\(safe\.status,structuredAnswers\)/);
   assert.match(code,/catch\(error\)\{[\s\S]{0,180}pendingAnswers=pendingAfter\('error',structuredAnswers\)/);
   assert.doesNotMatch(code,/if\(hasStructuredAnswers\)pendingAnswers=structuredAnswers/);
 });
