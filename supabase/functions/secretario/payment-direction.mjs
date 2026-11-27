@@ -51,7 +51,8 @@ function invoiceFollowup(text){
   const phrase=text.replace(/^(?:(?:y|ahora|mejor|entonces|dime|muestrame|ensename|solo|tambien|ahora quiero) )+/,'');
   return !otherSubject.test(phrase)&&(/^(?:las? |esas? |estas? )?(?:facturas?|pendientes)$/.test(phrase)||
     /^(?:(?:las?|esas?|estas?) )?(?:de |del |en |desde |hasta |entre |sin vencer\b|sin (?:fecha de )?vencimiento\b|vencidas?\b|que (?:vencen|no han vencido)\b)/.test(phrase)||
-    /^(?:(?:lo mismo )?para |todo el estudio|sin filtros|de todos los anos|(?:este|el) (?:ano|mes)\b|(?:proveedor|proyecto) |cualquier (?:moneda|proveedor|proyecto)|todas las monedas|(?:los )?proximos? \d+ dias)/.test(phrase)||/^(?:19|20|21)\d{2}$/.test(phrase));
+    /^(?:(?:lo mismo )?para |todo el estudio|sin filtros?|de todos los anos|(?:este|el) (?:ano|mes)\b|(?:proveedor|proyecto) |cualquier (?:moneda|proveedor|proyecto)|todas las monedas|(?:los )?proximos? \d+ dias)/.test(phrase)||
+    /^(?:(?:por favor) )?(?:quita(?:me)?|quitar|elimina(?:me)?|eliminar) (?:ese|este|el) filtro$/.test(phrase)||/^(?:19|20|21)\d{2}$/.test(phrase));
 }
 
 const scopeReplyRequested=turn=>turn?.role==='assistant'&&Object.values(payableScopePrompts).includes(turn.content);
@@ -81,7 +82,7 @@ function confirmedReceipt(query,priorQuery){
   return ['Facturas pendientes de cobro',extra,remainder].filter(Boolean).join(' ');
 }
 
-export function invoicePaymentTurn({message,automatic,answers={},history=[],context}){
+export function invoicePaymentTurn({message,automatic,answers={},history=[],context,documentContext}){
   const input=automatic?(answers[directionField]??answers.payable_scope??answers.detail??answers.receivable_confirm??message):message;
   const corrected=correctedQuery(input),query=corrected??input;
   const direction=paymentDirection(query);
@@ -95,15 +96,18 @@ export function invoicePaymentTurn({message,automatic,answers={},history=[],cont
   }
   const phrase=words(query),prior=previousPayment(history);
   const scopeReply=scopeReplyRequested(last);
+  const carried=documentContext?.scope?.kind==='received'&&documentContext.scope.mode==='pending-payables'?documentContext.scope:null;
   const expenseFocused=context?.focus?.document?.kind==='entry'||context?.focus?.results?.some(item=>item.kind==='entry');
   if(executePayment.test(phrase))return {direction:'payable',operation:'execute',query};
   if(partialPayment.test(phrase)&&(expenseFocused||prior?.direction==='payable'||/\b(?:pague|pagamos|he pagado|hemos pagado|abone|abonamos)\b/.test(phrase)))return {direction:'payable',operation:'partial',query};
   if(dueQuestion.test(phrase)&&(expenseFocused||prior?.direction==='payable'||/\bproveedor\b/.test(phrase)))return {direction:'payable',operation:'status',query};
   if(direction==='ambiguous')return {direction,query};
   if(corrected&&direction==='receivable')return {direction,query:'Facturas pendientes de cobro '+query};
+  if(carried&&!direction&&(invoiceFollowup(phrase)||scopeReply&&!action.test(phrase)&&!otherSubject.test(phrase)))
+    return {direction:'payable',query,base:carried};
   if(scopeReply&&prior?.direction==='payable'&&!direction&&!action.test(phrase)&&!otherSubject.test(phrase))
     return {...prior,query};
-  if(direction==='payable')return {...(invoice.test(phrase)?null:prior),direction,query};
+  if(direction==='payable')return {...(invoice.test(phrase)?null:carried?{base:carried}:prior),direction,query};
   if(direction||!prior||!invoiceFollowup(phrase))return null;
   return {...prior,query};
 }

@@ -3,12 +3,13 @@ import {collectPayables,resolvePayableScope} from './payables.mjs';
 import {invoicePaymentTurn} from './payment-direction.mjs';
 import {parsePeriod,resolveReceivableScope} from './receivable-scope.mjs';
 import {collectReceivables,isoDate,normalizeReceivableText} from './receivables.mjs';
+import {buildEntityCatalog,normalizeEntityText,parseEntityIdentity,resolveEntity,serializeEntityIdentity} from './entities.mjs';
 
 const PAGE_SIZE=12;
 const kinds=['invoice','quote','received'];
-const modes=['list','sum','sent','sent-copy','accepted-copy','linked','verify'];
-const states=['accepted','pending','rejected','paid','partial','overdue','void','sent'];
-const fields=['document_client','document_project','document_party','document_reference','document_period'];
+const modes=['list','sum','sent','sent-copy','accepted-copy','linked','verify','pending-payables'];
+const states=['accepted','pending','rejected','paid','partial','overdue','open','unknown_due','void','sent'];
+const fields=['document_client','document_project','document_party','document_reference','document_period','document_currency'];
 const string=(value,max=160)=>typeof value==='string'?value.trim().slice(0,max):'';
 const id=value=>typeof value==='string'||Number.isSafeInteger(value)?String(value):'';
 const norm=value=>normalizeReceivableText(value).replace(/[^a-z0-9/-]+/g,' ').trim().replace(/\s+/g,' ');
@@ -30,10 +31,34 @@ const quoteWord=/\bpresupuestos?\b/;
 const referenceWord=/\b[a-z]{1,12}(?:-[a-z0-9]+)*[-/]\d[a-z0-9/-]*\b/g;
 const sentWord=/\b(?:mande|mandamos|mandaste|envie|enviaste|enviamos|mandad[ao]s?|enviad[ao]s?)\b/;
 const clearAll=/\b(?:sin filtros|todos los filtros)\b/;
+const clearProject=/\b(?:todo el estudio|todos los proyectos|sin filtro de proyecto)\b/;
+const clearParty=/\b(?:todos los clientes|todos los proveedores|sin filtro de (?:cliente|proveedor))\b/;
+const clearCurrency=/\b(?:todas las monedas|cualquier moneda|sin filtro de moneda)\b/;
+const clearDate=/\b(?:todos los anos|sin limite de fechas|sin filtro de (?:periodo|fecha))\b/;
+const clearState=/\b(?:cualquier estado|todos los estados|sin filtro de estado)\b/;
+const clearReference=/\b(?:todas las referencias|sin filtro de referencia)\b/;
+const unspecifiedFilter=/^(?:(?:y|ahora|mejor|por favor) )*(?:quita(?:me)?|quitar|elimina(?:me)?|eliminar) (?:ese|este|el) filtro$/;
 const clearResult=/^(?:(?:y|ahora|mejor|ensename|muestrame|ver|dime) )*(?:todas|todos|las demas|los demas|el resto)$/;
 const namedScope=/\b(?:cliente|proveedor|proyecto)(?: (?:de|del|llamad[ao]))?$/;
 const quoteStateWords=/\b(?:aceptad[oa]s?|rechazad[oa]s?|pendientes? (?:de )?(?:aceptar|aceptacion))\b/;
 const invoiceStateWords=/\b(?:cobrad[ao]s?|pagad[ao]s?)\b/;
+const receivedWords=/\b(?:recibid[oa]s?|(?:de|del|a|al) (?:(?:un[ao]?|el|la|mis|los|las|nuestros|nuestras) )?proveedor(?:a|es|as)?)\b/;
+const unnamedSupplier=/\b(?:de|a) un[ao]? proveedor(?:a)?\b/;
+const paymentsMade='(?:(?:(?:he|e|hemos) (?:pagado|abonado|liquidado))|pague|pagamos|abone|abonamos)';
+const outgoingPaid=new RegExp('\\b'+paymentsMade+'\\b');
+const outgoingUnpaid=new RegExp('\\bno (?:(?:aun|todavia) )?'+paymentsMade+'\\b');
+const incomingPaid=/\b(?:(?:he|e|hemos) cobrado|cobre|cobramos|(?:me|nos) (?:ha|han) (?:pagado|abonado))\b/;
+const paidDateWords=/\b(?:fecha de (?:pago|abono|cobro)|(?:pagad[oa]s?|cobrad[oa]s?|pague|cobre|abone) (?:durante|entre|desde|hasta|el \d))\b/;
+const currencyWords={euro:'EUR',euros:'EUR',dolar:'USD',dolares:'USD','dolar estadounidense':'USD','dolares estadounidenses':'USD',
+  libra:'GBP',libras:'GBP','libra esterlina':'GBP','libras esterlinas':'GBP','dolar canadiense':'CAD','dolares canadienses':'CAD',
+  'peso mexicano':'MXN','pesos mexicanos':'MXN','franco suizo':'CHF','francos suizos':'CHF',yen:'JPY',yenes:'JPY'};
+const currencyCodes=new Set(Intl.supportedValuesOf('currency'));
+const currencyFilter=new RegExp('\\b(?:en (?:moneda )?|moneda )('+Object.keys(currencyWords).sort((a,b)=>b.length-a.length).join('|')+'|[a-z]{3})\\b','g');
+const currencyValue=value=>{
+  const name=norm(value),code=Object.hasOwn(currencyWords,name)?currencyWords[name]:currency(name);
+  return currencyCodes.has(code)?code:null;
+};
+const mentionsPhrase=(text,phrase)=>!!norm(phrase)&&new RegExp('(?:^| )'+escape(norm(phrase))+'(?= |$)').test(text);
 
 function focusedDocument(request){
   const focus=request.context?.focus;
@@ -61,9 +86,9 @@ function contextual(text){
 }
 
 function settledWord(text){
-  if(/\b(?:no|sin|parcialmente) (?:(?:estan?|han sido) )?(?:cobrad[oa]s?|pagad[oa]s?)\b|\b(?:cobrad[oa]s?|pagad[oa]s?) en parte\b/.test(text))return null;
-  if(/\bcobrad[oa]s?\b/.test(text))return 'incoming';
-  return /\bpagad[oa]s?\b/.test(text)?'outgoing':null;
+  if(outgoingUnpaid.test(text)||/\b(?:no|sin|parcialmente) (?:(?:estan?|han sido) )?(?:cobrad[oa]s?|pagad[oa]s?)\b|\b(?:cobrad[oa]s?|pagad[oa]s?) en parte\b/.test(text))return null;
+  if(incomingPaid.test(text)||/\bcobrad[oa]s?\b/.test(text))return 'incoming';
+  return outgoingPaid.test(text)||/\bpagad[oa]s?\b/.test(text)?'outgoing':null;
 }
 
 export function validDocumentContext(value){
@@ -71,7 +96,7 @@ export function validDocumentContext(value){
   const {scope,clarification}=value;
   if(scope){
     if(!only(scope,['kind','clientKey','projectId','date','state','reference','latest','selection','mode','paymentParty','brand','currency'])||
-      !kinds.includes(scope.kind)||!modes.includes(scope.mode)||typeof scope.latest!=='boolean'||
+      !kinds.includes(scope.kind)||!modes.includes(scope.mode)||scope.mode==='pending-payables'&&scope.kind!=='received'||typeof scope.latest!=='boolean'||
       !['clientKey','projectId','reference','selection'].every(field=>scope[field]==null||bounded(scope[field],400))||
       scope.state!=null&&!states.includes(scope.state)||
       scope.brand!=null&&(typeof scope.brand!=='string'||scope.brand.length>80)||
@@ -95,7 +120,13 @@ export function documentSearchTurn(request){
   const prompt=context?.clarification;
   const current=automatic?(prompt&&answers[prompt.field]||answers.detail||message):message;
   const text=norm(current);
-  if(!text||writing.test(text)||/\bpdf\b|\b(?:por|de) (?:cobrar|cobro|pagar|pago)\b/.test(text))return null;
+  const actionText=text.replace(/^(?:hola|buenas(?: tardes| noches)?|buenos dias)\b */,'');
+  const paymentText=text.replace(/\bfecha de (?:pago|abono|cobro)\b/g,' ');
+  if(!text||writing.test(actionText)||/\bpdf\b|\b(?:por|de) (?:cobrar|cobro|pagar|pago)\b/.test(paymentText))return null;
+  if(!prompt&&context?.scope&&context.scope.mode!=='pending-payables'&&unspecifiedFilter.test(text)){
+    const base=context.scope,filters=documentFilters(base,{});
+    return {kind:base.kind,query:filters.length===1?filters[0].clear:current,base,answers:{},filterChoice:filters.length!==1?filters:null};
+  }
   const missingMovement=/\b(?:ingresos?|movimientos?|asientos?)\b/.test(text)&&
     /\b(?:faltan?|faltantes?|ausentes?|sin registrar|no (?:estan |figuran )?registrad[oa]s?)\b/.test(text);
   const explicitDocuments=/\b(?:busca|muestra(?:me)?|ensena(?:me)?|ver|listar) (?:(?:las?|los?|mis|tus|unas?) )?(?:facturas?|presupuestos?)\b/.test(text);
@@ -104,8 +135,10 @@ export function documentSearchTurn(request){
   const explicitKind=mode==='linked'?'quote':invoiceWord.test(text)?'invoice':quoteWord.test(text)?'quote':null;
   const hasFollowup=!!context?.scope&&contextual(text);
   const dependentMode=['sent','sent-copy','accepted-copy'].includes(mode);
-  if(prompt&&(automatic?Object.hasOwn(answers,prompt.field):!explicitKind&&!differentTopic.test(text))){
-    return {kind:prompt.kind,query:prompt.query,base:context.scope,answers:{...prompt.answers,[prompt.field]:current},focus};
+  const typedParty=/^(?:(?:el|la) )?(?:proveedor|cliente|proyecto) /.test(text);
+  if(prompt&&(automatic?Object.hasOwn(answers,prompt.field):(!explicitKind||typedParty)&&!differentTopic.test(text))){
+    const prior=norm(prompt.query),settled=settledWord(prior)??(context.scope?.state==='paid'?(prompt.kind==='received'?'outgoing':'incoming'):null);
+    return {kind:prompt.kind,query:prompt.query,base:context.scope,answers:{...prompt.answers,[prompt.field]:current},focus,settled};
   }
   const fromGastos=/^(?:gastos|contabilidad)$/.test(request.context?.view||'');
   const settled=mode==='list'&&(explicitKind==='invoice'||contextual(text))?settledWord(text):null;
@@ -113,7 +146,7 @@ export function documentSearchTurn(request){
     invoicePaymentTurn({...request,message:'facturas',automatic:false,answers:{}}):null;
   const impliedKind=contextual(text)&&quoteStateWords.test(text)?'quote':contextual(text)&&invoiceStateWords.test(text)?
     /\bpagad[oa]s?\b/.test(text)&&(fromGastos||context?.scope?.kind==='received'||payableOrigin?.direction==='payable')?'received':'invoice':null;
-  const received=/\b(?:recibid[oa]s?|(?:de|del) (?:mis |los )?proveedores?)\b/.test(text);
+  const received=receivedWords.test(text)||outgoingPaid.test(text)&&!incomingPaid.test(text);
   const kind=explicitKind==='invoice'&&(received||payableOrigin?.direction==='payable'||fromGastos&&!/\b(?:emitid[ao]s?|ventas|clientes?)\b/.test(text))?'received':
     explicitKind||(dependentMode?family(focus)||context?.scope?.kind:null)||impliedKind||(hasFollowup?context.scope.kind:null);
   if(!kind||differentTopic.test(text)&&!explicitKind)return null;
@@ -123,45 +156,43 @@ export function documentSearchTurn(request){
   const paidScope=settled&&inherited&&!base?
     kind==='invoice'&&request.receivableContext?.scope?{receipt:request.receivableContext}:
     kind==='received'&&payableOrigin?.direction==='payable'?{payable:payableOrigin}:null:null;
-  return {kind,query:current,base,answers:{},focus,settled,paidScope};
+  return {kind,query:current,base,answers:{},focus,settled:settled??(base?.state==='paid'?(kind==='received'?'outgoing':'incoming'):null),paidScope};
 }
 
-function collectContacts(snapshot,kind,documents){
-  const entities=[];
-  const types=kind==='received'?['Proveedor','Contratista','Técnico']:['Cliente'];
-  const party=kind==='received'?'proveedor':'cliente';
-  for(const [index,contact] of (snapshot.clients??[]).entries()){
-    if(!types.includes(contact?.type)||!string(contact.name))continue;
-    const label=string(contact.name);
-    entities.push({
-      entity:party,key:key(party,id(contact.id)||id(contact.num)||String(index),label,contact.brand||''),label,index,
-      brand:string(contact.brand),contactId:id(contact.id),aliases:[label,contact.fiscal,contact.num,contact.commercialName,contact.tradeName].map(norm).filter(Boolean),
-      names:[label,contact.fiscal,contact.commercialName,contact.tradeName],
-      suffix:[contact.num,contact.brand&&contact.brand!=='both'?snapshot.config?.BRAND?.[contact.brand]?.name||contact.brand:''].filter(Boolean).join(' · ')
-    });
-  }
-  const duplicateKeys=new Set();
-  const existingKeys=new Set();
-  for(const entity of entities){if(existingKeys.has(entity.key))duplicateKeys.add(entity.key);existingKeys.add(entity.key);}
-  for(const entity of entities){
-    if(duplicateKeys.has(entity.key)){
-      entity.key=key(entity.key,entity.index);entity.suffix=[entity.suffix,'Ficha '+(entity.index+1)].filter(Boolean).join(' · ');
-    }
-  }
-  const exactContacts=new Set(entities.flatMap(item=>item.aliases.map(alias=>key(alias,item.brand))));
-  const discovered=new Set();
-  for(const doc of documents){
-    const label=string(doc.party),name=norm(label),registry=key(name,doc.brand);
-    if(!name||discovered.has(registry)||exactContacts.has(registry)||exactContacts.has(key(name,'both'))||exactContacts.has(key(name,'')))continue;
-    discovered.add(registry);
-    entities.push({entity:party,key:key(party,name,doc.brand),label,brand:doc.brand,aliases:[name]});
-  }
-  for(const entity of entities){
-    const firstWords=(entity.names??[entity.label]).map(name=>norm(name).split(' ')[0]).filter(first=>first.length>2);
-    entity.aliases.push(...firstWords);
-    entity.aliases=[...new Set(entity.aliases)];
-  }
-  return entities;
+export function plannedDocumentTurn(request,plan){
+  const lookup=plan?.lookup,kind=lookup?.documentType;
+  if(!kinds.includes(kind))return null;
+  const local=documentSearchTurn(request);
+  const query=local?.query??request.message,text=norm(query);
+  const action=text.replace(/^(?:hola|buenas(?: tardes| noches)?|buenos dias)\b */,'');
+  if(!text||writing.test(action)||/\bpdf\b/.test(text))return null;
+  if(local&&(local.kind!==kind||request.documentContext?.clarification&&local.query!==request.message))return local;
+  const previous=request.documentContext?.scope;
+  const base=local?.base??(lookup.continuation&&previous?.kind===kind&&contextual(text)?previous:null);
+  return {kind,query,base,answers:local?.answers??{},focus:local?.focus??focusedDocument(request),paidScope:local?.paidScope,
+    planned:{...lookup,clientId:plan.clientId,projectId:plan.projectId,projectQuery:plan.projectQuery}};
+}
+
+function documentEntities(snapshot,kind,catalog=buildEntityCatalog(snapshot)){
+  const role=kind==='received'?'supplier':'client';
+  const names={supplier:'proveedor',client:'cliente',project:'proyecto'};
+  const selectable=entity=>entity.kind==='project'?entity.id:serializeEntityIdentity(entity.identity);
+  const candidates=catalog.entities.filter(entity=>[role,'project'].includes(entity.kind));
+  const counts=new Map();
+  for(const entity of candidates){const value=selectable(entity);if(value)counts.set(value,(counts.get(value)??0)+1);}
+  const options=candidates.map((entity,index)=>{
+    const {record}=entity,value=selectable(entity),brand=entity.brand??'';
+    const stable=!!value&&counts.get(value)===1;
+    const aliases=[entity.label,record?.num,...entity.aliases].map(norm).filter(Boolean);
+    const partial=entity.kind!=='project'?aliases.flatMap(alias=>alias.split(' ')).filter(word=>word.length>3&&!['proveedor','cliente'].includes(word)):[];
+    const suffix=[entity.origin!=='document_party'?record?.num:null,
+      entity.kind!=='project'&&entity.origin!=='document_party'&&brand&&brand!=='both'?snapshot.config?.BRAND?.[brand]?.name||brand:null]
+      .filter(Boolean).join(' · ');
+    return {entity:names[entity.kind],key:stable?value:`unresolved:${index}`,label:string(entity.label),suffix,brand,
+      aliases:[...new Set([...aliases,...partial])],relation:entity,selectable:stable,index:entity.contactIndex,
+      contactId:entity.origin==='contact'?id(record?.id):null};
+  });
+  return {catalog,clients:options.filter(option=>option.relation.kind===role),projects:options.filter(option=>option.entity==='proyecto')};
 }
 
 function entityMatches(value,entities){
@@ -185,7 +216,7 @@ const selectionLabel=item=>[item.label,item.suffix].filter(Boolean).join(' · ')
 function clarification(turn,field,message,options=[]){
   return {
     status:'clarifying',message,sources:[],actions:[],trace:[],
-    questions:[{id:field,prompt:message,freeText:true,options:options.slice(0,8).map(item=>({id:field+':'+item.key,value:item.key,label:selectionLabel(item)}))}],
+    questions:[{id:field,prompt:message,freeText:true,options:options.filter(item=>item.selectable!==false).slice(0,8).map(item=>({id:field+':'+item.key,value:item.key,label:selectionLabel(item)}))}],
     documentContext:{scope:turn.base??null,clarification:{kind:turn.kind,field,query:turn.query,
       answers:Object.fromEntries(Object.entries(turn.answers??{}).filter(([id,value])=>id!==field&&bounded(value,1200)))}}
   };
@@ -205,21 +236,29 @@ function requestedState(text,kind){
     if(/\brechazad[oa]s?\b/.test(text))return 'rejected';
     return null;
   }
-  if(/\b(?:no (?:(?:estan?|han sido) )?(?:cobrad[oa]s?|pagad[oa]s?)|sin (?:cobrar|pagar))\b/.test(text))return 'pending';
+  if(outgoingUnpaid.test(text)||/\b(?:no (?:(?:estan?|han sido) )?(?:cobrad[oa]s?|pagad[oa]s?)|sin (?:cobrar|pagar))\b/.test(text))return 'pending';
   if(/\b(?:enviad[oa]s?|mandad[oa]s?)\b/.test(text)&&!/\b(?:mande|mandamos|envie|enviamos)\b/.test(text))return 'sent';
   if(/\b(?:cobro parcial|pago parcial|cobrad[ao]s? en parte|pagad[ao]s? en parte|parcialmente (?:cobrad[ao]s?|pagad[ao]s?))\b/.test(text))return 'partial';
-  if(invoiceStateWords.test(text))return 'paid';
+  if(settledWord(text))return 'paid';
+  if(/\b(?:sin vencer|no vencid[oa]s?)\b/.test(text))return 'open';
   if(/\bvencid[ao]s?\b/.test(text))return 'overdue';
   return /\bpendientes?\b/.test(text)?'pending':null;
 }
 
-function chosenAnswer(answer,entities){
+function chosenAnswer(answer,entities,catalog){
   if(!answer)return [];
-  const selected=entities.filter(item=>item.key===answer);
+  const types=[...new Set(entities.map(item=>item.relation.kind))],identity=parseEntityIdentity(answer);
+  if(identity){
+    const resolved=resolveEntity(catalog,{selected:identity,types});
+    return resolved.status==='resolved'?entities.filter(item=>item.selectable&&item.relation===resolved.entity):[];
+  }
+  if(typeof answer==='string'&&answer.trim().startsWith('{'))return [];
+  const selected=entities.filter(item=>item.selectable&&item.entity==='proyecto'&&item.key===answer);
   if(selected.length)return selected;
-  const input=norm(answer),qualified=/^(?:(?:el|la) )?(cliente|proveedor|proyecto) (?:de )?(.+)$/.exec(input);
-  return entities.filter(item=>(!qualified||item.entity===qualified[1])&&
-    (item.aliases.includes(qualified?.[2]??input)||norm(selectionLabel(item))===(qualified?.[2]??input)));
+  const input=normalizeEntityText(answer),exact=entities.filter(item=>item.relation.aliases.includes(input)||normalizeEntityText(selectionLabel(item))===input);
+  if(exact.length)return exact;
+  const resolved=resolveEntity(catalog,{query:answer.trim().replace(/^(?:del?|al?|para) /i,''),types});
+  return entities.filter(item=>resolved.candidates.includes(item.relation));
 }
 
 function paymentScope(snapshot,request,turn,today){
@@ -233,17 +272,17 @@ function paymentScope(snapshot,request,turn,today){
     return {projectId,date,reference,brand,currency,
       paymentParty:client?{name:client.name,label:client.label,brand:client.brand||null,clientIndex:client.clientIndex}:null};
   }
-  const {scope,supplierLabel}=resolvePayableScope(snapshot,request,{...previous.payable,query:''},today);
-  if(!scope)return null;
+  const {scope,supplierLabel,problem}=resolvePayableScope(snapshot,request,{...previous.payable,query:''},today);
+  if(!scope||problem)return null;
   const {supplier,projectId,date,reference,currency}=scope;
-  return {projectId,date,reference,currency,paymentParty:supplier?{name:supplier.key,label:string(supplierLabel)||supplier.key,brand:supplier.brand}:null};
+  return {projectId,date,reference,currency,clientKey:supplier?.identity??null,
+    paymentParty:supplier&&!supplier.identity?{name:supplier.key,label:string(supplierLabel)||supplier.key,brand:supplier.brand}:null};
 }
 
 function scopeFor(snapshot,request,turn,today,documents){
-  const {kind,answers={}}=turn,text=norm(turn.query);
+  const {kind,planned,answers={}}=turn,text=norm(turn.query);
   const party=kind==='received'?'proveedor':'cliente';
-  const clients=collectContacts(snapshot,kind,documents);
-  const projects=snapshot.projects.map(project=>({entity:'proyecto',key:id(project.id),label:string(project.name||project.num),suffix:string(project.num),aliases:[project.name,project.num].map(norm).filter(Boolean)}));
+  const {catalog,clients,projects}=documentEntities(snapshot,kind,request.entityCatalog);
   const carried=clearAll.test(text)?{}:paymentScope(snapshot,request,turn,today);
   if(!carried)return normalAnswer('No he podido confirmar el filtro anterior. Indica de nuevo el cliente o proveedor, proyecto y periodo que quieras conservar.');
   const scope={kind,clientKey:null,projectId:null,date:null,state:null,reference:null,latest:false,selection:null,mode:'list',...turn.base,...carried};
@@ -252,17 +291,43 @@ function scopeFor(snapshot,request,turn,today,documents){
     return {scope,client:clients.find(client=>client.key===scope.clientKey),clients};
   }
   if(clearAll.test(text))Object.assign(scope,{clientKey:null,paymentParty:null,projectId:null,date:null,state:null,reference:null,brand:null,currency:null,latest:false,selection:null});
-  if(/\b(?:todo el estudio|todos los proyectos|sin filtro de proyecto)\b/.test(text))scope.projectId=null;
-  if(/\b(?:todos los clientes|todos los proveedores|sin filtro de (?:cliente|proveedor))\b/.test(text)){scope.clientKey=null;scope.paymentParty=null;}
-  if(/\b(?:todas las monedas|cualquier moneda|sin filtro de moneda)\b/.test(text))scope.currency=null;
-  if(/\b(?:todos los anos|sin limite de fechas|sin filtro de (?:periodo|fecha))\b/.test(text))scope.date=null;
-  if(/\b(?:cualquier estado|todos los estados|sin filtro de estado)\b/.test(text))scope.state=null;
+  if(clearProject.test(text))scope.projectId=null;
+  if(clearParty.test(text)){scope.clientKey=null;scope.paymentParty=null;}
+  if(clearCurrency.test(text))scope.currency=null;
+  if(clearDate.test(text))scope.date=null;
+  if(clearState.test(text))scope.state=null;
+  if(clearReference.test(text))Object.assign(scope,{latest:false,reference:null,brand:null,selection:null});
   if(clearResult.test(text))Object.assign(scope,{latest:false,reference:null,brand:null,selection:null});
-  let remainder=text;
-  const chosen=Object.hasOwn(answers,'document_party')?chosenAnswer(answers.document_party,[...clients,...projects]):null;
-  if(chosen&&chosen.length!==1)return clarification(turn,'document_party','¿Qué cliente, proveedor o proyecto quieres consultar?',chosen);
+  const mode=documentMode(text),plannedState=planned?.state??(planned?.overdue==='overdue'?'overdue':planned?.overdue==='open'?'open':null);
+  const kindStates=kind==='quote'?['accepted','pending','rejected','void','sent']:['pending','partial','paid','open','overdue','void','sent'];
+  if(plannedState&&!clearState.test(text)&&!kindStates.includes(plannedState))return normalAnswer('Ese estado no está disponible para este tipo de documento.',{preserveQueryContext:true});
+  const state=requestedState(text,kind)??(!clearState.test(text)?plannedState:null);
+  if(state&&mode!=='verify')scope.state=state;
+  scope.mode=mode;
+  const ask=(field,message,options)=>clarification({...turn,base:scope},field,message,options);
+  let remainder=[clearAll,clearProject,clearParty,clearCurrency,clearDate,clearState,clearReference].reduce((value,filter)=>value.replace(filter,' '),text);
+  const needsSupplier=kind==='received'&&unnamedSupplier.test(remainder);
+  if(needsSupplier)remainder=remainder.replace(unnamedSupplier,' ');
+  const currencies=[...remainder.matchAll(currencyFilter)].filter(([,name])=>currencyValue(name));
+  const codes=[...new Set(currencies.map(([,name])=>currencyValue(name)))];
+  const currencyAnswer=Object.hasOwn(answers,'document_currency')?currencyValue(answers.document_currency):null;
+  if(Object.hasOwn(answers,'document_currency')&&!currencyAnswer||codes.length>1&&!currencyAnswer){
+    return ask('document_currency','¿En qué moneda quieres ver las facturas?',codes.map(code=>({key:code,label:code})));
+  }
+  for(const [occurrence] of currencies)remainder=remainder.replace(occurrence,' ');
+  const plannedCurrency=currencyValue(planned?.currency);
+  if(planned?.currency&&!currencyAnswer&&!clearCurrency.test(text)&&(!plannedCurrency||!codes.includes(plannedCurrency)&&plannedCurrency!==scope.currency)){
+    return ask('document_currency','¿En qué moneda quieres ver los documentos?');
+  }
+  scope.currency=currencyAnswer??codes[0]??scope.currency;
+  const allEntities=[...clients,...projects];
+  const mentioned=new Set((request.verifiedMentions??[]).map(entity=>serializeEntityIdentity(entity.identity)).filter(Boolean));
+  const verified=allEntities.filter(item=>item.selectable&&mentioned.has(serializeEntityIdentity(item.relation.identity))&&
+    (item.entity==='proyecto'?!clearProject.test(text):!clearParty.test(text)));
+  const chosen=Object.hasOwn(answers,'document_party')?chosenAnswer(answers.document_party,allEntities,catalog):null;
+  if(chosen&&(chosen.length!==1||!chosen[0].selectable))return ask('document_party','¿Qué cliente, proveedor o proyecto quieres consultar?',chosen);
   const groups=new Map();
-  for(const match of entityMatches(text,[...clients,...projects])){
+  for(const match of entityMatches(remainder,[...clients,...projects])){
     const position=key(match.start,match.end);
     if(!groups.has(position))groups.set(position,[]);
     groups.get(position).push(match);
@@ -273,11 +338,26 @@ function scopeFor(snapshot,request,turn,today,documents){
     remainder=remainder.slice(0,start)+' '.repeat(end-start)+remainder.slice(end);
     const options=[...new Map(group.map(match=>[match.key,match])).values()];
     if(options.some(option=>option.entity!==options[0].entity)){
-      if(!chosen)return clarification(turn,'document_party','¿Te refieres al contacto o al proyecto?',options.map(item=>({...item,label:(item.entity==='proyecto'?'Proyecto ':item.entity==='proveedor'?'Proveedor ':'Cliente ')+item.label})));
-      if(options.some(option=>option.key===chosen[0].key))deduped.push(chosen[0]);
+      const selection=chosen??verified.filter(item=>options.some(option=>option.key===item.key));
+      if(selection.length!==1)return ask('document_party','¿Te refieres al contacto o al proyecto?',options.map(item=>({...item,label:(item.entity==='proyecto'?'Proyecto ':item.entity==='proveedor'?'Proveedor ':'Cliente ')+item.label})));
+      if(options.some(option=>option.key===selection[0].key))deduped.push(selection[0]);
     }else deduped.push(...options);
   }
   if(chosen&&!deduped.some(item=>item.key===chosen[0].key))deduped.push(chosen[0]);
+  for(const item of verified)if(!deduped.some(candidate=>candidate.key===item.key))deduped.push(item);
+  for(const [field,label,options,fragment,wanted,cleared] of [
+    ['document_client',party,clients,planned?.partyQuery,kind==='received'?planned?.supplierId:planned?.clientId,clearParty.test(text)],
+    ['document_project','proyecto',projects,planned?.projectQuery,planned?.projectId,clearProject.test(text)]
+  ]){
+    if(!planned||cleared||answers[field]||!fragment&&!wanted)continue;
+    const grounded=!fragment||mentionsPhrase(text,fragment);
+    const direct=fragment&&grounded?chosenAnswer(fragment,options,catalog):[];
+    const evidence=direct.length?direct:deduped.filter(item=>item.entity===label);
+    const compatible=wanted?evidence.filter(item=>item.key===wanted||item.contactId&&item.contactId===String(wanted)):evidence;
+    if(!grounded||compatible.length!==1||!compatible[0].selectable)return ask(field,'¿De qué '+label+' quieres ver los documentos?',evidence);
+    if(fragment)remainder=remainder.replace(norm(fragment),' ');
+    if(!deduped.some(item=>item.key===compatible[0].key))deduped.push(compatible[0]);
+  }
   const activeProject=/\b(?:este proyecto|proyecto actual|proyecto abierto)\b/.test(text);
   if(activeProject&&request.context?.projectId&&projects.some(project=>project.key===request.context.projectId)){
     scope.projectId=request.context.projectId;
@@ -285,10 +365,13 @@ function scopeFor(snapshot,request,turn,today,documents){
   }
   for(const [dimension,field,property,options] of [[party,'document_client','clientKey',clients],['proyecto','document_project','projectId',projects]]){
     const answer=answers[field],eligible=[...new Map(deduped.filter(item=>item.entity===dimension).map(item=>[item.key,item])).values()];
-    const proposed=answer?chosenAnswer(answer,options):eligible;
+    const proposed=answer?chosenAnswer(answer,options,catalog):eligible;
     const hasNamedRequest=new RegExp('\\b'+dimension+'(?: (?:de|del|llamado))? +[a-z0-9]').test(remainder.replace(/\b(?:sin filtro de |todos los )\w+\b/g,' '));
-    if(proposed.length>1||!proposed.length&&(answer||hasNamedRequest&&!chosen)){
-      return clarification(turn,field,dimension==='proyecto'?'¿De qué proyecto quieres ver los documentos?':'¿De qué '+party+' quieres ver los documentos?',proposed);
+    if(dimension==='proveedor'&&needsSupplier&&!proposed.length&&!scope.clientKey&&!scope.paymentParty){
+      return ask(field,'¿De qué proveedor?',options);
+    }
+    if(proposed.length>1||proposed[0]?.selectable===false||!proposed.length&&(answer||hasNamedRequest&&!chosen)){
+      return ask(field,dimension==='proyecto'?'¿De qué proyecto quieres ver los documentos?':'¿De qué '+party+' quieres ver los documentos?',proposed);
     }
     if(proposed.length===1){
       scope[property]=proposed[0].key;
@@ -297,51 +380,52 @@ function scopeFor(snapshot,request,turn,today,documents){
     }
     if(answer)remainder=remainder.replace(new RegExp('\\b'+dimension+'(?: [a-z0-9/-]+)*(?= +(?:desde|entre|hasta|en|este ano|este mes)\\b|$)'),' ');
   }
-  if(activeProject&&!scope.projectId)return clarification(turn,'document_project','¿De qué proyecto quieres ver los documentos?');
+  if(activeProject&&!scope.projectId)return ask('document_project','¿De qué proyecto quieres ver los documentos?');
   const identity=answers.document_reference;
   if(identity){
     const exact=documents.filter(doc=>doc.key===identity||norm(doc.reference)===norm(identity));
-    if(exact.length!==1)return clarification(turn,'document_reference','¿Qué referencia quieres consultar?',exact);
+    if(exact.length!==1)return ask('document_reference','¿Qué referencia quieres consultar?',exact);
     scope.reference=norm(exact[0].reference);
     scope.selection=exact[0].key;
   }
   const directNumber=/\b(?:factura|presupuesto)(?: (?:n|nro|numero|no))? +(\d{1,15})\b(?![-/])/.exec(remainder)?.[1];
   const matchingReferences=[...new Set(documents.map(doc=>norm(doc.reference)).filter(ref=>/\d/.test(ref)&&
     (/^\d+$/.test(ref)?ref===directNumber:new RegExp('(?:^| )'+escape(ref)+'(?= |$)').test(remainder))))];
-  const possibleReference=[...(directNumber?[directNumber]:[]),...(remainder.match(referenceWord)||[]).filter(ref=>/^(?:f|fc|fac|fra|fv|p|pre|g|fr)[-/]/.test(ref))];
+  if(planned?.reference&&!identity&&!mentionsPhrase(text,planned.reference)&&norm(planned.reference)!==scope.reference){
+    return ask('document_reference','¿Qué referencia quieres consultar?');
+  }
+  const plannedReference=planned?.reference&&mentionsPhrase(text,planned.reference)?norm(planned.reference):null;
+  const possibleReference=[...new Set([plannedReference,directNumber,...(remainder.match(referenceWord)||[]).filter(ref=>/^(?:f|fc|fac|fra|fv|p|pre|g|fr)[-/]/.test(ref))].filter(Boolean))];
   const references=matchingReferences.length?matchingReferences:possibleReference;
-  if(references.length>1&&!identity)return clarification(turn,'document_reference','¿Qué referencia quieres consultar?');
+  if(references.length>1&&!identity)return ask('document_reference','¿Qué referencia quieres consultar?');
   if(references.length===1&&!identity){scope.reference=references[0];scope.brand=null;scope.selection=null;}
   const explicitFocus=/\b(?:(?:est[ae]|esa|ese) (?:factura|presupuesto)|la misma|el mismo|la version|el que)\b/.test(text);
-  const mode=documentMode(text);
   if(!scope.reference&&(explicitFocus||['linked','verify','sent-copy','accepted-copy'].includes(mode))&&family(turn.focus)===kind){
     const focused=documents.find(doc=>matchesSource(doc.source,turn.focus));
     if(focused){scope.reference=norm(focused.reference);scope.selection=focused.key;}
   }
   for(const reference of new Set([...references,...matchingReferences]))remainder=remainder.replace(reference,' ');
   const explicitDate=answers.document_period||null;
-  const period=parsePeriod(explicitDate||remainder,today);
-  if(period?.invalid||!period&&(explicitDate||/\b(?:trimestre|periodo|desde|hasta|entre|ultim[oa]s? \w+ (?:semanas?|dias?|meses?))\b/.test(remainder))){
-    return clarification(turn,'document_period','¿Qué fechas quieres consultar? Indica el mes y el año o dos fechas.');
+  const plannedPeriod=planned?.period&&mentionsPhrase(text,planned.period)?planned.period:null;
+  const period=parsePeriod(explicitDate||plannedPeriod||remainder,today);
+  if(period?.invalid||!period&&(explicitDate||planned?.period&&!clearDate.test(text)||/\b(?:trimestre|periodo|desde|hasta|entre|ultim[oa]s? \w+ (?:semanas?|dias?|meses?))\b/.test(remainder))){
+    return ask('document_period','¿Qué fechas quieres consultar? Indica el mes y el año o dos fechas.');
   }
   if(period){
-    const field=/\b(?:vencimiento|vencen?)\b/.test(text)?'due':/\b(?:emision|emitid[oa]s?)\b/.test(text)?'issued':scope.date?.field;
+    const field=/\b(?:vencimiento|vencen?)\b/.test(text)?'due':/\b(?:emision|emitid[oa]s?)\b/.test(text)?'issued':planned?.dateField??scope.date?.field;
     scope.date={from:period.from,to:period.to,...(field?{field}:{})};
     if(!explicitDate)remainder=remainder.replace(period.matched,' ');
   }
   if(/\b(?:ultim[oa]|mas recient[ea])\b/.test(text))scope.latest=true;
-  const state=requestedState(text,kind);
-  if(state&&mode!=='verify')scope.state=state;
-  scope.mode=mode;
   const unresolved=remainder.replace(/\b(?:(?:de|a) (?:mis |los )?(?:proveedores|clientes)|anulad[oa]s?|cobrad[oa]s?|pagad[oa]s?|enviad[oa]s?|mandad[oa]s?|emitid[oa]s?|recibid[oa]s?|rechazad[oa]s?|aceptad[oa]s?|vencid[oa]s?|pendientes? (?:de )?aceptar|pendientes?)\b/g,' ')
-    .replace(/\s+/g,' ').trim().replace(/\b(?:de|del|para|al?|en)(?: (?:de|del|para|al?|en))*$/,'').trim();
+    .replace(/\s+/g,' ').trim().replace(/\b(?:de|del|para|al?|en)(?: (?:de|del|para|al?|en|el|la|los|las))*$/,'').trim();
   if(!chosen&&!scope.reference&&!clearResult.test(text)&&!clearAll.test(text)&&
     /\b(?:de|del|para|al?|en) +(?!(?:este|esta|ese|esa|los|las|la|el|todo|mis|mi|emision|aceptar|aceptacion|fecha)\b)[a-z0-9][a-z0-9 /-]*$/.test(unresolved)){
-    return clarification(turn,'document_party','¿De qué '+party+' o proyecto quieres ver los documentos?');
+    return ask('document_party','¿De qué '+party+' o proyecto quieres ver los documentos?');
   }
   const client=clients.find(item=>item.key===scope.clientKey);
-  if(scope.clientKey&&!client)return clarification(turn,'document_client','¿De qué '+party+' quieres ver los documentos?');
-  if(scope.projectId&&!projects.some(project=>project.key===scope.projectId))return clarification(turn,'document_project','¿De qué proyecto quieres ver los documentos?');
+  if(scope.clientKey&&!client)return ask('document_client','¿De qué '+party+' quieres ver los documentos?');
+  if(scope.projectId&&!projects.some(project=>project.key===scope.projectId))return ask('document_project','¿De qué proyecto quieres ver los documentos?');
   return {scope,client,clients};
 }
 
@@ -353,16 +437,16 @@ const invoiceSent=record=>['env','enviada','enviado'].includes(documentState(rec
 const hasDraft=record=>record?.draft===true||draftStatus.test(documentState(record));
 const isVoid=record=>record?.voided===true||voidStatus.test(documentState(record));
 const stateLabels={
-  invoice:{paid:'Cobrada',partial:'Cobrada en parte',pending:'Pendiente de cobro',overdue:'Vencida',void:'Anulada',sent:'Enviada'},
-  received:{paid:'Pagada',partial:'Pagada en parte',pending:'Pendiente de pago',overdue:'Vencida',void:'Anulada'},
-  quote:{accepted:'Aceptado',pending:'Pendiente de aceptar',rejected:'Rechazado',void:'Anulado'}
+  invoice:{paid:'Cobrada',partial:'Cobrada en parte',pending:'Pendiente de cobro',open:'Sin vencer',overdue:'Vencida',void:'Anulada',sent:'Enviada'},
+  received:{paid:'Pagada',partial:'Pagada en parte',pending:'Pendiente de pago',open:'Sin vencer',overdue:'Vencida',void:'Anulada'},
+  quote:{accepted:'Aceptado',pending:'Pendiente de aceptar',rejected:'Rechazado',void:'Anulado',sent:'Enviado'}
 };
 
 function documentDue(kind,record,entry){
   const recorded=isoDate(record.due),movement=isoDate(entry?.due);
   if(record.due&&!recorded||entry?.due&&!movement||recorded&&movement&&recorded!==movement)return null;
   if(recorded||movement)return recorded||movement;
-  const issued=kind==='invoice'&&entry&&(isoDate(record.date)||isoDate(entry.date));
+  const issued=kind==='invoice'&&entry&&(isoDate(entry.date)||isoDate(record.date));
   return issued?new Date(Date.parse(issued)+30*86400000).toISOString().slice(0,10):null;
 }
 
@@ -402,10 +486,11 @@ function typedRows(snapshot,today,kind){
       label:reference,brand,projectId:pid,
       ...(counterparty?{[kind==='received'?'supplier':'client']:counterparty}:{}),
       ...(project?{projectLabel:string(project.name||project.num)}:{}),
-      ...(date?{date}:{}),...(due?{due}:{}),
+      ...(date?{date}:{}),...(due?{due,...(kind==='invoice'&&entry&&!record.due&&!entry.due?{dueCalculated:true}:{})}:{}),
       ...(amount!==null&&code?{total:amount,currency:code}:{}),
       ...(state?{statusLabel:stateLabels[kind][state]}:{}),
-      ...(pending?{pending:pending.remaining??pending.pending,currency:pending.currency,due:pending.due,overdue:pending.overdue,partial:pending.partial===true}:{})
+      ...(pending?{pending:pending.remaining??pending.pending,currency:pending.currency,due:pending.due,overdue:pending.overdue,
+        partial:pending.partial===true,...(pending.dueCalculated===true?{dueCalculated:true}:{})}:{})
     };
     const identity=key(source.kind,source.id,source.brand,source.projectId);
     records.push({key:identity,reference,date,due,brand,projectId:pid,party:counterparty,amount,currency:code,state,sent:invoiceSent(record)||invoiceSent(entry),source,record,
@@ -473,12 +558,14 @@ function typedRows(snapshot,today,kind){
 function matchingClient(document,client,clients){
   if(!client)return true;
   if(client.brand&&client.brand!=='both'&&client.brand!==document.brand)return false;
-  const name=norm(document.party);
-  if(!name||!client.aliases.includes(name))return false;
-  if(document.record.clientId!=null&&client.contactId)return id(document.record.clientId)===client.contactId;
-  if(document.record.clientIdx!==undefined&&document.record.clientIdx!==null&&document.record.clientIdx!==''&&client.index!=null)
-    return String(document.record.clientIdx)===String(client.index);
-  return clients.some(other=>other.key!==client.key&&other.aliases.includes(name)&&(!other.brand||other.brand==='both'||other.brand===document.brand))?null:true;
+  const name=normalizeEntityText(document.party);
+  if(!name||!client.relation.aliases.includes(name))return false;
+  const record=document.record;
+  const linkedId=client.entity==='proveedor'?(record.supplierId??record.contactId??record.clientId):record.clientId;
+  const linkedIndex=client.entity==='proveedor'?(record.supplierIdx??record.supIdx??record.clientIdx):record.clientIdx;
+  if(linkedId!=null&&linkedId!==''&&client.contactId)return id(linkedId)===client.contactId;
+  if(linkedIndex!=null&&linkedIndex!==''&&client.index!=null)return String(linkedIndex)===String(client.index);
+  return clients.some(other=>other.key!==client.key&&other.relation.aliases.includes(name)&&(!other.brand||other.brand==='both'||other.brand===document.brand))?null:true;
 }
 
 function matchingPaymentParty(document,party){
@@ -494,6 +581,16 @@ function byDate(a,b){
 }
 
 const periodLabel=scope=>scope.date?(scope.date.field==='due'?'Vencimiento: ':'Emisión: ')+dateLabel(scope.date.from)+' a '+dateLabel(scope.date.to):null;
+function documentFilters(scope,{client,projectLabel}){
+  const party=scope.kind==='received'?'proveedor':'cliente';
+  const filters=[
+    [(scope.clientKey||scope.paymentParty)&&(client?.label||scope.paymentParty?.label||(party==='proveedor'?'Proveedor':'Cliente')),'sin filtro de '+party],
+    [scope.projectId&&(projectLabel||'Proyecto'),'sin filtro de proyecto'],[periodLabel(scope),'sin filtro de periodo'],
+    [scope.currency,'sin filtro de moneda'],[scope.state&&(stateLabels[scope.kind][scope.state]||'Estado'),'sin filtro de estado'],
+    [scope.reference?.toUpperCase()||(scope.latest?'Más reciente por fecha de emisión':null),'sin filtro de referencia']
+  ];
+  return filters.filter(([label])=>label).map(([label,clear])=>({label,clear}));
+}
 
 function renderMessage({scope,rows,client,projectLabel,review,missingLatest}){
   const name=searchLabels[scope.kind];
@@ -538,7 +635,11 @@ const normalAnswer=(message,extras={})=>({status:'answer',message,sources:[],act
 
 export function searchDocuments(snapshot,request,turn,now){
   if(snapshot.role!=='admin')return null;
+  if(turn.filterChoice)return normalAnswer(turn.filterChoice.length?'¿Qué filtro quieres quitar?':'No hay filtros activos.',{
+    activeFilters:turn.filterChoice,preserveQueryContext:true});
   const text=norm(turn.query);
+  if(paidDateWords.test(text)||turn.planned?.dateField==='paid')return normalAnswer('Solo dispongo de la fecha de emisión para filtrar estas facturas.',{preserveQueryContext:true});
+  if(turn.kind==='quote'&&turn.planned?.dateField==='due')return normalAnswer('Solo dispongo de la fecha de emisión para filtrar estos presupuestos.',{preserveQueryContext:true});
   if(/\b(?:con|sin) (?:iva|impuestos?|retencion(?:es)?)\b|\b(?:mas|menos|mayor(?:es)?|menor(?:es)?) (?:de|que|a) \d/.test(text))
     return normalAnswer('Puedo filtrar por cliente o proveedor, proyecto, fecha de emisión, estado y referencia.');
   const today=new Intl.DateTimeFormat('sv-SE',{timeZone:request.context?.timeZone||'Europe/Madrid'}).format(now);
@@ -562,8 +663,9 @@ export function searchDocuments(snapshot,request,turn,now){
     if(!byClient){if(byClient===null)review++;return false;}
     const date=scope.date?.field==='due'?row.due:row.date;
     if(scope.date&&(!date||date<scope.date.from||date>scope.date.to)){if(!date)review++;return false;}
-    if(scope.state&&!(row.state===scope.state||scope.state==='partial'&&row.source.partial||scope.state==='sent'&&row.sent||scope.state==='pending'&&['pending','partial','overdue'].includes(row.state))){
-      if(!row.state||row.review)review++;
+    if(scope.state&&!(row.state===scope.state||scope.state==='partial'&&row.source.partial||scope.state==='sent'&&row.sent||
+      scope.state==='open'&&row.due&&['pending','partial'].includes(row.state)||scope.state==='pending'&&['pending','partial','overdue'].includes(row.state))){
+      if(!row.state||row.review||scope.state==='open'&&!row.due&&['pending','partial'].includes(row.state))review++;
       return false;
     }
     if(fingerprints.get(row.key)!==1){review++;return false;}
@@ -592,7 +694,8 @@ export function searchDocuments(snapshot,request,turn,now){
   const projectLabel=scope.projectId?snapshot.projects.find(project=>id(project.id)===scope.projectId)?.name:null;
   const scopeLabel=[client?.label??scope.paymentParty?.label,projectLabel,periodLabel(scope),scope.currency].filter(Boolean).join(' · ');
   return normalAnswer(renderMessage({scope,rows,client,projectLabel,review,missingLatest}),{
-    sources,sourceCount:count,documentContext:{scope},documents:{kind:scope.kind,count,offset,next,version,scopeLabel,projectId:scope.projectId,sourceVersion:scope.kind==='quote'?snapshot.versions.presupuestos:snapshot.versions.facturas},
+    sources,sourceCount:count,documentContext:{scope},activeFilters:documentFilters(scope,{client,projectLabel}),
+    documents:{kind:scope.kind,count,offset,next,version,scopeLabel,projectId:scope.projectId,sourceVersion:scope.kind==='quote'?snapshot.versions.presupuestos:snapshot.versions.facturas},
     trace:[{label:'Documentos autorizados comprobados',status:'done'}]
   });
 }

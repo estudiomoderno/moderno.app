@@ -46,7 +46,7 @@ export function conversationPolicy(request){
   return {message:'Desde el chat puedo preparar el borrador. Para guardarlo o emitirlo, revísalo en el editor. El envío se hace desde el recorrido disponible en la app.'};
  if(/^(?:borr(?:a|ala|alo|alas|alos|ar)|elimin(?:a|ala|alo|alas|alos|ar)|marc(?:a|ala|alo|alas|alos|ar)|registra (?:un|el) (?:cobro|pago)|cobra(?:la|lo|las|los))\b/.test(command))
   return {message:'Ese cambio se hace desde el registro. No lo he modificado.'};
- if(/\b(?:plano|planos)\b/.test(words)&&/\b(?:mide|medir|te subo|te adjunto|hazme|presupuest)\w*\b/.test(words))
+ if(/\b(?:plano|planos)\b/.test(words)&&/\b(?:mide|medir|medicion|escala|calibra)\w*\b/.test(words))
   return {message:'Todavía no puedo medir planos desde el chat. Con las medidas y los trabajos puedo preparar el borrador.'};
  if(/\b(?:anticipo|facturacion parcial|\d+(?:[.,]\d+)?\s*% (?:de|del) (?:este |ese |el )?presupuesto)\b/.test(words)&&/\b(?:factur|anticip|convierte)\w*\b/.test(words))
   return {message:'Puedo preparar la factura completa. Para facturar solo una parte, ajusta el documento en el editor.'};
@@ -91,19 +91,21 @@ const metricWords={
  budgeted:/\b(?:presupuestad[oa]|presupuestacion|presupueste|presupuestamos)\b/
 };
 export const explicitMetric=value=>Object.entries(metricWords).filter(([,rx])=>rx.test(plain(value))).map(([metric])=>metric);
-export const financeFollowup=value=>/^(?:y\b|ahora\b|mejor\b|solo\b|tambien\b|con\b|de\b|del\b|en\b|el total\b|cuanto (?:es|suma)\b|lo mismo\b|sin\b|todos?\b)/.test(plain(value));
+export const financeFollowup=value=>/^(?:y\b|ahora\b|mejor\b|solo\b|tambien\b|con\b|de\b|del\b|las? (?:de|del)\b|en\b|el total\b|cuanto (?:es|suma)\b|lo mismo\b|sin\b|todos?\b|quita(?:r)? (?:ese|el) filtro\b)/.test(plain(value));
 export const financePeriodClear=value=>/\b(?:sin filtros|todos los anos|sin (?:filtro de )?(?:periodo|fecha)|sin limite de fechas)\b/.test(plain(value));
 
 export function financeMetricTurn(request){
  const context=request.financeContext,words=plain(request.message),hits=explicitMetric(words);
  if(/^(?:abre|abrir|ensena(?:me)?|muestra(?:me)?|ver|edita|prepara|crea|busca)\b/.test(words)||
-  /\b(?:proxim[oa]s?|estimad[oa]|previst[oa]|rentabilidad|beneficio|limpio|ganando)\b/.test(words))return null;
- if(/^(?:como vamos de dinero|como van las finanzas|dame (?:un |el )?resumen economico|que tal van las finanzas)$/.test(words))
+   /\b(?:proxim[oa]s?|estimad[oa]|previst[oa]|rentabilidad|beneficio|limpio|ganando)\b/.test(words))return null;
+ if(/^(?:como vamos de dinero|como van las finanzas|dame (?:un |el )?resumen economico(?: breve)?|que tal van las finanzas)$/.test(words))
   return {metric:null,continuation:false};
+ if(context&&/^(?:resumelo(?: brevemente)?|se breve|en pocas palabras)$/.test(words))return {metric:context.metric,continuation:true};
+ if(context&&(/^(?:quita(?:r)? (?:ese|el) filtro)$/.test(words)||request.automatic&&request.answers?.financeFilter))return {metric:context.metric,continuation:true};
  const amount=/\b(?:cuanto|total|importe|suma(?:n)?|saldo|dime|que)\b/.test(words)||/^(?:gastos|costes|costos|facturacion|cobros)\b/.test(words);
  const follows=!!context&&financeFollowup(words);
  if(hits.length===1&&(amount||follows))return {metric:hits[0],continuation:follows};
- if(hits.length===0&&follows&&/\b(?:proyecto|cliente|lo mismo|ano|mes|fecha|de|del|sin filtros|total|importe)\b/.test(words))
+ if(hits.length===0&&follows&&/\b(?:proyecto|cliente|lo mismo|ano|mes|fecha|de|del|sin filtros|moneda|euros?|dolares?|total|importe)\b/.test(words))
   return {metric:context.metric,continuation:true};
  return null;
 }

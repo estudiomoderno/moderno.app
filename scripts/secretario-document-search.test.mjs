@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {documentSearchTurn,searchDocuments,validDocumentContext} from '../supabase/functions/secretario/document-search.mjs';
+import {documentSearchTurn,plannedDocumentTurn,searchDocuments,validDocumentContext} from '../supabase/functions/secretario/document-search.mjs';
 import {fixtureBlocks,fixtureRequest,studyId} from './secretario-receivables-fixture.mjs';
 
 const now=Date.parse('2026-11-27T10:00:00Z');
@@ -121,6 +121,139 @@ test('the function switches both settled statuses without invoking the planner',
   assert.equal(paid.status,200);
   assert.deepEqual(refs(paid.body),['G-PAGADA']);
   for(const result of [collected,paid])assert.deepEqual(result.calls.map(call=>call.name),['app_rol','app_leer_bloques','app_leer_versiones']);
+});
+
+test('a colloquial completed supplier payment asks only the supplier and matches text or the selected record',async()=>{
+  const request={studyId,context:{view:'finanzas',timeZone:'Europe/Madrid'}};
+  const blocks=fixtureBlocks({acceptance:true});
+  blocks.contactos.push({id:'leroy-supplier',name:'Leroy Demo',type:'Proveedor',brand:'cm'},
+    {id:'leroy-client',name:'Leroy Demo',type:'Cliente',brand:'cm'},
+    {id:'leroy-other',name:'Leroy Demo',type:'Proveedor',brand:'other'});
+  const paid={kind:'out',brand:'cm',pid:9001,sup:'Leroy Demo',supplierId:'leroy-supplier',amount:500,date:'2026-11-15',status:'cobr'};
+  blocks.facturas.entries.push({id:701,concept:'G-OK',...paid},{id:702,concept:'G-AK',...paid,currency:'USD'},
+    {id:703,concept:'G-ANTES',...paid,date:'2025-11-15'},
+    {id:704,concept:'G-PEND',...paid,status:'pend'},
+    {id:705,concept:'G-MARCA',...paid,brand:'other',supplierId:'leroy-other'},
+    {id:706,concept:'G-OTRO',...paid,pid:9002});
+  const options={acceptance:true,blocks};
+  const message='hola quiero saber que facturas e pagado de un proveedor';
+  const begun=await fixtureRequest({...request,message},options);
+  assert.equal(begun.body.message,'¿De qué proveedor?');
+  assert.equal(begun.body.documentContext.scope.kind,'received');
+  assert.equal(begun.body.documentContext.scope.state,'paid');
+  assert.equal(begun.body.questions[0].id,'document_client');
+  assert.deepEqual(begun.body.sources,[]);
+  const answerContext={...request,documentContext:begun.body.documentContext,
+    history:[{role:'user',content:message},{role:'assistant',content:begun.body.message}]};
+  const ambiguous=await fixtureRequest({...answerContext,message:'Leroy'},options);
+  assert.equal(ambiguous.body.status,'clarifying');
+  const choice=ambiguous.body.questions[0].options.find(option=>option.label==='Leroy Demo · cm');
+  assert.ok(choice);
+  const selected=await fixtureRequest({...answerContext,message:choice.label,automatic:true,
+    documentContext:ambiguous.body.documentContext,answers:{document_client:choice.value}},options);
+  assert.equal(selected.body.documents.kind,'received');
+  assert.equal(selected.body.documentContext.scope.state,'paid');
+  assert.deepEqual(refs(selected.body),['G-AK','G-OK','G-OTRO','G-ANTES']);
+  const typed=await fixtureRequest({...answerContext,message:'Leroy Demo · cm'},options);
+  assert.deepEqual(refs(typed.body),refs(selected.body));
+  const refine=async(message,last)=>fixtureRequest({...request,message,documentContext:last.body.documentContext},options);
+  const scoped=await refine('Solo de este año en euros para el proyecto Casa Sol',selected);
+  assert.deepEqual(refs(scoped.body),['G-OK']);
+  assert.match(scoped.body.documents.scopeLabel,/Leroy Demo.*Casa Sol.*2026.*EUR/);
+  const noDate=await refine('Sin filtro de periodo',scoped);
+  assert.deepEqual(refs(noDate.body),['G-OK','G-ANTES']);
+  const noCurrency=await refine('Sin filtro de moneda',noDate);
+  assert.deepEqual(refs(noCurrency.body),['G-AK','G-OK','G-ANTES']);
+  const noProject=await refine('Sin filtro de proyecto',noCurrency);
+  assert.deepEqual(refs(noProject.body),refs(selected.body));
+  const noProvider=await refine('Sin filtro de proveedor',noProject);
+  assert.ok(refs(noProvider.body).includes('G-MARCA'));
+  assert.ok(!refs(noProvider.body).includes('G-PEND'));
+  const noState=await refine('Sin filtro de estado',noProvider);
+  assert.ok(refs(noState.body).includes('G-PEND'));
+  for(const result of [begun,ambiguous,typed,selected,scoped,noDate,noCurrency,noProject,noProvider,noState]){
+    assert.deepEqual(result.body.actions,[]);
+    assert.deepEqual(result.calls.map(call=>call.name),['app_rol','app_leer_bloques','app_leer_versiones']);
+  }
+});
+
+test('the structured planner search validates the same supplier, date, state and currency against the snapshot',()=>{
+  const study=structuredClone(base);
+  study.clients.push({id:'lumen',name:'Lumen Demo',type:'Proveedor',brand:'demo'});
+  study.entries.push({id:702,kind:'out',brand:'demo',pid:2,concept:'G-PAGADA',sup:'Lumen Demo',supplierId:'lumen',
+    date:'2026-11-21',amount:400,status:'cobr'});
+  const request={message:'Quiero ver los comprobantes liquidados de Lumen en euros de este año',
+    context:{view:'finanzas',timeZone:'Europe/Madrid'}};
+  const plan={lookup:{documentType:'received',partyQuery:'Lumen',supplierId:'lumen',state:'paid',period:'este año',
+    dateField:'issued',currency:'EUR',continuation:false}};
+  const run=override=>searchDocuments(study,request,plannedDocumentTurn(request,{lookup:{...plan.lookup,...override}}),now);
+  const result=run({});
+  assert.equal(result.status,'answer');
+  assert.equal(result.documents.kind,'received');
+  assert.equal(result.documentContext.scope.state,'paid');
+  assert.deepEqual(refs(result),['G-PAGADA']);
+  assert.match(result.documents.scopeLabel,/Lumen Demo.*Emisión.*EUR/);
+  assert.equal(run({supplierId:'inventado'}).questions[0].id,'document_client');
+  assert.equal(run({partyQuery:'Otro proveedor'}).questions[0].id,'document_client');
+  assert.equal(run({reference:'G-DIFERENTE'}).questions[0].id,'document_reference');
+  assert.equal(run({currency:'USD'}).questions[0].id,'document_currency');
+  assert.deepEqual(run({dateField:'paid'}).sources,[]);
+  assert.match(run({dateField:'paid'}).message,/fecha de emisión/);
+  assert.equal(plannedDocumentTurn({...request,message:'Paga esta factura'},plan),null);
+});
+
+test('document chips remove precisely one filter and ask when the requested removal is ambiguous',()=>{
+  const annual=ask('Enséñame mis facturas de este año');
+  assert.deepEqual(annual.activeFilters.map(filter=>filter.clear),['sin filtro de periodo']);
+  const cleared=ask('Quita ese filtro',{previous:annual.documentContext});
+  assert.deepEqual(refs(cleared),['F-DEMO-05','F-DEMO-01','F-DEMO-04','F-DEMO-06']);
+  assert.deepEqual(cleared.activeFilters,[]);
+  const multiple=ask('Facturas de Ana Vega de este año');
+  const choice=ask('Quita ese filtro',{previous:multiple.documentContext});
+  assert.equal(choice.message,'¿Qué filtro quieres quitar?');
+  assert.deepEqual(refs(choice),[]);
+  assert.ok(choice.preserveQueryContext);
+  assert.deepEqual(choice.activeFilters.map(filter=>filter.clear),['sin filtro de cliente','sin filtro de periodo']);
+  const documents=ask('Sin filtro de cliente',{previous:multiple.documentContext});
+  assert.deepEqual(refs(documents),['F-DEMO-05','F-DEMO-01','F-DEMO-04']);
+  assert.deepEqual(documents.activeFilters.map(filter=>filter.clear),['sin filtro de periodo']);
+});
+
+test('verified mentions preserve a supplier identity through payable and paid follow-ups and chip removal',async()=>{
+  const blocks=fixtureBlocks({acceptance:true});
+  const options={blocks,acceptance:true};
+  blocks.contactos.push({id:'lumen-1',name:'Lumen Demo',type:'Proveedor',brand:'cm'},
+    {id:'lumen-2',name:'Lumen Demo',type:'Proveedor',brand:'cm'});
+  const model={kind:'out',brand:'cm',pid:9001,sup:'Lumen Demo',amount:400,date:'2026-11-15',status:'pend'};
+  blocks.facturas.entries.push({id:801,concept:'G-LUMEN-1',...model,supplierId:'lumen-1'},
+    {id:802,concept:'G-LUMEN-2',...model,supplierId:'lumen-2'},
+    {id:803,concept:'G-LUMEN-PAID',...model,supplierId:'lumen-1',status:'cobr'},
+    {id:804,concept:'G-AMBIGUA',...model});
+  const request={studyId,context:{view:'finanzas',timeZone:'Europe/Madrid'}};
+  const initial=await fixtureRequest({...request,message:'Facturas por pagar de @Lumen Demo para @Casa Sol',
+    mentions:[{label:'Lumen Demo',identity:{kind:'supplier',id:'lumen-1',brand:'cm'}},
+      {label:'Casa Sol',identity:{kind:'project',id:'9001'}}]},options);
+  assert.equal(initial.status,200);
+  assert.deepEqual(refs(initial.body),['G-LUMEN-1']);
+  assert.deepEqual(initial.body.activeFilters.map(filter=>filter.clear),['sin filtro de proveedor','sin filtro de proyecto']);
+  assert.equal(initial.body.payables.review,1);
+  assert.ok(validDocumentContext(initial.body.documentContext));
+  const refine=(message,from)=>fixtureRequest({...request,message,documentContext:from.body.documentContext},options);
+  const ambiguous=await refine('Quita ese filtro',initial);
+  assert.equal(ambiguous.body.message,'¿Qué filtro quieres quitar?');
+  assert.deepEqual(refs(ambiguous.body),[]);
+  const noProject=await refine('Sin filtro de proyecto',initial);
+  assert.deepEqual(refs(noProject.body),['G-LUMEN-1']);
+  const paid=await refine('Solo las pagadas',noProject);
+  assert.deepEqual(refs(paid.body),['G-LUMEN-PAID']);
+  assert.equal(paid.body.documents.kind,'received');
+  const noSupplier=await refine('Quita ese filtro',noProject);
+  assert.deepEqual(noSupplier.body.activeFilters,[]);
+  assert.ok(refs(noSupplier.body).includes('G-LUMEN-2'));
+  for(const result of [initial,ambiguous,noProject,paid,noSupplier]){
+    assert.deepEqual(result.body.actions,[]);
+    assert.deepEqual(result.calls.map(call=>call.name),['app_rol','app_leer_bloques','app_leer_versiones']);
+  }
 });
 
 test('limits send/version claims and links quotes only to their stored invoice reference',()=>{
