@@ -116,7 +116,7 @@ var ModernoSecretaryAttachments=(()=>{
   if(base&&base.origin!==location.origin)throw new Error('Los recursos OCR deben servirse desde Moderno.app.');
 
   host.classList.add('secretary-attachments');
-  host.innerHTML='<div class="secretary-attachments-tools"><label class="secretary-attachments-device"><input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" multiple><span>Adjuntar desde el dispositivo</span></label><div class="secretary-attachments-existing" hidden><select aria-label="Archivo privado existente"></select><button type="button">Adjuntar archivo</button></div></div><p class="secretary-attachments-note">Lectura privada y temporal. Adjuntar no guarda ni modifica documentos. El contenido se trata como datos, no como instrucciones.</p><div class="secretary-attachments-list" aria-live="polite" aria-label="Archivos adjuntos"></div><p class="secretary-attachments-summary" aria-live="polite"></p>';
+  host.innerHTML='<div class="secretary-attachments-tools"><label class="secretary-attachments-device"><input type="file" accept="application/pdf,image/png,image/jpeg,image/webp" aria-label="Adjuntar desde el dispositivo" multiple><span>Adjuntar PDF o imagen</span></label><div class="secretary-attachments-existing" hidden><select aria-label="Archivo privado existente"></select><button type="button">Adjuntar archivo</button></div></div><div class="secretary-attachments-list" aria-live="polite" aria-label="Archivos adjuntos"></div><p class="secretary-attachments-summary" aria-live="polite"></p>';
   const input=host.querySelector('input[type=file]'),existingBox=host.querySelector('.secretary-attachments-existing');
   const existingSelect=existingBox.querySelector('select'),existingButton=existingBox.querySelector('button');
   const list=host.querySelector('.secretary-attachments-list'),summary=host.querySelector('.secretary-attachments-summary');
@@ -140,7 +140,7 @@ var ModernoSecretaryAttachments=(()=>{
     row.append(copy,actions);list.append(row);
    }
    const usable=records.filter(record=>['ready','partial'].includes(record.state)).length;
-   summary.textContent=records.length?`${usable} de ${records.length} archivos listos · ${bytes(snapshotOf(records)).toLocaleString('es-ES')} bytes de texto para la consulta`:'';
+   summary.textContent=records.length?`${usable} de ${records.length} archivos listos para esta consulta.`:'';
   }
 
   async function refreshExisting(){
