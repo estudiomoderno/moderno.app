@@ -75,6 +75,17 @@ test('request accepts only conversation text and explicit context, never client 
 test('read boundary uses user role and exact current blocks',async()=>{
  const db=client(),s=await loadAuthorizedSnapshot(db,request());assert.equal(s.role,'admin');assert.deepEqual(db.calls.map(x=>x.name),['app_rol','app_leer_bloques']);assert.deepEqual(db.calls[1].args,{p_estudio:STUDY,p_bloques:ADMIN_BLOCKS});
 });
+test('explicit finance navigation preserves the query and uses the current permission',async()=>{
+ const planner=()=>assert.fail('A named finance screen does not need a model');
+ for(const [message,view] of [['Abre Resumen','finanzas'],['Abre Facturas','facturas'],['Llévame a Gastos','gastos']]){
+  const db=client(),result=await runSecretary({client:db,input:{studyId:STUDY,message},planner});
+  assert.equal(result.preserveQueryContext,true);
+  assert.deepEqual(result.actions.map(action=>[action.type,action.payload.view,action.openImmediately]),[['navigate',view,true]]);
+  assert.deepEqual(db.calls.map(call=>call.name),['app_rol']);
+ }
+ const limited=snapshot();limited.role='colaborador';
+ await assert.rejects(runSecretary({client:client(limited),input:{studyId:STUDY,message:'Abre Resumen'},planner}),{code:'forbidden'});
+});
 test('lightweight revalidation is complete, role-bound and fail-closed',async()=>{
  const expected=await loadAuthorizedVersions(client(),request(),ADMIN_BLOCKS);assert.equal(expected.role,'admin');assert.deepEqual(expected.versions,snapshot().versions);
  const valid=rows(snapshot()).map(({bloque,updated_at,rol})=>({bloque,updated_at,rol}));
@@ -309,7 +320,7 @@ test('context budget drops whole categories and records the omission before the 
 });
 test('compact planning keeps the complete snapshot authoritative for financial results',async()=>{
  const s=productionScaleSnapshot(),db=client(s);let plannerContext;
- const input=request({message:'Dame un resumen económico',context:{view:'finanzas'}}),summaryPlan=plan({intent:'summary',view:null,projectId:null,clientId:null,clientQuery:null,kind:null,lines:[],edits:[],sourceIds:[]});
+ const input=request({message:'¿Cuál es la situación económica del estudio?',context:{view:'finanzas'}}),summaryPlan=plan({intent:'summary',view:null,projectId:null,clientId:null,clientQuery:null,kind:null,lines:[],edits:[],sourceIds:[]});
  const result=await runSecretary({client:db,input,planner:async({context})=>{plannerContext=context;return summaryPlan;}});
  assert.ok(Buffer.byteLength(JSON.stringify(plannerContext),'utf8')<=80000);assert.equal(JSON.stringify(plannerContext).includes('Movimiento objetivo Zeta'),false);
  assert.equal(result.metrics.invoiced,412);assert.equal(result.metrics.pending,412);assert.equal(result.sourceCount,419);assert.ok(!result.sources.some(source=>source.kind==='quote'));
