@@ -174,62 +174,98 @@ var ModernoSecretary=(()=>{
     preview?.node.remove();preview=null;home=false;homePending=false;
     go(view,projectId);refresh();return state.view===view&&(projectId==null||state.currentProject===projectId);
   }
-  function openFinance(){
-    checkIdentity();if(!ready())return false;
-    const first=financeViews.find(view=>canView(view));if(!first)return false;
-    if(busyEditor(first,undefined,openFinance))return false;
+  function enterFinance(first){
     nativeFinance=false;homePending=true;collapsed=false;characterUnread=false;preview?.node.remove();preview=null;
     go(first);
-    if(state.view===first){home=true;homePending=false;refresh();composer?.focus();return true;}
-    return false;
+    if(state.view!==first)return false;
+    home=true;homePending=false;refresh();return true;
+  }
+  function openFinance(){
+    checkIdentity();if(!ready()||financeTransition)return false;
+    const first=financeViews.find(view=>canView(view));if(!first)return false;
+    if(busyEditor(first,undefined,openFinance))return false;
+    const opened=enterFinance(first);
+    if(opened)composer?.focus({preventScroll:true});
+    return opened;
   }
   function finishFinanceTransition(){
     if(!financeTransition)return;
-    financeTransition.remove();financeTransition=null;
-    document.body.classList.remove('secretary-finance-transition');
+    const {overlay,workspace,wasInert}=financeTransition;
+    financeTransition=null;
+    for(const animation of overlay.getAnimations({subtree:true}))animation.cancel();
+    overlay.remove();
+    workspace.inert=wasInert;
     if(panel)panel.inert=false;
   }
-  function mountFinanceTransition(){
-    if(financeTransition&&!financeTransition.isConnected)document.getElementById('view')?.append(financeTransition);
+  function positionFinanceTransition(){
+    if(!financeTransition)return;
+    const {overlay,workspace}=financeTransition,area=workspace.getBoundingClientRect(),visual=window.visualViewport;
+    const header=document.querySelector('#desktop-header .desktop-inset-header')||document.getElementById('mHeader');
+    const top=visual?.offsetTop||0,left=visual?.offsetLeft||0;
+    overlay.style.top=Math.max(area.top,header?.getBoundingClientRect().bottom||0,top)+'px';
+    overlay.style.left=Math.max(area.left,left)+'px';
+    overlay.style.right=Math.max(0,window.innerWidth-Math.min(area.right,left+(visual?.width||window.innerWidth)))+'px';
+    overlay.style.bottom=Math.max(0,window.innerHeight-Math.min(area.bottom,top+(visual?.height||window.innerHeight)))+'px';
   }
-  function openNormalFinance(){
+  function openNormalFinance(){return changeFinanceMode(false);}
+  function applyFinanceMode(enter,first){
+    if(enter)return enterFinance(first);
+    if(busy){contextInterrupted=true;controller?.abort();}
+    finishReply();
+    nativeFinance=true;home=false;homePending=false;collapsed=false;
+    preview?.node.remove();preview=null;
+    go(first);return state.view===first;
+  }
+  function focusFinanceMode(enter){(enter?composer:launcher)?.focus({preventScroll:true});}
+  async function changeFinanceMode(enter){
+    checkIdentity();
     const first=financeViews.find(view=>canView(view));
     if(!ready()||!first||financeTransition)return;
-    if(document.querySelector('.overlay.open,dialog[open]')){toast('Termina o cierra la ventana abierta para continuar.');return;}
-    if(draftEditing()&&draftDirty()){draftExitModal(first,undefined,openNormalFinance);return;}
-    const epoch=generation,captured=owner(),origin=currentContext();
+    if(busyEditor(first,undefined,()=>changeFinanceMode(enter)))return;
+    const workspace=document.querySelector('.main');
     const overlay=el('div','secretary-finance-loading');
+    if(!workspace||characterMotion?.matches||document.hidden||typeof overlay.animate!=='function'){
+      if(applyFinanceMode(enter,first))focusFinanceMode(enter);
+      return;
+    }
+    const origin=currentContext(),epoch=generation,captured=owner();
+    const current=()=>financeTransition?.overlay===overlay&&epoch===generation&&captured===owner()&&ready();
+    const mark=icon();mark.classList.add('secretary-mode-mark');
+    overlay.dataset.direction=enter?'enter':'exit';
     overlay.setAttribute('role','status');
-    overlay.append(el('span','secretary-spinner'),el('span','','Cargando Finanzas…'));
-    overlay.firstChild.setAttribute('aria-hidden','true');
-    financeTransition=overlay;
-    document.body.classList.add('secretary-finance-transition');
+    overlay.append(mark,el('span','',enter?'Abriendo Modo IA…':'Cargando Finanzas…'));
+    financeTransition={overlay,workspace,wasInert:workspace.inert};
+    document.body.append(overlay);workspace.inert=true;
     if(panel)panel.inert=true;
-    mountFinanceTransition();
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      if(financeTransition!==overlay)return;
-      if(epoch!==generation||captured!==owner()||!ready()||!sameContext(origin)){finishFinanceTransition();return;}
-      if(busy){contextInterrupted=true;controller?.abort();}
-      finishReply();
-      nativeFinance=true;home=false;homePending=false;collapsed=false;
-      preview?.node.remove();preview=null;
-      try{go(first);}
-      finally{
-        if(financeTransition===overlay){
-          const complete=()=>{
-            if(financeTransition!==overlay)return;
-            finishFinanceTransition();
-            launcher?.focus({preventScroll:true});
-          };
-          if(characterMotion?.matches)complete();
-          else {overlay.classList.add('is-ready');overlay.addEventListener('transitionend',complete,{once:true});setTimeout(complete,180);}
-        }
+    positionFinanceTransition();
+    const phase=(name,opacity,markFrames,duration)=>{
+      overlay.dataset.phase=name;
+      const timing={duration,easing:'cubic-bezier(.2,.65,.3,1)',fill:'both'};
+      const animations=[overlay.animate(opacity,timing),mark.animate(markFrames,timing)];
+      return Promise.all(animations.map(animation=>animation.finished.catch(()=>{})));
+    };
+    let switched=false;
+    try{
+      const approach=enter?[{transform:'scale(.78)',opacity:.3},{transform:'scale(1)',opacity:1}]:
+        [{transform:'scale(1)'},{transform:'scale(1)'}];
+      await phase('cover',[{opacity:0},{opacity:1}],approach,150);
+      if(!current()||!sameContext(origin)||document.querySelector('.overlay.open,dialog[open]'))return;
+      switched=applyFinanceMode(enter,first);
+      if(switched&&current()&&!characterMotion?.matches&&!document.hidden){
+        const end=enter?'scale(1)':'scale(.68)';
+        await phase('reveal',[{opacity:1},{opacity:0}],[{transform:'scale(1)'},{transform:end}],185);
       }
-    }));
+    }finally{
+      if(financeTransition?.overlay===overlay){
+        const focus=switched&&current()&&state.view===first;
+        finishFinanceTransition();
+        if(focus)focusFinanceMode(enter);
+      }
+    }
   }
   function showLauncher(mode){
     if((launcher?.dataset.mode??null)===mode)return;
-    launcher=mode==='finance'?modeButton('Modo IA',openFinance):mode==='project'?button('Modo IA',unfold,'secretary-reopen'):null;
+    launcher=mode==='finance'?modeButton('Modo IA',()=>changeFinanceMode(true)):mode==='project'?button('Modo IA',unfold,'secretary-reopen'):null;
     if(launcher){
       launcher.id='secretary-reopen';launcher.classList.add('secretary-reopen');launcher.dataset.mode=mode;
       launcher.lastChild.replaceWith(el('span','secretary-launch-label','Modo IA'));
@@ -897,7 +933,7 @@ var ModernoSecretary=(()=>{
       const record=appendMessage('assistant',payload.message,safe);record.feedbackTask=feedbackTask;
       if(safe.receivables)record.invoiceQuery=input;
       const action=safe.actions.find(item=>item.type==='prepare_draft'&&safe.status==='proposal'&&draftRequested||['open_document','navigate'].includes(item.type)&&item.openImmediately===true);
-      if(action&&!collapsed&&epoch===generation&&captured===owner())runAction(action,captured);
+      if(action&&!collapsed&&!financeTransition&&epoch===generation&&captured===owner())runAction(action,captured);
       setStatus('');
     }catch(error){
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
@@ -924,7 +960,7 @@ var ModernoSecretary=(()=>{
   }
   function schedulePosition(){
     if(positionQueued)return;positionQueued=true;
-    requestAnimationFrame(()=>{positionQueued=false;position();drawCharacter();});
+    requestAnimationFrame(()=>{positionQueued=false;positionFinanceTransition();position();drawCharacter();});
   }
   function position(){
     if(!panel?.isConnected||home||collapsed)return;
@@ -954,7 +990,7 @@ var ModernoSecretary=(()=>{
       clearLayout();
       if(lastView!==state.view){questions=[];answers={};questionTarget=null;pendingAnswers={};}
       lastView=state.view;lastProject=null;home=false;homePending=false;
-      showLauncher('finance');mountFinanceTransition();return;
+      showLauncher('finance');return;
     }
     if(preview&&(preview.view!==state.view||preview.project!==state.currentProject)){preview.node.remove();preview=null;}
     const viewingDocument=!!preview||state.view==='presedit'||!!document.querySelector('#view .finance-document-editor');
@@ -972,7 +1008,7 @@ var ModernoSecretary=(()=>{
     document.body.classList.toggle('secretary-previewing',!!preview);
     document.body.classList.toggle('secretary-document-open',viewingDocument);
     if(preview&&!preview.node.isConnected)document.getElementById('view')?.append(preview.node);
-    panel.classList.toggle('is-home',home);panel.hidden=collapsed;
+    panel.classList.toggle('is-home',home);panel.hidden=collapsed;panel.inert=!!financeTransition;
     const inFinance=financeViews.includes(state.view);
     returnButton.hidden=home;exitButton.hidden=!inFinance;foldButton.hidden=inFinance;
     panel.classList.toggle('has-mode-exit',inFinance);
@@ -1003,8 +1039,12 @@ var ModernoSecretary=(()=>{
   },true);
   window.addEventListener('resize',schedulePosition);
   if(window.visualViewport){window.visualViewport.addEventListener('resize',schedulePosition);window.visualViewport.addEventListener('scroll',schedulePosition);}
-  document.addEventListener('visibilitychange',()=>{if(document.hidden)finishReply();drawCharacter();});
-  characterMotion?.addEventListener?.('change',()=>{if(characterMotion.matches)finishReply();drawCharacter();});
+  function completeMotion(){
+    finishReply();
+    for(const animation of financeTransition?.overlay.getAnimations({subtree:true})||[])animation.finish();
+  }
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)completeMotion();drawCharacter();});
+  characterMotion?.addEventListener?.('change',()=>{if(characterMotion.matches)completeMotion();drawCharacter();});
   new MutationObserver(schedulePosition).observe(document.body,{childList:true});
   window.addEventListener('storage',handleFeedbackStorage);
   if(sb?.auth?.onAuthStateChange){

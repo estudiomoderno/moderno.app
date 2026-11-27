@@ -595,17 +595,27 @@ try:
 
             composer.fill("Texto conservado al volver")
             page.evaluate("""()=>{
-              window.fixtureFinanceLoading=false;
+              window.fixtureModes=[];
               new MutationObserver(records=>{
-                for(const record of records)for(const node of record.addedNodes)
-                  if(node.matches?.('.secretary-finance-loading')&&node.textContent==='Cargando Finanzas…')window.fixtureFinanceLoading=true;
-              }).observe(document.getElementById('view'),{childList:true});
+                for(const record of records)for(const node of record.addedNodes){
+                  if(!node.matches?.('.secretary-finance-loading'))continue;
+                  const mark=node.querySelector('.secretary-mode-mark');
+                  const frames=()=>mark.getAnimations().flatMap(a=>a.effect.getKeyframes()).map(frame=>frame.transform);
+                  const entry={direction:node.dataset.direction,label:node.textContent,mark:mark.getAttribute('src'),cover:frames()};
+                  window.fixtureModes.push(entry);
+                  new MutationObserver(()=>{if(node.dataset.phase==='reveal')entry.reveal=frames();}).observe(node,{attributes:true,attributeFilter:['data-phase']});
+                }
+              }).observe(document.body,{childList:true});
             }""")
             panel.get_by_role("button", name="Salir del Modo IA", exact=True).click()
             expect(panel).to_have_count(0)
             expect(page.locator(".finance-overview")).to_be_visible()
             expect(page.locator(".secretary-finance-loading")).to_have_count(0)
-            assert page.evaluate("window.fixtureFinanceLoading && fixtureDocuments()===demoRecords")
+            assert page.evaluate("fixtureDocuments()===demoRecords")
+            exit_effect = page.evaluate("window.fixtureModes[0]")
+            assert exit_effect["direction"] == "exit" and exit_effect["label"] == "Cargando Finanzas…"
+            assert exit_effect["mark"] == "/brand/secretario/lavanda/espera.png"
+            assert any("68" in transform for transform in exit_effect["reveal"])
             assert_launcher_clearance(page)
             expect(page.locator("#view button").filter(has_text="Modo IA")).to_have_count(0)
             expect(page.get_by_role("button", name="Modo IA", exact=True)).to_be_focused()
@@ -628,11 +638,33 @@ try:
             expect(composer).to_have_value("Texto conservado al volver")
             expect(panel.locator(".secretary-turn-assistant .secretary-bubble").last).to_have_text(animated_text)
             expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-home.*"))
+            expect(page.locator(".secretary-finance-loading")).to_have_count(0)
+            expect(composer).to_be_focused()
+            entry_effect = page.evaluate("window.fixtureModes[1]")
+            assert entry_effect["direction"] == "enter" and entry_effect["label"] == "Abriendo Modo IA…"
+            assert entry_effect["mark"] == exit_effect["mark"]
+            assert any("78" in transform for transform in entry_effect["cover"])
+
+            page.emulate_media(reduced_motion="reduce")
+            panel.get_by_role("button", name="Salir del Modo IA", exact=True).click()
+            expect(page.locator(".finance-overview")).to_be_visible()
+            page.get_by_role("button", name="Modo IA", exact=True).click()
+            expect(composer).to_have_value("Texto conservado al volver")
+            expect(composer).to_be_focused()
+            assert page.evaluate("window.fixtureModes.length===2 && !document.querySelector('.main').inert")
+            page.emulate_media(reduced_motion="no-preference")
+
             if output:
                 composer.fill("")
                 wait_for_stable_view(page)
                 page.screenshot(path=str(output / f"secretario-modo-ia-{width}.png"))
-            print(f"{width} PASS: composer handles multiple answers, reply reveal, reduced motion, Finance exit and preserved chat", flush=True)
+            page.evaluate("""()=>{
+              document.querySelector('.secretary-header .secretary-mode-button').click();
+              go('agenda');
+            }""")
+            expect(page.locator(".secretary-finance-loading")).to_have_count(0)
+            assert page.evaluate("state.view==='agenda' && !document.querySelector('.main').inert")
+            print(f"{width} PASS: composer, mascot transitions in both directions, reduced motion, preserved chat and navigation", flush=True)
             page.evaluate("Object.assign(state,window.originalInvoicesFixture);ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")
 
             # Folding remains available from a project. A proposal stays there
