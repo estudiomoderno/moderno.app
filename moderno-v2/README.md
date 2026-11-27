@@ -11,7 +11,7 @@
 | Modelo de datos y migrador | Inventario inicial; diseño e implementación pendientes |
 | Supabase Moderno Prueba | Destino exigido; identidad y estado todavía no verificados en este arranque |
 | ReUI premium | Compra/acceso pendientes de verificar; no se ha instalado código premium |
-| MCP de ReUI | No configurado ni comprobado en el nuevo Codex |
+| MCP de ReUI | Guía de preparación revisada; conexión pendiente de configurar y comprobar en el nuevo Codex |
 | Producción y datos reales | Sin cambios por este arranque |
 
 Repositorio de referencia: [estudiomoderno/moderno.app](https://github.com/estudiomoderno/moderno.app). Punto de partida inspeccionado: [61a0c09c044abbd576a6c485ca58d0db75831317](https://github.com/estudiomoderno/moderno.app/commit/61a0c09c044abbd576a6c485ca58d0db75831317).
@@ -31,6 +31,8 @@ La app actual ya contiene React/Base UI/Tailwind en [ui/team-profile/package.jso
 Fuentes de instalación: [ReUI Get Started](https://reui.io/docs/get-started), [registro ReUI](https://reui.io/docs/registry) y [shadcn para Vite](https://ui.shadcn.com/docs/installation/vite).
 
 ## Uso de ReUI sin copiar botón a botón
+
+Antes de comenzar, seguir la [guía de preparación de ReUI para Codex](docs/REUI-CODEX.md), revisada a partir de los tres enlaces facilitados por Javier. Distingue el cliente local del Taller alojado y define una comprobación real de la conexión.
 
 Configurar una sola vez el registro de ReUI en `components.json`. El Taller incorporará bloques mediante el CLI de shadcn, revisará sus dependencias y los adaptará a los componentes y tokens compartidos. `@reui` es un namespace del registro, no un paquete npm.
 

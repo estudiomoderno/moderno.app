@@ -4,7 +4,7 @@
 
 Construir una nueva Moderno.app desde cero, usando ReUI y bloques completos con una identidad visual común. Javier abrirá un Codex nuevo. La decisión procede de su conversación del 28/11/2026; no presupone que el nuevo chat herede el historial de otro.
 
-Leer este archivo, README.md y docs/MIGRACION-DATOS.md en este directorio. Después revisar las fuentes de la app antigua necesarias para cada módulo. Distinguir siempre una decisión del propietario, una propuesta técnica y un resultado comprobado.
+Leer este archivo, README.md, docs/REUI-CODEX.md y docs/MIGRACION-DATOS.md en este directorio. Después revisar las fuentes de la app antigua necesarias para cada módulo. Distinguir siempre una decisión del propietario, una propuesta técnica y un resultado comprobado.
 
 ## Aislamiento y autonomía
 
@@ -25,7 +25,7 @@ La base técnica propuesta es React + TypeScript + Vite + Tailwind 4 + ReUI/shad
 
 Establecer tokens de marca y componentes compartidos. Conservar el imagotipo y recursos oficiales; barra de herramientas del proyecto arriba y menú lateral inicialmente contraído. Prioridad de escritorio con estructura adaptable.
 
-Buscar composiciones y bloques completos antes de montar pantallas control a control. Leer el código real del bloque: no confundir una maqueta con autenticación, guardado, correo o visor conectado.
+Preparar la conexión ReUI y la skill según el entorno real, siguiendo docs/REUI-CODEX.md. No afirmar que están instaladas por haber leído la documentación o escrito una configuración en otro entorno. Buscar composiciones y bloques completos antes de montar pantallas control a control. Leer el código real del bloque: no confundir una maqueta con autenticación, guardado, correo o visor conectado.
 
 Separar la interfaz, las reglas del producto y el acceso a los datos. Los componentes visuales no deben depender del JSON antiguo ni implementar permisos por su cuenta. Diseñar adaptadores e importadores con correspondencias explícitas de identidad.
 
