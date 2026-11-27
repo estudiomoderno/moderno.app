@@ -68,6 +68,18 @@ test('returns only the genuine extracted value from the exact versioned source f
  assertReadOnly(client);
 });
 
+test('an issued invoice movement keeps its own attachment reference and version',async()=>{
+ const values=blocks(),file={name:'Factura ficticia.pdf',type:'application/pdf',data:'storage://archivo-ficticio'};
+ values.facturas.entries.push({id:'issued-entry',kind:'in',brand:'cm',pid:PROJECT_A,link:'F-DEMO-042',concept:'Factura F-DEMO-042',file});
+ const pointer={kind:'invoice_entry',id:'issued-entry',projectId:PROJECT_A,brand:'cm',version:VERSIONS.facturas};
+ const request=input({attachments:[attachment({name:file.name,pointer})]});
+ const client=scopedClient({values}),{result}=await run(request,{client});
+ assert.deepEqual(result.attachmentSources,[{file:file.name,page:1,excerpt:'Importe total: 321,45 EUR'}]);
+ assertReadOnly(client);
+ const stale={...pointer,version:VERSIONS.contactos};
+ await assert.rejects(run(input({attachments:[attachment({pointer:stale})]}),{client:scopedClient({values})}),{code:'source_unavailable'});
+});
+
 test('binds a private attachment to the RLS actor and study snapshot',async()=>{
  const actorB=scopedClient({actor:'actor-b',values:blocks({project:'project-b',file:'file-b'})});
  let plannerCalls=0;

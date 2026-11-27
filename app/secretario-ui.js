@@ -1197,9 +1197,22 @@ var ModernoSecretary=(()=>{
     }
     for(const project of state.projects||[])if(project?.id!=null&&!project.tpl)for(const file of project.files||[])
       if(file?.id!=null)add({kind:'document',id:`${project.id}:${file.id}`,projectId:String(project.id)},file,project.name,'proyectos');
-    if(_accessRole==='admin')for(const entry of state.entries||[]){
-      if(!entry?.file||entry.id==null||state.entriesDel?.[entry.id]||!canView('contabilidad'))continue;
-      add({kind:'entry',id:String(entry.id),brand:entry.brand,projectId:entry.pid==null?null:String(entry.pid)},entry.file,entry.concept,'facturas');
+    if(_accessRole==='admin'){
+      for(const [kind,docs,view,block] of [['invoice',state.invoices,'facturas','facturas'],['quote',state.quotes,'presupuestos','presupuestos']]){
+        if(!canView(view))continue;
+        for(const doc of docs||[]){
+          if(!doc?.file||!doc.ref||kind==='invoice'&&state.docsDel?.[doc.ref])continue;
+          const projectId=doc.projectId??doc.pid;
+          add({kind,id:String(doc.ref),brand:doc.brand,projectId:projectId==null?null:String(projectId)},doc.file,doc.ref,block);
+        }
+      }
+      for(const entry of state.entries||[]){
+        if(!entry?.file||entry.id==null||state.entriesDel?.[entry.id])continue;
+        const issued=entry.kind==='in'&&(entry.link||/^Factura\s/i.test(entry.concept||''))&&!state.docsDel?.[entry.link];
+        if(!(issued&&canView('facturas')||entry.kind==='out'&&canView('contabilidad')))continue;
+        const projectId=entry.pid??entry.projectId;
+        add({kind:issued?'invoice_entry':'entry',id:String(entry.id),brand:entry.brand,projectId:projectId==null?null:String(projectId)},entry.file,entry.concept,'facturas');
+      }
     }
     return list;
   }

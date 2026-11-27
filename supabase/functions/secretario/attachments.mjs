@@ -19,7 +19,7 @@ export function normalizeAttachments(list){
       pages.add(page.page);
     }
     const s=file.source;
-    if(s!==undefined&&(!only(s,['kind','id','projectId','brand','version'])||!['document','invoice','quote','entry'].includes(s.kind)||
+    if(s!==undefined&&(!only(s,['kind','id','projectId','brand','version'])||!['document','invoice','invoice_entry','quote','entry'].includes(s.kind)||
       !short(s.id,320)||s.projectId!=null&&!short(s.projectId,160)||s.brand!=null&&typeof s.brand!=='string'||
       !short(s.version,100)))return null;
   }

@@ -14,7 +14,7 @@ var ModernoSecretaryAttachments=(()=>{
  const OCR_TIMEOUT_MS=60000;
  const FILE_TIMEOUT_MS=180000;
  const ACCEPTED=new Set(['application/pdf','image/png','image/jpeg','image/webp']);
- const SOURCE_KINDS=new Set(['document','invoice','quote','entry']);
+ const SOURCE_KINDS=new Set(['document','invoice','invoice_entry','quote','entry']);
  const encoder=new TextEncoder();
  const moduleUrl=typeof document!=='undefined'&&document.currentScript?.src?document.currentScript.src:'';
  const defaultAssetBase=moduleUrl?new URL('./vendor/tesseract/6.0.1/',moduleUrl).href:'';
