@@ -126,18 +126,18 @@ def assert_secretary_clearance(page):
 
 
 def assert_launcher_clearance(page):
-    """The folded control must remain usable beside real chrome and save status."""
+    """The launcher fits the notification row and remains distinct from other tools."""
     page.wait_for_function("""()=>{
       const launcher=document.getElementById('secretary-reopen');
-      if(!launcher)return false;
-      const r=launcher.getBoundingClientRect();
-      if(r.width<44||r.height<44||r.top<0||r.left<0||r.bottom>innerHeight||r.right>innerWidth)return false;
-      return [...document.querySelectorAll('#syncTag,#project-window-bar,.project-tabs.project-dock')].every(node=>{
-        const style=getComputedStyle(node),box=node.getBoundingClientRect();
-        if(style.display==='none'||style.visibility==='hidden'||!box.width||!box.height)return true;
-        return r.right<=box.left||r.left>=box.right||r.bottom<=box.top-10||r.top>=box.bottom+10;
-      });
-    }""")
+      const bell=launcher?.nextElementSibling;
+      if(!bell?.matches('.ha-notification-host,.ha-notifications'))return false;
+      const r=launcher.getBoundingClientRect(),b=bell.getBoundingClientRect();
+      const touch=matchMedia('(pointer:coarse)').matches;
+      const heightFits=touch?r.height>=44:Math.abs(r.height-b.height)<=1;
+      return heightFits&&r.width>=(touch?44:36)&&r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight
+        &&b.width>0&&r.right<=b.left&&b.left-r.right<=10&&Math.abs((r.top+r.bottom)-(b.top+b.bottom))<=2
+        &&getComputedStyle(launcher).backgroundColor==='rgb(255, 186, 122)';
+    }""", timeout=6000)
 
 
 def assert_static_history(panel):
@@ -318,6 +318,11 @@ try:
             nav = panel.get_by_role("navigation", name="Accesos directos de Finanzas")
             expect(nav.locator(".secretary-shortcut")).to_have_text(["Resumen", "Facturas", "Gastos", "Presupuestos"])
             assert nav.evaluate("node=>node.getBoundingClientRect().bottom<=document.querySelector('.secretary-header').getBoundingClientRect().top")
+            assert nav.evaluate("""node=>{
+              const row=node.getBoundingClientRect(),sections=node.querySelector('.secretary-sections').getBoundingClientRect();
+              return Math.abs((row.left+row.right)-(sections.left+sections.right))<=2;
+            }""")
+            expect(panel.get_by_role("button", name="Plegar el Secretario", exact=True)).to_have_count(0)
             expect(panel.get_by_role("button", name="Salir del Modo IA", exact=True)).to_be_visible()
             expect(panel.get_by_role("button", name="Vaciar conversación", exact=True)).to_have_count(0)
             wait_for_stable_view(page)
@@ -402,28 +407,8 @@ try:
                 wait_for_stable_view(page)
                 page.screenshot(path=str(output / f"secretario-traza-activa-{width}.png"))
 
-            # Folding a running query preserves it. Receiving real results keeps
-            # the surface folded, marks them unread and leaves focus on the control.
-            panel.get_by_role('button', name='Plegar el Secretario', exact=True).click()
-            launcher = page.locator('#secretary-reopen')
-            expect(panel).to_be_hidden()
-            expect(launcher).to_have_attribute('data-character-state', 'trabajando')
-            expect(launcher).to_have_attribute('data-unread', 'false')
-            assert_launcher_clearance(page)
             pending_route, result = pending_receivables.pop()
             pending_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(result))
-            expect(launcher).to_have_attribute('data-unread', 'true')
-            expect(launcher).to_have_attribute('data-character-state', 'terminado')
-            expect(panel).to_be_hidden()
-            expect(launcher).to_be_focused()
-            if output:
-                page.screenshot(path=str(output / f"secretario-plegado-{width}.png"))
-            expect(launcher).to_have_attribute('data-character-state', 'espera', timeout=5500)
-            expect(launcher).to_have_attribute('data-unread', 'true')
-            expect(launcher.locator('.secretary-character')).to_have_attribute('data-animated', 'false')
-            assert launcher.locator('.secretary-character').evaluate("node=>new URL(node.src).pathname.endsWith('.png')")
-            launcher.click()
-            expect(launcher).to_have_count(0)
             expect(panel).to_be_visible()
             answer = panel.locator(".secretary-turn-assistant").last
             expect(answer.locator(".secretary-bubble")).to_contain_text("Tienes 3 facturas pendientes de cobro por 1.680")
@@ -621,8 +606,18 @@ try:
             expect(page.locator(".finance-overview")).to_be_visible()
             expect(page.locator(".secretary-finance-loading")).to_have_count(0)
             assert page.evaluate("window.fixtureFinanceLoading && fixtureDocuments()===demoRecords")
-            expect(page.locator("#secretary-reopen")).to_have_count(0)
+            assert_launcher_clearance(page)
+            expect(page.locator("#view button").filter(has_text="Modo IA")).to_have_count(0)
             expect(page.get_by_role("button", name="Modo IA", exact=True)).to_be_focused()
+            page.evaluate("ModernoHeaderActions.refresh()")
+            assert_launcher_clearance(page)
+            expect(page.get_by_role("button", name="Modo IA", exact=True)).to_have_count(1)
+            if width >= 1100:
+                page.set_viewport_size({"width": 390, "height": 844})
+                assert_launcher_clearance(page)
+                page.set_viewport_size({"width": width, "height": height})
+                assert_launcher_clearance(page)
+                expect(page.get_by_role("button", name="Modo IA", exact=True)).to_have_count(1)
             if output:
                 wait_for_stable_view(page)
                 page.screenshot(path=str(output / f"secretario-finanzas-normal-{width}.png"))
@@ -640,19 +635,30 @@ try:
             print(f"{width} PASS: composer handles multiple answers, reply reveal, reduced motion, Finance exit and preserved chat", flush=True)
             page.evaluate("Object.assign(state,window.originalInvoicesFixture);ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")
 
-            # A requested draft may finish while folded. It becomes reviewable
-            # without opening an editor until the user chooses its action.
+            # Folding remains available from a project. A proposal stays there
+            # until the user returns and chooses to open the draft.
+            page.evaluate("go('proyecto',9001)")
             page.locator('#secretary-message').fill('consulta lenta preparar factura')
             panel.get_by_role('button', name='Enviar', exact=True).click()
             expect(panel).to_have_attribute('data-character-state', 'trabajando')
             page.wait_for_timeout(30)
             assert len(pending) == 1
             panel.get_by_role('button', name='Plegar el Secretario', exact=True).click()
+            launcher = page.locator('#secretary-reopen')
+            expect(launcher).to_have_attribute('data-character-state', 'trabajando')
+            expect(launcher).to_be_focused()
+            assert_launcher_clearance(page)
             pending.pop().fulfill(status=200, headers=cors_headers, content_type='application/json', body=json.dumps(proposal()))
-            expect(page.locator('#secretary-reopen')).to_have_attribute('data-unread', 'true')
+            expect(launcher).to_have_attribute('data-unread', 'true')
+            expect(launcher).to_have_attribute('data-character-state', 'terminado')
             expect(panel).to_be_hidden()
-            assert page.evaluate("state.draft===null&&state.invoices.length===0&&state.view==='informes'")
-            page.locator('#secretary-reopen').click()
+            assert page.evaluate("state.draft===null&&state.invoices.length===0&&state.view==='proyecto'")
+            if output:
+                page.screenshot(path=str(output / f"secretario-plegado-{width}.png"))
+            expect(launcher).to_have_attribute('data-character-state', 'espera', timeout=5500)
+            expect(launcher.locator('.secretary-character')).to_have_attribute('data-animated', 'false')
+            launcher.click()
+            expect(launcher).to_have_count(0)
             expect(panel.get_by_role('button', name='Abrir borrador', exact=True)).to_be_visible()
             panel.get_by_role('button', name='Abrir borrador', exact=True).click()
             expect(page.locator('.finance-document-editor')).to_be_visible()
@@ -690,10 +696,8 @@ try:
             expect(page.locator("#modalBox")).to_contain_text("a medias")
             assert page.evaluate("state.draft.lines[0].qty===2")
             page.locator("#modalBox").get_by_role("button", name="Seguir editando", exact=True).click()
-            panel.get_by_role("button", name="Plegar el Secretario", exact=True).click()
-            expect(panel).to_be_hidden()
-            assert_launcher_clearance(page)
-            page.locator('#secretary-reopen').click()
+            expect(panel.get_by_role("button", name="Plegar el Secretario", exact=True)).to_have_count(0)
+            expect(panel.get_by_role("button", name="Salir del Modo IA", exact=True)).to_be_visible()
             expect(panel.locator(".secretary-bubble").get_by_text("El borrador está preparado para revisar.", exact=True)).to_be_visible()
 
             # Resume + edit a saved draft, preserving its original metadata and date.
