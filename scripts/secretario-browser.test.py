@@ -506,6 +506,14 @@ try:
             all_text = "Tienes 3 facturas pendientes de cobro por 2.300 €. De ellas, 2 están vencidas."
             year_text = "De las emitidas en 2026, tienes 2 facturas pendientes por 1.500 €. Una está vencida."
             ask_demo("que facturas quedan por que me pagen", all_text, ["F-DEMO-003", "F-DEMO-001", "F-DEMO-002"])
+            title = panel.locator(".secretary-title strong")
+            assert title.evaluate("node=>node.getBoundingClientRect().height<50")
+            if width < 500:
+                height = page.viewport_size["height"]
+                page.set_viewport_size({"width": 320, "height": height})
+                expect(panel.get_by_role("button", name="Salir del Modo IA", exact=True)).to_be_in_viewport()
+                assert title.evaluate("node=>node.getBoundingClientRect().height<50")
+                page.set_viewport_size({"width": width, "height": height})
             ask_demo("solo las de este año", year_text, ["F-DEMO-001", "F-DEMO-002"])
             year_turn = panel.locator(".secretary-turn-assistant").filter(has_text=year_text)
             if output:
