@@ -973,7 +973,9 @@ var ModernoSecretary=(()=>{
     document.body.classList.toggle('secretary-document-open',viewingDocument);
     if(preview&&!preview.node.isConnected)document.getElementById('view')?.append(preview.node);
     panel.classList.toggle('is-home',home);panel.hidden=collapsed;
-    returnButton.hidden=home;exitButton.hidden=!financeViews.includes(state.view);
+    const inFinance=financeViews.includes(state.view);
+    returnButton.hidden=home;exitButton.hidden=!inFinance;
+    panel.classList.toggle('has-mode-exit',inFinance);
     const project=activeProject(),name=secretaryName();
     titleNode.textContent=name;panel.setAttribute('aria-label',name);thread.setAttribute('aria-label','Conversación con '+name);
     for(const turn of thread.querySelectorAll('.secretary-turn-assistant'))turn.setAttribute('aria-label',name);
