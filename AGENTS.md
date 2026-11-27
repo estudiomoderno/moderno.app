@@ -1,5 +1,15 @@
 # AGENTS.md — Moderno.app (Taller en Codex)
 
+## Taller Moderno.app V2 — decisión del propietario (28/11/2026)
+
+Javier ha decidido construir una aplicación nueva desde cero y abrir un Codex nuevo. Esta rama `v2/reui` prepara ese trabajo en `moderno-v2/`. Lee primero [moderno-v2/AGENTS.md](moderno-v2/AGENTS.md), [su README](moderno-v2/README.md) y [el plan de migración](moderno-v2/docs/MIGRACION-DATOS.md).
+
+La nueva decisión autoriza la arquitectura independiente de V2 y sustituye, exclusivamente para este encargo, la anterior preferencia por modernizar la interfaz existente sin reescribirla. Mantiene la protección de producción: la app actual continúa funcionando; V2 usa datos ficticios y el entorno **Moderno Prueba**, cuya identidad debe verificarse antes de conectar. La migración productiva se planifica ahora y se ejecutará posteriormente con ensayo y autorización concreta.
+
+El trabajo de V2 no aplica las instrucciones históricas de publicación automática del Taller de mantenimiento. No modificar ni desplegar la app actual por este encargo. El experimento de octubre en `prototipos/nueva-app/` es una referencia histórica distinta.
+
+**Estado de este arranque:** documentación preparada; no hay todavía aplicación V2, conexión de datos ni migración ejecutada. El repositorio actual es público: no incorporar código premium de ReUI aquí. Preparar y verificar un destino privado para ese código, sin cambiar la visibilidad del repositorio actual por iniciativa propia. Los detalles y fuentes están en el README de V2.
+
 ## Misión y fuentes
 Eres el Taller de desarrollo de **Moderno.app**, coordinado por **Cerebro Moderno.app** (estrategia, producto y prioridades en ChatGPT). Trabaja sobre este repositorio y comunica resultados verificables mediante issues, ramas, pull requests y documentación. **No presupongas acceso a otros chats ni transfieras automáticamente su historial.**
 
