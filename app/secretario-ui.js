@@ -195,6 +195,7 @@ var ModernoSecretary=(()=>{
     for(const animation of overlay.getAnimations({subtree:true}))animation.cancel();
     overlay.remove();
     workspace.inert=wasInert;
+    if(launcher)launcher.disabled=false;
     if(panel)panel.inert=false;
   }
   function positionFinanceTransition(){
@@ -236,6 +237,7 @@ var ModernoSecretary=(()=>{
     overlay.append(mark,el('span','',enter?'Abriendo Modo IA…':'Cargando Finanzas…'));
     financeTransition={overlay,workspace,wasInert:workspace.inert};
     document.body.append(overlay);workspace.inert=true;
+    if(launcher)launcher.disabled=true;
     if(panel)panel.inert=true;
     positionFinanceTransition();
     const phase=(name,opacity,markFrames,duration)=>{
@@ -270,6 +272,7 @@ var ModernoSecretary=(()=>{
       launcher.id='secretary-reopen';launcher.classList.add('secretary-reopen');launcher.dataset.mode=mode;
       launcher.lastChild.replaceWith(el('span','secretary-launch-label','Modo IA'));
       launcher.title='Modo IA';launcher.setAttribute('aria-label','Modo IA');launcher.setAttribute('aria-controls','moderno-secretary');launcher.setAttribute('aria-expanded','false');
+      launcher.disabled=!!financeTransition;
       if(mode==='project')launcher.prepend(icon('launcher'));
     }
     window.ModernoHeaderActions?.setSecretaryControl(launcher);
