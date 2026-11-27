@@ -47,12 +47,12 @@ test('respects tombstones, reconciles legacy invoices, and rejects ambiguous lin
   s.entries.push({id:502,concept:'Otros ingresos',kind:'in',brand:'cm',amount:600,status:'pend'});
   const result=collectReceivables(s,{today,projectId:'9001'});
   assert.equal(result.review,0);
-  assert.deepEqual(collectReceivables(s,{today,projectId:'9002'}),{review:1,rows:[]});
+  assert.deepEqual(collectReceivables(s,{today,projectId:'9002'}),{review:1,rows:[],reviewReasons:[{reason:'duplicate',count:1}]});
   assert.deepEqual(result.rows.map(row=>[row.kind,row.label,row.due]),[
     ['invoice_entry','FC-0300','2026-11-26'],['invoice','FC-0003','2030-01-20']
   ]);
   assert.equal(result.rows[0].overdue,false);
-  assert.deepEqual(collectReceivables(s,{today,projectId:'9003'}),{review:0,rows:[]});
+  assert.deepEqual(collectReceivables(s,{today,projectId:'9003'}),{review:0,rows:[],reviewReasons:[]});
 });
 
 test('filters by authorized client, project, issue dates, due dates and overdue status', async () => {

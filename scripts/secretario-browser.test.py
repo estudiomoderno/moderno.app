@@ -29,6 +29,53 @@ invoice_fixture_script = ["node", "scripts/secretario-receivables-fixture.mjs"]
 invoice_fixture = json.loads(subprocess.check_output(invoice_fixture_script, cwd=repo, input=b""))
 acceptance_fixture = json.loads(subprocess.check_output([*invoice_fixture_script, "--acceptance"], cwd=repo, input=b""))
 
+# Exact fictional records from the conversation guide. This fixture remains
+# separate from the older acceptance dataset so both contracts stay covered.
+guide_browser_fixture = {
+    "clients": [
+        {"id": "ana", "name": "Ana Vega", "fiscal": "Ana Vega", "type": "Cliente", "brand": "cm"},
+        {"id": "bruno", "name": "Bruno Rey", "fiscal": "Bruno Rey", "type": "Cliente", "brand": "cm"},
+        {"id": "alfonso", "name": "Alfonso Cerropuerta", "fiscal": "Alfonso Cerropuerta", "type": "Cliente", "brand": "cm"},
+    ],
+    "projects": [
+        {"id": 9001, "num": "PR-PATIO", "name": "Patio Demo", "brand": "cm", "client": "Ana Vega", "status": "En curso", "tasks": [], "files": []},
+        {"id": 9002, "num": "PR-ALBA", "name": "Alba Demo", "brand": "cm", "client": "Bruno Rey", "status": "En curso", "tasks": [], "files": []},
+    ],
+    "invoices": [
+        {"ref": "F-DEMO-01", "client": "Ana Vega", "clientIdx": 0, "projectId": 9001, "brand": "cm", "date": "2026-11-01", "due": "2026-11-10", "total": 1200, "status": "env", "currency": "EUR", "lines": [{"name": "Servicio ficticio", "qty": 1, "unit": "ud", "price": 1200}]},
+        {"ref": "F-DEMO-02", "client": "Ana Vega", "clientIdx": 0, "projectId": 9001, "brand": "cm", "date": "2026-11-15", "due": "2026-12-10", "total": 600, "status": "env", "currency": "EUR", "lines": [{"name": "Servicio ficticio", "qty": 1, "unit": "ud", "price": 600}]},
+        {"ref": "F-DEMO-03", "client": "Bruno Rey", "clientIdx": 1, "projectId": 9002, "brand": "cm", "date": "2025-12-20", "due": "2026-01-20", "total": 700, "status": "env", "currency": "EUR", "lines": [{"name": "Servicio ficticio", "qty": 1, "unit": "ud", "price": 700}]},
+        {"ref": "F-DEMO-04", "client": "Ana Vega", "clientIdx": 0, "projectId": 9001, "brand": "cm", "date": "2026-10-10", "due": "2026-11-10", "total": 900, "status": "pag", "currency": "EUR", "lines": [{"name": "Servicio ficticio", "qty": 1, "unit": "ud", "price": 900}]},
+    ],
+    "entries": [
+        {"id": 101, "link": "F-DEMO-01", "client": "Ana Vega", "pid": 9001, "brand": "cm", "kind": "in", "concept": "Factura F-DEMO-01 · Ana Vega", "date": "01/11/2026", "due": "10/11/2026", "amount": 1200, "base": 1200, "currency": "EUR", "cobros": [{"amount": 400, "date": "05/11/2026"}], "status": "pend"},
+        {"id": 102, "link": "F-DEMO-02", "client": "Ana Vega", "pid": 9001, "brand": "cm", "kind": "in", "concept": "Factura F-DEMO-02 · Ana Vega", "date": "15/11/2026", "due": "10/12/2026", "amount": 600, "base": 600, "currency": "EUR", "cobros": [], "status": "pend"},
+        {"id": 103, "link": "F-DEMO-03", "client": "Bruno Rey", "pid": 9002, "brand": "cm", "kind": "in", "concept": "Factura F-DEMO-03 · Bruno Rey", "date": "20/12/2025", "due": "20/01/2026", "amount": 700, "base": 700, "currency": "EUR", "cobros": [{"amount": 200, "date": "15/01/2026"}], "status": "pend"},
+        {"id": 104, "link": "F-DEMO-04", "client": "Ana Vega", "pid": 9001, "brand": "cm", "kind": "in", "concept": "Factura F-DEMO-04 · Ana Vega", "date": "10/10/2026", "due": "10/11/2026", "amount": 900, "base": 900, "currency": "EUR", "cobros": [{"amount": 900, "date": "20/10/2026"}], "status": "cobr"},
+    ],
+}
+
+guide_rows = {
+    "F-DEMO-01": {"kind": "invoice", "id": "F-DEMO-01", "label": "F-DEMO-01", "brand": "cm", "projectId": "9001", "client": "Ana Vega", "currency": "EUR", "due": "2026-11-10", "overdue": True, "partial": True, "pending": 800},
+    "F-DEMO-02": {"kind": "invoice", "id": "F-DEMO-02", "label": "F-DEMO-02", "brand": "cm", "projectId": "9001", "client": "Ana Vega", "currency": "EUR", "due": "2026-12-10", "overdue": False, "partial": False, "pending": 600},
+    "F-DEMO-03": {"kind": "invoice", "id": "F-DEMO-03", "label": "F-DEMO-03", "brand": "cm", "projectId": "9002", "client": "Bruno Rey", "currency": "EUR", "due": "2026-01-20", "overdue": True, "partial": True, "pending": 500},
+}
+
+
+def guide_receivables(message, ids, scope):
+    rows = [dict(guide_rows[ref]) for ref in ids]
+    amount = sum(row["pending"] for row in rows)
+    version = json.dumps(["guide", ids, scope], sort_keys=True, ensure_ascii=False)
+    return {
+        "requestId": "guide-" + str(len(ids)) + "-" + str(amount), "status": "answer", "message": message,
+        "sources": rows, "questions": [], "actions": [], "trace": [],
+        "receivables": {"count": len(rows), "overdue": sum(bool(row["overdue"]) for row in rows),
+                        "amounts": [{"currency": "EUR", "amount": amount}], "review": 0, "reviewReasons": [],
+                        "offset": 0, "next": None, "version": version, "projectId": None,
+                        "scopeLabel": "Guía ficticia", "intent": "pending_invoices"},
+        "receivableContext": {"scope": scope},
+    }
+
 parsed = ast.parse((repo / "scripts/shopping-loading-browser.test.py").read_text())
 fixture = next(ast.literal_eval(node.value) for node in parsed.body if isinstance(node, ast.Assign)
                and any(isinstance(target, ast.Name) and target.id == "fixture_setup" for target in node.targets))
@@ -190,6 +237,7 @@ try:
             page = browser.new_page(viewport={"width": width, "height": height}, locale="es-ES")
             errors, requests, forbidden_writes, pending = [], [], [], []
             pending_receivables = []
+            guide_requests = []
             failed_invoice_reads = []
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.add_init_script(fake_sdk)
@@ -213,7 +261,7 @@ try:
                     assert set(envelope) == {"session", "payload"}
                     assert envelope["session"] == "fictional-token-no-credentials"
                     body = envelope["payload"]
-                    assert set(body).issubset({"studyId", "message", "automatic", "history", "context", "answers", "invoicePage", "receivableContext"})
+                    assert set(body).issubset({"studyId", "message", "automatic", "history", "context", "answers", "invoicePage", "receivableContext", "documentPage", "documentContext", "financeContext"})
                     assert body["studyId"] == "11111111-1111-4111-8111-111111111111"
                     if not body.get("invoicePage"):
                         assert isinstance(body.get("automatic"), bool)
@@ -241,13 +289,51 @@ try:
                         request_route.fulfill(status=429, headers=cors_headers, content_type="application/json",
                                               body=json.dumps({"requestId": "quota-fixture-12345678", "error": error}))
                         return
+                    guide_questions = {
+                        "¿Qué me falta por cobrar?", "Solo las de este año.", "Y de esas, las vencidas.",
+                        "Ábrela.", "¿Por qué pone 1.200 si me debe 800?",
+                    }
+                    if message in guide_questions:
+                        guide_requests.append(body)
+                        blank_scope = {"projectId": None, "clientKey": None, "date": None, "overdue": None,
+                                       "reference": None, "brand": None, "currency": None}
+                        annual_scope = {**blank_scope, "date": {"from": "2026-01-01", "to": "2026-12-31", "field": "issued"}}
+                        overdue_scope = {**annual_scope, "overdue": "overdue"}
+                        if message == "¿Qué me falta por cobrar?":
+                            assert not body.get("receivableContext")
+                            response = guide_receivables("Te quedan 1.900 € por cobrar en 3 facturas. Aquí las tienes.",
+                                                         ["F-DEMO-01", "F-DEMO-02", "F-DEMO-03"], blank_scope)
+                        elif message == "Solo las de este año.":
+                            assert body["receivableContext"]["scope"] == blank_scope
+                            response = guide_receivables("De las emitidas en 2026, quedan 2 facturas por cobrar: 1.400 €.",
+                                                         ["F-DEMO-01", "F-DEMO-02"], annual_scope)
+                        elif message == "Y de esas, las vencidas.":
+                            assert body["receivableContext"]["scope"] == annual_scope
+                            response = guide_receivables("Hay una vencida, con 800 € pendientes.", ["F-DEMO-01"], overdue_scope)
+                        elif message == "Ábrela.":
+                            assert body["receivableContext"]["scope"] == overdue_scope
+                            assert [row["id"] for row in body["context"]["focus"]["results"]] == ["F-DEMO-01"]
+                            source = dict(guide_rows["F-DEMO-01"])
+                            response = {"requestId": "guide-open", "status": "answer", "message": "Te abro F-DEMO-01.",
+                                        "sources": [source], "questions": [], "trace": [], "preserveQueryContext": True,
+                                        "actions": [{"id": "guide-open-document", "type": "open_document", "label": "Abrir factura",
+                                                     "viewMode": "read", "openImmediately": True, "payload": source,
+                                                     "sourceVersions": {"facturas": stamp}}]}
+                        else:
+                            assert body["receivableContext"]["scope"] == overdue_scope
+                            assert body["context"]["focus"]["document"]["id"] == "F-DEMO-01"
+                            detail_scope = {**overdue_scope, "reference": "f-demo-01"}
+                            response = guide_receivables("Los 1.200 € son el total de la factura. Tiene un cobro de 400 € registrado, así que quedan 800 €.",
+                                                         ["F-DEMO-01"], detail_scope)
+                        request_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(response))
+                        return
                     demo_questions = {
                         "que facturas quedan por que me pagen", "solo las de este año", "enséñame solo las vencidas",
                         "¿Cuánto falta por cobrar de la F-DEMO-002?", "¿Qué ingresos de facturas faltan?",
                         "pendientes de cobro y solo de este año", "Muéstrame las pendientes de Casa Sol de este año",
                         "Cliente Casa Sol", "Proyecto Casa Sol", "solo las de 2024", "solo las de 2025", "Abre la segunda",
                         "quiero ver las facturas que me quedan por pagar", "No que tengo que pagar yo",
-                        "las que quiero pagar yo", "facturas", "Abre la primera",
+                        "las que quiero pagar yo", "facturas", "Abre la primera", "Abre Resumen",
                     }
                     if message in demo_questions:
                         options = {"origin": origin, "acceptance": True, "pendingPlan": message == "¿Qué ingresos de facturas faltan?"}
@@ -481,21 +567,30 @@ try:
                 page.screenshot(path=str(output / f"secretario-facturas-centro-{width}.png"))
             if width >= 1100:
                 expect(answer.locator('.secretary-invoices-static')).to_be_visible()
-                expect(answer.locator('.secretary-invoice button, .secretary-invoice [draggable=true]')).to_have_count(0)
-                for request in ['Ver la factura FC-0002', 'Abre la factura FC-0002']:
-                    replies = panel.locator('.secretary-turn-assistant')
-                    next_reply = replies.nth(replies.count())
-                    page.locator('#secretary-message').fill(request)
-                    panel.get_by_role('button', name='Enviar', exact=True).click()
-                    card = next_reply.locator('.secretary-invoice')
-                    expect(card).to_contain_text('FC-0002')
-                    expect(card).to_contain_text('Casa Lino')
-                    expect(card).to_contain_text('15/02/2026')
-                    expect(card).to_contain_text('Reforma Lino')
-                    expect(card).to_be_visible()
-                    expect(card.get_by_role('button')).to_have_count(0)
-                    expect(page.locator('.finance-document-editor')).to_have_count(0)
-                    assert page.evaluate("document.body.classList.contains('secretary-home')&&state.draft===null")
+                expect(answer.get_by_role('button', name='Ver factura', exact=True)).to_have_count(3)
+                replies = panel.locator('.secretary-turn-assistant')
+                next_reply = replies.nth(replies.count())
+                page.locator('#secretary-message').fill('Ver la factura FC-0002')
+                panel.get_by_role('button', name='Enviar', exact=True).click()
+                card = next_reply.locator('.secretary-invoice')
+                expect(card).to_contain_text('FC-0002')
+                expect(card).to_contain_text('Casa Lino')
+                expect(card).to_contain_text('15/02/2026')
+                expect(card).to_contain_text('Reforma Lino')
+                expect(card).to_be_visible()
+                expect(card.get_by_role('button', name='Ver factura', exact=True)).to_be_visible()
+                expect(page.locator('.finance-document-editor')).to_have_count(0)
+                assert page.evaluate("document.body.classList.contains('secretary-home')&&state.draft===null")
+
+                page.locator('#secretary-message').fill('Abre la factura FC-0002')
+                panel.get_by_role('button', name='Enviar', exact=True).click()
+                preview = page.locator('.secretary-document-preview')
+                expect(preview.get_by_role('heading', name='FC-0002', exact=True)).to_be_visible()
+                expect(preview).to_contain_text('Versión actual del registro · Solo lectura')
+                expect(page.locator('.finance-document-editor')).to_have_count(0)
+                expect(page.locator('body')).to_have_class(__import__('re').compile(r'.*secretary-lateral.*'))
+                preview.get_by_role('button', name='← Volver a la conversación', exact=True).click()
+                assert page.evaluate("document.body.classList.contains('secretary-home')&&state.draft===null")
                 if output:
                     page.screenshot(path=str(output / 'secretario-factura-solo-lectura.png'))
                 page.locator('#secretary-message').fill('Quiero ver una factura')
@@ -532,7 +627,8 @@ try:
             page.locator("#secretary-message").fill("Facturas pendientes de cobrar de Casa Lino en febrero de 2026")
             panel.get_by_role("button", name="Enviar", exact=True).click()
             filtered = panel.locator(".secretary-turn-assistant").last
-            expect(filtered.locator(".secretary-bubble")).to_contain_text("Tienes 1 factura pendiente de cobro por 750")
+            expect(filtered.locator(".secretary-bubble")).to_contain_text("A Casa Lino le quedan 750")
+            expect(filtered.locator(".secretary-bubble")).to_contain_text("por pagar de 1 factura")
             expect(filtered).to_contain_text("Casa Lino · Emisión: 2026-02-01 a 2026-02-28")
             expect(filtered.locator(".secretary-invoice")).to_have_count(1)
             expect(filtered.locator(".secretary-invoice")).to_contain_text("FC-0002")
@@ -572,6 +668,11 @@ try:
                 opened = panel.locator('.secretary-turn-assistant').filter(has_text='He localizado F-DEMO-002.')
                 expect(opened.locator('.secretary-invoice')).to_contain_text('F-DEMO-002')
                 expect(page.locator('.finance-document-editor')).to_have_count(0)
+                preview = page.locator('.secretary-document-preview')
+                expect(preview.get_by_role('heading', name='F-DEMO-002', exact=True)).to_be_visible()
+                expect(preview).to_contain_text('Versión actual del registro · Solo lectura')
+                expect(page.locator('body')).to_have_class(__import__('re').compile(r'.*secretary-lateral.*'))
+                preview.get_by_role('button', name='← Volver a la conversación', exact=True).click()
                 assert page.evaluate("document.body.classList.contains('secretary-home')")
             else:
                 expect(page.locator(".finance-document-editor")).to_contain_text("Editando F-DEMO-002")
@@ -638,14 +739,21 @@ try:
                 assert page.evaluate("document.body.classList.contains('secretary-home') && state.view==='informes'")
                 if output:
                     page.screenshot(path=str(output / f'secretario-facturas-por-pagar-{width}.png'))
-                expect(result.locator('.secretary-invoice button')).to_have_count(0)
+                expect(result.get_by_role('button', name='Ver factura', exact=True)).to_have_count(2)
                 page.locator('#secretary-message').fill('Abre la primera')
                 panel.get_by_role('button', name='Enviar', exact=True).click()
                 opened = panel.locator('.secretary-turn-assistant').filter(has_text='He localizado FR-DEMO-001.')
                 expect(opened.locator('.secretary-invoice')).to_contain_text('FR-DEMO-001')
-                expect(page.locator('.secretary-document-preview')).to_have_count(0)
+                preview = page.locator('.secretary-document-preview')
+                expect(preview.get_by_role('heading', name='FR-DEMO-001', exact=True)).to_be_visible()
+                expect(preview).to_contain_text('Versión actual del registro · Solo lectura')
+                expect(preview).to_contain_text('No hay un PDF adjunto.')
+                expect(page.locator('.finance-document-editor')).to_have_count(0)
+                expect(page.locator('body')).to_have_class(__import__('re').compile(r'.*secretary-lateral.*'))
+                assert page.evaluate("fixtureDocuments()===demoRecords")
+                preview.get_by_role('button', name='← Volver a la conversación', exact=True).click()
                 assert page.evaluate("document.body.classList.contains('secretary-home') && fixtureDocuments()===demoRecords")
-                print('1440 PASS: pending supplier invoices, correction after receivables, readonly cards and no editor', flush=True)
+                print('1440 PASS: pending supplier invoices, correction after receivables, readonly preview and no editor', flush=True)
             print(f"{width} PASS: exact acceptance dialogue with one composer, invoice detail, choices, empty and failed read", flush=True)
             composer = panel.get_by_role("textbox", name="Mensaje para el Secretario", exact=True)
             send = panel.get_by_role("button", name="Enviar", exact=True)
@@ -756,6 +864,79 @@ try:
             assert page.evaluate("state.view==='agenda' && !document.querySelector('.main').inert")
             print(f"{width} PASS: composer, mascot transitions in both directions, reduced motion, preserved chat and navigation", flush=True)
             page.evaluate("Object.assign(state,window.originalInvoicesFixture);ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")
+
+            # Five exact turns from conversation A of the guide. The endpoint is
+            # still intercepted and every external request remains blocked.
+            if width >= 1100:
+                page.evaluate("""data=>{
+                  Object.assign(state,data);state.borradores=[];state.draft=null;state.fView=null;state.qView=null;
+                  ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions();
+                  window.guideDocumentBaseline=fixtureDocuments();
+                }""", guide_browser_fixture)
+
+                def ask_guide(question, expected, refs):
+                    page.locator("#secretary-message").fill(question)
+                    panel.get_by_role("button", name="Enviar", exact=True).click()
+                    turn = panel.locator(".secretary-turn-assistant").last
+                    expect(turn.locator(".secretary-bubble")).to_have_text(expected)
+                    expect(turn.locator(".secretary-invoice-label strong")).to_have_text(refs)
+                    return turn
+
+                ask_guide("¿Qué me falta por cobrar?", "Te quedan 1.900 € por cobrar en 3 facturas. Aquí las tienes.",
+                          ["F-DEMO-01", "F-DEMO-02", "F-DEMO-03"])
+                ask_guide("Solo las de este año.", "De las emitidas en 2026, quedan 2 facturas por cobrar: 1.400 €.",
+                          ["F-DEMO-01", "F-DEMO-02"])
+                ask_guide("Y de esas, las vencidas.", "Hay una vencida, con 800 € pendientes.", ["F-DEMO-01"])
+                if output:
+                    wait_for_stable_view(page)
+                    page.screenshot(path=str(output / "secretario-guia-a-central-1440.png"))
+
+                page.locator("#secretary-message").fill("Ábrela.")
+                panel.get_by_role("button", name="Enviar", exact=True).click()
+                expect(panel.locator(".secretary-turn-assistant").last.locator(".secretary-bubble")).to_have_text("Te abro F-DEMO-01.")
+                preview = page.locator(".secretary-document-preview")
+                expect(preview.get_by_role("heading", name="F-DEMO-01", exact=True)).to_be_visible()
+                expect(preview).to_contain_text("Versión actual del registro · Solo lectura")
+                expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-lateral.*"))
+                assert page.evaluate("fixtureDocuments()===guideDocumentBaseline")
+                if output:
+                    wait_for_stable_view(page)
+                    page.screenshot(path=str(output / "secretario-guia-a-lateral-1440.png"))
+
+                detail = ask_guide("¿Por qué pone 1.200 si me debe 800?",
+                    "Los 1.200 € son el total de la factura. Tiene un cobro de 400 € registrado, así que quedan 800 €.",
+                    ["F-DEMO-01"])
+                expect(detail.locator(".secretary-invoice-balance strong")).to_contain_text("800,00")
+                expect(preview.get_by_role("heading", name="F-DEMO-01", exact=True)).to_be_visible()
+                assert [request["message"] for request in guide_requests[-5:]] == [
+                    "¿Qué me falta por cobrar?", "Solo las de este año.", "Y de esas, las vencidas.",
+                    "Ábrela.", "¿Por qué pone 1.200 si me debe 800?",
+                ]
+                assert guide_requests[-2]["context"]["focus"]["results"] == [
+                    {"kind": "invoice", "id": "F-DEMO-01", "brand": "cm", "projectId": "9001"}
+                ]
+                assert guide_requests[-1]["context"]["focus"]["document"] == {
+                    "kind": "invoice", "id": "F-DEMO-01", "brand": "cm", "projectId": "9001"
+                }
+                assert page.evaluate("fixtureDocuments()===guideDocumentBaseline")
+
+                # Explicit navigation to the already-active Finance family must
+                # still leave the center dashboard open and the same chat at the
+                # side, without dropping the prior verified query context.
+                page.locator("#secretary-message").fill("Abre Resumen")
+                panel.get_by_role("button", name="Enviar", exact=True).click()
+                expect(page.locator(".finance-overview")).to_be_visible()
+                expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-lateral.*"))
+                assert requests[-1]["receivableContext"]["scope"]["overdue"] == "overdue"
+                assert page.evaluate("state.view==='informes' && fixtureDocuments()===guideDocumentBaseline")
+                panel.get_by_role("button", name="Volver al chat", exact=True).click()
+                expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-home.*"))
+                print("1440 PASS: guide A five-turn continuity, exact cents, readonly center preview and lateral chat", flush=True)
+
+                page.evaluate("""()=>{
+                  Object.assign(state,window.originalInvoicesFixture);state.borradores=[];state.draft=null;state.fView=null;state.qView=null;
+                  ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions();
+                }""")
 
             # Folding remains available from a project. A proposal stays there
             # until the user returns and chooses to open the draft.
