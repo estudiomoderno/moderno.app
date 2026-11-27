@@ -56,6 +56,7 @@ function fixture({storage=new Map(),storageBlocked=false,rpc,userId='fixture-use
     ${resetCharacterCode}
     ${resetCode}
     ${section('  function finishFinanceTransition()','  function mountFinanceTransition()')}
+    ${section('  function showLauncher(','  function returnToConversation()')}
     ${consentCode}
     ${storageRegistration}
   `,sandbox);

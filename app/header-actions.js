@@ -1,7 +1,7 @@
 /* Existing app handlers bridge to the isolated original ReUI profile component. */
 var ModernoHeaderActions=(()=>{
  'use strict';
- let enabled=true,standalone=null,host=null,group=null,observer=null,component=null,nativeProfile=null,useOriginal=true,notificationHost=null,notificationComponent=null,nativeNotification=null,projectActions=null;
+ let enabled=true,standalone=null,host=null,group=null,observer=null,component=null,nativeProfile=null,useOriginal=true,notificationHost=null,notificationComponent=null,nativeNotification=null,projectActions=null,notificationActions=null,secretaryControl=null;
  const $=selector=>document.querySelector(selector);
  const node=(tag,cls,text)=>{const el=document.createElement(tag);el.className=cls;if(text!==undefined)el.textContent=text;return el;};
  const bell=uiIcon('notificaciones');
@@ -34,13 +34,25 @@ var ModernoHeaderActions=(()=>{
   const source=$('#view .projects-primary-actions');if(!source)return;
   projectActions=node('div','ha-project-actions');projectActions.setAttribute('aria-label','Acciones de proyectos');
   for(const selector of ['.projects-new','.projects-archive']){const button=source.querySelector(selector);if(button)projectActions.append(button.cloneNode(true));}
-  host.insertBefore(projectActions,notificationHost||nativeNotification||host.firstChild);document.body.classList.add('has-project-header-actions');
+  host.insertBefore(projectActions,notificationActions||host.firstChild);document.body.classList.add('has-project-header-actions');
+ }
+ function setSecretaryControl(control){
+  if(secretaryControl!==control){secretaryControl?.remove();secretaryControl=control;}
+  if(control&&notificationActions&&control.parentElement!==notificationActions)notificationActions.prepend(control);
+  measure();
  }
  function measure(){if(host?.isConnected)document.body.style.setProperty('--header-actions-width',Math.ceil(host.getBoundingClientRect().width)+'px');}
  function recover(){useOriginal=false;queueMicrotask(()=>{clear();refresh();});}
  function decorate(target){
-  const notification=target.querySelector('button:has(#nBadge)');
-  if(notification){notification.classList.add('ha-notifications');if(!notification.querySelector('.desktop-bell-icon')){const icon=node('span','ha-bell');icon.innerHTML=bell;notification.prepend(icon);}}
+  const notification=target.querySelector('button:has(#nBadge)')||target.querySelector('.ha-notifications');
+  if(notification){
+   notificationActions=node('div','ha-notification-actions');notification.before(notificationActions);notificationActions.append(notification);
+   if(secretaryControl)notificationActions.prepend(secretaryControl);
+   if(!notification.classList.contains('ha-notifications')){
+    notification.classList.add('ha-notifications');
+    if(!notification.querySelector('.desktop-bell-icon')){const icon=node('span','ha-bell');icon.innerHTML=bell;notification.prepend(icon);}
+   }
+  }
   const summary=target.querySelector('.desktop-profile>summary')||$('#desktop-header .desktop-account>summary');
   if(useOriginal&&window.ModernoProfileComponent){
    try{nativeNotification=target.querySelector('.ha-notifications');
@@ -85,6 +97,8 @@ var ModernoHeaderActions=(()=>{
  function clear(){
   projectActions?.remove();projectActions=null;document.body.classList.remove('has-project-header-actions');
   notificationComponent?.unmount();notificationComponent=null;notificationHost?.remove();notificationHost=null;nativeNotification?.classList.remove('ha-original-notification');nativeNotification=null;
+  secretaryControl?.remove();
+  if(notificationActions){notificationActions.replaceWith(...notificationActions.children);notificationActions=null;}
   component?.unmount();component=null;nativeProfile?.classList.remove('ha-original-profile');nativeProfile=null;
   observer?.disconnect();observer=null;group?.remove();group=null;standalone?.remove();standalone=null;host=null;
   document.querySelectorAll('.ha-dots,.ha-bell').forEach(e=>e.remove());
@@ -106,5 +120,5 @@ var ModernoHeaderActions=(()=>{
  const originalBadge=notifBadge;notifBadge=function(){const result=originalBadge.apply(this,arguments);notifications();return result;};
  refresh();
  setTimeout(()=>presenceTrack(),0);
- return {refresh,refreshNotifications:notifications,isEnabled:()=>enabled,setEnabled(value){enabled=value===true;if(!enabled&&typeof teamPresence!=='undefined')teamPresence?.stop();refresh();presenceTrack();}};
+ return {refresh,refreshNotifications:notifications,setSecretaryControl,isEnabled:()=>enabled,setEnabled(value){enabled=value===true;if(!enabled&&typeof teamPresence!=='undefined')teamPresence?.stop();refresh();presenceTrack();}};
 })();
