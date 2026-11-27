@@ -45,12 +45,14 @@ var ModernoPageBreadcrumbs=(()=>{
   if(document.querySelector('.overlay.open,dialog[open]')){toast('Guarda o cancela la edición antes de registrar una factura.');return false;}
   entryModal('out');return true;
  }
- function createDocument(){
-  if(state.view==='facturas')return newInvoice();
-  if(state.view==='contabilidad')return newExpense();
-  if(['informes','presupuestos','prevision'].includes(state.view))return newQuote();
+ function openGenerator(view){
+  if(!canView(view))return false;
+  if(view==='facturas')return newInvoice();
+  if(view==='contabilidad')return newExpense();
+  if(view==='presupuestos')return newQuote();
   return false;
  }
+ function createDocument(){return openGenerator(['informes','prevision'].includes(state.view)?'presupuestos':state.view);}
  function createLabel(){
   if(state.view==='facturas')return 'Nueva factura';
   if(state.view==='contabilidad')return 'Nueva factura recibida';
@@ -138,5 +140,5 @@ var ModernoPageBreadcrumbs=(()=>{
  const originalRender=render;render=function(){const result=originalRender.apply(this,arguments);safeRefresh();return result;};
  const originalEnable=ModernoDesktopShell.setEnabled;ModernoDesktopShell.setEnabled=function(){const result=originalEnable.apply(this,arguments);safeRefresh();return result;};
  media.addEventListener('change',safeRefresh);safeRefresh();
- return {refresh:safeRefresh,setEnabled(value){enabled=value===true;safeRefresh();}};
+ return {refresh:safeRefresh,openGenerator,setEnabled(value){enabled=value===true;safeRefresh();}};
 })();

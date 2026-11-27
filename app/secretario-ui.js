@@ -8,12 +8,15 @@ var ModernoSecretary=(()=>{
   if(!bridge)return Object.freeze({enabled:false,refresh(){},reset(){},openFinance(){return false;}});
   const financeViews=['informes','facturas','contabilidad','presupuestos','prevision'];
   const financeShortcuts=[['informes','Resumen'],['facturas','Facturas'],['contabilidad','Gastos'],['presupuestos','Presupuestos']];
+  const financeDesktopMedia=window.matchMedia?.('(min-width:1100px) and (hover:hover) and (pointer:fine)');
+  const desktopFinance=()=>financeDesktopMedia?.matches&&document.body.classList.contains('desktop-shell')&&financeViews.includes(state.view);
   const supported=()=>financeViews.includes(state.view)||['proyecto','estancia','presedit'].includes(state.view);
   const owner=()=>JSON.stringify([ESTUDIO_ID||'',state.sessionUser?.id||'',_accessRole||'']);
   const ready=()=>!_accessLoading&&!!ESTUDIO_ID&&!!state.sessionUser?.id&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon;
   let identity=owner(),messages=[],panel=null,thread=null,composer=null,sendButton=null,stopButton=null,statusNode=null,titleNode=null,contextNode=null,announcementNode=null;
   let collapsed=false,home=false,homePending=false,lastView=null,lastProject=null,busy=false,controller=null,generation=0,unavailable=false,authSubscription=null;
   let documentOpen=false,preview=null,returnButton=null,exitButton=null,foldButton=null,launcher=null;
+  let expenseOverlay=null;
   let nativeFinance=false,financeTransition=null,questionTarget=null;
   let pendingBubble=null,revealingReply=null;
   let requestCounter=0,actions=new Map(),questions=[],answers={},pendingAnswers={},feedbackTask='finance_question',contextTrimmed=false;
@@ -153,14 +156,16 @@ var ModernoSecretary=(()=>{
     feedbackOperation++;feedback?.setContext(null);feedbackLoaded=false;feedbackLoading=false;feedbackRevision=null;feedbackError='';feedbackHost=null;
     panel?.remove();panel=null;thread=null;composer=null;titleNode=null;contextNode=null;announcementNode=null;identity=owner();collapsed=false;home=false;homePending=false;unavailable=false;lastView=null;lastProject=null;requestContext=null;contextInterrupted=false;
     activeActivity=null;documentOpen=false;preview?.node.remove();preview=null;returnButton=null;exitButton=null;foldButton=null;
-    document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open');
+    stopExpenseOverlay();
+    document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open','secretary-ai-finance');
     showLauncher(null);
   }
   function checkIdentity(){if(identity!==owner()){reset();return false;}return true;}
   function clearLayout(){
     panel?.remove();
     preview?.node.remove();preview=null;documentOpen=false;
-    document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open');
+    stopExpenseOverlay();
+    document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open','secretary-ai-finance');
     drawCharacter();
   }
   function busyEditor(view,projectId,onExit){
@@ -173,6 +178,32 @@ var ModernoSecretary=(()=>{
     if(busyEditor(view,projectId))return false;
     preview?.node.remove();preview=null;home=false;homePending=false;
     go(view,projectId);refresh();return state.view===view&&(projectId==null||state.currentProject===projectId);
+  }
+  const expenseObserver=new MutationObserver(()=>{
+    if(!expenseOverlay||expenseOverlay.classList.contains('open'))return;
+    stopExpenseOverlay();refresh();
+    if(home)composer?.focus({preventScroll:true});
+  });
+  function stopExpenseOverlay(){
+    if(!expenseOverlay)return;
+    expenseObserver.disconnect();expenseOverlay=null;document.body.classList.remove('secretary-expense-open');
+  }
+  function openFinanceGenerator(view,fromOwner=owner()){
+    if(!checkIdentity()||identity!==fromOwner||!ready()||!desktopFinance()||!canView(view)||financeTransition)return;
+    if(busyEditor(view,undefined,()=>openFinanceGenerator(view,fromOwner)))return;
+    if(!window.ModernoPageBreadcrumbs?.openGenerator(view))return;
+    if(view==='contabilidad'){
+      const overlay=document.getElementById('overlay');
+      if(overlay?.classList.contains('open')){
+        expenseOverlay=overlay;expenseObserver.observe(overlay,{attributes:true,attributeFilter:['class']});
+        document.body.classList.add('secretary-expense-open');
+      }
+    }
+    refresh();
+    if(view!=='contabilidad'){
+      const heading=document.querySelector('#view .finance-document-editor h1');
+      heading?.setAttribute('tabindex','-1');heading?.focus({preventScroll:true});
+    }
   }
   function enterFinance(first){
     nativeFinance=false;homePending=true;collapsed=false;characterUnread=false;preview?.node.remove();preview=null;
@@ -733,25 +764,107 @@ var ModernoSecretary=(()=>{
     const status=source.overdue?(source.partial?'Vencida · Cobro parcial':'Vencida'):source.partial?'Cobro parcial':date?'Vence':'Sin vencimiento registrado';
     return status+(date?' · '+date:'');
   }
+  function invoiceEntry(source){
+    const kind=source.kind==='entry'?'out':'in';
+    const matches=state.entries.filter(entry=>entry?.kind===kind&&String(entry.id)===String(source.id)&&
+      String(entry.brand??'')===String(source.brand??'')&&String(entry.pid??entry.projectId??'')===String(source.projectId??''));
+    return matches.length===1&&!state.entriesDel?.[source.id]?matches[0]:null;
+  }
+  function isInvoiceSource(source,invoiceViewing){
+    if(!source||source.id==null||!ready()||_accessRole!=='admin')return false;
+    if(source.kind==='entry')return canView('contabilidad')&&(typeof source.sourceVersion==='string'||invoiceViewing&&!!invoiceEntry(source));
+    return canView('facturas')&&['invoice','invoice_entry'].includes(source.kind);
+  }
+  function invoiceCardDetails(source){
+    const payable=source.kind==='entry';
+    let invoice=null,entry=null;
+    if(source.kind==='invoice'){
+      const matches=state.invoices.filter(doc=>doc?.ref===String(source.id)&&String(doc.brand??'')===String(source.brand??'')&&
+        String(doc.projectId??doc.pid??'')===String(source.projectId??''));
+      if(matches.length===1&&!state.docsDel?.[source.id]){
+        invoice=matches[0];
+        const movements=state.entries.filter(row=>row?.kind==='in'&&row.link===invoice.ref&&row.brand===invoice.brand&&
+          String(row.pid??row.projectId??'')===String(source.projectId??'')&&!state.entriesDel?.[row.id]);
+        if(movements.length===1)entry=movements[0];
+      }
+    }else entry=invoiceEntry(source);
+    const party=payable?source.supplier||entry?.sup||entry?.client:source.client||invoice?.client||entry?.client||entry?.sup;
+    const issued=financeDateISO(invoice?.date||entry?.date);
+    const project=source.projectId==null?null:state.projects.find(row=>String(row.id)===String(source.projectId));
+    const projectLabel=labelText(project?.name||project?.num,160);
+    const pending=Number.isFinite(source.pending)&&source.pending>0&&/^[A-Z]{3}$/.test(source.currency);
+    const due=pending&&financeDateISO(source.due);
+    const total=invoice?.total??entry?.amount;
+    const currency=source.currency||invoice?.currency||entry?.currency||state.account?.currency;
+    const hasTotal=(typeof total==='number'||typeof total==='string'&&total.trim())&&Number.isFinite(Number(total))&&/^[A-Z]{3}$/.test(currency);
+    let status='',overdue=false;
+    if(pending){
+      overdue=source.overdue===true;
+      status=overdue?(source.partial?'Vencida · Cobro parcial':'Vencida'):
+        source.partial?'Cobro parcial':payable?'Pendiente de pago':'Pendiente de cobro';
+    }
+    else if(/^(?:anul|cancel|void|rectificad)/i.test(invoice?.status??entry?.status??''))status='Anulada';
+    else if(payable&&entry)status=entry.status==='cobr'?'Pagada':entry.status==='pend'?'Pendiente de pago':'';
+    else if(entry&&(entry.cobros==null||Array.isArray(entry.cobros)&&entry.cobros.every(payment=>payment&&typeof payment==='object'))&&
+      (entry.status==='cobr'||typeof (entry.due||entry.date)==='string')){
+      const key=entryStKey(entry);
+      status={cobr:'Cobrada',parc:'Cobrada en parte',venc:'Vencida',pend:'Pendiente'}[key]||'';
+      overdue=key==='venc';
+    }
+    return {party:labelText(party,160),meta:[issued&&'Emisión '+issued.split('-').reverse().join('/'),projectLabel,
+      due&&(overdue?'Venció ':'Vence ')+due.split('-').reverse().join('/')].filter(Boolean).join(' · '),
+      amount:pending?invoiceMoney(source.pending,source.currency):hasTotal?invoiceMoney(Number(total),currency):'',status,overdue};
+  }
+  function appendInvoiceCard(list,source){
+    const {party,meta,amount,status,overdue}=invoiceCardDetails(source);
+    const row=el('li','secretary-invoice'),label=el('div','secretary-invoice-label'),balance=el('div','secretary-invoice-balance');
+    label.append(el('strong','',labelText(source.label,160)||String(source.id)));
+    if(party)label.append(el('span','secretary-caption',party));
+    if(meta)label.append(el('span','secretary-invoice-meta',meta));
+    if(amount)balance.append(el('strong','',amount));
+    if(status)balance.append(el('span','secretary-invoice-status'+(overdue?' secretary-invoice-overdue':''),status));
+    row.append(label,balance);list.append(row);
+  }
+  function appendInvoiceCards(container,sources){
+    if(!sources.length)return;
+    const list=el('ul','secretary-invoices secretary-invoices-static');
+    for(const source of sources)appendInvoiceCard(list,source);
+    container.append(list);
+  }
+  function invoiceRequest(content,results){
+    const words=labelText(content,6000).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9/-]+/g,' ').trim();
+    const request=words.replace(/^(?:(?:por favor|puedes|podrias|quiero|necesito) )+/,'');
+    const edit=/^(?:edita(?:me)?|editar|modifica(?:me)?|modificar|abr(?:e|ir) (?:el )?editor)\b/.test(request);
+    if(edit||requestsDraft(words)||/^(?:ve a|ir a|llevame a|abr(?:e|ir) (?:la )?(?:pantalla|seccion|menu)|abr(?:e|ir) (?:las )?facturas$)/.test(request))
+      return {edit,view:false};
+    const invoice=/\bfacturas?\b/.test(request);
+    const ordinal=/^(?:abre(?:me)?|abrir|ver|muestrame|ensename) (?:la |el )?(?:primer\w*|segund\w*|terc\w*|cuart\w*|quint\w*|sext\w*|septim\w*|octav\w*|noven\w*|decim\w*|\d{1,2})(?: |$)/.test(request);
+    return {edit,view:invoice||ordinal&&results?.some(source=>isInvoiceSource(source,true)),invoice};
+  }
   function drawInvoiceResults(container,record){
     const {sources,payables}=record.response,result=invoiceResults(record.response);
     if(result.scopeLabel)container.append(el('p','secretary-caption',labelText(result.scopeLabel,500)));
     if(!sources.length)return;
-    const list=el('ul','secretary-invoices');
-    for(const source of sources){
-      const row=el('li','secretary-invoice');
-      const label=el('div','secretary-invoice-label');
-      const counterparty=payables?labelText(source.supplier,160)||'Proveedor sin registrar':labelText(source.client,160)||'Cliente sin registrar';
-      label.append(el('strong','',labelText(source.label,160)),el('span','secretary-caption',counterparty));
-      const balance=el('div','secretary-invoice-balance');
-      balance.append(el('strong','',invoiceMoney(source.pending,source.currency)),el('span',source.overdue?'secretary-invoice-overdue':'secretary-caption',invoiceStatus(source)));
-      row.append(label,balance,button('Abrir factura',()=>{
-        const opened=payables?openPayable(source,record.owner,payables.sourceVersion):openSource(source,record.owner);
-        if(!opened)setStatus(payables?'La factura no está disponible para abrir. Vuelve a consultar las facturas por pagar.':'La factura ya no está disponible. Vuelve a consultar los pendientes.');
-      },'secretary-source'));
-      list.append(row);
+    if(desktopFinance()){
+      if(record.owner!==owner()||!ready()||_accessRole!=='admin'||!canView(payables?'contabilidad':'facturas'))return;
+      appendInvoiceCards(container,sources);
+    }else{
+      const list=el('ul','secretary-invoices');
+      for(const source of sources){
+        const row=el('li','secretary-invoice');
+        const label=el('div','secretary-invoice-label');
+        const counterparty=payables?labelText(source.supplier,160)||'Proveedor sin registrar':labelText(source.client,160)||'Cliente sin registrar';
+        label.append(el('strong','',labelText(source.label,160)),el('span','secretary-caption',counterparty));
+        const balance=el('div','secretary-invoice-balance');
+        balance.append(el('strong','',invoiceMoney(source.pending,source.currency)),el('span',source.overdue?'secretary-invoice-overdue':'secretary-caption',invoiceStatus(source)));
+        row.append(label,balance,button('Abrir factura',()=>{
+          const opened=payables?openPayable(source,record.owner,payables.sourceVersion):openSource(source,record.owner);
+          if(!opened)setStatus(payables?'La factura no está disponible para abrir. Vuelve a consultar las facturas por pagar.':'La factura ya no está disponible. Vuelve a consultar los pendientes.');
+        },'secretary-source'));
+        list.append(row);
+      }
+      container.append(list);
     }
-    container.append(list);
     if(sources.length<result.count)container.append(el('p','secretary-caption',`Viendo ${sources.length} de ${result.count} facturas. El total corresponde a todas.`));
     if(result.next!==null){
       const more=button(record.pageController?'Cargando…':'Ver más',()=>loadMoreInvoices(record),'secretary-button');
@@ -797,8 +910,18 @@ var ModernoSecretary=(()=>{
       welcome.append(el('h1','',activeProject()?'Vamos con este proyecto.':'¿Qué hacemos hoy?'));
       welcome.append(el('p','',activeProject()?'Pregúntame por sus tareas, plazos o documentos.':'Preparamos un presupuesto, revisamos una factura o ponemos en orden lo pendiente.'));
       const prompts=el('div','secretary-prompts');
-      const texts=activeProject()?['¿Qué queda pendiente en este proyecto?','Enséñame sus documentos','¿Qué debería revisar hoy?']:['Preparar un presupuesto','Crear una factura','¿Qué tengo pendiente de cobrar?'];
-      for(const text of texts)prompts.append(button(text,()=>submitMessage(text),'secretary-prompt'));
+      if(desktopFinance()){
+        prompts.setAttribute('role','group');prompts.setAttribute('aria-label','Accesos directos');
+        for(const [view,label] of [['presupuestos','Preparar presupuesto'],['facturas','Crear Factura'],['contabilidad','Añadir gasto']]){
+          if(canView(view))prompts.append(button(label,()=>openFinanceGenerator(view),'secretary-prompt'));
+        }
+        if(canView('facturas')){
+          const question='¿Qué tengo pendiente de cobro?';prompts.append(button(question,()=>submitMessage(question),'secretary-prompt'));
+        }
+      }else{
+        const texts=activeProject()?['¿Qué queda pendiente en este proyecto?','Enséñame sus documentos','¿Qué debería revisar hoy?']:['Preparar un presupuesto','Crear una factura','¿Qué tengo pendiente de cobrar?'];
+        for(const text of texts)prompts.append(button(text,()=>submitMessage(text),'secretary-prompt'));
+      }
       welcome.append(prompts);thread.append(welcome);
     }
     for(const record of messages){
@@ -810,13 +933,18 @@ var ModernoSecretary=(()=>{
       const extras=el('div','secretary-message-extras');
       if(invoiceResults(record.response))drawInvoiceResults(extras,record);
       else if(record.response?.sources?.length){
-        const sources=el('div','secretary-sources');sources.append(el('span','secretary-caption','Fuentes'));
         const received=record.response.sources.slice(0,80);
-        for(const source of received.slice(0,4))sources.append(button(labelText(source.label,180)||'Abrir fuente',()=>openSource(source,record.owner),'secretary-source'));
-        if(received.length>4){const more=el('details','secretary-more-sources');more.append(el('summary','',`Ver las ${received.length} fuentes`));const rest=el('div','secretary-sources');for(const source of received.slice(4))rest.append(button(labelText(source.label,180)||'Abrir fuente',()=>openSource(source,record.owner),'secretary-source'));more.append(rest);sources.append(more);}
+        const cards=desktopFinance()&&record.owner===owner()?received.filter(source=>isInvoiceSource(source,record.response.invoiceViewing)):[];
+        appendInvoiceCards(extras,cards.slice(0,4));
+        if(cards.length>4){const more=el('details','secretary-more-sources');more.append(el('summary','',`Ver las ${cards.length} facturas`));appendInvoiceCards(more,cards.slice(4));extras.append(more);}
+        const other=cards.length?received.filter(source=>!cards.includes(source)):received;
+        const sources=el('div','secretary-sources');
+        if(other.length)sources.append(el('span','secretary-caption','Fuentes'));
+        for(const source of other.slice(0,4))sources.append(button(labelText(source.label,180)||'Abrir fuente',()=>openSource(source,record.owner),'secretary-source'));
+        if(other.length>4){const more=el('details','secretary-more-sources');more.append(el('summary','',`Ver las ${other.length} fuentes`));const rest=el('div','secretary-sources');for(const source of other.slice(4))rest.append(button(labelText(source.label,180)||'Abrir fuente',()=>openSource(source,record.owner),'secretary-source'));more.append(rest);sources.append(more);}
         const sourceCount=Math.max(received.length,Number(record.response.sourceCount)||0,record.response.sources.length);
         if(sourceCount>received.length)sources.append(el('span','secretary-caption',`Se muestran ${received.length} de ${sourceCount} fuentes. Abre la sección para consultar el resto.`));
-        extras.append(sources);
+        if(sources.childNodes.length)extras.append(sources);
       }
       for(const action of record.response?.actions||[]){
         const result=actions.get(action.id);
@@ -957,14 +1085,34 @@ var ModernoSecretary=(()=>{
       if(invoiceResults(payload)&&!validInvoiceResults(payload))throw Error('No se han podido comprobar las facturas de la respuesta.');
       const safe={...payload,sources:Array.isArray(payload.sources)?payload.sources:[],trace:Array.isArray(payload.trace)?payload.trace.filter(step=>step?.status==='done'):[],
         actions:!invoiceResults(payload)&&Array.isArray(payload.actions)?payload.actions.filter(action=>['navigate','prepare_draft','open_document'].includes(action?.type)).slice(0,4):[]};
+      if(desktopFinance()){
+        const {edit,view,invoice}=invoiceRequest(content,results);
+        safe.invoiceViewing=view;
+        const originalActions=safe.actions;
+        safe.actions=originalActions.filter(action=>{
+          if(action.type==='open_document'&&!edit&&isInvoiceSource(action.payload,view)){
+            const source=action.payload;
+            if(!safe.sources.some(item=>item?.kind===source.kind&&String(item.id)===String(source.id)&&
+              String(item.brand??'')===String(source.brand??'')&&String(item.projectId??'')===String(source.projectId??'')))safe.sources.push(source);
+            return false;
+          }
+          return !view||action.type==='open_document'&&!invoice;
+        });
+        const hasCards=!invoiceResults(safe)&&safe.sources.some(source=>isInvoiceSource(source,view));
+        if(hasCards)safe.message=safe.message.replace(/\s*Abre una fuente para revisar su contenido completo\.\s*$/,'');
+        if(view&&originalActions.length!==safe.actions.length&&!hasCards&&safe.status!=='clarifying'){
+          safe.status='clarifying';safe.message='¿Qué factura quieres ver? Indica su número o el cliente.';
+          safe.sources=[];safe.questions=[];
+        }
+      }
       safe.actions=safe.actions.map((action,index)=>({...action,id:String(payload.requestId||current)+':'+String(action.id||index)}));
-      questions=Array.isArray(payload.questions)?payload.questions.filter(question=>typeof question.id==='string'&&typeof question.prompt==='string').slice(0,6).map(question=>({...question,options:Array.isArray(question.options)?question.options.slice(0,8):[]})):[];
-      pendingAnswers=pendingAfter(payload.status,structuredAnswers);
+      questions=Array.isArray(safe.questions)?safe.questions.filter(question=>typeof question.id==='string'&&typeof question.prompt==='string').slice(0,6).map(question=>({...question,options:Array.isArray(question.options)?question.options.slice(0,8):[]})):[];
+      pendingAnswers=pendingAfter(safe.status,structuredAnswers);
       if(safe.actions.some(action=>action.type==='prepare_draft')){const draft=safe.actions.find(action=>action.type==='prepare_draft').payload;feedbackTask=draft.sourceQuoteRef?'invoice_from_quote':draft.kind==='factura'?'invoice_create':'quote_create';}
       else if(safe.actions.some(action=>action.type==='navigate'))feedbackTask='navigation';
       unavailable=false;requestContext=null;finishActivity('done',safe.trace);
       setCharacter(safe.status==='clarifying'||questions.length?'aviso':'terminado',safe.status==='clarifying'||questions.length?'Necesito un dato tuyo':safe.actions.some(item=>item.type==='prepare_draft')?'Borrador preparado':'Respuesta lista',{notify:true});
-      const record=appendMessage('assistant',payload.message,safe);record.feedbackTask=feedbackTask;
+      const record=appendMessage('assistant',safe.message,safe);record.feedbackTask=feedbackTask;
       if(invoiceResults(safe))record.invoiceQuery=input;
       const action=safe.actions.find(item=>item.type==='prepare_draft'&&safe.status==='proposal'&&draftRequested||['open_document','navigate'].includes(item.type)&&item.openImmediately===true);
       if(action&&!collapsed&&!financeTransition&&epoch===generation&&captured===owner())runAction(action,captured);
@@ -1027,9 +1175,9 @@ var ModernoSecretary=(()=>{
       showLauncher('finance');return;
     }
     if(preview&&(preview.view!==state.view||preview.project!==state.currentProject)){preview.node.remove();preview=null;}
-    const viewingDocument=!!preview||state.view==='presedit'||!!document.querySelector('#view .finance-document-editor');
+    const viewingDocument=!!expenseOverlay||!!preview||state.view==='presedit'||!!document.querySelector('#view .finance-document-editor');
     if(viewingDocument){home=false;}
-    else if(homePending&&financeViews.includes(state.view)||documentOpen&&messages.length&&(lastView===state.view||lastView==='presedit'&&state.view==='proyecto')){
+    else if(homePending&&financeViews.includes(state.view)||documentOpen&&(messages.length||desktopFinance())&&(lastView===state.view||lastView==='presedit'&&state.view==='proyecto')){
       home=true;homePending=false;collapsed=false;
     }else if(lastView==null&&state.view==='informes')home=true;
     documentOpen=viewingDocument;
@@ -1046,6 +1194,7 @@ var ModernoSecretary=(()=>{
     const inFinance=financeViews.includes(state.view);
     returnButton.hidden=home;exitButton.hidden=!inFinance;foldButton.hidden=inFinance;
     panel.classList.toggle('has-mode-exit',inFinance);
+    document.body.classList.toggle('secretary-ai-finance',inFinance);
     const project=activeProject(),name=secretaryName();
     titleNode.textContent=name;panel.setAttribute('aria-label',name);thread.setAttribute('aria-label','Conversación con '+name);
     for(const turn of thread.querySelectorAll('.secretary-turn-assistant'))turn.setAttribute('aria-label',name);
@@ -1075,6 +1224,7 @@ var ModernoSecretary=(()=>{
     if(event.target.closest?.('#page-route-bar')){home=false;homePending=false;}
   },true);
   window.addEventListener('resize',schedulePosition);
+  financeDesktopMedia?.addEventListener?.('change',()=>requestAnimationFrame(()=>{if(panel?.isConnected)drawThread();}));
   if(window.visualViewport){window.visualViewport.addEventListener('resize',schedulePosition);window.visualViewport.addEventListener('scroll',schedulePosition);}
   function completeMotion(){
     finishReply();
