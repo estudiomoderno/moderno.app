@@ -49,6 +49,7 @@ async function readBody(request,signal){
  * user_metadata authorization. */
 export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Date.now,uuid=()=>crypto.randomUUID(),planner,logger,timeoutMs=25000}){
  const rates=new Map();
+ const reservedKeys=new Map();
  return async request=>{
   const requestId=uuid(),origin=request.headers.get('Origin'),started=now();let allowed=[],stage='gateway',inputBytes=0,timedOut=false;
   const controller=new AbortController(),onAbort=()=>controller.abort();
@@ -81,7 +82,16 @@ export function createSecretaryHandler({env,authenticate,fetchImpl=fetch,now=Dat
    // is deliberately not described as a distributed or monetary hard cap.
    const minute=Math.floor(now()/60000);for(const [key,value] of rates)if(value.minute!==minute)rates.delete(key);
    const rate=rates.get(actor.userId)||{minute,count:0};if(rate.count>=12||rates.size>=2000&&!rates.has(actor.userId))throw new SecretarioError('rate_limit','Hay varias consultas en curso. Espera un momento y vuelve a intentarlo.',429);rate.count++;rates.set(actor.userId,rate);
-   const result=await runSecretary({client:actor.client,input,signal:controller.signal,onStage:mark,now,planner:planner||(({request:turn,context})=>requestPlan({fetchImpl,apiKey:env.OPENAI_API_KEY,model:env.OPENAI_MODEL,request:turn,context,signal:controller.signal}))});
+   const reserveOnce=async(turn,reserve)=>{
+    const timestamp=now();
+    for(const [key,expiry] of reservedKeys)if(expiry<=timestamp)reservedKeys.delete(key);
+    const key=JSON.stringify([actor.userId,turn.studyId,turn.requestKey]);
+    if(reservedKeys.has(key))throw new SecretarioError('request_repeated','Esa consulta ya se ha enviado. Comprueba el resultado anterior.',409);
+    if(reservedKeys.size>=2048)throw new SecretarioError('rate_limit','Hay varias consultas en curso. Espera un momento y vuelve a intentarlo.',429);
+    reservedKeys.set(key,timestamp+5*60*1000);
+    try{return await reserve();}catch(error){if(error.code==='quota_exhausted')reservedKeys.delete(key);throw error;}
+   };
+   const result=await runSecretary({client:actor.client,input,signal:controller.signal,onStage:mark,now,reserveOnce,planner:planner||(({request:turn,context})=>requestPlan({fetchImpl,apiKey:env.OPENAI_API_KEY,model:env.OPENAI_MODEL,request:turn,context,signal:controller.signal}))});
    if(controller.signal.aborted)throw cancelled();
    mark('completed');report(200,'ok');return json(result);
   }catch(error){

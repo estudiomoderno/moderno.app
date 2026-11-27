@@ -462,6 +462,25 @@ test('an aborted provider request is classified as cancelled, not unavailable',a
 function http(body=request(),options={}){const session=options.session===undefined?'t'.repeat(30):options.session;return new Request('https://edge.test/secretario',{method:'POST',body:JSON.stringify(session?{session,payload:body}:body),...options,headers:{Origin:'http://localhost:4173','Content-Type':'application/json',...options.headers}});}
 function productionHttp(body=request(),options={}){return http(body,{...options,headers:{Origin:'https://app.moderno.app',...options.headers}});}
 function handler(changes={}){const {actorId='fake-user',...deps}=changes;return createSecretaryHandler({env,authenticate:async()=>({userId:actorId,client:client()}),planner:async()=>plan(),uuid:()=> 'request-demo',...deps});}
+test('an identical model retry cannot reserve or call the provider twice in the same instance',async()=>{
+ const db=client(),requestKey='turn-20261127-demo';let calls=0;
+ const h=handler({authenticate:async()=>({userId:'fake-user',client:db}),planner:async()=>{calls++;return plan();}});
+ const requestInput={...request(),requestKey};
+ const first=await h(http(requestInput));assert.equal(first.status,200);
+ const repeated=await h(http(requestInput));assert.equal(repeated.status,409);
+ assert.equal((await repeated.json()).error.code,'request_repeated');
+ assert.equal(calls,1);assert.equal(db.calls.filter(call=>call.name==='secretary_request_reserve').length,1);
+ const local=await h(http({...requestInput,message:'Hola',requestKey:'turn-20261127-hola'}));
+ assert.equal(local.status,200);assert.equal(calls,1);
+ assert.equal(db.calls.filter(call=>call.name==='secretary_request_reserve').length,1);
+});
+test('provider credits, provider quota and speed limit stay distinct',async()=>{
+ for(const [upstream,code] of [['credit_balance_exhausted','credit_balance_exhausted'],['insufficient_quota','provider_quota'],['rate_limit_exceeded','provider_busy']]){
+  await assert.rejects(requestPlan({apiKey:'fixture',model:'fixture',request:request(),context:{},fetchImpl:async()=>
+   Response.json({error:{code:upstream,message:'PRIVATE-PROVIDER-DETAIL'}},{status:429})}),
+   error=>error.status===429&&error.code===code&&!error.message.includes('PRIVATE'));
+ }
+});
 for(const [sqlMessage,scope,message] of [
  ['Límite diario del Secretario alcanzado','daily',/límite diario.*usuario.*00:00 UTC/],
  ['Límite mensual del Secretario alcanzado','monthly',/límite mensual.*usuario en este estudio.*primer día de cada mes a las 00:00 UTC/],

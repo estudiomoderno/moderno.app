@@ -1,5 +1,6 @@
 import {isoDate, normalizeReceivableText as normalize} from './receivables.mjs';
 import {paymentDirection} from './payment-direction.mjs';
+import {buildEntityCatalog,resolveEntity} from './entities.mjs';
 
 const compact = value => normalize(value).replace(/[^a-z0-9/-]+/g,' ').trim().replace(/\s+/g,' ');
 const customerDebt=/\b(?:me|nos) (?:deben?|adeudan?)\b/;
@@ -33,6 +34,11 @@ const dropAll=/\b(?:todo el estudio|sin filtros|de todos los anos|sin limite de 
 const months='enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre'.split(' ');
 const monthName=months.join('|');
 const periodStart=new RegExp('^(?:este (?:ano|mes)|(?:el )?(?:ano|mes) (?:pasado|anterior)|'+monthName+'|19\\d{2}|20\\d{2}|21\\d{2})\\b');
+const entityStop=new RegExp('\\s+(?=(?:y )?(?:(?:de|del|al|para|con|en) (?:el )?)?(?:cliente|proyecto)\\b|'+
+  '(?:emitid[ao]s?|emision|vencid[ao]s?|vencimiento|sin vencer|no vencidas?|desde|hasta|entre|este (?:mes|ano)|'+
+  '(?:el )?(?:mes|ano) (?:pasado|anterior)|(?:en|de|del) (?:'+monthName+'|(?:19|20|21)\\d{2})|'+
+  'en (?:moneda )?(?:euros?|dolares?|libras?|eur|usd|gbp)|sin filtro|todo el estudio|todos los)\\b)');
+const entityLeadReserved=/^(?:cobro|cobrar|facturas?|pendientes?|cliente|proyecto|periodo|fecha|vencimiento|moneda|referencia|este|ese|aquel|todos?|todas?|sin|vencidas?|emitidas?|desde|hasta|entre)\b/;
 const otherSubject=/\b(?:presupuestos?|tareas?|gastos?|balance|resumen|facturacion|informe|pedidos?)\b/;
 const rankingPhrase=/\b(?:(?:quien(?:es)?|(?:que|cual(?:es)?) (?:de (?:mis|nuestros|los) )?clientes?) (?:(?:me|nos) )?(?:deben?|adeudan?) mas(?: dinero)?|(?:que cliente|cual es el cliente)(?: tiene| con) (?:el )?(?:mayor|mas) (?:(?:saldo|importe) )?(?:pendiente(?: de cobro)?|por cobrar)|cual es el cliente que mas (?:me|nos) (?:debe|adeuda))\b/;
 const recheckBalance=/^(?:(?:y|entonces) )?(?:no (?:hay|quedan?) (?:ningun[ao]s?|nada)|cuanto (?:es|suma|queda)(?: (?:el|en))? total)(?: no)?$/;
@@ -42,10 +48,11 @@ const currencyCodes=new Set(Intl.supportedValuesOf('currency').map(code=>code.to
 const currencyMention=/\b(?:en (?:moneda )?|moneda )([a-z]{3}\b|(?:euros?|dolares?(?: estadounidenses?)?|libras?(?: esterlinas?)?)\b)/g;
 const clearCurrencyText=/\b(?:sin filtro de moneda|en cualquier moneda|(?:en )?todas las monedas)\b/g;
 const debtRecipient=/\b(?:me|nos) (?:deben?|adeudan?) (?:el cliente )?(?!nada\b)([a-z0-9/-]+(?: [a-z0-9/-]+)*?)(?= (?:del? (?:el )?proyecto|en|desde|hasta|entre|este|emitidas?|vencidas?|sin)\b|$)/;
+const genericFilterRemoval=/\b(?:quita|elimina|borra)(?:me)? (?:ese|este|el) filtro\b(?! de)/;
 const fragment=value=>{
   const text=value.replace(/^(?:(?:y|ahora|mejor|dime|ensename|muestrame|muestra|solo|tambien|entonces|quiero) )+/,'');
   return !otherSubject.test(text)&&(/^(?:de |del |para |en |entre |desde |hasta |las |esas |el cliente |el proyecto |cliente |proyecto |sin |pendientes? de cobro\b|todas\b|todos\b)/.test(text)||
-   /\b(?:vencidas?|vencen?|venceran?|sin vencer|sin filtro|todo el estudio)\b/.test(text)||periodStart.test(text));
+   /\b(?:vencidas?|vencen?|venceran?|sin vencer|sin filtro|todo el estudio)\b/.test(text)||genericFilterRemoval.test(text)||periodStart.test(text));
 };
 
 export function receivableDetailQuestion(value){
@@ -175,6 +182,7 @@ function clientCandidates(snapshot){
       display(snapshot.config.BRAND?.[space]?.name)||space].filter(Boolean).join(' · ');
     map.set(key,{kind:'client',key,brand:space,label:display(name),detail,
       ids:contactId?[contactId]:previous?.ids??[],clientIndex:duplicates?contact.index:null,
+      contactIndexes:contact?[contact.index]:previous?.contactIndexes??[],
       aliases:refAliases(name,...aliases,...(previous?.aliases??[])),name:normalized});
   }
   for(const group of contactGroups.values())for(const contact of group){
@@ -210,10 +218,66 @@ function findCandidates(answer,items){
   return items.filter(item=>item.key===answer||item.ids?.includes(answer)||item.aliases.includes(name));
 }
 
+function scopeCandidate(entity,clients,projects){
+  if(entity?.kind==='project'){
+    const matches=projects.filter(item=>item.key===String(entity.id));
+    return matches.length===1?matches[0]:null;
+  }
+  if(entity?.kind!=='client')return null;
+  let matches=Number.isSafeInteger(entity.contactIndex)?clients.filter(item=>item.contactIndexes?.includes(entity.contactIndex)):[];
+  if(!matches.length)matches=clients.filter(item=>item.ids?.includes(String(entity.id)));
+  if(!matches.length){
+    const name=compact(entity.label),space=entity.brand==='both'?'':display(entity.brand);
+    matches=clients.filter(item=>(item.name===name||item.aliases.some(alias=>entity.aliases?.includes(alias)))&&(!space||item.brand===space));
+  }
+  return matches.length===1?matches[0]:null;
+}
+
+function phraseAfter(text,kind){
+  const marker=kind==='client'?/(?:^| )(?:(?:del?|al|para|con) (?:el )?)?cliente\s+/g:
+    /(?:^| )(?:(?:del?|al|para|en) (?:el )?)?proyecto\s+/g;
+  let selected=null;
+  for(const match of text.matchAll(marker)){
+    let start=match.index+match[0].length,end=text.length;
+    const tail=text.slice(start),stop=entityStop.exec(tail);if(stop)end=start+stop.index;
+    while(start<end&&text[start]===' ')start+=1;while(end>start&&text[end-1]===' ')end-=1;
+    const query=text.slice(start,end);if(query&&!entityLeadReserved.test(query))selected={query,start,end};
+  }
+  return selected;
+}
+
+function untypedPhrase(text){
+  let selected=null;
+  for(const match of text.matchAll(/(?:^| )(?:de|del|para)\s+/g)){
+    let start=match.index+match[0].length,end=text.length;
+    const tail=text.slice(start),stop=entityStop.exec(tail);if(stop)end=start+stop.index;
+    while(start<end&&text[start]===' ')start+=1;while(end>start&&text[end-1]===' ')end-=1;
+    const query=text.slice(start,end);if(query&&!entityLeadReserved.test(query))selected={query,start,end};
+  }
+  return selected;
+}
+
+function mentionRange(text,label){
+  const alias=compact(label);if(!alias)return null;
+  const match=aliasPattern(alias).exec(text);if(!match)return null;
+  const start=match.index+match[0].length-match[1].length;
+  return {start,end:start+match[1].length};
+}
+
+const filterNames={project:'proyecto',client:'cliente',date:'periodo',overdue:'vencimiento',reference:'factura',currency:'moneda'};
+function activeScopeFilters(base){
+  if(!base)return [];
+  return [
+    ['project',base.projectId],['client',base.clientKey],['date',base.date],['overdue',base.overdue],
+    ['reference',base.reference],['currency',base.currency]
+  ].filter(([,value])=>value!=null).map(([kind])=>kind);
+}
+
 export function resolveReceivableScope(snapshot,request,turn,today){
   let {query:original,base,answers}=turn;
   const projects=snapshot.projects.map(row=>({kind:'project',key:String(row.id),label:display(row.name)||display(row.num),detail:display(row.num),aliases:refAliases(row.name,row.num)}));
   const clients=clientCandidates(snapshot);
+  const catalog=request.entityCatalog??buildEntityCatalog(snapshot);
   if(answers.receivable_scope){
     original='facturas pendientes '+answers.receivable_scope;
     delete answers.receivable_scope;
@@ -227,7 +291,42 @@ export function resolveReceivableScope(snapshot,request,turn,today){
   if(/\b(?:a fecha de|al cierre de)\b/.test(input))return queryError('receivable_scope','¿Quieres consultar los saldos actuales de facturas emitidas en un periodo? Indica el periodo de emisión.');
   let remainder=input;
   let chosenProject=null,chosenClient=null;
-  const allMatches=entityMatches(input,[...clients,...projects]);
+  let allMatches=entityMatches(input,[...clients,...projects]);
+  const addClosedMatches=(result,range)=>{
+    if(!range||!['resolved','ambiguous'].includes(result?.status))return;
+    const entities=result.status==='resolved'?[result.entity]:result.candidates;
+    const mapped=[...new Map(entities.map(entity=>scopeCandidate(entity,clients,projects)).filter(Boolean)
+      .map(candidate=>[JSON.stringify([candidate.kind,candidate.key]),candidate])).values()];
+    // Never turn an ambiguous catalog result into a unique local match merely
+    // because another candidate could not be projected into this scope.
+    if(result.status==='ambiguous'&&mapped.length<2)return;
+    for(const candidate of mapped)allMatches.push({candidate,start:range.start,end:range.end});
+  };
+  const verifiedRanges=new Map();
+  for(const entity of request.verifiedMentions??[]){
+    if(!['client','project'].includes(entity?.kind))continue;
+    const candidate=scopeCandidate(entity,clients,projects),range=mentionRange(input,entity.label);
+    if(!candidate||!range)continue;
+    const key=range.start+':'+range.end;if(!verifiedRanges.has(key))verifiedRanges.set(key,[]);
+    verifiedRanges.get(key).push({candidate,...range});
+  }
+  for(const group of verifiedRanges.values()){
+    const [{start,end}]=group;
+    allMatches=allMatches.filter(match=>match.start!==start||match.end!==end);
+    allMatches.push(...group);
+  }
+  const explicitFragments=[];
+  for(const kind of ['project','client']){
+    const range=phraseAfter(input,kind);if(!range)continue;explicitFragments.push(range);
+    addClosedMatches(resolveEntity(catalog,{query:range.query,types:[kind]}),range);
+  }
+  if(!explicitFragments.length&&!allMatches.length){
+    const range=untypedPhrase(input);
+    if(range)addClosedMatches(resolveEntity(catalog,{query:range.query,types:['client','project']}),range);
+  }
+  allMatches=[...new Map(allMatches.map(match=>[
+    JSON.stringify([match.start,match.end,match.candidate.kind,match.candidate.key]),match
+  ])).values()];
   const explicitProject=/\b(?:este|ese|del|el) proyecto\b/.test(input);
   const projectReference=/\b(?:de )?(este|ese) proyecto\b/.exec(input);
   const projectId=projectReference?.[1]==='ese'?base?.projectId??request.context.projectId:request.context.projectId;
@@ -257,14 +356,30 @@ export function resolveReceivableScope(snapshot,request,turn,today){
     }
     matches.push(...group.filter(({candidate})=>JSON.stringify([candidate.kind,candidate.key])===selection[0].value));
   }
+  // Entity spans are blanked to preserve offsets while choices are resolved.
+  // From here on only lexical parsing remains, so collapse those placeholders;
+  // otherwise a selected homonym followed by end-of-input cannot match its type.
+  remainder=remainder.replace(/\s+/g,' ').trim();
   const clearAll=/\b(?:todo el estudio|sin filtros)\b/.test(remainder);
-  const clearProject=clearAll||/\b(?:sin filtro de proyecto|todos los proyectos)\b/.test(remainder);
-  const clearClient=clearAll||/\b(?:sin filtro de cliente|todos los clientes)\b/.test(remainder);
-  const clearDate=clearAll||/\b(?:sin filtro de (?:periodo|fecha)|(?:de )?todos los anos|sin limite de fechas)\b/.test(remainder);
-  const clearOverdue=clearAll||/\b(?:sin filtro de vencimiento|vencidas y sin vencer|vencidas y no vencidas)\b/.test(remainder);
-  const clearCurrency=clearAll||[...remainder.matchAll(clearCurrencyText)].length>0;
+  let genericClear=null;
+  if(!clearAll&&genericFilterRemoval.test(remainder)){
+    const active=activeScopeFilters(base);
+    if(active.length!==1){
+      const options=active.map(kind=>({label:'Quitar el filtro de '+filterNames[kind],value:'sin filtro de '+filterNames[kind]}));
+      return queryError('receivable_scope',active.length?
+        '¿Qué filtro quieres quitar? Elige uno de los filtros activos.':
+        'No hay un filtro activo que pueda quitar. Indica el cliente, proyecto, periodo, vencimiento, factura o moneda que quieras cambiar.',options);
+    }
+    genericClear=active[0];remove(genericFilterRemoval);
+  }
+  const clearProject=clearAll||genericClear==='project'||/\b(?:sin filtro de proyecto|todos los proyectos)\b/.test(remainder);
+  const clearClient=clearAll||genericClear==='client'||/\b(?:sin filtro de cliente|todos los clientes)\b/.test(remainder);
+  const clearDate=clearAll||genericClear==='date'||/\b(?:sin filtro de (?:periodo|fecha)|(?:de )?todos los anos|sin limite de fechas)\b/.test(remainder);
+  const clearOverdue=clearAll||genericClear==='overdue'||/\b(?:sin filtro de vencimiento|vencidas y sin vencer|vencidas y no vencidas)\b/.test(remainder);
+  const clearReference=clearAll||genericClear==='reference'||/\b(?:sin filtro de (?:factura|referencia))\b/.test(remainder);
+  const clearCurrency=clearAll||genericClear==='currency'||[...remainder.matchAll(clearCurrencyText)].length>0;
   if(clearAll)base=null;
-  remove(/\b(?:sin filtros|sin filtro de (?:proyecto|cliente|periodo|fecha|vencimiento)|todos los (?:clientes|proyectos|anos)|sin limite de fechas|vencidas y (?:sin vencer|no vencidas))\b/g);
+  remove(/\b(?:sin filtros|sin filtro de (?:proyecto|cliente|periodo|fecha|vencimiento|factura|referencia)|todos los (?:clientes|proyectos|anos)|sin limite de fechas|vencidas y (?:sin vencer|no vencidas))\b/g);
   remove(clearCurrencyText);
   const currencyMatches=[...remainder.matchAll(currencyMention)].filter(([,word])=>Object.hasOwn(currencies,word)||currencyCodes.has(word));
   const requestedCurrencies=new Set(currencyMatches.map(([,word])=>currencies[word]??word.toUpperCase()));
@@ -272,7 +387,7 @@ export function resolveReceivableScope(snapshot,request,turn,today){
   for(const [match] of currencyMatches)remove(match);
   const references=[...remainder.matchAll(referencePattern)].map(match=>match[0]);
   if(references.length>1)return queryError('receivable_scope','¿Qué factura quieres consultar? Indica una referencia.');
-  const reference=references[0]??(clearAll?null:base?.reference??null);
+  const reference=references[0]??(clearReference?null:base?.reference??null);
   if(references.length)remove(references[0]);
   if(debt){
     const requestedClient=debtRecipient.exec(input)?.[1];
@@ -328,7 +443,7 @@ export function resolveReceivableScope(snapshot,request,turn,today){
   }
   return {scope:{projectId:chosenProject?.key??null,projectLabel:chosenProject?.label??null,client:chosenClient?{name:chosenClient.name,label:chosenClient.label,brand:chosenClient.brand,clientIndex:chosenClient.clientIndex}:null,
     date:period?{from:period.from,to:period.to,field:dueRange?'due':/\b(?:emitidas?|emision)\b/.test(input)?'issued':base?.date?.field??'issued'}:clearDate?null:base?.date??null,
-    overdue:overdue??(clearOverdue?null:base?.overdue??null),reference,brand:references.length?null:base?.brand??null,
+    overdue:overdue??(clearOverdue?null:base?.overdue??null),reference,brand:references.length||clearReference?null:base?.brand??null,
     currency:requestedCurrencies.values().next().value??(clearCurrency?null:base?.currency??null),ranking},
     clientKey:chosenClient?.key??null};
 }

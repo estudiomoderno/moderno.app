@@ -1,6 +1,7 @@
 import {parsePeriod} from './receivable-scope.mjs';
 import {isoDate,normalizeReceivableText} from './receivables.mjs';
 import {payableScopePrompts} from './payment-direction.mjs';
+import {buildEntityCatalog,normalizeEntityText,parseEntityIdentity,resolveEntity,serializeEntityIdentity} from './entities.mjs';
 
 const PAGE_SIZE=12;
 const label=(value,max=160)=>typeof value==='string'?value.trim().slice(0,max):'';
@@ -25,6 +26,28 @@ const currencyLabels={EUR:'Euros',USD:'Dólares estadounidenses'};
 const referencePattern=/\b[a-z][a-z0-9]*(?:-[a-z0-9]+)*[-/]\d[a-z0-9/-]*\b/g;
 const dateWords=/\b(?:este|esta|pasado|pasada|anterior|proxim[oa]s?|ultim[oa]s?) (?:anos?|mes(?:es)?|semanas?|trimestres?|semestres?|quincenas?)\b|\b(?:ayer|manana|trimestre|semestre|quincena|periodo fiscal|ejercicio fiscal|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b|\b(?:19|20|21)\d{2}\b|\b\d{1,2}\/\d{1,2}(?:\/\d{4})?\b/;
 const supplierTypes=new Set(['Proveedor','Contratista','Técnico']);
+const clearSupplier=/\b(?:todos los proveedores|cualquier proveedor|sin filtro de proveedor)\b/;
+const clearProject=/\b(?:todos los proyectos|cualquier proyecto|sin filtro de proyecto)\b/;
+const clearCurrency=/\b(?:todas las monedas|cualquier moneda|sin filtro de moneda)\b/;
+const clearDate=/\b(?:todos los anos|sin limite de fechas|sin filtro de (?:periodo|fecha))\b/;
+const clearDueStatus=/\b(?:sin filtro de (?:vencimiento|estado))\b/;
+const clearReference=/\b(?:sin referencia|todas las referencias|sin filtro de referencia)\b/;
+const clearAny=/^(?:(?:y|ahora|mejor|por favor) )*(?:quita(?:me)?|quitar|elimina(?:me)?|eliminar) (?:ese|este|el) filtro$/;
+
+function payableFilters(scope,{supplierLabel,projectLabel}={}){
+ const {projectId,supplier,date,overdue,currency:code,reference}=scope;
+ return [
+  [supplier&&(supplierLabel||'Proveedor'),'sin filtro de proveedor'],[projectId&&(projectLabel||'Proyecto'),'sin filtro de proyecto'],
+  [date&&`${date.field==='due'?'Vencimiento':'Emisión'} · ${date.from} a ${date.to}`,'sin filtro de periodo'],
+  [overdue==='overdue'?'Solo vencidas':overdue==='open'?'Sin vencer':overdue==='unknown'?'Sin vencimiento registrado':null,'sin filtro de vencimiento'],
+  [code&&(currencyLabels[code]||code),'sin filtro de moneda'],[reference&&reference.toUpperCase(),'sin filtro de referencia']
+ ].filter(([label])=>label).map(([label,clear])=>({label,clear}));
+}
+
+function supplierFromEntity(entity){
+ const identity=serializeEntityIdentity(entity.identity);
+ return identity?{key:normalize(entity.label),brand:entity.brand==='both'?null:entity.brand??null,identity}:null;
+}
 
 function supplierIndex(snapshot){
  const suppliers=new Map();
@@ -124,15 +147,39 @@ export function resolvePayableScope(snapshot,request,turn,today){
  entities.push(...supplierAliases(suppliers,brandName));
  const scope=blankScope(),problems=new Map();
  const reject=(kind,message,options)=>problems.set(kind,queryProblem(kind,message,options));
- const queries=[turn.priorQuery,...(turn.priorFilters??[]),turn.query].filter(Boolean);
+ const base=turn.base,mentions=request.verifiedMentions??[];
+ const catalog=request.entityCatalog??(base?.clientKey||mentions.some(item=>item.kind==='supplier')?buildEntityCatalog(snapshot):null);
+ let selectedSupplier=null;
+ if(base){
+  Object.assign(scope,{projectId:base.projectId??null,date:base.date??null,reference:base.reference??null,currency:base.currency??null,
+   overdue:base.state==='overdue'?'overdue':base.state==='open'?'open':base.state==='unknown_due'?'unknown':null});
+  if(scope.projectId&&!snapshot.projects.some(project=>rowId(project.id)===scope.projectId))reject('project',payableScopePrompts.project);
+  if(base.clientKey){
+   const identity=parseEntityIdentity(base.clientKey),result=identity&&catalog&&resolveEntity(catalog,{selected:identity,types:['supplier']});
+   if(result?.status!=='resolved')reject('supplier',payableScopePrompts.supplier);
+   else{selectedSupplier=result.entity;scope.supplier=supplierFromEntity(selectedSupplier);}
+  }else if(base.paymentParty){
+   const supplier=suppliers.get(base.paymentParty.name),brand=base.paymentParty.brand;
+   if(!supplier||brand===null&&(supplierBrands(supplier).length>1||supplier.contacts.length>1)||
+    brand!==null&&(!supplierBrands(supplier).includes(brand)||supplierConflict(supplier,brand)))reject('supplier',payableScopePrompts.supplier);
+   else scope.supplier={key:supplier.key,brand};
+  }
+ }
+ const queries=(base?[turn.query]:[turn.priorQuery,...(turn.priorFilters??[]),turn.query]).filter(Boolean);
  for(const query of queries){
   let input=normalize(query).replace(/\b(?:(?:de|a) (?:mis |nuestros |los )?proveedores|en total|de momento|por favor)\b/g,' ').trim();
   const accept=kind=>{problems.delete(kind);problems.delete('unknown');};
+  if(clearAny.test(input)){
+   const filters=payableFilters(scope);
+   if(filters.length!==1)return {filterChoice:filters};
+   input=filters[0].clear;
+  }
   if(/\b(?:todo el estudio|sin filtros)\b/.test(input)){Object.assign(scope,blankScope());problems.clear();}
-  if(/\b(?:todos los anos|sin limite de fechas)\b/.test(input)){scope.date=null;accept('period');}
-  if(/\b(?:todos los proveedores|cualquier proveedor)\b/.test(input)){scope.supplier=null;accept('supplier');input=input.replace(/\b(?:todos los proveedores|cualquier proveedor)\b/g,' ');}
-  if(/\b(?:todos los proyectos|cualquier proyecto)\b/.test(input)){scope.projectId=null;accept('project');input=input.replace(/\b(?:todos los proyectos|cualquier proyecto)\b/g,' ');}
-  if(/\b(?:todas las monedas|cualquier moneda|sin filtro de moneda)\b/.test(input)){scope.currency=null;accept('currency');input=input.replace(/\b(?:todas las monedas|cualquier moneda|sin filtro de moneda)\b/g,' ');}
+  if(clearDate.test(input)){scope.date=null;accept('period');input=input.replace(clearDate,' ');}
+  if(clearSupplier.test(input)){scope.supplier=null;accept('supplier');input=input.replace(clearSupplier,' ');}
+  if(clearProject.test(input)){scope.projectId=null;accept('project');input=input.replace(clearProject,' ');}
+  if(clearCurrency.test(input)){scope.currency=null;accept('currency');input=input.replace(clearCurrency,' ');}
+  if(clearDueStatus.test(input)){scope.overdue=null;accept('status');input=input.replace(clearDueStatus,' ');}
   if(problems.get('period')?.message===payableScopePrompts.soon&&/^(?:si|vale|correcto|de acuerdo)$/.test(input))input='vencen los proximos 7 dias';
   if(/\b(?:este|ese) proyecto\b/.test(input)){
    if(request.context.projectId){scope.projectId=request.context.projectId;accept('project');}
@@ -168,7 +215,7 @@ export function resolvePayableScope(snapshot,request,turn,today){
    if(problems.get('supplier')?.message===payableScopePrompts.supplier){scope.supplier=null;accept('supplier');}
    input=input.replace(new RegExp(`\\b(?:(?:ref(?:erencia)? (?:de factura )?|(?:factura )?(?:numero|n) ))?${escape(reference)}\\b`,'g'),' ');
   }
-  if(/\b(?:sin referencia|todas las referencias)\b/.test(input)){scope.reference=null;accept('reference');input=input.replace(/\b(?:sin referencia|todas las referencias)\b/g,' ');}
+  if(clearReference.test(input)){scope.reference=null;accept('reference');input=input.replace(clearReference,' ');}
   if(/\b(?:ref|referencia|numero de factura)\b/.test(input))reject('reference',payableScopePrompts.reference);
   const {aliases,codes}=requestedCurrency(input);
   if(codes.size>1)reject('currency',payableScopePrompts.currency);
@@ -212,10 +259,24 @@ export function resolvePayableScope(snapshot,request,turn,today){
   if(/\bproveedor +\S/.test(unrecognized)&&!problems.has('supplier')&&!problems.has('entity'))reject('supplier',payableScopePrompts.unknown);
   else if(/\bproyecto +\S/.test(unrecognized)&&!problems.has('project')&&!problems.has('entity'))reject('project',payableScopePrompts.unknown);
   else if(/\b(?:de|del|a|al) +(?!pago\b|cobro\b|las?\b|el\b|los\b|todo\b|mis?\b|nuestros?\b)[a-z0-9][a-z0-9 /-]*$/.test(unrecognized)&&!problems.size)reject('unknown',payableScopePrompts.unknown);
+  if(query===turn.query){
+   const spoken=normalize(query),verifiedSuppliers=mentions.filter(entity=>entity.kind==='supplier');
+   const verifiedProjects=mentions.filter(entity=>entity.kind==='project');
+   if(!clearSupplier.test(spoken)&&verifiedSuppliers.length===1){
+    const [entity]=verifiedSuppliers,resolution=catalog&&resolveEntity(catalog,{selected:entity.identity,types:['supplier']});
+    if(resolution?.status==='resolved'){
+     selectedSupplier=resolution.entity;scope.supplier=supplierFromEntity(selectedSupplier);accept('supplier');accept('entity');
+    }
+   }else if(verifiedSuppliers.length>1&&!clearSupplier.test(spoken))reject('supplier',payableScopePrompts.supplier);
+   if(!clearProject.test(spoken)&&verifiedProjects.length===1&&snapshot.projects.some(project=>rowId(project.id)===verifiedProjects[0].id)){
+    scope.projectId=verifiedProjects[0].id;accept('project');accept('entity');
+   }else if(verifiedProjects.length>1&&!clearProject.test(spoken))reject('project',payableScopePrompts.project);
+  }
  }
- if(problems.size)return {problem:[...problems.values()].at(-1)};
  const supplier=scope.supplier&&suppliers.get(scope.supplier.key);
- return {scope,supplierLabel:supplier&&(scope.supplier.brand===null?supplier.name:supplierOption(supplier,scope.supplier.brand,brandName(scope.supplier.brand)).label)};
+ const supplierLabel=scope.supplier?.identity===serializeEntityIdentity(selectedSupplier?.identity)?selectedSupplier?.label:
+  supplier&&(scope.supplier.brand===null?supplier.name:supplierOption(supplier,scope.supplier.brand,brandName(scope.supplier.brand)).label);
+ return {scope,supplierLabel,catalog,...(problems.size?{problem:[...problems.values()].at(-1)}:{})};
 }
 
 function entryReferences(entry){
@@ -225,7 +286,7 @@ function entryReferences(entry){
  return new Set(stored);
 }
 
-export function collectPayables(snapshot,today,scope=blankScope()){
+export function collectPayables(snapshot,today,scope=blankScope(),authorizedEntities=null){
  const ids=new Map();
  for(const entry of snapshot.entries){
   if(!entry||snapshot.invoiceData?.del?.[entry.id])continue;
@@ -234,11 +295,16 @@ export function collectPayables(snapshot,today,scope=blankScope()){
  }
  const rows=[];
  let review=0;
- for(const entry of snapshot.entries){
+ const identity=scope.supplier?.identity&&parseEntityIdentity(scope.supplier.identity);
+ const catalog=identity&&(authorizedEntities??buildEntityCatalog(snapshot));
+ const chosen=catalog&&resolveEntity(catalog,{selected:identity,types:['supplier']});
+ const selected=chosen?.status==='resolved'?new Set(chosen.entity.entryIndexes):null;
+ const other=selected?new Set(catalog.entities.filter(entity=>entity.kind==='supplier'&&entity!==chosen.entity).flatMap(entity=>entity.entryIndexes)):null;
+ for(const [entryIndex,entry] of snapshot.entries.entries()){
   if(entry?.kind!=='out'||snapshot.invoiceData?.del?.[entry.id])continue;
   const status=normalize(entry.status),id=rowId(entry.id),supplier=supplierName(entry),pid=entryProjectId(entry);
   if(paid.test(status)||invalid.test(status)||entry.voided===true||entry.draft===true)continue;
-  if(scope.projectId&&scope.projectId!==pid||scope.supplier&&(scope.supplier.key!==normalize(supplier)||scope.supplier.brand!==null&&scope.supplier.brand!==label(entry.brand,80))||
+  if(scope.projectId&&scope.projectId!==pid||!identity&&scope.supplier&&(scope.supplier.key!==normalize(supplier)||scope.supplier.brand!==null&&scope.supplier.brand!==label(entry.brand,80))||
     scope.reference&&!entryReferences(entry).has(scope.reference))continue;
   const due=isoDate(entry.due),issued=isoDate(entry.date),overdue=Boolean(due&&due<today),date=scope.date?.field==='due'?due:issued;
   if(scope.overdue==='unknown'&&due||scope.overdue&&scope.overdue!=='unknown'&&due&&overdue!==(scope.overdue==='overdue')||
@@ -246,6 +312,11 @@ export function collectPayables(snapshot,today,scope=blankScope()){
   const total=number(entry.amount),retention=entry.irpf==null||entry.irpf===''?0:number(entry.irpf),base=number(entry.base);
   const code=currency((entry.currency||snapshot.config.account?.currency||'EUR').toString().trim().toUpperCase());
   if(scope.currency&&code&&scope.currency!==code)continue;
+  if(identity&&!selected?.has(entryIndex)){
+   if(!other?.has(entryIndex)&&(chosen?.entity?.aliases??[normalizeEntityText(scope.supplier.key)]).includes(normalizeEntityText(supplier))&&
+     (scope.supplier.brand===null||scope.supplier.brand===label(entry.brand,80)))review++;
+   continue;
+  }
   const pending=cents(total)-Math.round(base*retention);
   if(status!=='pend'||!id||id.length>160||ids.get(id)!==1||total==null||total<0||retention==null||retention<0||retention>100||
    retention>0&&(base==null||base<0||base>total)||!Number.isSafeInteger(pending)||pending<0||!code||
@@ -281,18 +352,28 @@ function paymentOperation(snapshot,request,operation){
  return answer(status==='pend'?'Figura como pendiente de pago.':'Figura como pagada.');
 }
 
+function payableContext(scope,supplierLabel){
+ const {supplier,projectId,date,overdue,currency:code,reference}=scope;
+ return {scope:{kind:'received',mode:'pending-payables',latest:false,projectId,date,reference,currency:code,
+  clientKey:supplier?.identity??null,state:overdue==='overdue'?'overdue':overdue==='open'?'open':overdue==='unknown'?'unknown_due':null,
+  ...(supplier&&!supplier.identity?{paymentParty:{name:supplier.key,label:label(supplierLabel||supplier.key),brand:supplier.brand}}:{})}};
+}
+
 export function pendingPayables(snapshot,request,turn,now){
  if(turn.operation)return request.invoicePage?null:paymentOperation(snapshot,request,turn.operation);
  const today=new Intl.DateTimeFormat('sv-SE',{timeZone:request.context.timeZone||'Europe/Madrid'}).format(now);
  const scoped=resolvePayableScope(snapshot,request,turn,today),page=request.invoicePage;
- if(scoped.problem)return page?null:clarification(scoped.problem.message,scoped.problem.options);
- const {scope,supplierLabel}=scoped;
+ if(scoped.filterChoice)return page?null:{...answer(scoped.filterChoice.length?'¿Qué filtro quieres quitar?':'No hay filtros activos.'),
+  activeFilters:scoped.filterChoice,preserveQueryContext:true};
+ const {scope,supplierLabel,catalog}=scoped;
+ const documentContext=payableContext(scope,supplierLabel);
+ if(scoped.problem)return page?null:{...clarification(scoped.problem.message,scoped.problem.options),documentContext};
  const {projectId,supplier,date,overdue:dueFilter,currency:code,reference}=scope;
  const sourceVersion=snapshot.versions.facturas;
  const version=JSON.stringify(['payables',snapshot.studyId,sourceVersion,snapshot.versions.config,snapshot.versions.contactos,snapshot.versions.proyectos,scope,today]);
  const offset=page?.offset??0;
  if(page&&(page.version!==version||page.projectId!==projectId))return null;
- const {rows,review}=collectPayables(snapshot,today,scope),count=rows.length;
+ const {rows,review}=collectPayables(snapshot,today,scope,catalog),count=rows.length;
  if(reference&&count+review>1)return page?null:clarification(payableScopePrompts.duplicateReference);
  if(page&&offset>=count)return null;
  const totals=new Map();
@@ -305,10 +386,12 @@ export function pendingPayables(snapshot,request,turn,now){
  if(overdue)message+=overdue===1?' Una está vencida.':` De ellas, ${overdue} están vencidas.`;
  if(review)message+=` ${review===1?'Hay 1 factura que necesita':`Hay ${review} facturas que necesitan`} revisión por datos incompletos, pagos parciales sin saldo verificable o importes contradictorios.`;
  const sources=rows.slice(offset,offset+PAGE_SIZE).map(row=>({...row,pending:row.pending/100}));
- const scopeLabel=[snapshot.projects.find(project=>rowId(project.id)===projectId)?.name,supplierLabel,
+ const projectLabel=snapshot.projects.find(project=>rowId(project.id)===projectId)?.name;
+ const scopeLabel=[projectLabel,supplierLabel,
   date&&`${date.field==='due'?'Vencimiento':'Emisión'}: ${date.from} a ${date.to}`,dueFilter==='overdue'?'Solo vencidas':dueFilter==='open'?'Sin vencer':dueFilter==='unknown'?'Sin vencimiento registrado':null,
   code&&(currencyLabels[code]||code),reference&&reference.toUpperCase()].filter(Boolean).join(' · ');
  const next=offset+sources.length<count?offset+sources.length:null;
- return {status:'answer',message,sources,questions:[],actions:[],payables:{count,overdue,amounts,review,offset,next,version,sourceVersion,projectId,scopeLabel},
+ return {status:'answer',message,sources,questions:[],actions:[],documentContext,activeFilters:payableFilters(scope,{supplierLabel,projectLabel}),
+  payables:{count,overdue,amounts,review,offset,next,version,sourceVersion,projectId,scopeLabel},
   trace:[{label:'Facturas recibidas pendientes de pago comprobadas',status:'done'}]};
 }

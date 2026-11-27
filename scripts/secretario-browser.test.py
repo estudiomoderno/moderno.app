@@ -19,6 +19,9 @@ from playwright.sync_api import expect, sync_playwright
 repo = Path(__file__).resolve().parents[1]
 output = Path(sys.argv[1]) if len(sys.argv) > 1 else None
 desktop_only = os.environ.get('SECRETARIO_DESKTOP_ONLY') == '1'
+mobile_only = os.environ.get('SECRETARIO_MOBILE_ONLY') == '1'
+if desktop_only and mobile_only:
+    raise ValueError('Choose either SECRETARIO_DESKTOP_ONLY or SECRETARIO_MOBILE_ONLY')
 if output:
     output.mkdir(parents=True, exist_ok=True)
 backend = "https://chsilowzrtumbcofspwv.supabase.co"
@@ -28,6 +31,7 @@ source_versions = {key: stamp for key in ["config", "contactos", "proyectos", "p
 invoice_fixture_script = ["node", "scripts/secretario-receivables-fixture.mjs"]
 invoice_fixture = json.loads(subprocess.check_output(invoice_fixture_script, cwd=repo, input=b""))
 acceptance_fixture = json.loads(subprocess.check_output([*invoice_fixture_script, "--acceptance"], cwd=repo, input=b""))
+tiny_png = (repo / "app/brand/icon-16.png").read_bytes()
 
 # Exact fictional records from the conversation guide. This fixture remains
 # separate from the older acceptance dataset so both contracts stay covered.
@@ -87,7 +91,23 @@ window.__secretaryFakeBackend=true;
 window.__secretaryAuth=null;
 window.__secretaryConsent={enabled:false,version:1,revision:0};
 window.__secretaryRpc=[];window.__secretaryFeedbackEvents=[];window.__secretaryAuthListeners=[];
+window.__secretaryRecognitions=[];window.__secretarySpeechAvailability=[];window.__secretaryOcrCalls=[];
 window.__secretaryFailWithdrawal=false;
+class FictionalLocalSpeechRecognition {
+ static async available(options){window.__secretarySpeechAvailability.push(structuredClone(options));return 'available'}
+ static async install(){throw Error('The integrated fixture must not download a language')}
+ constructor(){this.processLocally=false;window.__secretaryRecognitions.push(this)}
+ start(){this.started=true;queueMicrotask(()=>this.onstart?.())}
+ stop(){this.stopped=true;this.onend?.()}
+ abort(){this.aborted=true;this.onerror?.({error:'aborted'});this.onend?.()}
+ emit(text,final=true){const result=Object.assign([{transcript:text}],{isFinal:final});this.onresult?.({resultIndex:0,results:[result]})}
+ end(){this.onend?.()}
+}
+window.SpeechRecognition=FictionalLocalSpeechRecognition;
+window.Tesseract={async createWorker(language,workers,options){
+ window.__secretaryOcrCalls.push({language,workers,workerPath:options?.workerPath,corePath:options?.corePath,langPath:options?.langPath,cacheMethod:options?.cacheMethod,workerBlobURL:options?.workerBlobURL});
+ return {async recognize(){return {data:{text:'DOCUMENTO FICTICIO\nIMPORTE TOTAL 321 EUR'}}},async terminate(){}};
+}};
 const emptyQuery=()=>({
  select(){return this},eq(){return this},order(){return this},limit(){return this},maybeSingle(){return this},single(){return this},in(){return this},
  insert(){throw Error('Unexpected insert')},update(){throw Error('Unexpected update')},upsert(){throw Error('Unexpected upsert')},delete(){throw Error('Unexpected delete')},
@@ -163,14 +183,25 @@ def wait_for_stable_view(page):
 
 
 def assert_secretary_clearance(page):
-    page.wait_for_function("""()=>{
-      const panel=document.getElementById('moderno-secretary'),sync=document.getElementById('syncTag');
-      if(!panel||!sync)return false;
-      const p=panel.getBoundingClientRect(),s=sync.getBoundingClientRect(),button=panel.querySelector('button[type=submit]')?.getBoundingClientRect();
-      if(!button)return false;
-      const disjoint=rect=>rect.right<=s.left||rect.left>=s.right||rect.bottom<=s.top-10||rect.top>=s.bottom+10;
-      return panel.parentElement===document.body&&disjoint(p)&&disjoint(button)&&p.top>=0&&p.bottom<=innerHeight;
-    }""")
+    try:
+        page.wait_for_function("""()=>{
+          const panel=document.getElementById('moderno-secretary'),sync=document.getElementById('syncTag');
+          if(!panel||!sync)return false;
+          const p=panel.getBoundingClientRect(),s=sync.getBoundingClientRect(),button=panel.querySelector('button[type=submit]')?.getBoundingClientRect();
+          if(!button)return false;
+          const disjoint=rect=>rect.right<=s.left||rect.left>=s.right||rect.bottom<=s.top-10||rect.top>=s.bottom+10;
+          return panel.parentElement===document.body&&disjoint(p)&&disjoint(button)&&p.top>=0&&p.bottom<=innerHeight;
+        }""")
+    except Exception:
+        geometry = page.evaluate("""()=>{
+          const panel=document.getElementById('moderno-secretary'),sync=document.getElementById('syncTag'),button=panel?.querySelector('button[type=submit]');
+          const rect=node=>node?Object.fromEntries(['top','right','bottom','left','width','height'].map(key=>[key,node.getBoundingClientRect()[key]])):null;
+          const style=node=>node?Object.fromEntries(['position','top','right','bottom','left','width','height','paddingBottom','overflow'].map(key=>[key,getComputedStyle(node)[key]])):null;
+          return {viewport:{width:innerWidth,height:innerHeight},body:document.body.className,panel:{rect:rect(panel),style:style(panel),parent:panel?.parentElement?.tagName},
+            sync:{rect:rect(sync),style:style(sync)},button:{rect:rect(button),style:style(button)}};
+        }""")
+        print('Secretary clearance geometry:', json.dumps(geometry, ensure_ascii=False, sort_keys=True), flush=True)
+        raise
 
 
 def assert_launcher_clearance(page):
@@ -232,12 +263,13 @@ try:
         if executable:
             options["executable_path"] = executable
         browser = playwright.chromium.launch(**options)
-        viewports = [(1440, 1000)] if desktop_only else [(1440, 1000), (390, 844)]
+        viewports = [(1440, 1000)] if desktop_only else [(390, 844)] if mobile_only else [(1440, 1000), (390, 844)]
         for width, height in viewports:
             page = browser.new_page(viewport={"width": width, "height": height}, locale="es-ES")
             errors, requests, forbidden_writes, pending = [], [], [], []
             pending_receivables = []
             guide_requests = []
+            integrated_tool_requests = []
             failed_invoice_reads = []
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.add_init_script(fake_sdk)
@@ -261,13 +293,50 @@ try:
                     assert set(envelope) == {"session", "payload"}
                     assert envelope["session"] == "fictional-token-no-credentials"
                     body = envelope["payload"]
-                    assert set(body).issubset({"studyId", "message", "automatic", "history", "context", "answers", "invoicePage", "receivableContext", "documentPage", "documentContext", "financeContext"})
+                    assert set(body).issubset({"studyId", "message", "automatic", "history", "context", "answers", "invoicePage", "receivableContext", "documentPage", "documentContext", "financeContext", "requestKey", "mentions", "attachments"})
                     assert body["studyId"] == "11111111-1111-4111-8111-111111111111"
                     if not body.get("invoicePage"):
                         assert isinstance(body.get("automatic"), bool)
                         assert body["automatic"] is bool(body.get("answers"))
                     requests.append(body)
                     message = body["message"]
+                    if message == "@Proyecto ficticio revisa el contexto":
+                        assert isinstance(body.get("requestKey"), str) and body["requestKey"]
+                        assert body.get("mentions") == [{
+                            "label": "Proyecto ficticio",
+                            "identity": {"kind": "project", "id": "9001"},
+                        }]
+                        assert not body.get("attachments")
+                        integrated_tool_requests.append(("mention", body))
+                        response = {
+                            "requestId": "integrated-mention", "status": "answer",
+                            "message": "Referencia ficticia verificada.", "sources": [],
+                            "questions": [], "actions": [], "trace": [],
+                        }
+                        request_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(response))
+                        return
+                    if message == "¿Qué pone en el archivo adjunto?":
+                        assert isinstance(body.get("requestKey"), str) and body["requestKey"]
+                        attachments = body.get("attachments")
+                        assert isinstance(attachments, list) and len(attachments) == 1
+                        attachment = attachments[0]
+                        assert attachment["name"] == "adjunto-ficticio.png"
+                        assert attachment["mime"] == "image/png"
+                        assert attachment["totalPages"] == 1 and attachment["status"] == "complete"
+                        assert attachment["pages"] == [{"page": 1, "text": "DOCUMENTO FICTICIO\nIMPORTE TOTAL 321 EUR"}]
+                        assert "source" not in attachment
+                        assert not body.get("mentions")
+                        integrated_tool_requests.append(("attachment", body))
+                        response = {
+                            "requestId": "integrated-attachment", "status": "answer",
+                            "message": "El adjunto ficticio indica un importe total de 321 EUR.",
+                            "sources": [], "questions": [], "actions": [], "trace": [],
+                            "attachmentSources": [{"file": "adjunto-ficticio.png", "page": 1,
+                                                   "excerpt": "IMPORTE TOTAL 321 EUR"}],
+                            "attachmentCoverage": {"processed": 1, "total": 1, "partial": False},
+                        }
+                        request_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(response))
+                        return
                     if "consulta lenta" in message:
                         pending.append(request_route)
                         return
@@ -470,6 +539,71 @@ try:
             if output:
                 page.screenshot(path=str(output / f"secretario-central-{width}.png"), full_page=True)
 
+            # Integrated composer tools run entirely against browser-local
+            # fixtures. Dictation uses a fictional on-device recognition API,
+            # attachments use a fictional local OCR worker, and mentions only
+            # expose identities already authorized in the in-memory state.
+            composer = page.locator('#secretary-message')
+            request_count = len(requests)
+            composer.fill('Texto escrito')
+            dictation = panel.get_by_role('button', name='Dictar mensaje', exact=True)
+            expect(dictation).to_be_visible()
+            dictation.click()
+            expect(dictation).to_have_attribute('aria-pressed', 'true')
+            expect(panel.locator('.secretary-dictation')).to_have_attribute('data-state', 'listening')
+            page.evaluate("""()=>{
+              const recognition=window.__secretaryRecognitions.filter(item=>item.started).at(-1);
+              if(!recognition||recognition.processLocally!==true)throw Error('Fictional local recognition did not start');
+              recognition.emit('con voz ficticia',true);recognition.end();
+            }""")
+            expect(composer).to_have_value('Texto escrito con voz ficticia')
+            expect(panel.locator('.secretary-dictation-status')).to_contain_text('Puedes editarlo antes de enviar.')
+            assert len(requests) == request_count
+            assert page.evaluate("window.__secretarySpeechAvailability.at(-1)?.processLocally===true&&window.__secretarySpeechAvailability.at(-1)?.langs?.[0]==='es'")
+            composer.fill('')
+
+            composer.fill('@Proyecto ficticio')
+            mentions = panel.get_by_role('listbox', name='Referencias disponibles', exact=True)
+            expect(mentions).to_be_visible()
+            expect(mentions.get_by_role('group', name='Proyectos', exact=True)).to_contain_text('Proyecto ficticio')
+            mention_request_count = len(requests)
+            composer.press('Enter')
+            expect(composer).to_have_value('@Proyecto ficticio ')
+            assert len(requests) == mention_request_count
+            composer.type('revisa el contexto')
+            panel.get_by_role('button', name='Enviar', exact=True).click()
+            mention_reply = panel.locator('.secretary-turn-assistant').last
+            expect(mention_reply.locator('.secretary-bubble')).to_have_text('Referencia ficticia verificada.')
+            expect(composer).to_have_value('')
+
+            attachment_input = panel.locator('.secretary-attachments-device input[type=file]')
+            attachment_input.set_input_files({
+                'name': 'adjunto-ficticio.png', 'mimeType': 'image/png', 'buffer': tiny_png,
+            })
+            ready_attachment = panel.locator('.secretary-attachment-ready')
+            expect(ready_attachment).to_be_visible(timeout=10000)
+            expect(ready_attachment).to_contain_text('adjunto-ficticio.png')
+            expect(ready_attachment).to_contain_text('1 página lista para consultar')
+            if output:
+                page.screenshot(path=str(output / f'secretario-adjunto-listo-{width}.png'), full_page=True)
+            attachment_request_count = len(requests)
+            panel.get_by_role('button', name='Enviar', exact=True).click()
+            attachment_reply = panel.locator('.secretary-turn-assistant').last
+            expect(attachment_reply.locator('.secretary-bubble')).to_have_text('El adjunto ficticio indica un importe total de 321 EUR.')
+            evidence = attachment_reply.locator('.secretary-attachment-evidence')
+            expect(evidence).to_contain_text('adjunto-ficticio.png · página 1')
+            expect(evidence).to_contain_text('IMPORTE TOTAL 321 EUR')
+            assert len(requests) == attachment_request_count + 1
+            expect(panel.locator('.secretary-attachment')).to_have_count(0)
+            assert page.evaluate("""()=>window.__secretaryOcrCalls.length===1&&
+              window.__secretaryOcrCalls[0].language==='spa'&&
+              [window.__secretaryOcrCalls[0].workerPath,window.__secretaryOcrCalls[0].corePath,window.__secretaryOcrCalls[0].langPath]
+                .every(value=>new URL(value).origin===location.origin)""")
+            assert [kind for kind, _body in integrated_tool_requests] == ['mention', 'attachment']
+            if output:
+                page.screenshot(path=str(output / f'secretario-herramientas-integradas-{width}.png'), full_page=True)
+            print(f'{width} PASS: local fake dictation, authorized mention and local OCR attachment with no implicit send', flush=True)
+
             # Quota failures explain their scope, keep the conversation central,
             # and offer a native navigation action that consumes no extra AI call.
             for query, expected in [
@@ -610,9 +744,17 @@ try:
             assert page.evaluate("document.body.classList.contains('secretary-home')&&state.draft===null")
             page.locator("#secretary-message").fill("Edita la factura FC-0002" if width >= 1100 else "Abre la factura FC-0002")
             panel.get_by_role("button", name="Enviar", exact=True).click()
-            expect(page.locator(".finance-document-editor")).to_contain_text("Editando FC-0002")
-            # The normal native editor close also returns to the conversation.
-            page.get_by_role("button", name="← Todas las facturas", exact=True).click()
+            if width >= 1100:
+                expect(page.locator(".finance-document-editor")).to_contain_text("Editando FC-0002")
+                # The normal native editor close also returns to the conversation.
+                page.get_by_role("button", name="← Todas las facturas", exact=True).click()
+            else:
+                preview = page.locator('.secretary-document-preview')
+                expect(preview.get_by_role('heading', name='FC-0002', exact=True)).to_be_visible()
+                expect(preview).to_contain_text('Versión actual del registro · Solo lectura')
+                expect(page.locator('.finance-document-editor')).to_have_count(0)
+                assert page.evaluate('state.draft===null')
+                preview.get_by_role('button', name='← Volver a la conversación', exact=True).click()
             expect(answer.locator(".secretary-invoice")).to_have_count(3)
             assert page.evaluate("document.body.classList.contains('secretary-home')")
             page.locator("#secretary-message").fill("¿Cuántas facturas tengo pendientes de cobrar?")
@@ -664,24 +806,19 @@ try:
                 page.screenshot(path=str(output / f"secretario-consulta-central-{width}.png"))
             page.locator("#secretary-message").fill("Abre la segunda")
             panel.get_by_role("button", name="Enviar", exact=True).click()
-            if width >= 1100:
-                opened = panel.locator('.secretary-turn-assistant').filter(has_text='He localizado F-DEMO-002.')
-                expect(opened.locator('.secretary-invoice')).to_contain_text('F-DEMO-002')
-                expect(page.locator('.finance-document-editor')).to_have_count(0)
-                preview = page.locator('.secretary-document-preview')
-                expect(preview.get_by_role('heading', name='F-DEMO-002', exact=True)).to_be_visible()
-                expect(preview).to_contain_text('Versión actual del registro · Solo lectura')
-                expect(page.locator('body')).to_have_class(__import__('re').compile(r'.*secretary-lateral.*'))
-                preview.get_by_role('button', name='← Volver a la conversación', exact=True).click()
-                assert page.evaluate("document.body.classList.contains('secretary-home')")
-            else:
-                expect(page.locator(".finance-document-editor")).to_contain_text("Editando F-DEMO-002")
-                expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-lateral.*"))
-                if output:
-                    wait_for_stable_view(page)
-                    page.screenshot(path=str(output / f"secretario-factura-lateral-{width}.png"))
-                panel.get_by_role("button", name="Volver al chat", exact=True).click()
-                expect(page.locator("#secretary-message")).to_be_focused()
+            opened = panel.locator('.secretary-turn-assistant').filter(has_text='He localizado F-DEMO-002.')
+            expect(opened.locator('.secretary-invoice')).to_contain_text('F-DEMO-002')
+            expect(page.locator('.finance-document-editor')).to_have_count(0)
+            preview = page.locator('.secretary-document-preview')
+            expect(preview.get_by_role('heading', name='F-DEMO-002', exact=True)).to_be_visible()
+            expect(preview).to_contain_text('Versión actual del registro · Solo lectura')
+            expect(page.locator('body')).to_have_class(__import__('re').compile(r'.*secretary-lateral.*'))
+            if output:
+                wait_for_stable_view(page)
+                page.screenshot(path=str(output / f"secretario-factura-lateral-{width}.png"))
+            preview.get_by_role('button', name='← Volver a la conversación', exact=True).click()
+            assert page.evaluate("document.body.classList.contains('secretary-home')")
+            expect(page.locator("#secretary-message")).to_be_focused()
             expect(year_turn.locator(".secretary-invoice")).to_have_count(2)
             assert [row["id"] for row in requests[-1]["context"]["focus"]["results"]] == ["F-DEMO-001", "F-DEMO-002"]
             assert page.evaluate("fixtureDocuments()===demoRecords")
