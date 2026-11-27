@@ -116,6 +116,10 @@ var ModernoHeaderActions=(()=>{
  document.addEventListener('click',e=>{if(host&&!host.contains(e.target))host.querySelectorAll('details[open]').forEach(d=>d.open=false);});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'){const open=host?.querySelector('details[open]');if(open){open.open=false;open.querySelector('summary')?.focus();}}});
  window.addEventListener('resize',refresh);
+ // DesktopShell can replace its header after the window resize event.
+ new MutationObserver(records=>{
+  if(records.some(record=>[...record.addedNodes,...record.removedNodes].some(node=>node.id==='desktop-header')))refresh();
+ }).observe(document.body,{childList:true});
  const originalRender=render;render=function(){const result=originalRender.apply(this,arguments);refresh();return result;};
  const originalBadge=notifBadge;notifBadge=function(){const result=originalBadge.apply(this,arguments);notifications();return result;};
  refresh();

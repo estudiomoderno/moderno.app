@@ -137,7 +137,7 @@ def assert_launcher_clearance(page):
       return heightFits&&r.width>=(touch?44:36)&&r.top>=0&&r.left>=0&&r.right<=innerWidth&&r.bottom<=innerHeight
         &&b.width>0&&r.right<=b.left&&b.left-r.right<=10&&Math.abs((r.top+r.bottom)-(b.top+b.bottom))<=2
         &&getComputedStyle(launcher).backgroundColor==='rgb(255, 186, 122)';
-    }""")
+    }""", timeout=6000)
 
 
 def assert_static_history(panel):
