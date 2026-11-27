@@ -133,7 +133,8 @@
     const matches=question.options.filter(option=>[option.label,...String(option.label??'').split(' · '),option.value]
       .some(value=>value&&[original,reply].includes(normalize(value))));
     if(matches.length===1)return {[key]:String(matches[0].value??matches[0].id)};
-    if(key==='period'&&/^(?:este (?:mes|ano)|(?:el )?(?:mes|ano) (?:pasado|anterior)|(?:en |de )?(?:19|20|21)\d{2}|(?:entre|del|de|desde|hasta) \d+[/-])/i.test(reply))return {[key]:message};
+    if(key==='currency'&&/^[a-z]{3}$/.test(reply))return {[key]:reply.toUpperCase()};
+    if(key==='period'&&/^(?:este (?:mes|ano)|(?:el )?(?:mes|ano) (?:pasado|anterior)|(?:en |de )?(?:19|20|21)\d{2}|(?:entre|del|de|desde|hasta) \d+[/-]|(?:en |de )?(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b)/i.test(reply))return {[key]:message};
     if(/^line\.\d+\.(?:qty|price)$/.test(key)&&/^(?:(?:a|son|por) )?\d+(?:[.,]\d+)?(?: [a-záéíóú€$²³/]+){0,4}$/i.test(reply))return {[key]:message};
     return null;
   }

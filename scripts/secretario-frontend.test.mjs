@@ -123,9 +123,9 @@ test('published app enables only the production endpoint and keeps feedback off'
   const config='window.MODERNO_SECRETARY_CONFIG=Object.freeze({enabled:true,endpoint:"https://cgqtylvaapwbuwqvpjtb.supabase.co/functions/v1/secretario",feedbackEnabled:false});';
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
-  assert.ok(html.includes('<script src="/secretario-bridge.js?v=4"></script>'));
-  assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=7">'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=15"></script>'));
+  assert.ok(html.includes('<script src="/secretario-bridge.js?v=5"></script>'));
+  assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=8">'));
+  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=16"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
 });
 
@@ -200,7 +200,7 @@ test('an in-flight request is bound to its original screen and project',async()=
   const code=await readFile(new URL('../app/secretario-ui.js',import.meta.url),'utf8');
   assert.match(code,/originContext=currentContext\(\)/);assert.match(code,/if\(!sameContext\(originContext\)\)/);
   assert.match(code,/La consulta se detuvo porque cambiaste de pantalla o de proyecto/);
-  assert.match(code,/if\(changedView\)\{questions=\[\];answers=\{\};pendingAnswers=\{\}/);
+  assert.match(code,/if\(changedView\)\{questions=\[\];answers=\{\};questionTarget=null;pendingAnswers=\{\}/);
   assert.doesNotMatch(code,/changedView&&\['proyecto','estancia'\]\.includes\(state\.view\)\)collapsed=false/);
 });
 

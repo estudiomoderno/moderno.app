@@ -272,6 +272,15 @@ try:
                         response = {"requestId": "escaped", "status": "answer", "message": '<img src=x onerror="window.injected=true">',
                                     "sources": [{"kind": "project", "id": "9001", "label": f"Fuente ficticia {i}", "projectId": 9001} for i in range(25)],
                                     "sourceCount": 25, "questions": [], "actions": [], "trace": []}
+                    elif message == "Completar partida ficticia":
+                        response = {"requestId": "multi", "status": "clarifying", "message": "Faltan los datos de la partida.",
+                                    "sources": [], "actions": [], "trace": [], "questions": [
+                                        {"id": "line.0.qty", "prompt": "Cantidad de la partida", "freeText": True, "options": []},
+                                        {"id": "line.0.price", "prompt": "Precio de la partida", "freeText": True, "options": []}]}
+                    elif body.get("answers", {}).get("line.0.qty"):
+                        assert body["answers"] == {"line.0.qty": "3 horas", "line.0.price": "125 €"}
+                        response = {"requestId": "multi-reply", "status": "answer", "message": "Datos de la partida comprobados.",
+                                    "sources": [], "actions": [], "trace": [], "questions": []}
                     elif body.get("answers"):
                         assert body["answers"]["clientId"] == "contact:0"
                         response = proposal()
@@ -306,6 +315,11 @@ try:
             expect(page.get_by_role("heading", name="¿Qué hacemos hoy?", exact=True)).to_be_visible()
             expect(panel.get_by_role("button", name="Facturas", exact=True)).to_be_visible()
             expect(page.locator(".finance-overview")).to_be_hidden()
+            nav = panel.get_by_role("navigation", name="Accesos directos de Finanzas")
+            expect(nav.locator(".secretary-shortcut")).to_have_text(["Resumen", "Facturas", "Gastos", "Presupuestos"])
+            assert nav.evaluate("node=>node.getBoundingClientRect().bottom<=document.querySelector('.secretary-header').getBoundingClientRect().top")
+            expect(panel.get_by_role("button", name="Salir del Modo IA", exact=True)).to_be_visible()
+            expect(panel.get_by_role("button", name="Vaciar conversación", exact=True)).to_have_count(0)
             wait_for_stable_view(page)
             welcome = panel.locator('.secretary-welcome .secretary-character')
             expect(welcome).to_be_visible()
@@ -443,6 +457,7 @@ try:
             expect(page.locator("#paper")).to_contain_text("Espacio Olivo")
             assert page.locator(".inv-form").evaluate("node=>getComputedStyle(node).position==='static'")
             assert_secretary_clearance(page)
+            assert panel.locator(".secretary-title strong").evaluate("node=>node.getBoundingClientRect().height<50")
             wait_for_stable_view(page)
             if output:
                 if width >= 1100:
@@ -524,18 +539,13 @@ try:
             expect(detail.locator(".secretary-invoice")).to_contain_text("F-DEMO-002")
             assert page.evaluate("document.body.classList.contains('secretary-home')&&fixtureDocuments()===demoRecords")
 
-            for use_form in [True, False]:
-                ask_demo("¿Qué ingresos de facturas faltan?", "¿Te refieres a facturas pendientes de cobro?", [])
-                reply = "pendientes de cobro y solo de este año"
-                if use_form:
-                    panel.get_by_role("textbox", name="Otra respuesta: ¿Te refieres a facturas pendientes de cobro?", exact=True).fill(reply)
-                    panel.get_by_role("button", name="Continuar", exact=True).click()
-                    expect(panel.locator(".secretary-turn-assistant .secretary-bubble").last).to_have_text(year_text)
-                    expect(panel.locator(".secretary-turn-user .secretary-bubble").last).to_have_text(reply)
-                    assert requests[-1]["automatic"] is True and requests[-1]["message"] == reply
-                else:
-                    ask_demo(reply, year_text, ["F-DEMO-001", "F-DEMO-002"])
-                    assert requests[-1]["automatic"] is False
+            ask_demo("¿Qué ingresos de facturas faltan?", "¿Te refieres a facturas pendientes de cobro?", [])
+            expect(panel.get_by_role("textbox")).to_have_count(1)
+            expect(panel.locator(".secretary-thread").get_by_text("¿Te refieres a facturas pendientes de cobro?", exact=True)).to_have_count(1)
+            expect(panel.get_by_text("Puedes elegir una opción o escribir tu respuesta.", exact=True)).to_have_count(0)
+            expect(panel.get_by_text("Puedes preguntar o pedirme que prepare un borrador.", exact=True)).to_have_count(0)
+            ask_demo("pendientes de cobro y solo de este año", year_text, ["F-DEMO-001", "F-DEMO-002"])
+            assert requests[-1]["automatic"] is False
 
             ambiguity = "¿Te refieres al cliente Casa Sol o al proyecto Casa Sol?"
             ask_demo("Muéstrame las pendientes de Casa Sol de este año", ambiguity, [])
@@ -544,7 +554,7 @@ try:
             ask_demo("Cliente Casa Sol", "No tienes facturas pendientes de cobro con esos filtros.", [])
             ask_demo("Muéstrame las pendientes de Casa Sol de este año", ambiguity, [])
             panel.get_by_role("button", name="Proyecto Casa Sol", exact=True).click()
-            panel.get_by_role("button", name="Continuar", exact=True).click()
+            panel.get_by_role("button", name="Enviar", exact=True).click()
             expect(panel.locator(".secretary-turn-assistant .secretary-bubble").last).to_have_text(
                 "De las emitidas en 2026, tienes 1 factura pendiente por 1.000 €. Una está vencida.")
             expect(panel.locator(".secretary-turn-user .secretary-bubble").last).to_have_text("Proyecto Casa Sol")
@@ -554,7 +564,71 @@ try:
             last = panel.locator(".secretary-turn-assistant").last
             expect(last.locator(".secretary-invoice")).to_contain_text("F-DEMO-003")
             assert requests[-1]["receivableContext"]["scope"]["projectId"] == "9001"
-            print(f"{width} PASS: exact acceptance dialogue, form and composer, invoice detail, choices, empty and failed read", flush=True)
+            print(f"{width} PASS: exact acceptance dialogue with one composer, invoice detail, choices, empty and failed read", flush=True)
+            composer = panel.get_by_role("textbox", name="Mensaje para el Secretario", exact=True)
+            send = panel.get_by_role("button", name="Enviar", exact=True)
+            composer.fill("Completar partida ficticia")
+            send.click()
+            expect(panel.get_by_role("button", name="Cantidad de la partida", exact=True)).to_be_visible()
+            initial_requests = len(requests)
+            composer.fill("3 horas")
+            send.click()
+            expect(composer).to_have_attribute("placeholder", "Precio de la partida")
+            assert len(requests) == initial_requests
+            composer.fill("125 €")
+            send.click()
+            expect(panel.locator(".secretary-turn-assistant .secretary-bubble").last).to_have_text("Datos de la partida comprobados.")
+            expect(panel.get_by_role("textbox")).to_have_count(1)
+
+            composer.fill("consulta lenta para mostrar efecto")
+            send.click()
+            marker = panel.locator(".secretary-reply-marker")
+            expect(marker).to_have_text("Generando respuesta…")
+            marker.evaluate("node=>node.dataset.fixtureReply='same-bubble'")
+            animated_text = "La respuesta aparece de forma progresiva. " * 8
+            animated_text = animated_text.strip()
+            pending.pop().fulfill(status=200, headers=cors_headers, content_type="application/json",
+                                  body=json.dumps({"requestId": "animation", "status": "answer", "message": animated_text}))
+            reveal = panel.locator(".secretary-reply-revealing")
+            expect(reveal).to_have_attribute("data-fixture-reply", "same-bubble")
+            expect(reveal).to_have_attribute("aria-busy", "true")
+            assert reveal.text_content() != animated_text
+            expect(reveal.locator(".secretary-reply-caret")).to_have_count(1)
+            page.emulate_media(reduced_motion="reduce")
+            expect(panel.locator(".secretary-turn-assistant .secretary-bubble").last).to_have_text(animated_text)
+            expect(panel.locator(".secretary-reply-caret")).to_have_count(0)
+            page.emulate_media(reduced_motion="no-preference")
+
+            composer.fill("Texto conservado al volver")
+            page.evaluate("""()=>{
+              window.fixtureFinanceLoading=false;
+              new MutationObserver(records=>{
+                for(const record of records)for(const node of record.addedNodes)
+                  if(node.matches?.('.secretary-finance-loading')&&node.textContent==='Cargando Finanzas…')window.fixtureFinanceLoading=true;
+              }).observe(document.getElementById('view'),{childList:true});
+            }""")
+            panel.get_by_role("button", name="Salir del Modo IA", exact=True).click()
+            expect(panel).to_have_count(0)
+            expect(page.locator(".finance-overview")).to_be_visible()
+            expect(page.locator(".secretary-finance-loading")).to_have_count(0)
+            assert page.evaluate("window.fixtureFinanceLoading && fixtureDocuments()===demoRecords")
+            expect(page.locator("#secretary-reopen")).to_have_count(0)
+            expect(page.get_by_role("button", name="Modo IA", exact=True)).to_be_focused()
+            if output:
+                wait_for_stable_view(page)
+                page.screenshot(path=str(output / f"secretario-finanzas-normal-{width}.png"))
+            page.evaluate("go('facturas')")
+            expect(page.get_by_role("button", name="Modo IA", exact=True)).to_be_visible()
+            expect(panel).to_have_count(0)
+            page.get_by_role("button", name="Modo IA", exact=True).click()
+            expect(composer).to_have_value("Texto conservado al volver")
+            expect(panel.locator(".secretary-turn-assistant .secretary-bubble").last).to_have_text(animated_text)
+            expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-home.*"))
+            if output:
+                composer.fill("")
+                wait_for_stable_view(page)
+                page.screenshot(path=str(output / f"secretario-modo-ia-{width}.png"))
+            print(f"{width} PASS: composer handles multiple answers, reply reveal, reduced motion, Finance exit and preserved chat", flush=True)
             page.evaluate("Object.assign(state,window.originalInvoicesFixture);ModernoSecretary.reset();go('informes');ModernoSecretary.openFinance();fixtureVersions()")
 
             # A requested draft may finish while folded. It becomes reviewable
@@ -581,9 +655,9 @@ try:
             expect(panel.get_by_role("button", name="Cliente ficticio", exact=True)).to_be_visible()
             expect(panel).to_have_attribute('data-character-state', 'aviso')
             assert page.evaluate("document.body.classList.contains('secretary-home')")
-            expect(panel.get_by_role("textbox", name="Otra respuesta: Elige el cliente", exact=True)).to_be_visible()
+            expect(panel.get_by_role("textbox")).to_have_count(1)
             panel.get_by_role("button", name="Cliente ficticio", exact=True).click()
-            panel.get_by_role("button", name="Continuar", exact=True).click()
+            panel.get_by_role("button", name="Enviar", exact=True).click()
             page.wait_for_function("state.view==='facturas'&&state.draft?.lines?.[0]?.qty===2")
             expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-lateral.*"))
             expect(page.locator(".finance-document-editor")).to_be_visible()
@@ -624,6 +698,12 @@ try:
             assert page.evaluate("state.draft.lines[0].price===125&&state.draft.lines[0].sourceProof.revision==='original'&&state.draft.date==='2026-10-01'&&state.draft.num===37")
             assert page.evaluate("state.borradores[0].draft.lines[0].qty===2&&state.invoices.length===0")
 
+            panel.get_by_role("button", name="Salir del Modo IA", exact=True).click()
+            expect(page.locator("#modalBox")).to_contain_text("a medias")
+            assert page.evaluate("state.draft.lines[0].qty===4")
+            page.locator("#modalBox").get_by_role("button", name="Seguir editando", exact=True).click()
+            expect(panel).to_be_visible()
+
             # Consent is optional. Only a deliberate rating sends an enumerated event.
             panel.get_by_label("Opciones del Secretario", exact=True).click()
             consent = panel.get_by_label("Ayudar a mejorar el Secretario", exact=True)
@@ -648,6 +728,14 @@ try:
             page.wait_for_function("!window.__secretaryConsent.enabled&&window.__secretaryFeedbackEvents.length===0")
             panel.get_by_label("Opciones del Secretario", exact=True).click()
             expect(panel.get_by_role("button", name="Sí", exact=True)).to_have_count(0)
+
+            panel.get_by_role("button", name="Salir del Modo IA", exact=True).click()
+            page.locator("#modalBox").get_by_role("button", name="Salir sin guardar", exact=True).click()
+            expect(page.get_by_role("button", name="Modo IA", exact=True)).to_be_visible()
+            expect(page.locator("#moderno-secretary")).to_have_count(0)
+            assert page.evaluate("state.draft===null&&state.borradores[0].draft.lines[0].qty===2&&state.invoices.length===0")
+            page.get_by_role("button", name="Modo IA", exact=True).click()
+            expect(panel.locator(".secretary-turn-user .secretary-bubble").last).to_have_text("editar guardado: 4 horas a 125 por hora")
 
             # One conversation follows the current project, including after folding.
             page.evaluate("state.draft=null;state.fView=null;go('proyecto',9001)")
