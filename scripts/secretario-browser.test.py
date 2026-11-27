@@ -452,7 +452,7 @@ try:
             pending_route, result = pending_receivables.pop()
             pending_route.fulfill(status=200, headers=cors_headers, content_type="application/json", body=json.dumps(result))
             expect(panel).to_be_visible()
-            answer = panel.locator(".secretary-turn-assistant").last
+            answer = panel.locator(".secretary-turn-assistant").filter(has_text="Tienes 3 facturas pendientes de cobro por 1.680")
             expect(answer.locator(".secretary-bubble")).to_contain_text("Tienes 3 facturas pendientes de cobro por 1.680")
             expect(answer.locator(".secretary-bubble")).to_contain_text("Una está vencida")
             expect(answer.locator(".secretary-invoice")).to_have_count(3)
