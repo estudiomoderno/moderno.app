@@ -513,6 +513,7 @@ try:
                 page.set_viewport_size({"width": 320, "height": height})
                 expect(panel.get_by_role("button", name="Salir del Modo IA", exact=True)).to_be_in_viewport()
                 assert title.evaluate("node=>node.getBoundingClientRect().height<50")
+                assert nav.evaluate("node=>node.getBoundingClientRect().top>=document.getElementById('mHeader').getBoundingClientRect().bottom")
                 page.set_viewport_size({"width": width, "height": height})
             ask_demo("solo las de este año", year_text, ["F-DEMO-001", "F-DEMO-002"])
             year_turn = panel.locator(".secretary-turn-assistant").filter(has_text=year_text)
