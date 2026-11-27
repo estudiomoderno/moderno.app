@@ -6,6 +6,13 @@ const customerDebt=/\b(?:me|nos) (?:deben?|adeudan?)\b/;
 const futureDue='(?:sin vencer|no vencidas?|(?:que )?(?:aun |todavia )?no (?:han vencido|vencen))';
 const includeFuture=new RegExp('\\b(?:tambien|incluye(?:me)?|anade) (?:las )?'+futureDue+'\\b','g');
 const futureDuePhrase=new RegExp('\\b'+futureDue+'\\b','g');
+// Normalize the opening only. Names, dates and exclusions still go through the scope parser.
+const existenceLead=new RegExp(
+  '^((?:(?:y|ahora|entonces|de esas|de estas) )*)(?:dime si )?(?:(?:aun|todavia) )?(?:(?:me|nos) )?'+
+  '(?:hay|faltan?|quedan?|tengo|tienen?|tenemos|teneis) (?:(?:aun|todavia) )?(?:(?:algun(?:[oa]s?)?|algo) )?'+
+  '(?:(facturas?) (?:(?:aun|todavia) )?)?(?:que (?:falten?|queden?) (?=(?:por cobrar|sin cobrar|pendientes?)\\b))?'+
+  '(?=(?:facturas?|por cobrar|sin cobrar|pendientes?|de|del)\\b)'
+);
 const queryText=value=>compact(value)
   .replace(/\bno (?:me|nos) (?:ha|han|hayan|habian) pagado\b/g,'por cobrar')
   .replace(/\bno ((?:(?:me|nos) )?(?:hay|quedan?|faltan?))(?: nada)? (?=por cobrar\b)/g,'$1 ')
@@ -15,6 +22,7 @@ const queryText=value=>compact(value)
   .replace(includeFuture,'sin filtro de vencimiento')
   .replace(futureDuePhrase,'sin vencer')
   .replace(/\b(?:lo mismo|igual) (?:para|en|de) (?=(?:el |del )?proyecto\b)/g,'para ')
+  .replace(existenceLead,(_match,prefix,invoice)=>prefix+'hay '+(invoice?invoice+' ':''))
   .replace(/\bsolamente\b/g,'solo');
 const allowedWords = new Set('a acerca actualmente ademas ahora al aun cobrar cobro cobros con cuales cuantos cuanto cuantas de del dime el en ensename entonces esas esos estas estos estan factura facturas falta faltan favor hay importe la las lista listar lo los me mejor mi mis mismas mismos mostrar muestra muestrame nos pendiente pendientes por para puedes podrias que quiero queda quedan saber saldo solo tambien tengo tiene total todo todas todos ver y impagada impagadas adeudan adeudadas estudio'.split(' '));
 const openOrWrite = /^(?:(?:por favor|puedes|podrias|quiero) )*(?:abre(?:me)?|abrir|edit\w*|registra\w*|emite\w*|envia\w*|crea\w*|prepara\w*|cobra|cobrame|paga(?:me|r)?|abona(?:me|r)?|como (?:puedo|podemos|debo|se|hago|pagar|abonar|configurar))\b/;
