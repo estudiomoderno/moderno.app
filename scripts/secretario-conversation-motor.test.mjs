@@ -72,7 +72,7 @@ test('CA02: a shortened typed name resolves before planning and keeps the full b
   assert.equal(result.status,200);
   assert.equal(result.body.status,'answer');
   assert.match(result.body.message,/^Amador Estudio Demo\nHay 1200,00\s€ de facturación registrada\.$/);
-  assert.deepEqual(result.body.sources.map(({id})=>id),['903']);
+  assert.deepEqual(result.body.sources.map(({kind,id})=>[kind,id]),[['invoice','F-AMADOR-001']]);
   assert.equal(result.body.metrics.invoiced,1200);
   assertAuthorizedEvidence(result,blocks);
  }
@@ -341,7 +341,7 @@ test('CA03/CA13: five-turn brief finance chain stays deterministic and source-ba
   const invoiced=await chat.turn('Solo la facturación',{financeContext:summary.body.financeContext});
   assert.equal(invoiced.body.financeContext.metric,'invoiced');
   assert.equal(invoiced.body.metrics.invoiced,3900);
-  assert.deepEqual(invoiced.body.sources.map(source=>String(source.id)),['100','101','102','103']);
+  assert.deepEqual(invoiced.body.sources.map(({kind,id})=>[kind,id]),['F-DEMO-001','F-DEMO-002','F-DEMO-003','F-DEMO-004'].map(id=>['invoice',id]));
   assertOneLine(invoiced.body.message);
   assertAuthorizedEvidence(invoiced,blocks);
 

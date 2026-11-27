@@ -19,6 +19,9 @@ from playwright.sync_api import expect, sync_playwright
 repo = Path(__file__).resolve().parents[1]
 output = Path(sys.argv[1]) if len(sys.argv) > 1 else None
 desktop_only = os.environ.get('SECRETARIO_DESKTOP_ONLY') == '1'
+mobile_only = os.environ.get('SECRETARIO_MOBILE_ONLY') == '1'
+if desktop_only and mobile_only:
+    raise ValueError('Choose either SECRETARIO_DESKTOP_ONLY or SECRETARIO_MOBILE_ONLY')
 if output:
     output.mkdir(parents=True, exist_ok=True)
 backend = "https://chsilowzrtumbcofspwv.supabase.co"
@@ -180,14 +183,25 @@ def wait_for_stable_view(page):
 
 
 def assert_secretary_clearance(page):
-    page.wait_for_function("""()=>{
-      const panel=document.getElementById('moderno-secretary'),sync=document.getElementById('syncTag');
-      if(!panel||!sync)return false;
-      const p=panel.getBoundingClientRect(),s=sync.getBoundingClientRect(),button=panel.querySelector('button[type=submit]')?.getBoundingClientRect();
-      if(!button)return false;
-      const disjoint=rect=>rect.right<=s.left||rect.left>=s.right||rect.bottom<=s.top-10||rect.top>=s.bottom+10;
-      return panel.parentElement===document.body&&disjoint(p)&&disjoint(button)&&p.top>=0&&p.bottom<=innerHeight;
-    }""")
+    try:
+        page.wait_for_function("""()=>{
+          const panel=document.getElementById('moderno-secretary'),sync=document.getElementById('syncTag');
+          if(!panel||!sync)return false;
+          const p=panel.getBoundingClientRect(),s=sync.getBoundingClientRect(),button=panel.querySelector('button[type=submit]')?.getBoundingClientRect();
+          if(!button)return false;
+          const disjoint=rect=>rect.right<=s.left||rect.left>=s.right||rect.bottom<=s.top-10||rect.top>=s.bottom+10;
+          return panel.parentElement===document.body&&disjoint(p)&&disjoint(button)&&p.top>=0&&p.bottom<=innerHeight;
+        }""")
+    except Exception:
+        geometry = page.evaluate("""()=>{
+          const panel=document.getElementById('moderno-secretary'),sync=document.getElementById('syncTag'),button=panel?.querySelector('button[type=submit]');
+          const rect=node=>node?Object.fromEntries(['top','right','bottom','left','width','height'].map(key=>[key,node.getBoundingClientRect()[key]])):null;
+          const style=node=>node?Object.fromEntries(['position','top','right','bottom','left','width','height','paddingBottom','overflow'].map(key=>[key,getComputedStyle(node)[key]])):null;
+          return {viewport:{width:innerWidth,height:innerHeight},body:document.body.className,panel:{rect:rect(panel),style:style(panel),parent:panel?.parentElement?.tagName},
+            sync:{rect:rect(sync),style:style(sync)},button:{rect:rect(button),style:style(button)}};
+        }""")
+        print('Secretary clearance geometry:', json.dumps(geometry, ensure_ascii=False, sort_keys=True), flush=True)
+        raise
 
 
 def assert_launcher_clearance(page):
@@ -249,7 +263,7 @@ try:
         if executable:
             options["executable_path"] = executable
         browser = playwright.chromium.launch(**options)
-        viewports = [(1440, 1000)] if desktop_only else [(1440, 1000), (390, 844)]
+        viewports = [(1440, 1000)] if desktop_only else [(390, 844)] if mobile_only else [(1440, 1000), (390, 844)]
         for width, height in viewports:
             page = browser.new_page(viewport={"width": width, "height": height}, locale="es-ES")
             errors, requests, forbidden_writes, pending = [], [], [], []
@@ -730,9 +744,17 @@ try:
             assert page.evaluate("document.body.classList.contains('secretary-home')&&state.draft===null")
             page.locator("#secretary-message").fill("Edita la factura FC-0002" if width >= 1100 else "Abre la factura FC-0002")
             panel.get_by_role("button", name="Enviar", exact=True).click()
-            expect(page.locator(".finance-document-editor")).to_contain_text("Editando FC-0002")
-            # The normal native editor close also returns to the conversation.
-            page.get_by_role("button", name="← Todas las facturas", exact=True).click()
+            if width >= 1100:
+                expect(page.locator(".finance-document-editor")).to_contain_text("Editando FC-0002")
+                # The normal native editor close also returns to the conversation.
+                page.get_by_role("button", name="← Todas las facturas", exact=True).click()
+            else:
+                preview = page.locator('.secretary-document-preview')
+                expect(preview.get_by_role('heading', name='FC-0002', exact=True)).to_be_visible()
+                expect(preview).to_contain_text('Versión actual del registro · Solo lectura')
+                expect(page.locator('.finance-document-editor')).to_have_count(0)
+                assert page.evaluate('state.draft===null')
+                preview.get_by_role('button', name='← Volver a la conversación', exact=True).click()
             expect(answer.locator(".secretary-invoice")).to_have_count(3)
             assert page.evaluate("document.body.classList.contains('secretary-home')")
             page.locator("#secretary-message").fill("¿Cuántas facturas tengo pendientes de cobrar?")
@@ -784,24 +806,19 @@ try:
                 page.screenshot(path=str(output / f"secretario-consulta-central-{width}.png"))
             page.locator("#secretary-message").fill("Abre la segunda")
             panel.get_by_role("button", name="Enviar", exact=True).click()
-            if width >= 1100:
-                opened = panel.locator('.secretary-turn-assistant').filter(has_text='He localizado F-DEMO-002.')
-                expect(opened.locator('.secretary-invoice')).to_contain_text('F-DEMO-002')
-                expect(page.locator('.finance-document-editor')).to_have_count(0)
-                preview = page.locator('.secretary-document-preview')
-                expect(preview.get_by_role('heading', name='F-DEMO-002', exact=True)).to_be_visible()
-                expect(preview).to_contain_text('Versión actual del registro · Solo lectura')
-                expect(page.locator('body')).to_have_class(__import__('re').compile(r'.*secretary-lateral.*'))
-                preview.get_by_role('button', name='← Volver a la conversación', exact=True).click()
-                assert page.evaluate("document.body.classList.contains('secretary-home')")
-            else:
-                expect(page.locator(".finance-document-editor")).to_contain_text("Editando F-DEMO-002")
-                expect(page.locator("body")).to_have_class(__import__("re").compile(r".*secretary-lateral.*"))
-                if output:
-                    wait_for_stable_view(page)
-                    page.screenshot(path=str(output / f"secretario-factura-lateral-{width}.png"))
-                panel.get_by_role("button", name="Volver al chat", exact=True).click()
-                expect(page.locator("#secretary-message")).to_be_focused()
+            opened = panel.locator('.secretary-turn-assistant').filter(has_text='He localizado F-DEMO-002.')
+            expect(opened.locator('.secretary-invoice')).to_contain_text('F-DEMO-002')
+            expect(page.locator('.finance-document-editor')).to_have_count(0)
+            preview = page.locator('.secretary-document-preview')
+            expect(preview.get_by_role('heading', name='F-DEMO-002', exact=True)).to_be_visible()
+            expect(preview).to_contain_text('Versión actual del registro · Solo lectura')
+            expect(page.locator('body')).to_have_class(__import__('re').compile(r'.*secretary-lateral.*'))
+            if output:
+                wait_for_stable_view(page)
+                page.screenshot(path=str(output / f"secretario-factura-lateral-{width}.png"))
+            preview.get_by_role('button', name='← Volver a la conversación', exact=True).click()
+            assert page.evaluate("document.body.classList.contains('secretary-home')")
+            expect(page.locator("#secretary-message")).to_be_focused()
             expect(year_turn.locator(".secretary-invoice")).to_have_count(2)
             assert [row["id"] for row in requests[-1]["context"]["focus"]["results"]] == ["F-DEMO-001", "F-DEMO-002"]
             assert page.evaluate("fixtureDocuments()===demoRecords")

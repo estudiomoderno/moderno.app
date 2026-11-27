@@ -860,12 +860,24 @@ function financeGroups(s,result,defaultCurrency,scope){
 }
 
 const financeSourceKey=(kind,row)=>sourceKey({kind,brand:text(row.brand),id:id(kind==='entry'?row.id:row.ref??row.id),projectId:id(row.projectId??row.pid)});
-function financialSources(s,records){
+function financialSources(s,records,preferIssued=false){
  const keys=new Set(records.map(([kind,row])=>financeSourceKey(kind,row)));
- const rows=sourceIndex(s).filter(item=>keys.has(item.key));
+ const index=sourceIndex(s),rows=index.filter(item=>keys.has(item.key));
  const counts=new Map();
  for(const row of rows)counts.set(row.key,(counts.get(row.key)||0)+1);
- return rows.filter(item=>counts.get(item.key)===1);
+ const verified=rows.filter(item=>counts.get(item.key)===1);
+ if(!preferIssued)return verified;
+ const issuedByKey=new Map();
+ for(const item of index)if(item.kind==='invoice')issuedByKey.set(item.key,issuedByKey.has(item.key)?null:item);
+ const movements=new Map(records.filter(([kind,row])=>kind==='entry'&&row.kind==='in'&&row.link).map(([,row])=>[financeSourceKey('entry',row),row]));
+ const sources=new Map();
+ for(const item of verified){
+  const row=movements.get(item.key);
+  const invoice=row&&issuedByKey.get(financeSourceKey('invoice',{ref:row.link,brand:row.brand,projectId:row.projectId??row.pid}));
+  const source=invoice??item;
+  sources.set(source.key,source);
+ }
+ return [...sources.values()];
 }
 function metricRecords(data,metric){
  if(metric==='budgeted'||metric==='acceptedQuotes')return (metric==='budgeted'?data.quotes:data.accepted).map(row=>['quote',row]);
@@ -908,7 +920,7 @@ function summary(s,r,p,now){
  const pendingDiffers=confirmedPending&&groups.some(group=>group.value.pending!==(invoicePending.get(group.currency)??0)/100);
  const records=metric?groups.flatMap(group=>metricRecords(group,metric)):
   groups.flatMap(group=>[...group.entries.map(row=>['entry',row]),...group.invoices.map(row=>['invoice',row]),...group.quotes.map(row=>['quote',row])]);
- const sources=financialSources(s,records);
+ const sources=financialSources(s,records,metric==='invoiced');
  const title=[scope.project?.name,scope.client?.c.name,scope.period&&scope.period.from+' a '+scope.period.to,scope.currency].filter(Boolean).join(' · ');
  const money=(value,currency)=>new Intl.NumberFormat('es',{style:'currency',currency}).format(value);
  const relevant=metric&&records.length===0&&!review&&data.value.missingDates===0&&(!['recordedCollections','invoiced'].includes(metric)||!data.value.unlinkedInvoices);
