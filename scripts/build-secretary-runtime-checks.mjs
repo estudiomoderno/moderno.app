@@ -6,6 +6,78 @@ const transactionBody=source=>source.replace(/^begin;\s*$/mi,'').replace(/^commi
 function body(file){return transactionBody(fs.readFileSync(new URL(`../SQL/${file}`,import.meta.url),'utf8'));}
 const functionHash=source=>createHash('md5').update(source.match(/as \$fn\$([\s\S]*?)\$fn\$;/)[1]).digest('hex');
 
+function noDailyLifecycle({label,limit,predecessor,prerequisites,upgrade,rollback}){
+ const expectedAfterFirst=200-limit-1;
+ return `
+-- Retirada de cuota diaria desde el predecesor ${label}. Todo vive en una
+-- transacción local desechable y se revierte después de comprobar el rollback.
+begin;
+do $$begin
+ if exists(select 1 from information_schema.columns where table_schema='auth' and table_name='users' and column_name='email')
+  or to_regclass('public.estudios') is not null then raise exception 'Requires bare, disposable local fixture';end if;
+end$$;
+grant usage on schema auth to anon,authenticated;
+grant execute on function auth.uid() to anon,authenticated;
+create table public.estudios(id uuid primary key default gen_random_uuid(),nombre text not null);
+create table public.miembros(user_id uuid not null references auth.users(id),estudio_id uuid not null references public.estudios(id),rol text not null,primary key(user_id,estudio_id));
+${prerequisites}
+${predecessor}
+do $$begin if not exists(select 1 from pg_roles where rolname='service_role') then create role service_role nologin;end if;end$$;
+grant execute on function public.secretary_request_reserve(uuid) to service_role;
+create temp table assertions(message text);grant select,insert on assertions to authenticated;
+create function pg_temp.assert_true(ok boolean,msg text) returns void language plpgsql as $$begin if ok is not true then raise exception '%',msg;end if;insert into assertions values(msg);end$$;
+insert into auth.users(id) values('10000000-0000-4000-8000-000000000001');
+insert into public.estudios(id,nombre) values('33333333-3333-4333-8333-333333333331','Estudio sin cuota diaria ${label}');
+insert into public.miembros(user_id,estudio_id,rol) values('10000000-0000-4000-8000-000000000001','33333333-3333-4333-8333-333333333331','admin');
+insert into moderno_secretary.usage_daily(user_id,estudio_id,day,requests)
+values('10000000-0000-4000-8000-000000000001','33333333-3333-4333-8333-333333333331',(clock_timestamp() at time zone 'UTC')::date,${limit});
+create temp table quota_contract_before as select proowner,proacl,prosecdef,proconfig,prorettype,proretset,prokind,provolatile,prolang,pronargs,proargtypes,proargnames from pg_proc where oid='public.secretary_request_reserve(uuid)'::regprocedure;
+create temp table quota_rows_before as select jsonb_agg(to_jsonb(q) order by q.user_id,q.estudio_id,q.day) value from moderno_secretary.usage_daily q;
+${upgrade}
+select pg_temp.assert_true((select value=(select jsonb_agg(to_jsonb(q) order by q.user_id,q.estudio_id,q.day) from moderno_secretary.usage_daily q) from quota_rows_before),'${label}: forward preserves every existing counter');
+select pg_temp.assert_true((select md5(prosrc)='${functionHash(upgrade)}' from pg_proc where oid='public.secretary_request_reserve(uuid)'::regprocedure),'${label}: forward installs the reviewed no-daily function');
+select pg_temp.assert_true((select p.proowner=b.proowner and p.proacl=b.proacl and p.prosecdef=b.prosecdef and p.proconfig=b.proconfig and p.prorettype=b.prorettype and p.proretset=b.proretset and p.prokind=b.prokind and p.provolatile=b.provolatile and p.prolang=b.prolang and p.pronargs=b.pronargs and p.proargtypes=b.proargtypes and p.proargnames=b.proargnames from pg_proc p cross join quota_contract_before b where p.oid='public.secretary_request_reserve(uuid)'::regprocedure),'${label}: forward preserves owner ACL and function contract');
+select pg_temp.assert_true((select pg_get_constraintdef(oid)='CHECK (((requests >= 0) AND (requests <= 200)))' and convalidated from pg_constraint where conrelid='moderno_secretary.usage_daily'::regclass and conname='usage_daily_requests_check'),'${label}: physical counter bound becomes monthly 200');
+select pg_temp.assert_true((select relrowsecurity from pg_class where oid='moderno_secretary.usage_daily'::regclass) and not has_schema_privilege('anon','moderno_secretary','USAGE') and not has_schema_privilege('authenticated','moderno_secretary','USAGE') and not has_table_privilege('anon','moderno_secretary.usage_daily','SELECT,INSERT,UPDATE,DELETE') and not has_table_privilege('authenticated','moderno_secretary.usage_daily','SELECT,INSERT,UPDATE,DELETE'),'${label}: RLS and private storage permissions remain unchanged');
+select pg_temp.assert_true(not has_function_privilege('anon','public.secretary_request_reserve(uuid)','EXECUTE') and has_function_privilege('authenticated','public.secretary_request_reserve(uuid)','EXECUTE') and has_function_privilege('service_role','public.secretary_request_reserve(uuid)','EXECUTE'),'${label}: RPC grants remain unchanged');
+select pg_temp.assert_true((select position('used_user_day' in prosrc)=0 and position('Límite diario del Secretario alcanzado' in prosrc)=0 and position('ifused_month>=200' in regexp_replace(prosrc,'[[:space:]]','','g'))>0 and position('ifused_global_month>=200' in regexp_replace(prosrc,'[[:space:]]','','g'))>0 from pg_proc where oid='public.secretary_request_reserve(uuid)'::regprocedure),'${label}: only daily rejection is removed and both monthly checks remain');
+select pg_temp.assert_true((select position('secretary-global:' in prosrc)>0 and position('secretary-global:' in prosrc)<position('into used_global_month' in prosrc) and position('into used_global_month' in prosrc)<position('actor_id::text||'':''||p_estudio::text' in prosrc) and position('actor_id::text||'':''||p_estudio::text' in prosrc)<position('into used_month' in prosrc) from pg_proc where oid='public.secretary_request_reserve(uuid)'::regprocedure),'${label}: lock order remains global then person-study');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+do $$declare i integer;r jsonb;begin
+ r:=public.secretary_request_reserve('33333333-3333-4333-8333-333333333331');
+ perform pg_temp.assert_true(r->'daily_remaining'='null'::jsonb and r->>'monthly_remaining'='${expectedAfterFirst}' and r->>'global_monthly_remaining'='${expectedAfterFirst}','${label}: reservation ${limit+1} is accepted without a daily remainder');
+ perform pg_temp.assert_true((select count(*)>=3 from pg_locks where pid=pg_backend_pid() and locktype='advisory' and granted),'${label}: migration and reservation acquire the reviewed advisory locks');
+ for i in ${limit+2}..200 loop r:=public.secretary_request_reserve('33333333-3333-4333-8333-333333333331');end loop;
+ perform pg_temp.assert_true(r->>'monthly_remaining'='0' and r->>'global_monthly_remaining'='0','${label}: same-day reservation 200 reaches both monthly ceilings exactly');
+ begin perform public.secretary_request_reserve('33333333-3333-4333-8333-333333333331');raise exception 'Monthly quota exceeded';
+ exception when sqlstate 'PT429' then perform pg_temp.assert_true(SQLERRM='Límite mensual global alcanzado','${label}: same-day reservation 201 is blocked by the global monthly ceiling');end;
+ begin perform public.secretary_request_reserve('33333333-3333-4333-8333-333333333332');raise exception 'Unauthorized study accepted';
+ exception when insufficient_privilege then perform pg_temp.assert_true(true,'${label}: quota change grants no study access');end;
+end$$;
+reset role;
+select pg_temp.assert_true((select count(*)=1 and sum(requests)=200 and max(requests)=200 from moderno_secretary.usage_daily),'${label}: blocked reservations preserve the exact count of 200');
+create temp table quota_rows_before_rollback as select jsonb_agg(to_jsonb(q) order by q.user_id,q.estudio_id,q.day) value from moderno_secretary.usage_daily q;
+${rollback}
+select pg_temp.assert_true((select value=(select jsonb_agg(to_jsonb(q) order by q.user_id,q.estudio_id,q.day) from moderno_secretary.usage_daily q) from quota_rows_before_rollback),'${label}: rollback preserves all historical counters');
+select pg_temp.assert_true((select md5(prosrc)='${functionHash(rollback)}' from pg_proc where oid='public.secretary_request_reserve(uuid)'::regprocedure),'${label}: rollback installs the reviewed 20-per-person containment');
+select pg_temp.assert_true((select p.proowner=b.proowner and p.proacl=b.proacl and p.prosecdef=b.prosecdef and p.proconfig=b.proconfig from pg_proc p cross join quota_contract_before b where p.oid='public.secretary_request_reserve(uuid)'::regprocedure),'${label}: rollback preserves owner ACL and security settings');
+select pg_temp.assert_true((select pg_get_constraintdef(oid)='CHECK (((requests >= 0) AND (requests <= 200)))' and convalidated from pg_constraint where conrelid='moderno_secretary.usage_daily'::regclass and conname='usage_daily_requests_check'),'${label}: rollback keeps storage valid for historical counts up to 200');
+update moderno_secretary.usage_daily set requests=19;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+do $$declare r jsonb;begin
+ r:=public.secretary_request_reserve('33333333-3333-4333-8333-333333333331');
+ perform pg_temp.assert_true(r->>'daily_remaining'='0','${label}: rollback permits the twentieth daily reservation');
+ begin perform public.secretary_request_reserve('33333333-3333-4333-8333-333333333331');raise exception 'Rollback daily quota exceeded';
+ exception when sqlstate 'PT429' then perform pg_temp.assert_true(SQLERRM='Límite diario del Secretario alcanzado','${label}: rollback blocks daily reservation 21');end;
+end$$;
+reset role;
+select count(*) as secretary_no_daily_${limit}_checks_passed from assertions;
+rollback;
+`;
+}
+
 // Runs only inside the disposable PostgreSQL service used by pull-request CI.
 // It installs the same isolated contract and quota that are applied to
 // moderno-pruebas, then rolls every fixture and object back.
@@ -15,6 +87,8 @@ export function buildSecretaryRuntimeChecks(){
  const legacyRuntime=transactionBody(fs.readFileSync(new URL('./fixtures/secretario-runtime-20.sql',import.meta.url),'utf8'));
  const upgrade=body('secretario-cuota-diaria-100.sql');
  const dailyRollback=body('secretario-cuota-diaria-100.rollback.sql');
+ const noDailyUpgrade=body('secretario-sin-cuota-diaria.sql');
+ const noDailyRollback=body('secretario-sin-cuota-diaria.rollback.sql');
  const changedFunction=legacyRuntime.match(/create or replace function public\.secretary_request_reserve[\s\S]*?\$fn\$;/)[0].replace("raise exception 'No autorizado'","raise exception 'Permiso de fixture cambiado'");
  const runtimeRollback=body('secretario-runtime.rollback.sql');
  return `begin;
@@ -179,7 +253,9 @@ select pg_temp.assert_true((select sum(requests)=200 and max(requests)=100 from 
 select pg_temp.assert_true(not has_function_privilege('anon','public.secretary_request_reserve(uuid)','EXECUTE') and has_function_privilege('authenticated','public.secretary_request_reserve(uuid)','EXECUTE'),'fresh runtime preserves the authenticated RPC boundary');
 select pg_temp.assert_true(not has_table_privilege('authenticated','moderno_secretary.usage_daily','SELECT,INSERT,UPDATE,DELETE'),'fresh storage stays private');
 select count(*) as secretary_fresh_runtime_checks_passed from assertions;
-rollback;`;
+rollback;
+${noDailyLifecycle({label:'20',limit:20,predecessor:legacyRuntime,prerequisites,upgrade:noDailyUpgrade,rollback:noDailyRollback})}
+${noDailyLifecycle({label:'100',limit:100,predecessor:runtime,prerequisites,upgrade:noDailyUpgrade,rollback:noDailyRollback})}`;
 }
 
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)process.stdout.write(buildSecretaryRuntimeChecks());
