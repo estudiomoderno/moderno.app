@@ -784,6 +784,7 @@ try:
 
             # One conversation follows the current project, including after folding.
             page.evaluate("state.draft=null;state.fView=null;go('proyecto',9001)")
+            assert page.evaluate("!document.querySelector('.secretary-finance-loading')&&!document.querySelector('.main').inert")
             expect(panel).to_be_visible()
             expect(panel).to_have_attribute('aria-label', 'Nuestro Secretario')
             expect(panel.locator('.secretary-title strong')).to_have_text('Nuestro Secretario')
@@ -792,6 +793,7 @@ try:
             assert panel.locator('[data-secretary-presence=header]').evaluate('(node,size)=>node.getBoundingClientRect().width===size&&node.getBoundingClientRect().height===size', 80 if width > 500 else 72)
             expect(panel.locator(".secretary-bubble").get_by_text("El borrador está preparado para revisar.", exact=True).first).to_be_visible()
             page.locator("#secretary-message").fill("respuesta segura")
+            expect(page.locator("#secretary-message")).to_have_value("respuesta segura")
             wait_for_stable_view(page)
             assert_secretary_clearance(page)
             # A growing save-status message must move the composer above it too.

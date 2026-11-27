@@ -235,7 +235,8 @@ var ModernoSecretary=(()=>{
     overlay.dataset.direction=enter?'enter':'exit';
     overlay.setAttribute('role','status');
     overlay.append(mark,el('span','',enter?'Abriendo Modo IA…':'Cargando Finanzas…'));
-    financeTransition={overlay,workspace,wasInert:workspace.inert};
+    const transition={overlay,workspace,wasInert:workspace.inert,switching:false};
+    financeTransition=transition;
     document.body.append(overlay);workspace.inert=true;
     if(launcher)launcher.disabled=true;
     if(panel)panel.inert=true;
@@ -252,7 +253,9 @@ var ModernoSecretary=(()=>{
         [{transform:'scale(1)'},{transform:'scale(1)'}];
       await phase('cover',[{opacity:0},{opacity:1}],approach,150);
       if(!current()||!sameContext(origin)||document.querySelector('.overlay.open,dialog[open]'))return;
+      transition.switching=true;
       switched=applyFinanceMode(enter,first);
+      transition.switching=false;
       if(switched&&current()&&!characterMotion?.matches&&!document.hidden){
         const end=enter?'scale(1)':'scale(.68)';
         await phase('reveal',[{opacity:1},{opacity:0}],[{transform:'scale(1)'},{transform:end}],185);
@@ -1030,8 +1033,11 @@ var ModernoSecretary=(()=>{
   render=function(){panel?.remove();const result=previousRender.apply(this,arguments);refresh();return result;};
   const previousGo=go;
   go=function(view,arg){
+    const transition=financeTransition;
+    const origin=transition&&!transition.switching?currentContext():null;
     const before=state.view,requestedHome=homePending,result=previousGo.apply(this,arguments);
     if(state.view!==before&&!requestedHome&&!(before==='presedit'&&state.view==='proyecto'&&home))home=false;
+    if(origin&&financeTransition===transition&&!sameContext(origin))finishFinanceTransition();
     refresh();return result;
   };
   document.addEventListener('click',event=>{
