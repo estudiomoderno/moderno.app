@@ -10501,15 +10501,23 @@ function draftSave(){
   if(i>=0) state.borradores[i]=item; else state.borradores.push(item);
   try{ cloudDirty(); }catch(e){}
 }
-function draftExitModal(view, arg){
-  modal(`<h3>Tienes un ${state.draft.kind==="factura"?"factura":"presupuesto"} a medias</h3>
+function draftExitModal(view, arg, onExit=()=>go(view,arg)){
+  modal(`<h3>Tienes ${state.draft.kind==="factura"?"una factura":"un presupuesto"} a medias</h3>
     <p style="font-size:12.5px;color:var(--ink-soft)">¿Qué hacemos con lo que llevas escrito?</p>
     <div class="modal-foot" style="display:flex;gap:6px;flex-wrap:wrap">
       <button class="btn btn-ghost" onclick="closeModal()">Seguir editando</button>
       <span style="flex:1"></span>
-      <button class="btn btn-ghost" style="color:var(--red-ink)" onclick="state.draft=null;state.qView=null;closeModal();go('${view}',${JSON.stringify(arg===undefined?null:arg).replace(/"/g,"'")})">Salir sin guardar</button>
-      <button class="btn btn-dark" onclick="draftSave();state.draft=null;state.qView=null;closeModal();toast('Guardado como borrador ✓');go('${view}',${JSON.stringify(arg===undefined?null:arg).replace(/"/g,"'")})">Guardar como borrador</button>
+      <button type="button" class="btn btn-ghost" style="color:var(--red-ink)" data-draft-exit="discard">Salir sin guardar</button>
+      <button type="button" class="btn btn-dark" data-draft-exit="save">Guardar como borrador</button>
     </div>`);
+  const leave=save=>{
+    if(save)draftSave();
+    state.draft=null;state.qView=null;closeModal();
+    if(save)toast('Guardado como borrador ✓');
+    onExit();
+  };
+  mb.querySelector('[data-draft-exit="discard"]').addEventListener('click',()=>leave(false));
+  mb.querySelector('[data-draft-exit="save"]').addEventListener('click',()=>leave(true));
 }
 function draftResume(id){
   const b=(state.borradores||[]).find(x=>x.id===id); if(!b) return;
@@ -13825,9 +13833,9 @@ const renderBeforeShoppingAdd=render;
 render=function(...args){const started=Date.now();try{const result=renderBeforeShoppingAdd.apply(this,args);shoppingRoomAddEnhance();return result;}finally{efficiencyMetrics.record('render',{ms:Date.now()-started});}};
 shoppingRoomAddEnhance();
 </script>
-<link rel="stylesheet" href="/brand/secretario.css?v=7">
-<script src="/secretario-bridge.js?v=4"></script>
+<link rel="stylesheet" href="/brand/secretario.css?v=8">
+<script src="/secretario-bridge.js?v=5"></script>
 <script src="/secretary-feedback.js?v=2"></script>
-<script src="/secretario-ui.js?v=15"></script>
+<script src="/secretario-ui.js?v=16"></script>
 </body>
 </html>

@@ -43,7 +43,7 @@ function fixture({storage=new Map(),storageBlocked=false,rpc,userId='fixture-use
       removeItem:key=>{storageAccess();storage.delete(key);}
     },
     sb:{rpc:(name,args)=>{calls.push({name,args:plain(args)});return rpc(name,args);}},
-    document:{body:{classList:{remove(){}}},getElementById:()=>null}
+    document:{body:{classList:{remove(){}}},getElementById:()=>null,querySelector:()=>null}
   });
   vm.runInContext(core,sandbox);
   vm.runInContext(`
@@ -55,6 +55,7 @@ function fixture({storage=new Map(),storageBlocked=false,rpc,userId='fixture-use
     ${declarations}
     ${resetCharacterCode}
     ${resetCode}
+    ${section('  function finishFinanceTransition()','  function mountFinanceTransition()')}
     ${consentCode}
     ${storageRegistration}
   `,sandbox);

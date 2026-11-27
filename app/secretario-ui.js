@@ -7,13 +7,15 @@ var ModernoSecretary=(()=>{
   const bridge=window.ModernoSecretaryBridge;
   if(!bridge)return Object.freeze({enabled:false,refresh(){},reset(){},openFinance(){return false;}});
   const financeViews=['informes','facturas','contabilidad','presupuestos','prevision'];
-  const sectionLabels={informes:'Resumen',facturas:'Facturas',contabilidad:'Gastos',presupuestos:'Presupuestos',prevision:'Previsión'};
+  const financeShortcuts=[['informes','Resumen'],['facturas','Facturas'],['contabilidad','Gastos'],['presupuestos','Presupuestos']];
   const supported=()=>financeViews.includes(state.view)||['proyecto','estancia','presedit'].includes(state.view);
   const owner=()=>JSON.stringify([ESTUDIO_ID||'',state.sessionUser?.id||'',_accessRole||'']);
   const ready=()=>!_accessLoading&&!!ESTUDIO_ID&&!!state.sessionUser?.id&&['admin','miembro','colaborador'].includes(_accessRole)&&!state.portalAnon;
   let identity=owner(),messages=[],panel=null,thread=null,composer=null,sendButton=null,stopButton=null,statusNode=null,titleNode=null,contextNode=null,announcementNode=null;
   let collapsed=false,home=false,homePending=false,lastView=null,lastProject=null,busy=false,controller=null,generation=0,unavailable=false,authSubscription=null;
-  let documentOpen=false,preview=null,returnButton=null;
+  let documentOpen=false,preview=null,returnButton=null,exitButton=null;
+  let nativeFinance=false,financeTransition=null,questionTarget=null;
+  let pendingBubble=null,revealingReply=null;
   let requestCounter=0,actions=new Map(),questions=[],answers={},pendingAnswers={},feedbackTask='finance_question',contextTrimmed=false;
   let activeActivity=null,requestContext=null,contextInterrupted=false;
   const characterPath='/brand/secretario/lavanda/';
@@ -33,6 +35,15 @@ var ModernoSecretary=(()=>{
   }}:{})});
   const el=(tag,className,value)=>{const node=document.createElement(tag);if(className)node.className=className;if(value!==undefined)node.textContent=value;return node;};
   const button=(label,fn,className='secretary-button')=>{const node=el('button',className,label);node.type='button';node.addEventListener('click',fn);return node;};
+  function modeButton(label,handler){
+    const control=button(label,handler,'secretary-mode-button');
+    const glyph=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    glyph.setAttribute('viewBox','0 0 24 24');glyph.setAttribute('aria-hidden','true');
+    for(const data of ['M9.937 15.5A2 2 0 0 0 8.5 14.063L2 12l6.5-2.063A2 2 0 0 0 9.937 8.5L12 2l2.063 6.5A2 2 0 0 0 15.5 9.937L22 12l-6.5 2.063a2 2 0 0 0-1.437 1.437L12 22z','M5 3v4m-2-2h4m12 12v4m-2-2h4']){
+      const path=document.createElementNS(glyph.namespaceURI,'path');path.setAttribute('d',data);glyph.append(path);
+    }
+    control.prepend(glyph);return control;
+  }
   const labelText=(value,max=500)=>typeof value==='string'?value.slice(0,max):'';
   function structuredFor(previous,current){
     if(!current)return {};
@@ -136,12 +147,15 @@ var ModernoSecretary=(()=>{
   }
   function reset(){
     resetCharacter();
+    clearTimeout(revealingReply?.timer);revealingReply=null;pendingBubble=null;
+    finishFinanceTransition();nativeFinance=false;questionTarget=null;
     generation++;controller?.abort();messages.forEach(record=>record.pageController?.abort());controller=null;busy=false;messages=[];actions.clear();questions=[];answers={};pendingAnswers={};contextTrimmed=false;
     feedbackOperation++;feedback?.setContext(null);feedbackLoaded=false;feedbackLoading=false;feedbackRevision=null;feedbackError='';feedbackHost=null;
     panel?.remove();panel=null;thread=null;composer=null;titleNode=null;contextNode=null;announcementNode=null;identity=owner();collapsed=false;home=false;homePending=false;unavailable=false;lastView=null;lastProject=null;requestContext=null;contextInterrupted=false;
-    activeActivity=null;documentOpen=false;preview?.node.remove();preview=null;returnButton=null;
+    activeActivity=null;documentOpen=false;preview?.node.remove();preview=null;returnButton=null;exitButton=null;
     document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open');
     document.getElementById('secretary-reopen')?.remove();
+    document.querySelector('.secretary-finance-entry')?.remove();
   }
   function checkIdentity(){if(identity!==owner()){reset();return false;}return true;}
   function clearLayout(){
@@ -150,9 +164,9 @@ var ModernoSecretary=(()=>{
     document.body.classList.remove('secretary-home','secretary-lateral','secretary-folded','secretary-on','secretary-previewing','secretary-document-open');
     drawCharacter();
   }
-  function busyEditor(view,projectId){
+  function busyEditor(view,projectId,onExit){
     if(document.querySelector('.overlay.open,dialog[open]')){toast('Termina o cierra la ventana abierta para continuar.');return true;}
-    if(draftEditing()&&draftDirty()){draftExitModal(view,projectId);return true;}
+    if(draftEditing()&&draftDirty()){draftExitModal(view,projectId,onExit);return true;}
     return false;
   }
   function goDirect(view,projectId){
@@ -164,11 +178,61 @@ var ModernoSecretary=(()=>{
   function openFinance(){
     checkIdentity();if(!ready())return false;
     const first=financeViews.find(view=>canView(view));if(!first)return false;
-    homePending=true;collapsed=false;characterUnread=false;preview?.node.remove();preview=null;
-    if(busyEditor(first))return false;
+    if(busyEditor(first,undefined,openFinance))return false;
+    nativeFinance=false;homePending=true;collapsed=false;characterUnread=false;preview?.node.remove();preview=null;
     go(first);
     if(state.view===first){home=true;homePending=false;refresh();composer?.focus();return true;}
     return false;
+  }
+  function finishFinanceTransition(){
+    if(!financeTransition)return;
+    financeTransition.remove();financeTransition=null;
+    document.body.classList.remove('secretary-finance-transition');
+    if(panel)panel.inert=false;
+  }
+  function mountFinanceTransition(){
+    if(financeTransition&&!financeTransition.isConnected)document.getElementById('view')?.append(financeTransition);
+  }
+  function openNormalFinance(){
+    const first=financeViews.find(view=>canView(view));
+    if(!ready()||!first||financeTransition)return;
+    if(document.querySelector('.overlay.open,dialog[open]')){toast('Termina o cierra la ventana abierta para continuar.');return;}
+    if(draftEditing()&&draftDirty()){draftExitModal(first,undefined,openNormalFinance);return;}
+    const epoch=generation,captured=owner(),origin=currentContext();
+    const overlay=el('div','secretary-finance-loading');
+    overlay.setAttribute('role','status');
+    overlay.append(el('span','secretary-spinner'),el('span','','Cargando Finanzas…'));
+    overlay.firstChild.setAttribute('aria-hidden','true');
+    financeTransition=overlay;
+    document.body.classList.add('secretary-finance-transition');
+    if(panel)panel.inert=true;
+    mountFinanceTransition();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(financeTransition!==overlay)return;
+      if(epoch!==generation||captured!==owner()||!ready()||!sameContext(origin)){finishFinanceTransition();return;}
+      if(busy){contextInterrupted=true;controller?.abort();}
+      finishReply();
+      nativeFinance=true;home=false;homePending=false;collapsed=false;
+      preview?.node.remove();preview=null;
+      try{go(first);}
+      finally{
+        if(financeTransition===overlay){
+          const complete=()=>{
+            if(financeTransition!==overlay)return;
+            finishFinanceTransition();
+            document.querySelector('.secretary-finance-entry button')?.focus({preventScroll:true});
+          };
+          if(characterMotion?.matches)complete();
+          else {overlay.classList.add('is-ready');overlay.addEventListener('transitionend',complete,{once:true});setTimeout(complete,180);}
+        }
+      }
+    }));
+  }
+  function drawFinanceEntry(){
+    const view=document.getElementById('view');
+    if(!view||view.querySelector('.secretary-finance-entry'))return;
+    const entry=el('div','secretary-finance-entry');
+    entry.append(modeButton('Modo IA',openFinance));view.prepend(entry);
   }
   function returnToConversation(){
     if(!ready())return;
@@ -183,7 +247,7 @@ var ModernoSecretary=(()=>{
     }
     composer?.focus();
   }
-  function fold(){collapsed=true;refresh();document.getElementById('secretary-reopen')?.focus();}
+  function fold(){finishReply();collapsed=true;refresh();document.getElementById('secretary-reopen')?.focus();}
   function unfold(){collapsed=false;characterUnread=false;refresh();composer?.focus();}
   function snapshot(){
     const dirtyBlocks=bridge.BLOCKS.filter(key=>!_cloudHash[key]||!CLOUD_BLOCKS[key]||canon(CLOUD_BLOCKS[key].get())!==_cloudHash[key]);
@@ -296,13 +360,54 @@ var ModernoSecretary=(()=>{
     }
     toast('Abre la sección correspondiente para consultar esta fuente.');
   }
+  function announce(value){if(announcementNode)announcementNode.textContent=value;}
+  function waitingBubble(){
+    const bubble=el('div','secretary-bubble secretary-reply-marker');
+    const spinner=el('span','secretary-spinner');spinner.setAttribute('aria-hidden','true');
+    bubble.append(spinner,el('span','','Generando respuesta…'));
+    bubble.setAttribute('aria-hidden','true');bubble.setAttribute('aria-busy','true');
+    return bubble;
+  }
+  function finishReply(){
+    if(!revealingReply)return;
+    const reply=revealingReply;revealingReply=null;
+    clearTimeout(reply.timer);
+    reply.node.textContent=reply.record.content;reply.node.classList.remove('secretary-reply-revealing');
+    reply.node.removeAttribute('aria-hidden');reply.node.removeAttribute('aria-busy');
+    if(reply.extras)reply.extras.hidden=false;
+    announce(reply.record.content);
+  }
+  function revealReply(record){
+    const node=pendingBubble||waitingBubble();
+    const parts=Array.from(record.content);
+    const body=document.createTextNode(''),cursor=el('span','secretary-reply-caret');
+    node.classList.remove('secretary-reply-marker');node.classList.add('secretary-reply-revealing');
+    node.replaceChildren(body,cursor);
+    const reply={record,node,length:0,timer:null,extras:null};revealingReply=reply;
+    const step=Math.max(4,Math.ceil(parts.length/68));
+    function frame(){
+      if(revealingReply!==reply)return;
+      const pin=thread&&thread.scrollHeight-thread.scrollTop-thread.clientHeight<100;
+      reply.length+=step;
+      if(reply.length>=parts.length)finishReply();
+      else {body.data=parts.slice(0,reply.length).join('');reply.timer=setTimeout(frame,24);}
+      if(pin)thread.scrollTop=thread.scrollHeight;
+    }
+    frame();
+  }
   function appendMessage(role,content,response,automatic=false){
     const record={role,content:labelText(content,12000),response,owner:identity,...(automatic===true?{automatic:true}:{})};
-    if(role==='assistant'&&activeActivity){record.activity=activeActivity;activeActivity=null;}
-    messages.push(record);
-    drawThread();if(role==='assistant'&&announcementNode)announcementNode.textContent=record.content;return record;
+    if(role==='assistant'){
+      if(activeActivity){record.activity=activeActivity;activeActivity=null;}
+      if(response&&record.content&&!collapsed&&!financeTransition&&!document.hidden&&!characterMotion?.matches)revealReply(record);
+      else announce(record.content);
+      pendingBubble=null;
+    }
+    messages.push(record);drawThread();return record;
   }
-  function setStatus(value){if(statusNode)statusNode.textContent=value+(contextTrimmed?' Uso el contexto reciente; el historial sigue visible.':'');}
+  function setStatus(value){
+    if(statusNode)statusNode.textContent=[value,contextTrimmed?'Uso el contexto reciente. El historial sigue visible.':''].filter(Boolean).join(' ');
+  }
   function currentContext(){
     const draft=!home&&draftEditing()?state.draft:null,project=activeProject();
     const document=draft?(draft.editRef?bridge.sourcePointer({kind:draft.kind==='factura'?'invoice':'quote',id:draft.editRef,brand:draft.brand,projectId:draft.projectId}):
@@ -489,36 +594,62 @@ var ModernoSecretary=(()=>{
     };
     area.append(button('Sí',()=>choose('helpful'),'secretary-button'),button('No',()=>choose('unhelpful'),'secretary-button'));container.append(area);
   }
+  const openQuestion=()=>questions.find(question=>question.id===questionTarget)||
+    questions.find(question=>!Object.hasOwn(answers,question.id));
+  const optionValue=option=>String(option.value??option.id??option.label);
+  const answerLabel=question=>question.options.find(option=>optionValue(option)===answers[question.id])?.label??answers[question.id];
+  function updateComposerPrompt(){
+    if(composer)composer.placeholder=questions.length>1&&openQuestion()?.prompt||'Cuéntame qué necesitas…';
+  }
+  function sendAnswers(){
+    const values=questions.map(answerLabel);
+    const receipt=questions.every(question=>question.id.startsWith('receivable_'));
+    const message=receipt?values.join('\n'):questions.map((question,index)=>question.prompt+' '+values[index]).join('\n');
+    submitMessage(message,{...answers},{visibleContent:values.join('\n')});
+  }
+  function submitComposer(event){
+    event.preventDefault();
+    if(busy)return;
+    const value=composer.value.trim();
+    if(!value){if(questions.length&&questions.every(question=>answers[question.id]))sendAnswers();return;}
+    const target=openQuestion();
+    const matched=target&&bridge.clarificationAnswer([target],value);
+    if(target&&(questionTarget===target.id&&target.freeText!==false||questions.length>1&&matched)){
+      if(value.length>1000){setStatus('Escribe una respuesta de hasta 1.000 caracteres para esta pregunta.');return;}
+      answers[target.id]=matched?.[target.id]??value;
+      questionTarget=null;
+      if(questions.every(question=>answers[question.id]))sendAnswers();
+      else {composer.value='';drawThread();composer.focus({preventScroll:true});}
+      return;
+    }
+    submitMessage(value,bridge.clarificationAnswer(questions,value)||undefined);
+  }
   function drawQuestions(container,response){
     if(response!==messages.at(-1)?.response||!questions.length)return;
-    const form=el('form','secretary-questions');
+    const group=el('div','secretary-questions');
     for(const question of questions){
-      const field=el('fieldset','secretary-question');field.append(el('legend','',labelText(question.prompt,600)));
-      const opts=el('div','secretary-options');
-      for(const option of question.options||[]){
-        const choice=button(labelText(option.label,160),()=>{
-          answers[question.id]=String(option.value??option.id??option.label);
-          for(const sibling of opts.children)sibling.setAttribute('aria-pressed',String(sibling===choice));
-          free.value='';
-        },'secretary-option');
-        choice.setAttribute('aria-pressed',String(answers[question.id]===String(option.value??option.id??option.label)));opts.append(choice);
+      const field=el('div','secretary-question');
+      if(questions.length>1||question.prompt.trim()!==response.message.trim()){
+        const prompt=button(labelText(question.prompt,600),()=>{
+          questionTarget=question.id;drawThread();composer?.focus({preventScroll:true});
+        },'secretary-question-prompt');
+        prompt.setAttribute('aria-pressed',String(questionTarget===question.id||questions.length>1&&openQuestion()?.id===question.id));
+        field.append(prompt);
+        if(answers[question.id])field.append(el('span','secretary-caption',labelText(answerLabel(question),160)));
       }
-      field.append(opts);
-      const free=el('input','secretary-free-answer');free.type='text';free.maxLength=1000;free.placeholder='Escribe otra respuesta…';free.setAttribute('aria-label','Otra respuesta: '+labelText(question.prompt,300));
-      free.addEventListener('input',()=>{answers[question.id]=free.value;for(const option of opts.children)option.setAttribute('aria-pressed','false');});field.append(free);form.append(field);
+      const opts=el('div','secretary-options');
+      for(const option of question.options){
+        const choice=button(labelText(option.label,160),()=>{
+          answers[question.id]=optionValue(option);questionTarget=null;
+          drawThread();composer?.focus({preventScroll:true});
+        },'secretary-option');
+        choice.setAttribute('aria-pressed',String(answers[question.id]===optionValue(option)));
+        opts.append(choice);
+      }
+      if(opts.childNodes.length)field.append(opts);
+      if(field.childNodes.length)group.append(field);
     }
-    const submit=el('button','secretary-primary','Continuar');submit.type='submit';submit.disabled=busy;form.append(submit);
-    form.addEventListener('submit',event=>{
-      event.preventDefault();
-      if(questions.some(question=>!String(answers[question.id]||'').trim())){setStatus('Responde a las preguntas para continuar. También puedes escribir abajo.');return;}
-      const copy={...answers},values=questions.map(question=>{
-        const value=String(copy[question.id]),option=(question.options||[]).find(item=>String(item.value??item.id??item.label)===value);
-        return option?labelText(option.label,160):value;
-      });
-      const receipt=questions.every(question=>question.id.startsWith('receivable_'));
-      const message=receipt?values.join('\n'):questions.map((question,index)=>question.prompt+' '+values[index]).join('\n');
-      submitMessage(message,copy,{visibleContent:values.join('\n')});
-    });container.append(form);
+    if(group.childNodes.length)container.append(group);
   }
   const invoiceMoney=(amount,currency)=>new Intl.NumberFormat('es-ES',{style:'currency',currency}).format(amount);
   function validReceivables(payload){
@@ -584,6 +715,7 @@ var ModernoSecretary=(()=>{
   }
   function drawThread(){
     if(!thread)return;
+    updateComposerPrompt();
     const nearBottom=thread.scrollHeight-thread.scrollTop-thread.clientHeight<100;
     const traceFocus=thread.contains(document.activeElement)?document.activeElement.dataset.traceKey:null;
     thread.replaceChildren();
@@ -600,7 +732,8 @@ var ModernoSecretary=(()=>{
       const item=el('article','secretary-turn secretary-turn-'+record.role);item.setAttribute('aria-label',record.role==='user'?'Tú':secretaryName());
       if(record.activity)item.append(drawActivity(record.activity));
       const line=el('div','secretary-message-line');
-      line.append(messageAvatar(record.role),el('div','secretary-bubble',record.content));item.append(line);
+      const reply=revealingReply?.record===record?revealingReply:null;
+      line.append(messageAvatar(record.role),reply?.node||el('div','secretary-bubble',record.content));item.append(line);
       const extras=el('div','secretary-message-extras');
       if(record.response?.receivables)drawReceivables(extras,record);
       else if(record.response?.sources?.length){
@@ -626,10 +759,14 @@ var ModernoSecretary=(()=>{
       },'secretary-button secretary-quota-action'));
       if(record.reference)extras.append(el('p','secretary-caption secretary-reference','Referencia técnica: '+record.reference+'.'));
       if(record.response){drawQuestions(extras,record.response);drawFeedback(extras,record);}
-      if(extras.childNodes.length)item.append(extras);
+      if(extras.childNodes.length){if(reply){extras.hidden=true;reply.extras=extras;}item.append(extras);}
       thread.append(item);
     }
     if(activeActivity)thread.append(drawActivity(activeActivity));
+    if(pendingBubble){
+      const line=el('div','secretary-message-line secretary-pending-reply');line.setAttribute('aria-hidden','true');
+      line.append(messageAvatar('assistant'),pendingBubble);thread.append(line);
+    }
     if(traceFocus)thread.querySelector('[data-trace-key="'+traceFocus+'"]')?.focus({preventScroll:true});
     if(nearBottom||busy)thread.scrollTop=thread.scrollHeight;
     drawCharacter();
@@ -644,29 +781,32 @@ var ModernoSecretary=(()=>{
     const header=el('header','secretary-header'),title=el('div','secretary-title');title.append(icon('header'));
     const copy=el('div','');titleNode=el('strong','',secretaryName());copy.append(titleNode);contextNode=el('span','secretary-context','');contextNode.hidden=true;copy.append(contextNode);title.append(copy);header.append(title);
     const controls=el('div','secretary-controls');
-    const settings=el('details','secretary-settings');const summary=el('summary','','•••');summary.setAttribute('aria-label','Opciones del Secretario');settings.append(summary);
-    const settingsContent=el('div','secretary-settings-content');settingsContent.append(el('strong','','Tu conversación'));
-    settingsContent.append(el('p','','Se conserva mientras trabajas en esta sesión y se vacía al cerrar sesión.'));
-    settingsContent.append(button('Vaciar conversación',()=>{reset();home=financeViews.includes(state.view);refresh();},'secretary-button'));
-    feedbackHost=el('div','secretary-feedback-settings');settingsContent.append(feedbackHost);drawFeedbackSettings();
-    settings.append(settingsContent);controls.append(settings);
-    const close=button('Plegar',fold,'secretary-fold');close.setAttribute('aria-label','Plegar el Secretario');controls.append(close);header.append(controls);panel.append(header);
+    if(config.feedbackEnabled===true){
+      const settings=el('details','secretary-settings');
+      const summary=el('summary','','•••');summary.setAttribute('aria-label','Opciones del Secretario');settings.append(summary);
+      const settingsContent=el('div','secretary-settings-content');
+      feedbackHost=el('div','secretary-feedback-settings');settingsContent.append(feedbackHost);drawFeedbackSettings();
+      settings.append(settingsContent);controls.append(settings);
+    }
+    const close=button('Plegar',fold,'secretary-fold');close.setAttribute('aria-label','Plegar el Secretario');close.title='Plegar el Secretario';
+    close.firstChild.replaceWith(el('span','secretary-fold-label','Plegar'));
+    const foldGlyph=el('span','secretary-fold-glyph','−');foldGlyph.setAttribute('aria-hidden','true');close.append(foldGlyph);controls.append(close);
+    exitButton=modeButton('Salir del Modo IA',openNormalFinance);controls.append(exitButton);header.append(controls);
     const shortcuts=el('nav','secretary-shortcuts');shortcuts.setAttribute('aria-label','Accesos directos de Finanzas');
     returnButton=button('Volver al chat',returnToConversation,'secretary-button secretary-return');shortcuts.append(returnButton);
-    for(const view of financeViews)if(canView(view))shortcuts.append(button(sectionLabels[view],()=>goDirect(view),'secretary-shortcut'));
-    panel.append(shortcuts);
-    thread=el('div','secretary-thread');thread.setAttribute('role','log');thread.setAttribute('aria-label','Conversación con '+secretaryName());panel.append(thread);
+    const sections=el('div','secretary-sections');
+    for(const [view,label] of financeShortcuts)if(canView(view))sections.append(button(label,()=>goDirect(view),'secretary-shortcut'));
+    if(sections.childNodes.length)shortcuts.append(sections);
+    panel.append(shortcuts,header);
+    thread=el('div','secretary-thread');thread.setAttribute('role','log');thread.setAttribute('aria-live','off');thread.setAttribute('aria-label','Conversación con '+secretaryName());panel.append(thread);
     const form=el('form','secretary-composer');const inputLabel=el('label','sr-only','Mensaje para el Secretario');inputLabel.htmlFor='secretary-message';form.append(inputLabel);
-    composer=el('textarea','');composer.id='secretary-message';composer.rows=2;composer.maxLength=6000;composer.placeholder='Cuéntame qué necesitas…';form.append(composer);
+    composer=el('textarea','');composer.id='secretary-message';composer.rows=2;composer.maxLength=6000;form.append(composer);
     composer.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();form.requestSubmit();}});
-    const composerFoot=el('div','secretary-composer-foot');composerFoot.append(el('span','','Puedes preguntar o pedirme que prepare un borrador.'));
+    const composerFoot=el('div','secretary-composer-foot');
     stopButton=button('Detener',()=>controller?.abort(),'secretary-button');stopButton.hidden=true;composerFoot.append(stopButton);
     sendButton=el('button','secretary-primary','Enviar');sendButton.type='submit';composerFoot.append(sendButton);form.append(composerFoot);
-    form.addEventListener('submit',event=>{
-      event.preventDefault();const value=composer.value.trim();
-      if(value)submitMessage(value,bridge.clarificationAnswer(questions,value)||undefined);
-    });panel.append(form);
-    statusNode=el('p','secretary-status','Los documentos se guardan desde su editor.');statusNode.setAttribute('role','status');panel.append(statusNode);
+    form.addEventListener('submit',submitComposer);panel.append(form);
+    statusNode=el('p','secretary-status');statusNode.setAttribute('role','status');panel.append(statusNode);
     announcementNode=el('p','sr-only','');announcementNode.setAttribute('aria-live','polite');announcementNode.setAttribute('aria-atomic','true');panel.append(announcementNode);drawThread();
     setCharacter('espera','Secretario disponible');
   }
@@ -687,7 +827,7 @@ var ModernoSecretary=(()=>{
       body:JSON.stringify({session:session.access_token,payload:input})});
   }
   async function submitMessage(content,answerValues,{visibleContent=content,previous}={}){
-    if(busy||!content?.trim())return;
+    if(busy||financeTransition||!content?.trim())return;
     checkIdentity();if(!ready()){setStatus('Inicia sesión para consultar al Secretario.');return;}
     if(!home&&!documentOpen){home=true;collapsed=false;refresh();}
     const captured=identity,epoch=generation,current=++requestCounter,originContext=currentContext();requestContext=originContext;contextInterrupted=false;
@@ -703,11 +843,12 @@ var ModernoSecretary=(()=>{
     catch(error){setStatus(error.message);return;}
     const structuredAnswers=previous?previous.structuredAnswers:receivableContext?.clarification?{...answerValues}:structuredFor(pendingAnswers,answerValues),hasStructuredAnswers=Object.keys(structuredAnswers).length>0;
     const retry=()=>submitMessage(content,answerValues,{visibleContent,previous:{history,receivableContext,structuredAnswers,results}});
-    questions=[];answers={};busy=true;controller=new AbortController();
+    finishReply();questions=[];answers={};questionTarget=null;busy=true;controller=new AbortController();
     characterUnread=false;setCharacter('pensando','Preparando la consulta');
     activeActivity={id:String(current),status:'running',started:performance.now(),query:null,steps:[],openByStep:new Map(),expanded:false};
+    pendingBubble=waitingBubble();announce('Generando respuesta…');
     appendMessage('user',visibleContent,undefined,!!answerValues);updateBusy();
-    if(composer)composer.value='';setStatus('Puedes detener la consulta cuando quieras.');
+    if(composer)composer.value='';setStatus('');
     try{
       const client=sb;if(!client?.auth)throw Error('La conexión del Secretario todavía no está configurada.');
       const {data,error}=await client.auth.getSession(),session=data?.session;
@@ -754,7 +895,7 @@ var ModernoSecretary=(()=>{
       if(safe.receivables)record.invoiceQuery=input;
       const action=safe.actions.find(item=>item.type==='prepare_draft'&&safe.status==='proposal'&&draftRequested||['open_document','navigate'].includes(item.type)&&item.openImmediately===true);
       if(action&&!collapsed&&epoch===generation&&captured===owner())runAction(action,captured);
-      setStatus(questions.length?'Puedes elegir una opción o escribir tu respuesta.':'Los documentos se guardan desde su editor.');
+      setStatus('');
     }catch(error){
       if(epoch!==generation||captured!==owner()||current!==requestCounter)return;
       pendingAnswers=pendingAfter('error',structuredAnswers);
@@ -774,7 +915,7 @@ var ModernoSecretary=(()=>{
       }
       setStatus(error.secretaryQuota?'Puedes seguir trabajando desde los accesos directos.':unavailable?'Tus documentos siguen disponibles en los accesos directos.':'Consulta detenida.');
     }finally{
-      if(epoch===generation&&captured===owner()&&current===requestCounter){busy=false;controller=null;requestContext=null;contextInterrupted=false;updateBusy();drawThread();const target=questions.length?thread?.querySelector('.secretary-question button,.secretary-free-answer'):composer;if(!collapsed&&panel?.isConnected&&!panel.hidden)target?.focus();}
+      if(epoch===generation&&captured===owner()&&current===requestCounter){busy=false;controller=null;requestContext=null;contextInterrupted=false;updateBusy();drawThread();if(!collapsed&&!financeTransition&&panel?.isConnected&&!panel.hidden)composer?.focus({preventScroll:true});}
       else checkIdentity();
     }
   }
@@ -807,7 +948,14 @@ var ModernoSecretary=(()=>{
   }
   function refresh(){
     checkIdentity();
-    if(!ready()||!supported()){clearLayout();lastView=state.view;return;}
+    if(!ready()||!supported()){clearLayout();finishFinanceTransition();lastView=state.view;return;}
+    if(nativeFinance&&financeViews.includes(state.view)){
+      clearLayout();
+      if(lastView!==state.view){questions=[];answers={};questionTarget=null;pendingAnswers={};}
+      lastView=state.view;lastProject=null;home=false;homePending=false;
+      drawFinanceEntry();mountFinanceTransition();return;
+    }
+    document.querySelector('.secretary-finance-entry')?.remove();
     if(preview&&(preview.view!==state.view||preview.project!==state.currentProject)){preview.node.remove();preview=null;}
     const viewingDocument=!!preview||state.view==='presedit'||!!document.querySelector('#view .finance-document-editor');
     if(viewingDocument){home=false;}
@@ -816,7 +964,7 @@ var ModernoSecretary=(()=>{
     }else if(lastView==null&&state.view==='informes')home=true;
     documentOpen=viewingDocument;
     const projectId=activeProject()?.id||null,changedView=lastView!==state.view||lastProject!==projectId;
-    if(changedView){questions=[];answers={};pendingAnswers={};if(busy&&requestContext&&!sameContext(requestContext)){contextInterrupted=true;controller?.abort();}}
+    if(changedView){questions=[];answers={};questionTarget=null;pendingAnswers={};if(busy&&requestContext&&!sameContext(requestContext)){contextInterrupted=true;controller?.abort();}}
     lastView=state.view;lastProject=projectId;
     if(!panel)build();
     document.body.classList.add('secretary-on');document.body.classList.toggle('secretary-home',home&&!collapsed);
@@ -825,7 +973,9 @@ var ModernoSecretary=(()=>{
     document.body.classList.toggle('secretary-document-open',viewingDocument);
     if(preview&&!preview.node.isConnected)document.getElementById('view')?.append(preview.node);
     panel.classList.toggle('is-home',home);panel.hidden=collapsed;
-    returnButton.hidden=home;
+    const inFinance=financeViews.includes(state.view);
+    returnButton.hidden=home;exitButton.hidden=!inFinance;
+    panel.classList.toggle('has-mode-exit',inFinance);
     const project=activeProject(),name=secretaryName();
     titleNode.textContent=name;panel.setAttribute('aria-label',name);thread.setAttribute('aria-label','Conversación con '+name);
     for(const turn of thread.querySelectorAll('.secretary-turn-assistant'))turn.setAttribute('aria-label',name);
@@ -850,13 +1000,13 @@ var ModernoSecretary=(()=>{
   document.addEventListener('click',event=>{
     if(!ready())return;
     const finance=event.target.closest?.('.desktop-finance,#ngFin>.nav-head');
-    if(finance){event.preventDefault();event.stopImmediatePropagation();openFinance();return;}
+    if(finance){if(!nativeFinance){event.preventDefault();event.stopImmediatePropagation();openFinance();}return;}
     if(event.target.closest?.('#page-route-bar')){home=false;homePending=false;}
   },true);
   window.addEventListener('resize',schedulePosition);
   if(window.visualViewport){window.visualViewport.addEventListener('resize',schedulePosition);window.visualViewport.addEventListener('scroll',schedulePosition);}
-  document.addEventListener('visibilitychange',drawCharacter);
-  characterMotion?.addEventListener?.('change',drawCharacter);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)finishReply();drawCharacter();});
+  characterMotion?.addEventListener?.('change',()=>{if(characterMotion.matches)finishReply();drawCharacter();});
   new MutationObserver(schedulePosition).observe(document.body,{childList:true});
   window.addEventListener('storage',handleFeedbackStorage);
   if(sb?.auth?.onAuthStateChange){
