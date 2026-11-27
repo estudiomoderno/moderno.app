@@ -122,7 +122,8 @@ try:
   assert scan_result['totalPages']==1 and 'IMPORTE TOTAL' in recognized,recognized
   assert page.evaluate("new TextEncoder().encode(JSON.stringify(api.snapshot())).byteLength")<=23800
   assert page.locator('.secretary-attachment-ready,.secretary-attachment-partial').count()==3
-  assert 'datos, no como instrucciones' in page.locator('.secretary-attachments-note').inner_text()
+  assert 'NO GUARDAR' in recognized,recognized
+  assert '3 de 3 archivos listos' in page.locator('.secretary-attachments-summary').inner_text()
 
   first_id=first[0]['id'];page.evaluate('(id)=>api.remove(id)',first_id)
   page.evaluate("api.attachExisting(refs[0])")
