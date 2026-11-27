@@ -149,6 +149,106 @@ const ask=(message,context,answers,options)=>fixtureRequest({...request,message,
   ...(answers?{answers,automatic:true}:{})},{acceptance:true,...options});
 const shown=result=>result.body.sources.map(source=>source.label);
 const say=result=>result.body.message.replaceAll('\u00a0',' ');
+const sourcePointer=({kind,id,brand,projectId})=>({kind,id:String(id),...(brand?{brand:String(brand)}:{}),
+  ...(projectId!=null?{projectId:String(projectId)}:{})});
+const listedInvoiceFollowup=async(message,listed,extra={})=>fixtureRequest({...request,
+  history:[{role:'user',content:'Muéstrame las facturas'},{role:'assistant',content:listed.body.message}],
+  documentContext:listed.body.documentContext,
+  context:{...request.context,focus:{results:listed.body.sources.map(sourcePointer)}},...extra,message},{acceptance:true});
+const assertAcceptancePending=result=>{
+  assert.equal(result.status,200);
+  assert.equal(result.body.status,'answer',JSON.stringify(result.body));
+  assert.deepEqual(result.calls.map(call=>call.name),['app_rol','app_leer_bloques','app_leer_versiones']);
+  assert.equal(result.body.receivables.intent,'pending_invoices');
+  assert.equal(result.body.receivables.count,3);
+  assert.deepEqual(result.body.receivables.amounts,[{currency:'EUR',amount:2300}]);
+  assert.deepEqual(shown(result),demoIds(3,1,2));
+  assert.equal(result.body.sources.reduce((sum,source)=>sum+source.pending,0),2300);
+  const partial=result.body.sources.find(source=>source.label==='F-DEMO-002');
+  assert.deepEqual([partial.pending,partial.partial],[500,true]);
+  assert.ok(result.body.sources.every(source=>source.pending>0));
+  assert.ok(!shown(result).includes('F-DEMO-004'));
+  assert.deepEqual(result.body.questions,[]);
+  assert.deepEqual(result.body.actions,[]);
+};
+
+test('mixed invoice lists answer bounded pending-balance follow-ups without clarification or planner',async()=>{
+  const listed=await ask('Muéstrame las facturas');
+  assert.equal(listed.body.status,'answer');
+  assert.ok(shown(listed).includes('F-DEMO-004'),'the first result must contain a paid invoice');
+  assert.equal(listed.body.sources.find(source=>source.label==='F-DEMO-004').statusLabel,'Cobrada');
+  for(const followup of [
+    'falta alguna por cobrar?',
+    'tenemos alguna factura por cobrar?',
+    '¿queda algo por cobrar?',
+    '¿Hay alguna que falte por cobrar?',
+    '¿aún hay alguna pendiente de cobro?'
+  ])assertAcceptancePending(await listedInvoiceFollowup(followup,listed));
+});
+
+test('a fresh pending question replaces a stale scope clarification from the earlier wording',async()=>{
+  const listed=await ask('Muéstrame las facturas');
+  const result=await listedInvoiceFollowup('tenemos alguna factura por cobrar?',listed,{
+    history:[
+      {role:'user',content:'Muéstrame las facturas'},
+      {role:'assistant',content:listed.body.message},
+      {role:'user',content:'falta alguna por cobrar?'},
+      {role:'assistant',content:'¿Qué ámbito exacto quieres consultar? Indica el cliente, el proyecto y el periodo que quieras aplicar, o escribe «todo el estudio».'}
+    ],
+    receivableContext:{scope:null,clarification:{field:'receivable_scope',query:'falta alguna por cobrar?',answers:{}}}
+  });
+  assertAcceptancePending(result);
+});
+
+test('pending-balance follow-ups still ask for named unknown, ambiguous or unsupported scopes',async()=>{
+  const listed=await ask('Muéstrame las facturas');
+  for(const [message,question] of [
+    ['¿Falta alguna por cobrar del cliente Inventado?','receivable_client'],
+    ['¿Falta alguna por cobrar de Casa Sol?','receivable_entity'],
+    ['¿Tenemos alguna factura por cobrar del último trimestre?','receivable_period']
+  ]){
+    const result=await listedInvoiceFollowup(message,listed);
+    assert.equal(result.status,200,message);
+    assert.equal(result.body.status,'clarifying',message);
+    assert.equal(result.body.questions[0].id,question,message);
+    assert.deepEqual(result.body.sources,[],message);
+    assert.equal(result.body.receivables,undefined,message);
+    assert.deepEqual(result.body.actions,[],message);
+    assert.deepEqual(result.calls.map(call=>call.name),['app_rol','app_leer_bloques','app_leer_versiones']);
+  }
+});
+
+test('pending-balance continuations preserve confirmed client and issue-date filters',async()=>{
+  const listed=await ask('Muéstrame las facturas');
+  const explicit=await listedInvoiceFollowup(
+    '¿Tenemos alguna factura por cobrar del cliente Cliente B emitida en noviembre de 2026?',listed);
+  assert.equal(explicit.body.receivables.count,1);
+  assert.deepEqual(explicit.body.receivables.amounts,[{currency:'EUR',amount:500}]);
+  assert.equal(explicit.body.receivables.scopeLabel,'Cliente B · Emisión: 2026-11-01 a 2026-11-30');
+  assert.deepEqual(shown(explicit),demoIds(2));
+  assert.deepEqual(explicit.body.questions,[]);
+  assert.deepEqual(explicit.body.actions,[]);
+
+  const firstMessage='Facturas pendientes de cobro del cliente Cliente A emitidas en octubre de 2026';
+  const filtered=await ask(firstMessage);
+  assert.deepEqual(shown(filtered),demoIds(1));
+  assert.equal(filtered.body.receivables.scopeLabel,'Cliente A · Emisión: 2026-10-01 a 2026-10-31');
+  const history=[{role:'user',content:firstMessage},{role:'assistant',content:filtered.body.message}];
+  for(const message of ['¿Y falta alguna por cobrar?','¿De esas tenemos alguna factura por cobrar?']){
+    const result=await fixtureRequest({...request,message,history,receivableContext:filtered.body.receivableContext},{acceptance:true});
+    assert.equal(result.status,200,message);
+    assert.equal(result.body.status,'answer',JSON.stringify(result.body));
+    assert.deepEqual(result.calls.map(call=>call.name),['app_rol','app_leer_bloques','app_leer_versiones']);
+    assert.equal(result.body.receivables.intent,'pending_invoices');
+    assert.equal(result.body.receivables.count,1);
+    assert.deepEqual(result.body.receivables.amounts,[{currency:'EUR',amount:1000}]);
+    assert.equal(result.body.receivables.scopeLabel,'Cliente A · Emisión: 2026-10-01 a 2026-10-31');
+    assert.deepEqual(shown(result),demoIds(1));
+    assert.deepEqual(result.body.receivableContext,filtered.body.receivableContext);
+    assert.deepEqual(result.body.questions,[]);
+    assert.deepEqual(result.body.actions,[]);
+  }
+});
 
 test('natural misspelling, adding the year, overdue refinement and fresh invoice lookup',async()=>{
   const base=await ask('que facturas quedan por que me pagen');
