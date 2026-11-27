@@ -124,8 +124,8 @@ test('published app enables only the production endpoint and keeps feedback off'
   assert.equal(html.split(config).length,2);
   assert.ok(html.indexOf(config)>html.indexOf('const SUPABASE_URL = "https://auth.moderno.app";'));
   assert.ok(html.includes('<script src="/secretario-bridge.js?v=5"></script>'));
-  assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=10">'));
-  assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=18"></script>'));
+ assert.ok(html.includes('<link rel="stylesheet" href="/brand/secretario.css?v=11">'));
+ assert.ok(html.indexOf(config)<html.indexOf('<script src="/secretario-ui.js?v=19"></script>'));
   assert.doesNotMatch(config,/OPENAI|sk-/i);
 });
 

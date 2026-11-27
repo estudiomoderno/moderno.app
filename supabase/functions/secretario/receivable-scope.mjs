@@ -1,13 +1,15 @@
 import {isoDate, normalizeReceivableText as normalize} from './receivables.mjs';
+import {paymentDirection} from './payment-direction.mjs';
 
 const compact = value => normalize(value).replace(/[^a-z0-9/-]+/g,' ').trim().replace(/\s+/g,' ');
 const queryText=value=>compact(value)
-  .replace(/\b(?:por que |por |que )?me (?:paguen|pagen|pagan|deben)\b/g,'por cobrar')
+  .replace(/\bno (?:me|nos) (?:ha|han|hayan|habian) pagado\b/g,'por cobrar')
+  .replace(/\b(?:por que |por |que )?(?:me|nos) (?:paguen|pagen|pagan|deben|(?:tienen?|van) (?:que |a )?pagar)\b/g,'por cobrar')
   .replace(/\b(?:por recibir el pago|sin haber cobrado|por ser cobradas|por pagarme|por abonarme|pendientes de cobrrar)\b/g,'por cobrar')
-  .replace(/\b(?:me tienen que pagar|faltan? cobrar|quedan? cobrar)\b/g,'por cobrar')
+  .replace(/\b(?:(?:faltan?|quedan?|tengo que|tenemos que|debo|debemos) cobrar|(?:clientes? (?:tienen?|deben?|van a)|les faltan?|les quedan?) (?:que |por )?pagar)\b/g,'por cobrar')
   .replace(/\bsolamente\b/g,'solo');
 const allowedWords = new Set('a acerca actualmente ademas ahora al aun cobrar cobro cobros con cuales cuantos cuanto cuantas de del dime el en ensename esas esos estas estos estan factura facturas falta faltan favor hay importe la las lista listar los me mejor mi mis mismas mismos mostrar muestra muestrame pendiente pendientes por para puedes podrias que quiero queda quedan saber saldo solo tambien tengo total todo todas todos ver y impagada impagadas adeudan adeudadas estudio'.split(' '));
-const openOrWrite = /^(?:(?:por favor|puedes|podrias|quiero) )*(?:abre(?:me)?|abrir|edit\w*|registra\w*|emite\w*|envia\w*|crea\w*|prepara\w*|cobra|cobrame)\b/;
+const openOrWrite = /^(?:(?:por favor|puedes|podrias|quiero) )*(?:abre(?:me)?|abrir|edit\w*|registra\w*|emite\w*|envia\w*|crea\w*|prepara\w*|cobra|cobrame|paga(?:me|r)?|abona(?:me|r)?|como (?:puedo|podemos|debo|se|hago|pagar|abonar|configurar))\b/;
 const fields=['receivable_confirm','receivable_scope','receivable_client','receivable_project','receivable_period','receivable_entity'];
 export const confirmReceivables='¿Te refieres a facturas pendientes de cobro?';
 const referencePattern=/\b[a-z][a-z0-9/-]*[-/]\d[a-z0-9/-]*\b/g;
@@ -25,6 +27,8 @@ const fragment=value=>{
 export function receivableQuestion(request) {
   const {message,automatic,history,receivableContext:context}=request;
   const answers=request.answers??{},text=queryText(message),standalone=isReceivableIntent(message);
+  const direction=paymentDirection(automatic?(answers.detail??answers.receivable_confirm??message):message);
+  if(direction==='payable'||direction==='ambiguous')return null;
   if(!automatic&&!standalone&&(openOrWrite.test(text)||otherSubject.test(text)))return null;
   const clarification=context?.clarification;
   const anaphora=/^y\b|\b(?:esas|estas|mismas)\b/.test(text);
@@ -55,10 +59,12 @@ function confirmedQuery(answer){
 
 export function isReceivableIntent(value) {
   const text=queryText(value);
+  const direction=paymentDirection(value);
+  if(direction==='payable'||direction==='ambiguous')return false;
   if(!text||openOrWrite.test(text)&&!/^abr(?:e|ir)(?:me)? (?:las )?facturas\b/.test(text))return false;
   const invoices=/\bfacturas?\b/.test(text);
   const collections=/\b(?:pendientes? (?:\w+ ){0,2}(?:cobro|cobrar)|por cobrar|sin cobrar|no cobradas?|impagad[ao]s?|saldo pendiente|cobros? pendientes?)\b/.test(text);
-  return invoices&&(/\b(?:pendientes?|impagad[ao]s?|vencidas?|sin (?:pagar|cobrar)|por cobrar|no cobradas?)\b/.test(text))||collections||
+  return direction==='receivable'||invoices&&(/\b(?:pendientes?|impagad[ao]s?|vencidas?|sin cobrar|por cobrar|no cobradas?)\b/.test(text))||collections||
     /\b(?:las|mis) pendientes(?: de| del|$)/.test(text);
 }
 
