@@ -9,7 +9,7 @@
 | Arranque y reglas del nuevo Codex | Documentados en esta rama |
 | Aplicación V2 ejecutable | Pendiente de construir |
 | Modelo de datos y migrador | Inventario inicial; diseño e implementación pendientes |
-| Supabase Moderno Prueba | Destino exigido; identidad y estado todavía no verificados en este arranque |
+| Supabase Moderno Prueba | Entorno exigido; conexión y funcionamiento de la nueva V2 pendientes de validar |
 | ReUI premium | Compra/acceso pendientes de verificar; no se ha instalado código premium |
 | MCP de ReUI | Guía de preparación revisada; conexión pendiente de configurar y comprobar en el nuevo Codex |
 | Producción y datos reales | Sin cambios por este arranque |
@@ -44,7 +44,7 @@ Elegir un bloque de Mail proporciona una base visual cuyo alcance hay que revisa
 
 Mantener la marca Moderno: imagotipo oficial, paleta crema/beige/grafito y tipografía existente verificada. Definir de forma compartida tamaños, espacios, bordes, estados y densidad. La barra de proyecto va arriba; la navegación lateral comienza contraída.
 
-Primer hito recomendado:
+Después del primer hito de publicación y Google, continuar este recorrido:
 
 1. Inventariar las funciones actuales por módulo y registrar qué se conserva, cambia o se pospone.
 2. Preparar el proyecto independiente, su entorno y los tokens comunes.
@@ -62,3 +62,7 @@ El [plan inicial de migración](docs/MIGRACION-DATOS.md) identifica datos, relac
 ## Verificación de esta preparación
 
 Solo se han preparado documentos. Se ha revisado el workflow [deploy-app.yml](https://github.com/estudiomoderno/moderno.app/blob/61a0c09c044abbd576a6c485ca58d0db75831317/.github/workflows/deploy-app.yml): su despliegue exige la rama main. No se han modificado código de aplicación, workflows, bases de datos, archivos privados ni servicios de producción. No hay compilación o pruebas funcionales de V2 que ejecutar todavía.
+
+## Publicación de avances y acceso con Google
+
+El primer hito debe ser una V2 publicada en una URL HTTPS estable, con Google funcional y un espacio de pruebas vacío. Cada entrega comprobada se publicará en ese destino. «Sin datos» significa sin importar datos de negocio reales; se permiten las identidades autorizadas y los ejemplos ficticios de pruebas. La migración requiere la orden expresa posterior del propietario. Ver [publicación V2 y Google](docs/PUBLICACION-V2-Y-GOOGLE.md).

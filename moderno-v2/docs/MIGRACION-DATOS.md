@@ -65,3 +65,7 @@ Referencia de protección existente: [PROTECCION-DATOS.md](https://github.com/es
 ## Decisiones pendientes
 
 Esquema final de V2, destino productivo de Supabase, alcance de Mail/integraciones, tratamiento concreto de Auth y borradores, tiempo de corte y periodo de recuperación. El nuevo Taller deberá resolverlas con evidencia durante el desarrollo; no bloquean la preparación de la interfaz y los ensayos ficticios.
+
+## Publicación durante el desarrollo
+
+V2 debe poder publicarse con Google y un espacio de pruebas vacío mientras se construye. Seguir [PUBLICACION-V2-Y-GOOGLE.md](PUBLICACION-V2-Y-GOOGLE.md). Publicar una entrega no activa ninguna importación productiva. La migración se ejecutará únicamente con la orden expresa posterior del propietario, después del ensayo y las comprobaciones del corte. Conservar el acceso y los permisos existentes es un criterio de aceptación. Los ejemplos y cuentas de ensayo no se trasladarán automáticamente a producción.

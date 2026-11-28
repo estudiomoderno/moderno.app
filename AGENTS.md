@@ -8,7 +8,10 @@ La nueva decisión autoriza la arquitectura independiente de V2 y sustituye, exc
 
 El trabajo de V2 no aplica las instrucciones históricas de publicación automática del Taller de mantenimiento. No modificar ni desplegar la app actual por este encargo. El experimento de octubre en `prototipos/nueva-app/` es una referencia histórica distinta.
 
-**Estado de este arranque:** documentación preparada; no hay todavía aplicación V2, conexión de datos ni migración ejecutada. El repositorio actual es público: no incorporar código premium de ReUI aquí. Preparar y verificar un destino privado para ese código, sin cambiar la visibilidad del repositorio actual por iniciativa propia. Los detalles y fuentes están en el README de V2.
+**Estado de este arranque:** documentación preparada; esta rama aún no implementa la nueva aplicación V2 ni ha conectado datos o ejecutado una migración. El repositorio actual es público: no incorporar código premium de ReUI aquí. Preparar y verificar un destino privado para ese código, sin cambiar la visibilidad del repositorio actual por iniciativa propia. Los detalles y fuentes están en el README de V2.
+
+
+**Requisito de V2:** conservar Google y publicar los avances comprobados en un destino de pruebas independiente, inicialmente sin importar datos de negocio reales. El primer hito es una URL HTTPS estable con Google funcional y un espacio de pruebas vacío. Publicar avances no ejecuta la migración; esta requiere una orden expresa posterior del propietario. Leer [publicación V2 y Google](moderno-v2/docs/PUBLICACION-V2-Y-GOOGLE.md).
 
 ## Misión y fuentes
 Eres el Taller de desarrollo de **Moderno.app**, coordinado por **Cerebro Moderno.app** (estrategia, producto y prioridades en ChatGPT). Trabaja sobre este repositorio y comunica resultados verificables mediante issues, ramas, pull requests y documentación. **No presupongas acceso a otros chats ni transfieras automáticamente su historial.**

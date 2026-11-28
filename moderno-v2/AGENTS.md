@@ -4,13 +4,13 @@
 
 Construir una nueva Moderno.app desde cero, usando ReUI y bloques completos con una identidad visual común. Javier abrirá un Codex nuevo. La decisión procede de su conversación del 28/11/2026; no presupone que el nuevo chat herede el historial de otro.
 
-Leer este archivo, README.md, docs/REUI-CODEX.md y docs/MIGRACION-DATOS.md en este directorio. Después revisar las fuentes de la app antigua necesarias para cada módulo. Distinguir siempre una decisión del propietario, una propuesta técnica y un resultado comprobado.
+Leer este archivo, README.md, docs/REUI-CODEX.md, docs/PUBLICACION-V2-Y-GOOGLE.md y docs/MIGRACION-DATOS.md en este directorio. Después revisar las fuentes de la app antigua necesarias para cada módulo. Distinguir siempre una decisión del propietario, una propuesta técnica y un resultado comprobado.
 
 ## Aislamiento y autonomía
 
 - Trabajar en `moderno-v2/`, con configuración, dependencias y comandos propios. La rama inicial es `v2/reui`.
 - El código antiguo sirve para entender comportamiento, contratos y activos de marca. Conservar intactos `app/`, `mailer/`, `ui/`, `SQL/`, `supabase/` y los workflows de producción durante este arranque.
-- Una rama distinta no aísla los datos. Usar inicialmente datos sintéticos. Antes de conectar Supabase, identificar y verificar el proyecto **Moderno Prueba**, su URL, claves de cliente, aislamiento y usuarios ficticios. No asumir que un nombre histórico identifica ese entorno.
+- Una rama distinta no aísla los datos. Usar inicialmente datos sintéticos. Antes de conectar Supabase, identificar y verificar el proyecto **Moderno Prueba**, su URL, claves de cliente, aislamiento y cuentas de prueba. El propietario puede usar Google para el acceso de pruebas; las pruebas automáticas usan identidades sintéticas. No asumir que un nombre histórico identifica ese entorno.
 - La configuración V2 debe fallar de forma segura si falta el destino de pruebas o no coincide con el proyecto verificado. No heredar URLs, claves ni valores por defecto de producción; no reutilizar el servidor o el .env de la app antigua sin comprobarlos.
 - Stripe exclusivamente en modo de prueba si se trabaja esa integración. Ningún envío real, cobro real, migración productiva o cambio de DNS queda autorizado por construir V2.
 - No incluir secretos, claves ReUI, datos reales, exportaciones privadas o copias de seguridad en Git. La clave de licencia de ReUI no es una variable pública del frontend.
@@ -29,7 +29,9 @@ Preparar la conexión ReUI y la skill según el entorno real, siguiendo docs/REU
 
 Separar la interfaz, las reglas del producto y el acceso a los datos. Los componentes visuales no deben depender del JSON antiguo ni implementar permisos por su cuenta. Diseñar adaptadores e importadores con correspondencias explícitas de identidad.
 
-Primer recorrido: listado de proyectos → abrir/crear → editar → guardar → recargar y recuperar el cambio. Hacer primero una demostración sintética y después el recorrido con persistencia de pruebas verificada. Declarar con claridad si el guardado es local o de servidor.
+Primer hito: URL HTTPS estable de V2, Google funcional en pruebas y espacio de pruebas vacío, según docs/PUBLICACION-V2-Y-GOOGLE.md. Después completar listado de proyectos → abrir/crear → editar → guardar → recargar y recuperar el cambio, con persistencia de pruebas verificada.
+
+Publicar cada entrega V2 comprobada en el destino de pruebas independiente una vez configurado y verificado. Esta publicación rutinaria forma parte del encargo; no activa una migración. El traslado de información real requiere la orden expresa posterior del propietario y el plan ensayado.
 
 ## Verificación y entrega
 
